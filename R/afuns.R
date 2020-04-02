@@ -27,12 +27,13 @@ get_giMoments <- function(params) {
     Rv <- get_R0(params, components=TRUE)
     R <- sum(Rv)
     irates <- with(as.list(params), c(lambda_a, lambda_p, lambda_m, lambda_s))
-
     gamma  <- params[["gamma"]]
 
-    Gbar <- sum(Rv/irates)/R + 1/gamma
-    iww <- sum(Rv/irates^2)/R + 1/gamma^2
-    kappa <- iww/Gbar^2 - 1
-    c(Gbar=Gbar, kappa=kappa)
+	 Gibar <- sum((Rv/R)/irates)
+	 Givar <- sum((Rv/R)/irates^2) - Gibar^2
+
+    Gbar <- Gibar + 1/gamma
+    Gvar <- Givar + 1/gamma^2
+    c(Gbar=Gbar, kappa=Gvar/Gbar^2)
 }
 
