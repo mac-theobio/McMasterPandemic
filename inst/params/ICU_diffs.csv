@@ -1,0 +1,8 @@
+Parameter,Symbol,Value,Source,Notes
+Fraction of hospital cases to acute care,phi1,0.76,pers comm
+Fraction of ICU cases dying,phi2,0.50,pers comm
+Rate of hospital leaving,rho,1/10,pers comm
+Rate of ICU back to acute care,psi1,1/20,pers comm
+Rate of ICU to death,psi2,1/8,pers comm
+Rate of post-ICU to discharge,psi3,1/5,pers comm
+Fraction of hospitalized (acute-care) cases that are fatal,delta,0,our def differs from Stanford's

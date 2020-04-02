@@ -1,0 +1,13 @@
+Package: McMasterPandemic
+Title: pandemic model 
+Description: This is a compartmental model for pandemic modeling/health care utilization.
+Version: 0.0.1
+Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
+	   	   person("David Earn",role="aut"),
+	   	   person("Morgan Kain",role="aut"),
+		   person("Jonathan Dushoff",role="aut"))
+Depends: R (>= 3.0.0), dplyr, tidyr, ggplot2
+Imports: Matrix, igraph, lubridate, forcats
+RoxygenNote: 7.1.0
+Encoding: UTF-8
+License: GPL
