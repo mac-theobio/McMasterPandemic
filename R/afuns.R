@@ -1,13 +1,33 @@
 
+##' return growth rate (from Jacobian)
+##' @param p parameters
+##' @export
+get_r <- function(p,s) {
+    max(eigen(make_jac(state=s,params=p))$values)
+}
+
+##' return mean gen interval
+##' @param p parameters
+##' @export
+get_GI <- function(p) {
+    with(as.list(p),
+        1/gamma+alpha/lambda_a+
+           (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
+}
+
+##' compute moments of GI
+##' @param params parameters
+##' @export
 get_giMoments <- function(params) {
     ## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
     ##  (will have to rethink this once we have a structured model)
-	 Rv <- get_R0(params, components=TRUE)
-	 R <- sum(Rv)
-	 irates <- with(as.list(params), c(lambda_a, lambda_p, lambda_m, lambda_s))
+    Rv <- get_R0(params, components=TRUE)
+    R <- sum(Rv)
+    irates <- with(as.list(params), c(lambda_a, lambda_p, lambda_m, lambda_s))
 
-	 Gbar <- sum(Rv/irates)/R + 1/gamma
-	 iww <- sum(Rv/irates^2)/R + 1/gamma^2
-	 kappa <- iww/Gbar^2 - 1
+    Gbar <- sum(Rv/irates)/R + 1/gamma
+    iww <- sum(Rv/irates^2)/R + 1/gamma^2
+    kappa <- iww/Gbar^2 - 1
+    c(Gbar=Gbar, kappa=kappa)
 }
 
