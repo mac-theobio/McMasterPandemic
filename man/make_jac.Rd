@@ -17,5 +17,8 @@ construct Jacobian matrix for ICU model
 \examples{
 params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 state <- make_state(params[["N"]],E=params[["E0"]])
+state[c("E","Ia","Ip","Im","Is")] <- 1
 J <- make_jac(state,params)
+round(J[1:6,1:6],3)
+eigen(J)$values
 }

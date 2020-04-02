@@ -8,7 +8,10 @@
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' J <- make_jac(state,params)
+##' round(J[1:6,1:6],3)
+##' eigen(J)$values
 make_jac <- function(state, params) {
     np <- length(params)
     ns <- length(state)
@@ -27,11 +30,11 @@ make_jac <- function(state, params) {
     M["S","Im"] <- S*Iwt[["Im"]]
     M["S","Is"] <- S*Iwt[["Is"]]
     M["E","S"] <- sum(Iwt)
-    M["E","E"] <- P$gamma
+    M["E","E"] <- -P$gamma
     M["Ia","E"] <- alpha*P$gamma
-    M["Ia","Ia"] <- lambda_a
+    M["Ia","Ia"] <- -lambda_a
     M["Ip","E"] <- (1-alpha)*P$gamma
-    M["Ip","Ip"] <- lambda_p
+    M["Ip","Ip"] <- -lambda_p
     M["Im","Ip"] <- mu*lambda_p
     M["Im","Im"] <- -lambda_m
     M["Is","Ip"] <- (1-mu)*lambda_p
