@@ -31,3 +31,10 @@ base version matches structure of Stanford/Georgia models
 \item parameter definitions: see params_CI_base.csv, params_ICU_diffs.csv
 }
 }
+\examples{
+params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+state <- make_state(params[["N"]],E=params[["E0"]])
+if (require(Matrix)) {
+  image(Matrix(make_ratemat(state,params)))
+}
+}

@@ -1,6 +1,44 @@
 ## FIXME: consistent naming of 'transmat'/'ratemat'/etc.
 ## FIXME: should eventually split this into multiple files. For now, it's more convenient to have it as one big lump (if/when it becomes a package we can include the tarball and install from source)
 
+##' construct Jacobian matrix for ICU model
+##' @param state state vector (named)
+##' @param params parameter vector
+##' @export
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' J <- make_jac(state,params)
+make_jac <- function(state, params) {
+    np <- length(params)
+    ns <- length(state)
+    ## make state and param names locally available (similar to with())
+    P <- c(as.list(state),as.list(params))
+    attach(P); on.exit(detach(P))
+    ## blank matrix
+    M <- matrix(0,
+                nrow=ns, ncol=ns,
+                dimnames=list(from=names(state),to=names(state)))
+    Ivec <- c(Ia, Ip, P$Im,Is)
+    Iwt <- beta0/N*c(Ia=Ca,Ip=Cp,Im=(1-iso_m)*Cm,Is=(1-iso_s)*Cs)
+    M["S","S"] <- -sum(Iwt)
+    M["S","Ia"] <- S*Iwt[["Ia"]]
+    M["S","Ip"] <- S*Iwt[["Ip"]]
+    M["S","Im"] <- S*Iwt[["Im"]]
+    M["S","Is"] <- S*Iwt[["Is"]]
+    M["E","S"] <- sum(Iwt)
+    M["E","E"] <- P$gamma
+    M["Ia","E"] <- alpha*P$gamma
+    M["Ia","Ia"] <- lambda_a
+    M["Ip","E"] <- (1-alpha)*P$gamma
+    M["Ip","Ip"] <- lambda_p
+    M["Im","Ip"] <- mu*lambda_p
+    M["Im","Im"] <- -lambda_m
+    M["Is","Ip"] <- (1-mu)*lambda_p
+    M["Is","Is"] <- -lambda_s
+    ## everything else is irrelevant
+    return(M)
+}
 
 ##' Create transition matrix: defines rates (per day) of flow
 ##' \emph{from} compartment i (row) \emph{to} compartment j (column)
@@ -13,6 +51,12 @@
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
 ##' @return matrix of (daily) transition rates
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' if (require(Matrix)) {
+##'   image(Matrix(make_ratemat(state,params)))
+##' }
 ##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE) {
     np <- length(params)
