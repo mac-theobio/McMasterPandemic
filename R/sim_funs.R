@@ -26,11 +26,12 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
                 dimnames=list(from=names(state),to=names(state)))
     ## fill entries
     ## NB meaning of iso_* has switched from Stanford model
-    Ivec <- c(Ia, Ip, Im,Is)
+    ## FIXME:: why are gamma(), Im() found rather than the values in P$ ???
+    Ivec <- c(Ia, Ip, P$Im,Is)
     Iwt <- beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs)
     M["S","E"]   <- sum(Iwt*Ivec)
-    M["E","Ia"]  <- alpha*gamma
-    M["E","Ip"]  <- (1-alpha)*gamma
+    M["E","Ia"]  <- alpha*P$gamma
+    M["E","Ip"]  <- (1-alpha)*P$gamma
     M["Ia","R"]  <- lambda_a
     M["Ip","Im"] <- mu*lambda_p
     M["Ip","Is"] <- (1-mu)*lambda_p
