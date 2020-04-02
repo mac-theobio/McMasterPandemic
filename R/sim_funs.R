@@ -50,13 +50,29 @@ make_jac <- function(state, params) {
     return(M)
 }
 
-##' Create transition matrix: defines rates (per day) of flow
-##' \emph{from} compartment i (row) \emph{to} compartment j (column)
-##' base version matches structure of Stanford/Georgia models
+##' Create transition matrix
+##'
+##' Defines rates (per day) of flow \emph{from} compartment \code{i}
+##' (row) \emph{to} compartment \code{j} (column).
+##'
+##' @details
+##' The rates are as follows:
+##' 
+##' \eqn{ S to E:  - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) }
+##' \eqn{ E to I_a: }
+##' \eqn{ E to I_p: }
+##' \eqn{ ... }
+##'
+##' See \code{\link{read_params}} for parameter definitions.
+##' 
+##' @note
+##' Base version matches structure of Stanford/Georgia models
 ##' \itemize{
-##' \item flow diagram: see https://covid-measures.github.io/ 'model details' tab or ../pix/model_schematic.png
-##' \item parameter definitions: see params_CI_base.csv, params_ICU_diffs.csv
+##'   \item flow diagram: see \url{https://covid-measures.github.io/} 'model details' tab
+##'         or \code{../pix/model_schematic.png}
+##'   \item parameter definitions: see \code{params_CI_base.csv}, \code{params_ICU_diffs.csv}
 ##' }
+##' 
 ##' @param state named vector of states
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
@@ -326,6 +342,20 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
 
 
 ##' retrieve parameters from a CSV file
+##'
+##' @details
+##' The parameters that must be set are:
+##'
+##' \eqn{   N:  }  population size
+##' 
+##' \eqn{   \beta_0:  }  transmission rate
+##' 
+##' \eqn{   1/\gamma:  }  mean \emph{latent} period
+##' 
+##' \eqn{   1/\lambda_a:  }  mean \emph{infectious} period for asymptomatic individuals
+##' 
+##' \eqn{   ... }
+##' 
 ##' @param fn file name (CSV file containing at least value and symbol columns
 ##' @param value_col name of column containing values
 ##' @param symbol_col name of column containing symbols
