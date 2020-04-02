@@ -414,9 +414,9 @@ summary.pansim <- function(x, ...) {
     ## FIXME: prettier?
     xa <- aggregate(x)
     attach(xa); on.exit(detach(xa))
-    res <- data.frame(peak_ICU_date=date[which.max(ICU)],
+    res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
              peak_ICU_val=round(max(ICU)),
-             peak_H_date=date[which.max(H)],
+             peak_H_date=xa$date[which.max(H)],
              peak_H_val=round(max(H)))
     ## FIXME: report time-varying R0
     if (!is.null(p <- attr(x,"params"))) {
