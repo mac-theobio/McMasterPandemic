@@ -8,10 +8,13 @@
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
-##' state[c("E","Ia","Ip","Im","Is")] <- 1
+##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
+##' state[["E"]] <- 1
 ##' J <- make_jac(state,params)
-##' round(J[1:6,1:6],3)
-##' eigen(J)$values
+##' J["S","S"]
+##' Jr <- J[1:6,1:6]
+##' round(Jr,3)
+##' eigen(Jr)$values
 make_jac <- function(state, params) {
     np <- length(params)
     ns <- length(state)
@@ -24,12 +27,16 @@ make_jac <- function(state, params) {
                 dimnames=list(from=names(state),to=names(state)))
     Ivec <- c(Ia, Ip, P$Im,Is)
     Iwt <- beta0/N*c(Ia=Ca,Ip=Cp,Im=(1-iso_m)*Cm,Is=(1-iso_s)*Cs)
-    M["S","S"] <- -sum(Iwt)
-    M["S","Ia"] <- S*Iwt[["Ia"]]
-    M["S","Ip"] <- S*Iwt[["Ip"]]
-    M["S","Im"] <- S*Iwt[["Im"]]
-    M["S","Is"] <- S*Iwt[["Is"]]
-    M["E","S"] <- sum(Iwt)
+    M["S","S"] <- -sum(Ivec*Iwt)
+    M["S","Ia"] <- -S*Iwt[["Ia"]]
+    M["S","Ip"] <- -S*Iwt[["Ip"]]
+    M["S","Im"] <- -S*Iwt[["Im"]]
+    M["S","Is"] <- -S*Iwt[["Is"]]
+    M["E","Ia"] <- S*Iwt[["Ia"]]
+    M["E","Ip"] <- S*Iwt[["Ip"]]
+    M["E","Im"] <- S*Iwt[["Im"]]
+    M["E","Is"] <- S*Iwt[["Is"]]
+    M["E","S"] <- +sum(Ivec*Iwt)
     M["E","E"] <- -P$gamma
     M["Ia","E"] <- alpha*P$gamma
     M["Ia","Ia"] <- -lambda_a
