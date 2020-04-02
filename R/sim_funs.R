@@ -433,10 +433,6 @@ get_R0 <- function(params, components=FALSE) {
     })
 }
 
-get_r <- function(params) {
-    ## will have to be done by constructing Jacobian?
-} 
-
 
 ##' @export
 summary.pansim <- function(x, ...) {
