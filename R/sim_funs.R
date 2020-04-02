@@ -46,7 +46,15 @@ make_jac <- function(state, params) {
     M["Im","Im"] <- -lambda_m
     M["Is","Ip"] <- (1-mu)*lambda_p
     M["Is","Is"] <- -lambda_s
-    ## everything else is irrelevant
+    M["H","Is"]  <- lambda_s*phi1
+    M["H","H"]   <- -rho
+    M["ICUs","Is"] <- lambda_s*(1-phi1)*(1-phi2)
+    M["ICUs","ICUs"] <- -psi1
+    M["H2","ICUs"] <- psi1
+    M["H2","H2"] <- -psi3
+    M["ICUd","Is"] <- lambda_s*(1-phi1)*phi2
+    M["ICUd","ICUd"] <- -psi2
+    M["D","ICUd"] <- psi2
     return(M)
 }
 
