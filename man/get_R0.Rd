@@ -6,6 +6,11 @@
 \usage{
 get_R0(params, components = FALSE)
 }
+\arguments{
+\item{params}{parameters}
+
+\item{components}{report R0 component-by-component?}
+}
 \description{
 calculate R0 for a given set of parameters
 }

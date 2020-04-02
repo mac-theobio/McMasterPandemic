@@ -13,6 +13,7 @@
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
 ##' @return matrix of (daily) transition rates
+##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE) {
     np <- length(params)
     ns <- length(state)
@@ -287,6 +288,7 @@ read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     return(res)
 }
 
+##' write parameters to CSV file
 ##' @param fn file name
 ##' @param params a params object
 ##' @param label a label for the parameters
@@ -332,6 +334,9 @@ aggregate.pansim <- function(x) {
 }
 
 ##' calculate R0 for a given set of parameters
+##' @param params parameters
+##' @param components report R0 component-by-component?
+##' @export
 get_R0 <- function(params, components=FALSE) {
     ## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
     ##  (will have to rethink this once we have a structured model)
@@ -390,6 +395,7 @@ make_state <- function(N,E0,type="ICU1",state_names=NULL) {
 ## FIXME: can this be made into a predict method??
 ##   with newdata, newparams, newinit
 
+##' @export
 predfun <- function(beta0,E0,data,
                     params,
                     start_date="10-Feb-2020",
