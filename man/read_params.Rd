@@ -16,3 +16,16 @@ read_params(fn, value_col = "Value", symbol_col = "Symbol")
 \description{
 retrieve parameters from a CSV file
 }
+\details{
+The parameters that must be set are:
+
+\eqn{   N:  }  population size
+
+\eqn{   \beta_0:  }  transmission rate
+
+\eqn{   1/\gamma:  }  mean \emph{latent} period
+
+\eqn{   1/\lambda_a:  }  mean \emph{infectious} period for asymptomatic individuals
+
+\eqn{   ... }
+}
