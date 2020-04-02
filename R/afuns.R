@@ -3,17 +3,20 @@
 ##' @param p parameters
 ##' @export
 get_r <- function(p,s) {
-    max(eigen(make_jac(state=s,params=p))$values)
+    res <- max(eigen(make_jac(state=s,params=p))$values)
+    return(res)
 }
 
 ##' return mean gen interval
 ##' @param p parameters
 ##' @export
 get_GI <- function(p) {
-    with(as.list(p),
+    res <- with(as.list(p),
         1/gamma+alpha/lambda_a+
-           (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
+        (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
+    return(res)
 }
+
 
 ##' compute moments of GI
 ##' @param params parameters
@@ -24,6 +27,8 @@ get_giMoments <- function(params) {
     Rv <- get_R0(params, components=TRUE)
     R <- sum(Rv)
     irates <- with(as.list(params), c(lambda_a, lambda_p, lambda_m, lambda_s))
+
+    gamma  <- params[["gamma"]]
 
     Gbar <- sum(Rv/irates)/R + 1/gamma
     iww <- sum(Rv/irates^2)/R + 1/gamma^2
