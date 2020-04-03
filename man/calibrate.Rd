@@ -11,8 +11,7 @@ calibrate(
   slope,
   pop,
   params,
-  R0 = 3,
-  GI = NULL,
+  target = c(Gbar = 6),
   date0 = ldmy("1-Mar-2020"),
   date1 = ldmy("25-Mar-2020"),
   var = "H"
@@ -23,9 +22,7 @@ calibrate(
 
 \item{slope}{log-linear slope (growth rate)}
 
-\item{R0}{desired/calibrated R0}
-
-\item{GI}{desired/calibrated mean generation interval (stub)}
+\item{target}{vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)}
 
 \item{date0}{date for initial conditions}
 
@@ -37,4 +34,12 @@ calibrate(
 given a log-linear intercept and slope and target values for R0 or GI,
 return initial conditions and parameters that will (approximately?)
 recapitulate the observed log-linear dynamics
+}
+\examples{
+params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+cc1 <- calibrate(int=log(200),slope=0.23,pop=1e6,params)
+summary(cc1$params)
+cc2 <- calibrate(int=log(200),slope=0.23,pop=1e6,params,target=c(R0=3))
+summary(cc2$params)
+
 }

@@ -11,11 +11,11 @@ adjust_params <- function(log_d_beta0,log_d_lambda,params) {
 
 ## FIXME: generalize s_new based on names of target
 ##  (r, R0, Gbar, kappa)
-badness <- function(delta, params, target, state) {
+badness <- function(delta, params, target) {
     p_new <- adjust_params(delta[1],delta[2],params)
     s_new <- rep(NA,length(target))
-    setNames(s_new,names(target))
-    GIm <- get_GImoments(p)
+    names(s_new) <- names(target)
+    GIm <- get_GI_moments(p_new)
     for (i in names(target)) {
         s_new[[i]] <- switch(i,
                               r=get_r(p_new),
@@ -23,7 +23,9 @@ badness <- function(delta, params, target, state) {
                               Gbar=GIm[["Gbar"]],
                               kappa=GIm[["kappa"]])
     }
-    return(sum((s_new-target)^2))
+    res <- sum((s_new-target)^2)
+    ## cat(delta,s_new,target,res,"\n")
+    return(res)
 }
 
 ## round-trip: should be zero
@@ -35,9 +37,13 @@ badness <- function(delta, params, target, state) {
 
 ##' adjust pars to match targets
 ##' @export
-fix_pars <- function(params, state, target=c(r=0.23,R0=3)) {
+fix_pars <- function(params, target=c(r=0.23,R0=3)) {
+    ## cc <- emdbook::curve3d(badness(c(x,y),params,target=target),
+    ##                        xlim=c(-1,1),ylim=c(-1,1),
+    ##                        sys3d="image")
     opt1 <- optim(par=c(0,0), fn= badness, method="Nelder-Mead",
-                  target=target, state=state, params=params)
+                  target=target, params=params)
+    ##                  control=list(trace=TRUE))
     p_new <- adjust_params(opt1$par[1],opt1$par[2], params)
     return(p_new)
 }
@@ -47,21 +53,33 @@ fix_pars <- function(params, state, target=c(r=0.23,R0=3)) {
 ##' recapitulate the observed log-linear dynamics
 ##' @param int log-linear intercept (expected value on date1)
 ##' @param slope log-linear slope (growth rate)
-##' @param R0 desired/calibrated R0
-##' @param GI desired/calibrated mean generation interval (stub)
+##' @param target vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)
 ##' @param date0 date for initial conditions
 ##' @param date1 initial date for regression
 ##' @param var variable for regression (H, D, ICU)
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' cc1 <- calibrate(int=log(200),slope=0.23,pop=1e6,params)
+##' summary(cc1$params)
+##' cc2 <- calibrate(int=log(200),slope=0.23,pop=1e6,params,target=c(R0=3))
+##' summary(cc2$params)
+## FIXME: warn if starting conditions are too low 
+##' 
 ##' @export
-calibrate <- function(int,slope,pop,params,R0=3,GI=NULL,
-                            date0=ldmy("1-Mar-2020"),
-                            date1=ldmy("25-Mar-2020"),
-                            var="H") {
+calibrate <- function(int,slope,pop,params,
+                      target=c(Gbar=6),
+                      date0=ldmy("1-Mar-2020"),
+                      date1=ldmy("25-Mar-2020"),
+                      var="H") {
+    ok_targets <- c("Gbar","kappa","R0")
+    bad_targets <- setdiff(names(target),ok_targets)
+    if (length(bad_targets)>0) stop("bad targets: ",paste(bad_targets,collapse=", "))
     ldmy <- lubridate::dmy  ## sugar) {
     ## first adjust base params to set r and R0 (or GI) to specified value
     params[["N"]] <- pop
     state <- make_state(N=pop,E0=1)
-    p2 <- fix_pars(params,state,target=c(r=slope,R0=R0))
+    target[["r"]] <- slope
+    p2 <- fix_pars(params, target=target)
     ## now get initial conds
     list(state=get_init(date0,date1,p2,int,slope,var),
          params=p2)

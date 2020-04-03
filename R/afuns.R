@@ -7,21 +7,19 @@ get_r <- function(p,s) {
     return(res)
 }
 
-##' return mean gen interval
-##' @param p parameters
-##' @export
-get_GI <- function(p) {
-    res <- with(as.list(p),
-        1/gamma+alpha/lambda_a+
-        (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
-    return(res)
-}
+## OBSOLETE: naive/unweighted GI mean
+## get_GI <- function(p) {
+##     res <- with(as.list(p),
+##         1/gamma+alpha/lambda_a+
+##         (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
+##     return(res)
+## }
 
 
-##' compute moments of GI
+##' compute moments of generation interval (mean and CV^2)
 ##' @param params parameters
 ##' @export
-get_giMoments <- function(params) {
+get_GI_moments <- function(params) {
     ## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
     ##  (will have to rethink this once we have a structured model)
     Rv <- get_R0(params, components=TRUE)

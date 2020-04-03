@@ -66,6 +66,11 @@ aggregate.pansim <- function(x) {
 }
 
 ##' @export
+summary.panparams <- function(x, ...) {
+    c(R0=get_R0(x),get_GI_moments(x))
+}
+
+##' @export
 summary.pansim <- function(x, ...) {
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
