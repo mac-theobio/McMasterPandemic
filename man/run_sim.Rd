@@ -11,9 +11,9 @@ run_sim(
   end_date = "1-May-2020",
   params_timevar = NULL,
   dt = 1,
+  stoch = c(obs = FALSE, proc = FALSE),
   transmat_args = NULL,
-  step_args = NULL,
-  attach_params = TRUE
+  step_args = NULL
 )
 }
 \arguments{
@@ -28,6 +28,8 @@ run_sim(
 \item{params_timevar}{three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})}
 
 \item{dt}{time step (days)}
+
+\item{stoch}{stochastic simulation? logical vector for observation and process noise}
 }
 \description{
 Run pandemic simulation

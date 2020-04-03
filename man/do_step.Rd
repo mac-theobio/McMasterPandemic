@@ -4,7 +4,14 @@
 \alias{do_step}
 \title{Take a single simulation time step}
 \usage{
-do_step(state, params, transmat, dt = 1, do_hazard = FALSE, stoch = FALSE)
+do_step(
+  state,
+  params,
+  transmat,
+  dt = 1,
+  do_hazard = FALSE,
+  stoch = c(obs = FALSE, proc = FALSE)
+)
 }
 \arguments{
 \item{state}{named vector of states}
@@ -17,7 +24,7 @@ do_step(state, params, transmat, dt = 1, do_hazard = FALSE, stoch = FALSE)
 
 \item{do_hazard}{use hazard calculation?}
 
-\item{stoch}{stochastic simulation?}
+\item{stoch}{stochastic simulation? logical vector for observation and process noise}
 }
 \description{
 Take a single simulation time step

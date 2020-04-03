@@ -157,12 +157,12 @@ update_foi <- function(state, params) {
 ##' @param transmat transition matrix
 ##' @param dt time step (days)
 ##' @param do_hazard use hazard calculation?
-##' @param stoch stochastic simulation? Choices are "none" (deterministc); "obs_only" ...
+##' @param stoch stochastic simulation? logical vector for observation and process noise
 ## (if we do the hazard calculations we can plug in pomp:::reulermultinom()
 ##  [or overdispersed analogue] directly)
 do_step <- function(state, params, transmat, dt=1,
-                           do_hazard=FALSE, stoch="none") {
-
+                    do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE)) {
+    
     transmat["S","E"] <- update_foi(state,params)
     if (!do_hazard) {
         ## from per capita rates to absolute changes
@@ -183,7 +183,7 @@ do_step <- function(state, params, transmat, dt=1,
         flows <- (1-E)*sweep(transmat, norm_sum, MARGIN=1, FUN="*")
         diag(flows) <- 0  ## no flow
     }
-    if (stoch %in% c("none","obs_only") {
+    if (!stoch[["proc"]]) {
         outflow <- rowSums(flows)
         inflow <-  colSums(flows)
         state <- state - outflow + inflow
@@ -217,10 +217,9 @@ run_sim <- function(params,
                     end_date="1-May-2020",
                     params_timevar=NULL,
                     dt=1,
-                    stoch="none",
+                    stoch=c(obs=FALSE,proc=FALSE),
                     transmat_args=NULL,
-                    step_args=NULL,
-                    attach_params=TRUE) {
+                    step_args=NULL) {
     call <- match.call()
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
@@ -263,12 +262,19 @@ run_sim <- function(params,
                             s,params0[[s]],params[[s]],i))
             }
         }
-        state <- 
-        res[i,] <- do.call(do_step,
-                           c(list(state=res[i-1,],
-                                  params=params, transmat = M,
-                                  dt = dt),
-                             step_args))
+        state <- do.call(do_step,
+                         c(list(state=state,
+                                params=params, transmat = M,
+                                dt = dt,
+                                stoch = stoch),
+                           step_args))
+        if (!stoch[["obs"]]) {
+            res[i,] <- state
+        } else {
+            res[i,] <- rnbinom(length(state),
+                               mu=state,
+                               size=params[["obs_disp"]])
+        }
     }
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
     ## store everything as attributes
