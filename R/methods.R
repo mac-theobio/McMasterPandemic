@@ -25,7 +25,7 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
     drop_states <- intersect(drop_states,names(x))
     xL <- (x
         %>% as_tibble()
-        %>% select(-one_of(drop_states))
+        %>% dplyr::select(-one_of(drop_states))
         %>% tidyr::pivot_longer(names_to="var", -date)
         %>% mutate(var=forcats::fct_inorder(factor(var)))
     )
