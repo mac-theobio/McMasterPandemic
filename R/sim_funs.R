@@ -223,11 +223,8 @@ run_sim <- function(params,
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
-    dfun <- function(x) if (is.character(x)) lubridate::dmy(x) else x
-    start_date <- dfun(start_date)
-    end_date <- dfun(end_date)
+    start_date <- ldmy(start_date); end_date <- ldmy(end_date)
     date_vec <- seq(start_date,end_date,by=dt)
-    
     nt <- (as.numeric(end_date-start_date))/dt+1  ## count first date as day 0 (??? FIXME/THINK!)
     ## will non-integer dates work??
 

@@ -68,20 +68,20 @@ fix_pars <- function(params, target=c(r=0.23,R0=3)) {
 ##' @export
 calibrate <- function(int,slope,pop,params,
                       target=c(Gbar=6),
-                      date0=ldmy("1-Mar-2020"),
-                      date1=ldmy("25-Mar-2020"),
+                      date0="1-Mar-2020",
+                      date1="25-Mar-2020",
                       var="H") {
+    date0 <- ldmy(date0); date1 <- ldmy(date1)
     ok_targets <- c("Gbar","kappa","R0")
     bad_targets <- setdiff(names(target),ok_targets)
     if (length(bad_targets)>0) stop("bad targets: ",paste(bad_targets,collapse=", "))
-    ldmy <- lubridate::dmy  ## sugar) {
     ## first adjust base params to set r and R0 (or GI) to specified value
     params[["N"]] <- pop
     state <- make_state(N=pop,E0=1)
     target[["r"]] <- slope
     p2 <- fix_pars(params, target=target)
     ## now get initial conds
-    list(state=get_init(date0,date1,p2,int,slope,var),
-         params=p2)
+    state_2 <- get_init(date0,date1,p2,int,slope,var)
+    return(list(state=state_2,params=p2))
 }    
 
