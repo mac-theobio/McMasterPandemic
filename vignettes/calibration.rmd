@@ -1,0 +1,27 @@
+---
+title: "Model calibration"
+author: "Ben Bolker"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{parallel optimization}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+Describe model calibration here: by (1) MLE fitting or (2) log-linear regression to exponential-phase data.
+
+## Log-linear method
+
+- fit an appropriate statistical model to time-series data (e.g. hospitalization, death, or ICU counts), e.g. negative binomial GLM or (for multiple regions) a GLMM
+- the log slope is an estimate of $r$, the log intercept will provide an estimate of initial conditions
+- the first step of the `calibrate()` function takes a given set of baseline parameters and adjusts a specified subset of them (at the moment this is fixed to be (1) the baseline transmission rate and (2) the latent period and infection periods for all but the presymptomatic period) to achieve the observed value of $r$ and one or more other epidemiological characteristics (at present $\bar G$, the mean generation interval)
+- the second step first projects the observed intercept (e.g. predicted number of hospitalizations at the beginning of the observation time period) back to the beginning of the simulation time period, then uses the dominant eigenvector of the linearized system to estimate the numbers of other states at that time.
+
+The top-level function is `calibrate()`: the machinery is in `R/calibrate.R`
+
+Possible calibration issues:
+
+- effects of nonlinear slopes?
+- what to do when different data streams have different regression slopes?
+- if we use a quadratic fit to allow for time-varying beta, how do we feed this back into the simulation?
