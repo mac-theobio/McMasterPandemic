@@ -2,6 +2,8 @@
 ## FIXME: should eventually split this into multiple files. For now, it's more convenient to have it as one big lump (if/when it becomes a package we can include the tarball and install from source)
 
 ##' construct Jacobian matrix for ICU model
+##' (not quite complete: doesn't include flows to R)
+## FIXME: derive from make_ratemat 
 ##' @param state state vector (named)
 ##' @param params parameter vector
 ##' @export
@@ -10,12 +12,16 @@
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
 ##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' state[["E"]] <- 1
-##' J <- make_jac(state,params)
+##' J <- make_jac(params,state)
 ##' J["S","S"]
 ##' Jr <- J[1:6,1:6]
 ##' round(Jr,3)
 ##' eigen(Jr)$values
-make_jac <- function(state, params) {
+##' make_jac(params)
+make_jac <- function(params, state=NULL) {
+    if (is.null(state)) {
+        state <- make_state(N=params[["N"]],E0=1e-3)
+    }
     np <- length(params)
     ns <- length(state)
     ## make state and param names locally available (similar to with())
@@ -274,13 +280,6 @@ run_sim <- function(params,
     return(res)
 }
 
-##' @export
-print.pansim <- function(x,all=FALSE) {
-    if (all) return(unclass(x))
-    attr(x,"params") <- NULL
-    print(x)
-}
-
     
 ## packages used 
 pkgs <- c("cowplot","tidyverse","ggplot2",
@@ -316,37 +315,6 @@ D,Deaths
 R,Recovered
 ")
 
-##' plot method for simulations
-##' @param x fitted \code{pansim} object
-##' @param drop_states states to \emph{exclude} from plot
-##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
-##' @param aggregate collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}
-##' @param log plot y-axis on log scale?
-##' @export
-plot.pansim <- function(x, drop_states=c("S","R","E","I"),
-                        keep_states=NULL, aggregate=TRUE,
-                        log=FALSE, ...) {
-    ## FIXME: check if already aggregated!
-    if (aggregate) x <- aggregate(x)
-    x <- as_tibble(x)  ## FIXME:: do this upstream?
-    if (!is.null(keep_states)) {
-        drop_states <- setdiff(names(x), c(keep_states,"date"))
-    }
-    ## don't try to drop columns that aren't there
-    drop_states <- intersect(drop_states,names(x))
-    xL <- (x
-        %>% as_tibble()
-        %>% select(-one_of(drop_states))
-        %>% tidyr::pivot_longer(names_to="var", -date)
-        %>% mutate(var=forcats::fct_inorder(factor(var)))
-    )
-    if (log) xL <- dplyr::filter(xL,value>1)
-    gg0 <- (ggplot(xL,aes(date,value,colour=var))
-        + geom_line()
-    )
-    if (log) gg0 <- gg0 + scale_y_log10()
-    return(gg0)
-}
 
 
 ##' retrieve parameters from a CSV file
@@ -396,68 +364,6 @@ write_params <- function(params, fn, label) {
         Value=unclass(params)), file=fn,
         row.names=FALSE, append=TRUE,
         sep=","))
-}
-
-##' Collapse columns (infected, ICU, hospitalized) in a pansim output
-##' @param x a pansim object
-##' @export
-aggregate.pansim <- function(x) {
-    ## FIXME: less clunky way to do this? Collapse columns *if* present
-    ##   but account for the fact that they might be missing in some variants
-    ## FIXME: extend to aggregate, S, E, etc. as we add space / testing / age
-    ## may need to go tidy?
-    c0 <- class(x)
-    ## collapse columns and add, if present
-    add_col <- function(dd,name,regex) {
-        vars <- grep(regex, names(x), value=TRUE)
-        if (length(vars)>0) {
-            dd[[name]] <- rowSums(x[vars])
-        }
-        return(dd)
-    }
-    dd <- x[c("date","S","E")]
-    dd <- add_col(dd,"I","^I[^C]")
-    dd <- add_col(dd,"H","^H")
-    dd <- add_col(dd,"ICU","^ICU")
-    dd <- data.frame(dd,R=x[["R"]])
-    dd <- add_col(dd,"discharge","discharge")
-    dd <- data.frame(dd,D=x[["D"]])
-    class(dd) <- c0 ## make sure class is restored
-    return(dd)
-}
-
-##' calculate R0 for a given set of parameters
-##' @param params parameters
-##' @param components report R0 component-by-component?
-##' @export
-get_R0 <- function(params, components=FALSE) {
-    ## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
-    ##  (will have to rethink this once we have a structured model)
-    with(as.list(params), {
-        comp <- beta0*c(alpha*Ca/lambda_a,
-        (1-alpha)*c(Cp/lambda_p,mu*(1-iso_m)*Cm/lambda_m,(1-mu)*(1-iso_s)*Cs/lambda_s ))
-        if (components) return(comp)
-        return(sum(comp))
-    })
-}
-
-
-##' @export
-summary.pansim <- function(x, ...) {
-    ## FIXME: get ventilators by multiplying ICU by 0.86?
-    ## FIXME: prettier?
-    xa <- aggregate(x)
-    attach(xa); on.exit(detach(xa))
-    res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
-             peak_ICU_val=round(max(ICU)),
-             peak_H_date=xa$date[which.max(H)],
-             peak_H_val=round(max(H)))
-    ## FIXME: report time-varying R0
-    if (!is.null(p <- attr(x,"params"))) {
-        res <- data.frame(res,R0=get_R0(p))
-    }
-    class(res) <- c("summary.pansim","data.frame")
-    res
 }
 
 ##' generate initial state vector

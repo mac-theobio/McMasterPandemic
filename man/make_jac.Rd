@@ -2,26 +2,29 @@
 % Please edit documentation in R/sim_funs.R
 \name{make_jac}
 \alias{make_jac}
-\title{construct Jacobian matrix for ICU model}
+\title{construct Jacobian matrix for ICU model
+(not quite complete: doesn't include flows to R)}
 \usage{
-make_jac(state, params)
+make_jac(params, state = NULL)
 }
 \arguments{
-\item{state}{state vector (named)}
-
 \item{params}{parameter vector}
+
+\item{state}{state vector (named)}
 }
 \description{
 construct Jacobian matrix for ICU model
+(not quite complete: doesn't include flows to R)
 }
 \examples{
 params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 state <- make_state(params[["N"]],E=params[["E0"]])
 ## state[c("E","Ia","Ip","Im","Is")] <- 1
 state[["E"]] <- 1
-J <- make_jac(state,params)
+J <- make_jac(params,state)
 J["S","S"]
 Jr <- J[1:6,1:6]
 round(Jr,3)
 eigen(Jr)$values
+make_jac(params)
 }
