@@ -13,3 +13,11 @@ Please send any comments to
 _Note:_ If you do not have the `devtools` package installed already then you will first need to run:
 
 `install.packages("devtools")`
+
+### DISCLAIMER
+
+We expect this package to be valuable primarily for _qualitative_
+understanding, which can help to guide planning during a pandemic.
+Quantitative forecasts are only as good as the parameter estimates,
+which are very challenging to make.
+
