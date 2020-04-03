@@ -12,8 +12,8 @@ calibrate(
   pop,
   params,
   target = c(Gbar = 6),
-  date0 = ldmy("1-Mar-2020"),
-  date1 = ldmy("25-Mar-2020"),
+  date0 = "1-Mar-2020",
+  date1 = "25-Mar-2020",
   var = "H"
 )
 }
