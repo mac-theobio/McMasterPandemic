@@ -29,8 +29,8 @@ get_giMoments <- function(params) {
     irates <- with(as.list(params), c(lambda_a, lambda_p, lambda_m, lambda_s))
     gamma  <- params[["gamma"]]
 
-	 Gibar <- sum((Rv/R)/irates)
-	 Givar <- sum((Rv/R)/irates^2) - Gibar^2
+    Gibar <- sum((Rv/R)/irates)
+    Givar <- sum((Rv/R)/irates^2) - Gibar^2
 
     Gbar <- Gibar + 1/gamma
     Gvar <- Givar + 1/gamma^2
@@ -52,20 +52,3 @@ get_R0 <- function(params, components=FALSE) {
     })
 }
 
-##' @export
-summary.pansim <- function(x, ...) {
-    ## FIXME: get ventilators by multiplying ICU by 0.86?
-    ## FIXME: prettier?
-    xa <- aggregate(x)
-    attach(xa); on.exit(detach(xa))
-    res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
-             peak_ICU_val=round(max(ICU)),
-             peak_H_date=xa$date[which.max(H)],
-             peak_H_val=round(max(H)))
-    ## FIXME: report time-varying R0
-    if (!is.null(p <- attr(x,"params"))) {
-        res <- data.frame(res,R0=get_R0(p))
-    }
-    class(res) <- c("summary.pansim","data.frame")
-    res
-}
