@@ -1,8 +1,9 @@
 ##' @export
 print.pansim <- function(x,all=FALSE) {
+    ## FIXME: is there a more principled way?
     if (all) return(unclass(x))
     attr(x,"params") <- NULL
-    print(x)
+    print(unclass(x))
 }
 
 ##' plot method for simulations
