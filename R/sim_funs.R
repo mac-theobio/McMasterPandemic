@@ -157,11 +157,11 @@ update_foi <- function(state, params) {
 ##' @param transmat transition matrix
 ##' @param dt time step (days)
 ##' @param do_hazard use hazard calculation?
-##' @param stoch stochastic simulation?
+##' @param stoch stochastic simulation? Choices are "none" (deterministc); "obs_only" ...
 ## (if we do the hazard calculations we can plug in pomp:::reulermultinom()
 ##  [or overdispersed analogue] directly)
 do_step <- function(state, params, transmat, dt=1,
-                           do_hazard=FALSE, stoch=FALSE) {
+                           do_hazard=FALSE, stoch="none") {
 
     transmat["S","E"] <- update_foi(state,params)
     if (!do_hazard) {
@@ -183,9 +183,11 @@ do_step <- function(state, params, transmat, dt=1,
         flows <- (1-E)*sweep(transmat, norm_sum, MARGIN=1, FUN="*")
         diag(flows) <- 0  ## no flow
     }
-    outflow <- rowSums(flows)
-    inflow <-  colSums(flows)
-    state <- state - outflow + inflow
+    if (stoch %in% c("none","obs_only") {
+        outflow <- rowSums(flows)
+        inflow <-  colSums(flows)
+        state <- state - outflow + inflow
+    }
     return(state)
 }
 
@@ -215,6 +217,7 @@ run_sim <- function(params,
                     end_date="1-May-2020",
                     params_timevar=NULL,
                     dt=1,
+                    stoch="none",
                     transmat_args=NULL,
                     step_args=NULL,
                     attach_params=TRUE) {
@@ -225,9 +228,9 @@ run_sim <- function(params,
     if (dt!=1) warning("nothing has been tested with dt!=1")
     start_date <- ldmy(start_date); end_date <- ldmy(end_date)
     date_vec <- seq(start_date,end_date,by=dt)
+    state0 <- state
     nt <- (as.numeric(end_date-start_date))/dt+1  ## count first date as day 0 (??? FIXME/THINK!)
     ## will non-integer dates work??
-
     M <- do.call(make_ratemat,c(list(state=state, params=params), transmat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
@@ -260,6 +263,7 @@ run_sim <- function(params,
                             s,params0[[s]],params[[s]],i))
             }
         }
+        state <- 
         res[i,] <- do.call(do_step,
                            c(list(state=res[i-1,],
                                   params=params, transmat = M,
@@ -269,7 +273,7 @@ run_sim <- function(params,
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
     ## store everything as attributes
     attr(res,"params") <- params0
-    attr(res,"state0") <- state
+    attr(res,"state0") <- state0
     attr(res,"start_date") <- start_date
     attr(res,"end_date") <- end_date
     attr(res,"call") <- call
@@ -278,24 +282,6 @@ run_sim <- function(params,
 }
 
     
-## packages used 
-pkgs <- c("cowplot","tidyverse","ggplot2",
-          "igraph", ## for flow chart
-          "pomp",   ## for reulermultinom
-          "bbmle",
-          "emdbook" ## for lambertW
-          )
-
-## utility for installing packages
-install_pkgs <- function() {
-    i1 <- installed.packages()
-    pkgs <- pkgs[!pkgs %in% rownames(i1)]
-    install.packages(pkgs)
-    ## load them all
-    suppressMessages(sapply(pkgs,library,character.only=TRUE))
-}
-
-
 ## dictionary; internal name, graph label
 label_dict <- read.csv(stringsAsFactors=TRUE,
 text="
