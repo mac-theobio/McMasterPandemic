@@ -70,7 +70,7 @@ aggregate.pansim <- function(x) {
 
 ##' @export
 summary.panparams <- function(x, ...) {
-    c(R0=get_R0(x),get_GI_moments(x))
+    c(r=get_r(x),R0=get_R0(x),get_GI_moments(x))
 }
 
 ##' @export
