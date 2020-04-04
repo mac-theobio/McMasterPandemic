@@ -106,17 +106,18 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
                      slope,
                      var="H") {
     ldmy <- lubridate::dmy  ## sugar
-    state <- make_state(N=params[["N"]],E0=0.001)
-    J <- make_jac(state=state,params=params)    
+    ## find eigenvectors of Jacobian (at disease-free eq)
+    J <- make_jac(params=params)    
     ee <- eigen(J)
     v <- ee$vectors
-    rownames(v) <- names(state)
+    rownames(v) <- rownames(J)
     (dom_vec <- v[,which.max(ee$values)])
     dom_vec <- abs(dom_vec[-1]) ## drop S
     ## back-project modeled var from date1 to date0
-    ## (predicted log(modeled var) on date0
-    int0 <- int - as.numeric(date1-date0)*slope
-    expected <- round(exp(int0)*dom_vec/dom_vec[[var]])
+    ## (predicted (modeled var) on date0
+    int0 <- exp(int - as.numeric(date1-date0)*slope)
+    ## scale state to expected (modeled var)
+    expected <- round(int0*dom_vec/dom_vec[[var]])
     expected <- expected[expected>0]
     state[names(expected)] <- expected
     ## not important, but adjust to keep same total pop
