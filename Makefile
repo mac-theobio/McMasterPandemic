@@ -12,7 +12,7 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
-## Change transmat
+## Change transmat ⇒ ratemat
 transrate:
 	perl -pi -e "s/transmat/ratemat/g" */*.R
 
