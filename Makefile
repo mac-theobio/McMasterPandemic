@@ -12,9 +12,9 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
-## Do not use (brain not working yet)
-ratetrans:
-	perl -pi -e "s/ratemat/transmat/g" */*.R
+## Change transmat
+transrate:
+	perl -pi -e "s/transmat/ratemat/g" */*.R
 
 ######################################################################
 

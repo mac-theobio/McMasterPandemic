@@ -1,4 +1,4 @@
-## FIXME: consistent naming of 'transmat'/'ratemat'/etc.
+## FIXME: consistent naming of 'ratemat'/'ratemat'/etc.
 ## FIXME: should eventually split this into multiple files. For now, it's more convenient to have it as one big lump (if/when it becomes a package we can include the tarball and install from source)
 
 ##' construct Jacobian matrix for ICU model
@@ -154,19 +154,19 @@ update_foi <- function(state, params) {
 
 ##' Take a single simulation time step
 ##' @inheritParams make_ratemat
-##' @param transmat transition matrix
+##' @param ratemat transition matrix
 ##' @param dt time step (days)
 ##' @param do_hazard use hazard calculation?
 ##' @param stoch stochastic simulation? logical vector for observation and process noise
 ## (if we do the hazard calculations we can plug in pomp:::reulermultinom()
 ##  [or overdispersed analogue] directly)
-do_step <- function(state, params, transmat, dt=1,
+do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE)) {
     
-    transmat["S","E"] <- update_foi(state,params)
+    ratemat["S","E"] <- update_foi(state,params)
     if (!do_hazard) {
         ## from per capita rates to absolute changes
-        flows <- sweep(transmat, state, MARGIN=1, FUN="*")*dt
+        flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
     } else {
         ## use hazard function: assumes exponential change
         ## (constant per capita flows) rather than linear change
@@ -176,11 +176,11 @@ do_step <- function(state, params, transmat, dt=1,
         ##    S = sum(r_i)   ## total rate
         ##    p_{ij}=(1-exp(-S*dt))*r_j/S
         ##    p_{ii}= exp(-S*dt)
-        S <- rowSums(transmat)
+        S <- rowSums(ratemat)
         E <- exp(-S*dt)
         ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
         norm_sum <- ifelse(S==0, 0, state/S)
-        flows <- (1-E)*sweep(transmat, norm_sum, MARGIN=1, FUN="*")
+        flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
         diag(flows) <- 0  ## no flow
     }
     if (!stoch[["proc"]]) {
@@ -218,7 +218,7 @@ run_sim <- function(params,
                     params_timevar=NULL,
                     dt=1,
                     stoch=c(obs=FALSE,proc=FALSE),
-                    transmat_args=NULL,
+                    ratemat_args=NULL,
                     step_args=NULL) {
     call <- match.call()
     ## FIXME: *_args approach (specifying arguments to pass through to
@@ -230,7 +230,7 @@ run_sim <- function(params,
     state0 <- state
     nt <- (as.numeric(end_date-start_date))/dt+1  ## count first date as day 0 (??? FIXME/THINK!)
     ## will non-integer dates work??
-    M <- do.call(make_ratemat,c(list(state=state, params=params), transmat_args))
+    M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
         switch_times <- NULL
@@ -264,7 +264,7 @@ run_sim <- function(params,
         }
         state <- do.call(do_step,
                          c(list(state=state,
-                                params=params, transmat = M,
+                                params=params, ratemat = M,
                                 dt = dt,
                                 stoch = stoch),
                            step_args))
