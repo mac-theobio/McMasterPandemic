@@ -1,0 +1,95 @@
+---
+title: "design decisions"
+author: "Ben Bolker"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{design decisions}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## goals
+
+The ability to simulate/forecast
+
+* time and height of peak health utilization (acute care, ICU beds, ventilators) regionally and locally
+* testing
+* ability to model local differences in epidemic curves based on locale-specific information (e.g. age-demographics, population density, etc.)
+
+## why another simulator?
+
+Given the [large number of available simulators](http://tinyurl.com/covid19-models), why did we write another one?
+
+* maybe laziness/stubbornness
+* desire for a flexible and clear model structure that might nevertheless go beyond existing models (age and geographic structure were higher priority goals when we started)
+
+## Platform
+
+Familiarity/convenience/speed and ease of implementation, debugging, maintenance are most important. For us, this rules out Julia and Python and strongly suggests R. Speed may eventually be important, for (1) running stochastic replicates and varying-parameter ensembles and (2) incorporating the model in simulation-based estimation methods (ABC, iterated filtering/`pomp`). If we are focused on estimation, we have a choice among Gibbs-based platforms (NIMBLE, JAGS) and platforms that only allow continuous latent variables (TMB, Stan).
+
+* **Estimation**: TMB, Stan, NIMBLE, pomp + ?, ABC + ?
+* **Forward simulation**: we could write in base R or try to couple with something faster (e.g. `odin`, `Rcpp`). Lots of possibilities for vectorization and matrix operations to speed up base R implementations, although some operations like convolution might be hard to vectorize. `pomp` provides a [Csnippets](http://kingaa.github.io/pomp/manual/csnippet.html) interface (used by the "COVID interventions" project). I am tempted by `odin`, a platform that allows translation/compilation in C++ via an R-like syntax, e.g. see the [discrete-simulation vignette](https://cran.r-project.org/web/packages/odin/vignettes/discrete.html)
+
+## Model
+
+### Compartmental structure
+
+* we need at least SEIR + hospitalization, ICU
+* probably important to include asymptomatic and presymptomatic compartments as well
+* may want to include compartments that model the testing as well as the treatment pipeline
+* deaths
+
+### Interventions
+
+Some of these are simple. Want to set up general structure for importing a dated list of changes in parameters (date, focal parameter, new value or proportional change). Testing rates can be included as part of this "non-autonomous"/forcing/external part of the parameterization.
+
+### Parameterization
+
+* get parameters from existing model implementations
+* list from MIDAS web page
+* age-specific death rates (Hubei) -- from Riou et al. https://t.co/F4CIJU22kU?amp=1
+* Hospitalization parameters: https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(20)30566-3/fulltext
+
+### Asymptomatic/undetected cases
+
+* could try to integrate new testing-distribution framework?
+* specify underreporting probability (ad hoc), beta-binomial process
+* time-varying reporting probability?
+* related to compartment structure, testing/intervention
+
+### Stochasticity
+
+* demographic stochasticity ([beta]binomial, Poisson/NB)
+* autoregressive variation in parameters? (important for estimation)
+* iteration over parameter uncertainty (hypercube/Sobol/etc.)
+
+### Geographic structure
+
+* including spatial structure at the local level doesn't seem too hard. Has implications for size of state vector/speed (mitigated by a vectorized/matrix-based set of machinery?), and raises questions about parameterization (spatial variation in parameters, travel/contact matrix)
+
+### Age structure
+
+* important for predictions of health care utilization/severity
+* also for effects of interventions (school, work closures, etc.): use info from Prem et al. 2013 WAIFW matrices divided by activity {school, home, work, other} (DOI:10.1371/journal.pcbi.1005697; machine-readable info at https://doi.org/10.1371/journal.pcbi.1005697.s002)
+* interactions with space? can use "other" category WAIFW matrix only (Kronecker product)
+
+### Delay distributions
+
+(not sure how important this is?)
+
+* most existing methods are using exponential periods
+* Erlang/linear chain?
+* generation intervals/convolution
+
+Disadvantages of linear-chain and convolution models are speed and potentially complexity/transparency (modeling convolution with GI handles arbitrary distribution of infectiousness over time, but making it interact with testing and treatment pipelines seems complicated?)
+
+## Relevant existing models (see [model list](https://tinyurl.com/covid19-models))
+
+* Covid19tauleapmodel [compartments, interventions, age, parameters]
+* COVID_interventions [compartments, interventions, parameters] Uses "Csnippet" (pomp-style C code) for speed.
+* CSH-covid19 [interventions]
+* Riou et al. [compartments, parameters, age, estimation] (but slow: uses ODEs in Stan, ~ 1 day run time)
+* Song lab [estimation?] (but some weird statistical choices?)
+* Georgia CEID
+

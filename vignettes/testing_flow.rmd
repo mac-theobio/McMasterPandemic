@@ -1,0 +1,30 @@
+---
+title: "incorporating testing dynamics in the model"
+author: "Ben Bolker"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{incorporating testing dynamics}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+We would like to be able to use the positive/negative tests information in a useful way. Here is one possibility:
+
+```{r flowchart,echo=FALSE}
+knitr::include_graphics(system.file("pix","testing_flow.png",
+                                    package="McMasterPandemic"))
+```
+
+That is, each compartment (except ICU/hospital/dead) has a parallel 'awaiting testing' compartment. From there, individuals can move back into their original compartment (on the receipt of a negative test), or directly to the recovered compartment (if we assume that all individuals receiving a positive test will self-isolate), or into the next compartment in the epidemiological flow (e.g., if they progress from Exposed to Pre-symptomatic while awaiting test results). All individuals are testing on transition to H, if not before.
+
+This should take care of test lags in a sensible way, although there are a bunch of questions/issues to resolve:
+
+- do test-awaiters differ in behavior, e.g. lower contact?
+- what do we assume about test sensitivity/specificity?
+- do those who test positive always isolate (i.e. go to R), or are they in yet another compartment ("confirmed")?
+- given a known testing intensity, how do we allocate tests among compartments (e.g. more weight on symptomatic classes, and more to severe infections? How do we model test limitation?)
+- how do we extend the transition matrix while keeping the code readable/maintainable?
+
+
+Integrate with material [here](https://github.com/wzmli/corona/blob/master/infection.rmd) (warning, link to private GH repo)
