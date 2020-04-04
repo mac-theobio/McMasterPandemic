@@ -4,7 +4,7 @@
 \alias{get_r}
 \title{return growth rate (from Jacobian)}
 \usage{
-get_r(p, s)
+get_r(p)
 }
 \arguments{
 \item{p}{parameters}

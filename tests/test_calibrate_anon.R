@@ -56,10 +56,14 @@ pframeS <- (pframeS
 
 print(plot(simScal,log=TRUE)
       + geom_point(data=simdat)
-      + geom_line(data=aggregate(sim1S,pivot=TRUE))
+      + geom_line(data=aggregate(sim1S,pivot=TRUE),lty=3)
       + geom_line(data=pframeS,lty=2)
       )
 ##  dashed line is NB regression fit
 ## conclusion: slope of simulation is not giving the expected growth rate.
 ## problem with make_jac?
 
+## what is the actual r?
+simAgg <- aggregate(simScal)[,3:5] ## E, I, H
+log(simAgg[nrow(simAgg),]/simAgg[1,])/nrow(simAgg)
+## r= ~ 0.167

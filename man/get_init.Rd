@@ -38,5 +38,6 @@ from day t1.  We want an initial condition for day t0.
 (Don't go too far back or rounding will kill us)#
 }
 \examples{
+params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 get_init(var="H",int=2.85,slope=0.176, param=params)
 }
