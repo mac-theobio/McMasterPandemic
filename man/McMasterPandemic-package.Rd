@@ -45,6 +45,13 @@ etc
 Use \code{browseVignettes("McMasterPandemic")} to find vignettes
 for this package.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/bbolker/McMasterPandemic}
+}
+
+}
 \author{
 \strong{Maintainer}: Ben Bolker \email{bolker@mcmaster.ca}
 
