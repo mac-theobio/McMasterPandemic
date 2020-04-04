@@ -1,9 +1,11 @@
 ##' @export
 print.pansim <- function(x,all=FALSE) {
-    ## FIXME: is there a more principled way?
-    if (all) return(unclass(x))
+    ## FIXME: is this the best way?
+    ## use tibbles or not?
+    class(x) <- "data.frame"
+    if (all) print(x)
     attr(x,"params") <- NULL
-    print(unclass(x))
+    print(x)
 }
 
 ##' plot method for simulations
