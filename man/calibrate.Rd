@@ -22,6 +22,8 @@ calibrate(
 
 \item{slope}{log-linear slope (growth rate)}
 
+\item{pop}{population size}
+
 \item{target}{vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)}
 
 \item{date0}{date for initial conditions}

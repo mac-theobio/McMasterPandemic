@@ -12,7 +12,7 @@ run_sim(
   params_timevar = NULL,
   dt = 1,
   stoch = c(obs = FALSE, proc = FALSE),
-  transmat_args = NULL,
+  ratemat_args = NULL,
   step_args = NULL
 )
 }
@@ -30,6 +30,10 @@ run_sim(
 \item{dt}{time step (days)}
 
 \item{stoch}{stochastic simulation? logical vector for observation and process noise}
+
+\item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
+
+\item{step_args}{additional arguments to pass to \code{do_step}}
 }
 \description{
 Run pandemic simulation

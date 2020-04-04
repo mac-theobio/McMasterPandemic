@@ -1,6 +1,3 @@
-## FIXME: consistent naming of 'ratemat'/'ratemat'/etc.
-## FIXME: should eventually split this into multiple files. For now, it's more convenient to have it as one big lump (if/when it becomes a package we can include the tarball and install from source)
-
 ##' construct Jacobian matrix for ICU model
 ##' (not quite complete: doesn't include flows to R)
 ## FIXME: derive from make_ratemat 
@@ -19,6 +16,11 @@
 ##' eigen(Jr)$values
 ##' make_jac(params)
 make_jac <- function(params, state=NULL) {
+    ## circumvent test code analyzers ...
+    globalVariables("S")
+    Ia <- Ip <- Is  <- Im <- NULL
+    alpha <- mu <- rho <- phi1 <- phi2 <- psi1 <- psi2 <- psi3 <- NULL
+    lambda_s <- lambda_p <- lambda_m <- lambda_a <- iso_m <- iso_s <- NULL
     if (is.null(state)) {
         state <- make_state(N=params[["N"]],E0=1e-3)
     }
@@ -196,6 +198,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
+##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
+##' @param step_args additional arguments to pass to \code{do_step}
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
@@ -206,7 +210,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
 ##'                    params_timevar=time_pars)
 ##' summary(res)
-
+##' @importFrom stats rnbinom
 ##' @export
 ## FIXME: params_timevar
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
@@ -324,6 +328,8 @@ R,Recovered
 ##' @param fn file name (CSV file containing at least value and symbol columns
 ##' @param value_col name of column containing values
 ##' @param symbol_col name of column containing symbols
+##' @importFrom stats setNames
+##' @importFrom utils read.csv write.table
 ##' @export
 read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     x <- read.csv(fn,
@@ -384,7 +390,6 @@ predfun <- function(beta0,E0,data,
                     params,
                     start_date="10-Feb-2020",
                     values_only=TRUE) {
-    require("dplyr")
     ## substitute values into base parameter vector
     params[["beta0"]] <- beta0
     params[["E0"]] <- E0  ## unnecessary?

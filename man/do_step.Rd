@@ -7,7 +7,7 @@
 do_step(
   state,
   params,
-  transmat,
+  ratemat,
   dt = 1,
   do_hazard = FALSE,
   stoch = c(obs = FALSE, proc = FALSE)
@@ -18,7 +18,7 @@ do_step(
 
 \item{params}{named vector of parameters}
 
-\item{transmat}{transition matrix}
+\item{ratemat}{transition matrix}
 
 \item{dt}{time step (days)}
 

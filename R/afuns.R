@@ -2,7 +2,7 @@
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
 ##' @export
-get_r <- function(p,s) {
+get_r <- function(p) {
     res <- max(eigen(make_jac(params=p))$values)
     return(res)
 }

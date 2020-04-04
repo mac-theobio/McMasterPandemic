@@ -1,5 +1,5 @@
 ##' @export
-print.pansim <- function(x,all=FALSE) {
+print.pansim <- function(x,all=FALSE,...) {
     ## FIXME: is this the best way?
     ## use tibbles or not?
     class(x) <- "data.frame"
@@ -44,8 +44,12 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
 ##' @param x a pansim object
 ##' @param pivot return long-format tibble instead of wide data frame?
 ##' @param keep_vars variables to retain (in addition to date) if pivoting
+##' @param ... unused, for generic consistency
+##' @importFrom stats aggregate
+##' @importFrom dplyr %>% as_tibble
+##' @importFrom tidyr pivot_longer
 ##' @export
-aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D")) {
+aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"), ...) {
     ## FIXME: less clunky way to do this? Collapse columns *if* present
     ##   but account for the fact that they might be missing in some variants
     ## FIXME: extend to aggregate, S, E, etc. as we add space / testing / age
@@ -78,22 +82,22 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D")) {
 }
 
 ##' @export
-summary.panparams <- function(x, ...) {
-    c(r=get_r(x),R0=get_R0(x),get_GI_moments(x))
+summary.panparams <- function(object, ...) {
+    c(r=get_r(object),R0=get_R0(object),get_GI_moments(object))
 }
 
 ##' @export
-summary.pansim <- function(x, ...) {
+summary.pansim <- function(object, ...) {
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
-    xa <- aggregate(x)
+    xa <- aggregate(object)
     attach(xa); on.exit(detach(xa))
     res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
              peak_ICU_val=round(max(ICU)),
              peak_H_date=xa$date[which.max(H)],
              peak_H_val=round(max(H)))
     ## FIXME: report time-varying R0
-    if (!is.null(p <- attr(x,"params"))) {
+    if (!is.null(p <- attr(object,"params"))) {
         res <- data.frame(res,R0=get_R0(p))
     }
     class(res) <- c("summary.pansim","data.frame")

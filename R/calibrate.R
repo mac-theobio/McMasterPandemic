@@ -36,6 +36,7 @@ badness <- function(delta, params, target) {
 ## badness(c(0,0), params=p1,target=c(r=0.23,R0=3), state=state)
 
 ##' adjust pars to match targets
+##' @importFrom stats optim
 ##' @export
 fix_pars <- function(params, target=c(r=0.23,R0=3)) {
     ## cc <- emdbook::curve3d(badness(c(x,y),params,target=target),
@@ -54,6 +55,7 @@ fix_pars <- function(params, target=c(r=0.23,R0=3)) {
 ##' @param int log-linear intercept (expected value on date1)
 ##' @param slope log-linear slope (growth rate)
 ##' @param target vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)
+##' @param pop population size
 ##' @param date0 date for initial conditions
 ##' @param date1 initial date for regression
 ##' @param var variable for regression (H, D, ICU)

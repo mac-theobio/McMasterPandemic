@@ -7,7 +7,8 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 	   	   person("Morgan Kain",role="aut"),
 		   person("Jonathan Dushoff",role="aut"))
 Depends: R (>= 3.0.0), dplyr, tidyr, ggplot2
-Imports: Matrix, igraph, lubridate, forcats
+Imports: Matrix, igraph, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods
+Suggests: knitr
 RoxygenNote: 7.1.0
 Encoding: UTF-8
 License: GPL
