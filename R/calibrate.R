@@ -117,6 +117,7 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
     ## (predicted (modeled var) on date0
     int0 <- exp(int - as.numeric(date1-date0)*slope)
     ## scale state to expected (modeled var)
+    state <- make_state(N=params[["N"]],E0=1) ## E0 will be replaced
     expected <- round(int0*dom_vec/dom_vec[[var]])
     expected <- expected[expected>0]
     state[names(expected)] <- expected

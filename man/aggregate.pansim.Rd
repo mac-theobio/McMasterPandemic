@@ -4,10 +4,14 @@
 \alias{aggregate.pansim}
 \title{Collapse columns (infected, ICU, hospitalized) in a pansim output}
 \usage{
-\method{aggregate}{pansim}(x)
+\method{aggregate}{pansim}(x, pivot = FALSE, keep_vars = c("H", "ICU", "D"))
 }
 \arguments{
 \item{x}{a pansim object}
+
+\item{pivot}{return long-format tibble instead of wide data frame?}
+
+\item{keep_vars}{variables to retain (in addition to date) if pivoting}
 }
 \description{
 Collapse columns (infected, ICU, hospitalized) in a pansim output
