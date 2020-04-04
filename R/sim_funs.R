@@ -16,11 +16,10 @@
 ##' eigen(Jr)$values
 ##' make_jac(params)
 make_jac <- function(params, state=NULL) {
-    ## circumvent test code analyzers ...
-    globalVariables("S")
-    Ia <- Ip <- Is  <- Im <- NULL
-    alpha <- mu <- rho <- phi1 <- phi2 <- psi1 <- psi2 <- psi3 <- NULL
-    lambda_s <- lambda_p <- lambda_m <- lambda_a <- iso_m <- iso_s <- NULL
+    ## circumvent test code analyzers ... problematic ...
+    ## Ia <- Ip <- Is  <- Im <- NULL
+    ## alpha <- mu <- rho <- phi1 <- phi2 <- psi1 <- psi2 <- psi3 <- NULL
+    ## lambda_s <- lambda_p <- lambda_m <- lambda_a <- iso_m <- iso_s <- NULL
     if (is.null(state)) {
         state <- make_state(N=params[["N"]],E0=1e-3)
     }
@@ -335,7 +334,7 @@ read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     x <- read.csv(fn,
                   colClasses="character",
                   stringsAsFactors=FALSE,
-                  comment="#",
+                  comment.char="#",
                   na.strings="variable")
     ## evaluate to allow expressions like "1/7" -> numeric
     x[[value_col]] <- vapply(x[[value_col]], function(z) eval(parse(text=z)), numeric(1))

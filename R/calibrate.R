@@ -99,7 +99,9 @@ calibrate <- function(int,slope,pop,params,
 ##' @param int regression intercept
 ##' @param slope regression slope
 ##' @param var regression variable
-##' @examples get_init(var="H",int=2.85,slope=0.176, param=params)
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' get_init(var="H",int=2.85,slope=0.176, param=params)
 ##' @export
 get_init <- function(date0=ldmy("1-Mar-2020"),
                      date1=ldmy("25-Mar-2020"),
