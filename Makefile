@@ -12,7 +12,18 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
+## Do not use (brain not working yet)
+ratetrans:
+	perl -pi -e "s/ratemat/transmat/g" */*.R
+
 ######################################################################
+
+Sources += $(wildcard */*.R)
+
+######################################################################
+
+package:
+	sudo R CMD INSTALL .
 
 ### Makestuff
 
