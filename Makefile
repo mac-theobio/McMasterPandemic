@@ -12,10 +12,6 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
-## Change transmat ⇒ ratemat
-transrate:
-	perl -pi -e "s/transmat/ratemat/g" */*.R
-
 ######################################################################
 
 Sources += $(wildcard */*.R)

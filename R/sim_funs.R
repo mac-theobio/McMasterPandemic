@@ -197,6 +197,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
+##' @param dt time step for do_step
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @examples
