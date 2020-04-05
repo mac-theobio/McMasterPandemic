@@ -133,6 +133,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         M["H","D"]   <- delta*rho
         M["H","R"]   <- (1-delta)*rho
     } else {
+	 		## FIXME: A better term than "acute" to mean the opposite of intensive?
         ## * three-way split (acute care, ICU/survive, ICUD/die)
         M["Is","H"] <- phi1*lambda_s
         M["Is","ICUs"] <- (1-phi1)*(1-phi2)*lambda_s
@@ -143,7 +144,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         ## H now means 'acute care' only; all H survive & are discharged
         M["H","D"]   <- 0
         M["H","R"] <- rho ## all acute-care survive
-
     }            
     return(M)
 }
