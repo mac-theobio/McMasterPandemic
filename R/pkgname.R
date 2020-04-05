@@ -7,12 +7,13 @@
 
 ##' \pkg{McMasterPandemic}
 ##'
-##' This R package provides Compartmental epidemic models for
+##' This R package provides compartmental epidemic models for
 ##' forecasting and analysis of infectious disease pandemics.
-##' 
-##' See the vignette \code{McMasterPandemic.pdf} for now...
-##' Eventually \code{vignette("McMasterPandemic",package="McMasterPandemic")}
-##' should work...
+##'
+##' To get started, read the introductory vignette, which can be viewed via
+##' \code{vignette("McMasterPandemic-intro",package="McMasterPandemic")}.
+##' Use \code{browseVignettes("McMasterPandemic")} to find other vignettes
+##' for this package.  
 ##'
 ##' While (even the strictly deterministic version of) the model is
 ##' not implemented as ODEs, its solutions are similar to those of the
@@ -42,6 +43,4 @@
 ##' 
 ##' \eqn{ dR/dt =  }
 ##'
-##' Use \code{browseVignettes("McMasterPandemic")} to find vignettes
-##' for this package.
 "_PACKAGE"

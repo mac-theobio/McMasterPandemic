@@ -2,14 +2,14 @@
 % Please edit documentation in R/sim_funs.R
 \name{sim_range}
 \alias{sim_range}
-\title{Run simulation across a range of times
-Possible refactorins step for run_sim}
+\title{Run simulation across a range of times}
 \usage{
 sim_range(
   params,
-  state,
-  steps = 100,
+  state = make_state(params[["N"]], params[["E0"]]),
+  nt = 100,
   dt = 1,
+  M = NULL,
   stoch = c(obs = FALSE, proc = FALSE),
   ratemat_args = NULL,
   step_args = NULL
@@ -20,7 +20,7 @@ sim_range(
 
 \item{state}{named vector of states}
 
-\item{steps}{(number of steps to take)}
+\item{nt}{number of steps to take}
 
 \item{dt}{time step (days)}
 
@@ -32,5 +32,8 @@ sim_range(
 }
 \description{
 Run simulation across a range of times
-Possible refactorins step for run_sim
+}
+\examples{
+params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+sim_range(params)
 }
