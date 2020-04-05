@@ -14,6 +14,11 @@ If you do not have the `devtools` package installed already then you will first 
 
 `install.packages("devtools")`
 
+
+### For developers
+
+* If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
+
 ### DISCLAIMER
 
 We expect this package to be valuable primarily for _qualitative_
