@@ -68,6 +68,10 @@ doc-update: R/*.R
 	echo "suppressWarnings(roxygen2::roxygenize(\".\",roclets = c(\"collate\", \"rd\")))" | $(R) --slave
 	@touch $@
 
+namespace-update: R/*.R
+	echo "suppressWarnings(roxygen2::roxygenize('.',roclets = 'namespace'))" | $(R) --slave
+	@touch $@
+
 pkgtest:
 	echo "devtools::test('.')" | $(R) --slave
 

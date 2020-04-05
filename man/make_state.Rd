@@ -4,7 +4,13 @@
 \alias{make_state}
 \title{generate initial state vector}
 \usage{
-make_state(N, E0, type = "ICU1", state_names = NULL)
+make_state(
+  N = params[["N"]],
+  E0 = params[["E0"]],
+  type = "ICU1",
+  state_names = NULL,
+  params
+)
 }
 \arguments{
 \item{N}{population size}
@@ -14,6 +20,8 @@ make_state(N, E0, type = "ICU1", state_names = NULL)
 \item{type}{(character) specify what model type this is intended for; determines state names}
 
 \item{state_names}{vector of state names, must include S and E}
+
+\item{params}{parameter vector (looked in for N and E0)}
 }
 \description{
 generate initial state vector

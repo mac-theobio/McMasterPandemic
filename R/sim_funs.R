@@ -257,7 +257,7 @@ run_sim <- function(params,
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
     }
     if (is.null(switch_times)) {
-        res <- do.call(sim_range,
+        res <- do.call(run_sim_range,
                        nlist(params,state,nt,dt,M,stoch,
                              ratemat_args,step_args))
     } else {
@@ -274,7 +274,7 @@ run_sim <- function(params,
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            resList[[i]] <- do.call(sim_range,
+            resList[[i]] <- do.call(run_sim_range,
                                     nlist(params,
                                           state,
                                           nt=times[i+1]-times[i],
@@ -427,9 +427,9 @@ predfun <- function(beta0,E0,data,
 ##' @importFrom stats rnbinom
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' sim_range(params)
+##' run_sim_range(params)
 ##' @export
-sim_range <- function(params
+run_sim_range <- function(params
         , state=make_state(params[["N"]], params[["E0"]])
 	, nt=100
         , dt=1
