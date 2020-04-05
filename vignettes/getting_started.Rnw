@@ -63,13 +63,54 @@ library(McMasterPandemic)
 
 \section{Data requirements}
 
+\paragraph{Parameters}
+
 To run simulations, a few parameter values must be specified.
+Set these by editing the example params file, which is converted
+to a \code{params_pansim} object by \code{read_params()}.
+
+Note that the \code{print} method for \code{params_pansim} objects
+returns a data frame with a column giving the meaning of each
+parameter.
+
 <<set params>>=
 params1 <- read_params("../inst/params/ICU1.csv")
 knitr::kable(print(params1))
 @
+
+\paragraph{Initial conditions}
+
+The initial state must also be set, but it is sufficient to take
+the population size and initially exposed population from the
+\code{params_pansim} object (in which case all non-exposed individuals
+will be assumed to be susceptible).
+
 <<set initial state>>=
 state1 <- make_state(N=params1[["N"]],E=params1[["E0"]],type="ICU1")
+@
+
+\paragraph{Start and end dates}
+
+Dates on which the simulation starts and ends must be stated.  If
+there are no observations that you are aiming to match, then these
+dates are arbitrary and only the length of time matters.
+
+<<dates>>=
+sdate <- "10-Feb-2020"
+edate <- "1-Jun-2020"
+
+@
+
+\section{Running a simulation}
+
+<<run sim>>=
+res1 <- run_sim(params1,state1,start_date=sdate,end_date=edate)
+print(p1 <- (plot(res1,keep_states=c("ICU","H","D"),log=FALSE)))
+print(p1 + scale_y_log10())
+  ## filter zero values to avoid log-scale warning
+  ##+ geom_point(data=dplyr::filter(clean_data,value>0)))
+  ##)
+
 @
 
 \end{document}
