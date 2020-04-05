@@ -262,9 +262,10 @@ run_sim <- function(params,
                              ratemat_args,step_args))
     } else {
         t_cur <- 1
-        times <- c(1,switch_times,nt)
+        ## want to *include* end date
+        times <- c(1,switch_times,nt+1)
         resList <- list()
-        for (i in seq(nt+1)) {
+        for (i in seq(length(times)-1)) {
             for (j in which(switch_times==times[i])) {
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
@@ -374,8 +375,11 @@ write_params <- function(params, fn, label) {
 ##' @param E0 initial number exposed
 ##' @param type (character) specify what model type this is intended for; determines state names
 ##' @param state_names vector of state names, must include S and E
+##' @param params parameter vector (looked in for N and E0)
 ##' @export
-make_state <- function(N,E0,type="ICU1",state_names=NULL) {
+make_state <- function(N=params[["N"]],
+                       E0=params[["E0"]],
+                       type="ICU1",state_names=NULL,params) {
     state_names <- switch(type,
        ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
        CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
