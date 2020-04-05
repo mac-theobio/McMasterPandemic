@@ -82,7 +82,7 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"), ...) {
 }
 
 ##' @export
-summary.panparams <- function(object, ...) {
+summary.params_pansim <- function(object, ...) {
     c(r=get_r(object),R0=get_R0(object),get_GI_moments(object))
 }
 

@@ -207,6 +207,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param dt time step for do_step
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
+##' @param ndt number of internal time steps per time step
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
@@ -222,16 +223,18 @@ do_step <- function(state, params, ratemat, dt=1,
 ## FIXME: params_timevar
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
-run_sim <- function(params,
-                    state,
-                    start_date="20-Mar-2020",
-                    end_date="1-May-2020",
-                    params_timevar=NULL,
-                    dt=1,
-                    stoch=c(obs=FALSE,proc=FALSE),
-                    ratemat_args=NULL,
-                    step_args=NULL) {
+run_sim <- function(params
+        , state=make_state(params[["N"]], params[["E0"]])
+			, start_date="20-Mar-2020"
+			, end_date="1-May-2020"
+			, params_timevar=NULL
+			, dt=1, ndt=1  ## FIXME: change after testing
+			, stoch=c(obs=FALSE,proc=FALSE)
+			, ratemat_args=NULL
+			, step_args=NULL
+) {
     call <- match.call()
+
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
@@ -240,7 +243,10 @@ run_sim <- function(params,
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
-    ## will non-integer dates work??
+    ## reconstruct
+    thin <- function(x) {
+        x[seq(nrow(x)) %% ndt == 1,]
+    }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
@@ -257,14 +263,19 @@ run_sim <- function(params,
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
     }
     if (is.null(switch_times)) {
-        res <- do.call(sim_range,
-                       nlist(params,state,nt,dt,M,stoch,
-                             ratemat_args,step_args))
+        res <- thin(do.call(run_sim_range,
+				nlist(params,state,
+					  nt=nt*ndt,
+					  dt=dt/ndt,M,stoch,
+					  ratemat_args,step_args
+				)
+			))
     } else {
         t_cur <- 1
-        times <- c(1,switch_times,nt)
+        ## want to *include* end date
+        times <- c(1,switch_times,nt+1)
         resList <- list()
-        for (i in seq(nt+1)) {
+        for (i in seq(length(times)-1)) {
             for (j in which(switch_times==times[i])) {
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
@@ -273,17 +284,17 @@ run_sim <- function(params,
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            resList[[i]] <- do.call(sim_range,
+            resList[[i]] <- do.call(run_sim_range,
                                     nlist(params,
                                           state,
-                                          nt=times[i+1]-times[i],
-                                          dt,M,stoch,
+                                          nt=(times[i+1]-times[i])*ndt,
+                                          dt=dt/ndt,M,stoch,
                                           ratemat_args,step_args))
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
         }
         ## combine
-        res <- do.call(rbind,resList)
+        res <- thin(do.call(rbind,resList))
     }
 
     ## drop internal stuff
@@ -348,7 +359,7 @@ read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     ## evaluate to allow expressions like "1/7" -> numeric
     x[[value_col]] <- vapply(x[[value_col]], function(z) eval(parse(text=z)), numeric(1))
     res <- setNames(x[[value_col]],x[[symbol_col]])
-    class(res) <- "panparams"
+    class(res) <- "params_pansim"
     return(res)
 }
 
@@ -374,8 +385,11 @@ write_params <- function(params, fn, label) {
 ##' @param E0 initial number exposed
 ##' @param type (character) specify what model type this is intended for; determines state names
 ##' @param state_names vector of state names, must include S and E
+##' @param params parameter vector (looked in for N and E0)
 ##' @export
-make_state <- function(N,E0,type="ICU1",state_names=NULL) {
+make_state <- function(N=params[["N"]],
+                       E0=params[["E0"]],
+                       type="ICU1",state_names=NULL,params) {
     state_names <- switch(type,
        ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
        CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
@@ -384,7 +398,7 @@ make_state <- function(N,E0,type="ICU1",state_names=NULL) {
     state <- setNames(numeric(length(state_names)),state_names)
     state[["S"]] <- N-E0
     state[["E"]] <- E0
-    class(state) <- "state.pansim"
+    class(state) <- "state_pansim"
     return(state)
 }
 
@@ -423,9 +437,9 @@ predfun <- function(beta0,E0,data,
 ##' @importFrom stats rnbinom
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' sim_range(params)
+##' run_sim_range(params)
 ##' @export
-sim_range <- function(params
+run_sim_range <- function(params
         , state=make_state(params[["N"]], params[["E0"]])
 	, nt=100
         , dt=1
