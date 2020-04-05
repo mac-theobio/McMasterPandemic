@@ -4,10 +4,17 @@
 \alias{run_sim}
 \title{Run pandemic simulation}
 \usage{
-run_sim(params, state, start_date = "20-Mar-2020",
-  end_date = "1-May-2020", params_timevar = NULL, dt = 1,
-  stoch = c(obs = FALSE, proc = FALSE), ratemat_args = NULL,
-  step_args = NULL)
+run_sim(
+  params,
+  state,
+  start_date = "20-Mar-2020",
+  end_date = "1-May-2020",
+  params_timevar = NULL,
+  dt = 1,
+  stoch = c(obs = FALSE, proc = FALSE),
+  ratemat_args = NULL,
+  step_args = NULL
+)
 }
 \arguments{
 \item{params}{named vector of parameters}

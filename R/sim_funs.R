@@ -416,34 +416,36 @@ predfun <- function(beta0,E0,data,
 }
 
 ##' Run simulation across a range of times
-##' Possible refactorins step for run_sim
 ##' @inheritParams do_step
-##' @param steps (number of steps to take)
+##' @param nt number of steps to take
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @importFrom stats rnbinom
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' sim_range(params)
 ##' @export
-sim_range <- function(params, state
-	, steps=100, dt=1
+sim_range <- function(params
+        , state=make_state(params[["N"]], params[["E0"]])
+	, nt=100
+        , dt=1
+        , M = NULL
 	, stoch=c(obs=FALSE,proc=FALSE)
-	, ratemat_args=NULL, step_args=NULL
-) {
-    call <- match.call()
-    if (dt!=1) warning("nothing has been tested with dt!=1")
-    date_vec <- seq(0,steps,by=dt)
-    state0 <- state
-    nt <- length(date_vec)
-    ## will non-integer dates work??
-    M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
-    params0 <- params ## save baseline (time-0) values
-	 foi <- numeric(nt)
-
+	, ratemat_args=NULL
+        , step_args=NULL
+          ) {
+    if (is.null(M)) {
+        M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
+    }
     ## set up output
+    foi <- rep(NA,nt)
     res <- matrix(NA, nrow=nt, ncol=length(state),
                   dimnames=list(time=seq(nt),
                                 state=names(state)))
+    ## initialization
     res[1,] <- state
-	 foi[[1]] <- 0
+    foi[[1]] <- update_foi(state,params)
+    ## loop
     for (i in 2:nt) {
         state <- do.call(do_step,
                          c(list(state=state,
@@ -451,9 +453,7 @@ sim_range <- function(params, state
                                 dt = dt,
                                 stoch = stoch),
                            step_args))
-		## FIXME: Not very DRY
-		## What's the best way to pass foi along without getting in the way?
-		 foi [[i]] <- update_foi(state, params)
+        foi[[i]] <- update_foi(state, params)
         if (!stoch[["obs"]]) {
             res[i,] <- state
         } else {
@@ -462,12 +462,5 @@ sim_range <- function(params, state
                                size=params[["obs_disp"]])
         }
     }
-    ## res <- data.frame(date=seq(start_date,end_date,by=dt),res)
-    ## store everything as attributes
-    attr(res,"params") <- params0
-    attr(res,"state0") <- state0
-    attr(res,"call") <- call
-    ## class(res) <- c("pansim","data.frame")
-    return(list(res=res, foi=foi))
+    return(data.frame(t=seq(nt),res,foi))
 }
-
