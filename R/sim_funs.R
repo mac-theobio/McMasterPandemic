@@ -239,8 +239,7 @@ run_sim <- function(params,
     start_date <- ldmy(start_date); end_date <- ldmy(end_date)
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
-    nt <- (as.numeric(end_date-start_date))/dt+1  ## count first date as day 0 (??? FIXME/THINK!)
-    ## JD: nt <- length(date_vec) ## ??
+    nt <- length(date_vec)
     ## will non-integer dates work??
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
@@ -257,37 +256,38 @@ run_sim <- function(params,
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
     }
-    ## set up output
-    res <- matrix(NA, nrow=nt, ncol=length(state),
-                  dimnames=list(time=seq(nt),
-                                state=names(state)))
-    res[1,] <- state
-    for (i in 2:nt) {
-
-        ## apply time-varying/control parameters
-        if (i %in% switch_times) {
-            for (j in which(switch_times==i)) {
+    if (is.null(switch_times)) {
+        res <- do.call(sim_range,
+                       nlist(params,state,nt,dt,M,stoch,
+                             ratemat_args,step_args))
+    } else {
+        t_cur <- 1
+        times <- c(1,switch_times,nt)
+        resList <- list()
+        for (i in seq(nt+1)) {
+            for (j in which(switch_times==times[i])) {
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
                 params[[s]] <- params0[[s]]*v
                 cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                             s,params0[[s]],params[[s]],i))
+                ## FIXME: so far still assuming that params only change foi
             }
+            resList[[i]] <- do.call(sim_range,
+                                    nlist(params,
+                                          state,
+                                          nt=times[i+1]-times[i],
+                                          dt,M,stoch,
+                                          ratemat_args,step_args))
+            state <- attr(resList[[i]],"state")
+            t_cur <- times[i]
         }
-        state <- do.call(do_step,
-                         c(list(state=state,
-                                params=params, ratemat = M,
-                                dt = dt,
-                                stoch = stoch),
-                           step_args))
-        if (!stoch[["obs"]]) {
-            res[i,] <- state
-        } else {
-            res[i,] <- rnbinom(length(state),
-                               mu=state,
-                               size=params[["obs_disp"]])
-        }
+        ## combine
+        res <- do.call(rbind,resList)
     }
+
+    ## drop internal stuff
+    res <- res[,setdiff(names(res),c("t","foi"))]
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
     ## store everything as attributes
     attr(res,"params") <- params0
@@ -462,5 +462,8 @@ sim_range <- function(params
                                size=params[["obs_disp"]])
         }
     }
-    return(data.frame(t=seq(nt),res,foi))
+    res <- data.frame(t=seq(nt),res,foi)
+    ## need to know true state - for cases with obs error
+    attr(res,"state") <- state
+    return(res)
 }
