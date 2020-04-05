@@ -69,6 +69,9 @@ To run simulations, a few parameter values must be specified.
 Set these by editing the example params file, which is converted
 to a \code{params_pansim} object by \code{read_params()}.
 
+The term ``in acute care'' means ``in hospital but not in the
+intensive care unit (ICU)''.
+
 Note that the \code{print} method for \code{params_pansim} objects
 returns a data frame with a column giving the meaning of each
 parameter.
