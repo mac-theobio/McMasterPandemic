@@ -1,0 +1,75 @@
+%\VignetteIndexEntry{getting started}
+%\VignetteEngine{knitr::knitr}
+%\VignetteEncoding{UTF-8}
+\documentclass[12pt]{article}
+\input{nlipreamble}
+
+%% code listing
+\usepackage{listings}
+\usepackage{color}
+\lstset{
+    showstringspaces=false,
+    basicstyle=\ttfamily,
+    commentstyle=\color[grey]{0.6},
+    stringstyle=\color[RGB]{255,150,75}
+}
+\newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
+\renewcommand{\code}[1]{\inlinecode{R}{#1}}
+
+<<setup,echo=FALSE>>=
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  fig.height = 4,
+  dev = "pdf",
+  ##dev = "tikz",
+  cache = TRUE,
+  ##warning=FALSE,
+  comment = "#>"
+)
+@
+
+\title{\texttt{McMasterPandemic}: getting started}
+
+\author{Ben Bolker and David Earn\\\texttt{earn@math.mcmaster.ca}}
+
+\begin{document}
+\linenumbers
+
+\maketitle
+
+\begin{abstract}
+  \texttt{McMasterPandemic} is an \Rlogo package that provides tools
+  for simulating and forecasting infectious disease outbreaks, using
+  compartmental epidemic models.  The primary mechanistic framework is
+  a susceptible-exposed-infectious-removed (SEIR) model, with
+  additional compartments for individuals in acute and intensive care
+  units in hospitals.
+\end{abstract}
+
+\tableofcontents
+
+\section{Installation}
+
+<<>>=
+if (!("McMasterPandemic" %in% installed.packages())) {
+    if (!("devtools" %in% installed.packages())) install.packages("devtools")
+    devtools::install_github("bbolker/McMasterPandemic")
+}
+@
+
+<<loadpkg,cache=FALSE>>=
+library(McMasterPandemic)
+@
+
+\section{Data requirements}
+
+To run simulations, a few parameter values must be specified.
+<<set params>>=
+params1 <- read_params("inst/params/ICU1.csv")
+print(params1)
+@
+<<set initial state>>=
+state1 <- make_state(N=params[["N"]],E=params[["E0"]],type="ICU1")
+@
+
+\end{document}
