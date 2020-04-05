@@ -51,7 +51,7 @@ localstuff:
 
 R=R
 # -> you can do    R=R-devel  make ....
-PACKAGE=glmmTMB
+## PACKAGE=glmmTMB
 # get VERSION from glmmTMB/DESCRIPTION  
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
 VERSION := $(shell sed -n '/^Version: /s///p' DESCRIPTION)
@@ -64,7 +64,7 @@ ZIPFILE := =$(PACKAGE)_$(VERSION).zip
 
 doc-update: R/*.R
 	echo "suppressWarnings(roxygen2::roxygenize(\".\",roclets = c(\"collate\", \"rd\")))" | $(R) --slave
-	@touch doc-update
+	@touch $@
 
 pkgtest:
 	echo "devtools::test('.')" | $(R) --slave

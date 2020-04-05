@@ -153,6 +153,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ##'  maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
 ## FIXME DRY from make_ratemat
+## Looks fixed?
 update_foi <- function(state, params) {
     ## update infection rate
     with(c(as.list(state),as.list(params)),
@@ -412,5 +413,61 @@ predfun <- function(beta0,E0,data,
     )
     if (values_only) return(pull(res2,value))
     return(res2)
+}
+
+##' Run simulation across a range of times
+##' Possible refactorins step for run_sim
+##' @inheritParams do_step
+##' @param steps (number of steps to take)
+##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
+##' @param step_args additional arguments to pass to \code{do_step}
+##' @importFrom stats rnbinom
+##' @export
+sim_range <- function(params, state
+	, steps=100, dt=1
+	, stoch=c(obs=FALSE,proc=FALSE)
+	, ratemat_args=NULL, step_args=NULL
+) {
+    call <- match.call()
+    if (dt!=1) warning("nothing has been tested with dt!=1")
+    date_vec <- seq(0,steps,by=dt)
+    state0 <- state
+    nt <- length(date_vec)
+    ## will non-integer dates work??
+    M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
+    params0 <- params ## save baseline (time-0) values
+	 foi <- numeric(nt)
+
+    ## set up output
+    res <- matrix(NA, nrow=nt, ncol=length(state),
+                  dimnames=list(time=seq(nt),
+                                state=names(state)))
+    res[1,] <- state
+	 foi[[1]] <- 0
+    for (i in 2:nt) {
+        state <- do.call(do_step,
+                         c(list(state=state,
+                                params=params, ratemat = M,
+                                dt = dt,
+                                stoch = stoch),
+                           step_args))
+		## FIXME: Not very DRY
+		## What's the best way to pass foi along without getting in the way?
+		 foi [[i]] <- update_foi(state, params)
+        if (!stoch[["obs"]]) {
+            res[i,] <- state
+        } else {
+            res[i,] <- rnbinom(length(state),
+                               mu=state,
+                               size=params[["obs_disp"]])
+        }
+    }
+    ## res <- data.frame(date=seq(start_date,end_date,by=dt),res)
+    ## store everything as attributes
+    attr(res,"params") <- params0
+    attr(res,"state0") <- state0
+    attr(res,"call") <- call
+    ## class(res) <- c("pansim","data.frame")
+    return(list(res=res, foi=foi))
 }
 
