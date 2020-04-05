@@ -1,0 +1,56 @@
+## kernel functions
+## not exported or documented yet!
+
+## compute kernal by brute force
+transKernel <- function(par, steps=100, do_hazard=TRUE){
+        par[["N"]] <- 1   ## ? redundant ?
+	state <- make_state(N=1, E=1)
+	return(run_sim_range(par, state
+		, nt=steps
+		, step_args = list(do_hazard=do_hazard)
+	))
+}
+
+## FIXME: kernel should ideally be an object with k and lag
+## (a class with methods)
+## Building with r instead of λ for this reason
+
+## Investigate r (combine with uniroot to get Euler's r)
+discountGap <- function(r, k){
+	lag <- 1:length(k)
+	discountR <- sum(k*exp(-lag*r))
+	return(discountR-1)
+}
+
+## Investigate κ (combine with uniroot to get κ_eff)
+kappaGap <- function(kappa, rho, R){
+	R_est <- (1+rho*kappa)^(1/kappa)
+	return(R-R_est)
+}
+
+## moments of a kernel with parameters/convolution vector k
+kernelMoments <- function(k){
+	lag <- 1:length(k)
+	R0 <- sum(k)
+	Gbar <- sum(k*lag)/R0
+	Gvar <- sum(k*lag^2)/R0 - Gbar^2
+	r0 <- (uniroot(discountGap, k=k, lower=-2, upper=2))$root
+	kappa_eff <- (uniroot(kappaGap, rho=r0*Gbar, R=R0, lower=0.01, upper=2))$root
+
+	return(c(R0=R0, Gbar=Gbar, r0=r0
+		, kappa=Gvar/Gbar^2
+		, kappa_eff=kappa_eff
+	))
+}
+
+## testing
+if (FALSE) {
+    pars <- read_params(input_files[[1]])
+
+    print(get_GI_moments(pars))
+    print(kernelMoments(transKernel(pars, do_hazard=FALSE, steps=500)$foi))
+    
+    sim <- run_sim(pars, end_date="01-Jul-2020")
+    rI <- diff(log(sim$Is))
+    print(max(rI[-1:-10]))
+}
