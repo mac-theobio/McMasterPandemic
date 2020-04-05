@@ -4,8 +4,14 @@
 \alias{do_step}
 \title{Take a single simulation time step}
 \usage{
-do_step(state, params, ratemat, dt = 1, do_hazard = FALSE,
-  stoch = c(obs = FALSE, proc = FALSE))
+do_step(
+  state,
+  params,
+  ratemat,
+  dt = 1,
+  do_hazard = FALSE,
+  stoch = c(obs = FALSE, proc = FALSE)
+)
 }
 \arguments{
 \item{state}{named vector of states}

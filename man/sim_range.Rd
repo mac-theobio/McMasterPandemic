@@ -5,8 +5,15 @@
 \title{Run simulation across a range of times
 Possible refactorins step for run_sim}
 \usage{
-sim_range(params, state, steps = 100, dt = 1, stoch = c(obs = FALSE,
-  proc = FALSE), ratemat_args = NULL, step_args = NULL)
+sim_range(
+  params,
+  state,
+  steps = 100,
+  dt = 1,
+  stoch = c(obs = FALSE, proc = FALSE),
+  ratemat_args = NULL,
+  step_args = NULL
+)
 }
 \arguments{
 \item{params}{named vector of parameters}

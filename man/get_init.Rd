@@ -8,8 +8,14 @@ Suppose we have a slope and an intercept for some variable
 from day t1.  We want an initial condition for day t0.
 (Don't go too far back or rounding will kill us)#}
 \usage{
-get_init(date0 = ldmy("1-Mar-2020"), date1 = ldmy("25-Mar-2020"),
-  params, int, slope, var = "H")
+get_init(
+  date0 = ldmy("1-Mar-2020"),
+  date1 = ldmy("25-Mar-2020"),
+  params,
+  int,
+  slope,
+  var = "H"
+)
 }
 \arguments{
 \item{date0}{date to get initial conditions for}
