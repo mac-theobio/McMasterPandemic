@@ -170,7 +170,7 @@ update_foi <- function(state, params) {
 ##  [or overdispersed analogue] directly)
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE)) {
-    
+
     ratemat["S","E"] <- update_foi(state,params)
     if (!do_hazard) {
         ## from per capita rates to absolute changes
@@ -244,9 +244,10 @@ run_sim <- function(params
     state0 <- state
     nt <- length(date_vec)
     ## reconstruct
-    thin <- function(x) {
-        x[seq(nrow(x)) %% ndt == 1,]
-    }
+thin <- function(x) {
+	if(ndt==1) return(x)
+	return(x[seq(nrow(x)) %% ndt == 1,])
+}
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
@@ -310,7 +311,6 @@ run_sim <- function(params
     return(res)
 }
 
-    
 ## dictionary; internal name, graph label
 label_dict <- read.csv(stringsAsFactors=TRUE,
 text="
