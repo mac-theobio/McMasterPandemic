@@ -349,7 +349,7 @@ read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     ## evaluate to allow expressions like "1/7" -> numeric
     x[[value_col]] <- vapply(x[[value_col]], function(z) eval(parse(text=z)), numeric(1))
     res <- setNames(x[[value_col]],x[[symbol_col]])
-    class(res) <- "panparams"
+    class(res) <- "params_pansim"
     return(res)
 }
 
@@ -388,7 +388,7 @@ make_state <- function(N=params[["N"]],
     state <- setNames(numeric(length(state_names)),state_names)
     state[["S"]] <- N-E0
     state[["E"]] <- E0
-    class(state) <- "state.pansim"
+    class(state) <- "state_pansim"
     return(state)
 }
 
