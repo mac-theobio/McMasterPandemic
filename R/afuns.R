@@ -27,7 +27,7 @@ get_GI_moments <- function(params) {
 	boxtimes <- with(as.list(params), 
 	 	1/c(gamma, lambda_a, lambda_p, lambda_m, lambda_s)
 	)
-	boxvar <- boxtimes^2
+	boxvars <- boxtimes^2
 
 	classtimes <- c(boxtimes[[1]]
 		, boxtimes[[1]] + boxtimes[[2]]
@@ -36,12 +36,16 @@ get_GI_moments <- function(params) {
 		, boxtimes[[1]] + boxtimes[[3]] + boxtimes[[5]]
 	)
 
-	classvars <- (1) ## FIXME
+	classvars <- c(boxvars[[1]]
+		, boxvars[[1]] + boxvars[[2]]
+		, boxvars[[1]] + boxvars[[3]]
+		, boxvars[[1]] + boxvars[[3]] + boxvars[[4]]
+		, boxvars[[1]] + boxvars[[3]] + boxvars[[5]]
+	)
 
 	Gbar <- sum((Rv/R)*classtimes)
-
-	return(c(Gbar
-	))
+	Gvar <- sum((Rv/R)*classvars)
+return(c(R0=R, Gbar=Gbar, Gvar=Gvar))
 }
 
 ##' calculate R0 for a given set of parameters
