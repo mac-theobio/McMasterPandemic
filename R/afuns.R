@@ -36,6 +36,7 @@ get_GI_moments <- function(params) {
 		, boxtimes[[1]] + boxtimes[[3]] + boxtimes[[5]]
 	)
 
+	## Not quite right for GI!
 	classvars <- c(boxvars[[1]]
 		, boxvars[[1]] + boxvars[[2]]
 		, boxvars[[1]] + boxvars[[3]]
@@ -45,7 +46,7 @@ get_GI_moments <- function(params) {
 
 	Gbar <- sum((Rv/R)*classtimes)
 	Gvar <- sum((Rv/R)*classvars)
-return(c(R0=R, Gbar=Gbar, Gvar=Gvar))
+return(c(R0=R, Gbar=Gbar, Gvar_approx=Gvar))
 }
 
 ##' calculate R0 for a given set of parameters
