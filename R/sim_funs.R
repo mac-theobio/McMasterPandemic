@@ -233,6 +233,7 @@ run_sim <- function(params,
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- (as.numeric(end_date-start_date))/dt+1  ## count first date as day 0 (??? FIXME/THINK!)
+    ## JD: nt <- length(date_vec) ## ??
     ## will non-integer dates work??
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
