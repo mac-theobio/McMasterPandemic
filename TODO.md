@@ -2,6 +2,10 @@
 
 ### short term
 
+* fix time-varying machinery (BMB)
+* incorporating kernel.R in get_r etc. (BMB)
+* testing calibration (BMB)
+
 * allow internal, smaller time steps [TEST]
 * test/fix calibration procedure
 * multi-parameter run interface (fix fitfun/predict/etc.)

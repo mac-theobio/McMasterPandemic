@@ -1,10 +1,14 @@
+## approximation functions
 
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
 ##' @export
-get_r <- function(p) {
+get_r <- function(p, method=c("jacobian")) {
+    if (method=="jacobian") {
 	res <- max(eigen(make_jac(params=p))$values)
-	return(res)
+    } else {
+        ## ... ?
+    }
 }
 
 ## OBSOLETE: naive/unweighted GI mean
@@ -23,12 +27,12 @@ get_GI_moments <- function(params) {
 	## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
 	##  (will have to rethink this once we have a structured model)
 	Rv <- c(0, get_R0(params, components=TRUE))
-	R <- sum(Rv)
+        R <- sum(Rv)
+        ## FIXME: get rates, use names rather than numeric indices below
 	boxtimes <- with(as.list(params), 
 	 	1/c(gamma, lambda_a, lambda_p, lambda_m, lambda_s)
 	)
 	boxvars <- boxtimes^2
-
 	classtimes <- c(boxtimes[[1]]
 		, boxtimes[[1]] + boxtimes[[2]]
 		, boxtimes[[1]] + boxtimes[[3]]

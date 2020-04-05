@@ -1,7 +1,7 @@
 ## kernel functions
 ## not exported or documented yet!
 
-## compute kernal by brute force
+## compute kernel by brute force
 transKernel <- function(par, steps=100, do_hazard=TRUE){
         par[["N"]] <- 1   ## ? redundant ?
 	state <- make_state(N=1, E=1)
@@ -45,6 +45,7 @@ kernelMoments <- function(k){
 
 ## testing
 if (FALSE) {
+    ## library(McMasterPandemic)  ## this will make package checks complain
     pars <- read_params(input_files[[1]])
 
     print(get_GI_moments(pars))

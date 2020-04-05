@@ -20,8 +20,9 @@ test_that("basic examples", {
 test_that("time-varying example", {
     time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
                             Symbol=c("beta0","beta0"),
-                            Relative_value=c(0.7,0.1))
-    resICU_t <- run_sim(params,state,start_date="1-Mar-2020",
+                            Relative_value=c(0.7,0.0))
+    resICU_t <- run_sim(params,state,
+                        start_date="1-Mar-2020",
                         end_date="1-Jun-2020",
                         params_timevar=time_pars)
     expect_is(resICU_t,"pansim")
