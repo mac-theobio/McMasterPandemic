@@ -4,7 +4,7 @@
 ##' @param x a \code{panparams} object
 ##'
 ##' @export
-print.panparams <- function( x ) {
+print.params_pansim <- function( x ) {
     param_meanings <- c(
         beta0 = "transmission rate",
         Ca = "relative asymptomatic transmissibility",
@@ -33,6 +33,5 @@ print.panparams <- function( x ) {
     x_meanings <- param_meanings[names(x)]
     xout <- data.frame(value=round(as.numeric(x),3),
                        meaning=x_meanings)
-    knitr::kable(xout)
-    return(invisiable(xout))
+    return(xout)
 }
