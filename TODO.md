@@ -2,6 +2,7 @@
 
 ### short term
 
+* allow internal, smaller time steps [TEST]
 * test/fix calibration procedure
 * multi-parameter run interface (fix fitfun/predict/etc.)
     * make a predict method for parameter sets (assuming we can use E0 and start date only as part of params)

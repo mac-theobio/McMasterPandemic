@@ -207,6 +207,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param dt time step for do_step
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
+##' @param ndt number of internal time steps per time step
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' state <- make_state(params[["N"]],E=params[["E0"]])
@@ -228,6 +229,7 @@ run_sim <- function(params,
                     end_date="1-May-2020",
                     params_timevar=NULL,
                     dt=1,
+                    ndt=1,  ## FIXME: change after testing
                     stoch=c(obs=FALSE,proc=FALSE),
                     ratemat_args=NULL,
                     step_args=NULL) {
@@ -240,7 +242,10 @@ run_sim <- function(params,
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
-    ## will non-integer dates work??
+    ## reconstruct
+    thin <- function(x) {
+        x[seq(nrow(x)) %% ndt == 1,]
+    }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
@@ -257,9 +262,12 @@ run_sim <- function(params,
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
     }
     if (is.null(switch_times)) {
-        res <- do.call(run_sim_range,
-                       nlist(params,state,nt,dt,M,stoch,
-                             ratemat_args,step_args))
+        res <- thin(do.call(run_sim_range,
+                       nlist(params,state,
+                             nt=nt*ndt,
+                             dt=dt/ndt,M,stoch,
+                             ratemat_args,step_args,
+                             )))
     } else {
         t_cur <- 1
         ## want to *include* end date
@@ -277,14 +285,14 @@ run_sim <- function(params,
             resList[[i]] <- do.call(run_sim_range,
                                     nlist(params,
                                           state,
-                                          nt=times[i+1]-times[i],
-                                          dt,M,stoch,
+                                          nt=(times[i+1]-times[i])*ndt,
+                                          dt=dt/ndt,M,stoch,
                                           ratemat_args,step_args))
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
         }
         ## combine
-        res <- do.call(rbind,resList)
+        res <- thin(do.call(rbind,resList))
     }
 
     ## drop internal stuff
