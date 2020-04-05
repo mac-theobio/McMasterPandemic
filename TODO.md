@@ -2,7 +2,7 @@
 
 ### short term
 
-* fix time-varying machinery (BMB)
+* fix time-varying machinery: check for off-by-one on dates?? (BMB)
 * incorporating kernel.R in get_r etc. (BMB)
 * testing calibration (BMB)
 
