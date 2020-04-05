@@ -8,3 +8,11 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
+
+Epidemics have the *general* characteristics of accelerating initially, then declerating and reaching a peak (as the population becomes exposed and then immune, or as behavioural changes and control measures take effect), then decreasing and decaying approximately exponentially (as the remaining infection chains die out).
+
+* Farr's law: Gaussian curve, vs SIR
+* cumulative equivalents: logistic, Richards probit, cumulative SIR
+* need to be careful about fitting cumulative curves without accounting for serial dependence
+* methods without mechanistic underpinning will rely entirely on the shape of the curve for predicting beyond the exponential phase
+
