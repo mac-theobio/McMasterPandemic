@@ -4,17 +4,10 @@
 \alias{run_sim}
 \title{Run pandemic simulation}
 \usage{
-run_sim(
-  params,
-  state,
-  start_date = "20-Mar-2020",
-  end_date = "1-May-2020",
-  params_timevar = NULL,
-  dt = 1,
-  stoch = c(obs = FALSE, proc = FALSE),
-  ratemat_args = NULL,
-  step_args = NULL
-)
+run_sim(params, state, start_date = "20-Mar-2020",
+  end_date = "1-May-2020", params_timevar = NULL, dt = 1,
+  stoch = c(obs = FALSE, proc = FALSE), ratemat_args = NULL,
+  step_args = NULL)
 }
 \arguments{
 \item{params}{named vector of parameters}
@@ -27,7 +20,7 @@ run_sim(
 
 \item{params_timevar}{three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})}
 
-\item{dt}{time step (days)}
+\item{dt}{time step for do_step}
 
 \item{stoch}{stochastic simulation? logical vector for observation and process noise}
 

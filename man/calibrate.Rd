@@ -6,16 +6,8 @@
 return initial conditions and parameters that will (approximately?)
 recapitulate the observed log-linear dynamics}
 \usage{
-calibrate(
-  int,
-  slope,
-  pop,
-  params,
-  target = c(Gbar = 6),
-  date0 = "1-Mar-2020",
-  date1 = "25-Mar-2020",
-  var = "H"
-)
+calibrate(int, slope, pop, params, target = c(Gbar = 6),
+  date0 = "1-Mar-2020", date1 = "25-Mar-2020", var = "H")
 }
 \arguments{
 \item{int}{log-linear intercept (expected value on date1)}

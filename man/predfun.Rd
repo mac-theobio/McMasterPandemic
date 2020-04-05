@@ -5,14 +5,8 @@
 \title{run simulation with specified parameters; extract results
 matching dates and variable order in data}
 \usage{
-predfun(
-  beta0,
-  E0,
-  data,
-  params,
-  start_date = "10-Feb-2020",
-  values_only = TRUE
-)
+predfun(beta0, E0, data, params, start_date = "10-Feb-2020",
+  values_only = TRUE)
 }
 \description{
 run simulation with specified parameters; extract results

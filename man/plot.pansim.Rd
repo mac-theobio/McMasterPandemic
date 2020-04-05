@@ -4,14 +4,8 @@
 \alias{plot.pansim}
 \title{plot method for simulations}
 \usage{
-\method{plot}{pansim}(
-  x,
-  drop_states = c("S", "R", "E", "I"),
-  keep_states = NULL,
-  aggregate = TRUE,
-  log = FALSE,
-  ...
-)
+\method{plot}{pansim}(x, drop_states = c("S", "R", "E", "I"),
+  keep_states = NULL, aggregate = TRUE, log = FALSE, ...)
 }
 \arguments{
 \item{x}{fitted \code{pansim} object}

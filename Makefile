@@ -16,6 +16,8 @@ vim_session:
 
 Sources += $(wildcard */*.R)
 
+Sources += $(wildcard man/*.Rd) NAMESPACE
+
 ######################################################################
 
 package:

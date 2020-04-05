@@ -4,7 +4,8 @@
 \alias{aggregate.pansim}
 \title{Collapse columns (infected, ICU, hospitalized) in a pansim output}
 \usage{
-\method{aggregate}{pansim}(x, pivot = FALSE, keep_vars = c("H", "ICU", "D"), ...)
+\method{aggregate}{pansim}(x, pivot = FALSE, keep_vars = c("H", "ICU",
+  "D"), ...)
 }
 \arguments{
 \item{x}{a pansim object}
