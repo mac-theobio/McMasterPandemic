@@ -22,9 +22,9 @@ print.panparams <- function( x ) {
         mu = "proportion of symptomatic infections that are mild",
         N = "total population size",
         E0 = "number of initially exposed individuals",
-        iso_m = "proportion of mildly symptomatic individuals who are isolated",
-        iso_s = "proportion of mildly severely symptomatic individuals who are isolated",
-        phi1 = "proportion of severely sympomatic infections that do NOT require ICU",
+        iso_m = "proportion of mildly symptomatic patients who are isolated",
+        iso_s = "proportion of severely symptomatic patients who are isolated",
+        phi1 = "proportion of severe infections that do NOT require ICU",
         phi2 = "proportion of ICU patients who die",
         psi1 = "1 / mean days in ICU if survive",
         psi2 = "1 / mean days in ICU if die",
@@ -34,5 +34,5 @@ print.panparams <- function( x ) {
     xout <- data.frame(value=round(as.numeric(x),3),
                        meaning=x_meanings)
     knitr::kable(xout)
-    return(xout)
+    return(invisiable(xout))
 }

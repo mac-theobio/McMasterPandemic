@@ -6,7 +6,7 @@
 \usage{
 run_sim(
   params,
-  state,
+  state = make_state(params[["N"]], params[["E0"]]),
   start_date = "20-Mar-2020",
   end_date = "1-May-2020",
   params_timevar = NULL,

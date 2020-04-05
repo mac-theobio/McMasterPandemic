@@ -2,6 +2,7 @@
 
 S3method(aggregate,pansim)
 S3method(plot,pansim)
+S3method(print,panparams)
 S3method(print,pansim)
 S3method(summary,pansim)
 S3method(summary,params_pansim)

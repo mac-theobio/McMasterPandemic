@@ -65,11 +65,11 @@ library(McMasterPandemic)
 
 To run simulations, a few parameter values must be specified.
 <<set params>>=
-params1 <- read_params("inst/params/ICU1.csv")
+params1 <- read_params("../inst/params/ICU1.csv")
 print(params1)
 @
 <<set initial state>>=
-state1 <- make_state(N=params[["N"]],E=params[["E0"]],type="ICU1")
+state1 <- make_state(N=params1[["N"]],E=params1[["E0"]],type="ICU1")
 @
 
 \end{document}
