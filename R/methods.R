@@ -104,8 +104,6 @@ summary.pansim <- function(object, ...) {
     res
 }
 
-##' @export
-print.params_pansim <- function( x, ... ) {
     param_meanings <- c(
         beta0 = "transmission rate",
         Ca = "relative asymptomatic transmissibility",
@@ -131,8 +129,21 @@ print.params_pansim <- function( x, ... ) {
         psi2 = "1 / mean days in ICU if die",
         psi3 = "1 / mean days post-ICU until discharge"
     )
-    x_meanings <- param_meanings[names(x)]
-    xout <- data.frame(value=round(as.numeric(x),3),
-                       meaning=x_meanings)
-    return(xout)
+
+##' print parameters, possibly with detailed description
+##' @param x an object of class \code{params_pansim} (parameters for pandemic simulation)
+##' @param describe print full description?
+##' @param ... (unused, for generic consistency)
+##' @export
+## FIXME: prettier printing, e.g. detect "1/" or "proportion"
+print.params_pansim <- function( x, describe=FALSE, ... ) {
+    if (!describe) {
+        print(unclass(x))
+    } else {
+        x_meanings <- param_meanings[names(x)]
+        xout <- data.frame(value=round(as.numeric(x),3),
+                           meaning=x_meanings)
+        print(xout)
+        return(invisible(xout))
+    }
 }

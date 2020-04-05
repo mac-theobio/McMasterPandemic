@@ -78,7 +78,7 @@ parameter.
 
 <<set params>>=
 params1 <- read_params("../inst/params/ICU1.csv")
-knitr::kable(print(params1))
+knitr::kable(print(params1, describe=TRUE))
 @
 
 \paragraph{Initial conditions}
