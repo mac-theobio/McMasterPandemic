@@ -223,17 +223,18 @@ do_step <- function(state, params, ratemat, dt=1,
 ## FIXME: params_timevar
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
-run_sim <- function(params,
-                    state,
-                    start_date="20-Mar-2020",
-                    end_date="1-May-2020",
-                    params_timevar=NULL,
-                    dt=1,
-                    ndt=1,  ## FIXME: change after testing
-                    stoch=c(obs=FALSE,proc=FALSE),
-                    ratemat_args=NULL,
-                    step_args=NULL) {
+run_sim <- function(params
+        , state=make_state(params[["N"]], params[["E0"]])
+			, start_date="20-Mar-2020"
+			, end_date="1-May-2020"
+			, params_timevar=NULL
+			, dt=1, ndt=1  ## FIXME: change after testing
+			, stoch=c(obs=FALSE,proc=FALSE)
+			, ratemat_args=NULL
+			, step_args=NULL
+) {
     call <- match.call()
+
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
@@ -263,11 +264,12 @@ run_sim <- function(params,
     }
     if (is.null(switch_times)) {
         res <- thin(do.call(run_sim_range,
-                       nlist(params,state,
-                             nt=nt*ndt,
-                             dt=dt/ndt,M,stoch,
-                             ratemat_args,step_args,
-                             )))
+				nlist(params,state,
+					  nt=nt*ndt,
+					  dt=dt/ndt,M,stoch,
+					  ratemat_args,step_args
+				)
+			))
     } else {
         t_cur <- 1
         ## want to *include* end date
