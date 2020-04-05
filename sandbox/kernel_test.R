@@ -2,10 +2,16 @@ devtools::load_all(".")
 pars <- read_params(system.file("params","ICU1.csv",
                                 package="McMasterPandemic"))
 
-print(get_GI_moments(pars))
-try(print(kernelMoments(transKernel(pars, do_hazard=FALSE, steps=500)$foi)))
-    
-sim <- run_sim(pars, end_date="01-Jul-2020")
+## FIXME: combination of numerical instability and epidemic phases
+##   (pre-exponential, exponential, saturating, declining) makes this
+##   a little sensitive to the length of the run
+print(gg <- get_GI_moments(pars))
+nt <- gg[["Gbar"]]*10
+kk <- transKernel(pars, do_hazard=FALSE, steps=nt)$foi
+print(kernelMoments(kk))
+
+pars[["E0"]] <- 0.001
+sim <- run_sim_range(params=pars, nt=gg[["Gbar"]]*5)
 rI <- diff(log(sim$Is))
-print(max(rI[-1:-10]))
+print(max(tail(rI,10)))
 
