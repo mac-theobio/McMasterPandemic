@@ -14,10 +14,11 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
 ##' @param aggregate collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}
 ##' @param log plot y-axis on log scale?
+##' @param show_times indicate times when parameters changed?
 ##' @export
 plot.pansim <- function(x, drop_states=c("S","R","E","I"),
                         keep_states=NULL, aggregate=TRUE,
-                        log=FALSE, ...) {
+                        log=FALSE, show_times=TRUE, ...) {
     ## FIXME: check if already aggregated!
     if (aggregate) x <- aggregate(x)
     x <- as_tibble(x)  ## FIXME:: do this upstream?
@@ -37,6 +38,9 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
         + geom_line()
     )
     if (log) gg0 <- gg0 + scale_y_log10()
+    if (show_times && !is.null(ptv <- attr(x,"params_timevar"))) {
+        gg0 <- gg0 + geom_vline(xintercept=ptv$Date,lty=2)
+    }
     return(gg0)
 }
 

@@ -30,7 +30,7 @@ kappaGap <- function(kappa, rho, R){
 
 ## moments of a kernel with parameters/convolution vector k
 kernelMoments <- function(k){
-	lag <- 1:length(k)
+	lag <- seq(length(k))
 	R0 <- sum(k)
 	Gbar <- sum(k*lag)/R0
 	Gvar <- sum(k*lag^2)/R0 - Gbar^2
@@ -41,17 +41,4 @@ kernelMoments <- function(k){
 		, kappa=Gvar/Gbar^2
 		, kappa_eff=kappa_eff
 	))
-}
-
-## testing
-if (FALSE) {
-    ## library(McMasterPandemic)  ## this will make package checks complain
-    pars <- read_params(input_files[[1]])
-
-    print(get_GI_moments(pars))
-    print(kernelMoments(transKernel(pars, do_hazard=FALSE, steps=500)$foi))
-    
-    sim <- run_sim(pars, end_date="01-Jul-2020")
-    rI <- diff(log(sim$Is))
-    print(max(rI[-1:-10]))
 }

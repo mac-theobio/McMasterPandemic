@@ -153,7 +153,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ##'  maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
 ## FIXME DRY from make_ratemat
-## Looks fixed?
 update_foi <- function(state, params) {
     ## update infection rate
     with(c(as.list(state),as.list(params)),
@@ -171,6 +170,7 @@ update_foi <- function(state, params) {
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE)) {
 
+    ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
     if (!do_hazard) {
         ## from per capita rates to absolute changes
@@ -243,11 +243,12 @@ run_sim <- function(params
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
-    ## reconstruct
-thin <- function(x) {
+    thin <- function(x) {
 	if(ndt==1) return(x)
-	return(x[seq(nrow(x)) %% ndt == 1,])
-}
+        x  <- x[seq(nrow(x)) %% ndt == 1,]
+        return(x)
+    }
+    drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
     if (is.null(params_timevar)) {
@@ -258,7 +259,7 @@ thin <- function(x) {
         stopifnot(all(c("Date","Symbol","Relative_value") %in%
                       names(params_timevar)))
         ## convert char to date
-        switch_dates <- lubridate::dmy(params_timevar[["Date"]])
+        switch_dates <- params_timevar[["Date"]] <- ldmy(params_timevar[["Date"]])
         ## match specified times with time sequence
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
@@ -285,17 +286,22 @@ thin <- function(x) {
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            resList[[i]] <- do.call(run_sim_range,
-                                    nlist(params,
-                                          state,
-                                          nt=(times[i+1]-times[i])*ndt,
-                                          dt=dt/ndt,M,stoch,
-                                          ratemat_args,step_args))
+            M["S","E"] <- update_foi(state,params) ## unnecessary?
+            resList[[i]] <- drop_last(
+                do.call(run_sim_range,
+                        nlist(params,
+                              state,
+                              nt=(times[i+1]-times[i]+1)*ndt,
+                              dt=dt/ndt,M,stoch,
+                              ratemat_args,step_args))
+            )
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
         }
         ## combine
         res <- thin(do.call(rbind,resList))
+        ## add last row
+        ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }
 
     ## drop internal stuff
@@ -307,6 +313,7 @@ thin <- function(x) {
     attr(res,"start_date") <- start_date
     attr(res,"end_date") <- end_date
     attr(res,"call") <- call
+    attr(res,"params_timevar") <- params_timevar
     class(res) <- c("pansim","data.frame")
     return(res)
 }
@@ -448,6 +455,7 @@ run_sim_range <- function(params
 	, ratemat_args=NULL
         , step_args=NULL
           ) {
+    ## cat("beta0",params[["beta0"]],"\n")
     if (is.null(M)) {
         M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     }
