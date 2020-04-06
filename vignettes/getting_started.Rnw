@@ -73,11 +73,11 @@ The term ``in acute care'' means ``in hospital but not in the
 intensive care unit (ICU)''.
 
 Note that the \code{print} method for \code{params_pansim} objects
-returns a data frame with a column giving the meaning of each
-parameter.
+will return a data frame with a column giving the meaning of each
+parameter (with argument \code{describe=TRUE}).
 
 <<set params>>=
-params1 <- read_params("../inst/params/ICU1.csv")
+params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 knitr::kable(print(params1, describe=TRUE))
 @
 
@@ -106,14 +106,64 @@ edate <- "1-Jun-2020"
 
 \section{Running a simulation}
 
+A simple deterministic simulation is run as follows, and returns a
+\code{pansim} object.  The \code{summary} method computes the times
+and magnitudes of peak demands on acute care (H) and intenstive care
+(ICU), and the basic reproduction number $\R_0$.
+\david{It would be good if the summary method spewed the the initial
+exponential growth rate $r$, and the initial doubling time as well.}
 <<run sim>>=
-res1 <- run_sim(params1,state1,start_date=sdate,end_date=edate)
-print(p1 <- (plot(res1,keep_states=c("ICU","H","D"),log=FALSE)))
-print(p1 + scale_y_log10())
+res1 <- run_sim(params1, state1, start_date=sdate, end_date=edate)
+summary(res1)
+@
+
+The \code{plot} method for \code{pansim} objects returns a
+\code{ggplot} object.
+Specifying a log scale in the construction of the plot avoids zeros in
+the resulting time series.
+<<plot sim>>=
+p1 <- plot(res1, keep_states=c("ICU","H","D"), log=TRUE)
+print(p1 + scale_y_continuous()) # show linear plot
+print(p1) # show logarithmic plot
   ## filter zero values to avoid log-scale warning
   ##+ geom_point(data=dplyr::filter(clean_data,value>0)))
   ##)
+@
 
+\subsection{Stochasticity}
+
+The effects of observation error (reporting imperfections) are easy to
+explore with the \code{stoch} argument to \code{run_sim}.
+\david{This runs, but produces what appears to be garbage.  I'm not
+  guessing how to use it properly.}
+<<run sim obs noise>>=
+params1obs <- c(params1, obs_disp=0.1)
+res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
+                   stoch=c(obs=TRUE, proc=FALSE))
+summary(res1obs)
+p1obs <- plot(res1obs, keep_states=c("ICU","H","D"), log=TRUE)
+print(p1obs + scale_y_continuous()) # show linear plot
+print(p1obs) # show logarithmic plot
+@
+
+\subsection{Time-dependent transmission rate}
+
+Implementing known changes in transmission rate (e.g., resulting from
+social distancing measures) is straighforward via the \code{time_pars}
+argument.  The following reduces $\beta_0$ (and hence $\R_0$) to 70\%
+of its original value on 20 March 2020, and to 10\% of its original
+value on 25 March 2020.
+
+<<run sim time-dependent beta0>>=
+time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
+                      Symbol=c("beta0","beta0"),
+                      Relative_value=c(0.7,0.1))
+restimedep <- run_sim(params1,state1,start_date=sdate,end_date=edate,
+                  params_timevar=time_pars)
+summary(restimedep)
+ptimedep <- plot(restimedep, log=TRUE)
+print(ptimedep + scale_y_log10())
+print(ptimedep)
 @
 
 \end{document}
