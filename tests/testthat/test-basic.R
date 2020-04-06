@@ -24,10 +24,12 @@ test_that("params methods", {
                  tolerance=2e-3)
 })
 
+
+time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
+                        Symbol=c("beta0","beta0"),
+                        Relative_value=c(0.5,0.1))
+
 test_that("time-varying example", {
-    time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
-                            Symbol=c("beta0","beta0"),
-                            Relative_value=c(0.5,0.1))
     resICU_t <- run_sim(params,state,
                         start_date="1-Mar-2020",
                         end_date="1-Jun-2020",
@@ -36,6 +38,17 @@ test_that("time-varying example", {
     expect_is(resICU_t,"pansim")
     plot(resICU_t)
     plot(resICU_t,aggregate=FALSE,log=TRUE,drop_vars=NULL)
+})
+
+test_that("time-varying with ndt>1", {
+    resICU_t2 <- run_sim(params,state,
+                        start_date="1-Mar-2020",
+                        end_date="1-June-2020",
+                        params_timevar=time_pars,
+                        step_args=list(do_hazard=TRUE),
+                        ndt=10)
+    expect_is(resICU_t,"pansim")
+    plot(resICU_t)
 })
 
 test_that("ndt>1", {

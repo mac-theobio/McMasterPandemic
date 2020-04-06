@@ -231,7 +231,7 @@ run_sim <- function(params
 			, start_date="20-Mar-2020"
 			, end_date="1-May-2020"
 			, params_timevar=NULL
-			, dt=1, ndt=1  ## FIXME: change after testing
+			, dt=1, ndt=1  ## FIXME: change default after testing?
 			, stoch=c(obs=FALSE,proc=FALSE)
 			, ratemat_args=NULL
 			, step_args=NULL
@@ -287,18 +287,19 @@ run_sim <- function(params
             }
             M["S","E"] <- update_foi(state,params) ## unnecessary?
             resList[[i]] <- drop_last(
-                do.call(run_sim_range,
+                thin(ndt=ndt,
+                     do.call(run_sim_range,
                         nlist(params,
                               state,
                               nt=(times[i+1]-times[i]+1)*ndt,
                               dt=dt/ndt,M,stoch,
-                              ratemat_args,step_args))
+                              ratemat_args,step_args)))
             )
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
         }
         ## combine
-        res <- thin(ndt=ndt, do.call(rbind,resList))
+        res <- do.call(rbind,resList)
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }

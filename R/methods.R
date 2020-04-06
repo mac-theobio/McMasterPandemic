@@ -15,6 +15,7 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param aggregate collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}
 ##' @param log plot y-axis on log scale?
 ##' @param show_times indicate times when parameters changed?
+##' @param ... additional models to overlay
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
 ##' @export
 plot.pansim <- function(x, drop_states=c("S","R","E","I"),
