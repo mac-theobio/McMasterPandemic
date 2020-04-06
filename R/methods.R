@@ -85,6 +85,7 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"), ...) {
     return(dd)
 }
 
+##' summary method for \code{pansim} parameter objects
 ##' @param object a params vector
 ##' @param ... unused
 ##' @export
@@ -96,6 +97,7 @@ summary.params_pansim <- function(object, ...) {
     return(res)
 }
 
+##' summary method for \code{pansim} objects
 ##' @export
 summary.pansim <- function(object, ...) {
     ## FIXME: get ventilators by multiplying ICU by 0.86?
