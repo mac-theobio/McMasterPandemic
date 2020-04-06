@@ -4,7 +4,11 @@
 \alias{fix_pars}
 \title{adjust pars to match targets}
 \usage{
-fix_pars(params, target = c(r = 0.23, R0 = 3))
+fix_pars(
+  params,
+  target = c(r = 0.23, Gbar = 6),
+  pars_adj = list("beta0", c("gamma", "lambda_s", "lambda_m", "lambda_a"))
+)
 }
 \description{
 adjust pars to match targets

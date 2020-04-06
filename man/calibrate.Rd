@@ -12,9 +12,11 @@ calibrate(
   pop,
   params,
   target = c(Gbar = 6),
+  init_target = NULL,
   date0 = "1-Mar-2020",
   date1 = "25-Mar-2020",
-  var = "H"
+  var = "H",
+  sim_args = NULL
 )
 }
 \arguments{
@@ -24,13 +26,19 @@ calibrate(
 
 \item{pop}{population size}
 
+\item{params}{a parameter set}
+
 \item{target}{vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)}
+
+\item{init_target}{value of focal variable to hit on date1}
 
 \item{date0}{date for initial conditions}
 
 \item{date1}{initial date for regression}
 
 \item{var}{variable for regression (H, D, ICU)}
+
+\item{sim_args}{additional parameters to pass to \code{run_sim} if shooting}
 }
 \description{
 given a log-linear intercept and slope and target values for R0 or GI,

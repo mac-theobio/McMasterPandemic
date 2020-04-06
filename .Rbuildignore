@@ -7,3 +7,11 @@ Makefile
 LICENSE
 makestuff
 target.mk
+doc-update
+namespace-update
+figure/
+.*.wrapR.r
+.*.Rout
+## ignore hidden files: https://stackoverflow.com/questions/42521012/rbuildignore-how-to-exclude-all-invisible-files
+^[.].*$
+^.*/[.].*$

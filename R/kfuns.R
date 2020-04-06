@@ -51,15 +51,20 @@ kernelMoments <- function(k,lwr=0.01){
 }
 
 ### What to multiply beta by to get a desired r
+##' @importFrom stats uniroot
 rmult <- function(k, r){
 	uniroot(f=function(m) {discountGap(r, m*k)}
 		, lower=1/10, upper=10
 	)$root
 }
 
+## run a pure-exponential sim
+## return either r or eigenvector
 rExp <- function(par, steps=100, ndt=1,
-                 do_hazard=FALSE)
+                 do_hazard=FALSE,
+                 return_val=c("r0","eigenvector"))
 {
+        return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
 	state <- make_state(N=1, E=1e-5)
@@ -68,5 +73,13 @@ rExp <- function(par, steps=100, ndt=1,
                          , step_args = list(do_hazard=do_hazard,
                                             do_exponential=TRUE))
         nn <- ndt*steps
-        mean(log(unlist(r[nn,]/r[nn-1,]))[-(1:2)])  ## drop t, S
+        ## DRY: get_evec()
+        drop_vars <- c("date","t","S","R","D","foi")
+        uf <- function(x,pos) unlist(x[pos,!names(r) %in% drop_vars])
+        r_last <- uf(r,nn)
+        r_nextlast <- uf(r,nn-1)
+        ret <- switch(return_val,
+                      r0=mean(log(r_last/r_nextlast)),
+                      eigenvector=unlist(r_last/sum(r_last)))
+        return(ret)
 }

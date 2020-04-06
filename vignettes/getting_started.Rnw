@@ -56,6 +56,12 @@ Use \code{remotes::install_github("bbolker/McMasterPandemic")} to install the la
 library(McMasterPandemic)
 @
 
+In this vignette we'll also use the \code{ggplot2} package
+
+<<loadpkgs,message=FALSE>>=
+library(ggplot2); theme_set(theme_bw())
+@ 
+
 \section{Data requirements}
 
 \paragraph{Parameters}

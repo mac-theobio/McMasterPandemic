@@ -21,7 +21,7 @@ test_that("params methods", {
     expect_equal(summary(params),
                  c(r0 = 0.22783, R0 = 6.51918, Gbar = 12.19064,
                    dbl_time = 3.04243),
-                 tolerance=1e-4)
+                 tolerance=2e-3)
 })
 
 test_that("time-varying example", {
@@ -78,4 +78,7 @@ test_that("calibration", {
     s4 <- summary(fix_pars(params,target=c(Gbar=6),
                            pars_adj=list(c("gamma","lambda_s","lambda_m","lambda_a"))))
     expect_equal(s4[["Gbar"]],6,tolerance=0.005)
+    e1 <- get_evec(params)
+    e2 <- get_evec(params,method="analytical")
+    expect_equal(e1,e2,tolerance=1e-4)
 })

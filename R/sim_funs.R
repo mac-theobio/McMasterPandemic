@@ -429,7 +429,8 @@ make_state <- function(N=params[["N"]],
 ##' matching dates and variable order in data
 ## FIXME: can this be made into a predict method??
 ##   with newdata, newparams, newinit
-
+## not sure where to put these ...
+##' @importFrom dplyr mutate mutate_at %>% as_tibble right_join
 ##' @export
 predfun <- function(beta0,E0,data,
                     params,

@@ -12,9 +12,11 @@ get_init(
   date0 = ldmy("1-Mar-2020"),
   date1 = ldmy("25-Mar-2020"),
   params,
-  int,
-  slope,
-  var = "H"
+  int = NULL,
+  slope = NULL,
+  var = "H",
+  init_target = NULL,
+  sim_args = NULL
 )
 }
 \arguments{
@@ -29,6 +31,10 @@ get_init(
 \item{slope}{regression slope}
 
 \item{var}{regression variable}
+
+\item{init_target}{value of focal variable to hit on date1}
+
+\item{sim_args}{additional parameters to pass to \code{run_sim} if shooting}
 }
 \description{
 Back-calculate initial conditions
@@ -39,5 +45,8 @@ from day t1.  We want an initial condition for day t0.
 }
 \examples{
 params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+## eigenvector projection
 get_init(var="H",int=2.85,slope=0.176, param=params)
+## shooting
+get_init(var="H",init_target=50, param=params)
 }

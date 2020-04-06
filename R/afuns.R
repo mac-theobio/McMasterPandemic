@@ -20,6 +20,23 @@ get_r <- function(p, method=c("expsim","kernel","analytical")) {
     return(res)
 }
 
+get_evec <- function(p, method=c("expsim","analytical")) {
+    method <- match.arg(method)
+    res <- switch(method,
+                  expsim=rExp(p,return_val="eigenvector"),
+                  analytical= {
+                      J <- make_jac(params=p)    
+                      ee <- eigen(J)
+                      v <- ee$vectors
+                      rownames(v) <- rownames(J)
+                      dom_vec <- v[,which.max(ee$values)]
+                      drop_vars <- c("date","t","S","R","D","foi")
+                      dd <- abs(dom_vec[!names(dom_vec) %in% drop_vars])
+                      dd/sum(dd)
+                  })
+    return(res)
+}
+
 get_Gbar <- function(p, method=c("analytical","kernel")) {
     method <- match.arg(method)
     res <- switch(method,

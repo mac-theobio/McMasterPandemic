@@ -15,6 +15,7 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param aggregate collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}
 ##' @param log plot y-axis on log scale?
 ##' @param show_times indicate times when parameters changed?
+##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
 ##' @export
 plot.pansim <- function(x, drop_states=c("S","R","E","I"),
                         keep_states=NULL, aggregate=TRUE,
@@ -26,6 +27,7 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
         drop_states <- setdiff(names(x), c(keep_states,"date"))
     }
     ## don't try to drop columns that aren't there
+    ## FIXME: use aggregate.pansim method?
     drop_states <- intersect(drop_states,names(x))
     xL <- (x
         %>% as_tibble()
@@ -33,7 +35,7 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
         %>% tidyr::pivot_longer(names_to="var", -date)
         %>% mutate(var=forcats::fct_inorder(factor(var)))
     )
-    if (log) xL <- dplyr::filter(xL,value>1)
+    if (log) xL <- dplyr::filter(xL,value>=1)
     gg0 <- (ggplot(xL,aes(date,value,colour=var))
         + geom_line()
     )
@@ -43,14 +45,6 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
     }
     return(gg0)
 }
-
-## machinery for computing cases
-## inc0 <- (as.data.frame(sim0)
-##         %>% transmute(date=date
-##                 , inc = foi*S
-##                 , rep = stats::filter(inc, delayKernel, sides=1)
-##         )
-## )
 
 ##' Collapse columns (infected, ICU, hospitalized) in a pansim output
 ##' @param x a pansim object
@@ -83,9 +77,16 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"),
     dd <- data.frame(dd,R=x[["R"]])
     dd <- add_col(dd,"discharge","discharge")
     dd <- data.frame(dd,D=x[["D"]])
+    ## machinery for computing cases
+    ## inc0 <- (as.data.frame(sim0)
+    ##         %>% transmute(date=date
+    ##                 , inc = foi*S
+    ##                 , rep = stats::filter(inc, delayKernel, sides=1)
+    ##         )
+    ## )
     class(dd) <- c0 ## make sure class is restored
     if (!pivot) return(dd)
-    ## more convenient for regressions etc.
+    ## OTHERWISE long form: more convenient for regressions etc.
     dd <- (dd
         %>% as_tibble()
         %>% dplyr::select(c("date",keep_vars))
