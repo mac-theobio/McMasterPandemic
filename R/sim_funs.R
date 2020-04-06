@@ -305,7 +305,7 @@ run_sim <- function(params
     }
 
     ## drop internal stuff
-    res <- res[,setdiff(names(res),c("t","foi"))]
+    ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
     ## store everything as attributes
     attr(res,"params") <- params0
@@ -314,6 +314,7 @@ run_sim <- function(params
     attr(res,"end_date") <- end_date
     attr(res,"call") <- call
     attr(res,"params_timevar") <- params_timevar
+	 ## attr(res,"final_state") <- state
     class(res) <- c("pansim","data.frame")
     return(res)
 }

@@ -9,6 +9,9 @@ pars <- read_params(system.file("params","ICU1.csv",
 ## Since it's a pandemic repo, we could just set the lower limit to zero for a while, I think.
 ## I am curious about BB's description of a "two-cycle", though
 print(gg <- get_GI_moments(pars))
+pars[["beta0"]] <- 5
+print(gg <- get_GI_moments(pars))
+
 nt <- gg[["Gbar"]]*10
 kk <- transKernel(pars, do_hazard=FALSE, steps=nt)$foi
 print(kernelMoments(kk))
