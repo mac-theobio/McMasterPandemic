@@ -99,9 +99,9 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"),
 ##' @param ... unused
 ##' @export
 summary.params_pansim <- function(object, ...) {
-    ## FIXME: decide whether to subset (c("R0","Gbar","r0")) ?
-    ## document and/or rename kappa and kappa_eff for a wider audience
-    res <- get_kernel_moments(object)
+    ## FIXME: include kappa once we know what works
+    ## (analytical vs kernel vs ...)
+    res <- c(r0=get_r(object),R0=get_R0(object),Gbar=get_Gbar(object))
     res["dbl_time"] <- log(2)/res["r0"]
     return(res)
 }

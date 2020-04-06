@@ -2,26 +2,38 @@
 ##  plus parallel list of parameter vectors e.g.
 ##  log_delta=c(beta0=...,lambda=...)
 ##  pars_adj= list("beta0",c("gamma","lambda_s","lambda_m", "lambda_a"))
-adjust_params <- function(log_d_beta0,log_d_lambda,params) {
-    lambda_vars <- c("gamma","lambda_s","lambda_m", "lambda_a")
-    params[lambda_vars] <- params[lambda_vars]*exp(log_d_lambda)
-    params[["beta0"]] <- params[["beta0"]]*exp(log_d_beta0)
+adjust_params <- function(log_delta,
+                          pars_adj=list("beta0",
+                                        c("gamma","lambda_s","lambda_m","lambda_a")),
+                          params) {
+    for (i in seq_along(log_delta)) {
+        params[pars_adj[[i]]] <- params[pars_adj[[i]]]*exp(log_delta[i])
+    }
     return(params)
 }
 
-## FIXME: generalize s_new based on names of target
-##  (r, R0, Gbar, kappa)
-badness <- function(delta, params, target) {
-    p_new <- adjust_params(delta[1],delta[2],params)
+## 
+uniroot_target <- function(log_delta, params, target, pars_adj) {
+    p_new <- adjust_params(log_delta, pars_adj=pars_adj, params)
+    val <- switch(names(target),
+                  r=get_r(p_new),
+                  R0=get_R0(p_new),
+                  Gbar=get_Gbar(p_new))
+    return(val-target)
+}
+
+
+badness <- function(delta, params, target, pars_adj) {
+    p_new <- adjust_params(delta, params, pars_adj=pars_adj)
     s_new <- rep(NA,length(target))
     names(s_new) <- names(target)
     GIm <- get_GI_moments(p_new)
     for (i in names(target)) {
         s_new[[i]] <- switch(i,
-                              r=get_r(p_new),
-                              R0=get_R0(p_new),
-                              Gbar=GIm[["Gbar"]],
-                              kappa=GIm[["kappa"]])
+                             r=get_r(p_new),
+                             R0=get_R0(p_new),
+                             Gbar=get_Gbar(p_new),
+                             kappa=GIm[["kappa"]])
     }
     res <- sum((s_new-target)^2)
     ## cat(delta,s_new,target,res,"\n")
@@ -38,14 +50,35 @@ badness <- function(delta, params, target) {
 ##' adjust pars to match targets
 ##' @importFrom stats optim
 ##' @export
-fix_pars <- function(params, target=c(r=0.23,R0=3)) {
+fix_pars <- function(params, target=c(r=0.23,Gbar=6),
+                     pars_adj=list("beta0",
+                                   c("gamma","lambda_s","lambda_m","lambda_a")))
+{
     ## cc <- emdbook::curve3d(badness(c(x,y),params,target=target),
     ##                        xlim=c(-1,1),ylim=c(-1,1),
     ##                        sys3d="image")
-    opt1 <- optim(par=c(0,0), fn= badness, method="Nelder-Mead",
-                  target=target, params=params)
-    ##                  control=list(trace=TRUE))
-    p_new <- adjust_params(opt1$par[1],opt1$par[2], params)
+    if (identical(names(target),"r")) {
+        ## adjust beta0
+        k <- transKernel(params)$foi
+        rm <- rmult(k,target[["r"]])
+        p_new <- params
+        p_new[["beta0"]] <- p_new[["beta0"]]*rm
+    } else {
+        if (length(target)==1) {
+            ## pvec <- seq(-3,3,length.out=101)
+            ## s <- sapply(pvec, uniroot_target,
+            ##    params=params, target=target)
+            u <- uniroot(f=uniroot_target,interval=c(-3,3),
+                         params=params, target=target, pars_adj=pars_adj)
+            p_new <- adjust_params(u$root, params, pars_adj = pars_adj)
+        } else {
+            argList <- list(par=c(0,0), fn= badness, target=target, params=params, pars_adj=pars_adj)
+            argList$method <- "Nelder-Mead"
+            
+            opt1 <- do.call(optim, argList)
+            p_new <- adjust_params(opt1$par, params, pars_adj=pars_adj)
+        }
+    }
     return(p_new)
 }
 

@@ -3,10 +3,12 @@
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
 ##' @export
-get_r <- function(p, method=c("kernel","analytical","expsim")) {
+get_r <- function(p, method=c("expsim","kernel","analytical")) {
+    ## expsim and kernel match well, analytical is ???
     method <- match.arg(method)
     res <- switch(method,
                   analytical = {
+                      warning("Jacobian-based r may be unreliable!")
                       max(eigen(make_jac(params=p))$values)
                   },
                   kernel = {
@@ -18,13 +20,18 @@ get_r <- function(p, method=c("kernel","analytical","expsim")) {
     return(res)
 }
 
-## OBSOLETE: naive/unweighted GI mean
-## get_GI <- function(p) {
-##	 res <- with(as.list(p),
-##		 1/gamma+alpha/lambda_a+
-##		 (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
-##	 return(res)
-## }
+get_Gbar <- function(p, method=c("analytical","kernel")) {
+    method <- match.arg(method)
+    res <- switch(method,
+                  analytical = {
+                      get_GI_moments(p)[["Gbar"]]
+                  },
+                  kernel = {
+                      ## ???
+                      get_kernel_moments(p)[["Gbar"]]
+                  })
+    return(res)
+}
 
 ##' compute R0, r, etc. based on kernel computation
 ##' @param params parameter vector

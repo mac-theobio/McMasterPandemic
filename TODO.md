@@ -4,11 +4,12 @@
 
 * fix time-varying machinery: check for off-by-one on dates?? (BMB)
 * testing calibration (BMB)
-
-* allow internal, smaller time steps [TEST]
+* cases: delayKernel (mean and std dev -> Gamma?), case underreporting parameters
+* allow internal, smaller time steps [TEST WITH time-varying]
 * test/fix calibration procedure
 * multi-parameter run interface (fix fitfun/predict/etc.)
     * make a predict method for parameter sets (assuming we can use E0 and start date only as part of params)
+* multi-run plots (aggregate + bind_rows)	
 * get public H/D/ICU data for examples
 * improve documentation!
 * fitting procedure with time-varying parameters
@@ -20,7 +21,6 @@
 * include start dates as attributes of params
 * include parameters and other metadata as an attribute in returned object
 * check `do_hazard` option and switch to this as default
-* enable dt<1 for testing
 * un-FRY `update_foi` function
 * `write_params`, `read_params`; keep labels, unevaluated values, etc. as attributes, get start date as attribute. (Store as separate column, or commented row, or ... ???) [store params as JSON???]
 * expose 'safe' code in public-facing repo?
@@ -31,6 +31,7 @@
 
 ### longer term
 
+* effective heterogeneity: alpha  = (S(t)/S(0))^alpha
 * full stochastic version (now does obs stoch)
     * demographic: reulermultinom etc.
     * random-walk of parameters

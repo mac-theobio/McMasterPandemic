@@ -19,8 +19,8 @@ test_that("basic examples", {
 
 test_that("params methods", {
     expect_equal(summary(params),
-                 c(R0 = 6.521938, Gbar = 12.236827, r0 = 0.227825,
-                   kappa = 0.45739, kappa_eff = 0.398295, dbl_time = 3.042448),
+                 c(r0 = 0.22783, R0 = 6.51918, Gbar = 12.19064,
+                   dbl_time = 3.04243),
                  tolerance=1e-4)
 })
 
@@ -65,4 +65,17 @@ test_that("state methods", {
                              D = 0, R = 0), class = "state_pansim"))
     expect_error(make_state(x=1:5),regexp="must be named")
     expect_warning(make_state(x=c(N=1,E0=1,K=5)),"extra state variables")
+})
+
+test_that("calibration", {
+    ## test at a tolerance of 0.5%
+    s1 <- summary(params)
+    s2 <- summary(fix_pars(params,target=c(r=0.23,Gbar=6)))
+    expect_equal(s2[["r0"]],0.23,tolerance=0.005)
+    expect_equal(s2[["Gbar"]],6,tolerance=0.005)
+    s3 <- summary(fix_pars(params,target=c(r=0.23)))
+    expect_equal(s3[["r0"]],0.23,tolerance=0.005)
+    s4 <- summary(fix_pars(params,target=c(Gbar=6),
+                           pars_adj=list(c("gamma","lambda_s","lambda_m","lambda_a"))))
+    expect_equal(s4[["Gbar"]],6,tolerance=0.005)
 })
