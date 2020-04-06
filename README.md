@@ -8,12 +8,7 @@ Please send any comments to
 
 ### Installation
 
-`devtools::install_github("bbolker/McMasterPandemic")`
-
-If you do not have the `devtools` package installed already then you will first need to run:
-
-`install.packages("devtools")`
-
+`remotes:install_github("bbolker/McMasterPandemic")` (you have to install the `remotes` package first, if you don't have it)
 
 ### For developers
 

@@ -19,7 +19,7 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
 ##' @importFrom dplyr one_of
 ##' @export
-plot.pansim <- function(x, drop_states=c("S","R","E","I"),
+plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
                         keep_states=NULL, aggregate=TRUE,
                         log=FALSE, show_times=TRUE, ...) {
     ## global variables
@@ -59,12 +59,14 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
 ##' @importFrom dplyr %>% as_tibble
 ##' @importFrom tidyr pivot_longer
 ##' @export
-aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"),
+aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
                              ...) {
     ## FIXME: less clunky way to do this? Collapse columns *if* present
     ##   but account for the fact that they might be missing in some variants
     ## FIXME: extend to aggregate, S, E, etc. as we add space / testing / age
     ## may need to go tidy?
+    ## global variables
+    c_prop <- c_delay_mean <- c_delay_cv <- NULL
     c0 <- class(x)
     ## collapse columns and add, if present
     add_col <- function(dd,name,regex) {
@@ -81,16 +83,20 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"),
     dd <- data.frame(dd,R=x[["R"]])
     dd <- add_col(dd,"discharge","discharge")
     dd <- data.frame(dd,D=x[["D"]])
-    ## machinery for computing cases
-    ## inc0 <- (as.data.frame(sim0)
-    ##         %>% transmute(date=date
-    ##                 , inc = foi*S
-    ##                 , rep = stats::filter(inc, delayKernel, sides=1)
-    ##         )
-    ## )
+    params <- attr(x,"params")
+    if ("c_delay_mean" %in% names(params)) {
+        dd$incidence <- x$foi*x$S
+        unpack(as.list(params))
+        dd$report <- as.numeric(stats::filter(dd$incidence,
+                                   make_delay_kernel(c_prop,
+                                                     c_delay_mean,
+                                                     c_delay_cv,
+                                                     max_len=10)))
+    }
     class(dd) <- c0 ## make sure class is restored
     if (!pivot) return(dd)
     ## OTHERWISE long form: more convenient for regressions etc.
+    keep_vars <- intersect(keep_vars,names(dd))
     dd <- (dd
         %>% as_tibble()
         %>% dplyr::select(c("date",keep_vars))
@@ -165,11 +171,17 @@ summary.pansim <- function(object, ...) {
 ## FIXME: prettier printing, e.g. detect "1/" or "proportion"
 print.params_pansim <- function( x, describe=FALSE, ... ) {
     if (!describe) {
+        attr(x,"description") <- NULL
         print(unclass(x))
     } else {
-        x_meanings <- param_meanings[names(x)]
+        if (!is.null(attr(x,"description"))) {
+            x_meanings <- attr(x,"description")[names(x)]
+        } else {  ## backup/built-in
+            x_meanings <- param_meanings[names(x)]
+        }
         xout <- data.frame(value=round(as.numeric(x),3),
                            meaning=x_meanings)
+        ## FIXME: pretty-printing?
         print(xout)
         return(invisible(xout))
     }

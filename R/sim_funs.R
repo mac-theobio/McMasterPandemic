@@ -223,7 +223,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param ndt number of internal time steps per time step
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' state <- make_state(params=params)
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
 ##'                        Symbol=c("beta0","beta0"),
@@ -365,10 +365,13 @@ R,Recovered
 ##' @param fn file name (CSV file containing at least value and symbol columns
 ##' @param value_col name of column containing values
 ##' @param symbol_col name of column containing symbols
+##' @param desc_col name of (optional) column containing descriptions
+##' @param 
 ##' @importFrom stats setNames
 ##' @importFrom utils read.csv write.table
 ##' @export
-read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
+read_params <- function(fn,value_col="Value",symbol_col="Symbol",
+                        desc_col="Parameter") {
     x <- read.csv(fn,
                   colClasses="character",
                   stringsAsFactors=FALSE,
@@ -378,6 +381,9 @@ read_params <- function(fn,value_col="Value",symbol_col="Symbol") {
     x[[value_col]] <- vapply(x[[value_col]], function(z) eval(parse(text=z)), numeric(1))
     res <- setNames(x[[value_col]],x[[symbol_col]])
     class(res) <- "params_pansim"
+    if (desc_col %in% names(x)) {
+        attr(res,"description") <- setNames(x[[desc_col]],x[[symbol_col]])
+    }
     return(res)
 }
 
@@ -527,4 +533,22 @@ run_sim_range <- function(params
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
     return(res)
+}
+
+##' construct a Gamma-distributed delay kernel
+##' @param prop area under the curve (proportion reported)
+##' @param delay_mean mean value
+##' @param delay_cv coeff of var
+##' @param max_len maximum delay
+##' @importFrom stats pgamma
+## mean = a*s
+## sd = sqrt(a)*s
+## cv = 1/sqrt(a)
+## s = mean/cv^2
+## a = 1/cv^2
+make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=10) {
+    gamma_shape <- 1/delay_cv^2
+    gamma_scale <- delay_mean/gamma_shape
+    v <- prop*diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
+    return(v)
 }
