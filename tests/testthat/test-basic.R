@@ -16,6 +16,12 @@ test_that("basic examples", {
     expect_is(s1,"pansim")
 })
 
+test_that("params methods", {
+    expect_equal(summary(params),
+                 c(R0 = 6.521938, Gbar = 12.236827, r0 = 0.227825,
+                   kappa = 0.45739, kappa_eff = 0.398295, dbl_time = 3.042448),
+                 tolerance=1e-6)
+})
 
 test_that("time-varying example", {
     time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),

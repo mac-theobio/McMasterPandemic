@@ -25,3 +25,20 @@ Possible calibration issues:
 - effects of nonlinear slopes?
 - what to do when different data streams have different regression slopes?
 - if we use a quadratic fit to allow for time-varying beta, how do we feed this back into the simulation?
+
+
+---
+
+Brain dump from e-mail:
+
+Our calibration is/will be based on
+
+* taking reasonable baseline values of all epi parameters (transmission rate, residence time in various compartments, relative transmission of different compartments, aspects of severity and health  utilization ...)  [right now these are taken from the Stanford covid-interventions model and some conversations from our organizational contact about e.g. fraction ICU, hospital residence times etc.  They could easily be adjusted based on regional variation.]
+* adjusting these parameters to get a mean generation interval and a
+shape (squared coef of var) that are a match for reasonable values from
+the literature
+* doing a log-linear (negative binomial) fit to one or more observed time series (cases, hospitalization, death) to get a value of 'r'; adjust base transmission rate to match this r  **JD: I still don't know how we can adjust beta0 without screwing up Gbar?**, if necessary using numerical optimization to get the same desired values of G etc. at the same time
+* use the log-slope and log-intercept of the fit in previous step to set initial conditions, seting the *relative* numbers in compartments according to the dominant eigenvector of the Jacobian.  This is where underreporting comes in: e.g. if you're calibrating from confirmed cases, you need to guess the ratio between cases and true I.  If you're calibrating from reported COVID deaths,  you should scale your true initial conditions to take this into account.
+
+Note that we could fake a testing lag (for now) by simple post-hoc adjustment of case times vs. other times. Don't yet have a good solution for dependence of case numbers on testing intensity though (see `testing_flow.md`).
+

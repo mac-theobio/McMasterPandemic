@@ -10,6 +10,7 @@
   keep_states = NULL,
   aggregate = TRUE,
   log = FALSE,
+  show_times = TRUE,
   ...
 )
 }
@@ -23,6 +24,8 @@
 \item{aggregate}{collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}}
 
 \item{log}{plot y-axis on log scale?}
+
+\item{show_times}{indicate times when parameters changed?}
 }
 \description{
 plot method for simulations

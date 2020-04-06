@@ -1,15 +1,12 @@
-source("sim_funs.R")
+library(McMasterPandemic)
 library(bbmle)
 library(plyr)
 library(dplyr) ## second!
 library(ggplot2); theme_set(theme_bw())
 
-pp <- ### GET PARAMETERS HERE
+p <- read_params(system.file("params","ICU1.csv",
+                             package="McMasterPandemic"))
     
-## get new Stanford parameters
-##  combine them with ICU parameters (which aren't in S. parameter set)
-##  refit with these parameters
-
 ## n.b. extra factor levels cause problems below
 ## FIXME: drop levels upstream?
 clean_data <- dplyr::as_tibble(

@@ -8,3 +8,7 @@ target.mk
 makestuff/
 doc-update
 namespace-update
+*.log
+*.tex
+*.pdf
+*.html

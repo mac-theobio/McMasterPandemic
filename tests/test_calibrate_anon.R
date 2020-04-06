@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2); theme_set(theme_bw())
 
-load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
+L <- load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
 ### 
 summary(cparams)
 cparams[["obs_disp"]] <- 200
@@ -53,7 +53,6 @@ pframeS <- (pframeS
                var="H")
 )
 
-
 print(plot(simScal,log=TRUE)
       + geom_point(data=simdat)
       + geom_line(data=aggregate(sim1S,pivot=TRUE),lty=3)
@@ -66,4 +65,4 @@ print(plot(simScal,log=TRUE)
 ## what is the actual r?
 simAgg <- aggregate(simScal)[,3:5] ## E, I, H
 log(simAgg[nrow(simAgg),]/simAgg[1,])/nrow(simAgg)
-## r= ~ 0.167
+## r= ~ 0.193

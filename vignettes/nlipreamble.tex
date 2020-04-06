@@ -1,0 +1,348 @@
+%% FROM sirhpreamble.tex, which was itself:
+%% FROM 4mbapreamble.tex: %% more below
+
+%%FIX: use geometry package instead!
+%% page layout
+\textheight 9in 
+\textwidth 6.5in
+\topmargin -0.5in
+\oddsidemargin 0in
+\evensidemargin 0in
+%\hoffset=-0.5in
+\voffset=-0.25in
+
+%% packages
+\usepackage{scrtime} % for \thistime (this package MUST be listed first!)
+\usepackage{amsmath} % essential for cases environment
+\usepackage{amsthm} % for theorems and proofs
+\usepackage{amsfonts} % mathbb
+\usepackage{graphics,graphicx}
+\usepackage{grffile} % allow arbitrary graphics filenames
+\usepackage{multirow} % fancy tables
+\usepackage{wasysym} % circle symbols (including half-filled circles)
+\usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
+%% for huxtable ...
+\usepackage[table]{xcolor} % table option allows \rowcolors
+%\usepackage{color}
+\usepackage{array}
+\usepackage{hhline}
+\usepackage{tabularx}
+\usepackage{array}
+%\usepackage{caption}
+\usepackage{siunitx}
+\usepackage{calc}
+
+\usepackage[utf8]{inputenc} % protect accents in bib
+\usepackage{cprotect} % allow verbatim in caption
+
+\usepackage{framed} % framed environment
+%% shadecolour must be defined for framed environment:
+\definecolor{shadecolor}{rgb}{0.9,0.9,0.9}
+%%\definecolor[named]{shadecolor}{rgb}{0.9,0.9,0.9}
+%%\definecolor[named]{verylightgray}{rgb}{0.95,0.95,0.95}
+%%\definecolor[named]{lightgray}{rgb}{0.9,0.9,0.9}
+%%\definecolor[named]{grey}{rgb}{0.7,0.7,0.7}
+%% \usepackage{showlabels}
+
+%% macros
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\term}[1]{{\slshape #1}}
+\newcommand{\Ker}{{\text{Ker}\,}}
+\newcommand{\Range}{{\text{Range}\,}}
+\newcommand{\diag}{{\text{diag}}}
+\newcommand{\alg}{{\text{alg}}}
+\newcommand{\geom}{{\text{geom}}}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\B}{\cal B}
+\newcommand{\etal}{\textit{et al}.\xspace}
+\newcommand*\diff{\mathop{}\!\mathrm{d}}
+\newcommand*\Diff[1]{\mathop{}\!\mathrm{d^#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% from feverpreamble.tex %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{amssymb,latexsym,amsmath,setspace}
+\definecolor{aqua}{RGB}{0, 128, 225}
+%% https://tex.stackexchange.com/questions/24428/latex-and-pdf-rangecheck-error-in-pdfmark-using-ghostscript
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,citecolor=aqua,linkcolor=aqua,urlcolor=aqua,hypertexnames=false]{hyperref}
+\usepackage{xspace}
+\usepackage{graphics,graphicx}
+%%\usepackage{subfigure}
+\usepackage{lineno}\renewcommand\thelinenumber{\color{gray}\arabic{linenumber}}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}  %% for texi2dvi ~ bug
+\usepackage[normalem]{ulem}
+\usepackage{tikz} % http://www.texample.net/tikz/examples/tikzdevice-demo/
+%% improve figure caption typsetting:  (see ~/tex/caption.pdf for manual)
+\usepackage[footnotesize,bf]{caption}
+\usepackage{placeins} % \FloatBarrier
+
+% citation macros
+\newcommand{\citen}[1]{\cite{#1}}
+
+% comment macros
+\usepackage{color}
+\newcommand{\fix}[1]{\textcolor{magenta}{{\bfseries \underline{FIX}:} #1}}
+\newcommand{\comment}[3]{\textcolor{#1}{\textbf{[#2: }\textit{#3}\textbf{]}}}
+\newcommand{\david}[1]{\comment{magenta}{DE}{#1}}
+\newcommand{\jd}[1]{\comment{blue}{JD}{#1}}
+\newcommand{\ben}[1]{\comment{purple}{BB}{#1}}
+%https://tex.stackexchange.com/questions/130623/crossing-out-using-different-colour
+\newcommand{\bensout}{\bgroup\markoverwith{\textcolor{cyan}{\rule[0.5ex]{2pt}{0.4pt}}}\ULon}
+\newcommand{\hendrik}[1]{\comment{red}{HP}{#1}}
+\newcommand{\needref}{{\textcolor{red}{[NEED REF]}}}
+\newcommand{\TBD}{{\textcolor{red}{{\bf TBD}}}}
+% remove comments
+%%\renewcommand{\comment}[3]{\relax}
+% remove section headings
+%\def\subsubsection*#1{\relax\nobreak}
+
+% other macros
+\newcommand{\avg}[1]{{\left\langle#1\right\rangle}}
+\newcommand{\var}[1]{\textrm{var}\left(#1\right)}
+\newcommand{\sem}[1]{\textrm{sem}\left(#1\right)}
+\newcommand{\natinf}{{\mathcal I}}
+\newcommand{\find}{f_{\textrm{i}}}
+\newcommand{\fpop}{f_{\textrm{p}}}
+\newcommand{\logit}{\textrm{logit}}
+\newcommand{\sign}{\textrm{sign}}
+\newcommand{\logistic}{\textrm{logistic}}
+\def\AJE{{\it American Journal of Epidemiology\/}}
+\newcommand{\code}[1]{{\tt #1}}
+\newcommand{\magcode}[1]{{\tt\color{magenta}#1}}
+\newcommand{\rzero}{\ensuremath{\R_0}\xspace}
+\newcommand{\Zp}{\ensuremath{Z_{\mbox{\tiny P}}}\xspace}
+\newcommand{\Zb}{\ensuremath{Z_{\mbox{\tiny B}}}\xspace}
+\newcommand{\rzerop}{\ensuremath{{\mathcal R}_{0,\mbox{\tiny P}}}\xspace}
+\newcommand{\rzerob}{\ensuremath{{\mathcal R}_{0,\mbox{\tiny B}}}\xspace}
+\newcommand{\ypestis}{\emph{Y.~pestis}\xspace}
+\newcommand{\gentime}{T_{\mbox{\tiny g}}}
+
+
+%%%%%%%%%%%%%%%%%%%
+%% JOURNAL NAMES %%
+%%%%%%%%%%%%%%%%%%%
+\def\PNAS{PNAS}
+\def\JAMA{JAMA}
+\def\BMB{{\it Bulletin of Mathematical Biology\/}}
+
+% references
+\newcommand{\sref}[1]{\S\ref{S:#1}}
+% other macros
+\newcommand{\supp}{Supplemental Information\xspace}
+\newcommand{\StoppedHere}{\bigskip\bigskip{\textcolor{red}{\hrule\centerline{\bfseries STOPPED HERE}\hrule}}\bigskip\bigskip}
+\newcommand{\colvec}[2]{\begin{pmatrix}#1\\#2\end{pmatrix}}
+\newcommand{\diagmat}[3]{\begin{pmatrix}#1&0&0\\0&#2&0\\0&0&#3\end{pmatrix}}
+
+\newcommand{\solution}[1]{{\hfill\break\vspace{-0.5\baselineskip}\break\color{blue}\emph{Solution: }#1}}
+\newcommand{\tr}{\text{tr}}
+
+\newcommand{\thickredline}{\bigskip{\color{red}\hrule height 5pt}\bigskip}
+
+% Journal Names
+% -------------
+% \def\MNRAS{{\it Mon.\ Not.\ R.\ astr.\ Soc.\/}}
+\def\MNRAS{{\it Monthly Notices of the Royal Astronomical Society\/}}
+% \def\ApJ{{\it Astrophys.~J.\/}}
+\def\ApJ{{\it The Astrophysical Journal\/}}
+% \def\Interface{{\it J.\ R.\ Soc.\ Lond.\/ \rm Interface}}
+\def\Interface{{\it Journal of the Royal Society of London, \rm Interface}}
+% \def\ProcA{{\it Proc.\ R.\ Soc.\ Lond.\/ \rm A}}
+\def\ProcA{{\it Proceedings of the Royal Society of London, Series\/ \rm A}}
+% \def\ProcB{{\it Proc.\ R.\ Soc.\ Lond.\/ \rm B}}
+\def\ProcB{{\it Proceedings of the Royal Society of London, Series\/ \rm B}}
+% \def\TransB{{\it Phil.\ Trans.\ R.\ Soc.\ Lond.\/ \rm B}}
+\def\TransB{{\it Philosophical Transactions of the Royal Society of London, Series\/ \rm B}}
+\def\TREE{{\it Trends in Ecology and Evolution\/}}
+% \def\JTB{{\it J.\ theor.\ Biol.\/}}
+\def\JTB{{\it Journal of Theoretical Biology\/}}
+% \def\BE{{\it Behav.\ Ecol.\/}}
+\def\BE{{\it Behavioural Ecology\/}}
+% \def\BES{{\it Behav.\ Ecol.\ Sociobiol.\/}}
+\def\BES{{\it Behavioural Ecology and Sociobiology\/}}
+% \def\BJLS{\it Biol.\ J.\ Linn.\ Soc.\/}}
+\def\BJLS{{\it Biological Journal of the Linnean Society\/}}
+\def\Nature{{\it Nature\/}}
+\def\Science{{\it Science\/}}
+\def\Lancet{{\it The Lancet\/}}
+\def\LancetID{{\it Lancet Infectious Diseases\/}}
+% \def\PNAS{{\it Proc.\ Natl.\ Acad.\ Sci.\ USA}}
+\def\PNAS{{\it PNAS -- Proceedings of the National Academy of Sciences of the
+U.S.A.}}
+\def\PLoSMed{{\it PLoS Medicine\/}}
+\def\PLoSCB{{\it PLoS Computational Biology\/}}
+\def\EID{{\it Emerging Infectious Diseases\/}}
+\def\BMB{{\it Bulletin of Mathematical Biology\/}}
+\def\AJE{{\it American Journal of Epidemiology\/}}
+\def\TPB{{\it Theoretical Population Biology\/}}
+\def\JRSS{{\it Journal of the Royal Statistical Society\/}}
+\def\JRSSB{{\it Journal of the Royal Statistical Society Series B\/}}
+\def\IRV{{\it Influenza and Other Respiratory Viruses\/}}
+\def\JAMA{{\it JAMA -- Journal of the American Medical Association\/}}
+\def\JGLR{{\it Journal of Great Lakes Research\/}}
+\def\NEJM{{\it New England Journal of Medicine\/}}
+\def\JMB{{\it Journal of Mathematical Biology\/}}
+\def\Interface{{\it Journal of the Royal Society Interface\/}}
+\def\THEE{{\it Theoretical Ecology\/}}
+\def\Annals{{\it Annals of Internal Medicine\/}}
+\def\PRL{{\it Physical Review Letters\/}}
+\def\PRX{{\it Physical Review X\/}}
+\def\NAMS{{\it Notices of the American Mathematical Society\/}}
+
+%% from invasion.tex
+%% LaTeX PACKAGES
+\usepackage{scrtime} % for \thistime (this package MUST be listed first!)
+\usepackage{amsmath} % essential for cases environment
+\usepackage{amssymb} % \gtrsim
+\usepackage{amsthm} % for theorems and proofs
+\newcounter{theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\usepackage{amsfonts} % mathbb
+\usepackage{graphics,graphicx}
+\usepackage{multirow} % fancy tables
+\usepackage{wasysym} % circle symbols (including half-filled circles)
+\usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
+%\usepackage{xcolor}
+\usepackage{color}
+\usepackage{xspace}
+\usepackage{hyperref}
+
+%% MACROS
+\newcommand{\de}[1]{{\color{cyan}$\langle${\bfseries DE:} #1$\rangle$}}
+\newcommand{\bb}[1]{{\color{magenta}$\langle${\bfseries BB:} #1$\rangle$}}
+% \newcommand{\jd}[1]{{\color{blue}$\langle${\bfseries JD:} #1$\rangle$}}
+\newcommand{\irena}[1]{{\color{purple}$\langle${\bfseries Irena:} #1$\rangle$}}
+\newcommand{\jm}[1]{{\color{brown}$\langle${\bfseries JM:} #1$\rangle$}}
+\newcommand{\eq}[1]{Equation~\eqref{E:#1}}
+\newcommand{\eqs}[1]{Equations~\eqref{E:#1}}
+\newcommand{\R}{{\mathcal R}} % using \rho...
+\newcommand{\LLS}{{\mathcal L}} % Lyapunov level set
+\newcommand{\eps}{\varepsilon}
+\newcommand{\Tinf}{T_\textrm{inf}}
+\newcommand{\Shat}{{\hat{S}}}
+\newcommand{\Ihat}{{\hat{I}}}
+\newcommand{\Ilin}{{I_{\rm lin}}}
+\newcommand{\That}{{\hat{T}}}
+\newcommand{\Sinfl}{S_{\rm infl}}
+\newcommand{\ie}{\emph{i.e., }}
+\newcommand{\eg}{\emph{e.g., }}
+\newcommand{\etc}{\emph{etc.}\xspace}
+\newcommand{\Tpeak}{T_{\rm peak}}
+\newcommand{\Tpeaktobal}{\Delta T_{\rm peak\to{}bal}}
+\newcommand{\Tbal}{T_{\rm bal}}
+\newcommand{\Tturn}{T_{\rm turn}}
+\newcommand{\Tinfl}{T_{\rm infl}}
+\newcommand{\Iq}{I_{\!\rm q}}
+\newcommand{\Sq}{S_{\!\rm q}}
+\newcommand{\Rq}{R_{\!\rm q}}
+\newcommand{\Ip}{I_{\!\rm p}}
+\newcommand{\Sp}{S_{\!\rm p}}
+\newcommand{\Rp}{R_{\!\rm p}}
+\newcommand{\Rqp}{R_{\!\rm qp}}
+\newcommand{\Rinfl}{R_{\rm infl}}
+\newcommand{\join}{{\color{cyan}\mathtt{join}}}
+\newcommand{\Rjoin}{R_{\rm join}}
+\newcommand{\Ijoin}{I_{\rm join}}
+\newcommand{\taujoin}{\tau_{\rm join}}
+\newcommand{\taui}{\tau_{\!\rm i}}
+\newcommand{\tauf}{\tau_{\rm f}}
+\newcommand{\tauc}{\tau_{\rm c}}
+\newcommand{\taujoinL}{\tau_{\rm join,L}}
+\newcommand{\taujoinR}{\tau_{\rm join,R}}
+\newcommand{\Iqp}{I_{\!\rm qp}}
+\newcommand{\Rpeak}{R_{\rm peak}}
+\newcommand{\Imin}{I^{\rm min}}
+\newcommand{\TImin}{T_{I_\textrm{min}}}
+\newcommand{\TIhat}{T_{\Ihat}}
+\newcommand{\Smin}{S^{\rm min}}
+\newcommand{\Tr}{T_{\rm r}}
+\newcommand{\Reff}{\R_{\rm eff}}
+\newcommand{\Sinit}{S_{\rm i}}
+\newcommand{\Iinit}{I_{\rm i}}
+\newcommand{\Rinit}{R_{\rm i}}
+\newcommand{\winit}{w_{\rm i}}
+\newcommand{\Hfun}{{\mathcal H}}
+\newcommand{\Kfun}{{\mathcal K}}
+\newcommand{\Sfin}{S_{\rm f}}
+\newcommand{\Ifin}{I_{\rm f}}
+\newcommand{\Rfin}{R_{\rm f}}
+\newcommand{\RL}{R_{\rm L}}
+\newcommand{\RR}{R_{\rm R}}
+\newcommand{\taufin}{\tau_{\rm f}}
+\newcommand{\Rinfty}{R_\infty}
+\newcommand{\tauq}{\tau_{\!{\rm q}}}
+\newcommand{\tauqp}{\tau_{\!{\rm qp}}}
+\newcommand{\tauqinfl}{\tau_{\!{\rm qinfl}}}
+\newcommand{\taupapprox}{\tau_{\!{\rm ap}}}
+%%\newcommand{\tauptrue}{\tau_{\!{\rm p}}}
+\newcommand{\taup}{\tau_{\!{\rm p}}}
+\DeclareMathOperator{\sech}{sech}
+%%\newcommand{\sech}{\textrm{sech}}
+\DeclareMathOperator{\arctanh}{arctanh}
+%%\newcommand{\arctanh}{\textrm{arctanh}}
+\DeclareMathOperator{\arccosh}{arccosh}
+%% critical R0 for nonnsense solutions of power models:
+\newcommand{\rhoc}{\rho_{\rm c}}
+
+\newcommand{\vversa}{\emph{vice versa}}
+%% from head of invasion.tex:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% FANCY HEADER AND FOOTER STUFF %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancyhdr,lastpage}
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer parameters
+%%%\lhead{Student Name: \theblank{4cm}}
+%%%\chead{}
+%%%\rhead{Student Number: \theblank{3cm}}
+%%%\lfoot{\small\bfseries\ifnum\thepage<\pageref{LastPage}{CONTINUED\\on next page}\else{LAST PAGE}\fi}
+\lfoot{}
+\cfoot{{\small\bfseries Page \thepage\ of \pageref{LastPage}}}
+\rfoot{}
+\renewcommand\headrulewidth{0pt} % Removes funny header line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\date{\today\ @ \thistime}
+
+%% nli macros
+%% http://tex.stackexchange.com/questions/60545/should-i-mathrm-the-d-in-my-integrals
+\newcommand \dd[1]  { \,\textrm d{#1}                       }   % infintesimal
+\newcommand \dbyd[2]  { \frac{\mathrm d{#1}}{\mathrm d{#2}}   }   % first order derivative
+
+%% cleveref package for convenient hyperrefercing/citing:
+\usepackage[nameinlink,capitalize]{cleveref}
+\crefname{equation}{Equation}{Equations}
+\Crefname{equation}{Equation}{Equations}
+\crefname{figure}{Figure}{Figures}
+\Crefname{figure}{Figure}{Figures}
+
+%%\usepackage{cite} % compress numerical citations (or sort option in natbib)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Science ref and bib style %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[round,numbers,sort&compress]{natbib} % square is the default
+%%\usepackage{notes2bib}
+%%\let\footnote=\bibnote  % endnotes rather than footnotes
+%%\renewcommand{\citenumfont}{\itshape}  % italic numbers in citations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PNAS starting character %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{lettrine} % For dropped capitals
+%%\newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{26pt}{28pt}\selectfont}
+\newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{36pt}{36pt}\selectfont}
+\newcommand{\dropcap}[1]{\lettrine[lines=2,lraise=0.05,findent=0.1em, nindent=0em]{{\dropcapfont{#1}}}{}}
+
+%% prevent page breaks
+%% https://tex.stackexchange.com/questions/94699/absolutely-definitely-preventing-page-break
+\newenvironment{absolutelynopagebreak}
+  {\par\nobreak\vfil\penalty0\vfilneg
+   \vtop\bgroup}
+  {\par\xdef\tpd{\the\prevdepth}\egroup
+   \prevdepth=\tpd}
