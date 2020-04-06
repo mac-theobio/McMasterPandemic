@@ -43,3 +43,11 @@ kernelMoments <- function(k,lwr=0.05){
 		, kappa_eff=kappa_eff
 	))
 }
+
+### What to multiply beta by to get a desired r
+rmult <- function(k, r){
+	uniroot(f=function(m) {discountGap(r, m*k)}
+		, lower=1/10, upper=10
+	)$root
+}
+
