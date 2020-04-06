@@ -243,11 +243,6 @@ run_sim <- function(params
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
-    thin <- function(x) {
-	if(ndt==1) return(x)
-        x  <- x[seq(nrow(x)) %% ndt == 1,]
-        return(x)
-    }
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
@@ -265,13 +260,14 @@ run_sim <- function(params
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
     }
     if (is.null(switch_times)) {
-        res <- thin(do.call(run_sim_range,
-				nlist(params,state,
-					  nt=nt*ndt,
-					  dt=dt/ndt,M,stoch,
-					  ratemat_args,step_args
-				)
-			))
+        res <- thin(ndt=ndt,
+                    do.call(run_sim_range,
+                            nlist(params,state,
+                                  nt=nt*ndt,
+                                  dt=dt/ndt,M,stoch,
+                                  ratemat_args,step_args
+                                  )
+                            ))
     } else {
         t_cur <- 1
         ## want to *include* end date
@@ -299,7 +295,7 @@ run_sim <- function(params
             t_cur <- times[i]
         }
         ## combine
-        res <- thin(do.call(rbind,resList))
+        res <- thin(ndt=ndt, do.call(rbind,resList))
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }

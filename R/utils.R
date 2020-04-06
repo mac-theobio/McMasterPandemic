@@ -13,3 +13,9 @@ nlist <- function (...) {
         nm[nonames] <- snm[nonames]
     setNames(L, nm)
 }
+
+thin <- function(x,ndt=1) {
+    if(ndt==1) return(x)
+    x  <- x[seq(nrow(x)) %% ndt == 1,]
+    return(x)
+}

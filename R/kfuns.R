@@ -1,12 +1,15 @@
 ## kernel functions
 ## not exported or documented yet!
 
+## FIXME: how to aggregate/thin/adjust time scale?
 ## compute kernel by brute force
-transKernel <- function(par, steps=100, do_hazard=TRUE){
+transKernel <- function(par, steps=100, do_hazard=TRUE,
+                        ndt=1){
+        if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
 	state <- make_state(N=1, E=1)
 	return(run_sim_range(par, state
-		, nt=steps
+		, nt=steps*ndt
 		, step_args = list(do_hazard=do_hazard)
 	))
 }
