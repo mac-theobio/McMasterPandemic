@@ -29,12 +29,13 @@ kappaGap <- function(kappa, rho, R){
 }
 
 ## moments of a kernel with parameters/convolution vector k
-kernelMoments <- function(k){
+## FIXME: principled way to deal with lower-bound issues
+kernelMoments <- function(k,lwr=0.05){
 	lag <- seq(length(k))
 	R0 <- sum(k)
 	Gbar <- sum(k*lag)/R0
 	Gvar <- sum(k*lag^2)/R0 - Gbar^2
-	r0 <- (uniroot(discountGap, k=k, lower=-2, upper=2))$root
+	r0 <- (uniroot(discountGap, k=k, lower=lwr, upper=2))$root
 	kappa_eff <- (uniroot(kappaGap, rho=r0*Gbar, R=R0, lower=0.01, upper=2))$root
 
 	return(c(R0=R0, Gbar=Gbar, r0=r0
