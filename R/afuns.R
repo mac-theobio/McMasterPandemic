@@ -10,7 +10,7 @@ get_r <- function(p, method=c("kernel","jacobian")) {
                       max(eigen(make_jac(params=p))$values)
                   },
                   kernel = {
-                      get_kernel_moments(params)[["r0"]]
+                      get_kernel_moments(p)[["r0"]]
                   })
     return(res)
 }
@@ -23,6 +23,9 @@ get_r <- function(p, method=c("kernel","jacobian")) {
 ##	 return(res)
 ## }
 
+##' compute R0, r, etc. based on kernel computation
+##' @param params parameter vector
+##' @export
 get_kernel_moments <- function(params) {
     gg <- get_GI_moments(params)
     nt <- gg[["Gbar"]]*10
