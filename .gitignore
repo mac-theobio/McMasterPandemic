@@ -12,3 +12,7 @@ namespace-update
 *.tex
 *.pdf
 *.html
+*/*.wrapR.r
+*/*.Rout
+*/.*.RData
+*/.*.Rlog

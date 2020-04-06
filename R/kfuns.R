@@ -13,6 +13,8 @@ transKernel <- function(par, steps=100, do_hazard=TRUE,
 		, step_args = list(do_hazard=do_hazard)
 	))
 }
+## allow caching of results
+transKernel <- memoise::memoise(transKernel)
 
 ## FIXME: kernel should ideally be an object with k and lag
 ## (a class with methods)
@@ -55,3 +57,16 @@ rmult <- function(k, r){
 	)$root
 }
 
+rExp <- function(par, steps=100, ndt=1,
+                 do_hazard=FALSE)
+{
+        if (ndt>1) warning("ndt not fully implemented")
+        par[["N"]] <- 1   ## ? redundant ?
+	state <- make_state(N=1, E=1e-5)
+	r <- run_sim_range(par, state
+                         , nt=steps*ndt
+                         , step_args = list(do_hazard=do_hazard,
+                                            do_exponential=TRUE))
+        nn <- ndt*steps
+        mean(log(unlist(r[nn,]/r[nn-1,]))[-(1:2)])  ## drop t, S
+}

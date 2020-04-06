@@ -3,14 +3,17 @@
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
 ##' @export
-get_r <- function(p, method=c("kernel","jacobian")) {
+get_r <- function(p, method=c("kernel","analytical","expsim")) {
     method <- match.arg(method)
     res <- switch(method,
-                  jacobian = {
+                  analytical = {
                       max(eigen(make_jac(params=p))$values)
                   },
                   kernel = {
                       get_kernel_moments(p)[["r0"]]
+                  },
+                  expsim = {
+                      rExp(p)
                   })
     return(res)
 }
@@ -72,14 +75,21 @@ return(c(R0=R, Gbar=Gbar, Gvar_approx=Gvar))
 ##' @param params parameters
 ##' @param components report R0 component-by-component?
 ##' @export
-get_R0 <- function(params, components=FALSE) {
+get_R0 <- function(params, components=FALSE,
+                   method=c("analytical","kernel")) {
+    method <- match.arg(method)
+    res <- switch(method,
+                  
 	## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
 	##  (will have to rethink this once we have a structured model)
-	with(as.list(params), {
-		comp <- beta0*c(alpha*Ca/lambda_a,
-		(1-alpha)*c(Cp/lambda_p,mu*(1-iso_m)*Cm/lambda_m,(1-mu)*(1-iso_s)*Cs/lambda_s ))
-		if (components) return(comp)
-		return(sum(comp))
-	})
+                  analytical = with(as.list(params), {
+                      comp <- beta0*c(alpha*Ca/lambda_a,
+                      (1-alpha)*c(Cp/lambda_p,
+                                  mu*(1-iso_m)*Cm/lambda_m,
+                                  (1-mu)*(1-iso_s)*Cs/lambda_s ))
+                      if (components) comp else sum(comp)
+                  }),
+                  kernel=get_kernel_moments(params)[["R0"]]
+                  )
 }
 

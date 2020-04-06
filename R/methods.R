@@ -44,6 +44,14 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
     return(gg0)
 }
 
+## machinery for computing cases
+## inc0 <- (as.data.frame(sim0)
+##         %>% transmute(date=date
+##                 , inc = foi*S
+##                 , rep = stats::filter(inc, delayKernel, sides=1)
+##         )
+## )
+
 ##' Collapse columns (infected, ICU, hospitalized) in a pansim output
 ##' @param x a pansim object
 ##' @param pivot return long-format tibble instead of wide data frame?
@@ -53,7 +61,8 @@ plot.pansim <- function(x, drop_states=c("S","R","E","I"),
 ##' @importFrom dplyr %>% as_tibble
 ##' @importFrom tidyr pivot_longer
 ##' @export
-aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"), ...) {
+aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"),
+                             ...) {
     ## FIXME: less clunky way to do this? Collapse columns *if* present
     ##   but account for the fact that they might be missing in some variants
     ## FIXME: extend to aggregate, S, E, etc. as we add space / testing / age

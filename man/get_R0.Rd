@@ -4,7 +4,7 @@
 \alias{get_R0}
 \title{calculate R0 for a given set of parameters}
 \usage{
-get_R0(params, components = FALSE)
+get_R0(params, components = FALSE, method = c("analytical", "kernel"))
 }
 \arguments{
 \item{params}{parameters}

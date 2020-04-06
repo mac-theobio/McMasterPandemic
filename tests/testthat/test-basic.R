@@ -1,5 +1,6 @@
 library(testthat)
 library(McMasterPandemic)
+library(ggplot2)
 
 context("very basic simulation")
 
@@ -45,9 +46,23 @@ test_that("ndt>1", {
     s3B <- run_sim(params,state,
                   start_date="1-Mar-2020",
                   end_date="20-Mar-2020")
+    ## s3C <- run_sim(params,state=unlist(tail(s3B,1)),
+    ## start_date="1-Mar-2020",
+    ## end_date="20-Mar-2020")
+                   
     S3comb <- dplyr::bind_rows(n5=aggregate(s3,pivot=TRUE),
                      n1=aggregate(s3B,pivot=TRUE),
                      .id="model")
     ggplot(S3comb,aes(date,value,colour=var,lty=model))+geom_line() +
         scale_y_log10()
+})
+
+test_that("state methods", {
+    expect_equal(make_state(N=1,E0=1),
+                 structure(c(S = 0, E = 1, Ia = 0, Ip = 0,
+                             Im = 0, Is = 0, H = 0, 
+                             H2 = 0, ICUs = 0, ICUd = 0,
+                             D = 0, R = 0), class = "state_pansim"))
+    expect_error(make_state(x=1:5),regexp="must be named")
+    expect_warning(make_state(x=c(N=1,E0=1,K=5)),"extra state variables")
 })

@@ -9,7 +9,8 @@ make_state(
   E0 = params[["E0"]],
   type = "ICU1",
   state_names = NULL,
-  params
+  params,
+  x = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ make_state(
 \item{state_names}{vector of state names, must include S and E}
 
 \item{params}{parameter vector (looked in for N and E0)}
+
+\item{x}{proposed (named) state vector; missing values will be set to zero}
 }
 \description{
 generate initial state vector

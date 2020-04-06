@@ -4,7 +4,7 @@
 \alias{get_r}
 \title{return growth rate (from Jacobian)}
 \usage{
-get_r(p, method = c("kernel", "jacobian"))
+get_r(p, method = c("kernel", "analytical", "expsim"))
 }
 \arguments{
 \item{p}{parameters}

@@ -164,11 +164,13 @@ update_foi <- function(state, params) {
 ##' @param ratemat transition matrix
 ##' @param dt time step (days)
 ##' @param do_hazard use hazard calculation?
+##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
 ##' @param stoch stochastic simulation? logical vector for observation and process noise
 ## (if we do the hazard calculations we can plug in pomp:::reulermultinom()
 ##  [or overdispersed analogue] directly)
 do_step <- function(state, params, ratemat, dt=1,
-                    do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE)) {
+                    do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE),
+                    do_exponential=FALSE) {
 
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
@@ -193,6 +195,7 @@ do_step <- function(state, params, ratemat, dt=1,
     }
     if (!stoch[["proc"]]) {
         outflow <- rowSums(flows)
+        if (do_exponential) outflow[["S"]] <- 0
         inflow <-  colSums(flows)
         state <- state - outflow + inflow
     }
@@ -390,18 +393,34 @@ write_params <- function(params, fn, label) {
 ##' @param type (character) specify what model type this is intended for; determines state names
 ##' @param state_names vector of state names, must include S and E
 ##' @param params parameter vector (looked in for N and E0)
+##' @param x proposed (named) state vector; missing values will be set to zero
 ##' @export
+## FIXME: can pass x, have a name check, fill in zero values
 make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
-                       type="ICU1",state_names=NULL,params) {
+                       type="ICU1",
+                       state_names=NULL,
+                       params,
+                       x=NULL) {
+    ## select vector of state names
     state_names <- switch(type,
        ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
        CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
        stop("unknown type")
        )
     state <- setNames(numeric(length(state_names)),state_names)
-    state[["S"]] <- N-E0
-    state[["E"]] <- E0
+    if (is.null(x)) {
+        state[["S"]] <- N-E0
+        state[["E"]] <- E0
+    } else {
+        if (length(names(x))==0) {
+            stop("provided state vector must be named")
+        }
+        if (length(extra_names <- setdiff(names(x),state_names))>0) {
+            warning("extra state variables (ignored): ",paste(extra_names,collapse=", "))
+        }
+        state[names(x)] <- x
+    }
     class(state) <- "state_pansim"
     return(state)
 }
@@ -467,10 +486,11 @@ run_sim_range <- function(params
     ## loop
     for (i in 2:nt) {
         state <- do.call(do_step,
-                         c(list(state=state,
-                                params=params, ratemat = M,
-                                dt = dt,
-                                stoch = stoch),
+                         c(nlist(state
+                               , params
+                               , ratemat = M
+                               , dt
+                               , stoch),
                            step_args))
         foi[[i]] <- update_foi(state, params)
         if (!stoch[["obs"]]) {

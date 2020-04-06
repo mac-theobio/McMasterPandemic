@@ -10,7 +10,8 @@ do_step(
   ratemat,
   dt = 1,
   do_hazard = FALSE,
-  stoch = c(obs = FALSE, proc = FALSE)
+  stoch = c(obs = FALSE, proc = FALSE),
+  do_exponential = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ do_step(
 \item{do_hazard}{use hazard calculation?}
 
 \item{stoch}{stochastic simulation? logical vector for observation and process noise}
+
+\item{do_exponential}{prevent outflow of susceptibles, to create a pure-exponential process?}
 }
 \description{
 Take a single simulation time step

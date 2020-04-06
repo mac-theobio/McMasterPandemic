@@ -6,7 +6,7 @@ params <- read_params(system.file("params","ICU1.csv",
                                   package="McMasterPandemic"))
 get_GI_moments(params)
 get_kernel_moments(params)
-
+get_r(params,method="jacobian")
 
 ## this example comes from a calibration to r=0.1914 ..., Gbar=6
 ## calibration was done with get_GI_moments, kernel moments don't match?
@@ -16,3 +16,7 @@ ccS <- readRDS(system.file("testdata","ccS.rds",
                            package="McMasterPandemic"))
 get_GI_moments(ccS$param)
 get_kernel_moments(ccS$param)
+
+get_r(ccS$param,method="kernel")
+get_r(ccS$param,method="analytical")
+get_r(ccS$param,method="expsim")
