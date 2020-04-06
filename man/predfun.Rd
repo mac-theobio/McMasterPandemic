@@ -14,6 +14,19 @@ predfun(
   values_only = TRUE
 )
 }
+\arguments{
+\item{beta0}{baseline transmission}
+
+\item{E0}{starting value}
+
+\item{data}{data (for subsetting/matching)}
+
+\item{params}{parameters}
+
+\item{start_date}{start date}
+
+\item{values_only}{return a vector rather than a data frame}
+}
 \description{
 run simulation with specified parameters; extract results
 matching dates and variable order in data

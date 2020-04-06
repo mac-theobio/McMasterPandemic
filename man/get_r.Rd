@@ -8,6 +8,8 @@ get_r(p, method = c("expsim", "kernel", "analytical"))
 }
 \arguments{
 \item{p}{parameters}
+
+\item{method}{computation method}
 }
 \description{
 return growth rate (from Jacobian)

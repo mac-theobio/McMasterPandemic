@@ -10,6 +10,8 @@ get_R0(params, components = FALSE, method = c("analytical", "kernel"))
 \item{params}{parameters}
 
 \item{components}{report R0 component-by-component?}
+
+\item{method}{computation method}
 }
 \description{
 calculate R0 for a given set of parameters

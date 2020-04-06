@@ -47,8 +47,8 @@ test_that("time-varying with ndt>1", {
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE),
                         ndt=10)
-    expect_is(resICU_t,"pansim")
-    plot(resICU_t)
+    expect_is(resICU_t2,"pansim")
+    plot(resICU_t2)
 })
 
 test_that("ndt>1", {

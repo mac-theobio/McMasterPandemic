@@ -10,6 +10,13 @@ fix_pars(
   pars_adj = list("beta0", c("gamma", "lambda_s", "lambda_m", "lambda_a"))
 )
 }
+\arguments{
+\item{params}{a parameter vector}
+
+\item{target}{target values for one or more epidemic moments}
+
+\item{pars_adj}{list of sets of parameters to adjust}
+}
 \description{
 adjust pars to match targets
 }

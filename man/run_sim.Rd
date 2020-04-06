@@ -43,7 +43,7 @@ Run pandemic simulation
 }
 \examples{
 params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-state <- make_state(params[["N"]],E=params[["E0"]])
+state <- make_state(params[["N"]],E0=params[["E0"]])
 sdate <- "10-Feb-2020" ## arbitrary!
 time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
                        Symbol=c("beta0","beta0"),

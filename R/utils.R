@@ -1,7 +1,6 @@
 
-##' @importFrom methods is
 ## attempt convert x to a date unless it already is one
-ldmy <- function(x) if (is(x,"Date")) x else lubridate::dmy(x)
+ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
 
 ## self-naming list (copied from lme4:::namedList)
 nlist <- function (...) {
@@ -14,8 +13,30 @@ nlist <- function (...) {
     setNames(L, nm)
 }
 
+## select every ndt'th row of a data frame
 thin <- function(x,ndt=1) {
     if(ndt==1) return(x)
     x  <- x[seq(nrow(x)) %% ndt == 1,]
     return(x)
+}
+
+## unpack a list into the current (calling) environment
+unpack <- function(L) {
+    invisible(list2env(L,envir=parent.frame()))
+}
+
+## generate " a <- b <- c <- NULL" statements
+if (FALSE) {
+    p <- read_params(system.file("params","ICU1.csv",
+                                 package="McMasterPandemic"))
+    s <- make_state(params=p)
+    m <- make_ratemat(s,p)
+    print_globals(s,p)
+}
+print_globals <- function(..., chunksize=8) {
+    all_names <- unlist(lapply(list(...),
+              function(z) if (is.matrix(z)) colnames(z) else names(z)))
+    ss <- split(all_names,seq(all_names) %/% chunksize)
+    ss2 <- paste(sapply(ss,paste,collapse=" <- ")," <- NULL")
+    cat(ss2,sep="\n")
 }

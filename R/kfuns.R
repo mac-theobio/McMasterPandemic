@@ -7,7 +7,7 @@ transKernel <- function(par, steps=100, do_hazard=TRUE,
                         ndt=1){
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E=1)
+	state <- make_state(N=1, E0=1)
 	return(run_sim_range(par, state
 		, nt=steps*ndt
 		, step_args = list(do_hazard=do_hazard)
@@ -67,7 +67,7 @@ rExp <- function(par, steps=100, ndt=1,
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E=1e-5)
+	state <- make_state(N=1, E0=1e-5)
 	r <- run_sim_range(par, state
                          , nt=steps*ndt
                          , step_args = list(do_hazard=do_hazard,

@@ -2,6 +2,7 @@
 
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
+##' @param method computation method
 ##' @export
 get_r <- function(p, method=c("expsim","kernel","analytical")) {
     ## expsim and kernel match well, analytical is ???
@@ -98,6 +99,7 @@ return(c(R0=R, Gbar=Gbar, Gvar_approx=Gvar))
 ##' calculate R0 for a given set of parameters
 ##' @param params parameters
 ##' @param components report R0 component-by-component?
+##' @param method computation method
 ##' @export
 get_R0 <- function(params, components=FALSE,
                    method=c("analytical","kernel")) {

@@ -58,17 +58,12 @@ simScal <- run_sim(ccS$params, ccS$state,
                    end_date="1-Apr-2020",
                    ndt=10)
 
-L <- load("tmp.RData")
-ccS2$params[["E0"]] <- ccS2$state[["E"]]
-all.equal(params,ccS2$params)
-all.equal(state,ccS2$state)
-
 ## try brute-force-calibrated initial conditions
 simScal_brute <- run_sim(ccS2$params, ccS2$state,
                    start_date="1-Mar-2020",
                    end_date="1-Apr-2020",
                    ndt=10)
-simScal_brute %>% filter(date==date1)  ## 45 + 1(H2),not 36???
+simScal_brute %>% filter(date==min(regdatS$date))  ## 45 + 1(H2),not 36???
 ## step_args=list(do_hazard=TRUE))
 
 ## predicted values from regression

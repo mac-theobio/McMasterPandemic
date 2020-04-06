@@ -49,6 +49,9 @@ badness <- function(delta, params, target, pars_adj) {
 
 ##' adjust pars to match targets
 ##' @importFrom stats optim
+##' @param params a parameter vector
+##' @param target target values for one or more epidemic moments
+##' @param pars_adj list of sets of parameters to adjust
 ##' @export
 fix_pars <- function(params, target=c(r=0.23,Gbar=6),
                      pars_adj=list("beta0",
@@ -93,6 +96,8 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 ##' @param date0 date for initial conditions
 ##' @param date1 initial date for regression
 ##' @param var variable for regression (H, D, ICU)
+##' @importFrom utils tail
+##' @importFrom dplyr select pull
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
 ##' cc1 <- calibrate(int=log(200),slope=0.23,pop=1e6,params)

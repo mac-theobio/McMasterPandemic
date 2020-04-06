@@ -17,10 +17,13 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param show_times indicate times when parameters changed?
 ##' @param ... additional models to overlay
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
+##' @importFrom dplyr one_of
 ##' @export
 plot.pansim <- function(x, drop_states=c("S","R","E","I"),
                         keep_states=NULL, aggregate=TRUE,
                         log=FALSE, show_times=TRUE, ...) {
+    ## global variables
+    var <- value <- NULL
     ## FIXME: check if already aggregated!
     if (aggregate) x <- aggregate(x)
     x <- as_tibble(x)  ## FIXME:: do this upstream?
@@ -108,13 +111,14 @@ summary.params_pansim <- function(object, ...) {
     return(res)
 }
 
-##' summary method for \code{pansim} objects
 ##' @export
 summary.pansim <- function(object, ...) {
+    ## global variables
+    ICU <- H <- NULL
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
     xa <- aggregate(object)
-    attach(xa); on.exit(detach(xa))
+    unpack(xa)
     res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
              peak_ICU_val=round(max(ICU)),
              peak_H_date=xa$date[which.max(H)],
