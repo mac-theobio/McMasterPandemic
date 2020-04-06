@@ -3,12 +3,16 @@
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
 ##' @export
-get_r <- function(p, method=c("jacobian")) {
-    if (method=="jacobian") {
-	res <- max(eigen(make_jac(params=p))$values)
-    } else {
-        ## ... ?
-    }
+get_r <- function(p, method=c("kernel","jacobian")) {
+    method <- match.arg(method)
+    res <- switch(method,
+                  jacobian = {
+                      max(eigen(make_jac(params=p))$values)
+                  },
+                  kernel = {
+                      get_kernel_moments(params)[["r0"]]
+                  })
+    return(res)
 }
 
 ## OBSOLETE: naive/unweighted GI mean
@@ -18,6 +22,14 @@ get_r <- function(p, method=c("jacobian")) {
 ##		 (1-alpha)*(1/lambda_p + mu/lambda_m + (1-mu)/lambda_s))
 ##	 return(res)
 ## }
+
+get_kernel_moments <- function(params) {
+    gg <- get_GI_moments(params)
+    nt <- gg[["Gbar"]]*10
+    kk <- transKernel(params, do_hazard=FALSE, steps=nt)$foi
+    ## FIXME: check agreement between get_GI_moments() and kk ?
+    return(kernelMoments(kk))
+}
 
 
 ##' compute moments of generation interval (mean and CV^2)

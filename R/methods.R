@@ -85,9 +85,15 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D"), ...) {
     return(dd)
 }
 
+##' @param object a params vector
+##' @param ... unused
 ##' @export
 summary.params_pansim <- function(object, ...) {
-    c(r=get_r(object),R0=get_R0(object),get_GI_moments(object))
+    ## FIXME: decide whether to subset (c("R0","Gbar","r0")) ?
+    ## document and/or rename kappa and kappa_eff for a wider audience
+    res <- get_kernel_moments(object)
+    res["dbl_time"] <- log(2)/res["r0"]
+    return(res)
 }
 
 ##' @export

@@ -6,7 +6,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
 		   person("Jonathan Dushoff",role="aut"))
-Depends: R (>= 3.0.0), dplyr, tidyr, ggplot2
+Depends: R (>= 3.5.0), dplyr, tidyr, ggplot2
 Imports: Matrix, igraph, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods
 Suggests: knitr
 RoxygenNote: 7.1.0
