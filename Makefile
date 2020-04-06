@@ -20,8 +20,14 @@ Sources += $(wildcard man/*.Rd) NAMESPACE
 
 ######################################################################
 
+sandbox/kernel_test.Rout: sandbox/kernel_test.R
+
+######################################################################
+
 package:
 	sudo R CMD INSTALL .
+
+######################################################################
 
 ### Makestuff
 
@@ -43,11 +49,13 @@ localstuff:
 
 -include makestuff/os.mk
 
-## -include makestuff/wrapR.mk
+-include makestuff/wrapR.mk
 
 -include makestuff/git.mk
 -include makestuff/visual.mk
 -include makestuff/projdir.mk
+
+######################################################################
 
 ### package-building stuff, copied from glmmTMB
 
