@@ -162,8 +162,8 @@ restimedep <- run_sim(params1,state1,start_date=sdate,end_date=edate,
                   params_timevar=time_pars)
 summary(restimedep)
 ptimedep <- plot(restimedep, log=TRUE)
-print(ptimedep + scale_y_log10())
-print(ptimedep)
+print(ptimedep + scale_y_continuous()) # linear scale
+print(ptimedep) # logarithmic scale
 @
 
 \end{document}
