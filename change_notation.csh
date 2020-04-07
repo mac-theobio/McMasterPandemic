@@ -1,6 +1,14 @@
 #!/bin/csh -f
 
-foreach f (*)
+if ($#argv == 0) then
+   set ff = `ls`
+else
+   set ff = "$argv"
+endif
+
+echo files to be changed:  $ff
+
+foreach f ($ff)
     echo $f
     mv $f $f.1
     sed 's/gamma/sigma/g' $f.1 > $f.2
