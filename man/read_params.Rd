@@ -23,9 +23,9 @@ The parameters that must be set are:
 
 \eqn{   \beta_0:  }  transmission rate
 
-\eqn{   1/\gamma:  }  mean \emph{latent} period
+\eqn{   1/\sigma:  }  mean \emph{latent} period
 
-\eqn{   1/\lambda_a:  }  mean \emph{infectious} period for asymptomatic individuals
+\eqn{   1/\gamma_a:  }  mean \emph{infectious} period for asymptomatic individuals
 
 \eqn{   ... }
 }

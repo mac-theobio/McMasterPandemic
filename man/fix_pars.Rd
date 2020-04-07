@@ -7,7 +7,7 @@
 fix_pars(
   params,
   target = c(r = 0.23, Gbar = 6),
-  pars_adj = list("beta0", c("gamma", "lambda_s", "lambda_m", "lambda_a"))
+  pars_adj = list("beta0", c("sigma", "gamma_s", "gamma_m", "gamma_a"))
 )
 }
 \arguments{

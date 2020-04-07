@@ -4,15 +4,17 @@
 \alias{print.params_pansim}
 \title{print parameters, possibly with detailed description}
 \usage{
-\method{print}{params_pansim}(x, describe = FALSE, ...)
+\method{print}{params_pansim}(x, describe = FALSE, silent = TRUE, ...)
 }
 \arguments{
 \item{x}{an object of class \code{params_pansim} (parameters for pandemic simulation)}
 
 \item{describe}{print full description?}
 
+\item{silent}{if \code{describe} and \code{silent}, do not print (just return data frame)}
+
 \item{...}{(unused, for generic consistency)}
 }
 \description{
-print parameters, possibly with detailed description
+If the detailed description is requested, it is returned as a data frame.
 }
