@@ -144,7 +144,7 @@ summary.pansim <- function(object, ...) {
         gamma_m = "1 / mean days in mildly symptomatic infectious class",
         gamma_p = "1 / mean days in pre-symptomatic infectious class",
         rho = "1 / mean days in acute care",
-        delta = "proportion in acute care patients who die",
+        delta = "proportion of acute care patients who die",
         mu = "proportion of symptomatic infections that are mild",
         N = "total population size",
         E0 = "number of initially exposed individuals",
@@ -158,19 +158,23 @@ summary.pansim <- function(object, ...) {
     )
 
 ##' print parameters, possibly with detailed description
+##'
+##' If the detailed description is requested, it is returned as a data frame.
 ##' @param x an object of class \code{params_pansim} (parameters for pandemic simulation)
 ##' @param describe print full description?
+##' @param silent if \code{describe} and \code{silent}, do not print (just return data frame)
 ##' @param ... (unused, for generic consistency)
 ##' @export
 ## FIXME: prettier printing, e.g. detect "1/" or "proportion"
-print.params_pansim <- function( x, describe=FALSE, ... ) {
+print.params_pansim <- function( x, describe=FALSE, silent=TRUE, ... ) {
     if (!describe) {
         print(unclass(x))
     } else {
         x_meanings <- param_meanings[names(x)]
-        xout <- data.frame(value=round(as.numeric(x),3),
+        xout <- data.frame(symbol=names(x),
+                           value=round(as.numeric(x),3),
                            meaning=x_meanings)
-        print(xout)
+        if (!silent) print(xout)
         return(invisible(xout))
     }
 }
