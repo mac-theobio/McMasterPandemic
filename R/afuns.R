@@ -2,6 +2,7 @@
 
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
+##' @param method computation method
 ##' @export
 get_r <- function(p, method=c("expsim","kernel","analytical")) {
     ## expsim and kernel match well, analytical is ???
@@ -16,6 +17,23 @@ get_r <- function(p, method=c("expsim","kernel","analytical")) {
                   },
                   expsim = {
                       rExp(p)
+                  })
+    return(res)
+}
+
+get_evec <- function(p, method=c("expsim","analytical")) {
+    method <- match.arg(method)
+    res <- switch(method,
+                  expsim=rExp(p,return_val="eigenvector"),
+                  analytical= {
+                      J <- make_jac(params=p)    
+                      ee <- eigen(J)
+                      v <- ee$vectors
+                      rownames(v) <- rownames(J)
+                      dom_vec <- v[,which.max(ee$values)]
+                      drop_vars <- c("date","t","S","R","D","foi")
+                      dd <- abs(dom_vec[!names(dom_vec) %in% drop_vars])
+                      dd/sum(dd)
                   })
     return(res)
 }
@@ -81,6 +99,7 @@ return(c(R0=R, Gbar=Gbar, Gvar_approx=Gvar))
 ##' calculate R0 for a given set of parameters
 ##' @param params parameters
 ##' @param components report R0 component-by-component?
+##' @param method computation method
 ##' @export
 get_R0 <- function(params, components=FALSE,
                    method=c("analytical","kernel")) {

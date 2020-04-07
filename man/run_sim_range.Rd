@@ -24,6 +24,8 @@ run_sim_range(
 
 \item{dt}{time step (days)}
 
+\item{M}{rate matrix}
+
 \item{stoch}{stochastic simulation? logical vector for observation and process noise}
 
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}

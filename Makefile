@@ -87,3 +87,6 @@ pkgtest:
 
 pkgcheck:
 	echo "devtools::check('.')" | $(R) --slave
+
+clean:
+	find . \( -name "\.#*" -o -name "*~" \) -exec rm {} \;

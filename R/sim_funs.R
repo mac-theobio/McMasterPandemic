@@ -6,7 +6,7 @@
 ##' @export
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' state[["E"]] <- 1
 ##' J <- make_jac(params,state)
@@ -17,9 +17,12 @@
 ##' make_jac(params)
 make_jac <- function(params, state=NULL) {
     ## circumvent test code analyzers ... problematic ...
-    ## Ia <- Ip <- Is  <- Im <- NULL
-    ## alpha <- mu <- rho <- phi1 <- phi2 <- psi1 <- psi2 <- psi3 <- NULL
-    ## lambda_s <- lambda_p <- lambda_m <- lambda_a <- iso_m <- iso_s <- NULL
+    S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
+    H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
+    Cm <- Cs <- alpha <- gamma <- lambda_a <- lambda_m <- lambda_s <- lambda_p  <- NULL
+    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
+    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
+    ####
     if (is.null(state)) {
         state <- make_state(N=params[["N"]],E0=1e-3)
     }
@@ -27,12 +30,12 @@ make_jac <- function(params, state=NULL) {
     ns <- length(state)
     ## make state and param names locally available (similar to with())
     P <- c(as.list(state),as.list(params))
-    attach(P); on.exit(detach(P))
+    unpack(P) ## extract variables
     ## blank matrix
     M <- matrix(0,
                 nrow=ns, ncol=ns,
                 dimnames=list(from=names(state),to=names(state)))
-    Ivec <- c(Ia, Ip, P$Im,Is)
+    Ivec <- c(Ia, Ip, Im,Is)
     Iwt <- beta0/N*c(Ia=Ca,Ip=Cp,Im=(1-iso_m)*Cm,Is=(1-iso_s)*Cs)
     M["S","S"] <- -sum(Ivec*Iwt)
     M["S","Ia"] <- -S*Iwt[["Ia"]]
@@ -100,17 +103,24 @@ make_jac <- function(params, state=NULL) {
 ##' @return matrix of (daily) transition rates
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' if (require(Matrix)) {
 ##'   image(Matrix(make_ratemat(state,params)))
 ##' }
 ##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE) {
+    ## circumvent test code analyzers ... problematic ...
+    S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
+    H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
+    Cm <- Cs <- alpha <- gamma <- lambda_a <- lambda_m <- lambda_s <- lambda_p  <- NULL
+    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
+    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
+    ####
     np <- length(params)
     ns <- length(state)
     ## make state and param names locally available (similar to with())
     P <- c(as.list(state),as.list(params))
-    attach(P); on.exit(detach(P))
+    unpack(P)
     ## blank matrix
     M <- matrix(0,
                 nrow=ns, ncol=ns,
@@ -213,7 +223,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param ndt number of internal time steps per time step
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' state <- make_state(params[["N"]],E=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
 ##'                        Symbol=c("beta0","beta0"),
@@ -231,7 +241,7 @@ run_sim <- function(params
 			, start_date="20-Mar-2020"
 			, end_date="1-May-2020"
 			, params_timevar=NULL
-			, dt=1, ndt=1  ## FIXME: change after testing
+			, dt=1, ndt=1  ## FIXME: change default after testing?
 			, stoch=c(obs=FALSE,proc=FALSE)
 			, ratemat_args=NULL
 			, step_args=NULL
@@ -287,18 +297,19 @@ run_sim <- function(params
             }
             M["S","E"] <- update_foi(state,params) ## unnecessary?
             resList[[i]] <- drop_last(
-                do.call(run_sim_range,
+                thin(ndt=ndt,
+                     do.call(run_sim_range,
                         nlist(params,
                               state,
                               nt=(times[i+1]-times[i]+1)*ndt,
                               dt=dt/ndt,M,stoch,
-                              ratemat_args,step_args))
+                              ratemat_args,step_args)))
             )
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
         }
         ## combine
-        res <- thin(ndt=ndt, do.call(rbind,resList))
+        res <- do.call(rbind,resList)
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }
@@ -429,12 +440,22 @@ make_state <- function(N=params[["N"]],
 ##' matching dates and variable order in data
 ## FIXME: can this be made into a predict method??
 ##   with newdata, newparams, newinit
-
+## not sure where to put these ...
+##' @param beta0 baseline transmission
+##' @param E0 starting value
+##' @param data data (for subsetting/matching)
+##' @param params parameters
+##' @param start_date start date
+##' @param values_only return a vector rather than a data frame
+##' @importFrom dplyr mutate mutate_at %>% as_tibble right_join
 ##' @export
 predfun <- function(beta0,E0,data,
                     params,
                     start_date="10-Feb-2020",
                     values_only=TRUE) {
+    ## global variables
+    beta0 <- E0 <- data <- params <- start_date <- values_only <- NULL
+    var <- value <- NULL
     ## substitute values into base parameter vector
     params[["beta0"]] <- beta0
     params[["E0"]] <- E0  ## unnecessary?
@@ -457,6 +478,7 @@ predfun <- function(beta0,E0,data,
 ##' @param nt number of steps to take
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
+##' @param M rate matrix
 ##' @importFrom stats rnbinom
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))

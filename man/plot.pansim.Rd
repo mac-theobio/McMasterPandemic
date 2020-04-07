@@ -26,6 +26,8 @@
 \item{log}{plot y-axis on log scale?}
 
 \item{show_times}{indicate times when parameters changed?}
+
+\item{...}{additional models to overlay}
 }
 \description{
 plot method for simulations

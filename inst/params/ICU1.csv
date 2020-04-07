@@ -1,26 +1,29 @@
-# ICU base param set 1: Stanford parameters + ICU info
-# Date: 30 Mar 2020
-"Symbol","Value"
-"beta0",1
-"Ca",0.666666666666667
-"Cp",1
-"Cs",1
-"Cm",1
-"alpha",0.333333333333333
-"gamma",0.192307692307692
-"lambda_a",0.142857142857143
-"lambda_s",0.173611111111111
-"lambda_m",0.142857142857143
-"lambda_p",2
-"rho",0.1
-"delta",0
-"mu",0.956
-"N",1e6
-"E0",5
-"iso_m",0
-"iso_s",0
-"phi1",0.76
-"phi2",0.5
-"psi1",0.05
-"psi2",0.125
-"psi3",0.2
+# ICU base param set 1: Stanford parameters + ICU info + case delay params
+# Date: revised 6 April
+"Symbol","Value",Parameter
+"beta0",1,Baseline (non-intervention) transmission across categories
+"Ca",2/3,relative asymptomatic transmission (or contact)
+"Cp",1,relative presymptomatic transmission (or contact)
+"Cm",1,relative mildly sympomatic transmission (or contact)
+"Cs",1,relative severely symptomatic transmission (or contact)
+"alpha",1/3,Fraction of asymptomatic case
+"gamma",1/5.2,1/time in exposed class
+"lambda_a",1/7,1/time for asymptomatic recovery
+"lambda_m",1/7,1/time for mildly symptomatic recovery
+"lambda_s",1/5.72,1/time for severely symptomatic recovery
+"lambda_p",2,1/time in pre-symptomatic class
+"rho",1/10,1/time in hospital (acute care)
+"delta",0,Fraction of acute-care cases that are fatal
+"mu",0.956,Fraction of symptomatic cases that are mild
+"N",1e6,Population size
+"E0",5,Initial number exposed
+"iso_m",0,Relative self-isolation/distancing of mild cases
+"iso_s",0,Relative self-isolation/distancing of severe cases
+"phi1",0.76,Fraction of hospital cases to acute care
+"phi2",1/2,Fraction of ICU cases dying
+"psi1",1/20,Rate of ICU back to acute care
+"psi2",1/8,Rate of ICU to death
+"psi3",1/5,Rate of post-ICU to discharge
+"c_prop",1/10,fraction of incidence reported
+"c_delaymean",5,average delay between incidence and test report
+"c_delayCV",0.25,coefficient of variation of testing delay

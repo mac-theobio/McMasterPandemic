@@ -21,13 +21,15 @@ test_that("params methods", {
     expect_equal(summary(params),
                  c(r0 = 0.22783, R0 = 6.51918, Gbar = 12.19064,
                    dbl_time = 3.04243),
-                 tolerance=1e-4)
+                 tolerance=2e-3)
 })
 
+
+time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
+                        Symbol=c("beta0","beta0"),
+                        Relative_value=c(0.5,0.1))
+
 test_that("time-varying example", {
-    time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
-                            Symbol=c("beta0","beta0"),
-                            Relative_value=c(0.5,0.1))
     resICU_t <- run_sim(params,state,
                         start_date="1-Mar-2020",
                         end_date="1-Jun-2020",
@@ -36,6 +38,17 @@ test_that("time-varying example", {
     expect_is(resICU_t,"pansim")
     plot(resICU_t)
     plot(resICU_t,aggregate=FALSE,log=TRUE,drop_vars=NULL)
+})
+
+test_that("time-varying with ndt>1", {
+    resICU_t2 <- run_sim(params,state,
+                        start_date="1-Mar-2020",
+                        end_date="1-June-2020",
+                        params_timevar=time_pars,
+                        step_args=list(do_hazard=TRUE),
+                        ndt=10)
+    expect_is(resICU_t2,"pansim")
+    plot(resICU_t2)
 })
 
 test_that("ndt>1", {
@@ -78,4 +91,7 @@ test_that("calibration", {
     s4 <- summary(fix_pars(params,target=c(Gbar=6),
                            pars_adj=list(c("gamma","lambda_s","lambda_m","lambda_a"))))
     expect_equal(s4[["Gbar"]],6,tolerance=0.005)
+    e1 <- get_evec(params)
+    e2 <- get_evec(params,method="analytical")
+    expect_equal(e1,e2,tolerance=1e-4)
 })
