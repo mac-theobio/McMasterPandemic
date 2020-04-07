@@ -24,6 +24,6 @@
 "psi1",1/20,Rate of ICU back to acute care
 "psi2",1/8,Rate of ICU to death
 "psi3",1/5,Rate of post-ICU to discharge
-"c_prop",1/10,fraction of incidence reported
-"c_delaymean",5,average delay between incidence and test report
-"c_delayCV",0.25,coefficient of variation of testing delay
+"c_prop",1/10,fraction of incidence reported as positive tests
+"c_delay_mean",5,average delay between incidence and test report
+"c_delay_cv",0.25,coefficient of variation of testing delay

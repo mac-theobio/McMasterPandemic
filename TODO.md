@@ -2,11 +2,9 @@
 
 ### short term
 
+* incorporate het/behavioural change: `beta*(S/N)^het_alpha*I`
 * fix time-varying machinery: check for off-by-one on dates?? (BMB)
 * testing calibration (BMB)
-* cases: delayKernel (mean and std dev -> Gamma?), case underreporting parameters
-* allow internal, smaller time steps [TEST WITH time-varying]
-* test/fix calibration procedure
 * multi-parameter run interface (fix fitfun/predict/etc.)
     * make a predict method for parameter sets (assuming we can use E0 and start date only as part of params)
 * multi-run plots (aggregate + bind_rows)	
@@ -18,9 +16,9 @@
 
 * add hospital admissions 'stock'
 * translate label names for graphs ("D" -> "Dead", etc.)
-* include start dates as attributes of params
-* include parameters and other metadata as an attribute in returned object
+* include start dates as metadata for params, states, runs ... 
 * check `do_hazard` option and switch to this as default
+* carry labels as metadata with params
 * un-FRY `update_foi` function
 * `write_params`, `read_params`; keep labels, unevaluated values, etc. as attributes, get start date as attribute. (Store as separate column, or commented row, or ... ???) [store params as JSON???]
 * expose 'safe' code in public-facing repo?

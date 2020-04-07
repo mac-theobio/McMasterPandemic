@@ -4,7 +4,12 @@
 \alias{read_params}
 \title{retrieve parameters from a CSV file}
 \usage{
-read_params(fn, value_col = "Value", symbol_col = "Symbol")
+read_params(
+  fn,
+  value_col = "Value",
+  symbol_col = "Symbol",
+  desc_col = "Parameter"
+)
 }
 \arguments{
 \item{fn}{file name (CSV file containing at least value and symbol columns}
@@ -12,6 +17,8 @@ read_params(fn, value_col = "Value", symbol_col = "Symbol")
 \item{value_col}{name of column containing values}
 
 \item{symbol_col}{name of column containing symbols}
+
+\item{desc_col}{name of (optional) column containing descriptions}
 }
 \description{
 retrieve parameters from a CSV file

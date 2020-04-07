@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{pansim}(
   x,
-  drop_states = c("S", "R", "E", "I"),
+  drop_states = c("t", "S", "R", "E", "I", "incidence"),
   keep_states = NULL,
   aggregate = TRUE,
   log = FALSE,
