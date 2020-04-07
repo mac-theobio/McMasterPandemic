@@ -22,6 +22,8 @@ Sources += $(wildcard man/*.Rd) NAMESPACE
 
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
+tests/moments.Rout:
+
 ######################################################################
 
 package:
