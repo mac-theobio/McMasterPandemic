@@ -89,7 +89,7 @@ test_that("calibration", {
     s3 <- summary(fix_pars(params,target=c(r=0.23)))
     expect_equal(s3[["r0"]],0.23,tolerance=0.005)
     s4 <- summary(fix_pars(params,target=c(Gbar=6),
-                           pars_adj=list(c("gamma","lambda_s","lambda_m","lambda_a"))))
+                           pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))))
     expect_equal(s4[["Gbar"]],6,tolerance=0.005)
     e1 <- get_evec(params)
     e2 <- get_evec(params,method="analytical")
