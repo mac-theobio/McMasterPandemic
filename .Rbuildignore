@@ -16,3 +16,4 @@ figure/
 ^[.].*$
 ^.*/[.].*$
 misc/
+install

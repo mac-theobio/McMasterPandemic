@@ -2,7 +2,9 @@
 ## attempt convert x to a date unless it already is one
 ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
 
-## self-naming list (copied from lme4:::namedList)
+##' self-naming list (copied from lme4:::namedList)
+##' @param ... a list of objects
+##' @export
 nlist <- function (...) {
     L <- list(...)
     snm <- vapply(substitute(list(...)), deparse, character(1))[-1]
@@ -20,9 +22,13 @@ thin <- function(x,ndt=1) {
     return(x)
 }
 
-## unpack a list into the current (calling) environment
-unpack <- function(L) {
-    invisible(list2env(L,envir=parent.frame()))
+##' unpack a list into the current (calling) environment
+##' this is a replacement for \code{with()} (which is hard to debug) and \code{attach()} (which is frowned upon by CRAN/triggers package-check warnings)
+##' (for more traditional Python tuple unpacking see the \code{zeallot} package)
+##' @param x a named vector or a list
+##' @export
+unpack <- function(x) {
+    invisible(list2env(as.list(x),envir=parent.frame()))
 }
 
 ## generate " a <- b <- c <- NULL" statements

@@ -189,7 +189,6 @@ describe_params <- function(x) {
 ##' If the detailed description is requested, it is returned as a data frame.
 ##' @param x an object of class \code{params_pansim} (parameters for pandemic simulation)
 ##' @param describe print full description?
-##' @param silent if \code{describe} and \code{silent}, do not print (just return data frame)
 ##' @param ... (unused, for generic consistency)
 ##' @examples
 ##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
