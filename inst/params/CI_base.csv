@@ -6,11 +6,11 @@ pre-symptomatic relative contact rate,Cp,1,Assume same without intervention,yes,
 severely symptomatic relative contact rate,Cs,1,Assume same without intervention,yes,
 mildly symptomatic relative contact rate,Cm,1,Assume same without intervention,yes,
 Fraction of cases that are asymptomatic,alpha,1/3,,,"Reported as 51.7% for the Diamond Princess in Mizuomoto et al. Eurosurveillance, Reported as 30.8% among Japanese evacuees from Wuhan in Nishiura et al. International journal of infectious diseases"
-1/time in exposed class,gamma,1/5.2,,,Drake's code has incubation period of 6 days
-1/time for asymptomatic to recover,lambda_a,1/7,,,Drake's code has natural infectious period of 7 days but not sure if that is assumption
-1/time for severely symptomatic to be hospitalized,lambda_s,1/5.76,,,"Other values on MIDAS: 1/5.9 (Tindale et al. Singapore), 1/2.7 (Linton et al. China)"
-1/time for mildly symptomatic to recover,lambda_m,1/7,,,"Other values on MIDAS: ""time from symptom onset to recover: 22.2, Dorigatti et al.), Drake's code has natural infectious period of 7 days but not sure if that is assumption"
-1/time in pre-symptomatic,lambda_p,2,,,
+1/time in exposed class,sigma,1/5.2,,,Drake's code has incubation period of 6 days
+1/time for asymptomatic to recover,gamma_a,1/7,,,Drake's code has natural infectious period of 7 days but not sure if that is assumption
+1/time for severely symptomatic to be hospitalized,gamma_s,1/5.76,,,"Other values on MIDAS: 1/5.9 (Tindale et al. Singapore), 1/2.7 (Linton et al. China)"
+1/time for mildly symptomatic to recover,gamma_m,1/7,,,"Other values on MIDAS: ""time from symptom onset to recover: 22.2, Dorigatti et al.), Drake's code has natural infectious period of 7 days but not sure if that is assumption"
+1/time in pre-symptomatic,gamma_p,2,,,
 1/time for leaving hospital,rho,1/14.5,,,"Other values on MIDAS: 1/13.3 (Tindale et al. Singapore), 1/11.5 (Sanche et al. China)"
 Fraction of hospitalized cases that are fatal,delta,0.2,,,"Other values on MIDAS: 0.14 (Wu et al. for Wuhan), 0.33 (Famulare et al. for China)"
 Fraction of cases that are minor,mu,0.956,,,
