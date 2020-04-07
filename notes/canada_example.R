@@ -10,15 +10,26 @@ dd <- read_csv(url)
 ## %>% group_by(Province)
 ## %>% mutate(t_loc=as.numeric(Date-min(Date)
 
-ggplot(dd,aes(Date,incidence,colour=Province))+
-    geom_point()+scale_y_log10()+
-    geom_smooth(method="glm",
-                formula=y~poly(x,2),
-                se=FALSE)
+## quadratic fit (changing scale in ggplot confuses
+##  link function in GLMs)
+(ggplot(dd,aes(Date,incidence,colour=Province))
+    + geom_point()+scale_y_log10()
+    + geom_smooth(method="lm",
+                  formula=y~poly(x,2),
+                  se=FALSE)
+)
 
+## easiest way to plot mixed model outputs with CIs?
+## sjPlot, broom.mixed, ... ?
+
+## data exploration and possible comparison of IDEA/IHME/etc. approaches
+## (i.e. purely phenomenological)
 ## fit linear, quad mixed? models
 ## logit, Richards?
+## epigrowthfit or mle2 or ... ?
+## plot predictions and CIs
 
+## implied curves of R_t?
 
 ## calibrate to reports
 

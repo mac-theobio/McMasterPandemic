@@ -2,10 +2,9 @@
 
 ### short term
 
-* transition TODO list to GH issues???
+* transition TODO list to GH issues??? (items marked Z have been posted)
 * fix make rules
-* fix 
-* write_params
+* Z write_params
 * incorporate het/behavioural change: `beta*(S/N)^het_alpha*I`
 * fix time-varying machinery: check for off-by-one on dates?? (BMB)
 * testing calibration (BMB)
@@ -19,16 +18,14 @@
 ### minor/cosmetic
 
 * add hospital admissions 'stock'
-* translate label names for graphs ("D" -> "Dead", etc.)
-* include start dates as metadata for params, states, runs ... 
+* Z translate label names for graphs ("D" -> "Dead", etc.)
+* Z include start dates as metadata for params, states, runs ... 
 * check `do_hazard` option and switch to this as default
-* carry labels as metadata with params
 * un-FRY `update_foi` function
-* `write_params`, `read_params`; keep labels, unevaluated values, etc. as attributes, get start date as attribute. (Store as separate column, or commented row, or ... ???) [store params as JSON???]
-* expose 'safe' code in public-facing repo?
+* Z `write_params`, `read_params`; keep labels, unevaluated values, etc. as attributes, get start date as attribute. (Store as separate column, or commented row, or ... ???) [store params as JSON???]
 * S3 method for params
-    * pretty-printing (print rates as reciprocals?)
-	* transform/update method?
+    * Z pretty-printing (print rates as reciprocals?)
+	* Z transform/update method?
 
 
 ### longer term

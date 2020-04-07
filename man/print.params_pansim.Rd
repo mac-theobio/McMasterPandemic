@@ -4,17 +4,22 @@
 \alias{print.params_pansim}
 \title{print parameters, possibly with detailed description}
 \usage{
-\method{print}{params_pansim}(x, describe = FALSE, silent = TRUE, ...)
+\method{print}{params_pansim}(x, describe = FALSE, ...)
 }
 \arguments{
 \item{x}{an object of class \code{params_pansim} (parameters for pandemic simulation)}
 
 \item{describe}{print full description?}
 
-\item{silent}{if \code{describe} and \code{silent}, do not print (just return data frame)}
-
 \item{...}{(unused, for generic consistency)}
+
+\item{silent}{if \code{describe} and \code{silent}, do not print (just return data frame)}
 }
 \description{
 If the detailed description is requested, it is returned as a data frame.
+}
+\examples{
+params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+print(params)
+print(params,describe=TRUE)
 }
