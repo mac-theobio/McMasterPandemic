@@ -167,7 +167,7 @@ param_meanings <- c(
 
 ##' Describe parameters
 ##'
-##' Create a data frame with symbols, values an meanings of parameters
+##' Create a data frame with symbols, values and meanings of parameters
 ##' @param x a \code{params_pansim} object
 ##' @export
 describe_params <- function(x) {
