@@ -165,6 +165,11 @@ param_meanings <- c(
     psi3 = "1 / mean days post-ICU until discharge"
 )
 
+##' Describe parameters
+##'
+##' Create a data frame with symbols, values and meanings of parameters
+##' @param x a \code{params_pansim} object
+##' @export
 describe_params <- function(x) {
     if (!is.null(attr(x,"description"))) {
         x_meanings <- attr(x,"description")[names(x)]
@@ -172,7 +177,8 @@ describe_params <- function(x) {
         x_meanings <- param_meanings[names(x)]
     }
     xout <- data.frame(symbol=names(x),
-                       value=round(as.numeric(x),3),
+                       ##value=round(as.numeric(x),3),
+                       value=sprintf("%.3g", as.numeric(x)),
                        meaning=x_meanings)
     rownames(xout) <- NULL ## redundant
     return(xout)

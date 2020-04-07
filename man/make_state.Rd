@@ -18,14 +18,20 @@ make_state(
 
 \item{E0}{initial number exposed}
 
-\item{type}{(character) specify what model type this is intended for; determines state names}
+\item{type}{(character) specify what model type this is intended
+for (e.g., \code{"ICU1"}, \code{"CI"}); determines state names}
 
 \item{state_names}{vector of state names, must include S and E}
 
 \item{params}{parameter vector (looked in for N and E0)}
 
-\item{x}{proposed (named) state vector; missing values will be set to zero}
+\item{x}{proposed (named) state vector; missing values will be set
+to zero}
 }
 \description{
 generate initial state vector
+}
+\note{
+\code{"CI"} refers to the Stanford group's
+    "covid intervention" model.
 }

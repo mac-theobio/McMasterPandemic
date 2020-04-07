@@ -138,7 +138,8 @@ The \code{obs_disp} parameter is the dispersion parameter for a negative
 binomial.
 
 <<run_sim_obs_noise,fig.width=8>>=
-params1obs <- c(params1, obs_disp=200)
+params1obs <- params1
+params1obs[["obs_disp"]] <- 200
 res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
                    stoch=c(obs=TRUE, proc=FALSE))
 summary(res1obs)
