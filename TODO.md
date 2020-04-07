@@ -2,6 +2,10 @@
 
 ### short term
 
+* transition TODO list to GH issues???
+* fix make rules
+* fix 
+* write_params
 * incorporate het/behavioural change: `beta*(S/N)^het_alpha*I`
 * fix time-varying machinery: check for off-by-one on dates?? (BMB)
 * testing calibration (BMB)

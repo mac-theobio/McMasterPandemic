@@ -85,7 +85,7 @@ params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic
 @
 
 <<params_kable,echo=FALSE>>=
-invisible(knitr::kable(print(params1, describe=TRUE)))
+knitr::kable(describe_params(params1))
 @
 
 \paragraph{Initial conditions}

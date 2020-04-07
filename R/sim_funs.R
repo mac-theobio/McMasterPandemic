@@ -365,7 +365,6 @@ R,Recovered
 ##' @param value_col name of column containing values
 ##' @param symbol_col name of column containing symbols
 ##' @param desc_col name of (optional) column containing descriptions
-##' @param 
 ##' @importFrom stats setNames
 ##' @importFrom utils read.csv write.table
 ##' @export

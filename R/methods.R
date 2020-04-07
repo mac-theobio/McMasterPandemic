@@ -137,31 +137,46 @@ summary.pansim <- function(object, ...) {
     res
 }
 
-    param_meanings <- c(
-        beta0 = "transmission rate",
-        Ca = "relative asymptomatic transmissibility",
-        Cp = "relative pre-symptomatic transmissibility",
-        Cs = "relative severely symptomatic transmissibility",
-        Cm = "relative mildly symptomatic transmissibility",
-        alpha = "proportion of infections that are asymptomatic",
-        sigma = "1 / mean LATENT period",
-        gamma_a = "1 / mean days in asymptomatic infectious class",
-        gamma_s = "1 / mean days in severely symptomatic infectious class",
-        gamma_m = "1 / mean days in mildly symptomatic infectious class",
-        gamma_p = "1 / mean days in pre-symptomatic infectious class",
-        rho = "1 / mean days in acute care",
-        delta = "proportion of acute care patients who die",
-        mu = "proportion of symptomatic infections that are mild",
-        N = "total population size",
-        E0 = "number of initially exposed individuals",
-        iso_m = "proportion of mildly symptomatic patients who are isolated",
-        iso_s = "proportion of severely symptomatic patients who are isolated",
-        phi1 = "proportion of severe infections that do NOT require ICU",
-        phi2 = "proportion of ICU patients who die",
-        psi1 = "1 / mean days in ICU if survive",
-        psi2 = "1 / mean days in ICU if die",
-        psi3 = "1 / mean days post-ICU until discharge"
-    )
+## hard-coded param descriptions
+## use as backup if params don't have them attached
+param_meanings <- c(
+    beta0 = "transmission rate",
+    Ca = "relative asymptomatic transmissibility",
+    Cp = "relative pre-symptomatic transmissibility",
+    Cs = "relative severely symptomatic transmissibility",
+    Cm = "relative mildly symptomatic transmissibility",
+    alpha = "proportion of infections that are asymptomatic",
+    sigma = "1 / mean LATENT period",
+    gamma_a = "1 / mean days in asymptomatic infectious class",
+    gamma_s = "1 / mean days in severely symptomatic infectious class",
+    gamma_m = "1 / mean days in mildly symptomatic infectious class",
+    gamma_p = "1 / mean days in pre-symptomatic infectious class",
+    rho = "1 / mean days in acute care",
+    delta = "proportion of acute care patients who die",
+    mu = "proportion of symptomatic infections that are mild",
+    N = "total population size",
+    E0 = "number of initially exposed individuals",
+    iso_m = "proportion of mildly symptomatic patients who are isolated",
+    iso_s = "proportion of severely symptomatic patients who are isolated",
+    phi1 = "proportion of severe infections that do NOT require ICU",
+    phi2 = "proportion of ICU patients who die",
+    psi1 = "1 / mean days in ICU if survive",
+    psi2 = "1 / mean days in ICU if die",
+    psi3 = "1 / mean days post-ICU until discharge"
+)
+
+describe_params <- function(x) {
+    if (!is.null(attr(x,"description"))) {
+        x_meanings <- attr(x,"description")[names(x)]
+    } else {  ## backup/built-in
+        x_meanings <- param_meanings[names(x)]
+    }
+    xout <- data.frame(symbol=names(x),
+                       value=round(as.numeric(x),3),
+                       meaning=x_meanings)
+    rownames(xout) <- NULL ## redundant
+    return(xout)
+}
 
 ##' print parameters, possibly with detailed description
 ##'
@@ -170,25 +185,17 @@ summary.pansim <- function(object, ...) {
 ##' @param describe print full description?
 ##' @param silent if \code{describe} and \code{silent}, do not print (just return data frame)
 ##' @param ... (unused, for generic consistency)
+##' @examples
+##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' print(params)
+##' print(params,describe=TRUE)
 ##' @export
 ## FIXME: prettier printing, e.g. detect "1/" or "proportion"
-## FIXME: 'silent' doesn't make sense for a print method; break out
-##   enrichment code to a separate fn
-print.params_pansim <- function( x, describe=FALSE, silent=TRUE, ... ) {
+print.params_pansim <- function( x, describe=FALSE, ... ) {
     if (!describe) {
         attr(x,"description") <- NULL
         print(unclass(x))
     } else {
-        if (!is.null(attr(x,"description"))) {
-            x_meanings <- attr(x,"description")[names(x)]
-        } else {  ## backup/built-in
-            x_meanings <- param_meanings[names(x)]
-        }
-        xout <- data.frame(symbol=names(x),
-                   value=round(as.numeric(x),3),
-                   meaning=x_meanings)
-        ## FIXME: pretty-printing?
-       if (!silent) print(xout)
-        return(invisible(xout))
+        print(describe_params(x))
     }
 }

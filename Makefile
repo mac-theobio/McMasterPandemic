@@ -63,10 +63,10 @@ localstuff:
 
 R=R
 # -> you can do    R=R-devel  make ....
-## PACKAGE=glmmTMB
+PACKAGE=McMasterPandemic
 # get VERSION from glmmTMB/DESCRIPTION  
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
-VERSION := $(shell sed -n '/^Version: /s///p' DESCRIPTION)
+VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 
 testversion:
 	echo "${VERSION}"
@@ -90,3 +90,15 @@ pkgcheck:
 
 clean:
 	find . \( -name "\.#*" -o -name "*~" \) -exec rm {} \;
+
+CPP_SRC=
+
+## FIXME: depend on ??
+build-package: $(TARBALL)
+$(TARBALL): ./NAMESPACE
+	$(R) CMD build --resave-data=no .
+	mv $@ ..
+
+install: $(TARBALL)
+	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
+	@touch $@
