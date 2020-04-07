@@ -11,9 +11,12 @@ doc-update
 namespace-update
 *.log
 *.tex
+*.synctex*
+*.toc
 *.pdf
 *.html
 */*.wrapR.r
 */*.Rout
 */.*.RData
 */.*.Rlog
+cache
