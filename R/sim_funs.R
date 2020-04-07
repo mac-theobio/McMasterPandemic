@@ -405,12 +405,17 @@ write_params <- function(params, fn, label) {
 ##' generate initial state vector
 ##' @param N population size
 ##' @param E0 initial number exposed
-##' @param type (character) specify what model type this is intended for; determines state names
+##' @param type (character) specify what model type this is intended
+##'     for (e.g., \code{"ICU1"}, \code{"CI"}); determines state names
 ##' @param state_names vector of state names, must include S and E
 ##' @param params parameter vector (looked in for N and E0)
-##' @param x proposed (named) state vector; missing values will be set to zero
+##' @param x proposed (named) state vector; missing values will be set
+##'     to zero
+##' @note \code{"CI"} refers to the Stanford group's
+##'     "covid intervention" model.
 ##' @export
-## FIXME: can pass x, have a name check, fill in zero values
+##'
+##  FIXME: can pass x, have a name check, fill in zero values
 make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
                        type="ICU1",
