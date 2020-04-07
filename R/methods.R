@@ -177,7 +177,8 @@ describe_params <- function(x) {
         x_meanings <- param_meanings[names(x)]
     }
     xout <- data.frame(symbol=names(x),
-                       value=round(as.numeric(x),3),
+                       ##value=round(as.numeric(x),3),
+                       value=sprintf("%.3g", as.numeric(x)),
                        meaning=x_meanings)
     rownames(xout) <- NULL ## redundant
     return(xout)

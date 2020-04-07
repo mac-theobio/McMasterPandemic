@@ -10,5 +10,5 @@ describe_params(x)
 \item{x}{a \code{params_pansim} object}
 }
 \description{
-Create a data frame with symbols, values an meanings of parameters
+Create a data frame with symbols, values and meanings of parameters
 }
