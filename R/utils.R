@@ -40,3 +40,12 @@ print_globals <- function(..., chunksize=8) {
     ss2 <- paste(sapply(ss,paste,collapse=" <- ")," <- NULL")
     cat(ss2,sep="\n")
 }
+
+## utility for Stanford-to-McMaster notation change
+rename_params <- function(p) {
+    n <- names(p)
+    n <- gsub("^gamma","sigma",n)
+    n <- gsub("^lambda","gamma",n)
+    names(p) <- n
+    return(p)
+}

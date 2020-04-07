@@ -18,3 +18,4 @@ foreach f ($ff)
     git diff -U0 --word-diff --no-index $f.1 $f
     echo ------------------------------------------------
 end
+

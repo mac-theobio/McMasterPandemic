@@ -47,10 +47,10 @@ make_jac <- function(params, state=NULL) {
     M["E","Im"] <- S*Iwt[["Im"]]
     M["E","Is"] <- S*Iwt[["Is"]]
     M["E","S"] <- +sum(Ivec*Iwt)
-    M["E","E"] <- -P$sigma
-    M["Ia","E"] <- alpha*P$sigma
+    M["E","E"] <- -sigma
+    M["Ia","E"] <- alpha*sigma
     M["Ia","Ia"] <- -gamma_a
-    M["Ip","E"] <- (1-alpha)*P$sigma
+    M["Ip","E"] <- (1-alpha)*sigma
     M["Ip","Ip"] <- -gamma_p
     M["Im","Ip"] <- mu*gamma_p
     M["Im","Im"] <- -gamma_m
@@ -127,12 +127,11 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
                 dimnames=list(from=names(state),to=names(state)))
     ## fill entries
     ## NB meaning of iso_* has switched from Stanford model
-    ## FIXME:: why are sigma(), Im() found rather than the values in P$ ???
-    Ivec <- c(Ia, Ip, P$Im,Is)
+    Ivec <- c(Ia, Ip, Im,Is)
     Iwt <- beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs)
     M["S","E"]   <- sum(Iwt*Ivec)
     M["E","Ia"]  <- alpha*P$sigma
-    M["E","Ip"]  <- (1-alpha)*P$sigma
+    M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
     M["Ip","Im"] <- mu*gamma_p
     M["Ip","Is"] <- (1-mu)*gamma_p
