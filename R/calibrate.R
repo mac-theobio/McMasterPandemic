@@ -1,10 +1,10 @@
 ## FIXME: generalize to take vector of params (log change)
 ##  plus parallel list of parameter vectors e.g.
-##  log_delta=c(beta0=...,lambda=...)
-##  pars_adj= list("beta0",c("gamma","lambda_s","lambda_m", "lambda_a"))
+##  log_delta=c(beta0=...,gamma=...)
+##  pars_adj= list("beta0",c("sigma","gamma_s","gamma_m", "gamma_a"))
 adjust_params <- function(log_delta,
                           pars_adj=list("beta0",
-                                        c("gamma","lambda_s","lambda_m","lambda_a")),
+                                        c("sigma","gamma_s","gamma_m","gamma_a")),
                           params) {
     for (i in seq_along(log_delta)) {
         params[pars_adj[[i]]] <- params[pars_adj[[i]]]*exp(log_delta[i])
@@ -55,7 +55,7 @@ badness <- function(delta, params, target, pars_adj) {
 ##' @export
 fix_pars <- function(params, target=c(r=0.23,Gbar=6),
                      pars_adj=list("beta0",
-                                   c("gamma","lambda_s","lambda_m","lambda_a")))
+                                   c("sigma","gamma_s","gamma_m","gamma_a")))
 {
     ## cc <- emdbook::curve3d(badness(c(x,y),params,target=target),
     ##                        xlim=c(-1,1),ylim=c(-1,1),

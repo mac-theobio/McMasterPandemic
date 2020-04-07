@@ -19,7 +19,7 @@ make_jac <- function(params, state=NULL) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- gamma <- lambda_a <- lambda_m <- lambda_s <- lambda_p  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
@@ -47,28 +47,28 @@ make_jac <- function(params, state=NULL) {
     M["E","Im"] <- S*Iwt[["Im"]]
     M["E","Is"] <- S*Iwt[["Is"]]
     M["E","S"] <- +sum(Ivec*Iwt)
-    M["E","E"] <- -P$gamma
-    M["Ia","E"] <- alpha*P$gamma
-    M["Ia","Ia"] <- -lambda_a
-    M["Ip","E"] <- (1-alpha)*P$gamma
-    M["Ip","Ip"] <- -lambda_p
-    M["Im","Ip"] <- mu*lambda_p
-    M["Im","Im"] <- -lambda_m
-    M["Is","Ip"] <- (1-mu)*lambda_p
-    M["Is","Is"] <- -lambda_s
-    M["H","Is"]  <- phi1*lambda_s
+    M["E","E"] <- -P$sigma
+    M["Ia","E"] <- alpha*P$sigma
+    M["Ia","Ia"] <- -gamma_a
+    M["Ip","E"] <- (1-alpha)*P$sigma
+    M["Ip","Ip"] <- -gamma_p
+    M["Im","Ip"] <- mu*gamma_p
+    M["Im","Im"] <- -gamma_m
+    M["Is","Ip"] <- (1-mu)*gamma_p
+    M["Is","Is"] <- -gamma_s
+    M["H","Is"]  <- phi1*gamma_s
     M["H","H"]   <- -rho
-    M["ICUs","Is"] <- (1-phi1)*(1-phi2)*lambda_s
+    M["ICUs","Is"] <- (1-phi1)*(1-phi2)*gamma_s
     M["ICUs","ICUs"] <- -psi1
     M["H2","ICUs"] <- psi1
     M["H2","H2"] <- -psi3
-    M["ICUd","Is"] <- (1-phi1)*phi2*lambda_s
+    M["ICUd","Is"] <- (1-phi1)*phi2*gamma_s
     M["ICUd","ICUd"] <- -psi2
     M["D","ICUd"] <- psi2
-    M["R","Ia"] <- lambda_a
-    M["R","Ip"] <- lambda_p
-    M["R","Im"] <- lambda_m
-    M["R","Is"] <- lambda_s
+    M["R","Ia"] <- gamma_a
+    M["R","Ip"] <- gamma_p
+    M["R","Im"] <- gamma_m
+    M["R","Is"] <- gamma_s
     M["R","H"] <- rho
     M["R","H2"] <- psi3
     return(M)
@@ -112,7 +112,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- gamma <- lambda_a <- lambda_m <- lambda_s <- lambda_p  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
@@ -127,27 +127,27 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
                 dimnames=list(from=names(state),to=names(state)))
     ## fill entries
     ## NB meaning of iso_* has switched from Stanford model
-    ## FIXME:: why are gamma(), Im() found rather than the values in P$ ???
+    ## FIXME:: why are sigma(), Im() found rather than the values in P$ ???
     Ivec <- c(Ia, Ip, P$Im,Is)
     Iwt <- beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs)
     M["S","E"]   <- sum(Iwt*Ivec)
-    M["E","Ia"]  <- alpha*P$gamma
-    M["E","Ip"]  <- (1-alpha)*P$gamma
-    M["Ia","R"]  <- lambda_a
-    M["Ip","Im"] <- mu*lambda_p
-    M["Ip","Is"] <- (1-mu)*lambda_p
-    M["Im","R"]  <- lambda_m
+    M["E","Ia"]  <- alpha*P$sigma
+    M["E","Ip"]  <- (1-alpha)*P$sigma
+    M["Ia","R"]  <- gamma_a
+    M["Ip","Im"] <- mu*gamma_p
+    M["Ip","Is"] <- (1-mu)*gamma_p
+    M["Im","R"]  <- gamma_m
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
-        M["Is","H"]  <- lambda_s
+        M["Is","H"]  <- gamma_s
         M["H","D"]   <- delta*rho
         M["H","R"]   <- (1-delta)*rho
     } else {
 	 		## FIXME: A better term than "acute" to mean the opposite of intensive?
         ## * three-way split (acute care, ICU/survive, ICUD/die)
-        M["Is","H"] <- phi1*lambda_s
-        M["Is","ICUs"] <- (1-phi1)*(1-phi2)*lambda_s
-        M["Is","ICUd"] <- (1-phi1)*phi2*lambda_s
+        M["Is","H"] <- phi1*gamma_s
+        M["Is","ICUs"] <- (1-phi1)*(1-phi2)*gamma_s
+        M["Is","ICUd"] <- (1-phi1)*phi2*gamma_s
         M["ICUs","H2"] <- psi1 ## ICU to post-ICU acute care
         M["ICUd","D"] <- psi2  ## ICU to death
         M["H2","R"]   <- psi3  ## post-ICU to discharge
@@ -356,9 +356,9 @@ R,Recovered
 ##' 
 ##' \eqn{   \beta_0:  }  transmission rate
 ##' 
-##' \eqn{   1/\gamma:  }  mean \emph{latent} period
+##' \eqn{   1/\sigma:  }  mean \emph{latent} period
 ##' 
-##' \eqn{   1/\lambda_a:  }  mean \emph{infectious} period for asymptomatic individuals
+##' \eqn{   1/\gamma_a:  }  mean \emph{infectious} period for asymptomatic individuals
 ##' 
 ##' \eqn{   ... }
 ##' 

@@ -73,7 +73,7 @@ get_GI_moments <- function(params) {
         R <- sum(Rv)
         ## FIXME: get rates, use names rather than numeric indices below
 	boxtimes <- with(as.list(params), 
-	 	1/c(gamma, lambda_a, lambda_p, lambda_m, lambda_s)
+	 	1/c(sigma, gamma_a, gamma_p, gamma_m, gamma_s)
 	)
 	boxvars <- boxtimes^2
 	classtimes <- c(boxtimes[[1]]
@@ -109,10 +109,10 @@ get_R0 <- function(params, components=FALSE,
 	## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
 	##  (will have to rethink this once we have a structured model)
                   analytical = with(as.list(params), {
-                      comp <- beta0*c(alpha*Ca/lambda_a,
-                      (1-alpha)*c(Cp/lambda_p,
-                                  mu*(1-iso_m)*Cm/lambda_m,
-                                  (1-mu)*(1-iso_s)*Cs/lambda_s ))
+                      comp <- beta0*c(alpha*Ca/gamma_a,
+                      (1-alpha)*c(Cp/gamma_p,
+                                  mu*(1-iso_m)*Cm/gamma_m,
+                                  (1-mu)*(1-iso_s)*Cs/gamma_s ))
                       if (components) comp else sum(comp)
                   }),
                   kernel=get_kernel_moments(params)[["R0"]]
