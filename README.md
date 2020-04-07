@@ -13,6 +13,7 @@ Please send any comments to
 ### For developers
 
 * If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
+* please test/check the package periodically as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R).
 
 ### DISCLAIMER
 

@@ -85,7 +85,7 @@ params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic
 @
 
 <<params_kable,echo=FALSE>>=
-knitr::kable(print(params1, describe=TRUE))
+invisible(knitr::kable(print(params1, describe=TRUE)))
 @
 
 \paragraph{Initial conditions}
@@ -125,10 +125,9 @@ The \code{plot} method for \code{pansim} objects returns a
 \code{ggplot} object.
 Specifying a log scale in the construction of the plot avoids zeros in
 the resulting time series.
-<<plot_sim>>=
-p1 <- plot(res1, keep_states=c("ICU","H","D"), log=TRUE)
-print(p1 + scale_y_continuous()) # show linear plot
-print(p1) # show logarithmic plot
+<<plot_sim,fig.width=8>>=
+plot_grid(plot(res1, log=TRUE),  ## logarithmic
+          plot(res1))  ## linear
 @
 
 \subsection{Stochasticity}
