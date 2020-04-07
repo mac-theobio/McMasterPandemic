@@ -1,0 +1,77 @@
+---
+title: "analysis of Ontario COVID19 data"
+author: "Ben Bolker and Mike Li"
+date: "`r format(Sys.time(),'%d %b %Y')`"
+---
+
+```{r opts, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r pkgs,message=FALSE}
+library(tidyverse)
+library(McMasterPandemic)
+library(directlabels)
+library(ggplot2); theme_set(theme_bw())
+library(colorspace)
+scale_colour_discrete <- function(...) {
+  colorspace::scale_colour_discrete_qualitative(...)
+}
+scale_fill_discrete <- function(...) {
+  colorspace::scale_fill_discrete_qualitative(...)
+}
+```
+
+Reading data from Mike Li's [curated Canadian COVID data repository](https://github.com/wzmli/COVID19-Canada),
+harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0).
+
+```{r read_data,message=FALSE,warning=FALSE}
+url <- "https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv"
+## download.file("https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv", dest="today.csv")
+dd <- read_csv(url)
+## dd %>% filter(Province=="ON") %>% select(Date,source,Note) %>% View()
+
+ont_dd <- (dd
+  %>% filter(Province=="ON")
+  %>% select(Date,Hospitalization,ICU,ventilator,incidence,deceased)
+  %>% rename(pos_tests="incidence")
+  %>% pivot_longer(-Date,names_to="var")
+  %>% filter(Date>=as.Date("2020-03-15"))
+)
+```
+
+variable meanings (see https://github.com/wzmli/COVID19-Canada/blob/master/ON.R )
+
+* Hospitalization: Number of patients hospitalized with COVID-19
+* ICU: Number of patients in ICU with COVID-19
+* Ventilator: Number of patients in ICU on a ventilator with COVID-19
+* pos_tests: difference in daily reports of cumulative presumptive + confirmed positive cases
+* deceased: cumulative deaths
+
+```{r main_plot,warning=FALSE}
+gg0 <- (ggplot(ont_dd,aes(Date,value,colour=var))
+  + geom_point()
+  + scale_y_log10()
+  + geom_line(size=0.5,alpha=0.5)
+  + geom_smooth(method="lm",
+                formula=y~poly(x,2))
+)
+dm <- list(dl.trans(x=x+0.2),cex=1,last.bumpup)
+print(gg1 <- (gg0
+  + geom_dl(aes(label=var),method=dm)
+  + theme(legend.position="none")
+  + expand_limits(x=as.Date("2020-04-15"))
+)
+)
+```
+
+The curves represent quadratic fits to the data. We are concerned that the strong saturation of ICU and ventilator numbers indicate the onset of severe capacity limitation of the medical system. Do you have any information? Are there relatively innocuous explanations (related to reporting procedures or other) that we haven't thought of?
+
+```{r ICU_ratio}
+ICU_ratio <- (ont_dd
+  %>% filter(var %in% c("ICU","ventilator"))
+  %>% pivot_wider(names_from="var",values_from="value")
+  %>% na.omit()
+  %>% mutate(ratio=ventilator/ICU)
+)
+```
