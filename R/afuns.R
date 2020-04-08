@@ -38,6 +38,10 @@ get_evec <- function(p, method=c("expsim","analytical")) {
     return(res)
 }
 
+##' compute mean generation interval from parameters
+##' @param p a set of parameters
+##' @param method computational method
+##' @export
 get_Gbar <- function(p, method=c("analytical","kernel")) {
     method <- match.arg(method)
     res <- switch(method,

@@ -3,7 +3,7 @@ library(glmmTMB)
 library(nlme)
 library(broom.mixed)
 library(McMasterPandemic)
-url <- "https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv"
+url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
 dd <- read_csv(url)
 
 ## process with knitr::spin() ...
@@ -12,7 +12,7 @@ dd <- read_csv(url)
 
 ##' Warm up with a quadratic fit (changing scale in ggplot link function in GLMs) to reported incidence in all provinces
 ##+ first_plot
-print(gg0 <- ggplot(dd,aes(Date,incidence,colour=Province))
+print(gg0 <- ggplot(dd,aes(Date,newConfirmations,colour=Province))
     + geom_line(size=0.5,alpha=0.3)
     + geom_point()+scale_y_log10()
     + geom_smooth(method="lm",
@@ -32,7 +32,7 @@ print(gg0 <- ggplot(dd,aes(Date,incidence,colour=Province))
 
 ont_dd <- (dd
     %>% filter(Province=="ON")
-    %>% select(Date,Hospitalization,ICU,ventilator,incidence,deceased)
+    %>% select(Date,Hospitalization,ICU,Ventilator,newConfirmations,deceased)
     %>% pivot_longer(-Date,names_to="var")
 )
 
@@ -42,7 +42,7 @@ print(gg1 <- ggplot(ont_dd,aes(Date,value,colour=var))
     + geom_smooth(method="lm",
                   formula=y~poly(x,2))
 )
-##' * Natural for ICU and ventilator to be parallel (no real lags here)
+##' * Natural for ICU and Ventilator to be parallel (no real lags here)
 ##' * recent nonlinearity/flattening in cases is too recent/sharp to affect the estimated slope much
 ##' * very weird that the ICU/vent curves are flattening before the other two
 
@@ -96,8 +96,8 @@ t0 <- (tidy(fit1Q,conf.int=TRUE)
                        ifelse(grepl("1$",term),"linear","quad")))
     %>% mutate(var=gsub("Poly[0-9]","",term),
                ## reverse levels to get top-to-bottom
-               var=factor(var,levels=rev(c("incidence","Hospitalization",
-                                       "ICU","ventilator","deceased"))))
+               var=factor(var,levels=rev(c("newConfirmations","Hospitalization",
+                                       "ICU","Ventilator","deceased"))))
     %>% select(-c(effect,component,statistic,p.value))
 )
 print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
@@ -106,11 +106,11 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
     + geom_vline(xintercept=0,lty=2)
 )
 
-##' * intercepts for variables other than incidence describe sensitivity (how small a non-zero value is actually reported?
-##' * incidence and hosp slopes and curvature agree fairly well
-##' * no 'clear' evidence of slowing incidence/hospitalization (¿ flattening in incidence could be obscured by increasing testing/ too recent or sharp to be well-modeled by a quadratic ?)
+##' * intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
+##' * newConfirmations and hosp slopes and curvature agree fairly well
+##' * no 'clear' evidence of slowing newConfirmations/hospitalization (¿ flattening in newConfirmations could be obscured by increasing testing/ too recent or sharp to be well-modeled by a quadratic ?)
 ##' * 
-##' * don't know why death is slower  and ICU/ventilator are faster
+##' * don't know why death is slower  and ICU/Ventilator are faster
 ##' * deaths conf intervals might be overly narrow because these are cumulative values
 
 ##' calibrate to hospitalization
