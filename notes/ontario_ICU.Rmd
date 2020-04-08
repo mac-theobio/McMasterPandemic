@@ -1,6 +1,6 @@
 ---
 title: "analysis of Ontario COVID19 data"
-author: "Ben Bolker and Mike Li"
+author: "Ben Bolker and Mike Li, McMaster University"
 date: "`r format(Sys.time(),'%d %b %Y')`"
 ---
 
@@ -76,4 +76,4 @@ ICU_ratio <- (ont_dd
 )
 ```
 
-Source code for this document is [here](https://github.com/bbolker/McMasterPandemic/blob/master/notes/ontario_ICU.Rmd).
+Source code for this document on our [McMasterPandemic github repository](https://github.com/bbolker/McMasterPandemic/blob/master/notes/ontario_ICU.Rmd).
