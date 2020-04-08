@@ -26,14 +26,12 @@ Reading data from Mike Li's [curated Canadian COVID data repository](https://wzm
 harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0).
 
 ```{r read_data,message=FALSE,warning=FALSE}
-url <- "https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv"
-## download.file("https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv", dest="today.csv")
+url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
 dd <- read_csv(url)
-## dd %>% filter(Province=="ON") %>% select(Date,source,Note) %>% View()
 
 ont_dd <- (dd
   %>% filter(Province=="ON")
-  %>% select(Date,Hospitalization,ICU,Ventilator,deceased)
+  %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
   %>% pivot_longer(-Date,names_to="var")
   %>% filter(Date>=as.Date("2020-03-15"))
 )
@@ -44,7 +42,7 @@ variable meanings (see https://github.com/wzmli/COVID19-Canada/blob/master/ON.R 
 * Hospitalization: Number of patients hospitalized with COVID-19
 * ICU: Number of patients in ICU with COVID-19
 * Ventilator: Number of patients in ICU on a ventilator with COVID-19
-* pos_tests: difference in daily reports of cumulative presumptive + confirmed positive cases
+* newConfirmations: difference in daily reports of cumulative presumptive + confirmed positive cases
 * deceased: cumulative deaths
 
 Note [footnote 7](https://www.ontario.ca/page/2019-novel-coronavirus#7) from the Ontario reports page:
@@ -72,10 +70,10 @@ The curves represent quadratic fits to the data.
 
 ```{r ICU_ratio}
 ICU_ratio <- (ont_dd
-  %>% filter(var %in% c("ICU","ventilator"))
+  %>% filter(var %in% c("ICU","Ventilator"))
   %>% pivot_wider(names_from="var",values_from="value")
   %>% na.omit()
-  %>% mutate(ratio=ventilator/ICU)
+  %>% mutate(ratio=Ventilator/ICU)
 )
 ```
 
