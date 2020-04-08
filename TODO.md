@@ -11,7 +11,6 @@
 * multi-parameter run interface (fix fitfun/predict/etc.)
     * make a predict method for parameter sets (assuming we can use E0 and start date only as part of params)
 * multi-run plots (aggregate + bind_rows)	
-* get public H/D/ICU data for examples
 * improve documentation!
 * fitting procedure with time-varying parameters
 
@@ -30,7 +29,6 @@
 
 ### longer term
 
-* effective heterogeneity: alpha  = (S(t)/S(0))^alpha
 * full stochastic version (now does obs stoch)
     * demographic: reulermultinom etc.
     * random-walk of parameters
