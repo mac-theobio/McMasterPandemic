@@ -1,7 +1,4 @@
-## FIXME: generalize to take vector of params (log change)
-##  plus parallel list of parameter vectors e.g.
-##  log_delta=c(beta0=...,gamma=...)
-##  pars_adj= list("beta0",c("sigma","gamma_s","gamma_m", "gamma_a"))
+
 adjust_params <- function(log_delta,
                           pars_adj=list("beta0",
                                         c("sigma","gamma_s","gamma_m","gamma_a")),
@@ -52,26 +49,27 @@ badness <- function(delta, params, target, pars_adj) {
 ##' @param params a parameter vector
 ##' @param target target values for one or more epidemic moments
 ##' @param pars_adj list of sets of parameters to adjust
+##' @param u_interval interval for uniroot adjustment
+##' @param r_method method for fixing r (brute-force exponential simulation or JD's kernel-based approach?)
 ##' @export
+## FIXME: automatically choose default pars_adj on the basis of target?
+##  better checking of pars_adj (should be a list of named vectors with
+##  length equal to length of target
 fix_pars <- function(params, target=c(r=0.23,Gbar=6),
                      pars_adj=list("beta0",
-                                   c("sigma","gamma_s","gamma_m","gamma_a")))
+                                   c("sigma","gamma_s","gamma_m","gamma_a")),
+                     r_method=c("expsim","rmult"),
+                     u_interval = c(-3,3))
 {
-    ## cc <- emdbook::curve3d(badness(c(x,y),params,target=target),
-    ##                        xlim=c(-1,1),ylim=c(-1,1),
-    ##                        sys3d="image")
-    if (identical(names(target),"r")) {
-        ## adjust beta0
+    r_method <- match.arg(r_method)
+    if (identical(names(target),"r") && r_method=="rmult") {
         k <- transKernel(params)$foi
         rm <- rmult(k,target[["r"]])
         p_new <- params
         p_new[["beta0"]] <- p_new[["beta0"]]*rm
     } else {
         if (length(target)==1) {
-            ## pvec <- seq(-3,3,length.out=101)
-            ## s <- sapply(pvec, uniroot_target,
-            ##    params=params, target=target)
-            u <- uniroot(f=uniroot_target,interval=c(-3,3),
+            u <- uniroot(f=uniroot_target,interval=u_interval,
                          params=params, target=target, pars_adj=pars_adj)
             p_new <- adjust_params(u$root, params, pars_adj = pars_adj)
         } else {

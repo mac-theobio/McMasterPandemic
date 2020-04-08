@@ -9,6 +9,7 @@ target.mk
 makestuff/
 doc-update
 namespace-update
+install
 *.log
 *.tex
 *.synctex*

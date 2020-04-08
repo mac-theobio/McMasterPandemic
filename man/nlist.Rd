@@ -2,12 +2,13 @@
 % Please edit documentation in R/utils.R
 \name{nlist}
 \alias{nlist}
-\title{self-naming list (copied from lme4:::namedList)
-... a list of objects}
+\title{self-naming list (copied from lme4:::namedList)}
 \usage{
 nlist(...)
 }
+\arguments{
+\item{...}{a list of objects}
+}
 \description{
 self-naming list (copied from lme4:::namedList)
-... a list of objects
 }

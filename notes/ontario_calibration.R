@@ -2,6 +2,7 @@ library(tidyverse)
 library(glmmTMB)
 library(nlme)
 library(broom.mixed)
+library(McMasterPandemic)
 url <- "https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv"
 dd <- read_csv(url)
 
@@ -61,7 +62,7 @@ ont_recent <- (filter(ont_dd,Date>=as.Date("2020-03-15"))
     %>% ungroup()
 )
     
-print(gg0 %+% ont_recent)
+print(gg1 %+% ont_recent)
 
 print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
     + geom_point()
@@ -99,7 +100,7 @@ t0 <- (tidy(fit1Q,conf.int=TRUE)
                                        "ICU","ventilator","deceased"))))
     %>% select(-c(effect,component,statistic,p.value))
 )
-(gg2 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
+print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
     + geom_pointrange()
     + facet_wrap(~type,scale="free",ncol=1)
     + geom_vline(xintercept=0,lty=2)
@@ -116,16 +117,100 @@ t0 <- (tidy(fit1Q,conf.int=TRUE)
 
 vv <- vcov(fit1Q)$cond
 hosp_ind <- grep("Hospitalization",rownames(vv))
-vv <- vv
+mu <- fixef(fit1Q)$cond[hosp_ind]
+vv <- vv[hosp_ind, hosp_ind]
+
+## assume for now that Wald approx is OK for sampling distribution
+nsim <- 200
+set.seed(101)
+sim_params <- MASS::mvrnorm(nsim,mu=mu,Sigma=vv)
+## add Gbar distribution (independent Gaussian sample)
+Gbar_prior <- c(mean=6,sd=0.2)
+## FIXME: narrow for now, come back and fix calibration issues
+##  (does analytic solution work for Gbar???)
+sim_params <- cbind(sim_params,Gbar=do.call(rnorm,c(list(nsim),
+                                                    as.list(Gbar_prior))))
+sim_params <- as.data.frame(sim_params)
+names(sim_params) <- c("int","slope","curve","Gbar")
+
+## for each set of parameters:
+## (1) calibrate params to G
+## (2) calibrate beta0 to r
+## (3) calibrate intercept
+## (4) run and store
+
+
+base_params <- read_params(system.file("params","ICU1.csv",
+                                       package="McMasterPandemic"))
+base_params[["N"]] <- 14.57e6  ## Ontario pop size
+reg_date <- (ont_recent
+    %>% filter(var=="Hospitalization",vday==0)
+    %>% pull(Date)
+)
+
+##' x= param vector (int/slope/curve/Gbar)
+##' base_params
+##' start_date start date for sims
+##' reg_date start date for regressions
+##' end_date
+##' init_var calibration variable
+##' init_var_value
+sim_fun <- function(x, base_params,
+                    start_date="1-Mar-2020",
+                    reg_date,
+                    end_date="1-May-2020",
+                    init_var="H", sim_args=NULL,
+                    vals_only=TRUE) {
+    ## calibration
+    p <- fix_pars(base_params, target=c(Gbar=x[["Gbar"]]),
+                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
+    stopifnot(all.equal(get_Gbar(p),x[["Gbar"]],tolerance=1e-4))
+    ## fix params to *initial* slope (for now)
+    p <- fix_pars(p, target=c(r=x[["slope"]]),
+                  pars_adj=list("beta0"),u_interval=c(-1,2))
+    ## FIXME: problems with r-calibration here if using r_method="rmult"
+    stopifnot(all.equal(get_r(p),x[["slope"]],tolerance=1e-4))
+    ## calibrate initial state (shooting)
+    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
+                      init_target=x[["int"]], sim_args=sim_args)
+    arg_list <- nlist(params=p,
+                      state,
+                      start_date,
+                      end_date)
+    r <- do.call(run_sim,arg_list)
+    a <- aggregate(r,pivot=TRUE)
+    if (vals_only) return(a$value) else return(a)
+}
+
+## FIXME: could use pmap ... ?
+t1 <- system.time(sim_res <- plyr::alply(sim_params, .margins=1, .fun=sim_fun,
+                       base_params=base_params, reg_date=reg_date,
+                       end_date="1-June-2020",
+                       .progress="text"))
+
+## put together the pieces (alply gives lists, we want a matrix)
+sim_mat <- bind_rows(sim_res)
+sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
+    %>% as_tibble()
+    %>% setNames(c("lwr","median","upr"))
+)
+sim_0 <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date, vals_only=FALSE,
+                       end_date="1-June-2020")
+sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
+(ggplot(sim_final,aes(date,median,colour=var))
+    + scale_y_log10()
+    + geom_line()
+    + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var), colour=NA,
+                  alpha=0.2)
+    + geom_vline(xintercept=reg_date,lty=2)
+)
+
+## weird patterns: because of calibration of intercept???
+## looks plausible.
+
+
 ## implied curves of R_t?
-
-## calibrate to reports
-
-
 ## dates of control???
-
-## run sims
-
 
 ### ISSUES
 
@@ -134,11 +219,3 @@ vv <- vv
 ## 2. non-constant testing (ignore this for now, maybe we can do a brute-force correction where we subtract r(testing) from r(reports) - this assumes that tests are not expanding to incorporate a different subset of people
 ## 3. use H, ICU, D to get r then use reports to get time-varying beta0?
 
-## suppose we have GLM(M)NB fit to something
-## * sample from the distribution of slopes and intercepts
-## for each sample of (i0, r):
-##    * adjust the parameters to get the right beta0/r
-##    * maybe pick a random value of G?
-##    * brute-force calibrate initial conditions based on those parameters and the i0 we picked
-## 
-##    * run the simulation to forecast

@@ -75,3 +75,5 @@ ICU_ratio <- (ont_dd
   %>% mutate(ratio=ventilator/ICU)
 )
 ```
+
+Source code for this document is [here](https://github.com/bbolker/McMasterPandemic/blob/master/notes/ontario_ICU.Rmd).

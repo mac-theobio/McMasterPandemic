@@ -12,8 +12,6 @@
 \item{describe}{print full description?}
 
 \item{...}{(unused, for generic consistency)}
-
-\item{silent}{if \code{describe} and \code{silent}, do not print (just return data frame)}
 }
 \description{
 If the detailed description is requested, it is returned as a data frame.
