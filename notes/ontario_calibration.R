@@ -197,7 +197,7 @@ sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
 sim_0 <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date, vals_only=FALSE,
                        end_date="1-June-2020")
 sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
-(ggplot(sim_final,aes(date,median,colour=var))
+(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
     + scale_y_log10()
     + geom_line()
     + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var), colour=NA,
@@ -205,6 +205,7 @@ sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
     + geom_vline(xintercept=reg_date,lty=2)
 )
 
+ggsave(gg_forecast,file="forecast0.pdf")
 ## weird patterns: because of calibration of intercept???
 ## looks plausible.
 
