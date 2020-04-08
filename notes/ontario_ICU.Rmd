@@ -1,6 +1,6 @@
 ---
 title: "analysis of Ontario COVID19 data"
-author: "Ben Bolker and Mike Li, McMaster University"
+author: "Ben Bolker, Mike Li, Jonathan Dushoff, David Earn (McMaster University)"
 date: "`r format(Sys.time(),'%d %b %Y')`"
 ---
 
@@ -22,19 +22,18 @@ scale_fill_discrete <- function(...) {
 }
 ```
 
-Reading data from Mike Li's [curated Canadian COVID data repository](https://github.com/wzmli/COVID19-Canada),
+Reading data from Mike Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
 harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0).
 
 ```{r read_data,message=FALSE,warning=FALSE}
-url <- "https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv"
+url <- "https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv"
 ## download.file("https://raw.githubusercontent.com/wzmli/COVID19-Canada/master/clean.Rout.csv", dest="today.csv")
 dd <- read_csv(url)
 ## dd %>% filter(Province=="ON") %>% select(Date,source,Note) %>% View()
 
 ont_dd <- (dd
   %>% filter(Province=="ON")
-  %>% select(Date,Hospitalization,ICU,ventilator,incidence,deceased)
-  %>% rename(pos_tests="incidence")
+  %>% select(Date,Hospitalization,ICU,Ventilator,deceased)
   %>% pivot_longer(-Date,names_to="var")
   %>% filter(Date>=as.Date("2020-03-15"))
 )
@@ -47,6 +46,10 @@ variable meanings (see https://github.com/wzmli/COVID19-Canada/blob/master/ON.R 
 * Ventilator: Number of patients in ICU on a ventilator with COVID-19
 * pos_tests: difference in daily reports of cumulative presumptive + confirmed positive cases
 * deceased: cumulative deaths
+
+Note [footnote 7](https://www.ontario.ca/page/2019-novel-coronavirus#7) from the Ontario reports page:
+
+> ICU data include patients in levels 2 and 3  flex, neonatal, pediatric, and adult ICU beds. The reported numbers reflect the previous day’s values. As patients begin to be transferred between units (eg; from lower level of care to a higher level of care), it has become apparent that the previous methods of identifying patients based on a 24-hour time period would count patients transferred between different locations twice; once in each location they were at during the course of the day. In order to eliminate this issue, patients will no longer be counted over a 24 hour period, but will be counted at a single point in time (11:59 pm) to ensure that each person is only counted once.
 
 ```{r main_plot,warning=FALSE}
 gg0 <- (ggplot(ont_dd,aes(Date,value,colour=var))
