@@ -85,8 +85,14 @@ print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
     + geom_smooth(method="lm",formula=y~poly(x,2))
     + scale_x_continuous(limits=c(-1,NA))
 )
-
 ```
+
+## Calibration strategy
+
+- set reasonable parameters (based on literature; ours come from the Stanford covid-interventions model and from personal communications about health-utilization parameters (fraction hospitalized, length of stays in acute care/ICU, etc.)
+- 
+- get an estimate of $r(0)$ (initial exponential growth rate)
+- (NOT YET) adjust time-varying $r(0)$
 
 ## Fitting to data
 
