@@ -37,12 +37,13 @@ Ontario is the only province we have all three reported hospitalization counts (
 ont_dd <- (dd
   %>% filter(Province=="ON")
   %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
-  %>% pivot_longer(-Date,names_to="var")
+    %>% pivot_longer(-Date,names_to="var")
+    %>% setNames(tolower(names(.)))
 )
 ```
 
 ```{r ONplot,message=FALSE, warning=FALSE}
-print(gg1 <- ggplot(ont_dd,aes(Date,value,colour=var))
+print(gg1 <- ggplot(ont_dd,aes(date,value,colour=var))
   + geom_point()
   + scale_y_log10()
   + geom_smooth(method="lm",formula=y~poly(x,2))
@@ -65,11 +66,10 @@ min_day <- function(day,value) {
 start_date <- "2020-03-15"
 
 ont_recent <- (ont_dd
-    %>% filter(Date>=as.Date(start_date))
-    %>% mutate(day=as.numeric(Date-min(Date)))
+    %>% filter(date>=as.Date(start_date))
+    %>% mutate(day=as.numeric(date-min(date)))
     %>% group_by(var)
-    %>% mutate(vday=day-min_day(day,value)
-               , date=as.Date(Date))  ## trying to not to break things
+    %>% mutate(vday=day-min_day(day,value))
     %>% ungroup()
 )
     
@@ -79,7 +79,6 @@ print(gg1 %+% ont_recent)
 We want to find the first _useful/meaningful_ day for each variable and adjust the different time series to their respective meaningful day.
 
 ```{r ont_plot_shift, message=FALSE, warning=FALSE}
-
 print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
     + geom_point()
     + scale_y_log10()
@@ -219,7 +218,7 @@ base_params <- read_params(system.file("params","ICU1.csv",
 base_params[["N"]] <- 14.57e6  ## Ontario pop size
 reg_date <- (ont_recent
     %>% filter(var=="Hospitalization",vday==0)
-    %>% pull(Date)
+    %>% pull(date)
 )
 ```
 
@@ -232,24 +231,49 @@ reg_date <- (ont_recent
 - init_var_value
 
 ```{r simfuns}
+## FIXME: put this in the package
+calib2 <- function(base_params,
+                   target=c(Gbar=6,r=0.23,X0=200),
+                   start_date,
+                   reg_date,
+                   init_var="H",
+                   sim_args=NULL) {
+    start_date <- ldmy(start_date)
+    reg_date <- ldmy(reg_date)
+    p <- fix_pars(base_params, target=c(Gbar=target[["Gbar"]]),
+                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
+    stopifnot(all.equal(get_Gbar(p),target[["Gbar"]],tolerance=1e-4))
+    ## fix params to *initial* slope (for now)
+    p <- fix_pars(p, target=c(r=target[["r"]]),
+                  pars_adj=list("beta0"),u_interval=c(-1,2))
+    ## FIXME: problems with r-calibration here if using r_method="rmult"
+    stopifnot(all.equal(get_r(p),target[["r"]],tolerance=1e-4))
+    ## calibrate initial state (shooting)
+    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
+                      init_target=target[["X0"]], sim_args=sim_args)
+    p[["E0"]] <- state[["E"]]
+    return(p)
+}
+
 sim_fun <- function(x, base_params,
                     start_date="1-Mar-2020",
                     reg_date,
                     end_date="1-May-2020",
-                    init_var="H", sim_args=NULL,
+                    init_var="H",
+                    sim_args=NULL,
                     vals_only=TRUE) {
+    ## FIXME: do the next three cal steps (Gbar -> p -> E0)
+    ##   supersede calibrate()?
+    p <- calib2(base_params,
+                target=c(Gbar=x[["Gbar"]],
+                         r=x[["slope"]],
+                         X0=x[["int"]]),
+                start_date=start_date,
+                reg_date=reg_date,
+                init_var=init_var,
+                sim_args=sim_args)
     ## calibration
-    p <- fix_pars(base_params, target=c(Gbar=x[["Gbar"]]),
-                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
-    stopifnot(all.equal(get_Gbar(p),x[["Gbar"]],tolerance=1e-4))
-    ## fix params to *initial* slope (for now)
-    p <- fix_pars(p, target=c(r=x[["slope"]]),
-                  pars_adj=list("beta0"),u_interval=c(-1,2))
-    ## FIXME: problems with r-calibration here if using r_method="rmult"
-    stopifnot(all.equal(get_r(p),x[["slope"]],tolerance=1e-4))
-    ## calibrate initial state (shooting)
-    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
-                      init_target=x[["int"]], sim_args=sim_args)
+    state <- make_state(params=p)
     arg_list <- nlist(params=p,
                       state,
                       start_date,
@@ -258,6 +282,16 @@ sim_fun <- function(x, base_params,
     a <- aggregate(r,pivot=TRUE)
     if (vals_only) return(a$value) else return(a)
 }
+```
+
+Sim test
+```{r}
+sim_fun(x=sim_params[1,]
+      , base_params=base_params
+      , reg_date=reg_date
+      , end_date="1-June-2020"
+      , vals_only=FALSE
+        )
 ```
 
 Simulating
@@ -317,6 +351,22 @@ print(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
 - weird patterns: because of calibration of intercept??? looks plausible.
 - implied curves of R_t?
 - dates of control???
+
+## estimating breakpoints
+
+```{r breakpoint}
+pars <- fixef(fit1Q)$cond[hosp_ind]
+pp <- calib2(base_params=base_params,
+             target=c(Gbar=6,
+                      r=pars[[2]],
+                      X0=exp(pars[[1]])),
+             start_date="1-Mar-2020",
+             reg_date="15-Mar-2020",
+             init_var="H")
+
+get_break(params=pp,data=ont_recent)
+
+```
 
 ## ISSUES
 

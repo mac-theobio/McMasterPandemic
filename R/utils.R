@@ -1,5 +1,6 @@
 
 ## attempt convert x to a date unless it already is one
+## FIXME: export? use anytime package?
 ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
 
 ##' self-naming list (copied from lme4:::namedList)
@@ -55,3 +56,42 @@ rename_params <- function(p) {
     names(p) <- n
     return(p)
 }
+
+
+
+## dictionary; internal name, graph label
+label_dict <- read.csv(stringsAsFactors=FALSE,
+text="
+Symbol,Label,Regex
+S,Susceptible,Sus.*
+E,Exposed,Exp.*
+I,Total infectious,Inf.*
+Ia,Infectious/asymptomatic,NA
+Im,Infectious/mild,NA
+Is,Infectious/severe,NA
+H,Hospital,Hosp.*
+ICU,ICU,ICU.*
+D,Deaths,[Dd]e.*
+R,Recovered,NA
+")
+## factor with levels in order of appearance (forcats equiv?)
+ff <- function(x) factor(x,levels=x)
+label_dict$Symbol <- ff(label_dict$Symbol)
+label_dict$Label <-  ff(label_dict$Label)
+
+## FIXME: NA for non-matches??? cleaner way to do this?
+trans_state_vars <- function(x) {
+    x <- as.character(x)
+    D <- na.omit(label_dict)
+    matches <- lapply(D$Regex,grep,x=unique(x))
+    if (any(vapply(matches,length,numeric(1))>1)) {
+        stop("multiple matches")
+    }
+    for (i in seq(nrow(D))) {
+        if (length(matches[[i]])>0) {
+            ## translate
+            x[grepl(D$Regex[i],x)] <- as.character(D$Symbol[i])
+        }
+    }
+    return(x)
+}        

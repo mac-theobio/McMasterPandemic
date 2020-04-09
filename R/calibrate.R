@@ -112,6 +112,7 @@ calibrate <- function(int,slope,pop,params,
                       date1="25-Mar-2020",
                       var="H",
                       sim_args=NULL) {
+    ## FIXME: refactor/rejigger more consistently
     date0 <- ldmy(date0); date1 <- ldmy(date1)
     ok_targets <- c("Gbar","kappa","R0")
     bad_targets <- setdiff(names(target),ok_targets)
@@ -124,7 +125,11 @@ calibrate <- function(int,slope,pop,params,
     ## now get initial conds
     if (is.null(init_target)) {
         state_2 <- get_init(date0,date1,p2,int,slope,var)
+        ## IC is fully determined by E0 in this case
+        p2[["E0"]] <- state_2[["E"]]
     } else {
+        ## here (if it ever works) IC is more complex, includes
+        ##  many non-zero compartments
         state_2 <- get_init(date0,date1,p2,var="H",init_target=init_target,
                             sim_args=sim_args)
     }
@@ -196,5 +201,52 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
     return(state)
 }
 
+get_break <- function(date0=ldmy("1-Mar-2020"),
+                      end_date=ldmy("8-Apr-2020"),
+                      break_dates=c("20-Mar-2020"),
+                      params,
+                      data=ont_recent,
+                      var="H",
+                      sim_args=NULL,
+                      ## FIXME, unused
+                      optim_args=list())
+{
+    ## FIXME: check order of dates?
+    ## brute force
+    s0 <- make_state(params=params)
+    ## we are changing beta0 at a pre-specified set of break dates
+    ## (by an unknown amount)
+    mle_fun <- function(p,data) {
+        ## inverse-link parameters
+        rel_beta0 <- plogis(p[seq(nbrk)])
+        nb_disp <- exp(p[-(1:seq(nbrk))])
+        ## construct time-varying frame, parameters
+        timevar <- data.frame(Date=break_dates,
+                              Symbol="beta0",
+                              Relative_value=rel_beta0)
+        sim_args <- c(nlist(params,
+                           state=make_state(params=params),
+                           start_date=date0,
+                           end_date=end_date),
+                      sim_args)
+        ## run simulation, aggregate
+        r <- (aggregate(do.call(run_sim,sim_args), pivot=TRUE)
+            %>% rename(pred="value")
+        )
+        ## match up sim results with specified data
+        names(data) <- tolower(names(data)) ## ugh
+        data <- filter(data,var %in% unique(r$var))
+        r2 <- (left_join(data,r,by=c("date","var"))
+            %>% drop_na(value))
+        ## compute negative log-likelihood
+        ## FIXME assuming a single nb_disp for now
+        ret <- with(r2,-sum(dnbinom(value,mu=pred,size=nb_disp,log=TRUE)))
+        return(ret)
+    }
+    ## use optim to start with; maybe switch to mle2 later
+    nbrk <- length(break_dates)
+    nvar <- length(var)
+    optim(par=rep(0,nbrk+nvar), fn=mle_fun, data=data)
+}
 
 

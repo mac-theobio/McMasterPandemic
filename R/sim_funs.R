@@ -328,22 +328,6 @@ run_sim <- function(params
     return(res)
 }
 
-## dictionary; internal name, graph label
-label_dict <- read.csv(stringsAsFactors=TRUE,
-text="
-Symbol,Label
-S,Susceptible
-E,Exposed
-I,Total infectious
-Ia,Infectious/asymptomatic
-Im,Infectious/mild
-Is,Infectious/severe
-H,Hospital
-ICU,ICU
-D,Deaths
-R,Recovered
-")
-
 
 
 ##' retrieve parameters from a CSV file
