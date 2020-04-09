@@ -68,7 +68,8 @@ ont_recent <- (ont_dd
     %>% filter(Date>=as.Date(start_date))
     %>% mutate(day=as.numeric(Date-min(Date)))
     %>% group_by(var)
-    %>% mutate(vday=day-min_day(day,value))
+    %>% mutate(vday=day-min_day(day,value)
+               , date=as.Date(Date))  ## trying to not to break things
     %>% ungroup()
 )
     
@@ -290,12 +291,26 @@ sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
 Plotting forecast
 
 ```{r forecast,warning=FALSE,message=FALSE}
+
+
+
+label_dat <- data.frame(
+  var =c("Hospitalization","ICU","Ventilator","newConfirmations","deceased")
+  , sim_var = c("H","ICU","V","report","D")
+)
+
+ont_recent2 <- (left_join(ont_recent,label_dat)
+  %>% mutate(var=sim_var)
+)
+
 print(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
     + scale_y_log10()
     + geom_line()
+    + geom_point(data=ont_recent2,aes(x=date,y=value))
     + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var), colour=NA,
                   alpha=0.2)
     + geom_vline(xintercept=reg_date,lty=2)
+    + facet_wrap(~var)
 )
 ```
 
