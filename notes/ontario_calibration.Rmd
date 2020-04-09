@@ -11,12 +11,10 @@ knitr::opts_chunk$set(echo=FALSE)
 ```{r pkgs,message=FALSE}
 library(tidyverse)
 library(glmmTMB)
-library(nlme)
 library(broom.mixed)
 library(McMasterPandemic)
-library(ggplot2);theme_set(theme_bw())
+library(ggplot2); theme_set(theme_bw())
 ```
-
 
 Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
 harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gather from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf).
@@ -25,38 +23,14 @@ harvested from official sources such as [this](https://www.ontario.ca/page/2019-
 ```{r read_data,message=FALSE,warning=FALSE}
 url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
 dd <- read_csv(url)
-
 PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
 ddPHO <- read_csv(PHOurl)
 
 ```
 
-## Preliminary exploration 
-
-Let's warm up with a quadratic fit (changing scale in ggplot link function in GLMs) to reported cases in all provinces
-```{r Canada_reported_case, message=FALSE,warning=FALSE,echo=FALSE}
-print(gg0 <- ggplot(dd,aes(Date,newConfirmations,colour=Province))
-  + geom_line(size=0.5,alpha=0.3)
-  + geom_point()+scale_y_log10()
-  + geom_smooth(method="lm",formula=y~poly(x,2),se=FALSE)
-)
-
-## easiest way to plot mixed model outputs with CIs?
-## sjPlot, broom.mixed, ... ?
-
-## data exploration and possible comparison of IDEA/IHME/etc. approaches
-## (i.e. purely phenomenological)
-## fit linear, quad mixed? models
-## logit, Richards?
-## epigrowthfit or mle2 or ... ?
-## plot predictions and CIs
-
-```
-
-
 ## Ontario, Canada
 
-Ontario is the only province we have all three reported hospitlaization counts (hospitalization, ICU, ventilator). 
+Ontario is the only province we have all three reported hospitalization counts (hospitalization, ICU, ventilator). 
 
 ```{r ONdata_cleaning,message=FALSE,warning=FALSE}
 
@@ -77,7 +51,7 @@ print(gg1 <- ggplot(ont_dd,aes(Date,value,colour=var))
 
 - Natural for ICU and Ventilator to be parallel (no real lags here)
 - recent nonlinearity/flattening in cases is too recent/sharp to affect the estimated slope much
-- very weird that the ICU/vent curves are flattening before the other two
+- Weird that the ICU/vent curves are flattening before the other two: not apparently a capacity issue, maybe something about reporting (e.g. see [here](https://www.ontario.ca/page/2019-novel-coronavirus#7))?
 
 Picture is cleaner (and flattening is more apparent) if we focus on more recent data.
 
@@ -280,7 +254,7 @@ sim_fun <- function(x, base_params,
 ```
 
 Simulating
-```{r sim_res, warning=FALSE, message=FALSE}
+```{r sim_res, warning=FALSE, message=FALSE,cache=TRUE}
 ## FIXME: could use pmap ... ?
 t1 <- system.time(sim_res <- plyr::alply(sim_params
   , .margins=1
