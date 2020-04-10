@@ -14,7 +14,8 @@ run_sim(
   ndt = 1,
   stoch = c(obs = FALSE, proc = FALSE),
   ratemat_args = NULL,
-  step_args = NULL
+  step_args = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ run_sim(
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
 
 \item{step_args}{additional arguments to pass to \code{do_step}}
+
+\item{verbose}{print messages (e.g. about time-varying parameters)?}
 }
 \description{
 Run pandemic simulation

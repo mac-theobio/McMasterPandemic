@@ -1,6 +1,8 @@
 
-## attempt convert x to a date unless it already is one
-## FIXME: export? use anytime package?
+##' attempt to convert x to a date unless it already is one
+##' @param x a date, or a character string in some day-month-year format that \code{lubridate::dmy} can handle
+##' @keywords internal
+##' @export
 ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
 
 ##' self-naming list (copied from lme4:::namedList)
@@ -73,6 +75,7 @@ H,Hospital,Hosp.*
 ICU,ICU,ICU.*
 D,Deaths,[Dd]e.*
 R,Recovered,NA
+report,Case reports,newConf.*
 ")
 ## factor with levels in order of appearance (forcats equiv?)
 ff <- function(x) factor(x,levels=x)
@@ -80,6 +83,7 @@ label_dict$Symbol <- ff(label_dict$Symbol)
 label_dict$Label <-  ff(label_dict$Label)
 
 ## FIXME: NA for non-matches??? cleaner way to do this?
+##' @importFrom stats na.omit
 trans_state_vars <- function(x) {
     x <- as.character(x)
     D <- na.omit(label_dict)

@@ -201,16 +201,26 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
     return(state)
 }
 
+##' estimate magnitude of drop in beta0 at known dates
+##' @inheritParams calibrate
+##' @inheritParams run_sim_break
+##' @param optim_args additional args to \code{optim}
+##' @param end_date ending date of sim
+##' @param data data to match
+##' @importFrom stats plogis
+##' @export
+## FIXME: take end_date from data
 get_break <- function(date0=ldmy("1-Mar-2020"),
                       end_date=ldmy("8-Apr-2020"),
                       break_dates=c("20-Mar-2020"),
                       params,
-                      data=ont_recent,
+                      data,
                       var="H",
                       sim_args=NULL,
                       ## FIXME, unused
                       optim_args=list())
 {
+    value <- NULL ## global var check
     ## FIXME: check order of dates?
     ## brute force
     s0 <- make_state(params=params)
@@ -220,24 +230,22 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
         ## inverse-link parameters
         rel_beta0 <- plogis(p[seq(nbrk)])
         nb_disp <- exp(p[-(1:seq(nbrk))])
-        ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=break_dates,
-                              Symbol="beta0",
-                              Relative_value=rel_beta0)
-        sim_args <- c(nlist(params,
-                           state=make_state(params=params),
-                           start_date=date0,
-                           end_date=end_date),
-                      sim_args)
+        r <- do.call(run_sim_break,
+                     c(nlist(params,
+                             break_dates,
+                             start_date=date0,
+                             end_date,
+                             rel_beta0),
+                       sim_args))
         ## run simulation, aggregate
-        r <- (aggregate(do.call(run_sim,sim_args), pivot=TRUE)
-            %>% rename(pred="value")
+        r <- (aggregate(r, pivot=TRUE)
+            %>% dplyr::rename(pred="value")
         )
         ## match up sim results with specified data
         names(data) <- tolower(names(data)) ## ugh
-        data <- filter(data,var %in% unique(r$var))
-        r2 <- (left_join(data,r,by=c("date","var"))
-            %>% drop_na(value))
+        data <- dplyr::filter(data,var %in% unique(r$var))
+        r2 <- (dplyr::left_join(data,r,by=c("date","var"))
+            %>% tidyr::drop_na(value))
         ## compute negative log-likelihood
         ## FIXME assuming a single nb_disp for now
         ret <- with(r2,-sum(dnbinom(value,mu=pred,size=nb_disp,log=TRUE)))
@@ -249,4 +257,27 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
     optim(par=rep(0,nbrk+nvar), fn=mle_fun, data=data)
 }
 
-
+##' run simulation with one or more breakpoints
+## FIXME: make rel_beta0 part of params??? probably
+## FIXME: roll into run_sim?
+##' @param ... additional arguments to \code{run_sim}
+##' @param params parameters
+##' @param break_dates dates of breakpoints in transmission
+##' @param rel_beta0 numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint
+##' @export
+run_sim_break <- function(params,
+                          break_dates,
+                          rel_beta0,
+                          ...) {
+    ## construct time-varying frame, parameters
+    timevar <- data.frame(Date=break_dates,
+                          Symbol="beta0",
+                          Relative_value=rel_beta0)
+    sim_args <- c(list(...),
+                  nlist(params,
+                        params_timevar=timevar,
+                        state=make_state(params=params))
+                  )
+    do.call(run_sim,sim_args)
+}
+                        

@@ -8,6 +8,8 @@ print.pansim <- function(x,all=FALSE,...) {
     print(x)
 }
 
+## FIXME: allow faceting automatically? (each var alone or by groups?)
+## don't compare prevalences and incidences?
 ##' plot method for simulations
 ##' @param x fitted \code{pansim} object
 ##' @param drop_states states to \emph{exclude} from plot

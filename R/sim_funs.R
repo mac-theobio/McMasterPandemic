@@ -231,19 +231,21 @@ do_step <- function(state, params, ratemat, dt=1,
 ##'                    params_timevar=time_pars)
 ##' summary(res)
 ##' @importFrom stats rnbinom
+##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
 ## FIXME: params_timevar
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params
         , state=make_state(params[["N"]], params[["E0"]])
-			, start_date="20-Mar-2020"
-			, end_date="1-May-2020"
-			, params_timevar=NULL
-			, dt=1, ndt=1  ## FIXME: change default after testing?
-			, stoch=c(obs=FALSE,proc=FALSE)
-			, ratemat_args=NULL
-			, step_args=NULL
+        , start_date="20-Mar-2020"
+        , end_date="1-May-2020"
+        , params_timevar=NULL
+        , dt=1, ndt=1  ## FIXME: change default after testing?
+        , stoch=c(obs=FALSE,proc=FALSE)
+        , ratemat_args=NULL
+        , step_args=NULL
+        , verbose = FALSE
 ) {
     call <- match.call()
 
@@ -290,7 +292,7 @@ run_sim <- function(params
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
                 params[[s]] <- params0[[s]]*v
-                cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
+                if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }

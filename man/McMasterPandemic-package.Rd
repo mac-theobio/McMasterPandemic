@@ -57,6 +57,7 @@ Authors:
 \itemize{
   \item David Earn
   \item Morgan Kain
+  \item Mike Li
   \item Jonathan Dushoff
 }
 
