@@ -70,15 +70,14 @@ library(cowplot)
 To run simulations, a few parameter values must be specified.
 Set these by editing the example params file, which is converted
 to a \code{params_pansim} object by \code{read_params()}.
+In the example, the time unit is assumed to be days.
 
 The term ``in acute care'' means ``in hospital but not in the
 intensive care unit (ICU)''.
 
-If \code{p} is a parameter set
-(e.g. the result of \code{read_params}), then
-\code{print(p, describe=TRUE)} will return a data frame
-with a column giving the meaning of each
-parameter.
+If \code{p} is a parameter set (e.g. the result of
+\code{read_params}), then \code{print(p, describe=TRUE)} will return a
+data frame with a column giving the meaning of each parameter.
 
 <<set_params>>=
 params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
@@ -86,6 +85,35 @@ params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic
 
 <<params_kable,echo=FALSE>>=
 knitr::kable(describe_params(params1))
+@
+
+\bigskip
+
+The \code{summary} method for \code{params_pansim} objects returns the
+initial exponential growth rate ($r_0$), the doubling time
+($\log{2}/r_0$), the mean generation interval ($\overline{G}$), and
+the basic reproduction number
+%%
+\begin{equation*}
+\R_0 = \beta_0 \left\{
+\alpha \frac{C_{\rm a}}{\gamma_{\rm a}}
++
+(1-\alpha)\left[ \frac{C_{\rm p}}{\gamma_{\rm p}}
+  + \mu(1-\texttt{iso}_{\rm m})\frac{C_{\rm m}}{\gamma_{\rm m}}
+  + (1-\mu)(1-\texttt{iso}_{\rm s})\frac{C_{\rm s}}{\gamma_{\rm s}} \right]
+  \right\} \,.
+\end{equation*}
+
+<<params_summary>>=
+knitr::kable(round(t(summary(params1)),2))
+@
+
+\bigskip\noindent
+The components of $\R_0$ the reproduction number associated with each infectious compartment
+can also be extracted.
+
+<<R0_components>>=
+knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 @
 
 \paragraph{Initial conditions}
@@ -167,6 +195,17 @@ plot_grid(plot(restimedep, log=TRUE, aggregate=FALSE),
 @
 
 \section{Calibration}
+
+In a typical epidemic forecasting application, we have imperfect
+information about the parameters and a time series of reported events
+(e.g., cases, hospitalizations, deaths, \emph{etc.}).  Our goal is to
+predict the future course of the outbreak, and to determine how it
+will differ under various intervention scenarios.
+
+The natural approach is to find a set of parameters that lies within
+the estimated constraints and best fits the observed part of the
+epidemic.
+
 
 
 \end{document}
