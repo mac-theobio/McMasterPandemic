@@ -245,7 +245,8 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
         names(data) <- tolower(names(data)) ## ugh
         data <- dplyr::filter(data,var %in% unique(r$var))
         r2 <- (dplyr::left_join(data,r,by=c("date","var"))
-            %>% tidyr::drop_na(value))
+            %>% tidyr::drop_na(value,pred))
+        ## FIXME: why do we have an NA in pred??
         ## compute negative log-likelihood
         ## FIXME assuming a single nb_disp for now
         ret <- with(r2,-sum(dnbinom(value,mu=pred,size=nb_disp,log=TRUE)))

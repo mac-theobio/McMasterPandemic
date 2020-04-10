@@ -371,7 +371,6 @@ pp <- calib2(base_params=base_params,
              start_date="1-Mar-2020",
              reg_date="15-Mar-2020",
              init_var="H")
-
 b <- get_break(params=pp,data=ont_recent)
 print(b$par)  ## logit(rel beta0), log(nb_disp)
 print(c(plogis(b$par[1]),exp(b$par[2])))
