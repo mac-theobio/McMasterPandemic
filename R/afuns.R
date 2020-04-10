@@ -121,5 +121,7 @@ get_R0 <- function(params, components=FALSE,
                   }),
                   kernel=get_kernel_moments(params)[["R0"]]
                   )
+    ## FIXME: helpful to name this, but we'll need something smarter in general:
+    if (length(res) == 4) names(res) <- c("asymptomatic", "pre-symptomatic", "mild", "severe")
+    return(res)
 }
-

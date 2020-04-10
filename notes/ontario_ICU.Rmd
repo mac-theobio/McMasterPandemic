@@ -2,6 +2,7 @@
 title: "analysis of Ontario COVID19 data"
 author: "Ben Bolker, Mike Li, Jonathan Dushoff, David Earn (McMaster University)"
 date: "`r format(Sys.time(),'%d %b %Y')`"
+output: pdf_document
 ---
 
 ```{r opts, include=FALSE}
