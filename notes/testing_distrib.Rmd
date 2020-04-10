@@ -6,6 +6,7 @@ title: "models for testing"
 library(tidyverse)
 library(ggplot2); theme_set(theme_bw())
 library(viridis)
+library(bbmle)
 source("covid19testing_funs.R")
 ```
 
@@ -119,9 +120,8 @@ When is $\phi$ identifiable?
 
 MLE: want to estimate $i_0$, $r$ (growth rate of prevalence), and $\phi$. We know $t(\tau)$ and $c(\tau)$ (no time lags yet!)
    
-```{r eval=FALSE}
+```{r testsim}
 ## t (test vector) and c (confirmation vector) are defined; tau is a time vector
-library(bbmle)
 set.seed(101)
 ## scalar parameters
 true_pars <- c(I_0=100, r=log(2)/3, phi=0.5,
@@ -172,7 +172,7 @@ tt <- (broom::tidy(mle_out)
   %>% mutate(term=c("i_0","r","phi"))
   %>% mutate(true=true_pars[c("i_0","r","phi")])
 )
-
+```
 
 - The next simulation is for understanding better what we're really modeling here. The simulation should be a more mechanistic description of the infection and testing process: not sure how this actually worked. There must be some infection process (e.g. an SIR model ...) and some process by which people get assigned a probability of being chosen for testing, which we can match up with the mathematical description above. The testing process is also mechanistic; after testing people get removed from the testable pool.
 
