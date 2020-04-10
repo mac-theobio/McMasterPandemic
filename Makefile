@@ -24,38 +24,14 @@ sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
 tests/moments.Rout:
 
+## notes/ontario_calibration.html:
+%.html: %.Rmd
+	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
+
 ######################################################################
 
 package:
 	sudo R CMD INSTALL .
-
-######################################################################
-
-### Makestuff
-
-Sources += Makefile
-
-## Sources += content.mk
-## include content.mk
-
-Ignore += makestuff
-msrepo = https://github.com/dushoff
-Makefile: makestuff/Makefile
-makestuff/Makefile:
-	git clone $(msrepo)/makestuff
-	ls $@
-
-localstuff: 
-	ln -s ../makestuff .
-	ls $@
-
--include makestuff/os.mk
-
--include makestuff/wrapR.mk
-
--include makestuff/git.mk
--include makestuff/visual.mk
--include makestuff/projdir.mk
 
 ######################################################################
 
@@ -102,3 +78,35 @@ $(TARBALL): ./NAMESPACE
 install: $(TARBALL)
 	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
 	@touch $@
+
+######################################################################
+
+### Makestuff
+
+Sources += Makefile
+
+## Sources += content.mk
+## include content.mk
+
+Ignore += makestuff
+msrepo = https://github.com/dushoff
+Makefile: makestuff/Makefile
+makestuff/Makefile:
+	git clone $(msrepo)/makestuff
+	ls $@
+
+localstuff: 
+	ln -s ../makestuff .
+	ls $@
+
+-include makestuff/os.mk
+
+-include makestuff/wrapR.mk
+-include makestuff/rmd.mk
+
+-include makestuff/git.mk
+-include makestuff/visual.mk
+-include makestuff/projdir.mk
+
+######################################################################
+
