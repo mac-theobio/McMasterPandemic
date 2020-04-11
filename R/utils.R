@@ -82,8 +82,11 @@ ff <- function(x) factor(x,levels=x)
 label_dict$Symbol <- ff(label_dict$Symbol)
 label_dict$Label <-  ff(label_dict$Label)
 
+##' Translate state variables
 ## FIXME: NA for non-matches??? cleaner way to do this?
 ##' @importFrom stats na.omit
+##' @param x a vector of state variables (factor or character)
+##' @export
 trans_state_vars <- function(x) {
     x <- as.character(x)
     D <- na.omit(label_dict)

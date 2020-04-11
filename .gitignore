@@ -23,3 +23,6 @@ install
 cache
 */*_cache/
 */*_files/
+*.o
+*.so
+*/*.wrapR.rout

@@ -28,26 +28,8 @@ Reading data from Michael Li's [curated Canadian COVID data repository](https://
 harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gather from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf).
 
 
-```{r read_data,message=FALSE,warning=FALSE}
-url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
-dd <- read_csv(url)
-PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
-ddPHO <- read_csv(PHOurl)
-
-```
-
-## Ontario, Canada
-
-Ontario is the only province we have all three reported hospitalization counts (hospitalization, ICU, ventilator). 
-
-```{r ONdata_cleaning,message=FALSE,warning=FALSE}
-
-ont_dd <- (dd
-  %>% filter(Province=="ON")
-  %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
-    %>% pivot_longer(-Date,names_to="var")
-    %>% setNames(tolower(names(.)))
-)
+```{r get_data, message=FALSE}
+source("ontario_clean.R")
 ```
 
 ```{r ONplot,message=FALSE, warning=FALSE}
@@ -64,23 +46,7 @@ print(gg1 <- ggplot(ont_dd,aes(date,value,colour=var))
 
 Picture is cleaner (and flattening is more apparent) if we focus on more recent data.
 
-```{r ont_plot_recent, message=FALSE, warning=FALSE}
-## find first useful day
-min_day <- function(day,value) {
-    good <- !is.na(value) & value>0
-    if (all(good)) min(day) else min(day[good])
-}
-
-start_date <- "2020-03-15"
-
-ont_recent <- (ont_dd
-    %>% filter(date>=as.Date(start_date))
-    %>% mutate(day=as.numeric(date-min(date)))
-    %>% group_by(var)
-    %>% mutate(vday=day-min_day(day,value))
-    %>% ungroup()
-)
-    
+```{r recent}
 print(gg1 %+% ont_recent)
 ```
 
@@ -112,10 +78,8 @@ fit1 <- glmmTMB(value~var-1 + var:vday
   , dispformula=~var-1
   , data=ont_recent
 )
-
 ```
 
-TODO: Check convergence warnings (false convergence warning?)
 
 Use raw polynomials to parameterize in terms of initial slope rather than average slope.
 
@@ -123,8 +87,10 @@ Use raw polynomials to parameterize in terms of initial slope rather than averag
 fit1Q <- update(fit1, . ~ -1 + var + var:poly(vday,2,raw=TRUE))
 ```
 
-```{r tidying_fits, message=FALSE, warning=FALSE}
+"False convergence" warnings ...
 
+
+```{r tidying_fits, message=FALSE, warning=FALSE}
 fix_term <- function(x) {
   gsub(":poly(vday, 2, raw = TRUE)","Poly"
     , gsub("var","",x)
@@ -155,6 +121,7 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
     + geom_pointrange()
     + facet_wrap(~type,scale="free",ncol=1)
     + geom_vline(xintercept=0,lty=2)
+    + labs(y="")
 )
 ```
 
@@ -166,29 +133,14 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
 
 ## calibrate to hospitalization
 
-TODO: We should give some intuition why one would calibrate to hospitalization
-What are out calibrating options?
+We have a variety of time series (case reports, hospitalization, ICU, ventilator, death) from which to try to estimate initial growth rate $r_0$ (and potentially any time variation in $r$, which we would usually attribute to behavioural change or physical distancing efforts); we could pick any one of these, or some average.
 
-I like a little note to go with this and say why we picked hospitalization over the little r estimates of newConfirmed, ICU, decease, and ventilator. 
-
-Not sure what the order should be:
-
-- little r estimates on cumulative counts have narrow CI (for deceased)  at the mvn sampling step
-- new confirmation counts are highly correlated with testing regime through time
-- hosp/icu/ventilator/decease data are more stable and less effected by testing efforts compare to new confirmation counts
-- We have good data (we are lucky enough to think about picking which one, (but like I said before, we eventually want to calibrate all the little r, I think)). If you don’t have hosp/icu/ventilator data, using new confirmation is fine and probably applicable to many places. 
-
-BMB:   Yes.  There's an open and rather deep question about whether one
-ought to try to calibrate to one of the possible time series
-(cases/H/ICU/deaths), or some average of them, or all of them (e.g. via
-MLE rather than externally).
-
-  I've seen it suggested that H could be preferable because it's
-relatively reliable and because, while it lags behind hospital
-admissions and cases, it leads deaths.
-
-MLi: How do we feel the _early_? slow down of ICU (haven't change hospitalization).
-
+* in general it is better to fit to incidence-like variables rather than cumulative values or prevalence (e.g. hospital/ICU/ventilation utilization), because cumulative and prevalence values are considerably autocorrelated. We can always make a cumulative variable into an incidence-like variable by differencing it, although in the case of health utilization (hospital, ICU, vent), this will include changes due to both admission and discharge; we would prefer a hospital admission time series if it were available. In general cumulative curves will still give reasonable estimates of the initial growth rate, but they will underestimate uncertainty [REF Rohani and King?]
+* case confirmations are difficult to interpret because they are strongly confounded with time-varying testing intensity and criteria.
+* when possible, especially when estimating *changes* in $r$ we would prefer to use leading rather than lagging indicators (cases > hospital admissions > hospital occupancy > death)
+* in general more severe outcomes are less likely to be underreported or inconsistently reported (deaths > hospitalizations > infections)
+* given that health utilization is not too high (saturating/overwhelming resources) ICU, vent, and hospital occupancy are relatively equivalent, given that a reasonably constant fraction of hospitalized cases require ICU/ventilators. (ICU occupancy will probably lag acute-care a bit because the average occupancy time is longer, although there is also a post-ICU acute-care period.)
+* we have chosen to calibrate to hospitalizations, although as shown above there is not a big difference between the estimated $r$ based on new confirmations vs. hospital occupancy.
 
 ```{r sample_params, message=FALSE,warning=FALSE}
 vv <- vcov(fit1Q)$cond
@@ -204,13 +156,14 @@ sim_params <- MASS::mvrnorm(nsim,mu=mu,Sigma=vv)
 Gbar_prior <- c(mean=6,sd=0.2)
 ## FIXME: narrow for now, come back and fix calibration issues
 ##  (does analytic solution work for Gbar???)
+sim_params_0 <- c(mu,Gbar=6)
 sim_params <- cbind(sim_params,Gbar=do.call(rnorm,c(list(nsim),
                                                     as.list(Gbar_prior))))
 sim_params <- as.data.frame(sim_params)
-names(sim_params) <- c("int","slope","curve","Gbar")
+names(sim_params) <- names(sim_params_0) <- c("int","slope","curve","Gbar")
 ```
 
-The first step of calibrating is the get a set of parameters. If we want to include CI envelope, we need to generate/sample multiple sets of parameters.
+The first step of calibrating is the get a set of parameters. If we want to compute confidence intervals on the forecasts, we need to generate/sample multiple sets of parameters.
 
 For each set of parameters:
 
@@ -227,6 +180,7 @@ reg_date <- (ont_recent
     %>% filter(var=="Hospitalization",vday==0)
     %>% pull(date)
 )
+## first day of hospitalization data >0/non-NA: 19 March
 ```
 
 - x= param vector (int/slope/curve/Gbar)
@@ -254,6 +208,7 @@ calib2 <- function(base_params,
     p <- fix_pars(p, target=c(r=target[["r"]]),
                   pars_adj=list("beta0"),u_interval=c(-1,2))
     ## FIXME: problems with r-calibration here if using r_method="rmult"
+    ## problem, or mismatch?
     stopifnot(all.equal(get_r(p),target[["r"]],tolerance=1e-4))
     ## calibrate initial state (shooting)
     state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
@@ -268,18 +223,17 @@ sim_fun <- function(x, base_params,
                     end_date="1-May-2020",
                     init_var="H",
                     sim_args=NULL,
-                    vals_only=TRUE) {
-    ## FIXME: do the next three cal steps (Gbar -> p -> E0)
-    ##   supersede calibrate()?
+                    return_val=c("sim","aggsim","vals_only")) {
+    return_val <- match.arg(return_val)
+    ## calibration
     p <- calib2(base_params,
                 target=c(Gbar=x[["Gbar"]],
                          r=x[["slope"]],
-                         X0=x[["int"]]),
+                         X0=exp(x[["int"]])),
                 start_date=start_date,
                 reg_date=reg_date,
                 init_var=init_var,
                 sim_args=sim_args)
-    ## calibration
     state <- make_state(params=p)
     arg_list <- nlist(params=p,
                       state,
@@ -287,19 +241,44 @@ sim_fun <- function(x, base_params,
                       end_date)
     r <- do.call(run_sim,arg_list)
     a <- aggregate(r,pivot=TRUE)
-    if (vals_only) return(a$value) else return(a)
+    return(switch(return_val,
+                  sim=r,
+                  aggsim=a,
+                  vals_only=a$value))
 }
 ```
 
-Sim test
+Calibrate and simulate with point estimates:
 ```{r}
-sim_fun(x=sim_params[1,]
+s1 <- sim_fun(x=sim_params_0,
       , base_params=base_params
       , reg_date=reg_date
-      , end_date="1-June-2020"
-      , vals_only=FALSE
+      , end_date="15-Apr-2020"
+      , return_val="sim"
         )
+filter(s1,date==ldmy("19-03-2020"))
+plot(s1,log=TRUE)+geom_point(data=mutate_at(ont_recent,"var",trans_state_vars))
 ```
+
+Checking calibration:
+```{r}
+tt2 <- (tidy(fit1Q)
+    %>% select(term,estimate,std.error)
+    %>% filter(grepl("Hosp",term))
+    %>% mutate(term=c("int","lin","quad"))
+)
+ff <- setNames(tt2$estimate,tt2$term)
+ffdat <- (tibble(vday=0:20)
+    %>% mutate(logpred = ff[["int"]]+vday*ff[["lin"]],
+               value=exp(logpred),
+               var="Hospitalization"))
+(ggplot(ont_recent,aes(vday,value,colour=var))
+    + geom_point()
+    + scale_y_log10()
+    + geom_line(data=ffdat)
+)
+```
+**recheck calibration machinery! what went wrong??**
 
 Simulating
 ```{r sim_res, warning=FALSE, message=FALSE,cache=TRUE}
@@ -310,6 +289,7 @@ t1 <- system.time(sim_res <- plyr::alply(sim_params
   , base_params=base_params
   , reg_date=reg_date
   , end_date="1-June-2020"
+   , return_val="vals_only"
   # ,.progress="text" # commenting this out, this will not render nicely 
   )
 )
@@ -324,9 +304,11 @@ sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
     %>% as_tibble()
     %>% setNames(c("lwr","median","upr"))
 )
-sim_0 <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date, vals_only=FALSE,
-                       end_date="1-June-2020")
-sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
+## do one simulation to get date/var columns
+sim_last <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date,
+                 return_val="aggsim",
+                 end_date="1-June-2020")
+sim_final <- bind_cols(sim_last[c("date","var")], sim_q)
 ```
 
 ## Plotting forecast

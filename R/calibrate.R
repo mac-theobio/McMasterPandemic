@@ -220,7 +220,7 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
                       ## FIXME, unused
                       optim_args=list())
 {
-    value <- NULL ## global var check
+    value <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
     ## brute force
     s0 <- make_state(params=params)

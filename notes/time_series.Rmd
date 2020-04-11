@@ -1,0 +1,64 @@
+---
+title: "time-series analysis of growth rates"
+author: "Ben Bolker"
+date: "`r format(Sys.time(),'%d %b %Y')`"
+
+---
+
+```{r opts, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r pkgs,message=FALSE}
+library(tidyverse)
+library(glmmTMB)
+library(broom.mixed)
+library(McMasterPandemic)
+library(ggplot2); theme_set(theme_bw())
+library(colorspace)
+## make nice defaults
+scale_colour_discrete <- function(...) {
+  colorspace::scale_colour_discrete_qualitative(...)
+}
+scale_fill_discrete <- function(...) {
+  colorspace::scale_fill_discrete_qualitative(...)
+}
+```
+
+
+```{r read_data,message=FALSE,warning=FALSE}
+url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
+dd <- read_csv(url)
+PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
+ddPHO <- read_csv(PHOurl)
+```
+
+## goals
+
+* explore phenomenological fits to epidemic time-series data
+* cumulative incidence (wrong?) vs incidence vs 
+* different functional forms: Gaussian (IHME/probit) vs logit vs Richards (vs SIR)?
+* choice of response distribution (negative binomial 1 vs 2, log-Normal, least-squares, ... ?)
+* EpiEstim, EpiEstim plus priors?
+
+```{r}
+ont_dd <- (dd
+  %>% filter(Province=="ON")
+  %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
+    %>% pivot_longer(-Date,names_to="var")
+    %>% setNames(tolower(names(.)))
+)
+```
+
+```{r}
+library(TMB)
+compile("epigrowthfit_TMB.cpp")
+## fit linear, quad mixed? models
+## logit, Richards?
+## epigrowthfit or mle2 or ... ?
+## plot predictions and CIs
+dyn.load("epigrowthfit_TMB.so")
+m <- MakeADFun(data=, parameters, DLL="epigrowthfit_TMB")
+
+```
+

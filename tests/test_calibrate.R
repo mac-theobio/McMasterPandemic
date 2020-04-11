@@ -87,8 +87,7 @@ print(gg1
       + geom_vline(xintercept=as.Date("2020-03-16"),lty=2)
       )
 ##  dashed line is NB regression fit
-## conclusion: slope of simulation is not giving the expected growth rate.
-## problem with make_jac?
+
 
 ## what is the actual r?
 simAgg <- aggregate(simScal)[,c("H","ICU","D")]

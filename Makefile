@@ -24,7 +24,8 @@ sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
 tests/moments.Rout:
 
-## notes/ontario_calibration.html: notes/ontario_calibration.Rmd
+notes/ontario_calibration.html: notes/ontario_calibration.Rmd notes/ontario_clean.RData
+
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
 
