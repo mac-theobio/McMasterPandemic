@@ -2,6 +2,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 
+## FIXME: should cache results
 url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
 dd <- read_csv(url)
 PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
@@ -28,3 +29,5 @@ ont_recent <- (ont_dd
 )
 
 save("ont_recent","start_date","ont_dd", file="ontario_clean.RData")
+
+## use rdsave ... ?

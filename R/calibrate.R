@@ -282,3 +282,68 @@ run_sim_break <- function(params,
     do.call(run_sim,sim_args)
 }
                         
+
+##' Calibrate parameters 
+##' @param base_params base parameters
+##' @param target calibration values: mean generation interval, initial growth rate, initial value of calibration variable (\code{X0})
+##' @param start_date starting date for simulations (should be far enough before the start of the data to allow sorting-out of initial conditions)
+##' @param reg_date first day of calibration data used in log-linear regression
+##' @param init_var variable to use in initial-condition calibration matching
+##' @param sim_args list of additional arguments to pass to \code{\link{run_sim}}
+##' @export
+calib2 <- function(base_params,
+                   target=c(Gbar=6,r=0.23,X0=200),
+                   start_date,
+                   reg_date,
+                   init_var="H",
+                   sim_args=NULL) {
+    start_date <- ldmy(start_date)
+    reg_date <- ldmy(reg_date)
+    p <- fix_pars(base_params, target=c(Gbar=target[["Gbar"]]),
+                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
+    stopifnot(all.equal(get_Gbar(p),target[["Gbar"]],tolerance=1e-4))
+    ## fix params to *initial* slope (for now)
+    p <- fix_pars(p, target=c(r=target[["r"]]),
+                  pars_adj=list("beta0"),u_interval=c(-1,2))
+    ## FIXME: problems with r-calibration here if using r_method="rmult"
+    ## problem, or mismatch?
+    stopifnot(all.equal(get_r(p),target[["r"]],tolerance=1e-4))
+    ## calibrate initial state (shooting)
+    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
+                      init_target=target[["X0"]], sim_args=sim_args)
+    p[["E0"]] <- state[["E"]]
+    return(p)
+}
+
+##' calibrate and run simulation
+##' @inheritParams calib2
+##' @param end_date ending date for simulation
+##' @param return_val return values: "sim"=full simulation (wide format); "aggsim"=aggregated and pivoted simulation output, "vals_only" = vector containing only values output from simulation
+##' @export
+sim_fun <- function(target, base_params,
+                    start_date="1-Mar-2020",
+                    reg_date,
+                    end_date="1-May-2020",
+                    init_var="H",
+                    sim_args=NULL,
+                    return_val=c("sim","aggsim","vals_only")) {
+    return_val <- match.arg(return_val)
+    ## calibration
+    p <- calib2(base_params,
+                target=target,
+                start_date=start_date,
+                reg_date=reg_date,
+                init_var=init_var,
+                sim_args=sim_args)
+    state <- make_state(params=p)
+    arg_list <- nlist(params=p,
+                      state,
+                      start_date,
+                      end_date)
+    r <- do.call(run_sim,arg_list)
+    a <- aggregate(r,pivot=TRUE)
+    return(switch(return_val,
+                  sim=r,
+                  aggsim=a,
+                  vals_only=a$value))
+}

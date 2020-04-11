@@ -24,13 +24,14 @@ scale_fill_discrete <- function(...) {
 }
 ```
 
-Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
-harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gather from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf).
-
-
-```{r get_data, message=FALSE}
+```{r get_data, message=FALSE, warning=FALSE}
 source("ontario_clean.R")
 ```
+
+Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
+harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gathered from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf). (Latest data in this example are from `r format(max(ont_dd$date))`.)
+
+
 
 ```{r ONplot,message=FALSE, warning=FALSE}
 print(gg1 <- ggplot(ont_dd,aes(date,value,colour=var))
@@ -46,7 +47,7 @@ print(gg1 <- ggplot(ont_dd,aes(date,value,colour=var))
 
 Picture is cleaner (and flattening is more apparent) if we focus on more recent data.
 
-```{r recent}
+```{r plot_recent, warning=FALSE}
 print(gg1 %+% ont_recent)
 ```
 
@@ -127,8 +128,7 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
 
 - intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
 - newConfirmations and hosp slopes and curvature agree fairly well
-- no 'clear' evidence of slowing newConfirmations/hospitalization (¿ flattening in newConfirmations could be obscured by increasing testing/ too recent or sharp to be well-modeled by a quadratic ?)
-- don't know why death is slower  and ICU/Ventilator are faster (MLi: under reporting? there was a discussion on missing a lot of deaths)
+- don't know why death is slower  and ICU/Ventilator are faster (MLi: under reporting? there was a discussion on missing a lot of deaths. BMB: Underreporting alone doesn't change $r$ ... need some time-varying change in reporting rate etc..)
 - deaths conf intervals might be overly narrow because these are cumulative values
 
 ## calibrate to hospitalization
@@ -145,22 +145,24 @@ We have a variety of time series (case reports, hospitalization, ICU, ventilator
 ```{r sample_params, message=FALSE,warning=FALSE}
 vv <- vcov(fit1Q)$cond
 hosp_ind <- grep("Hospitalization",rownames(vv))
-mu <- fixef(fit1Q)$cond[hosp_ind]
+pars_0 <- fixef(fit1Q)$cond[hosp_ind]
 vv <- vv[hosp_ind, hosp_ind]
 
 ## assume for now that Wald approx is OK for sampling distribution
 nsim <- 200
 set.seed(101)
-sim_params <- MASS::mvrnorm(nsim,mu=mu,Sigma=vv)
+sim_params <- MASS::mvrnorm(nsim,mu=pars_0,Sigma=vv)
 ## add Gbar distribution (independent Gaussian sample)
 Gbar_prior <- c(mean=6,sd=0.2)
 ## FIXME: narrow for now, come back and fix calibration issues
 ##  (does analytic solution work for Gbar???)
-sim_params_0 <- c(mu,Gbar=6)
-sim_params <- cbind(sim_params,Gbar=do.call(rnorm,c(list(nsim),
-                                                    as.list(Gbar_prior))))
+sim_params_0 <- c(exp(pars_0[1]),pars_0[2],Gbar=6)
+sim_params <- cbind(exp(sim_params[,1]),
+                    sim_params[,2],
+                    Gbar=do.call(rnorm,c(list(nsim),
+                                         as.list(Gbar_prior))))
 sim_params <- as.data.frame(sim_params)
-names(sim_params) <- names(sim_params_0) <- c("int","slope","curve","Gbar")
+names(sim_params) <- names(sim_params_0) <- c("X0","r","Gbar")
 ```
 
 The first step of calibrating is the get a set of parameters. If we want to compute confidence intervals on the forecasts, we need to generate/sample multiple sets of parameters.
@@ -191,77 +193,21 @@ reg_date <- (ont_recent
 - init_var calibration variable
 - init_var_value
 
-```{r simfuns}
-## FIXME: put this in the package
-calib2 <- function(base_params,
-                   target=c(Gbar=6,r=0.23,X0=200),
-                   start_date,
-                   reg_date,
-                   init_var="H",
-                   sim_args=NULL) {
-    start_date <- ldmy(start_date)
-    reg_date <- ldmy(reg_date)
-    p <- fix_pars(base_params, target=c(Gbar=target[["Gbar"]]),
-                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
-    stopifnot(all.equal(get_Gbar(p),target[["Gbar"]],tolerance=1e-4))
-    ## fix params to *initial* slope (for now)
-    p <- fix_pars(p, target=c(r=target[["r"]]),
-                  pars_adj=list("beta0"),u_interval=c(-1,2))
-    ## FIXME: problems with r-calibration here if using r_method="rmult"
-    ## problem, or mismatch?
-    stopifnot(all.equal(get_r(p),target[["r"]],tolerance=1e-4))
-    ## calibrate initial state (shooting)
-    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
-                      init_target=target[["X0"]], sim_args=sim_args)
-    p[["E0"]] <- state[["E"]]
-    return(p)
-}
-
-sim_fun <- function(x, base_params,
-                    start_date="1-Mar-2020",
-                    reg_date,
-                    end_date="1-May-2020",
-                    init_var="H",
-                    sim_args=NULL,
-                    return_val=c("sim","aggsim","vals_only")) {
-    return_val <- match.arg(return_val)
-    ## calibration
-    p <- calib2(base_params,
-                target=c(Gbar=x[["Gbar"]],
-                         r=x[["slope"]],
-                         X0=exp(x[["int"]])),
-                start_date=start_date,
-                reg_date=reg_date,
-                init_var=init_var,
-                sim_args=sim_args)
-    state <- make_state(params=p)
-    arg_list <- nlist(params=p,
-                      state,
-                      start_date,
-                      end_date)
-    r <- do.call(run_sim,arg_list)
-    a <- aggregate(r,pivot=TRUE)
-    return(switch(return_val,
-                  sim=r,
-                  aggsim=a,
-                  vals_only=a$value))
-}
-```
 
 Calibrate and simulate with point estimates:
-```{r}
-s1 <- sim_fun(x=sim_params_0,
+```{r calib_point}
+s1 <- sim_fun(target=sim_params_0,
       , base_params=base_params
       , reg_date=reg_date
       , end_date="15-Apr-2020"
       , return_val="sim"
         )
-filter(s1,date==ldmy("19-03-2020"))
+## filter(s1,date==ldmy("19-03-2020"))
 plot(s1,log=TRUE)+geom_point(data=mutate_at(ont_recent,"var",trans_state_vars))
 ```
 
 Checking calibration:
-```{r}
+```{r calib_check}
 tt2 <- (tidy(fit1Q)
     %>% select(term,estimate,std.error)
     %>% filter(grepl("Hosp",term))
@@ -278,9 +224,10 @@ ffdat <- (tibble(vday=0:20)
     + geom_line(data=ffdat)
 )
 ```
-**recheck calibration machinery! what went wrong??**
+
 
 Simulating
+
 ```{r sim_res, warning=FALSE, message=FALSE,cache=TRUE}
 ## FIXME: could use pmap ... ?
 t1 <- system.time(sim_res <- plyr::alply(sim_params
@@ -289,11 +236,12 @@ t1 <- system.time(sim_res <- plyr::alply(sim_params
   , base_params=base_params
   , reg_date=reg_date
   , end_date="1-June-2020"
-   , return_val="vals_only"
-  # ,.progress="text" # commenting this out, this will not render nicely 
+  , return_val="vals_only"
   )
 )
 ```
+
+FIXME: more robust caching/making of this step
 
 Put together pieces.
 
@@ -345,11 +293,8 @@ print(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
 ## estimating breakpoints
 
 ```{r breakpoint}
-pars <- fixef(fit1Q)$cond[hosp_ind]
 pp <- calib2(base_params=base_params,
-             target=c(Gbar=6,
-                      r=pars[[2]],
-                      X0=exp(pars[[1]])),
+             target=sim_params_0,
              start_date="1-Mar-2020",
              reg_date="15-Mar-2020",
              init_var="H")
@@ -361,15 +306,20 @@ bb <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Ma
 plot(bb,log=TRUE)+  geom_point(data=ont_recent2,aes(x=date,y=value))
 ```
 
-```{r}
+```{r plot_long_sim}
 bb_long <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
-                    start_date="1-Mar-2020",end_date="1-Jul-2020")
-plot(bb_long,log=TRUE)+  geom_point(data=ont_recent2,aes(x=date,y=value))
+                    start_date="1-Mar-2020",end_date="1-Aug-2020")
+(plot(bb_long,log=TRUE)
+    + geom_point(data=ont_recent2,aes(x=date,y=value))
+    + facet_wrap(~var)
+    + theme(legend.position="none")
+)
 ```
 
 Summarize R0 etc. before and after breakpoint
 
 What's up with cases???
+
 
 ## ISSUES
 
