@@ -17,7 +17,7 @@
 get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                           start_date_offset=15,
                           end_date=max(data$date),
-                          break_dates=c("23-Mar-2020","30-Mar-2020")n,
+                          break_dates=c("23-Mar-2020","30-Mar-2020"),
                           base_params,
                           data,
                           var="report",
