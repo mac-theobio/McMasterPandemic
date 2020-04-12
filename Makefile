@@ -31,6 +31,18 @@ notes/ontario_calibration.html: notes/ontario_calibration.Rmd notes/ontario_clea
 
 ######################################################################
 
+# Try to break out aggfun stuff
+aggfuns.Rout: notes/aggfuns.R
+	$(run-R)
+
+ontario_clean.Rout: notes/ontario_clean.R
+	$(run-R)
+
+aggtest.Rout: aggfuns.Rout ontario_clean.Rout notes/aggtest.R
+	$(run-R)
+
+######################################################################
+
 package:
 	sudo R CMD INSTALL .
 
@@ -108,6 +120,3 @@ localstuff:
 -include makestuff/git.mk
 -include makestuff/visual.mk
 -include makestuff/projdir.mk
-
-######################################################################
-
