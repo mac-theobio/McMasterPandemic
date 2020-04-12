@@ -135,9 +135,9 @@ if (run_stuff) {
     }
     print(ggplot(dd,aes(date,value)) + geom_point() + scale_y_log10())
     ## adjust parameters to sensible generation interval
-    params[["N"]] <- 19.5e6
     params <- fix_pars(read_params("ICU1.csv"), target=c(Gbar=6),u_interval=c(-1,1),
                        pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
+    params[["N"]] <- 19.5e6  ## reset pop to Ontario
     summary(params)
     g1 <- get_break_gen(data=dd, base_params=params, debug=TRUE,
                         optim_args=list(control=list(maxit=10000),hessian=TRUE),
