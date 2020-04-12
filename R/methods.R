@@ -206,3 +206,13 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
         print(describe_params(x))
     }
 }
+
+##' @export
+update.params_pansim <- function(object, ...) {
+    L <- list(...)
+    nm <- names(L)
+    for (i in seq_along(L)) {
+        object[[nm[i]]] <- L[[i]]
+    }
+    return(object)
+}

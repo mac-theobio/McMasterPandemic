@@ -320,6 +320,9 @@ Summarize R0 etc. before and after breakpoint
 
 What's up with cases???
 
+## combined calibration
+
+What if we want to estimate `beta0`, `E0`, and more than one breakpoint at the same time? (Primary use case here is for South African data where the 
 
 ## next
 

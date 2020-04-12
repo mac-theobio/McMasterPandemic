@@ -347,46 +347,6 @@ run_sim <- function(params
 ##' 
 ##' \eqn{   ... }
 ##' 
-##' @param fn file name (CSV file containing at least value and symbol columns
-##' @param value_col name of column containing values
-##' @param symbol_col name of column containing symbols
-##' @param desc_col name of (optional) column containing descriptions
-##' @importFrom stats setNames
-##' @importFrom utils read.csv write.table
-##' @export
-read_params <- function(fn,value_col="Value",symbol_col="Symbol",
-                        desc_col="Parameter") {
-    x <- read.csv(fn,
-                  colClasses="character",
-                  stringsAsFactors=FALSE,
-                  comment.char="#",
-                  na.strings="variable")
-    ## evaluate to allow expressions like "1/7" -> numeric
-    x[[value_col]] <- vapply(x[[value_col]], function(z) eval(parse(text=z)), numeric(1))
-    res <- setNames(x[[value_col]],x[[symbol_col]])
-    class(res) <- "params_pansim"
-    if (desc_col %in% names(x)) {
-        attr(res,"description") <- setNames(x[[desc_col]],x[[symbol_col]])
-    }
-    return(res)
-}
-
-##' write parameters to CSV file
-##' @param fn file name
-##' @param params a params object
-##' @param label a label for the parameters
-##' @export
-write_params <- function(params, fn, label) {
-    writeLines(con=fn,
-           c(paste("#",label),
-             sprintf("# Date: %s",format(Sys.time(),"%d %b %Y"))))
-    ## unavoidable warning "appending column names to file"
-    suppressWarnings(write.table(data.frame(
-        Symbol=names(params),
-        Value=unclass(params)), file=fn,
-        row.names=FALSE, append=TRUE,
-        sep=","))
-}
 
 ##' generate initial state vector
 ##' @param N population size

@@ -2,7 +2,7 @@
 % Please edit documentation in R/sim_funs.R
 \name{make_state}
 \alias{make_state}
-\title{generate initial state vector}
+\title{retrieve parameters from a CSV file}
 \usage{
 make_state(
   N = params[["N"]],
@@ -29,6 +29,21 @@ for (e.g., \code{"ICU1"}, \code{"CI"}); determines state names}
 to zero}
 }
 \description{
+retrieve parameters from a CSV file
+}
+\details{
+The parameters that must be set are:
+
+\eqn{   N:  }  population size
+
+\eqn{   \beta_0:  }  transmission rate
+
+\eqn{   1/\sigma:  }  mean \emph{latent} period
+
+\eqn{   1/\gamma_a:  }  mean \emph{infectious} period for asymptomatic individuals
+
+\eqn{   ... }
+
 generate initial state vector
 }
 \note{
