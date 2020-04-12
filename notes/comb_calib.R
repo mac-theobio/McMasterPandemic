@@ -12,7 +12,7 @@
 ##' @param var variable to compare to (FIXME: this should be inferred from data!
 ##' @param opt_pars starting parameters (and structure)
 ##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
-##' @param agg_args arguments passed to \code{\link{aggregate.pansim}}
+##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
 ##' @param optim_args arguments passed to \code{\link{optim}}
 get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                           start_date_offset=15,
@@ -63,8 +63,8 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                        sim_args))
         ## aggregate
         r <- (do.call(aggregate,
-                     c(list(r, pivot=TRUE,
-                            aggregate_args)))
+                     c(list(r, pivot=TRUE),
+                            aggregate_args))
             %>% dplyr::rename(pred="value")
         )
         ## match up sim results with specified data
