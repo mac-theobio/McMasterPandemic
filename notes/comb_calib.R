@@ -142,8 +142,7 @@ if (run_stuff) {
     g1 <- get_break_gen(data=dd, base_params=params, debug=TRUE,
                         optim_args=list(control=list(maxit=10000),hessian=TRUE),
                         var=if (!use_hosp) "report" else "H",
-                        aggregate_args = agg_list,
-                        debug_plot=TRUE)
+                        aggregate_args = agg_list)
     ## check standard deviations
     sqrt(diag(solve(g1$hessian)))
     ## for structure
