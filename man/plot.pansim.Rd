@@ -27,7 +27,7 @@
 
 \item{show_times}{indicate times when parameters changed?}
 
-\item{...}{additional models to overlay}
+\item{...}{additional arguments to \code{\link{aggregate.pansim}}}
 }
 \description{
 plot method for simulations

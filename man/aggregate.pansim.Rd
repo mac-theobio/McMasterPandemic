@@ -4,7 +4,16 @@
 \alias{aggregate.pansim}
 \title{Collapse columns (infected, ICU, hospitalized) in a pansim output}
 \usage{
-\method{aggregate}{pansim}(x, pivot = FALSE, keep_vars = c("H", "ICU", "D", "report"), ...)
+\method{aggregate}{pansim}(
+  x,
+  pivot = FALSE,
+  keep_vars = c("H", "ICU", "D", "report"),
+  agg_states = TRUE,
+  t_agg_start = NULL,
+  t_agg_period = NULL,
+  t_agg_fun = mean,
+  ...
+)
 }
 \arguments{
 \item{x}{a pansim object}
@@ -13,8 +22,24 @@
 
 \item{keep_vars}{variables to retain (in addition to date) if pivoting}
 
+\item{agg_states}{aggregate states (and add case reports)?}
+
+\item{t_agg_start}{starting date for temporal aggregation}
+
+\item{t_agg_period}{time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})}
+
+\item{t_agg_fun}{temporal aggregation function (applied across all variables) (FIXME: allow variable-specific aggregation?)}
+
 \item{...}{unused, for generic consistency}
 }
 \description{
 Collapse columns (infected, ICU, hospitalized) in a pansim output
+}
+\examples{
+params <- read_params("ICU1.csv")
+state <- make_state(params=params)
+sdate <- "10-Feb-2020" ## arbitrary!
+res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
+a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
+plot(a1)
 }
