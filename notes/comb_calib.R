@@ -114,6 +114,7 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
 
 run_stuff <- TRUE
 use_hosp <- FALSE
+weekly <- TRUE
 
 if (run_stuff) {
     library(McMasterPandemic)
@@ -121,6 +122,17 @@ if (run_stuff) {
     library(dplyr)
     source("ontario_clean.R") ## n.b. need to fix expectation of working directory; add an ON data set to pkg?
     dd <- dplyr::filter(ont_recent,var==if (!use_hosp) "newConfirmations" else "Hospitalization")
+    if(weekly){
+      dd <- (dd 
+        %>% mutate(week = format(date, "%Y-%U"))
+        %>% group_by(week)
+        %>% summarise(date = max(date)
+            , value = sum(value)
+            , var = first(var)
+            )
+      )
+      agg_list <- list(t_agg_start="07-Mar-2020",t_agg_period="7 days",t_agg_fun=sum)
+    }
     print(ggplot(dd,aes(date,value)) + geom_point() + scale_y_log10())
     ## adjust parameters to sensible generation interval
     params <- fix_pars(read_params("ICU1.csv"), target=c(Gbar=6),u_interval=c(-1,1),
@@ -129,6 +141,7 @@ if (run_stuff) {
     g1 <- get_break_gen(data=dd, base_params=params, debug=TRUE,
                         optim_args=list(control=list(maxit=10000),hessian=TRUE),
                         var=if (!use_hosp) "report" else "H",
+                        aggregate_args = agg_list,
                         debug_plot=TRUE)
     ## check standard deviations
     sqrt(diag(solve(g1$hessian)))
@@ -142,7 +155,8 @@ if (run_stuff) {
                       base_params=params,
                       start_date=min(dd$date)-15,
                       end_date="1-Jun-2020",
-                      break_dates=bd)
+                      break_dates=bd,
+                      aggregate_args = agg_list)
     ## FIXME: r can't use plot.pansim method ATM
     print(ggplot(r,aes(date,value,colour=var))
           +geom_line()
