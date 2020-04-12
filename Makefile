@@ -38,10 +38,6 @@ aggfuns.Rout: notes/aggfuns.R
 ontario_clean.Rout: notes/ontario_clean.R
 	$(run-R)
 
-aggtest.Rout: aggfuns.Rout ontario_clean.Rout notes/aggtest.R
-	$(run-R)
-
-######################################################################
 
 package:
 	sudo R CMD INSTALL .
