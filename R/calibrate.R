@@ -51,15 +51,17 @@ badness <- function(delta, params, target, pars_adj) {
 ##' @param pars_adj list of sets of parameters to adjust
 ##' @param u_interval interval for uniroot adjustment
 ##' @param r_method method for fixing r (brute-force exponential simulation or JD's kernel-based approach?)
+##' @param debug debug?
 ##' @export
 ## FIXME: automatically choose default pars_adj on the basis of target?
 ##  better checking of pars_adj (should be a list of named vectors with
-##  length equal to length of target
+##  length equal to length of target, should be appropriate to target ...)
 fix_pars <- function(params, target=c(r=0.23,Gbar=6),
                      pars_adj=list("beta0",
                                    c("sigma","gamma_s","gamma_m","gamma_a")),
                      r_method=c("expsim","rmult"),
-                     u_interval = c(-3,3))
+                     u_interval = c(-3,3),
+                     debug=FALSE)
 {
     r_method <- match.arg(r_method)
     if (identical(names(target),"r") && r_method=="rmult") {
@@ -69,6 +71,13 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
         p_new[["beta0"]] <- p_new[["beta0"]]*rm
     } else {
         if (length(target)==1) {
+            if (debug) {
+                cat("plotting uniroot curve\n")
+                pvec <- seq(u_interval[1], u_interval[2], length.out=101)
+                uvec <- vapply(pvec, uniroot_target, params=params,target=target, pars_adj=pars_adj, FUN.VALUE=numeric(1))
+                plot(pvec,uvec)
+                abline(v=0,lty=2)
+            }
             u <- uniroot(f=uniroot_target,interval=u_interval,
                          params=params, target=target, pars_adj=pars_adj)
             p_new <- adjust_params(u$root, params, pars_adj = pars_adj)
