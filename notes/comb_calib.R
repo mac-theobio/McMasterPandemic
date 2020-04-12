@@ -3,6 +3,36 @@
 ## this for the special case of RSA forecasting (fit E0, beta0,
 ##  breakpoints).  Use Ontario data as example.
 
+
+forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
+                         sim_args=NULL, aggregate_args=NULL,
+                         ## FIXME: return_val is redundant with sim_fun
+                         return_val=c("aggsim","vals_only"))
+{
+    return_val <- match.arg(return_val)
+    ## restructure and inverse-link parameters
+    pp <- invlink_trans(relist(p, opt_pars))
+    ## substitute into parameters
+    params <- update(base_params, E0=pp[["E0"]], beta0=pp[["beta0"]])
+    ## run simulation (uses params to set initial values)
+    r <- do.call(run_sim_break,
+                 c(nlist(params,
+                         start_date,
+                         end_date,
+                         break_dates,
+                         rel_beta0=pp$rel_beta0),
+                   sim_args))
+    ## aggregate
+    r_agg <- do.call(aggregate,
+                     c(list(r, pivot=TRUE),
+                       aggregate_args))
+    ret <- switch(return_val,
+                aggsim=r_agg,
+                vals_only=r_agg$value
+                )
+    return(ret)
+}
+
 ## EXAMPLES: see below
 ##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
 ##' @param end_date ending date
@@ -49,22 +79,9 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
     ##  ?? build this as an optional argument to
     ##   aggregate.pansim
     mle_fun <- function(p,data,do_plot=FALSE) {
-        ## restructure and inverse-link parameters
-        pp <- invlink_trans(relist(p, opt_pars))
-        ## substitute into parameters
-        params <- update(base_params, E0=pp[["E0"]], beta0=pp[["beta0"]])
-        ## run simulation (uses params to set initial values)
-        r <- do.call(run_sim_break,
-                     c(nlist(params,
-                             start_date=start_date,
-                             end_date,
-                             break_dates,
-                             rel_beta0=pp$rel_beta0),
-                       sim_args))
-        ## aggregate
-        r <- (do.call(aggregate,
-                     c(list(r, pivot=TRUE),
-                            aggregate_args))
+        r <- (do.call(forecast_sim,
+                     nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
+                           sim_args, aggregate_args))
             %>% dplyr::rename(pred="value")
         )
         ## match up sim results with specified data
@@ -81,6 +98,8 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
             plot(value~date, data=r2, log="y")
             with(r2,lines(date,pred))
         }
+        ## need this for NB parameter
+        pp <- invlink_trans(relist(p, opt_pars))
         ret <- with(r2,-sum(dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE)))
         ## FIXME: add evaluation number?
         if (debug) cat(unlist(pp),ret,"\n")
@@ -118,20 +137,49 @@ if (run_stuff) {
     ## get parameters back onto original scale
     pp <- invlink_trans(relist(g1$par, opt_pars))
     print(pp)
-    ## final call: 67.95043 0.7845309 1.448797 0.2688962 338.2609 86.92687 
-    params_fit <- update(params, E0=pp[["E0"]], beta0=pp[["beta0"]])
-    ## set same arguments as used by default
-    start_date <- min(dd$date)-15
-    end_date <- max(dd$date)
-    break_dates <- c("23-Mar-2020","30-Mar-2020")
-    r <- do.call(run_sim_break,
-                 nlist(params=params_fit,
-                       start_date=start_date,
-                       end_date,
-                       break_dates,
-                       rel_beta0=pp$rel_beta0))
-    (plot(r,log=TRUE)
-        + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
-        + geom_vline(xintercept=ldmy(break_dates),lty=2)
+    bd <- ldmy(c("23-Mar-2020","30-Mar-2020"))
+    r <- forecast_sim(g1$par, opt_pars,
+                      base_params=params,
+                      start_date=min(dd$date)-15,
+                      end_date="1-Jun-2020",
+                      break_dates=bd)
+    ## FIXME: r can't use plot.pansim method ATM
+    print(ggplot(r,aes(date,value,colour=var))
+          +geom_line()
+          + scale_y_log10()
+          + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+          + geom_vline(xintercept=bd,lty=2)
+          )
+
+    ## parameter ensemble
+    set.seed(101)
+    e_pars <- as.data.frame(MASS::mvrnorm(200,
+                            mu=g1$par,
+                            Sigma=solve(g1$hessian)))
+    ## tried with purrr::pmap but too much of a headache
+    t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars)
+                                         , .margins=1
+                                         , .fun=forecast_sim
+                                         , base_params=params
+                                         , start_date=min(dd$date)-15,
+                                         , end_date="1-June-2020"
+                                         , return_val="vals_only"
+                                         , break_dates=bd
+                                          , opt_pars = opt_pars))
+
+    e_res2 <- (e_res %>% bind_cols()
+        %>% apply(1,quantile,c(0.1,0.5,0.9),na.rm=TRUE)
+        %>% t()
+        %>% as_tibble()
+        %>% setNames(c("lwr","value","upr"))
     )
+    e0 <- dplyr::select(r,date,var) %>% as_tibble()
+    e_res3 <- bind_cols(e0, e_res2)
+    print(ggplot(e_res3, aes(date,value,colour=var,fill=var))
+          + geom_line()
+          + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
+          + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+          + geom_vline(xintercept=bd,lty=2)
+          + scale_y_log10()
+          )
 }
