@@ -135,6 +135,7 @@ if (run_stuff) {
     }
     print(ggplot(dd,aes(date,value)) + geom_point() + scale_y_log10())
     ## adjust parameters to sensible generation interval
+    params[["N"]] <- 19.5e6
     params <- fix_pars(read_params("ICU1.csv"), target=c(Gbar=6),u_interval=c(-1,1),
                        pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
     summary(params)
@@ -154,9 +155,9 @@ if (run_stuff) {
     r <- forecast_sim(g1$par, opt_pars,
                       base_params=params,
                       start_date=min(dd$date)-15,
-                      end_date="1-Jun-2020",
-                      break_dates=bd,
-                      aggregate_args = agg_list)
+                      end_date="1-Aug-2020",
+                      break_dates=bd)
+    ## aggregate_args = agg_list)
     ## FIXME: r can't use plot.pansim method ATM
     print(ggplot(r,aes(date,value,colour=var))
           +geom_line()
@@ -176,10 +177,10 @@ if (run_stuff) {
                                          , .fun=forecast_sim
                                          , base_params=params
                                          , start_date=min(dd$date)-15,
-                                         , end_date="1-June-2020"
+                                         , end_date="1-Aug-2020"
                                          , return_val="vals_only"
                                          , break_dates=bd
-                                          , opt_pars = opt_pars))
+                                         , opt_pars = opt_pars))
 
     e_res2 <- (e_res %>% bind_cols()
         %>% apply(1,quantile,c(0.1,0.5,0.9),na.rm=TRUE)
@@ -188,12 +189,13 @@ if (run_stuff) {
         %>% setNames(c("lwr","value","upr"))
     )
     e0 <- dplyr::select(r,date,var) %>% as_tibble()
+    ## combine quantiles with the original date/var columns
     e_res3 <- bind_cols(e0, e_res2)
     print(ggplot(e_res3, aes(date,value,colour=var,fill=var))
           + geom_line()
           + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
           + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
           + geom_vline(xintercept=bd,lty=2)
-          + scale_y_log10()
+          + scale_y_log10(limits=c(1,NA), oob=scales::squish)
           )
 }

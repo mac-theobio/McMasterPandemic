@@ -28,8 +28,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
     var <- value <- NULL
     ## attributes get lost somewhere below ...
     ptv <- attr(x,"params_timevar")
-    ## FIXME: check if already aggregated!
-    if (aggregate) {
+    if (aggregate && !isTRUE(attr(x,"aggregated"))) {
         x <- aggregate(x)
     }
     x <- as_tibble(x)  ## FIXME:: do this upstream?
@@ -39,6 +38,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
     ## don't try to drop columns that aren't there
     ## FIXME: use aggregate.pansim method?
     drop_states <- intersect(drop_states,names(x))
+    ## FIXME: don't pivot if already pivoted
     xL <- (x
         %>% as_tibble()
         %>% dplyr::select(-one_of(drop_states))
@@ -129,7 +129,6 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
                              FUN=t_agg_fun)
         dd$date <- as.Date(dd$date)
     }
-
     class(dd) <- c0 ## make sure class is restored
     if (!pivot) return(dd)
     ## OTHERWISE long form: more convenient for regressions etc.
@@ -139,6 +138,10 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
         %>% dplyr::select(c("date",keep_vars))
         %>% pivot_longer(names_to="var",-date)
     )
+    ## FIXME: distinguish between agg w/ and w/o pivot?
+    attr(dd,"aggregated") <- TRUE
+    ## FIXME: restore other attributes!
+    class(dd) <- c0 ## restore class
     return(dd)
 }
 
