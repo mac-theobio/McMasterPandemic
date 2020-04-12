@@ -1,15 +1,26 @@
+restore <- function(flesh, skeleton, fixed=NULL) {
+    if (is.null(fixed)) return(relist(flesh,skeleton))
+    ## rely on name-matching for now ... fragile?
+    full_flesh <- unlist(skeleton)
+    full_flesh[names(flesh)] <- flesh
+    full_flesh[names(fixed)] <- unlist(fixed)
+    relist(full_flesh,skeleton)
+}
+
 ## this is a generalization/adaptation of 'get_break'; should
 ## think more generally about the interface, but for now just using
 ## this for the special case of RSA forecasting (fit E0, beta0,
 ##  breakpoints).  Use Ontario data as example.
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
+                         fixed_pars = NULL,
                          sim_args=NULL, aggregate_args=NULL,
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"))
 {
     return_val <- match.arg(return_val)
     ## restructure and inverse-link parameters
-    pp <- invlink_trans(relist(p, opt_pars))
+    pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
+    
     ## substitute into parameters
     params <- update(base_params, E0=pp[["E0"]], beta0=pp[["beta0"]])
     ## run simulation (uses params to set initial values)
@@ -53,6 +64,7 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                                         log_beta0=-1,
                                         log_rel_beta0=c(-1,-1),
                                         log_nb_disp=0),
+                          fixed_pars=NULL,
                           sim_args=NULL,
                           aggregate_args=NULL,
                           optim_args=NULL,
@@ -97,15 +109,19 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
             with(r2,lines(date,pred))
         }
         ## need this for NB parameter
-        pp <- invlink_trans(relist(p, opt_pars))
+        pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
         ret <- with(r2,-sum(dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE)))
         ## FIXME: add evaluation number?
         if (debug) cat(unlist(pp),ret,"\n")
         return(ret)
     }
+    opt_inputs <- unlist(opt_pars)
+    if (!is.null(fixed_pars)) {
+        opt_inputs <- opt_inputs[setdiff(names(opt_inputs), names(unlist(fixed_pars)))]
+    }
     ## use optim to start with; maybe switch to mle2 later
     do.call(optim,
-            c(list(par=unlist(opt_pars), fn=mle_fun, data=data,
+            c(list(par=opt_inputs, fn=mle_fun, data=data,
                    do_plot=debug_plot),
               optim_args))
 }
