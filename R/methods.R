@@ -26,6 +26,8 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
                         log=FALSE, show_times=TRUE, ...) {
     ## global variables
     var <- value <- NULL
+    ## attributes get lost somewhere below ...
+    ptv <- attr(x,"params_timevar")
     ## FIXME: check if already aggregated!
     if (aggregate) x <- aggregate(x)
     x <- as_tibble(x)  ## FIXME:: do this upstream?
@@ -46,7 +48,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
         + geom_line()
     )
     if (log) gg0 <- gg0 + scale_y_log10()
-    if (show_times && !is.null(ptv <- attr(x,"params_timevar"))) {
+    if (show_times && !is.null(ptv)) {
         gg0 <- gg0 + geom_vline(xintercept=ptv$Date,lty=2)
     }
     return(gg0)

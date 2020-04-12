@@ -4,8 +4,7 @@ library(ggplot2)
 
 context("very basic simulation")
 
-params <- read_params(system.file("params","ICU1.csv",
-                                  package="McMasterPandemic"))
+params <- read_params("ICU1.csv")
 state <- make_state(params=params)
 
 test_that("basic examples", {
@@ -37,7 +36,8 @@ test_that("time-varying example", {
                         step_args=list(do_hazard=TRUE))
     expect_is(resICU_t,"pansim")
     plot(resICU_t)
-    plot(resICU_t,aggregate=FALSE,log=TRUE,drop_vars=NULL)
+    ## not showing foi because of log / <= 1 filter
+    plot(resICU_t,aggregate=FALSE,log=TRUE,drop_states=c("t","S","R","E"))
 })
 
 test_that("time-varying with ndt>1", {

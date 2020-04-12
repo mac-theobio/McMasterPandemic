@@ -9,7 +9,8 @@ fix_pars(
   target = c(r = 0.23, Gbar = 6),
   pars_adj = list("beta0", c("sigma", "gamma_s", "gamma_m", "gamma_a")),
   r_method = c("expsim", "rmult"),
-  u_interval = c(-3, 3)
+  u_interval = c(-3, 3),
+  debug = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ fix_pars(
 \item{r_method}{method for fixing r (brute-force exponential simulation or JD's kernel-based approach?)}
 
 \item{u_interval}{interval for uniroot adjustment}
+
+\item{debug}{debug?}
 }
 \description{
 adjust pars to match targets
