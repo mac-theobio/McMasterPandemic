@@ -74,7 +74,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
 ##' a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
-##' plot(a1)
+##' plot(a1) + geom_point()
 ##' @export
 aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
                              agg_states=TRUE,
