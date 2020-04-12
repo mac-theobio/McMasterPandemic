@@ -91,11 +91,12 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
     if ("c_delay_mean" %in% names(params)) {
         dd$incidence <- x$foi*x$S
         unpack(as.list(params))
-        dd$report <- as.numeric(stats::filter(dd$incidence,
-                                   make_delay_kernel(c_prop,
-                                                     c_delay_mean,
-                                                     c_delay_cv,
-                                                     max_len=10)))
+        kern <- make_delay_kernel(c_prop,                                                     c_delay_mean,
+                                  c_delay_cv,
+                                  max_len=10)
+        ## FIXME: don't hard-code max len?
+        dd$report <- as.numeric(stats::filter(dd$incidence,kern,
+                                              sides=1))
     }
     class(dd) <- c0 ## make sure class is restored
     if (!pivot) return(dd)

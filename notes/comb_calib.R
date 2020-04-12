@@ -113,7 +113,7 @@ get_break_gen <- function(start_date=min(data$date)-start_date_offset,
 }
 
 run_stuff <- TRUE
-use_hosp <- TRUE
+use_hosp <- FALSE
 
 if (run_stuff) {
     library(McMasterPandemic)
@@ -126,8 +126,10 @@ if (run_stuff) {
     params <- fix_pars(read_params("ICU1.csv"), target=c(Gbar=6),u_interval=c(-1,1),
                        pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
     summary(params)
-    g1 <- get_break_gen(data=dd, base_params=params, debug=TRUE,optim_args=list(control=list(maxit=10000),hessian=TRUE),
-                        var=if (!use_hosp) "report" else "H")
+    g1 <- get_break_gen(data=dd, base_params=params, debug=TRUE,
+                        optim_args=list(control=list(maxit=10000),hessian=TRUE),
+                        var=if (!use_hosp) "report" else "H",
+                        debug_plot=TRUE)
     ## check standard deviations
     sqrt(diag(solve(g1$hessian)))
     ## for structure
