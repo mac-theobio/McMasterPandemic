@@ -5,7 +5,7 @@
 ##' @param params parameter vector
 ##' @export
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' state[["E"]] <- 1
@@ -102,7 +102,7 @@ make_jac <- function(params, state=NULL) {
 ##' @param do_ICU include additional health utilization compartments
 ##' @return matrix of (daily) transition rates
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' if (require(Matrix)) {
 ##'   image(Matrix(make_ratemat(state,params)))
@@ -221,7 +221,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @param ndt number of internal time steps per time step
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params=params)
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
@@ -436,7 +436,7 @@ predfun <- function(beta0,E0,data,
 ##' @param M rate matrix
 ##' @importFrom stats rnbinom
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' params <- read_params("ICU1.csv")
 ##' run_sim_range(params)
 ##' @export
 run_sim_range <- function(params

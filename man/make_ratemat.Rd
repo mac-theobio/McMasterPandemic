@@ -39,7 +39,7 @@ Base version matches structure of Stanford/Georgia models
 }
 }
 \examples{
-params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+params <- read_params("ICU1.csv")
 state <- make_state(params[["N"]],E0=params[["E0"]])
 if (require(Matrix)) {
   image(Matrix(make_ratemat(state,params)))

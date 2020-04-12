@@ -36,6 +36,6 @@ run_sim_range(
 Run simulation across a range of times
 }
 \examples{
-params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+params <- read_params("ICU1.csv")
 run_sim_range(params)
 }

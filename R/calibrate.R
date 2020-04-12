@@ -76,7 +76,7 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
                 pvec <- seq(u_interval[1], u_interval[2], length.out=101)
                 uvec <- vapply(pvec, uniroot_target, params=params,target=target, pars_adj=pars_adj, FUN.VALUE=numeric(1))
                 plot(pvec,uvec)
-                abline(v=0,lty=2)
+                graphics::abline(v=0,lty=2)
             }
             u <- uniroot(f=uniroot_target,interval=u_interval,
                          params=params, target=target, pars_adj=pars_adj)

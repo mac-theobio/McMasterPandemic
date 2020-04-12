@@ -17,7 +17,7 @@ construct Jacobian matrix for ICU model
 (not quite complete: doesn't include flows to R)
 }
 \examples{
-params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+params <- read_params("ICU1.csv")
 state <- make_state(params[["N"]],E0=params[["E0"]])
 ## state[c("E","Ia","Ip","Im","Is")] <- 1
 state[["E"]] <- 1
