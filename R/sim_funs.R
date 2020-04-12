@@ -130,7 +130,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
     Ivec <- c(Ia, Ip, Im,Is)
     Iwt <- beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs)
     M["S","E"]   <- sum(Iwt*Ivec)
-    M["E","Ia"]  <- alpha*P$sigma
+    M["E","Ia"]  <- alpha*sigma
     M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
     M["Ip","Im"] <- mu*gamma_p
