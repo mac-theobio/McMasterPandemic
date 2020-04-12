@@ -4,6 +4,16 @@
 ##  breakpoints).  Use Ontario data as example.
 
 ## EXAMPLES: see below
+##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
+##' @param end_date ending date
+##' @param break_dates specified breakpoints in beta0
+##' @param base_params baseline parameters
+##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
+##' @param var variable to compare to (FIXME: this should be inferred from data!
+##' @param opt_pars starting parameters (and structure)
+##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
+##' @param agg_args arguments passed to \code{\link{aggregate.pansim}}
+##' @param optim_args arguments passed to \code{\link{optim}}
 get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                           start_date_offset=15,
                           end_date=max(data$date),
