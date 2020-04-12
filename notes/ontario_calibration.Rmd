@@ -226,7 +226,7 @@ ffdat <- (tibble(vday=0:20)
 ```
 
 
-Simulating
+Simulating (calibrating every time; could arguably (more efficiently?) sample over a joint distribution of r, G, E0?  Do importance-sampling weighting?
 
 ```{r sim_res, warning=FALSE, message=FALSE,cache=TRUE}
 ## FIXME: could use pmap ... ?
@@ -321,11 +321,10 @@ Summarize R0 etc. before and after breakpoint
 What's up with cases???
 
 
-## ISSUES
+## next
+
+1. better/different approaches to estimating time-varying beta?
 
 
-1. non-constant r (use epigrowthfit and feed in observed relative r over time (i.e. derivative of fitted curve) as timevars?
-2. non-constant testing (ignore this for now, maybe we can do a brute-force correction where we subtract r(testing) from r(reports) - this assumes that tests are not expanding to incorporate a different subset of people
-3. use H, ICU, D to get r then use reports to get time-varying beta0?
 
 

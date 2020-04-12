@@ -16,6 +16,7 @@ library(broom.mixed)
 library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
+library(TMB)
 ## make nice defaults
 scale_colour_discrete <- function(...) {
   colorspace::scale_colour_discrete_qualitative(...)
@@ -26,12 +27,6 @@ scale_fill_discrete <- function(...) {
 ```
 
 
-```{r read_data,message=FALSE,warning=FALSE}
-url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
-dd <- read_csv(url)
-PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
-ddPHO <- read_csv(PHOurl)
-```
 
 ## goals
 
@@ -41,24 +36,46 @@ ddPHO <- read_csv(PHOurl)
 * choice of response distribution (negative binomial 1 vs 2, log-Normal, least-squares, ... ?)
 * EpiEstim, EpiEstim plus priors?
 
-```{r}
-ont_dd <- (dd
-  %>% filter(Province=="ON")
-  %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
-    %>% pivot_longer(-Date,names_to="var")
-    %>% setNames(tolower(names(.)))
+
+```{r get_data,warning=FALSE}
+source("ontario_clean.R")
+```
+
+```{r plot1,warning=FALSE}
+(ggplot(ont_recent,aes(x=vday,y=value,colour=var))
+    + geom_point()
+    + scale_y_log10()
+    + geom_smooth(method="lm",
+                  formula=y~poly(x,2),
+                  se=FALSE)
+    + scale_x_continuous(limits=c(-2,NA))
 )
 ```
 
 ```{r}
-library(TMB)
 compile("epigrowthfit_TMB.cpp")
 ## fit linear, quad mixed? models
 ## logit, Richards?
 ## epigrowthfit or mle2 or ... ?
 ## plot predictions and CIs
 dyn.load("epigrowthfit_TMB.so")
-m <- MakeADFun(data=, parameters, DLL="epigrowthfit_TMB")
-
+## data; include t=-1 as initial time (for cumulated incidence for first step)
+tmb_data <- with(filter(ont_recent,
+                        vday>=0,var=="Hospitalization"),
+                 list(t=c(-1,vday),x=value))
+m <- MakeADFun(data=tmb_data
+             , parameters=list(log_thalf=5,
+                               log_K=5,
+                               log_r=-1,
+                               log_nb_disp=0,
+                               log_p=0)
+             , DLL="epigrowthfit_TMB")
+m$fn(m$par)
+fit1 <- with(m,nlminb(start=par,
+                      objective=fn,
+                      gradient=gr))
+exp(setNames(fit1$par,gsub("log_","",names(fit1$par))))
+m$report()$inccurve
 ```
 
+**FIXME**: are we handling missing data correctly by ignoring it?
