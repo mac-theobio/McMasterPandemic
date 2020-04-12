@@ -120,7 +120,7 @@ if (run_stuff) {
     library(McMasterPandemic)
     library(ggplot2); theme_set(theme_bw())
     library(dplyr)
-    source("ontario_clean.R") ## n.b. need to fix expectation of working directory; add an ON data set to pkg?
+    source("notes/ontario_clean.R") ## n.b. need to fix expectation of working directory; add an ON data set to pkg?
     dd <- dplyr::filter(ont_recent,var==if (!use_hosp) "newConfirmations" else "Hospitalization")
     if(weekly){
       dd <- (dd 
