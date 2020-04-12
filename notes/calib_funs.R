@@ -1,16 +1,6 @@
-restore <- function(flesh, skeleton, fixed=NULL) {
-    if (is.null(fixed)) return(relist(flesh,skeleton))
-    ## rely on name-matching for now ... fragile?
-    full_flesh <- unlist(skeleton)
-    full_flesh[names(flesh)] <- flesh
-    full_flesh[names(fixed)] <- unlist(fixed)
-    relist(full_flesh,skeleton)
-}
-
-## this is a generalization/adaptation of 'get_break'; should
-## think more generally about the interface, but for now just using
-## this for the special case of RSA forecasting (fit E0, beta0,
-##  breakpoints).  Use Ontario data as example.
+##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
+##' @inheritParams get_break_gen
+##' @export
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
                          fixed_pars = NULL,
                          sim_args=NULL, aggregate_args=NULL,
@@ -42,7 +32,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return(ret)
 }
 
-## EXAMPLES: see below
+##' calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 ##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
 ##' @param end_date ending date
 ##' @param break_dates specified breakpoints in beta0
@@ -53,6 +43,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 ##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
 ##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
 ##' @param optim_args arguments passed to \code{\link{optim}}
+##' @export
 get_break_gen <- function(start_date=min(data$date)-start_date_offset,
                           start_date_offset=15,
                           end_date=max(data$date),

@@ -171,3 +171,21 @@ invlink_trans <- function(p) {
     if (is.numeric(p)) r <- unlist(r)
     return(r)
 }
+
+##' convert a parameter vector back to a structured list
+##' Like \code{\link{relist}}, but adds the capability to fill in
+##' parameters from a "fixed-parameter" vector
+##' @param flesh a vector to be restored
+##' @param skeleton a list, the structure of which determines the structure of the result
+##' @param fixed a list which determines extra components to fill in
+##' @note Depends at present on the names of the unlisted object; may be fragile
+##' @export
+restore <- function(flesh, skeleton, fixed=NULL) {
+    if (is.null(fixed)) return(utils::relist(flesh,skeleton))
+    ## rely on name-matching for now ... fragile?
+    full_flesh <- unlist(skeleton)
+    full_flesh[names(flesh)] <- flesh
+    full_flesh[names(fixed)] <- unlist(fixed)
+    utils::relist(full_flesh,skeleton)
+}
+
