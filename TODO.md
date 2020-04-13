@@ -2,6 +2,8 @@
 
 ### short term
 
+* move aggregate to collapse; collapse option for keeping everything
+
 * encapsulate ensemble-forecast machinery
 * implement Poisson in get_breaks_gen ?
 * wrap new calibration machinery back into package

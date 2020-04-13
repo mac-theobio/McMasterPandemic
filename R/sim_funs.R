@@ -37,16 +37,10 @@ make_jac <- function(params, state=NULL) {
                 dimnames=list(from=names(state),to=names(state)))
     Ivec <- c(Ia, Ip, Im,Is)
     Iwt <- beta0/N*c(Ia=Ca,Ip=Cp,Im=(1-iso_m)*Cm,Is=(1-iso_s)*Cs)
+    Ivars <- c("Ia","Ip","Im","Is")
     M["S","S"] <- -sum(Ivec*Iwt)
-    M["S","Ia"] <- -S*Iwt[["Ia"]]
-    M["S","Ip"] <- -S*Iwt[["Ip"]]
-    M["S","Im"] <- -S*Iwt[["Im"]]
-    M["S","Is"] <- -S*Iwt[["Is"]]
-    M["E","Ia"] <- S*Iwt[["Ia"]]
-    M["E","Ip"] <- S*Iwt[["Ip"]]
-    M["E","Im"] <- S*Iwt[["Im"]]
-    M["E","Is"] <- S*Iwt[["Is"]]
-    M["E","S"] <- +sum(Ivec*Iwt)
+    M["S",Ivars] <- -S*Iwt[Ivars]
+    M["E",c("S",Ivars)] <- -M["S",c("S",Ivars)]
     M["E","E"] <- -sigma
     M["Ia","E"] <- alpha*sigma
     M["Ia","Ia"] <- -gamma_a
@@ -66,9 +60,7 @@ make_jac <- function(params, state=NULL) {
     M["ICUd","ICUd"] <- -psi2
     M["D","ICUd"] <- psi2
     M["R","Ia"] <- gamma_a
-    M["R","Ip"] <- gamma_p
     M["R","Im"] <- gamma_m
-    M["R","Is"] <- gamma_s
     M["R","H"] <- rho
     M["R","H2"] <- psi3
     return(M)

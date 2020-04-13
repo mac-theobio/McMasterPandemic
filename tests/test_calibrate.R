@@ -19,8 +19,8 @@ simdat <- (aggregate(sim1S,pivot=TRUE)
     %>% filter(date>as.Date("2020-03-15") & date<as.Date("2020-03-29"))
 )
 
-simdat %>% filter(date==as.Date("2020-03-17"),var=="D")
-sim1S %>% filter(date==as.Date("2020-03-17")) %>% select(D)
+## simdat %>% filter(date==as.Date("2020-03-17"),var=="D")
+## sim1S %>% filter(date==as.Date("2020-03-17")) %>% select(D)
 ## reasonable trajectories
 ## note H > ICU > D as it should be
 plot(sim1S,log=TRUE) + geom_point(data=simdat)
@@ -63,8 +63,6 @@ simScal_brute <- run_sim(ccS2$params, ccS2$state,
                    start_date="1-Mar-2020",
                    end_date="1-Apr-2020",
                    ndt=10)
-simScal_brute %>% filter(date==min(regdatS$date))  ## 45 + 1(H2),not 36???
-## step_args=list(do_hazard=TRUE))
 
 ## predicted values from regression
 pframeS <- data.frame(date=seq(as.Date("2020-03-01"),
@@ -97,6 +95,7 @@ print(log(unlist(simAgg[n,]/simAgg[n-10,]))/10)
 ## 0.1942182 0.1946885 0.2026567 
 summary(ccS$params)
 
-## LESSON: *small* details in 
+## LESSON: *small* details in simulation procedure (do_hazard or not, ndt) change the initial
+##  stages considerably, which leads to problems in brute-force
 
 

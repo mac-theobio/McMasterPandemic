@@ -8,6 +8,21 @@ print.pansim <- function(x,all=FALSE,...) {
     print(x)
 }
 
+calc_reports <- function(x,params) {
+    ## compute incidence and reports (as convolution of incidence)
+    incidence <- x$foi*x$S
+    unpack(as.list(params))
+    kern <- make_delay_kernel(c_prop,
+                              c_delay_mean,
+                              c_delay_cv,
+                              max_len=10)
+    ## FIXME: don't hard-code max len ...
+    report <- as.numeric(stats::filter(incidence,kern,
+                                       sides=1))
+
+    return(data.frame(incidence, report))
+}
+
 ## FIXME: allow faceting automatically? (each var alone or by groups?)
 ## don't compare prevalences and incidences?
 ##' plot method for simulations
@@ -64,6 +79,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' @param t_agg_start starting date for temporal aggregation
 ##' @param t_agg_period time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})
 ##' @param t_agg_fun temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)
+##' @param add_reports add incidence and case reports?
 ##' @param ... unused, for generic consistency
 ##' @importFrom stats aggregate
 ##' @importFrom dplyr %>% as_tibble
@@ -83,6 +99,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' @export
 aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
                              agg_states=TRUE,
+                             add_reports=TRUE,
                              t_agg_start=NULL,
                              t_agg_period=NULL,
                              t_agg_fun=mean,
@@ -104,9 +121,9 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
             }
             return(dd)
         }
-		  ## Sorry, Ben; no good way to get reports and Is, Im
-		  ## Add reports as a separate argument instead of part of agg_states?
-		  ## MLi: I am sorry too, we needed more states 2:27am.
+        ## Sorry, Ben; no good way to get reports and Is, Im
+        ## Add reports as a separate argument instead of part of agg_states?
+        ## MLi: I am sorry too, we needed more states 2:27am.
         dd <- dd[c("date","S","E","Ia", "Is", "Im", "H","H2","ICUs","ICUd","foi")]
         dd <- add_col(dd,"I","^I[^C]")
         dd <- add_col(dd,"H","^H")
@@ -115,19 +132,14 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
         dd <- add_col(dd,"discharge","discharge")
         dd <- data.frame(dd,D=x[["D"]])
         params <- attr(x,"params")
-        ## compute reports as convolution of incidence
-        if ("c_delay_mean" %in% names(params)) {
-            dd$incidence <- x$foi*x$S
-            unpack(as.list(params))
-            kern <- make_delay_kernel(c_prop,
-                                      c_delay_mean,
-                                      c_delay_cv,
-                                      max_len=10)
-            ## FIXME: don't hard-code max len ...
-            dd$report <- as.numeric(stats::filter(dd$incidence,kern,
-                                                  sides=1))
-        }
     } ## if agg_states
+    if (add_reports) {
+        if (!"c_delay_mean" %in% names(params)) {
+            warning("add_reports requested but delay parameters missing")
+        } else {
+            dd <- data.frame(dd, calc_reports(x,params))
+        }
+    }
     ## do temporal aggregation, if requested
     if (!is.null(t_agg_start)) {
         agg_datevec <- seq.Date(ldmy(t_agg_start),max(dd$date)+30,by=t_agg_period)

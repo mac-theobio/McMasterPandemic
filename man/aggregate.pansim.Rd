@@ -9,6 +9,7 @@
   pivot = FALSE,
   keep_vars = c("H", "ICU", "D", "report"),
   agg_states = TRUE,
+  add_reports = TRUE,
   t_agg_start = NULL,
   t_agg_period = NULL,
   t_agg_fun = mean,
@@ -23,6 +24,8 @@
 \item{keep_vars}{variables to retain (in addition to date) if pivoting}
 
 \item{agg_states}{aggregate states (and add case reports)?}
+
+\item{add_reports}{add incidence and case reports?}
 
 \item{t_agg_start}{starting date for temporal aggregation}
 

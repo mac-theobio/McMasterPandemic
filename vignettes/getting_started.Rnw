@@ -16,7 +16,7 @@
 \newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
 \renewcommand{\code}[1]{\inlinecode{R}{#1}}
 
-<<setup,echo=FALSE>>=
+<<setup,include=FALSE,eval=FALSE>>=
 knitr::opts_chunk$set(
   collapse = TRUE,
   fig.height = 4,
@@ -52,7 +52,7 @@ knitr::opts_chunk$set(
 
 Use \code{remotes::install_github("bbolker/McMasterPandemic")} to install the latest version of the package.
 
-<<loadpkg,message=FALSE>>=
+<<loadpkg, message=FALSE>>=
 library(McMasterPandemic)
 @
 
@@ -80,8 +80,10 @@ If \code{p} is a parameter set (e.g. the result of
 data frame with a column giving the meaning of each parameter.
 
 <<set_params>>=
-params1 <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+params1 <- read_params("ICU1.csv")
 @
+
+(by default \code{read_params} looks first in the working directory for CSV files, then in the \code{params} directory installed with the package (\code{system.file("params", package="McMasterPandemic")}).
 
 <<params_kable,echo=FALSE>>=
 knitr::kable(describe_params(params1))
@@ -93,6 +95,7 @@ The \code{summary} method for \code{params_pansim} objects returns the
 initial exponential growth rate ($r_0$), the doubling time
 ($\log{2}/r_0$), the mean generation interval ($\overline{G}$), and
 the basic reproduction number
+
 %%
 \begin{equation*}
 \R_0 = \beta_0 \left\{
@@ -109,8 +112,7 @@ knitr::kable(round(t(summary(params1)),2))
 @
 
 \bigskip\noindent
-The components of $\R_0$ the reproduction number associated with each infectious compartment
-can also be extracted.
+The components of $\R_0$ (the reproduction number associated with each infectious compartment) can also be extracted.
 
 <<R0_components>>=
 knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
@@ -118,13 +120,13 @@ knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 
 \paragraph{Initial conditions}
 
-The initial state must also be set, but it is sufficient to take
-the population size and initially exposed population from the
-\code{params_pansim} object (in which case all non-exposed individuals
-will be assumed to be susceptible).
+The initial state must also be set, but it is sufficient to specify
+the parameter set (a \code{params_pansim} object), in which case 
+the population size and initially exposed population will be taken from the parameters (in this case all non-exposed individuals
+are assumed to be susceptible).
 
 <<set_initial_state>>=
-state1 <- make_state(N=params1[["N"]],E=params1[["E0"]],type="ICU1")
+state1 <- make_state(params=params1)
 @
 
 \paragraph{Start and end dates}
@@ -144,15 +146,15 @@ A simple deterministic simulation is run as follows, and returns a
 \code{pansim} object.  The \code{summary} method computes the times
 and magnitudes of peak demands on acute care (H) and intenstive care
 (ICU), and the basic reproduction number $\R_0$.
+
 <<run_sim>>=
-res1 <- run_sim(params1, state1, start_date=sdate, end_date=edate)
+res1 <- run_sim(params=params1, state=state1, start_date=sdate, end_date=edate)
 summary(res1)
 @
 
 The \code{plot} method for \code{pansim} objects returns a
-\code{ggplot} object.
-Specifying a log scale in the construction of the plot avoids zeros in
-the resulting time series.
+\code{ggplot} object, optionally on a log scale.
+
 <<plot_sim,fig.width=8>>=
 plot_grid(plot(res1, log=TRUE),  ## logarithmic
           plot(res1))  ## linear
@@ -160,7 +162,7 @@ plot_grid(plot(res1, log=TRUE),  ## logarithmic
 
 \subsection{Stochasticity}
 
-The effects of observation error (reporting imperfections) are easy to
+The effects of observation error are easy to
 explore with the \code{stoch} argument to \code{run_sim}.
 The \code{obs_disp} parameter is the dispersion parameter for a negative
 binomial.
@@ -205,7 +207,5 @@ will differ under various intervention scenarios.
 The natural approach is to find a set of parameters that lies within
 the estimated constraints and best fits the observed part of the
 epidemic.
-
-
 
 \end{document}

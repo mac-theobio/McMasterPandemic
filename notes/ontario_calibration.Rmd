@@ -298,7 +298,7 @@ pp <- calib2(base_params=base_params,
              start_date="1-Mar-2020",
              reg_date="15-Mar-2020",
              init_var="H")
-b <- get_break(params=pp,data=ont_recent)
+b <- get_break_old(params=pp,data=ont_recent)
 print(b$par)  ## logit(rel beta0), log(nb_disp)
 print(c(plogis(b$par[1]),exp(b$par[2])))
 bb <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
