@@ -75,6 +75,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
 ##' a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
 ##' plot(a1) + ggplot2::geom_point()
+##' ## column-specific aggregation
 ##' first <- dplyr::first
 ##' a2 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",
 ##'         t_agg_fun=list(mean=c("H","ICU","I"),
