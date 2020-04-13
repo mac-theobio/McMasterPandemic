@@ -18,6 +18,8 @@ if (weekly) {
         %>% mutate(diff=diff(c(0,value)))
         %>% dplyr::filter(diff>0)
     )
+    ## set start values to (initial date in data set - 6 days) to make *end* of first
+    ## aggregation period line up correctly
     agg_list <- list(t_agg_start=min(dd$date)-6,t_agg_period="7 days",t_agg_fun=sum)
 }
 print(ggplot(dd,aes(date,value)) + geom_point() + scale_y_log10())
@@ -54,15 +56,6 @@ r <- forecast_sim(g1$par, opt_pars,
                   end_date=ed,
                   break_dates=bd,
                   aggregate_args = agg_list)
-hack <- g1$par
-hack[4]<- -0.3
-r_hack <- forecast_sim(hack, opt_pars,
-                  ## fixed_pars = fp,
-                  base_params=params,
-                  start_date=min(dd$date)-15,
-                  end_date=ed,
-                  break_dates=bd,
-                  aggregate_args = agg_list)
 
 ## aggregate_args = agg_list)
 ## FIXME: r can't use plot.pansim method ATM
@@ -76,19 +69,22 @@ print(ggplot(r,aes(date,value,colour=var))
 ## parameter ensemble
 set.seed(101)
 e_pars <- as.data.frame(MASS::mvrnorm(200,
-                                      mu=g1$par,
-                                      Sigma=solve(g1$hessian)))
+                                      mu=g1$par[1:4],
+                                      Sigma=solve(g1$hessian[1:4,1:4])))
 ## tried with purrr::pmap but too much of a headache
 t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars)
                                      , .margins=1
                                      , .fun=forecast_sim
+                                     , aggregate_args = agg_list
                                      , base_params=params
                                      , start_date=min(dd$date)-15,
-                                     , end_date="1-Aug-2020"
+                                     , end_date=ed,
                                      , return_val="vals_only"
                                      , break_dates=bd
                                      , opt_pars = opt_pars
-                                     , fixed_pars = fp))
+                                     ## , fixed_pars = fp
+## breaks with fixed_pars *and* aggregate_args but OK with either?
+))
 
 ## get quantiles by observation
 e_res2 <- (e_res %>% bind_cols()
