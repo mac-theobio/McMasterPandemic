@@ -106,7 +106,8 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
         }
 		  ## Sorry, Ben; no good way to get reports and Is, Im
 		  ## Add reports as a separate argument instead of part of agg_states?
-        dd <- dd[c("date","S","E", "Is", "Im")]
+		  ## MLi: I am sorry too, we needed more states 2:27am.
+        dd <- dd[c("date","S","E","Ia", "Is", "Im", "H","H2","ICUs","ICUd")]
         dd <- add_col(dd,"I","^I[^C]")
         dd <- add_col(dd,"H","^H")
         dd <- add_col(dd,"ICU","^ICU")
