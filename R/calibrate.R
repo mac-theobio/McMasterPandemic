@@ -200,7 +200,7 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
         ufun <- function(E0) {
             sim_args$state[["E"]] <- E0
             ## run simulation, aggregate
-            r <- aggregate(do.call(run_sim,sim_args))
+            r <- condense(do.call(run_sim,sim_args))
             return(tail(r[[var]],1)-init_target)
         }
         params[["E0"]] <- uniroot(ufun,interval=c(0.001,2000))$root
@@ -247,7 +247,7 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
                              rel_beta0),
                        sim_args))
         ## run simulation, aggregate
-        r <- (aggregate(r, pivot=TRUE)
+        r <- (pivot(condense(r))
             %>% dplyr::rename(pred="value")
         )
         ## match up sim results with specified data
@@ -350,7 +350,7 @@ sim_fun <- function(target, base_params,
                       start_date,
                       end_date)
     r <- do.call(run_sim,arg_list)
-    a <- aggregate(r,pivot=TRUE)
+    a <- pivot(condense(r))
     return(switch(return_val,
                   sim=r,
                   aggsim=a,

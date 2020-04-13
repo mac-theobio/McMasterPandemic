@@ -2,52 +2,45 @@
 % Please edit documentation in R/methods.R
 \name{aggregate.pansim}
 \alias{aggregate.pansim}
-\title{Collapse columns (infected, ICU, hospitalized) in a pansim output}
+\title{Temporal aggregation of pansim objects}
 \usage{
 \method{aggregate}{pansim}(
   x,
-  pivot = FALSE,
-  keep_vars = c("H", "ICU", "D", "report"),
-  agg_states = TRUE,
-  add_reports = TRUE,
-  t_agg_start = NULL,
-  t_agg_period = NULL,
-  t_agg_fun = mean,
+  start = NULL,
+  period = NULL,
+  FUN = mean,
+  fixed_vars = TRUE,
+  extend = 30,
   ...
 )
 }
 \arguments{
 \item{x}{a pansim object}
 
-\item{pivot}{return long-format tibble instead of wide data frame?}
+\item{start}{starting date for temporal aggregation}
 
-\item{keep_vars}{variables to retain (in addition to date) if pivoting}
+\item{period}{time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})}
 
-\item{agg_states}{aggregate states (and add case reports)?}
+\item{FUN}{temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)}
 
-\item{add_reports}{add incidence and case reports?}
+\item{fixed_vars}{treat names in FUN as fixed strings rather than regular expressions?}
 
-\item{t_agg_start}{starting date for temporal aggregation}
-
-\item{t_agg_period}{time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})}
-
-\item{t_agg_fun}{temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)}
+\item{extend}{how far to extend time series for aggregation purposes}
 
 \item{...}{unused, for generic consistency}
 }
 \description{
-Collapse columns (infected, ICU, hospitalized) in a pansim output
+Temporal aggregation of pansim objects
 }
 \examples{
 params <- read_params("ICU1.csv")
 state <- make_state(params=params)
 sdate <- "10-Feb-2020" ## arbitrary!
 res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
-a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
-plot(a1) + ggplot2::geom_point()
+a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
 ## column-specific aggregation
 first <- dplyr::first
-a2 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",
-        t_agg_fun=list(mean=c("H","ICU","I"),
+a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
+        FUN=list(mean=c("H","ICU","I"),
                first=c("D"),sum=c("report")))
 }

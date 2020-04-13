@@ -10,6 +10,7 @@ print.pansim <- function(x,all=FALSE,...) {
 
 calc_reports <- function(x,params) {
     ## compute incidence and reports (as convolution of incidence)
+    c_prop <- c_delay_mean <- c_delay_cv <- NULL
     incidence <- x$foi*x$S
     unpack(as.list(params))
     kern <- make_delay_kernel(c_prop,
@@ -29,36 +30,34 @@ calc_reports <- function(x,params) {
 ##' @param x fitted \code{pansim} object
 ##' @param drop_states states to \emph{exclude} from plot
 ##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
-##' @param aggregate collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}
+##' @param condense condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}
 ##' @param log plot y-axis on log scale?
 ##' @param show_times indicate times when parameters changed?
-##' @param ... additional arguments to \code{\link{aggregate.pansim}}
+##' @param ... additional arguments to \code{\link{condense.pansim}}
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
 ##' @importFrom dplyr one_of
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
-                        keep_states=NULL, aggregate=TRUE,
+                        keep_states=NULL, condense=TRUE,
                         log=FALSE, show_times=TRUE, ...) {
     ## global variables
     var <- value <- NULL
     ## attributes get lost somewhere below ...
     ptv <- attr(x,"params_timevar")
-    if (aggregate && !isTRUE(attr(x,"aggregated"))) {
-        x <- aggregate(x)
+    if (condense) {
+        x <- condense(x)
     }
-    x <- as_tibble(x)  ## FIXME:: do this upstream?
     if (!is.null(keep_states)) {
         drop_states <- setdiff(names(x), c(keep_states,"date"))
     }
     ## don't try to drop columns that aren't there
-    ## FIXME: use aggregate.pansim method?
+    ## FIXME: use condense.pansim method?
     drop_states <- intersect(drop_states,names(x))
     ## FIXME: don't pivot if already pivoted
-    xL <- (x
-        %>% as_tibble()
-        %>% dplyr::select(-one_of(drop_states))
-        %>% tidyr::pivot_longer(names_to="var", -date)
-        %>% mutate(var=forcats::fct_inorder(factor(var)))
+    xL <- (pivot(x)
+        %>% dplyr::filter(!var %in% drop_states)
+        %>% dplyr::mutate(var=forcats::fct_inorder(factor(var)))
+        ## FIXME: order factor in pivot?
     )
     if (log) xL <- dplyr::filter(xL,value>=1)
     gg0 <- (ggplot(xL,aes(date,value,colour=var))
@@ -71,121 +70,141 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
     return(gg0)
 }
 
-##' Collapse columns (infected, ICU, hospitalized) in a pansim output
-##' @param x a pansim object
-##' @param agg_states aggregate states (and add case reports)?
-##' @param pivot return long-format tibble instead of wide data frame?
-##' @param keep_vars variables to retain (in addition to date) if pivoting
-##' @param t_agg_start starting date for temporal aggregation
-##' @param t_agg_period time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})
-##' @param t_agg_fun temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)
+
+
+##' condense an object
+##' @param object an object to condense
+##' @param ... additional arguments
+##' @export
+condense <- function (object, ...)  {
+    UseMethod("condense")
+}
+
+##' pivot an object
+##' @param object an object to pivot
+##' @param ... additional arguments
+##' @export
+pivot <- function (object, ...)  {
+    UseMethod("pivot")
+}
+
+##' @export
+##' @importFrom dplyr %>%
+pivot.pansim <- function(object, ...) {
+    dd <- (object
+        %>% as_tibble()
+        %>% tidyr::pivot_longer(names_to="var",-date)
+    )
+    return(dd)
+}
+
+##' Condense columns (infected, ICU, hospitalized) in a pansim output
+##' @param object a pansim object
 ##' @param add_reports add incidence and case reports?
+##' @param keep_all keep unaggregated variables in data frame as well?
+##' @param ... additional args
+##' @export
+condense.pansim <-  function(object, add_reports=TRUE, keep_all=FALSE, ...) {
+    aa <- get_attr(object)
+    ## condense columns and add, if present
+    add_col <- function(dd,name,regex) {
+        vars <- grep(regex, names(object), value=TRUE)
+        if (length(vars)>0) {
+            dd[[name]] <- rowSums(object[vars])
+        }
+        return(dd)
+    }
+    if (keep_all) {
+        dd <- object
+    } else {
+        dd <- object[c("date","S","E")]
+    }
+    dd <- add_col(dd,"I","^I[^C]")
+    dd <- add_col(dd,"H","^H")
+    dd <- add_col(dd,"ICU","^ICU")
+    dd <- data.frame(dd,R=object[["R"]])
+    dd <- add_col(dd,"discharge","discharge")
+    dd <- data.frame(dd,D=object[["D"]])
+    if (add_reports) {
+        params <- attr(object,"params")
+        if (!"c_delay_mean" %in% names(params)) {
+            warning("add_reports requested but delay parameters missing")
+        } else {
+            dd <- data.frame(dd, calc_reports(object,params))
+        }
+    }
+    dd <- put_attr(dd,aa)
+    return(dd)
+}
+
+##' Temporal aggregation of pansim objects
+##' @param x a pansim object
+##' @param start starting date for temporal aggregation
+##' @param period time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})
+##' @param FUN temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)
+##' @param extend how far to extend time series for aggregation purposes
+##' @param fixed_vars treat names in FUN as fixed strings rather than regular expressions?
 ##' @param ... unused, for generic consistency
 ##' @importFrom stats aggregate
-##' @importFrom dplyr %>% as_tibble
-##' @importFrom tidyr pivot_longer
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params=params)
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
-##' a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
-##' plot(a1) + ggplot2::geom_point()
+##' a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
 ##' ## column-specific aggregation
 ##' first <- dplyr::first
-##' a2 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",
-##'         t_agg_fun=list(mean=c("H","ICU","I"),
+##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
+##'         FUN=list(mean=c("H","ICU","I"),
 ##'                first=c("D"),sum=c("report")))
 ##' @export
-aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
-                             agg_states=TRUE,
-                             add_reports=TRUE,
-                             t_agg_start=NULL,
-                             t_agg_period=NULL,
-                             t_agg_fun=mean,
+aggregate.pansim <- function(x,
+                             start=NULL,
+                             period=NULL,
+                             FUN=mean,
+                             fixed_vars=TRUE,
+                             extend=30,
                              ...) {
-    ## FIXME: less clunky way to do this? Collapse columns *if* present
-    ##   but account for the fact that they might be missing in some variants
-    ## FIXME: extend to aggregate, S, E, etc. as we add space / testing / age
-    ## may need to go tidy?
-    ## global variables
-    c_prop <- c_delay_mean <- c_delay_cv <- NULL
-    c0 <- class(x)
+    aa <- get_attr(x)
     dd <- x
-    if (agg_states) {
-        ## collapse columns and add, if present
-        add_col <- function(dd,name,regex) {
-            vars <- grep(regex, names(x), value=TRUE)
-            if (length(vars)>0) {
-                dd[[name]] <- rowSums(x[vars])
-            }
-            return(dd)
+    agg_datevec <- seq.Date(ldmy(start),max(dd$date)+extend,
+                            by=period)
+    agg_period <- cut.Date(dd$date,agg_datevec)
+    ## set to *last* day of period
+    ap <- as.Date(levels(agg_period))
+    dt <- as.numeric(diff(ap))[1]
+    levels(agg_period) <- as.character(ap+dt-1)
+    if (is.function(FUN)) {
+        dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
+                                          by=list(date=agg_period),
+                                          FUN=FUN)
+    } else {
+        if (!is.list(FUN)) {
+            stop("FUN should be either a single function or a list of the form list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))")
         }
-        ## Sorry, Ben; no good way to get reports and Is, Im
-        ## Add reports as a separate argument instead of part of agg_states?
-        ## MLi: I am sorry too, we needed more states 2:27am.
-        dd <- dd[c("date","S","E","Ia", "Is", "Im", "H","H2","ICUs","ICUd","foi")]
-        dd <- add_col(dd,"I","^I[^C]")
-        dd <- add_col(dd,"H","^H")
-        dd <- add_col(dd,"ICU","^ICU")
-        dd <- data.frame(dd,R=x[["R"]])
-        dd <- add_col(dd,"discharge","discharge")
-        dd <- data.frame(dd,D=x[["D"]])
-        params <- attr(x,"params")
-    } ## if agg_states
-    if (add_reports) {
-        if (!"c_delay_mean" %in% names(params)) {
-            warning("add_reports requested but delay parameters missing")
-        } else {
-            dd <- data.frame(dd, calc_reports(x,params))
-        }
-    }
-    ## do temporal aggregation, if requested
-    if (!is.null(t_agg_start)) {
-        agg_datevec <- seq.Date(ldmy(t_agg_start),max(dd$date)+30,by=t_agg_period)
-        agg_period <- cut.Date(dd$date,agg_datevec)
-        ## set to *last* day of period
-        ap <- as.Date(levels(agg_period))
-        dt <- as.numeric(diff(ap))[1]
-        levels(agg_period) <- as.character(ap+dt-1)
-        if (is.function(t_agg_fun)) {
-            dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
-                                              by=list(date=agg_period),
-                                              FUN=t_agg_fun)
-        } else {
-            if (!is.list(t_agg_fun)) {
-                stop("t_agg_fun should be either a single function or a list of the form list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))")
-            }
-            dd_tmp <- list()
-            for (i in seq_along(t_agg_fun)) {
-                FUN <- get(names(t_agg_fun)[i])
-                for (j in seq_along(t_agg_fun[[i]])) {
-                    var <- t_agg_fun[[i]][[j]]
+        dd_tmp <- list()
+        for (i in seq_along(FUN)) {
+            cur_FUN <- get(names(FUN)[i])
+            for (j in seq_along(FUN[[i]])) {
+                pat <- FUN[[i]][[j]]
+                if (!fixed_vars) {
+                    var <- grep(pattern=pat,names(dd), value=TRUE)
+                } else var <- pat
+                if (length(var)==0 || any(!var %in% names(dd))) {
+                    warning("no variables matching ",sQuote(pat))
+                } else {
                     dd_tmp <- c(dd_tmp,
-                                setNames(list(stats::aggregate(dd[[var]],
-                                                               by=list(date=agg_period),
-                                                               FUN=FUN)[,2]),var))
+                                setNames(list(stats::aggregate.data.frame(dd[var],
+                                                           by=list(date=agg_period),
+                                                           FUN=cur_FUN)[,-1]),var))
                 }
             }
-            dd <- do.call(data.frame,c(list(date=unique(na.omit(agg_period))),dd_tmp))
             ## FIXME: fix order of columns?
-        }
+        } ## loop over agg_fun elements
+        dd <- do.call(data.frame,c(list(date=unique(na.omit(agg_period))),dd_tmp))
         dd$date <- as.Date(dd$date)
-    }
-    class(dd) <- c0 ## make sure class is restored
-    if (!pivot) return(dd)
-    ## OTHERWISE long form: more convenient for regressions etc.
-    ## keep_vars <- names(dd)
-    keep_vars <- intersect(keep_vars,names(dd))
-    dd <- (dd
-        %>% as_tibble()
-        %>% dplyr::select(c("date",keep_vars))
-        %>% pivot_longer(names_to="var",-date)
-    )
-    ## FIXME: distinguish between agg w/ and w/o pivot?
-    attr(dd,"aggregated") <- TRUE
-    ## FIXME: restore other attributes!
-    class(dd) <- c0 ## restore class
+    } ## agg_fun is a list
+    dd <- put_attr(dd,aa)
     return(dd)
 }
 
@@ -207,7 +226,7 @@ summary.pansim <- function(object, ...) {
     ICU <- H <- NULL
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
-    xa <- aggregate(object)
+    xa <- condense(object)
     unpack(xa)
     res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
              peak_ICU_val=round(max(ICU)),

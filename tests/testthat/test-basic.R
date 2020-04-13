@@ -37,7 +37,7 @@ test_that("time-varying example", {
     expect_is(resICU_t,"pansim")
     plot(resICU_t)
     ## not showing foi because of log / <= 1 filter
-    plot(resICU_t,aggregate=FALSE,log=TRUE,drop_states=c("t","S","R","E"))
+    plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))
 })
 
 test_that("time-varying with ndt>1", {
@@ -63,8 +63,8 @@ test_that("ndt>1", {
     ## start_date="1-Mar-2020",
     ## end_date="20-Mar-2020")
                    
-    S3comb <- dplyr::bind_rows(n5=aggregate(s3,pivot=TRUE),
-                     n1=aggregate(s3B,pivot=TRUE),
+    S3comb <- dplyr::bind_rows(n5=pivot(condense(s3)),
+                     n1=pivot(condense(s3B)),
                      .id="model")
     ggplot(S3comb,aes(date,value,colour=var,lty=model))+geom_line() +
         scale_y_log10()

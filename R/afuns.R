@@ -21,6 +21,10 @@ get_r <- function(p, method=c("expsim","kernel","analytical")) {
     return(res)
 }
 
+##' get dominant eigenvector
+##' @param p parameters
+##' @param method computational method
+##' @export
 get_evec <- function(p, method=c("expsim","analytical")) {
     method <- match.arg(method)
     res <- switch(method,

@@ -5,6 +5,11 @@ library(ggplot2); theme_set(theme_bw())
 
 L <- load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
 summary(cparams)
+## fill in new parameters for case reports
+cparams[["c_prop"]] <- 1/10
+cparams[["c_delay_mean"]] <- 5
+cparams[["c_delay_cv"]] <- 0.25
+
 cparams[["obs_disp"]] <- 20
 
 ## FIXME: thinning interacts with ndt?
@@ -15,8 +20,9 @@ sim1S <- run_sim(cparams, cstate, start_date="1-Mar-2020",
                  stoch=c(obs = TRUE, proc = FALSE))
 
 ## aggregate/subset simulated data to a short time window (15 Mar - 29 Mar)/
-simdat <- (aggregate(sim1S,pivot=TRUE)
-    %>% filter(date>as.Date("2020-03-15") & date<as.Date("2020-03-29"))
+simdat <- (pivot(condense(sim1S))
+    %>% filter(date>as.Date("2020-03-15") & date<as.Date("2020-03-29"),
+               var %in% c("H","ICU","D","report"))
 )
 
 ## simdat %>% filter(date==as.Date("2020-03-17"),var=="D")
@@ -76,9 +82,9 @@ pframeS <- (pframeS
 
 print(gg1 <- plot(simScal,log=TRUE)
       + geom_point(data=simdat)
-      + geom_line(data=aggregate(sim1S,pivot=TRUE),lty=3)
+      + geom_line(data=pivot(condense(sim1S)),lty=3)
       + geom_line(data=pframeS,lty=2)
-      + geom_line(data=aggregate(simScal_brute,pivot=TRUE))
+      + geom_line(data=pivot(condense(simScal_brute)))
       )
 print(gg1
       + geom_hline(yintercept=36,lty=2)
@@ -88,7 +94,7 @@ print(gg1
 
 
 ## what is the actual r?
-simAgg <- aggregate(simScal)[,c("H","ICU","D")]
+simAgg <- condense(simScal)[,c("H","ICU","D")]
 n <- nrow(simAgg)
 print(log(unlist(simAgg[n,]/simAgg[n-10,]))/10)
 ##         H       ICU         D 

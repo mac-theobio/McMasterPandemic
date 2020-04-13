@@ -190,3 +190,18 @@ restore <- function(flesh, skeleton, fixed=NULL) {
     utils::relist(full_flesh,skeleton)
 }
 
+## save attributes
+get_attr <- function(x, exclude=c("names", "row.names", "class")) {
+    aa <- attributes(x)
+    aa <- aa[setdiff(names(aa), exclude)]
+    return(aa)
+}
+
+## restore attributes and set class to (pansim, ...)
+put_attr <- function(x, a) {
+    for (i in seq_along(a)) {
+        attr(x,names(a)[i]) <- a[i]
+    }
+    class(x) <- c("pansim", class(x))
+    return(x)
+}

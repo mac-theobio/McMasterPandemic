@@ -16,13 +16,14 @@
 \newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
 \renewcommand{\code}[1]{\inlinecode{R}{#1}}
 
-<<setup,include=FALSE,eval=FALSE>>=
+<<setup,include=FALSE>>=
 knitr::opts_chunk$set(
   collapse = TRUE,
   fig.height = 4,
   dev = "pdf",
   ##dev = "tikz",
   cache = FALSE,
+  ## error=TRUE,  ## allow run to continue with error (good for debugging1)
   ##warning=FALSE,
   comment = "#>"
 )
@@ -192,8 +193,8 @@ time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
 restimedep <- run_sim(params1,state1,start_date=sdate,end_date=edate,
                       params_timevar=time_pars,ndt=20)
 summary(restimedep)
-plot_grid(plot(restimedep, log=TRUE, aggregate=FALSE),
-          plot(restimedep, aggregate=FALSE))
+plot_grid(plot(restimedep, log=TRUE, condense=FALSE),
+          plot(restimedep, condense=FALSE))
 @
 
 \section{Calibration}

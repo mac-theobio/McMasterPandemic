@@ -8,7 +8,7 @@
   x,
   drop_states = c("t", "S", "R", "E", "I", "incidence"),
   keep_states = NULL,
-  aggregate = TRUE,
+  condense = TRUE,
   log = FALSE,
   show_times = TRUE,
   ...
@@ -21,13 +21,13 @@
 
 \item{keep_states}{states to \emph{include} in plot (overrides \code{drop_states})}
 
-\item{aggregate}{collapse states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{aggregate.pansim}}}
+\item{condense}{condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}}
 
 \item{log}{plot y-axis on log scale?}
 
 \item{show_times}{indicate times when parameters changed?}
 
-\item{...}{additional arguments to \code{\link{aggregate.pansim}}}
+\item{...}{additional arguments to \code{\link{condense.pansim}}}
 }
 \description{
 plot method for simulations
