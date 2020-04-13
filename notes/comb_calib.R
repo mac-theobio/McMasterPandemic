@@ -67,3 +67,51 @@ print(ggplot(e_res3, aes(date,value,colour=var,fill=var))
       + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
       )
+
+### now try calibrating to
+ont_recent_t <- mutate_at(ont_recent,"var",trans_state_vars)
+dd2 <- dplyr::filter(ont_recent_t, var != "Ventilator")
+
+## fit everything: cases, hosp, ICU, death, along with params
+##    specifying fractions determining those flows
+##  FIXME: allow variable-specific NB disp
+opt_pars2 <- list(params=c(log_E0=4, log_beta0=-1,
+                           ## fraction of mild (non-hosp) cases
+                           log_mu=log(params[["mu"]]),
+                           ## fraction of incidence reported
+                           logit_c_prop=qlogis(params[["c_prop"]]),
+                           ## fraction of hosp to acute (non-ICU)
+                           logit_phi1=qlogis(params[["phi1"]]),
+                           ## fraction of ICU cases dying
+                           logit_phi2=qlogis(params[["phi2"]])),
+                           log_rel_beta0 = c(-1,-1),
+                           log_nb_disp=0)
+t2 <- system.time(g2 <- calibrate(data=dd2, base_params=params,
+                opt_pars=opt_pars2,
+                optim_args=list(control=list(maxit=10000),hessian=TRUE))
+)
+                           
+r2 <- do.call(forecast_sim, c(list(p=g2$par), attr(g2,"forecast_args")))
+(ggplot(dplyr::filter(r2, var %in% keep_vars),
+        aes(date,value,colour=var))
+    + geom_line()
+    + scale_y_log10()
+    + geom_point(data=dd2)
+    + geom_vline(xintercept=ldmy(attr(g2,"forecast_args")$break_dates),lty=2)
+)
+i1 <- invlink_trans(restore(g2$par,opt_pars2))
+params_fitted <- update(params,i1$params)
+## hack
+moment_params <- eval(formals(fix_pars)$pars_adj)[[2]]
+out <- (describe_params(params_fitted)
+    %>% mutate(type=case_when(
+                   symbol %in% names(i1$params) ~ "mle-calibrated",
+                   symbol %in% moment_params ~ "Gbar-calibrated",
+                   TRUE ~ "assumed"),
+               type=factor(type,levels=c("mle-calibrated",
+                                         "Gbar-calibrated",
+                                         "assumed")))
+    %>% arrange(type)
+)
+
+write_csv(out, path="ont_calib.csv")

@@ -11,8 +11,8 @@ calibrate(
   break_dates = c("23-Mar-2020", "30-Mar-2020"),
   base_params,
   data,
-  opt_pars = list(log_E0 = 4, log_beta0 = -1, log_rel_beta0 = c(-1, -1), log_nb_disp =
-    0),
+  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), log_rel_beta0 = c(-1, -1),
+    log_nb_disp = 0),
   fixed_pars = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
@@ -34,7 +34,7 @@ calibrate(
 
 \item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
 
-\item{opt_pars}{starting parameters (and structure)}
+\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
 
 \item{fixed_pars}{parameters to fix}
 

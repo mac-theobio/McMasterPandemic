@@ -313,7 +313,7 @@ update.params_pansim <- function(object, ...) {
     L <- list(...)
     nm <- names(L)
     for (i in seq_along(L)) {
-        if (is.list(L[[i]])) {
+        if (length(L[[i]])>1) {
             for (j in seq_along(L[[i]])) {
                 object[[names(L[[i]])[j]]] <- L[[i]][j]
             }

@@ -2,13 +2,9 @@
 
 ### short term
 
-* generalize parameter-passing in calibrate/forecast_sim
-* encapsulate ensemble-forecast machinery
 * implement Poisson in calibrate?
-* wrap new calibration machinery back into package
-* better handling of multiple vars (auto-recognition of vars)
+* allow var-specific nb params
 * better error handling if dates/vars don't match
-* report non-convergence
 * roll in mle2???
 * include hessian=TRUE by default
 
@@ -16,13 +12,8 @@
 * fix make rules
 * Z write_params
 * incorporate het/behavioural change: `beta*(S/N)^het_alpha*I`
-* fix time-varying machinery: check for off-by-one on dates?? (BMB)
-* testing calibration (BMB)
-* multi-parameter run interface (fix fitfun/predict/etc.)
-    * make a predict method for parameter sets (assuming we can use E0 and start date only as part of params)
 * multi-run plots (aggregate + bind_rows)	
 * improve documentation!
-* fitting procedure with time-varying parameters
 
 ### minor/cosmetic
 
@@ -34,8 +25,6 @@
 * Z `write_params`, `read_params`; keep labels, unevaluated values, etc. as attributes, get start date as attribute. (Store as separate column, or commented row, or ... ???) [store params as JSON???]
 * S3 method for params
     * Z pretty-printing (print rates as reciprocals?)
-	* Z transform/update method?
-
 	
 ### longer term
 

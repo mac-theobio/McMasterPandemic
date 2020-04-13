@@ -375,9 +375,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return_val <- match.arg(return_val)
     ## restructure and inverse-link parameters
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
-    
     ## substitute into parameters
-    params <- update(base_params, E0=pp[["E0"]], beta0=pp[["beta0"]])
+    params <- update(base_params, params=pp$params)
     ## run simulation (uses params to set initial values)
     r <- do.call(run_sim_break,
                  c(nlist(params,
@@ -406,7 +405,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 ##' @param break_dates specified breakpoints in beta0
 ##' @param base_params baseline parameters
 ##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
-##' @param opt_pars starting parameters (and structure)
+##' @param opt_pars starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters
 ##' @param fixed_pars parameters to fix
 ##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
 ##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
@@ -420,8 +419,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                           break_dates=c("23-Mar-2020","30-Mar-2020"),
                           base_params,
                           data,
-                          opt_pars=list(log_E0=4,
-                                        log_beta0=-1,
+                          opt_pars=list(params=c(log_E0=4,
+                                                 log_beta0=-1),
                                         log_rel_beta0=c(-1,-1),
                                         log_nb_disp=0),
                           fixed_pars=NULL,
@@ -507,6 +506,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param qnames quantile names
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
+## FIXME: use bbmle::pop_pred_samp?
 forecast_ensemble <- function(fit,
                               nsim=200,
                               forecast_args=attr(fit,"forecast_args"),

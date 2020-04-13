@@ -154,19 +154,31 @@ write_params <- function(params, fn, label) {
 ##' @examples
 ##' invlink_trans(c(log_p1=0,logit_p2=0))
 ##' invlink_trans(list(log_p1=c(0,0),logit_p2=c(0,0,0)))
+##' invlink_trans(list(p1=c(log_a=0,log_b=0),p2=4))
 ##' @export
 invlink_trans <- function(p) {
     r <- vector("list",length(p))
     for (i in seq_along(p)) {
-        invlink <- gsub("^([^_]+).*","\\1",names(p)[i])
-        ## cat(invlink,"\n")
-        r[[i]] <- switch(invlink,
-                         log=exp(p[[i]]),
-                         log10=10^(p[[i]]),
-                         logit=plogis(p[[i]]),
-                         stop("unknown link"))
-        ## FIXME: add cloglog? user-specified links?
-    }
+        ## recurse if necessary
+        if (length(p[[i]])>1 && !is.null(names(p[[i]]))) {
+            r[[i]] <- invlink_trans(p[[i]])
+        } else {
+            nm <- names(p)[i]
+            if (!grepl("_",nm)) {
+                ## identity; should be able to do this with a better regex?
+                r[[i]] <- p[[i]]
+            } else {
+                invlink <- gsub("^([^_]+).*","\\1",names(p)[i])
+                ## cat(invlink,"\n")
+                r[[i]] <- switch(invlink,
+                                 log=exp(p[[i]]),
+                                 log10=10^(p[[i]]),
+                                 logit=plogis(p[[i]]),
+                                 stop("unknown link"))
+                ## FIXME: add cloglog? user-specified links?
+            } ## contains link
+        }  ## atomic
+    } ## loop over p
     names(r) <- gsub("^[^_]+_","",names(p))
     if (is.numeric(p)) r <- unlist(r)
     return(r)
@@ -179,6 +191,10 @@ invlink_trans <- function(p) {
 ##' @param skeleton a list, the structure of which determines the structure of the result
 ##' @param fixed a list which determines extra components to fill in
 ##' @note Depends at present on the names of the unlisted object; may be fragile
+##' @examples
+##' opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
+##' restore(unlist(opt_pars),opt_pars)
+##' invlink_trans(restore(unlist(opt_pars),opt_pars))
 ##' @export
 restore <- function(flesh, skeleton, fixed=NULL) {
     flesh <- unlist(flesh)  ## just in case ...

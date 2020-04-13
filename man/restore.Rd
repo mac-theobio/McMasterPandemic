@@ -23,3 +23,8 @@ parameters from a "fixed-parameter" vector
 \note{
 Depends at present on the names of the unlisted object; may be fragile
 }
+\examples{
+opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
+restore(unlist(opt_pars),opt_pars)
+invlink_trans(restore(unlist(opt_pars),opt_pars))
+}

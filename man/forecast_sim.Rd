@@ -20,7 +20,7 @@ forecast_sim(
 \arguments{
 \item{p}{vector of parameters}
 
-\item{opt_pars}{starting parameters (and structure)}
+\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
 
 \item{base_params}{baseline parameters}
 
