@@ -63,7 +63,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' @param keep_vars variables to retain (in addition to date) if pivoting
 ##' @param t_agg_start starting date for temporal aggregation
 ##' @param t_agg_period time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})
-##' @param t_agg_fun temporal aggregation function (applied across all variables) (FIXME: allow variable-specific aggregation?)
+##' @param t_agg_fun temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)
 ##' @param ... unused, for generic consistency
 ##' @importFrom stats aggregate
 ##' @importFrom dplyr %>% as_tibble
@@ -75,6 +75,10 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
 ##' a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
 ##' plot(a1) + ggplot2::geom_point()
+##' first <- dplyr::first
+##' a2 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",
+##'         t_agg_fun=list(mean=c("H","ICU","I"),
+##'                first=c("D"),sum=c("report")))
 ##' @export
 aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
                              agg_states=TRUE,
@@ -124,9 +128,28 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
     if (!is.null(t_agg_start)) {
         agg_datevec <- seq.Date(ldmy(t_agg_start),max(dd$date)+30,by=t_agg_period)
         agg_period <- cut.Date(dd$date,agg_datevec)
-        dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
-                             by=list(date=agg_period),
-                             FUN=t_agg_fun)
+        if (is.function(t_agg_fun)) {
+            dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
+                                              by=list(date=agg_period),
+                                              FUN=t_agg_fun)
+        } else {
+            if (!is.list(t_agg_fun)) {
+                stop("t_agg_fun should be either a single function or a list of the form list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))")
+            }
+            dd_tmp <- list()
+            for (i in seq_along(t_agg_fun)) {
+                FUN <- get(names(t_agg_fun)[i])
+                for (j in seq_along(t_agg_fun[[i]])) {
+                    var <- t_agg_fun[[i]][[j]]
+                    dd_tmp <- c(dd_tmp,
+                                setNames(list(stats::aggregate(dd[[var]],
+                                                               by=list(date=agg_period),
+                                                               FUN=FUN)[,2]),var))
+                }
+            }
+            dd <- do.call(data.frame,c(list(date=unique(na.omit(agg_period))),dd_tmp))
+            ## FIXME: fix order of columns?
+        }
         dd$date <- as.Date(dd$date)
     }
     class(dd) <- c0 ## make sure class is restored

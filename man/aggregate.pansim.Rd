@@ -28,7 +28,7 @@
 
 \item{t_agg_period}{time period for temporal aggregation (e.g. "7 days", see \code{\link{seq.Date}})}
 
-\item{t_agg_fun}{temporal aggregation function (applied across all variables) (FIXME: allow variable-specific aggregation?)}
+\item{t_agg_fun}{temporal aggregation function (applied across all variables) \emph{or} a list of the form \code{list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))} (temporal aggregation is done after state aggregation, so variable names specified should be adjusted appropriately)}
 
 \item{...}{unused, for generic consistency}
 }
@@ -42,4 +42,8 @@ sdate <- "10-Feb-2020" ## arbitrary!
 res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
 a1 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",t_agg_fun=sum, agg_state=FALSE)
 plot(a1) + ggplot2::geom_point()
+first <- dplyr::first
+a2 <- aggregate(res, t_agg_start="12-Feb-2020",t_agg_period="7 days",
+        t_agg_fun=list(mean=c("H","ICU","I"),
+               first=c("D"),sum=c("report")))
 }
