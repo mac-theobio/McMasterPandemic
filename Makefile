@@ -24,6 +24,11 @@ sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
 tests/moments.Rout:
 
+break_test.Rout: notes/break_test.R
+	$(run-R)
+
+######################################################################
+
 notes/ontario_calibration.html: notes/ontario_calibration.Rmd notes/ontario_clean.RData
 
 %.html: %.Rmd
@@ -37,7 +42,6 @@ aggfuns.Rout: notes/aggfuns.R
 
 ontario_clean.Rout: notes/ontario_clean.R
 	$(run-R)
-
 
 package:
 	sudo R CMD INSTALL .
