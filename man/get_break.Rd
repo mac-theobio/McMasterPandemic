@@ -5,7 +5,7 @@
 \title{estimate magnitude of drop in beta0 at known dates}
 \usage{
 get_break(
-  date0 = ldmy("1-Mar-2020"),
+  start_date = ldmy("1-Mar-2020"),
   end_date = ldmy("8-Apr-2020"),
   break_dates = c("20-Mar-2020"),
   params,
@@ -16,19 +16,19 @@ get_break(
 )
 }
 \arguments{
-\item{date0}{date for initial conditions}
+\item{start_date}{starting date}
 
 \item{end_date}{ending date of sim}
 
-\item{break_dates}{dates of breakpoints in transmission}
+\item{break_dates}{specified breakpoints in beta0}
 
-\item{params}{a parameter set}
+\item{params}{parameters}
 
 \item{data}{data to match}
 
-\item{var}{variable for regression (H, D, ICU)}
+\item{var}{variable to match}
 
-\item{sim_args}{additional parameters to pass to \code{run_sim} if shooting}
+\item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{optim_args}{additional args to \code{optim}}
 }

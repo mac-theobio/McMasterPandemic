@@ -2,7 +2,8 @@
 % Please edit documentation in R/calibrate.R
 \name{sim_fun}
 \alias{sim_fun}
-\title{calibrate and run simulation}
+\title{calibrate and run simulation
+obsolete, replaced by forecast_sim?}
 \usage{
 sim_fun(
   target,
@@ -34,4 +35,5 @@ sim_fun(
 }
 \description{
 calibrate and run simulation
+obsolete, replaced by forecast_sim?
 }

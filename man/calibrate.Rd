@@ -2,54 +2,52 @@
 % Please edit documentation in R/calibrate.R
 \name{calibrate}
 \alias{calibrate}
-\title{given a log-linear intercept and slope and target values for R0 or GI,
-return initial conditions and parameters that will (approximately?)
-recapitulate the observed log-linear dynamics}
+\title{calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters}
 \usage{
 calibrate(
-  int,
-  slope,
-  pop,
-  params,
-  target = c(Gbar = 6),
-  init_target = NULL,
-  date0 = "1-Mar-2020",
-  date1 = "25-Mar-2020",
-  var = "H",
-  sim_args = NULL
+  start_date = min(data$date) - start_date_offset,
+  start_date_offset = 15,
+  end_date = max(data$date),
+  break_dates = c("23-Mar-2020", "30-Mar-2020"),
+  base_params,
+  data,
+  opt_pars = list(log_E0 = 4, log_beta0 = -1, log_rel_beta0 = c(-1, -1), log_nb_disp =
+    0),
+  fixed_pars = NULL,
+  sim_args = NULL,
+  aggregate_args = NULL,
+  optim_args = NULL,
+  debug = FALSE,
+  debug_plot = FALSE
 )
 }
 \arguments{
-\item{int}{log-linear intercept (expected value on date1)}
+\item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
 
-\item{slope}{log-linear slope (growth rate)}
+\item{start_date_offset}{days to go back before first data value}
 
-\item{pop}{population size}
+\item{end_date}{ending date}
 
-\item{params}{a parameter set}
+\item{break_dates}{specified breakpoints in beta0}
 
-\item{target}{vector of target statistics (allowed: R0, Gbar (mean generation interval), or kappa (CV^2 of generation interval)}
+\item{base_params}{baseline parameters}
 
-\item{init_target}{value of focal variable to hit on date1}
+\item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
 
-\item{date0}{date for initial conditions}
+\item{opt_pars}{starting parameters (and structure)}
 
-\item{date1}{initial date for regression}
+\item{fixed_pars}{parameters to fix}
 
-\item{var}{variable for regression (H, D, ICU)}
+\item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
-\item{sim_args}{additional parameters to pass to \code{run_sim} if shooting}
+\item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+
+\item{optim_args}{arguments passed to \code{\link{optim}}}
+
+\item{debug}{print debugging messages?}
+
+\item{debug_plot}{plot debugging curves?}
 }
 \description{
-given a log-linear intercept and slope and target values for R0 or GI,
-return initial conditions and parameters that will (approximately?)
-recapitulate the observed log-linear dynamics
-}
-\examples{
-params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-cc1 <- calibrate(int=log(200),slope=0.23,pop=1e6,params)
-summary(cc1$params)
-cc2 <- calibrate(int=log(200),slope=0.23,pop=1e6,params,target=c(R0=3))
-summary(cc2$params)
-
+calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 }
