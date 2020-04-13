@@ -78,7 +78,7 @@ pkgcheck:
 	echo "devtools::check('.')" | $(R) --slave
 
 clean:
-	find . \( -name "\.#*" -o -name "*~" \) -exec rm {} \;
+	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
 CPP_SRC=
 

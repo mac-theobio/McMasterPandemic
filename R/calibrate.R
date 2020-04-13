@@ -106,15 +106,15 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 ##' @importFrom utils tail
 ##' @importFrom dplyr select pull
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
-##' cc1 <- calibrate(int=log(200),slope=0.23,pop=1e6,params)
+##' params <- read_params("ICU1.csv")
+##' cc1 <- calibrate_slopeint(int=log(200),slope=0.23,pop=1e6,params)
 ##' summary(cc1$params)
-##' cc2 <- calibrate(int=log(200),slope=0.23,pop=1e6,params,target=c(R0=3))
+##' cc2 <- calibrate_slopeint(int=log(200),slope=0.23,pop=1e6,params,target=c(R0=3))
 ##' summary(cc2$params)
 ## FIXME: warn if starting conditions are too low 
 ##' 
 ##' @export
-calibrate <- function(int,slope,pop,params,
+calibrate_slopeint <- function(int,slope,pop,params,
                       target=c(Gbar=6),
                       init_target=NULL,
                       date0="1-Mar-2020",
@@ -214,12 +214,14 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
 ##' @inheritParams calibrate
 ##' @inheritParams run_sim_break
 ##' @param optim_args additional args to \code{optim}
+##' @param start_date starting date
 ##' @param end_date ending date of sim
 ##' @param data data to match
+##' @param var variable to match
 ##' @importFrom stats plogis
 ##' @export
 ## FIXME: take end_date from data
-get_break <- function(date0=ldmy("1-Mar-2020"),
+get_break <- function(start_date=ldmy("1-Mar-2020"),
                       end_date=ldmy("8-Apr-2020"),
                       break_dates=c("20-Mar-2020"),
                       params,
@@ -242,7 +244,7 @@ get_break <- function(date0=ldmy("1-Mar-2020"),
         r <- do.call(run_sim_break,
                      c(nlist(params,
                              break_dates,
-                             start_date=date0,
+                             start_date=start_date,
                              end_date,
                              rel_beta0),
                        sim_args))
@@ -325,6 +327,7 @@ calib2 <- function(base_params,
 }
 
 ##' calibrate and run simulation
+##' obsolete, replaced by forecast_sim?
 ##' @inheritParams calib2
 ##' @param end_date ending date for simulation
 ##' @param return_val return values: "sim"=full simulation (wide format); "aggsim"=aggregated and pivoted simulation output, "vals_only" = vector containing only values output from simulation
@@ -355,4 +358,204 @@ sim_fun <- function(target, base_params,
                   sim=r,
                   aggsim=a,
                   vals_only=a$value))
+}
+
+##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
+##' @importFrom stats update
+##' @inheritParams calibrate
+##' @param p vector of parameters
+##' @param return_val specify values to return (aggregated simulation, or just the values?)
+##' @export
+forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
+                         fixed_pars = NULL,
+                         sim_args=NULL, aggregate_args=NULL,
+                         ## FIXME: return_val is redundant with sim_fun
+                         return_val=c("aggsim","vals_only"))
+{
+    return_val <- match.arg(return_val)
+    ## restructure and inverse-link parameters
+    pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
+    
+    ## substitute into parameters
+    params <- update(base_params, E0=pp[["E0"]], beta0=pp[["beta0"]])
+    ## run simulation (uses params to set initial values)
+    r <- do.call(run_sim_break,
+                 c(nlist(params,
+                         start_date,
+                         end_date,
+                         break_dates,
+                         rel_beta0=pp$rel_beta0),
+                   sim_args))
+    ## aggregate
+    r_agg <- condense(r)
+    if (!is.null(aggregate_args)) {
+        r_agg <- do.call(aggregate, c(list(r_agg),aggregate_args))
+    }
+    r_agg <- pivot(r_agg)
+    ret <- switch(return_val,
+                aggsim=r_agg,
+                vals_only=r_agg$value
+                )
+    return(ret)
+}
+
+##' calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
+##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
+##' @param start_date_offset days to go back before first data value
+##' @param end_date ending date
+##' @param break_dates specified breakpoints in beta0
+##' @param base_params baseline parameters
+##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
+##' @param opt_pars starting parameters (and structure)
+##' @param fixed_pars parameters to fix
+##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
+##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
+##' @param optim_args arguments passed to \code{\link{optim}}
+##' @param debug print debugging messages?
+##' @param debug_plot plot debugging curves?
+##' @export
+calibrate <- function(start_date=min(data$date)-start_date_offset,
+                          start_date_offset=15,
+                          end_date=max(data$date),
+                          break_dates=c("23-Mar-2020","30-Mar-2020"),
+                          base_params,
+                          data,
+                          opt_pars=list(log_E0=4,
+                                        log_beta0=-1,
+                                        log_rel_beta0=c(-1,-1),
+                                        log_nb_disp=0),
+                          fixed_pars=NULL,
+                          sim_args=NULL,
+                          aggregate_args=NULL,
+                          optim_args=NULL,
+                          debug=FALSE,
+                          debug_plot=FALSE)
+                          
+{
+    if (debug) {
+        cat("start date: ", format(start_date),
+            "; end_date: ", format(end_date), "\n")
+    }
+    ## FIXME: check that appropriate var names are present
+    ## translate state variables names in data to expected internal names (e.g. newConfirmations -> reports)
+    ## FIXME: should this be external?
+    data$var <- trans_state_vars(data$var)
+    value <- pred <- NULL ## global var check
+    ## FIXME: check order of dates?
+    ## brute force
+    ## we are changing beta0 at a pre-specified set of break dates
+    ## (by an unknown amount)
+    ## FIXME: allow for aggregation of reports etc.
+    ##  ?? build this as an optional argument to
+    ##   aggregate.pansim
+    mle_fun <- function(p,data,do_plot=FALSE) {
+        var <- NULL 
+        r <- (do.call(forecast_sim,
+                     nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
+                           sim_args, aggregate_args))
+            %>% dplyr::rename(pred="value")
+        )
+        ## match up sim results with specified data
+        ## FIXME: do these steps (names fix, filter) outside ?
+        names(data) <- tolower(names(data)) ## ugh
+        ## discard unused state variables
+        data2 <- dplyr::filter(data,var %in% unique(r$var))
+        ## keep only dates present in data
+        r2 <- (dplyr::left_join(data2,r,by=c("date","var"))
+            %>% tidyr::drop_na(value,pred))         ## FIXME: why do we have an NA in pred??
+        ## compute negative log-likelihood
+        ## FIXME assuming a single nb_disp for now
+        if (do_plot) {
+            plot(value~date, data=r2, log="y")
+            with(r2,lines(date,pred))
+        }
+        ## need this for NB parameter
+        pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
+        ret <- with(r2,-sum(dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE)))
+        ## FIXME: add evaluation number?
+        if (debug) cat(unlist(pp),ret,"\n")
+        return(ret)
+    }
+    opt_inputs <- unlist(opt_pars)
+    if (!is.null(fixed_pars)) {
+        opt_inputs <- opt_inputs[setdiff(names(opt_inputs), names(unlist(fixed_pars)))]
+    }
+    ## use optim to start with; maybe switch to mle2 later
+    opt <- do.call(optim,
+            c(list(par=opt_inputs, fn=mle_fun, data=data,
+                   do_plot=debug_plot),
+              optim_args))
+    if (opt$convergence>0) warning("convergence problem in optim()")
+    attr(opt,"forecast_args") <- nlist(start_date,
+                                       end_date,
+                                       break_dates,
+                                       base_params,
+                                       opt_pars,
+                                       fixed_pars,
+                                       sim_args,
+                                       aggregate_args)
+    return(opt)
+}
+
+
+##' find confidence envelopes by simulation
+##' @param fit output from \code{calibrate}
+##' @param nsim number of simulations
+##' @param seed random-number seed
+##' @param forecast_args arguments to pass to \code{forecast_sim}
+##' @param qvec vector of quantiles
+##' @param qnames quantile names
+##' @export
+## FIXME: way to add args to forecast_args list, e.g. stochastic components?
+forecast_ensemble <- function(fit,
+                              nsim=200,
+                              forecast_args=attr(fit,"forecast_args"),
+                              qvec=c(0.05,0.5,0.95),
+                              qnames=c("lwr","value","upr"),
+                              seed=NULL
+                              ) {
+
+    var <- NULL
+    ## FIXME: include baseline forecast as well?
+    
+    ## parameter ensemble
+    if (!is.null(seed)) set.seed(seed)
+        ## HACK: for aggregated data, NB fit is unhappy because there is severe underdispersion (because of
+        ##  overfitting to time series); NB disp parameter is >>> 1
+        ##  we seem to be able to get away with ignoring it completely here
+        ##  (not needed for forecast ...)
+    ## might help to fix it ...
+    ff <- function(p, return_val="vals_only") {
+        do.call(forecast_sim,
+                c(list(p,return_val=return_val),forecast_args))
+    }
+
+    ## baseline fit
+    r <- ff(fit$par, return_val="aggsim")
+
+    ## Wald sample
+    e_pars <- as.data.frame(MASS::mvrnorm(nsim,
+                                          mu=fit$par[1:4],
+                                          Sigma=solve(fit$hessian[1:4,1:4])))
+
+    ## run for all param vals in ensemble
+    ## tried with purrr::pmap but too much of a headache
+    t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars)
+                                         , .margins=1
+                                         , .fun=ff))
+    ## get quantiles per observation
+    e_res2 <- (e_res %>% dplyr::bind_cols()
+        %>% apply(1,stats::quantile,qvec,na.rm=TRUE)
+        %>% t()
+        %>% dplyr::as_tibble()
+        %>% setNames(qnames)
+    )
+    
+    ## date/var values
+    e0 <- (dplyr::select(r,date,var)
+        %>% dplyr::as_tibble()
+    )
+    ## combine quantiles with the original date/var columns
+    e_res3 <- dplyr::bind_cols(e0, e_res2)
+    return(e_res3)
 }

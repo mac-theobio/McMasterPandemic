@@ -2,15 +2,15 @@
 
 ### short term
 
-* move aggregate to collapse; collapse option for keeping everything
-
+* generalize parameter-passing in calibrate/forecast_sim
 * encapsulate ensemble-forecast machinery
-* implement Poisson in get_breaks_gen ?
+* implement Poisson in calibrate?
 * wrap new calibration machinery back into package
 * better handling of multiple vars (auto-recognition of vars)
 * better error handling if dates/vars don't match
 * report non-convergence
 * roll in mle2???
+* include hessian=TRUE by default
 
 * transition TODO list to GH issues??? (items marked Z have been posted)
 * fix make rules

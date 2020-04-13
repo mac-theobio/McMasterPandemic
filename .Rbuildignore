@@ -17,3 +17,4 @@ figure/
 ^.*/[.].*$
 misc/
 install
+ChangeLog.md

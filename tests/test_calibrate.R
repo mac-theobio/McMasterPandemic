@@ -42,14 +42,14 @@ regdatS <- (simdat
 g1S <- MASS::glm.nb(value~t0,data=regdatS)
 
 ## calibrate (use orig, sim params as starting point)
-ccS <- calibrate(coef(g1S)[1],coef(g1S)[2],
+ccS <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
                 pop=cparams[["N"]],
                 params=cparams,
                 date0="1-Mar-2020",
                 date1=min(regdatS$date))
 
 ## brute-force (shooting) calibration
-ccS2 <- calibrate(coef(g1S)[1],coef(g1S)[2],
+ccS2 <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
                 pop=cparams[["N"]],
                 params=cparams,
                 date0="1-Mar-2020",
