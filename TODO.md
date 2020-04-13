@@ -2,6 +2,14 @@
 
 ### short term
 
+* encapsulate ensemble-forecast machinery
+* implement Poisson in get_breaks_gen ?
+* wrap new calibration machinery back into package
+* better handling of multiple vars (auto-recognition of vars)
+* better error handling if dates/vars don't match
+* report non-convergence
+* roll in mle2???
+
 * transition TODO list to GH issues??? (items marked Z have been posted)
 * fix make rules
 * Z write_params
@@ -26,7 +34,7 @@
     * Z pretty-printing (print rates as reciprocals?)
 	* Z transform/update method?
 
-
+	
 ### longer term
 
 * full stochastic version (now does obs stoch)

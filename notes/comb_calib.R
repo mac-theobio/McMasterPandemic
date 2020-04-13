@@ -68,6 +68,11 @@ print(ggplot(r,aes(date,value,colour=var))
 
 ## parameter ensemble
 set.seed(101)
+## HACK: NB fit is unhappy because there is severe underdispersion (because of
+##  overfitting to time series); NB disp parameter is >>> 1
+##  we seem to be able to get away with ignoring it completely here
+##  (not needed for forecast ...)
+## might help to fix it ...
 e_pars <- as.data.frame(MASS::mvrnorm(200,
                                       mu=g1$par[1:4],
                                       Sigma=solve(g1$hessian[1:4,1:4])))
