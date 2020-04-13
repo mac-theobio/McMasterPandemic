@@ -181,6 +181,7 @@ invlink_trans <- function(p) {
 ##' @note Depends at present on the names of the unlisted object; may be fragile
 ##' @export
 restore <- function(flesh, skeleton, fixed=NULL) {
+    flesh <- unlist(flesh)  ## just in case ...
     if (is.null(fixed)) return(utils::relist(flesh,skeleton))
     ## rely on name-matching for now ... fragile?
     full_flesh <- unlist(skeleton)

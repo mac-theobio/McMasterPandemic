@@ -10,13 +10,15 @@ dd <- dplyr::filter(ont_recent,var==if (!use_hosp) "newConfirmations" else "Hosp
 if (weekly) {
     dd <- (dd 
         %>% mutate(week = format(date, "%Y-%U"))
-        %>% group_by(week)
+        %>% group_by(week,var)
         %>% summarise(date = max(date)
                     , value = sum(value)
-                    , var = first(var)
                       )
+        %>% ungroup()
+        %>% mutate(diff=diff(c(0,value)))
+        %>% dplyr::filter(diff>0)
     )
-    agg_list <- list(t_agg_start="07-Mar-2020",t_agg_period="7 days",t_agg_fun=sum)
+    agg_list <- list(t_agg_start=min(dd$date)-6,t_agg_period="7 days",t_agg_fun=sum)
 }
 print(ggplot(dd,aes(date,value)) + geom_point() + scale_y_log10())
 ## adjust parameters to sensible generation interval
@@ -43,17 +45,30 @@ opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
 pp <- invlink_trans(restore(g1$par, opt_pars, fp))
 print(pp)
 bd <- ldmy(c("23-Mar-2020","30-Mar-2020"))
-r <- forecast_sim(g1R$par, opt_pars,
-                  fixed_pars = fp,
+##g1R$par[4] <- -8  ## HACK/test
+ed <- "1-May-2020"
+r <- forecast_sim(g1$par, opt_pars,
+                  ## fixed_pars = fp,
                   base_params=params,
                   start_date=min(dd$date)-15,
-                  end_date="1-Aug-2020",
-                  break_dates=bd)
+                  end_date=ed,
+                  break_dates=bd,
+                  aggregate_args = agg_list)
+hack <- g1$par
+hack[4]<- -0.3
+r_hack <- forecast_sim(hack, opt_pars,
+                  ## fixed_pars = fp,
+                  base_params=params,
+                  start_date=min(dd$date)-15,
+                  end_date=ed,
+                  break_dates=bd,
+                  aggregate_args = agg_list)
+
 ## aggregate_args = agg_list)
 ## FIXME: r can't use plot.pansim method ATM
 print(ggplot(r,aes(date,value,colour=var))
       +geom_line()
-      + scale_y_log10()
+      + scale_y_log10(limits=c(1,NA),oob=scales::squish)
       + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
       + geom_vline(xintercept=bd,lty=2)
       )
@@ -94,4 +109,5 @@ print(ggplot(e_res3, aes(date,value,colour=var,fill=var))
       + geom_vline(xintercept=bd,lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
       )
+
 

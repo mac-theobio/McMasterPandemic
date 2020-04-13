@@ -129,6 +129,10 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
     if (!is.null(t_agg_start)) {
         agg_datevec <- seq.Date(ldmy(t_agg_start),max(dd$date)+30,by=t_agg_period)
         agg_period <- cut.Date(dd$date,agg_datevec)
+        ## set to *last* day of period
+        ap <- as.Date(levels(agg_period))
+        dt <- as.numeric(diff(ap))[1]
+        levels(agg_period) <- as.character(ap+dt-1)
         if (is.function(t_agg_fun)) {
             dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
                                               by=list(date=agg_period),
