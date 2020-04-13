@@ -2,10 +2,13 @@
 
 ### short term
 
-* implement Poisson in calibrate?
-* allow var-specific nb params
-* better error handling if dates/vars don't match
-* roll in mle2???
+* `condense` option for including/not including ICU in H output
+* distributions in `calibrate`
+     * implement Poisson?
+     * allow var-specific nb params
+* `calibrate`/`mle_fun`: better error handling if dates/vars don't match
+* `calibrate` substitute mle2 for optim?
+* importance weights for `forecast_ensemble`?
 * include hessian=TRUE by default
 
 * transition TODO list to GH issues??? (items marked Z have been posted)

@@ -5,7 +5,7 @@ date: "`r format(Sys.time(),'%d %b %Y')`"
 ---
 
 ```{r opts, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(echo=FALSE,error=TRUE)
 ```
 
 ```{r pkgs,message=FALSE}
@@ -247,7 +247,7 @@ Put together pieces.
 
 ```{r calibrate, warning=FALSE,message=FALSE}
 ## put together the pieces (alply gives lists, we want a matrix)
-sim_mat <- bind_rows(sim_res)
+sim_mat <- dplyr::bind_rows(sim_res)
 sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
     %>% as_tibble()
     %>% setNames(c("lwr","median","upr"))
@@ -269,13 +269,15 @@ label_dat <- data.frame(
   var =c("Hospitalization","ICU","Ventilator","newConfirmations","deceased")
   , sim_var = c("H","ICU","V","report","D")
 )
-
+keep_vars <- c("H","ICU","report","D") 
 ont_recent2 <- (left_join(ont_recent,label_dat)
     %>% mutate(var=sim_var)
-    %>% filter(var!="V") ## not that much point plotting ventilator
+    %>% filter(var %in% keep_vars)
 )
 
-print(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
+print(gg_forecast <- ggplot(
+          dplyr::filter(sim_final, var %in% keep_vars),
+          aes(date,median,colour=var))
     + scale_y_log10()
     + geom_line()
     + geom_point(data=ont_recent2,aes(x=date,y=value))
@@ -298,7 +300,7 @@ pp <- calib2(base_params=base_params,
              start_date="1-Mar-2020",
              reg_date="15-Mar-2020",
              init_var="H")
-b <- get_break_old(params=pp,data=ont_recent)
+b <- get_break(params=pp,data=ont_recent)
 print(b$par)  ## logit(rel beta0), log(nb_disp)
 print(c(plogis(b$par[1]),exp(b$par[2])))
 bb <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
