@@ -104,7 +104,9 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
             }
             return(dd)
         }
-        dd <- dd[c("date","S","E")]
+		  ## Sorry, Ben; no good way to get reports and Is, Im
+		  ## Add reports as a separate argument instead of part of agg_states?
+        dd <- dd[c("date","S","E", "Is", "Im")]
         dd <- add_col(dd,"I","^I[^C]")
         dd <- add_col(dd,"H","^H")
         dd <- add_col(dd,"ICU","^ICU")
@@ -160,6 +162,7 @@ aggregate.pansim <- function(x,pivot=FALSE,keep_vars=c("H","ICU","D","report"),
     class(dd) <- c0 ## make sure class is restored
     if (!pivot) return(dd)
     ## OTHERWISE long form: more convenient for regressions etc.
+    ## keep_vars <- names(dd)
     keep_vars <- intersect(keep_vars,names(dd))
     dd <- (dd
         %>% as_tibble()
