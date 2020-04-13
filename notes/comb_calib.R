@@ -5,7 +5,8 @@ library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(dplyr)
 source("notes/ontario_clean.R") ## add an ON data set to pkg?
-dd <- dplyr::filter(ont_recent,var==if (!use_hosp) "newConfirmations" else "Hospitalization")
+dd <- dplyr::filter(ont_recent,
+          var==if (!use_hosp) "newConfirmations" else "Hospitalization")
 if (weekly) {
     dd <- (dd 
         %>% mutate(week = format(date, "%Y-%U"))
@@ -41,41 +42,28 @@ g1R <- calibrate(data=dd, base_params=params,
 
 ## check standard deviations
 sqrt(diag(solve(g1$hessian)))
-## for structure
-opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
-## get parameters back onto original scale
-pp <- invlink_trans(restore(g1$par, opt_pars, fp))
-print(pp)
-bd <- ldmy(c("23-Mar-2020","30-Mar-2020"))
-##g1R$par[4] <- -8  ## HACK/test
-ed <- "1-May-2020"
-r <- forecast_sim(g1$par, opt_pars,
-                  ## fixed_pars = fp,
-                  base_params=params,
-                  start_date=min(dd$date)-15,
-                  end_date=ed,
-                  break_dates=bd,
-                  aggregate_args = agg_list)
 
-## aggregate_args = agg_list)
+## re-run forecast with best-fit parameters
+f_args <-attr(g1,"forecast_args")
+r <- do.call(forecast_sim,
+    c(list(p=g1$par), f_args))
+
 ## FIXME: r can't use plot.pansim method ATM
 keep_vars <- c("H","ICU","D","report")
 rs <- dplyr::filter(r, var %in% keep_vars)
 print(ggplot(rs,aes(date,value,colour=var))
-      +geom_line()
+      + geom_line()
       + scale_y_log10(limits=c(1,NA),oob=scales::squish)
       + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
-      + geom_vline(xintercept=bd,lty=2)
+      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       )
 
-e_res3 <- forecast_ensemble(
+e_res3 <- forecast_ensemble(g1) %>% filter(var %in% keep_vars)
 
 print(ggplot(e_res3, aes(date,value,colour=var,fill=var))
       + geom_line()
       + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
       + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
-      + geom_vline(xintercept=bd,lty=2)
+      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
       )
-
-
