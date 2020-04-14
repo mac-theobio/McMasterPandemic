@@ -19,7 +19,7 @@ min_day <- function(day,value) {
 }
 
 start_date <- "2020-03-15"
-start_date <- "2020-03-01"
+## start_date <- "2020-03-01"
 
 
 ont_recent <- (ont_dd

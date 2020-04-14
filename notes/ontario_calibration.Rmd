@@ -15,6 +15,7 @@ library(broom.mixed)
 library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
+library(corrplot)
 ## make nice defaults
 scale_colour_discrete <- function(...) {
   colorspace::scale_colour_discrete_qualitative(...)
@@ -26,6 +27,11 @@ scale_fill_discrete <- function(...) {
 
 ```{r get_data, message=FALSE, warning=FALSE}
 source("ontario_clean.R")
+keep_vars <- c("H","ICU","D","report", "incidence")
+ont_dd2 <- (ont_recent
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% keep_vars)
+)
 ```
 
 Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
@@ -62,16 +68,9 @@ print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
 )
 ```
 
-## Calibration strategy
-
-- set reasonable parameters (based on literature; ours come from the Stanford covid-interventions model and from personal communications about health-utilization parameters (fraction hospitalized, length of stays in acute care/ICU, etc.)
-- 
-- get an estimate of $r(0)$ (initial exponential growth rate)
-- (NOT YET) adjust time-varying $r(0)$
-
 ## Fitting to data
 
-We want to use the time series data to estimate the growth rate. 
+We don't use this for calibration any more, but it is of some interest to fit log-quadratic curves to the data (this closely parallels the well-known IHME model ...)
 
 ```{r nbfit1, message=FALSE, warning=FALSE}
 fit1 <- glmmTMB(value~var-1 + var:vday
@@ -88,7 +87,7 @@ Use raw polynomials to parameterize in terms of initial slope rather than averag
 fit1Q <- update(fit1, . ~ -1 + var + var:poly(vday,2,raw=TRUE))
 ```
 
-"False convergence" warnings ...
+"False convergence" warnings ... (can these be resolved?)
 
 
 ```{r tidying_fits, message=FALSE, warning=FALSE}
@@ -131,7 +130,9 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
 - don't know why death is slower  and ICU/Ventilator are faster (MLi: under reporting? there was a discussion on missing a lot of deaths. BMB: Underreporting alone doesn't change $r$ ... need some time-varying change in reporting rate etc..)
 - deaths conf intervals might be overly narrow because these are cumulative values
 
-## calibrate to hospitalization
+## time-series calibration
+
+We don't do this any more, but one calibration strategy is to use a phenomenological fit to the initial stage of the epidemic to estimate the initial growth rate ($r_0$).
 
 We have a variety of time series (case reports, hospitalization, ICU, ventilator, death) from which to try to estimate initial growth rate $r_0$ (and potentially any time variation in $r$, which we would usually attribute to behavioural change or physical distancing efforts); we could pick any one of these, or some average.
 
@@ -140,212 +141,30 @@ We have a variety of time series (case reports, hospitalization, ICU, ventilator
 * when possible, especially when estimating *changes* in $r$ we would prefer to use leading rather than lagging indicators (cases > hospital admissions > hospital occupancy > death)
 * in general more severe outcomes are less likely to be underreported or inconsistently reported (deaths > hospitalizations > infections)
 * given that health utilization is not too high (saturating/overwhelming resources) ICU, vent, and hospital occupancy are relatively equivalent, given that a reasonably constant fraction of hospitalized cases require ICU/ventilators. (ICU occupancy will probably lag acute-care a bit because the average occupancy time is longer, although there is also a post-ICU acute-care period.)
-* we have chosen to calibrate to hospitalizations, although as shown above there is not a big difference between the estimated $r$ based on new confirmations vs. hospital occupancy.
+* we chose to calibrate to hospitalizations, although as shown above there is not a big difference between the estimated $r$ based on new confirmations vs. hospital occupancy. 
 
-```{r sample_params, message=FALSE,warning=FALSE}
-vv <- vcov(fit1Q)$cond
-hosp_ind <- grep("Hospitalization",rownames(vv))
-pars_0 <- fixef(fit1Q)$cond[hosp_ind]
-vv <- vv[hosp_ind, hosp_ind]
+This earlier version of calibration
 
-## assume for now that Wald approx is OK for sampling distribution
-nsim <- 200
-set.seed(101)
-sim_params <- MASS::mvrnorm(nsim,mu=pars_0,Sigma=vv)
-## add Gbar distribution (independent Gaussian sample)
-Gbar_prior <- c(mean=6,sd=0.2)
-## FIXME: narrow for now, come back and fix calibration issues
-##  (does analytic solution work for Gbar???)
-sim_params_0 <- c(exp(pars_0[1]),pars_0[2],Gbar=6)
-sim_params <- cbind(exp(sim_params[,1]),
-                    sim_params[,2],
-                    Gbar=do.call(rnorm,c(list(nsim),
-                                         as.list(Gbar_prior))))
-sim_params <- as.data.frame(sim_params)
-names(sim_params) <- names(sim_params_0) <- c("X0","r","Gbar")
-```
+* take a multivariate Normal sample of the intercept and initial slope from the log-quadratic fit; append a Normal sample from a prior for the generation interval (we used mean=6, sd=0.2 [probably too narrow])? For each sample we 
 
-The first step of calibrating is the get a set of parameters. If we want to compute confidence intervals on the forecasts, we need to generate/sample multiple sets of parameters.
+1. calibrated the parameters to $\bar G$ (adjusting latent period and infectious period for asymptomatic, mild, severe cases [not pre-symptomatic period])
+2. calibrated the initial growth rate $r(0)$ to the slope (adjusting baseline transmission `beta0`)3. calibrate the starting value by picking $E(0)$ values until, starting from an earlier time with $S=N-E(0)$, $E=E(0)$ and all other states 0, we hit the intercept 
+4. run the simulation forward.
 
-For each set of parameters:
-
-1.  calibrate params to G
-2.  calibrate beta0 to r
-3.  calibrate intercept
-4.  run and store
-
-```{r base_params, warning=FALSE,message=FALSE}
-base_params <- read_params(system.file("params","ICU1.csv",
-                                       package="McMasterPandemic"))
-base_params[["N"]] <- 14.57e6  ## Ontario pop size
-reg_date <- (ont_recent
-    %>% filter(var=="Hospitalization",vday==0)
-    %>% pull(date)
-)
-## first day of hospitalization data >0/non-NA: 19 March
-```
-
-- x= param vector (int/slope/curve/Gbar)
-- base_params
-- start_date start date for sims
-- reg_date start date for regressions
-- end_date
-- init_var calibration variable
-- init_var_value
-
-
-Calibrate and simulate with point estimates:
-```{r calib_point}
-s1 <- sim_fun(target=sim_params_0,
-      , base_params=base_params
-      , reg_date=reg_date
-      , end_date="15-Apr-2020"
-      , return_val="sim"
-        )
-## filter(s1,date==ldmy("19-03-2020"))
-plot(s1,log=TRUE)+geom_point(data=mutate_at(ont_recent,"var",trans_state_vars))
-```
-
-Checking calibration:
-```{r calib_check}
-tt2 <- (tidy(fit1Q)
-    %>% select(term,estimate,std.error)
-    %>% filter(grepl("Hosp",term))
-    %>% mutate(term=c("int","lin","quad"))
-)
-ff <- setNames(tt2$estimate,tt2$term)
-ffdat <- (tibble(vday=0:20)
-    %>% mutate(logpred = ff[["int"]]+vday*ff[["lin"]],
-               value=exp(logpred),
-               var="Hospitalization"))
-(ggplot(ont_recent,aes(vday,value,colour=var))
-    + geom_point()
-    + scale_y_log10()
-    + geom_line(data=ffdat)
-)
-```
-
-
-Simulating (calibrating every time; could arguably (more efficiently?) sample over a joint distribution of r, G, E0?  Do importance-sampling weighting?
-
-```{r sim_res, warning=FALSE, message=FALSE,cache=TRUE}
-## FIXME: could use pmap ... ?
-t1 <- system.time(sim_res <- plyr::alply(sim_params
-  , .margins=1
-  , .fun=sim_fun
-  , base_params=base_params
-  , reg_date=reg_date
-  , end_date="1-June-2020"
-  , return_val="vals_only"
-  )
-)
-```
-
-FIXME: more robust caching/making of this step
-
-Put together pieces.
-
-```{r calibrate, warning=FALSE,message=FALSE}
-## put together the pieces (alply gives lists, we want a matrix)
-sim_mat <- dplyr::bind_rows(sim_res)
-sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
-    %>% as_tibble()
-    %>% setNames(c("lwr","median","upr"))
-)
-## do one simulation to get date/var columns
-sim_last <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date,
-                 return_val="aggsim",
-                 end_date="1-June-2020")
-sim_final <- bind_cols(sim_last[c("date","var")], sim_q)
-```
-
-## Plotting forecast
-
-```{r forecast,warning=FALSE,message=FALSE}
-
-## FIXME: use trans_var?
-
-label_dat <- data.frame(
-  var =c("Hospitalization","ICU","Ventilator","newConfirmations","deceased")
-  , sim_var = c("H","ICU","V","report","D")
-)
-keep_vars <- c("H","ICU","report","D") 
-ont_recent2 <- (left_join(ont_recent,label_dat)
-    %>% mutate(var=sim_var)
-    %>% filter(var %in% keep_vars)
-)
-
-print(gg_forecast <- ggplot(
-          dplyr::filter(sim_final, var %in% keep_vars),
-          aes(date,median,colour=var))
-    + scale_y_log10()
-    + geom_line()
-    + geom_point(data=ont_recent2,aes(x=date,y=value))
-    + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var), colour=NA,
-                  alpha=0.2)
-    + geom_vline(xintercept=reg_date,lty=2)
-    + facet_wrap(~var)
-)
-```
-
-- weird patterns: because of calibration of intercept??? looks plausible.
-- implied curves of R_t?
-- dates of control???
-
-## estimating breakpoints
-
-```{r breakpoint, warning=FALSE,message=FALSE}
-pp <- calib2(base_params=base_params,
-             target=sim_params_0,
-             start_date="1-Mar-2020",
-             reg_date="15-Mar-2020",
-             init_var="H")
-b <- get_break(params=pp,data=ont_recent)
-print(b$par)  ## logit(rel beta0), log(nb_disp)
-print(c(plogis(b$par[1]),exp(b$par[2])))
-bb <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
-                    start_date="1-Mar-2020")
-plot(bb,log=TRUE)+  geom_point(data=ont_recent2,aes(x=date,y=value))
-```
-
-```{r plot_long_sim, warning=FALSE,message=FALSE}
-bb_long <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
-                    start_date="1-Mar-2020",end_date="1-Aug-2020")
-(plot(bb_long,log=TRUE)
-    + geom_point(data=ont_recent2,aes(x=date,y=value))
-    + facet_wrap(~var)
-    + theme(legend.position="none")
-)
-```
-
-Summarize R0 etc. before and after breakpoint
-
-What's up with cases???
+Notes: (a) the first two steps are independent; (b) we could also calibrate the shape of the generation interval; (c) this calibration procedure doesn't account for later changes, and relies on estimates in the exponential phase; (d) it would be nice to replace step 3 with an analytical calculation based on the dominant eigenvector, but a combination of Jacobian issues and sensitivity to time steps etc. has made this hard so far.
 
 ## combined calibration
 
 What if we want to estimate `beta0`, `E0`, and more than one breakpoint at the same time? 
-
-MLi: Are we using hosp or reports here?
-```{r reportdat,warning=FALSE,message=FALSE}
-use_hosp <- FALSE
-start_date <- as.Date("2020-03-15")
-dd <- (dplyr::filter(ont_recent,
-          var==if (!use_hosp) "newConfirmations" else "Hospitalization")
-    %>% dplyr::filter(date>start_date)
-)
-
-```
 
 Break points
 
 - [March 17th closures](https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html)
 - [March 23rd closure](https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html)
 - [March 23rd closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
-- [March 28th prohibts gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
+- [March 28th prohibits gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
 
 ```{r cali_setup, message=FALSE, warning=FALSE}
-
 params <- fix_pars(read_params("ICU1.csv")
     , target=c(Gbar=6)
     , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
@@ -357,40 +176,61 @@ schoolClose <- "17-Mar-2020"
 countryClose <- "23-Mar-2020"
 socialClose <- "28-Mar-2020"
 
-bd <- ldmy(c(schoolClose,countryClose,socialClose)) ## Why can't I do three breaks?
-bd <- ldmy(c(countryClose,socialClose))
-
+bd <- ldmy(c(schoolClose,countryClose,socialClose))
 print(bd)
-agg_list <- NULL
 ```
 
 ```{r cali_fit, message=FALSE,warning=FALSE,cache=TRUE}
-g1 <- calibrate(data=dd
+opt_pars <- list(
+    ## these params go to run_sim
+    params=c(log_E0=4
+             , log_beta0=-1
+             ## fraction of mild (non-hosp) cases
+             , log_mu=log(params[["mu"]])
+             ## fraction of incidence reported
+             ## logit_c_prop=qlogis(params[["c_prop"]]),
+             ## fraction of hosp to acute (non-ICU)
+             , logit_phi1=qlogis(params[["phi1"]])
+             ## fraction of ICU cases dying
+             ## logit_phi2=qlogis(params[["phi2"]])
+             ),
+    log_rel_beta0 = rep(-1, length(bd)),
+    log_nb_disp=0)
+t1 <- system.time(g1 <- calibrate(data=ont_recent
     , base_params=params
     , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-    , aggregate_args = agg_list
+    , opt_pars = opt_pars,
     , break_dates = bd
-)
-
-## check standard deviations
-sqrt(diag(solve(g1$hessian)))
-
+    ## , debug=TRUE
+      )
+      ) ## system.time
 ```
 
-Now we want to rerun the forecast using the fitted parameters.
+The fit takes `r round(t1[["elapsed"]])` seconds.
+
+Initially tried to fit `c_prop` (proportion of cases reported) and `phi2` (proportion of ICU dying) but got ridiculous answers and non-pos-def Hessians: real non-identifiability or just wonky data? Or some outcome of some of the other shortcuts/problems in the fitting (e.g. equal dispersion parameters per variable)?
+
+```{r pars}
+invlink_trans(restore(g1$par,opt_pars))
+```
+
+```{r}
+vv <- solve(g1$hessian)
+corrplot::corrplot.mixed(cov2cor(vv),lower="number",upper="ellipse")
+```
+
+Now forecast using the fitted parameters.
 
 ```{r rerun_forecast, message=FALSE, warning=FALSE}
 f_args <-attr(g1,"forecast_args")
 r <- do.call(forecast_sim,
     c(list(p=g1$par), f_args))
-
 ## FIXME: r can't use plot.pansim method ATM
-keep_vars <- c("H","ICU","D","report")
 rs <- dplyr::filter(r, var %in% keep_vars)
 print(ggplot(rs,aes(date,value,colour=var))
       + geom_line()
       + scale_y_log10(limits=c(1,NA),oob=scales::squish)
-      + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+      + geom_point(data=ont_dd2)
       + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       )
 ```
@@ -398,79 +238,13 @@ print(ggplot(rs,aes(date,value,colour=var))
 Now we want to generate envelope via parameter ensemble. 
 
 ```{r forecast_ensemble,warning=FALSE,message=FALSE,cache=TRUE}
-
 e_res <- forecast_ensemble(g1) %>% filter(var %in% keep_vars)
-
 print(ggplot(e_res, aes(date,value,colour=var,fill=var))
       + geom_line()
       + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
-      + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+      + geom_point(data=ont_dd2)
       + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
-      )
-```
-
-Now let's try to calibrate to all the variables. We want to fit everything: cases, hosp, ICU, death, along with parameters specifying factions determining those flows
-
-```{r setup_all_calib,warning=FALSE,message=FALSE}
-dd2 <- (mutate_at(ont_recent,"var",trans_state_vars)
-    %>% dplyr::filter(var != "Ventilator")
-)
-
-##  FIXME: allow variable-specific NB disp
-opt_pars2 <- list(params=c(log_E0=4, log_beta0=-1,
-                           ## fraction of mild (non-hosp) cases
-                           log_mu=log(params[["mu"]]),
-                           ## fraction of incidence reported
-                           logit_c_prop=qlogis(params[["c_prop"]]),
-                           ## fraction of hosp to acute (non-ICU)
-                           logit_phi1=qlogis(params[["phi1"]]),
-                           ## fraction of ICU cases dying
-                           logit_phi2=qlogis(params[["phi2"]])),
-                           log_rel_beta0 = c(-1,-1),
-                           log_nb_disp=0)
-
-```
-
-```{r fit_all_calib, warning=FALSE,message=FALSE,cache=TRUE}
-t2 <- system.time(g2 <- calibrate(data=dd2
-    , base_params=params
-    , opt_pars=opt_pars2
-    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-    )
-)
-                        
-```
-
-Now we want to rerun the forecast using the all the fitted parameters.
-
-```{r forecast_all_calib, warning=FALSE, message=FALSE,cache=TRUE}
-r2 <- do.call(forecast_sim, c(list(p=g2$par), attr(g2,"forecast_args")))
-r2 <- (r2 %>% filter(date > start_date))
-(ggplot(dplyr::filter(r2, var %in% keep_vars),
-        aes(date,value,colour=var))
-    + geom_line()
-    + scale_y_log10()
-    + geom_point(data=dd2)
-    + geom_vline(xintercept=ldmy(attr(g2,"forecast_args")$break_dates),lty=2)
-    + facet_wrap(~var,scale="free")
-    + xlim(c(start_date,as.Date("2020-04-15")))
-)
-```
-
-Forecast envelope via parameter ensemble.
-
-```{r forecast_ensemble2, warning=FALSE, message=FALSE, cache=TRUE}
-e_res2 <- forecast_ensemble(g2) %>% filter(var %in% keep_vars)
-e_res2 <- filter(date > start_date)
-print(ggplot(e_res2, aes(date,value,colour=var,fill=var))
-      + geom_line()
-      + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
-      + geom_point(data=dplyr::mutate_at(dd2,"var",trans_state_vars))
-      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
-      + scale_y_log10(limits=c(1,NA), oob=scales::squish)
-      + facet_wrap(~var, scale="free")
-      + xlim(c(start_date,as.Date("2020-04-15")))
       )
 ```
 

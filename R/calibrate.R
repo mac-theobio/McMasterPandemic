@@ -534,8 +534,8 @@ forecast_ensemble <- function(fit,
     r <- ff(fit$par, return_val="aggsim")
 
     ## Wald sample
-
-	 parnum <- length(fit$par) - 1
+    ## FIXME: count number of distribution params
+    parnum <- length(fit$par) - 1
     e_pars <- as.data.frame(MASS::mvrnorm(nsim,
                                           mu=fit$par[1:parnum],
                                           Sigma=solve(fit$hessian[1:parnum,1:parnum])))
