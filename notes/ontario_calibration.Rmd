@@ -294,7 +294,7 @@ print(gg_forecast <- ggplot(
 
 ## estimating breakpoints
 
-```{r breakpoint}
+```{r breakpoint, warning=FALSE,message=FALSE}
 pp <- calib2(base_params=base_params,
              target=sim_params_0,
              start_date="1-Mar-2020",
@@ -308,7 +308,7 @@ bb <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Ma
 plot(bb,log=TRUE)+  geom_point(data=ont_recent2,aes(x=date,y=value))
 ```
 
-```{r plot_long_sim}
+```{r plot_long_sim, warning=FALSE,message=FALSE}
 bb_long <- run_sim_break(params=pp,rel_beta0=plogis(b$par[1]),break_dates=ldmy("20-Mar-2020"),
                     start_date="1-Mar-2020",end_date="1-Aug-2020")
 (plot(bb_long,log=TRUE)
@@ -324,7 +324,155 @@ What's up with cases???
 
 ## combined calibration
 
-What if we want to estimate `beta0`, `E0`, and more than one breakpoint at the same time? (Primary use case here is for South African data where the 
+What if we want to estimate `beta0`, `E0`, and more than one breakpoint at the same time? 
+
+MLi: Are we using hosp or reports here?
+```{r reportdat,warning=FALSE,message=FALSE}
+use_hosp <- FALSE
+start_date <- as.Date("2020-03-15")
+dd <- (dplyr::filter(ont_recent,
+          var==if (!use_hosp) "newConfirmations" else "Hospitalization")
+    %>% dplyr::filter(date>start_date)
+)
+
+```
+
+Break points
+
+- [March 17th closures](https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html)
+- [March 23rd closure](https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html)
+- [March 23rd closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
+- [March 28th prohibts gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
+
+```{r cali_setup, message=FALSE, warning=FALSE}
+
+params <- fix_pars(read_params("ICU1.csv")
+    , target=c(Gbar=6)
+    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
+)
+params[["N"]] <- 19.5e6  ## reset pop to Ontario
+summary(params)
+
+schoolClose <- "17-Mar-2020"
+countryClose <- "23-Mar-2020"
+socialClose <- "28-Mar-2020"
+
+bd <- ldmy(c(schoolClose,countryClose,socialClose)) ## Why can't I do three breaks?
+bd <- ldmy(c(countryClose,socialClose))
+
+print(bd)
+agg_list <- NULL
+```
+
+```{r cali_fit, message=FALSE,warning=FALSE,cache=TRUE}
+g1 <- calibrate(data=dd
+    , base_params=params
+    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
+    , aggregate_args = agg_list
+    , break_dates = bd
+)
+
+## check standard deviations
+sqrt(diag(solve(g1$hessian)))
+
+```
+
+Now we want to rerun the forecast using the fitted parameters.
+
+```{r rerun_forecast, message=FALSE, warning=FALSE}
+f_args <-attr(g1,"forecast_args")
+r <- do.call(forecast_sim,
+    c(list(p=g1$par), f_args))
+
+## FIXME: r can't use plot.pansim method ATM
+keep_vars <- c("H","ICU","D","report")
+rs <- dplyr::filter(r, var %in% keep_vars)
+print(ggplot(rs,aes(date,value,colour=var))
+      + geom_line()
+      + scale_y_log10(limits=c(1,NA),oob=scales::squish)
+      + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
+      )
+```
+
+Now we want to generate envelope via parameter ensemble. 
+
+```{r forecast_ensemble,warning=FALSE,message=FALSE,cache=TRUE}
+
+e_res <- forecast_ensemble(g1) %>% filter(var %in% keep_vars)
+
+print(ggplot(e_res, aes(date,value,colour=var,fill=var))
+      + geom_line()
+      + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
+      + geom_point(data=dplyr::mutate_at(dd,"var",trans_state_vars))
+      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
+      + scale_y_log10(limits=c(1,NA), oob=scales::squish)
+      )
+```
+
+Now let's try to calibrate to all the variables. We want to fit everything: cases, hosp, ICU, death, along with parameters specifying factions determining those flows
+
+```{r setup_all_calib,warning=FALSE,message=FALSE}
+dd2 <- (mutate_at(ont_recent,"var",trans_state_vars)
+    %>% dplyr::filter(var != "Ventilator")
+)
+
+##  FIXME: allow variable-specific NB disp
+opt_pars2 <- list(params=c(log_E0=4, log_beta0=-1,
+                           ## fraction of mild (non-hosp) cases
+                           log_mu=log(params[["mu"]]),
+                           ## fraction of incidence reported
+                           logit_c_prop=qlogis(params[["c_prop"]]),
+                           ## fraction of hosp to acute (non-ICU)
+                           logit_phi1=qlogis(params[["phi1"]]),
+                           ## fraction of ICU cases dying
+                           logit_phi2=qlogis(params[["phi2"]])),
+                           log_rel_beta0 = c(-1,-1),
+                           log_nb_disp=0)
+
+```
+
+```{r fit_all_calib, warning=FALSE,message=FALSE,cache=TRUE}
+t2 <- system.time(g2 <- calibrate(data=dd2
+    , base_params=params
+    , opt_pars=opt_pars2
+    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
+    )
+)
+                        
+```
+
+Now we want to rerun the forecast using the all the fitted parameters.
+
+```{r forecast_all_calib, warning=FALSE, message=FALSE,cache=TRUE}
+r2 <- do.call(forecast_sim, c(list(p=g2$par), attr(g2,"forecast_args")))
+r2 <- (r2 %>% filter(date > start_date))
+(ggplot(dplyr::filter(r2, var %in% keep_vars),
+        aes(date,value,colour=var))
+    + geom_line()
+    + scale_y_log10()
+    + geom_point(data=dd2)
+    + geom_vline(xintercept=ldmy(attr(g2,"forecast_args")$break_dates),lty=2)
+    + facet_wrap(~var,scale="free")
+    + xlim(c(start_date,as.Date("2020-04-15")))
+)
+```
+
+Forecast envelope via parameter ensemble.
+
+```{r forecast_ensemble2, warning=FALSE, message=FALSE, cache=TRUE}
+e_res2 <- forecast_ensemble(g2) %>% filter(var %in% keep_vars)
+e_res2 <- filter(date > start_date)
+print(ggplot(e_res2, aes(date,value,colour=var,fill=var))
+      + geom_line()
+      + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
+      + geom_point(data=dplyr::mutate_at(dd2,"var",trans_state_vars))
+      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
+      + scale_y_log10(limits=c(1,NA), oob=scales::squish)
+      + facet_wrap(~var, scale="free")
+      + xlim(c(start_date,as.Date("2020-04-15")))
+      )
+```
 
 ## next
 

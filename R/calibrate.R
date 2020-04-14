@@ -534,9 +534,11 @@ forecast_ensemble <- function(fit,
     r <- ff(fit$par, return_val="aggsim")
 
     ## Wald sample
+
+	 parnum <- length(fit$par) - 1
     e_pars <- as.data.frame(MASS::mvrnorm(nsim,
-                                          mu=fit$par[1:4],
-                                          Sigma=solve(fit$hessian[1:4,1:4])))
+                                          mu=fit$par[1:parnum],
+                                          Sigma=solve(fit$hessian[1:parnum,1:parnum])))
 
     ## run for all param vals in ensemble
     ## tried with purrr::pmap but too much of a headache

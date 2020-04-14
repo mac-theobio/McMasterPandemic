@@ -43,6 +43,8 @@ g1R <- calibrate(data=dd, base_params=params,
 ## check standard deviations
 sqrt(diag(solve(g1$hessian)))
 
+
+
 ## re-run forecast with best-fit parameters
 f_args <-attr(g1,"forecast_args")
 r <- do.call(forecast_sim,

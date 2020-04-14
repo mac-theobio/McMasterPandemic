@@ -31,6 +31,10 @@ break_test.Rout: notes/break_test.R
 
 notes/ontario_calibration.html: notes/ontario_calibration.Rmd notes/ontario_clean.RData
 
+
+comb_calib.Rout: notes/comb_calib.R
+	$(run-R)
+
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
 
