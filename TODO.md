@@ -2,6 +2,9 @@
 
 ### short term
 
+* make get_r work for r<1 ...
+* utility to reconstruct summaries for each phase in a breakpoint model
+* check off-by-one-day in breakpoints?
 * `condense` option for including/not including ICU in H output
 * distributions in `calibrate`
      * implement Poisson?

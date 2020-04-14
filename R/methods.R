@@ -319,7 +319,7 @@ update.params_pansim <- function(object, ...) {
             }
         } else {
             ## atomic
-                object[[nm[i]]] <- L[[i]]
+            object[[nm[i]]] <- L[[i]]
         }
     }
     return(object)

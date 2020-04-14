@@ -180,7 +180,8 @@ bd <- ldmy(c(schoolClose,countryClose,socialClose))
 print(bd)
 ```
 
-```{r cali_fit, message=FALSE,warning=FALSE,cache=TRUE}
+**FIXME**: make this and cache it!
+```{r cali_fit, message=FALSE,warning=FALSE}
 opt_pars <- list(
     ## these params go to run_sim
     params=c(log_E0=4
@@ -250,6 +251,41 @@ print(ggplot(e_res2, aes(date,value,colour=var,fill=var))
       + geom_vline(xintercept=ldmy(f_args$break_dates)-1,lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
       )
+```
+
+```{r}
+moment_params <- eval(formals(fix_pars)$pars_adj)[[2]]
+out <- (describe_params(params_fitted)
+    %>% mutate(type=case_when(
+                   symbol %in% names(i1$params) ~ "mle-calibrated",
+                   symbol %in% moment_params ~ "Gbar-calibrated",
+                   TRUE ~ "assumed"),
+               type=factor(type,levels=c("mle-calibrated",
+                                         "Gbar-calibrated",
+                                         "assumed")))
+    %>% arrange(type)
+)
+```
+
+What are the implied R0 values here?
+
+```{r}
+summary2 <- function(fit) {
+    f_args <- attr(fit,"forecast_args")
+    pars <- invlink_trans(restore(fit$par,f_args$opt_pars,f_args$fixed_pars))
+    beta0 <- pars$params[["beta0"]]
+    pp[[1]] <- update(f_args$base_params,beta0=beta0)
+    for (i in seq_along(f_args$break_dates)) {
+        pp[[i+1]] <- update(pp[[1]],
+                            beta0=beta0*pars$rel_beta0[i])
+    }
+    ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
+    names(pp) <- c(format(f_args$start_date),format(f_args$break_dates))
+    ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
+    return(ret)
+}
+print(ss <- summary2(g1))
+saveRDS(ss,file="git_push/ontario_R0_cal1.rds")
 ```
 
 ## next
