@@ -237,35 +237,18 @@ print(ggplot(rs,aes(date,value,colour=var))
 
 ### forecast farther ahead
 
-Now we want to generate envelope via parameter ensemble. 
 
 ```{r forecast_ensemble2}
 f_args2 <- f_args
-f_args2$end_date <- "01-06-2020"
+f_args2$end_date <- "15-05-2020"
 e_res2 <- forecast_ensemble(g1,
                            forecast_args=f_args2) %>% filter(var %in% keep_vars)
 print(ggplot(e_res2, aes(date,value,colour=var,fill=var))
       + geom_line()
       ## + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
       + geom_point(data=ont_dd2)
-      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
+      + geom_vline(xintercept=ldmy(f_args$break_dates)-1,lty=2)
       + scale_y_log10(limits=c(1,NA), oob=scales::squish)
-      )
-```
-
-Now forecast using the fitted parameters.
-
-```{r rerun_forecast2, message=FALSE, warning=FALSE}
-f_args <-attr(g1,"forecast_args")
-r <- do.call(forecast_sim,
-    c(list(p=g1$par), f_args))
-## FIXME: r can't use plot.pansim method ATM
-rs <- dplyr::filter(r, var %in% keep_vars)
-print(ggplot(rs,aes(date,value,colour=var))
-      + geom_line()
-      + scale_y_log10(limits=c(1,NA),oob=scales::squish)
-      + geom_point(data=ont_dd2)
-      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
       )
 ```
 
