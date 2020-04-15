@@ -30,6 +30,8 @@ ont_recent <- (ont_all
     %>% ungroup()
 )
 
-# rdsave("ont_recent","start_date","ont_all")
+ont_recent_nt <- filter(ont_recent,var != "newTests")
+ont_all_nt <- filter(ont_all,var != "newTests")
 
-## use rdsave ... ?
+# rdsave("ont_all", "ont_recent", "ont_all_nt", "ont_recent_nt", "start_date")
+
