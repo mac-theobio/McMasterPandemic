@@ -5,6 +5,8 @@
 * epiestim: delay-convolve beta curve
 * check off-by-one-day in breakpoints?
 
+* add global options for diff-deaths, hospital incl ICU, etc. ?
+
 * fit to hospitalization only? or just leave out ICU?
 * add testing intensity?
 * MCMC

@@ -109,6 +109,7 @@ pivot.pansim <- function(object, ...) {
 ##' Condense columns (infected, ICU, hospitalized) in a pansim output
 ##' @param object a pansim object
 ##' @param add_reports add incidence and case reports?
+##' @param diff_deaths compute first differences of death series to get daily deaths?
 ##' @param keep_all keep unaggregated variables in data frame as well?
 ##' @param ... additional args
 ##' @export
@@ -168,7 +169,7 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
 ##' first <- dplyr::first
 ##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
 ##'         FUN=list(mean=c("H","ICU","I"),
-##'                first=c("D"),sum=c("report")))
+##'                sum=c("report","d")))
 ##' @export
 aggregate.pansim <- function(x,
                              start=NULL,

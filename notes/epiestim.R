@@ -31,7 +31,7 @@ epiestim_fit <- (e1$R
                   ~gsub("Quantile\\.0\\.([0-9]+)\\(R\\)","q\\1",.))
     %>% rename(med="Median(R)")
     ## FIXME: not 100% sure how dates line up?
-    %>% mutate(date=head(sort(unique(ont_recent$date)),nrow(e1$R)))
+    ## %>% mutate(date=head(sort(unique(ont_recent$date)),nrow(e1$R)))
 )
 
 # rdsave("epiestim_fit")
