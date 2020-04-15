@@ -8,20 +8,28 @@ print.pansim <- function(x,all=FALSE,...) {
     print(x)
 }
 
-calc_reports <- function(x,params) {
-    ## compute incidence and reports (as convolution of incidence)
+##' calculate convolution
+##' @param i an incidence time series
+##' @param params a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}
+##' @export
+calc_conv <- function(i,params) {
     c_prop <- c_delay_mean <- c_delay_cv <- NULL
-    incidence <- x$foi*x$S
-    unpack(as.list(params))
-    kern <- make_delay_kernel(c_prop,
-                              c_delay_mean,
-                              c_delay_cv,
-                              max_len=10)
+    kern <- with(as.list(params),
+                 make_delay_kernel(c_prop,
+                                   c_delay_mean,
+                                   c_delay_cv,
+                                   max_len=10)
+                 )
     ## FIXME: don't hard-code max len ...
-    report <- as.numeric(stats::filter(incidence,kern,
-                                       sides=1))
+    ret <- as.numeric(stats::filter(i,kern,sides=1))
+    return(ret)
+}
 
-    return(data.frame(incidence, report))
+## compute incidence and reports (as convolution of incidence)
+calc_reports <- function(x,params) {
+    incidence <- x$foi*x$S
+    ret <- data.frame(incidence, report=calc_conv(incidence,params))
+    return(ret)
 }
 
 ## FIXME: allow faceting automatically? (each var alone or by groups?)

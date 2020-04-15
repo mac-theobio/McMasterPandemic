@@ -4,7 +4,7 @@
 \alias{condense.pansim}
 \title{Condense columns (infected, ICU, hospitalized) in a pansim output}
 \usage{
-\method{condense}{pansim}(object, add_reports = TRUE, keep_all = FALSE, ...)
+\method{condense}{pansim}(object, add_reports = TRUE, diff_deaths = TRUE, keep_all = FALSE, ...)
 }
 \arguments{
 \item{object}{a pansim object}

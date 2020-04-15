@@ -6,7 +6,6 @@
 * check off-by-one-day in breakpoints?
 
 * fit to hospitalization only? or just leave out ICU?
-* fit to new deaths?
 * add testing intensity?
 * MCMC
 * arrange caching for MLi data (want to be able to replicate if data gets weird)

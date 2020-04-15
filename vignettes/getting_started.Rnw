@@ -137,8 +137,8 @@ there are no observations that you are aiming to match, then these
 dates are arbitrary and only the length of time matters.
 
 <<dates>>=
-sdate <- "10-Feb-2020"
-edate <- "1-Jun-2020"
+sdate <- "2020-Feb-10"
+edate <- "2020-Jun-1"
 @
 
 \section{Running a simulation}
@@ -187,7 +187,7 @@ of its original value on 10 March 2020, and to 10\% of its original
 value on 25 March 2020.
 
 <<run_sim_time-dependent_beta0,fig.width=8>>=
-time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
+time_pars <- data.frame(Date=c("2020-Mar-10","2020-Mar-25"),
                       Symbol=c("beta0","beta0"),
                       Relative_value=c(0.5,0.1))
 restimedep <- run_sim(params1,state1,start_date=sdate,end_date=edate,
