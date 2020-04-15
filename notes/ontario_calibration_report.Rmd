@@ -335,7 +335,7 @@ mle_cal1 <- (mle_cal0
     %>% select(date,R0)   ## other columns too?
     %>% tidyr::fill(R0)
     ## OK to use base_params (we haven't calibrated anything about reporting delay)
-    %>% mutate(R0=calc_conv(R0,update(f_args$base_params,c_prop=1)))
+    %>% mutate(R0conv=calc_conv(R0,update(f_args$base_params,c_prop=1)))
 )
 
 print(gg1 <- ggplot(epiestim_fit,aes(date, y=med))
@@ -344,7 +344,7 @@ print(gg1 <- ggplot(epiestim_fit,aes(date, y=med))
       + geom_ribbon(aes(ymin=q025,ymax=q975),colour=NA,alpha=0.2,fill="blue")
       + scale_y_log10(breaks=c(0.75, 1, 1.1, 1.3, 1.5, 2, 3, 5))
       + geom_vline(xintercept=bd,lty=2)
-      + geom_line(data=mle_cal1,aes(y=R0),
+      + geom_line(data=mle_cal1,aes(y=R0conv),
                   lwd=2,alpha=0.3)
       )
 ```
