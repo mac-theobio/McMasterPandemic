@@ -8,7 +8,7 @@ params[["N"]] <- 19.5e6  ## reset pop to Ontario
 
 opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
 p <- c(log_E0=2,log_beta0=-0.24,log_relbeta01=-0.5,log_rel_beta02=-8, log_nb_disp=4)
-bd <- ldmy(c("23-Mar-2020","30-Mar-2020"))
+bd <- anydate(c("23-Mar-2020","30-Mar-2020"))
 f1 <- forecast_sim(p, opt_pars, base_params=params,
              start_date="29-02-2020", end_date="01-06-2020",
              break_dates=bd)

@@ -122,7 +122,7 @@ calibrate_slopeint <- function(int,slope,pop,params,
                       var="H",
                       sim_args=NULL) {
     ## FIXME: refactor/rejigger more consistently
-    date0 <- ldmy(date0); date1 <- ldmy(date1)
+    date0 <- anydate(date0); date1 <- anydate(date1)
     ok_targets <- c("Gbar","kappa","R0")
     bad_targets <- setdiff(names(target),ok_targets)
     if (length(bad_targets)>0) stop("bad targets: ",paste(bad_targets,collapse=", "))
@@ -166,8 +166,8 @@ calibrate_slopeint <- function(int,slope,pop,params,
 ##' ## shooting
 ##' get_init(var="H",init_target=50, param=params)
 ##' @export
-get_init <- function(date0=ldmy("1-Mar-2020"),
-                     date1=ldmy("25-Mar-2020"),
+get_init <- function(date0=anydate("1-Mar-2020"),
+                     date1=anydate("25-Mar-2020"),
                      params,
                      int=NULL,
                      slope=NULL,
@@ -221,8 +221,8 @@ get_init <- function(date0=ldmy("1-Mar-2020"),
 ##' @importFrom stats plogis
 ##' @export
 ## FIXME: take end_date from data
-get_break <- function(start_date=ldmy("1-Mar-2020"),
-                      end_date=ldmy("8-Apr-2020"),
+get_break <- function(start_date=anydate("1-Mar-2020"),
+                      end_date=anydate("8-Apr-2020"),
                       break_dates=c("20-Mar-2020"),
                       params,
                       data,
@@ -308,8 +308,8 @@ calib2 <- function(base_params,
                    reg_date,
                    init_var="H",
                    sim_args=NULL) {
-    start_date <- ldmy(start_date)
-    reg_date <- ldmy(reg_date)
+    start_date <- anydate(start_date)
+    reg_date <- anydate(reg_date)
     p <- fix_pars(base_params, target=c(Gbar=target[["Gbar"]]),
                   pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
     stopifnot(all.equal(get_Gbar(p),target[["Gbar"]],tolerance=1e-4))

@@ -5,6 +5,7 @@
 
 library(McMasterPandemic)
 library(tidyverse)
+library(anytime)
 
 ## 
 source("notes/ontario_clean.R")
@@ -26,7 +27,7 @@ schoolClose <- "17-Mar-2020"
 countryClose <- "23-Mar-2020"
 socialClose <- "28-Mar-2020"
 
-bd <- ldmy(c(schoolClose,countryClose,socialClose))
+bd <- anydate(c(schoolClose,countryClose,socialClose))
 ## print(bd)
 
 opt_pars <- list(

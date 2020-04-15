@@ -4,6 +4,7 @@
 library(McMasterPandemic)
 library(tidyverse)
 library(zoo)
+library(anytime)
 
 first_date <- as.Date("2020-03-15")
 end_date <- as.Date("2020-03-25")
@@ -24,7 +25,7 @@ params[["N"]] <- 19.5e6  ## reset pop to Ontario
 ## breakpoints
 schoolClose <- "20-Mar-2020"
 
-bd <- ldmy(c(schoolClose))
+bd <- anydate(c(schoolClose))
 ## print(bd)
 
 opt_pars <- list(

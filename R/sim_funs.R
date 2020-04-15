@@ -223,6 +223,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##'                    params_timevar=time_pars)
 ##' summary(res)
 ##' @importFrom stats rnbinom
+##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
 ## FIXME: params_timevar
@@ -245,7 +246,7 @@ run_sim <- function(params
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
-    start_date <- ldmy(start_date); end_date <- ldmy(end_date)
+    start_date <- anydate(start_date); end_date <- anydate(end_date)
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
@@ -260,7 +261,7 @@ run_sim <- function(params
         stopifnot(all(c("Date","Symbol","Relative_value") %in%
                       names(params_timevar)))
         ## convert char to date
-        switch_dates <- params_timevar[["Date"]] <- ldmy(params_timevar[["Date"]])
+        switch_dates <- params_timevar[["Date"]] <- anydate(params_timevar[["Date"]])
         ## match specified times with time sequence
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")

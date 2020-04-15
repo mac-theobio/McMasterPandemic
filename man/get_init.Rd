@@ -9,8 +9,8 @@ from day t1.  We want an initial condition for day t0.
 (Don't go too far back or rounding will kill us)#}
 \usage{
 get_init(
-  date0 = ldmy("1-Mar-2020"),
-  date1 = ldmy("25-Mar-2020"),
+  date0 = anydate("1-Mar-2020"),
+  date1 = anydate("25-Mar-2020"),
   params,
   int = NULL,
   slope = NULL,

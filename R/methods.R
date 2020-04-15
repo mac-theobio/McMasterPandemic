@@ -167,7 +167,7 @@ aggregate.pansim <- function(x,
                              ...) {
     aa <- get_attr(x)
     dd <- x
-    agg_datevec <- seq.Date(ldmy(start),max(dd$date)+extend,
+    agg_datevec <- seq.Date(anydate(start),max(dd$date)+extend,
                             by=period)
     agg_period <- cut.Date(dd$date,agg_datevec)
     ## set to *last* day of period

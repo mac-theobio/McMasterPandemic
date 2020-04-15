@@ -1,9 +1,10 @@
 
-##' attempt to convert x to a date unless it already is one
-##' @param x a date, or a character string in some day-month-year format that \code{lubridate::dmy} can handle
-##' @keywords internal
-##' @export
-ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
+## OBSOLETE, replaced by anytime::anydate
+## attempt to convert x to a date unless it already is one
+## @param x a date, or a character string in some day-month-year format that \code{lubridate::dmy} can handle
+## @keywords internal
+## @export
+## ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
 
 ##' self-naming list (copied from lme4:::namedList)
 ##' @param ... a list of objects

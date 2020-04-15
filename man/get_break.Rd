@@ -5,8 +5,8 @@
 \title{estimate magnitude of drop in beta0 at known dates}
 \usage{
 get_break(
-  start_date = ldmy("1-Mar-2020"),
-  end_date = ldmy("8-Apr-2020"),
+  start_date = anydate("1-Mar-2020"),
+  end_date = anydate("8-Apr-2020"),
   break_dates = c("20-Mar-2020"),
   params,
   data,
