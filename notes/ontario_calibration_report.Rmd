@@ -321,7 +321,7 @@ mle_cal0 <- (ss
     %>% rename(date="start_date")
     ## HACK: scale_x_date has no oob argument?
     ## set first date to a more recent time
-    %>% mutate(date=c(min(res$date)-5,as.Date(date[-1])))
+    %>% mutate(date=c(min(epiestim_fit$date)-5,as.Date(date[-1])))
     %>% bind_rows(tibble(date=max(ont_recent$date),
                          r0=tail(.$r0,1),
                          R0=tail(.$R0,1),
