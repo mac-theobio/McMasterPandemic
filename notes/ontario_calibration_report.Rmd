@@ -23,6 +23,7 @@ library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
 library(corrplot)
+library(directlabels)
 ## make nice defaults
 scale_colour_discrete <- function(...) {
   colorspace::scale_colour_discrete_qualitative(...)
@@ -36,21 +37,19 @@ scale_fill_discrete <- function(...) {
 ## Getting data
 
 ```{r get_data, message=FALSE, warning=FALSE}
-source("ontario_clean.R")
-keep_vars <- c("H","ICU","D","report", "incidence")
-ont_dd2 <- (ont_recent
-    %>% mutate_at("var",trans_state_vars)
-    %>% filter(var %in% keep_vars)
-)
+load("ontario_clean.RData")
+load("ontario_calibration.RData")
+## FIXME: better documentation about what these pieces are doing?
+## move the keep_vars/ont_recent_sub stuff to ontario_clean.R ?
 ```
 
 Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
-harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gathered from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf). (Latest data in this example are from `r format(max(ont_dd$date))`.)
+harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gathered from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf). (Latest data in this example are from `r format(max(ont_recent_sub$date))`.)
 
 ## Basic visualization
 
 ```{r ONplot,message=FALSE, warning=FALSE}
-print(gg1 <- ggplot(ont_dd,aes(date,value,colour=var))
+print(gg1 <- ggplot(ont_all,aes(date,value,colour=var))
   + geom_point()
   + scale_y_log10()
   + geom_smooth(method="lm",formula=y~poly(x,2))
@@ -174,47 +173,10 @@ Break points
 - [March 23rd closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
 - [March 28th prohibits gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
 
-```{r cali_setup, message=FALSE, warning=FALSE}
-params <- fix_pars(read_params("ICU1.csv")
-    , target=c(Gbar=6)
-    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
-)
-params[["N"]] <- 19.5e6  ## reset pop to Ontario
-## summary(params)
-
-schoolClose <- "17-Mar-2020"
-countryClose <- "23-Mar-2020"
-socialClose <- "28-Mar-2020"
-
-bd <- ldmy(c(schoolClose,countryClose,socialClose))
-## print(bd)
-```
-
-```{r cali_fit, message=FALSE,warning=FALSE,cache=TRUE}
-# FIXME: 'make' this! cache is too fragile ...
-opt_pars <- list(
-    ## these params go to run_sim
-    params=c(log_E0=4
-             , log_beta0=-1
-             ## fraction of mild (non-hosp) cases
-             , log_mu=log(params[["mu"]])
-             ## fraction of incidence reported
-             ## logit_c_prop=qlogis(params[["c_prop"]]),
-             ## fraction of hosp to acute (non-ICU)
-             , logit_phi1=qlogis(params[["phi1"]])
-             ## fraction of ICU cases dying
-             ## logit_phi2=qlogis(params[["phi2"]])
-             ),
-    log_rel_beta0 = rep(-1, length(bd)),
-    log_nb_disp=0)
-t1 <- system.time(g1 <- calibrate(data=ont_recent
-    , base_params=params
-    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-    , opt_pars = opt_pars,
-    , break_dates = bd
-    ## , debug=TRUE
-      )
-      ) ## system.time
+```{r}
+L <- load("ontario_calibration.RData")
+## loads: t1 (fitting time), opt_pars, g1 (fit), bd (break dates),
+## ont_recent_sub (data with 
 ```
 
 The fit takes `r round(t1[["elapsed"]])` seconds.
@@ -237,22 +199,7 @@ corrplot::corrplot.mixed(cov2cor(vv),lower="number",upper="ellipse")
 What are the implied R0 values here?
 
 ```{r R0_summary}
-summary2 <- function(fit) {
-    f_args <- attr(fit,"forecast_args")
-    pars <- invlink_trans(restore(fit$par,f_args$opt_pars,f_args$fixed_pars))
-    pp <- list()
-    beta0 <- pars$params[["beta0"]]
-    pp[[1]] <- update(f_args$base_params,beta0=beta0)
-    for (i in seq_along(f_args$break_dates)) {
-        pp[[i+1]] <- update(pp[[1]],
-                            beta0=beta0*pars$rel_beta0[i])
-    }
-    ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
-    names(pp) <- c(format(f_args$start_date),format(f_args$break_dates))
-    ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
-    return(ret)
-}
-ss <- summary2(g1)
+ss <- summary(g1)
 knitr::kable(data.frame(date=ss$start_date,round(ss[,-1],3)))
 saveRDS(ss,file="../git_push/ontario_R0_cal1.rds")
 ```
@@ -279,33 +226,79 @@ out <- (describe_params(params_fitted)
 Now forecast using the fitted parameters.
 
 ```{r rerun_forecast, message=FALSE, warning=FALSE}
-r <- do.call(forecast_sim,
-    c(list(p=g1$par), f_args))
-## FIXME: r can't use plot.pansim method ATM
-rs <- dplyr::filter(r, var %in% keep_vars)
-print(ggplot(rs,aes(date,value,colour=var))
-      + geom_line()
-      + scale_y_log10(limits=c(1,NA),oob=scales::squish)
-      + geom_point(data=ont_dd2)
-      + geom_vline(xintercept=ldmy(f_args$break_dates),lty=2)
-      )
+get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report"),
+                                "inc","prev"))
+mk_fc <- function(new_end=NULL) {
+    if (!is.null(new_end)) {
+        f_args$end_date <- new_end
+    }
+    fc <- (do.call(forecast_sim,
+                      c(list(p=g1$par), f_args))
+        %>% dplyr::filter(var %in% keep_vars)
+        %>% get_type()
+    )
+    return(fc)
+}
+forecast1 <- mk_fc()
+## pivot and unpivot to rescale newTests ...
+ont_recent_sub2 <- (ont_recent_sub
+    %>% select(-c(day,vday))
+    %>% pivot_wider(names_from="var",values_from="value",id_cols="date")
+    %>% mutate(`newTests/1000`=newTests/1000)
+    %>% select(-newTests)
+    %>% pivot_longer(names_to="var",-date)
+    %>% get_type()
+)
+newtest_lab <-data.frame(date=as.Date("2020-04-10"),
+                         value=10,
+                         vtype="prev",
+                         var="newTests/1000",
+                         lab="newTests/1000")
 ```
+
+
+```{r plot_forecast,fig.width=6,fig.height=7, warning=FALSE}
+## FIXME: forecast1 can't use plot.pansim method ATM
+gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
+    + geom_line()
+    + scale_y_log10(limits=c(1,NA),oob=scales::squish)
+    + geom_point(data=ont_recent_sub2)
+    + geom_line(data=ont_recent_sub2,alpha=0.2)
+    + geom_vline(xintercept=bd-1,lty=2)
+    + facet_wrap(~vtype,ncol=1,scale="free_y")
+    + geom_text(data=newtest_lab, aes(label=lab))
+    + labs(y="")
+    + theme(legend.position="none",
+            ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
+            strip.background = element_blank(),
+            strip.text = element_blank())
+)
+## trying to fix spacing on the fly: kluge!
+## geom_dl() must do weird evaluation env stuff
+plotfun <- function(data,
+                    dlspace=1,
+                    limspace=10) {
+    force(dlspace)
+    force(limspace)
+    print(gg4 %+% data
+          + geom_dl(method=list(dl.trans(x=x+1),cex=1,"last.points"),
+                    aes(label=var))
+          + expand_limits(x=max(data$date)+limspace))
+}
+plotfun(forecast1)
+```
+
 
 ### forecast farther ahead
 
+```{r forecast_long,warning=FALSE,fig.width=6,fig.height=7}
+plotfun(mk_fc(new_end="15-05-2020"),limspace=20)
+```
 
-```{r forecast_ensemble2,warning=FALSE}
-f_args2 <- f_args
-f_args2$end_date <- "15-05-2020"
-e_res2 <- forecast_ensemble(g1,
-                           forecast_args=f_args2) %>% filter(var %in% keep_vars)
-print(ggplot(e_res2, aes(date,value,colour=var,fill=var))
-      + geom_line()
-      + geom_ribbon(colour=NA, alpha=0.2, aes(ymin=lwr, ymax=upr))
-      + geom_point(data=ont_dd2)
-      + geom_vline(xintercept=ldmy(f_args$break_dates)-1,lty=2)
-      + scale_y_log10(limits=c(1,NA), oob=scales::squish)
-      )
+### forecast much farther ahead
+
+```{r forecast_longlong,fig.width=6,fig.height=7, warning=FALSE}
+plotfun(mk_fc(new_end="01-10-2020"),limspace=50)
 ```
 
 * have cheated here on displaying breakpoints (we *might* be off by one day?)

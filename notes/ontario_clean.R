@@ -7,9 +7,9 @@ url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
 dd <- read_csv(url)
 PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
 ddPHO <- read_csv(PHOurl)
-ont_dd <- (dd
-  %>% filter(Province=="ON")
-  %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations)
+ont_all <- (dd
+    %>% filter(Province=="ON")
+    %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
     %>% pivot_longer(-Date,names_to="var")
     %>% setNames(tolower(names(.)))
 )
@@ -22,7 +22,7 @@ start_date <- "2020-03-15"
 ## start_date <- "2020-03-01"
 
 
-ont_recent <- (ont_dd
+ont_recent <- (ont_all
     %>% filter(date>=as.Date(start_date))
     %>% mutate(day=as.numeric(date-min(date)))
     %>% group_by(var)
@@ -30,6 +30,6 @@ ont_recent <- (ont_dd
     %>% ungroup()
 )
 
-save("ont_recent","start_date","ont_dd", file="ontario_clean.RData")
+# rdsave("ont_recent","start_date","ont_all")
 
 ## use rdsave ... ?

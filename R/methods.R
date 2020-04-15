@@ -324,3 +324,22 @@ update.params_pansim <- function(object, ...) {
     }
     return(object)
 }
+
+##' @export
+summary.fit_pansim <- function(object, ...) {
+    
+    f_args <- attr(object,"forecast_args")
+    pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
+    pp <- list()
+    beta0 <- pars$params[["beta0"]]
+    pp[[1]] <- update(f_args$base_params,beta0=beta0)
+    for (i in seq_along(f_args$break_dates)) {
+        pp[[i+1]] <- update(pp[[1]],
+                            beta0=beta0*pars$rel_beta0[i])
+    }
+    ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
+    names(pp) <- c(format(f_args$start_date),format(f_args$break_dates))
+    ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
+    return(ret)
+}
+

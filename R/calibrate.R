@@ -493,6 +493,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                        fixed_pars,
                                        sim_args,
                                        aggregate_args)
+    class(opt) <- c("fit_pansim",class(opt))
     return(opt)
 }
 

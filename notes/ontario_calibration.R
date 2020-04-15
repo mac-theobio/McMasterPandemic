@@ -1,222 +1,58 @@
-library(tidyverse)
-library(glmmTMB)
-library(nlme)
-library(broom.mixed)
+##
+## possible params to set/command-line arguments:
+##  Gbar = 6
+##  which vars to fit?
+
 library(McMasterPandemic)
-url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
-dd <- read_csv(url)
+library(tidyverse)
 
-## process with knitr::spin() ...
-
-##'  Filter/date by time since first reported case, per province ...
-
-##' Warm up with a quadratic fit (changing scale in ggplot link function in GLMs) to reported incidence in all provinces
-##+ first_plot
-print(gg0 <- ggplot(dd,aes(Date,newConfirmations,colour=Province))
-    + geom_line(size=0.5,alpha=0.3)
-    + geom_point()+scale_y_log10()
-    + geom_smooth(method="lm",
-                  formula=y~poly(x,2),
-                  se=FALSE)
+## 
+source("notes/ontario_clean.R")
+keep_vars <- c("H","ICU","D","report", "incidence","newTests")
+ont_recent_sub <- (ont_recent
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% keep_vars)
 )
 
-## easiest way to plot mixed model outputs with CIs?
-## sjPlot, broom.mixed, ... ?
-
-## data exploration and possible comparison of IDEA/IHME/etc. approaches
-## (i.e. purely phenomenological)
-## fit linear, quad mixed? models
-## logit, Richards?
-## epigrowthfit or mle2 or ... ?
-## plot predictions and CIs
-
-ont_dd <- (dd
-    %>% filter(Province=="ON")
-    %>% select(Date,Hospitalization,ICU,Ventilator,newConfirmations,deceased)
-    %>% pivot_longer(-Date,names_to="var")
+## adjust mean GI
+params <- fix_pars(read_params("ICU1.csv")
+    , target=c(Gbar=6)
+    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
 )
+params[["N"]] <- 19.5e6  ## reset pop to Ontario
 
-print(gg1 <- ggplot(ont_dd,aes(Date,value,colour=var))
-    + geom_point()
-    + scale_y_log10()
-    + geom_smooth(method="lm",
-                  formula=y~poly(x,2))
-)
-##' * Natural for ICU and Ventilator to be parallel (no real lags here)
-##' * recent nonlinearity/flattening in cases is too recent/sharp to affect the estimated slope much
-##' * very weird that the ICU/vent curves are flattening before the other two
+## breakpoints
+schoolClose <- "17-Mar-2020"
+countryClose <- "23-Mar-2020"
+socialClose <- "28-Mar-2020"
 
-##' Picture is cleaner (and flattening is more apparent) if we focus on more recent data:
-##'
+bd <- ldmy(c(schoolClose,countryClose,socialClose))
+## print(bd)
 
-## find first useful day
-min_day <- function(day,value) {
-    good <- !is.na(value) & value>0
-    if (all(good)) min(day) else min(day[good])
-}
+opt_pars <- list(
+    ## these params go to run_sim
+    params=c(log_E0=4
+             , log_beta0=-1
+             ## fraction of mild (non-hosp) cases
+             , log_mu=log(params[["mu"]])
+             ## fraction of incidence reported
+             ## logit_c_prop=qlogis(params[["c_prop"]]),
+             ## fraction of hosp to acute (non-ICU)
+             , logit_phi1=qlogis(params[["phi1"]])
+             ## fraction of ICU cases dying
+             ## logit_phi2=qlogis(params[["phi2"]])
+             ),
+    log_rel_beta0 = rep(-1, length(bd)),
+    log_nb_disp=0)
 
-ont_recent <- (filter(ont_dd,Date>=as.Date("2020-03-15"))
-    %>% mutate(day=as.numeric(Date-min(Date)))
-    %>% group_by(var)
-    %>% mutate(vday=day-min_day(day,value))
-    %>% ungroup()
-)
-    
-print(gg1 %+% ont_recent)
+t1 <- system.time(g1 <- calibrate(data=ont_recent_sub
+    , base_params=params
+    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
+    , opt_pars = opt_pars,
+    , break_dates = bd
+    ## , debug=TRUE
+      )
+      ) ## system.time
 
-print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
-    + geom_point()
-    + scale_y_log10()
-    + geom_smooth(method="lm",
-                  formula=y~poly(x,2))
-    + scale_x_continuous(limits=c(-1,NA))
-)
-
-fit1 <- glmmTMB(value~var-1 + var:vday,
-        family=nbinom2,
-        dispformula=~var-1,
-        data=ont_recent)
-
-## FIXME: check vs nbinom1 ?
-
-##' use raw polynomials to parameterize in terms of initial slope
-##' rather than average slope
-fit1Q <- update(fit1, . ~ -1 + var + var:poly(vday,2,raw=TRUE))
-## false convergence warning?
-
-fix_term <- function(x) {
-    gsub(":poly(vday, 2, raw = TRUE)","Poly",
-         gsub("var","",x),
-         fixed=TRUE)
-}
-
-t0 <- (tidy(fit1Q,conf.int=TRUE)
-    %>% mutate_at("term",fix_term)
-    %>% mutate(type=ifelse(grepl("[[:alpha:]]$",term),"int",
-                       ifelse(grepl("1$",term),"linear","quad")))
-    %>% mutate(var=gsub("Poly[0-9]","",term),
-               ## reverse levels to get top-to-bottom
-               var=factor(var,levels=rev(c("newConfirmations","Hospitalization",
-                                       "ICU","Ventilator","deceased"))))
-    %>% select(-c(effect,component,statistic,p.value))
-)
-print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
-    + geom_pointrange()
-    + facet_wrap(~type,scale="free",ncol=1)
-    + geom_vline(xintercept=0,lty=2)
-)
-
-##' * intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
-##' * newConfirmations and hosp slopes and curvature agree fairly well
-##' * no 'clear' evidence of slowing newConfirmations/hospitalization (¿ flattening in newConfirmations could be obscured by increasing testing/ too recent or sharp to be well-modeled by a quadratic ?)
-##' * 
-##' * don't know why death is slower  and ICU/Ventilator are faster
-##' * deaths conf intervals might be overly narrow because these are cumulative values
-
-##' calibrate to hospitalization
-
-vv <- vcov(fit1Q)$cond
-hosp_ind <- grep("Hospitalization",rownames(vv))
-mu <- fixef(fit1Q)$cond[hosp_ind]
-vv <- vv[hosp_ind, hosp_ind]
-
-## assume for now that Wald approx is OK for sampling distribution
-nsim <- 200
-set.seed(101)
-sim_params <- MASS::mvrnorm(nsim,mu=mu,Sigma=vv)
-## add Gbar distribution (independent Gaussian sample)
-Gbar_prior <- c(mean=6,sd=0.2)
-## FIXME: narrow for now, come back and fix calibration issues
-##  (does analytic solution work for Gbar???)
-sim_params <- cbind(sim_params,Gbar=do.call(rnorm,c(list(nsim),
-                                                    as.list(Gbar_prior))))
-sim_params <- as.data.frame(sim_params)
-names(sim_params) <- c("int","slope","curve","Gbar")
-
-## for each set of parameters:
-## (1) calibrate params to G
-## (2) calibrate beta0 to r
-## (3) calibrate intercept
-## (4) run and store
-
-
-base_params <- read_params(system.file("params","ICU1.csv",
-                                       package="McMasterPandemic"))
-base_params[["N"]] <- 14.57e6  ## Ontario pop size
-reg_date <- (ont_recent
-    %>% filter(var=="Hospitalization",vday==0)
-    %>% pull(Date)
-)
-
-##' x= param vector (int/slope/curve/Gbar)
-##' base_params
-##' start_date start date for sims
-##' reg_date start date for regressions
-##' end_date
-##' init_var calibration variable
-##' init_var_value
-sim_fun <- function(x, base_params,
-                    start_date="1-Mar-2020",
-                    reg_date,
-                    end_date="1-May-2020",
-                    init_var="H", sim_args=NULL,
-                    vals_only=TRUE) {
-    ## calibration
-    p <- fix_pars(base_params, target=c(Gbar=x[["Gbar"]]),
-                  pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a")))
-    stopifnot(all.equal(get_Gbar(p),x[["Gbar"]],tolerance=1e-4))
-    ## fix params to *initial* slope (for now)
-    p <- fix_pars(p, target=c(r=x[["slope"]]),
-                  pars_adj=list("beta0"),u_interval=c(-1,2))
-    ## FIXME: problems with r-calibration here if using r_method="rmult"
-    stopifnot(all.equal(get_r(p),x[["slope"]],tolerance=1e-4))
-    ## calibrate initial state (shooting)
-    state <- get_init(date0=start_date,date1=reg_date,p,var=init_var,
-                      init_target=x[["int"]], sim_args=sim_args)
-    arg_list <- nlist(params=p,
-                      state,
-                      start_date,
-                      end_date)
-    r <- do.call(run_sim,arg_list)
-    a <- aggregate(r,pivot=TRUE)
-    if (vals_only) return(a$value) else return(a)
-}
-
-## FIXME: could use pmap ... ?
-t1 <- system.time(sim_res <- plyr::alply(sim_params, .margins=1, .fun=sim_fun,
-                       base_params=base_params, reg_date=reg_date,
-                       end_date="1-June-2020",
-                       .progress="text"))
-
-## put together the pieces (alply gives lists, we want a matrix)
-sim_mat <- bind_rows(sim_res)
-sim_q <- (t(apply(sim_mat,1 ,quantile,c(0.1,0.5,0.9),na.rm=TRUE))
-    %>% as_tibble()
-    %>% setNames(c("lwr","median","upr"))
-)
-sim_0 <- sim_fun(sim_params[1,], base_params=base_params, reg_date=reg_date, vals_only=FALSE,
-                       end_date="1-June-2020")
-sim_final <- bind_cols(sim_0[c("date","var")], sim_q)
-(gg_forecast <- ggplot(sim_final,aes(date,median,colour=var))
-    + scale_y_log10()
-    + geom_line()
-    + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var), colour=NA,
-                  alpha=0.2)
-    + geom_vline(xintercept=reg_date,lty=2)
-)
-
-ggsave(gg_forecast,file="forecast0.pdf")
-## weird patterns: because of calibration of intercept???
-## looks plausible.
-
-
-## implied curves of R_t?
-## dates of control???
-
-### ISSUES
-
-
-## 1. non-constant r (use epigrowthfit and feed in observed relative r over time (i.e. derivative of fitted curve) as timevars?
-## 2. non-constant testing (ignore this for now, maybe we can do a brute-force correction where we subtract r(testing) from r(reports) - this assumes that tests are not expanding to incorporate a different subset of people
-## 3. use H, ICU, D to get r then use reports to get time-varying beta0?
+# rdsave("t1","opt_pars","g1","bd","ont_recent_sub","params","keep_vars")
 

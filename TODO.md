@@ -2,7 +2,19 @@
 
 ### short term
 
-* make get_r work for r<1 ...
+* facet, stacked vertically (incidence+report): forecasts and no ribbons
+* long projection
+* epiestim: delay-convolve beta curve
+* current capacity 630, 1300
+* newTests
+
+* fit to hospitalization only?
+* fit to new deaths?
+* add testing intensity?
+* long-projection plot
+* MCMC
+* arrange caching for MLi data (want to be able to replicate if data gets weird)
+* make `get_r` work for r<1 ...
 * utility to reconstruct summaries for each phase in a breakpoint model
 * check off-by-one-day in breakpoints?
 * `condense` option for including/not including ICU in H output
