@@ -5,14 +5,14 @@
 * epiestim: delay-convolve beta curve
 * check off-by-one-day in breakpoints?
 
-* add global options for diff-deaths, hospital incl ICU, etc. ?
+* `condense` option for including/not including ICU in H output
+* add global options for condense: diff-deaths, hospital incl ICU, etc. ?
 
 * fit to hospitalization only? or just leave out ICU?
 * add testing intensity?
 * MCMC
 * arrange caching for MLi data (want to be able to replicate if data gets weird)
 * make `get_r` work for r<1 ...
-* `condense` option for including/not including ICU in H output
 * distributions in `calibrate`
      * implement Poisson?
      * allow var-specific nb params

@@ -30,6 +30,9 @@ epiestim_fit <- (e1$R
     %>% rename_at(vars(starts_with("Q")),
                   ~gsub("Quantile\\.0\\.([0-9]+)\\(R\\)","q\\1",.))
     %>% rename(med="Median(R)")
+    %>% mutate(date=tail(e1$dates,nrow(e1$R)))
+    %>% select(date,med,starts_with("q"))
+    %>% as_tibble()
     ## FIXME: not 100% sure how dates line up?
     ## %>% mutate(date=head(sort(unique(ont_recent$date)),nrow(e1$R)))
 )

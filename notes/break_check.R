@@ -96,9 +96,11 @@ mk_fc <- function(new_end=NULL) {
 }
 forecast1 <- mk_fc()
 
-aa <- forecast1 %>% filter(var == "report")
-(ggplot(aa,aes(x=date,y=value))
+aa <- forecast1 %>% filter(var %in% c("report","incidence"))
+(ggplot(aa,aes(x=date,y=value,colour=var))
     + geom_line()
     + geom_vline(xintercept = as.Date("2020-03-20"))
     + scale_x_date(breaks="2 day")
+    + scale_y_log10()
 )
+ 

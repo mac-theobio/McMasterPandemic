@@ -259,18 +259,13 @@ capac_info <- data.frame(value=c(630,1300),
 
 
 ```{r plot_forecast,fig.width=6,fig.height=7, warning=FALSE}
-(ggplot(ont_recent_sub2,aes(date,value,colour=var))
-    + geom_point(data=ont_recent_sub2)
-    + geom_line(data=ont_recent_sub2,alpha=0.2)
-)
-
 ## FIXME: forecast1 can't use plot.pansim method ATM
 gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
     + geom_line()
     + scale_y_log10(limits=c(1,NA),oob=scales::squish)
     + geom_point(data=ont_recent_sub2)
     + geom_line(data=ont_recent_sub2,alpha=0.2)
-    + geom_vline(xintercept=bd-1,lty=2)
+    + geom_vline(xintercept=bd,lty=2)
     + facet_wrap(~vtype,ncol=1,scale="free_y")
     + labs(y="")
     + theme(legend.position="none",

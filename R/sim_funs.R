@@ -279,7 +279,7 @@ run_sim <- function(params
         t_cur <- 1
         ## want to *include* end date 
 		  ## MLi: Does this mean you want to include nt+1 (yes, I agree you need that) or do you mean for the break ranges include up to the last day? If this is the case, then the effect will happen on the next day... I can going to hack this now to take effect right away.
-		  switch_times <- switch_times - 1
+		  switch_times <- switch_times + 1
         times <- c(1,switch_times,nt+1)
         resList <- list()
         for (i in seq(length(times)-1)) {
