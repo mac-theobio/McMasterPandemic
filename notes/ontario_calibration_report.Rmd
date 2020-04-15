@@ -284,7 +284,7 @@ plotfun <- function(data,
                     limspace=10) {
     force(dlspace)
     force(limspace)
-    print(gg4 %+% data
+    (gg4 %+% data
           + geom_dl(method=list(dl.trans(x=x+1),cex=1,"last.points"),
                     aes(label=var))
           + expand_limits(x=max(data$date)+limspace))
