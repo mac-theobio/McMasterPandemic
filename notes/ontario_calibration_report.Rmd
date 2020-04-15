@@ -254,6 +254,10 @@ newtest_lab <-data.frame(date=as.Date("2020-04-10"),
                          vtype="prev",
                          var="newTests/1000",
                          lab="newTests/1000")
+capac_info <- data.frame(value=c(630,1300),
+                         vtype="prev",
+                         var="ICU",
+                         lab=c("current","expanded"))
 ```
 
 
@@ -292,7 +296,13 @@ plotfun(forecast1)
 ### forecast farther ahead
 
 ```{r forecast_long,warning=FALSE,fig.width=6,fig.height=7}
-plotfun(mk_fc(new_end="15-05-2020"),limspace=20)
+(plotfun(mk_fc(new_end="15-05-2020"),limspace=20)
+    + geom_hline(data=capac_info,aes(yintercept=value,
+                                     colour=var),lty=3)
+    + geom_text(data=capac_info,aes(y=value,x=min(ont_recent_sub$date),
+                               label=lab))
+)
+                               
 ```
 
 ### forecast much farther ahead
