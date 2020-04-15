@@ -31,6 +31,8 @@ break_test.Rout: notes/break_test.R
 
 notes/ontario_calibration_report.html: notes/ontario_clean.RData notes/ontario_calibration.RData notes/ontario_calibration_report.Rmd
 
+notes/ontario_calibration_report_mli.html: notes/ontario_clean.RData notes/ontario_calibration.RData notes/ontario_calibration_report_mli.Rmd
+
 comb_calib.Rout: notes/comb_calib.R
 	$(run-R)
 
