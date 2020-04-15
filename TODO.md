@@ -2,21 +2,15 @@
 
 ### short term
 
-* facet, stacked vertically (incidence+report): forecasts and no ribbons
-* long projection
 * epiestim: delay-convolve beta curve
-* current capacity 630, 1300
-* newTests
+* check off-by-one-day in breakpoints?
 
-* fit to hospitalization only?
+* fit to hospitalization only? or just leave out ICU?
 * fit to new deaths?
 * add testing intensity?
-* long-projection plot
 * MCMC
 * arrange caching for MLi data (want to be able to replicate if data gets weird)
 * make `get_r` work for r<1 ...
-* utility to reconstruct summaries for each phase in a breakpoint model
-* check off-by-one-day in breakpoints?
 * `condense` option for including/not including ICU in H output
 * distributions in `calibrate`
      * implement Poisson?
@@ -25,6 +19,7 @@
 * `calibrate` substitute mle2 for optim?
 * importance weights for `forecast_ensemble`?
 * include hessian=TRUE by default
+* process error version
 
 * transition TODO list to GH issues??? (items marked Z have been posted)
 * fix make rules
