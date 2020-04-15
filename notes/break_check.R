@@ -9,11 +9,12 @@ library(anytime)
 first_date <- as.Date("2020-03-15")
 end_date <- as.Date("2020-03-25")
 dd <- data.frame(date = as.Date(first_date:end_date)
-    , value = c(100,105,120,160,200,300,70,60,45,55,50)
+    , value = c(100,105,120,160,200,300,200,150,125,100,50)
     # , value = c(30,300,40,50,60,65,70,60,45,55,50)
     , var = "newConfirmations"
 )
 
+print(dd)
 
 ## 
 params <- fix_pars(read_params("ICU1.csv")
@@ -24,6 +25,8 @@ params[["N"]] <- 19.5e6  ## reset pop to Ontario
 
 ## breakpoints
 schoolClose <- "20-Mar-2020"
+#schoolClose <- "19-Mar-2020"
+
 
 bd <- anydate(c(schoolClose))
 ## print(bd)
@@ -47,9 +50,10 @@ opt_pars <- list(
 t1 <- system.time(g1 <- calibrate(data=dd
                                   , base_params=params
                                   , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-                                  , opt_pars = opt_pars,
+                                  , opt_pars = opt_pars
                                   , break_dates = bd
-                                  ## , debug=TRUE
+                                  , debug=TRUE
+                                  , debug_plot = TRUE
 )
 ) ## system.time
 
@@ -77,7 +81,7 @@ mk_fc <- function(new_end=NULL) {
     }
     fc <- (do.call(forecast_sim,
                    c(list(p=g1$par), f_args))
-           %>% dplyr::filter(var %in% keep_vars)
+           # %>% dplyr::filter(var %in% keep_vars)
            %>% get_type()
     )
     return(fc)
