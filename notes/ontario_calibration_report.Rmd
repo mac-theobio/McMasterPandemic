@@ -33,7 +33,6 @@ scale_fill_discrete <- function(...) {
 }
 ```
 
-
 ## Getting data
 
 ```{r get_data, message=FALSE, warning=FALSE}
@@ -48,28 +47,33 @@ harvested from official sources such as [this](https://www.ontario.ca/page/2019-
 
 ## Basic visualization
 
+These are simply plots of the data with quadratic (log-)linear model fits to each time series (this is not the optimal statistical approach, which would account for the fact that the data are counts, but is easy and is fine for visualization purposes).
+
 ```{r ONplot,message=FALSE, warning=FALSE}
-print(gg1 <- ggplot(ont_all,aes(date,value,colour=var))
+print(gg1 <- ggplot(ont_all_nt, aes(date,value,colour=var))
   + geom_point()
   + scale_y_log10()
   + geom_smooth(method="lm",formula=y~poly(x,2))
 )
 ```
 
+**FIXME**: could make prettier (direct labels), add `newTests/1000`, etc. (how much effort do we want to put in here?)
+
+Some conclusions
+
 - Natural for ICU and Ventilator to be parallel (no real lags here)
-- recent nonlinearity/flattening in cases is too recent/sharp to affect the estimated slope much
-- Weird that the ICU/vent curves are flattening before the other two: not apparently a capacity issue, maybe something about reporting (e.g. see [here](https://www.ontario.ca/page/2019-novel-coronavirus#7))?
+- Weird that the ICU/vent curves are flattening/decling before the other series: not apparently a capacity issue, maybe something about reporting (e.g. see [here](https://www.ontario.ca/page/2019-novel-coronavirus#7))?
 
 Picture is cleaner (and flattening is more apparent) if we focus on more recent data.
 
 ```{r plot_recent, warning=FALSE}
-print(gg1 %+% ont_recent)
+print(gg1 %+% ont_recent_nt)
 ```
 
 We want to find the first _useful/meaningful_ day for each variable and adjust the different time series to their respective meaningful day.
 
 ```{r ont_plot_shift, message=FALSE, warning=FALSE}
-print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
+print(gg2 <- ggplot(ont_recent_nt,aes(vday,value,colour=var))
     + geom_point()
     + scale_y_log10()
     + geom_smooth(method="lm",formula=y~poly(x,2))
@@ -79,46 +83,40 @@ print(gg2 <- ggplot(ont_recent,aes(vday,value,colour=var))
 
 ## Fitting to data
 
-We don't use this for calibration any more, but it is of some interest to fit log-quadratic curves to the data (this closely parallels the well-known IHME model ...)
+We don't use this for calibration any more, but it is of some interest to fit log-quadratic curves to the data (this closely parallels the well-known IHME model ...). Use raw polynomials to parameterize in terms of initial slope rather than average slope.
 
-```{r nbfit1, message=FALSE, warning=FALSE}
-fit1 <- glmmTMB(value~var-1 + var:vday
-  , family=nbinom2
-  , dispformula=~var-1
-  , data=droplevels(filter(ont_recent,var!="newTests"))
-)
+```{r nbfit2, warning=FALSE}
+fitfun <- function(d,key) {
+    fit <- glmmTMB(value~poly(vday,2,raw=TRUE),
+                    family=nbinom2,
+                   data=d)
+    ## assume that non-pos-def result is caused by nbinom ...
+    if (is.na(AIC(fit))) {
+        fit <- update(fit, family=poisson)
+    }
+    return(fit)
+}
+ont_recent_ntv <- filter(ont_recent_nt, var != "Ventilator")
+fit2Q <- setNames(dplyr::group_map(group_by(ont_recent_ntv,var), fitfun),
+                  unique(ont_recent_ntv$var))
 ```
-
-
-Use raw polynomials to parameterize in terms of initial slope rather than average slope.
-
-```{r nbfit_quad, message=FALSE, warning=FALSE}
-fit1Q <- update(fit1, . ~ -1 + var + var:poly(vday,2,raw=TRUE))
-```
-
 "False convergence" warnings ... (can these be resolved?)
 
 
 ```{r tidying_fits, message=FALSE, warning=FALSE}
 fix_term <- function(x) {
-  gsub(":poly(vday, 2, raw = TRUE)","Poly"
-    , gsub("var","",x)
-    , fixed=TRUE
-  )
+  gsub("poly(vday, 2, raw = TRUE)","Poly" , x, fixed=TRUE)
 }
-
-t0 <- (tidy(fit1Q,conf.int=TRUE)
-  %>% mutate_at("term",fix_term)
-  %>% mutate(type=ifelse(grepl("[[:alpha:]]$",term)
-          , "int"
-          , ifelse(grepl("1$",term),"linear","quad")
-          )
-      , var=gsub("Poly[0-9]","",term)
-      , var=factor(var,levels=rev(
-          c("newConfirmations","Hospitalization","ICU","Ventilator","deceased")
-          ))
-      )
-  %>% select(-c(effect,component,statistic,p.value))
+t0 <- (map_dfr(fit2Q,tidy,conf.int=TRUE,.id="var")
+    %>% mutate_at("term",fix_term)
+    %>% mutate(type=case_when(term=="(Intercept)" ~ "int", 
+                              grepl("1$", term) ~ "linear",
+                              TRUE ~ "quad")
+             , var=factor(var,levels=rev(
+                                  c("newConfirmations","Hospitalization","ICU","newDeaths")
+                              ))
+               )
+    %>% select(-c(effect,component,statistic,p.value))
 )
 
 ```
@@ -135,9 +133,8 @@ print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
 ```
 
 - intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
-- newConfirmations and hosp slopes and curvature agree fairly well
-- don't know why death is slower  and ICU/Ventilator are faster (MLi: under reporting? there was a discussion on missing a lot of deaths. BMB: Underreporting alone doesn't change $r$ ... need some time-varying change in reporting rate etc..)
-- deaths conf intervals might be overly narrow because these are cumulative values
+- slopes are similar (newConfirmations maybe a little slower?)
+- don't know why ICU (and slightly less) hospitalization are flattening faster. Can't really be explained by (constant) underreporting or reaching capacity (we're not); there were some changes in ICU reporting that may have lower double-counting, but ???
 
 ## time-series calibration
 
@@ -226,7 +223,7 @@ out <- (describe_params(params_fitted)
 Now forecast using the fitted parameters.
 
 ```{r rerun_forecast, message=FALSE, warning=FALSE}
-get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report"),
+get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report","d"),
                                 "inc","prev"))
 mk_fc <- function(new_end=NULL) {
     if (!is.null(new_end)) {
@@ -262,6 +259,11 @@ capac_info <- data.frame(value=c(630,1300),
 
 
 ```{r plot_forecast,fig.width=6,fig.height=7, warning=FALSE}
+(ggplot(ont_recent_sub2,aes(date,value,colour=var))
+    + geom_point(data=ont_recent_sub2)
+    + geom_line(data=ont_recent_sub2,alpha=0.2)
+)
+
 ## FIXME: forecast1 can't use plot.pansim method ATM
 gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
     + geom_line()
@@ -270,7 +272,6 @@ gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
     + geom_line(data=ont_recent_sub2,alpha=0.2)
     + geom_vline(xintercept=bd-1,lty=2)
     + facet_wrap(~vtype,ncol=1,scale="free_y")
-    + geom_text(data=newtest_lab, aes(label=lab))
     + labs(y="")
     + theme(legend.position="none",
             ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
@@ -282,33 +283,30 @@ gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
 plotfun <- function(data,
                     dlspace=1,
                     limspace=10) {
-    force(dlspace)
-    force(limspace)
     (gg4 %+% data
           + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
                     aes(label=var))
           + expand_limits(x=max(data$date)+limspace))
 }
-plotfun(forecast1)
+plotfun(forecast1)  + geom_text(data=newtest_lab, aes(label=lab))
 ```
 
 
 ### forecast farther ahead
 
 ```{r forecast_long,warning=FALSE,fig.width=6,fig.height=7}
-(plotfun(mk_fc(new_end="15-05-2020"),limspace=20)
+(plotfun(mk_fc(new_end="2020-05-15"),limspace=20)
     + geom_hline(data=capac_info,aes(yintercept=value,
                                      colour=var),lty=3)
     + geom_text(data=capac_info,aes(y=value,x=min(ont_recent_sub$date),
                                label=lab),vjust=-1)
 )
-                               
 ```
 
 ### forecast much farther ahead
 
 ```{r forecast_longlong,fig.width=6,fig.height=7, warning=FALSE}
-plotfun(mk_fc(new_end="01-10-2020"),limspace=50)
+plotfun(mk_fc(new_end="2020-10-01"),limspace=50)
 ```
 
 * have cheated here on displaying breakpoints (we *might* be off by one day?)

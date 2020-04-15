@@ -104,7 +104,7 @@ pivot.pansim <- function(object, ...) {
 ##' @param keep_all keep unaggregated variables in data frame as well?
 ##' @param ... additional args
 ##' @export
-condense.pansim <-  function(object, add_reports=TRUE, keep_all=FALSE, ...) {
+condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_all=FALSE, ...) {
     aa <- get_attr(object)
     ## condense columns and add, if present
     add_col <- function(dd,name,regex) {
@@ -124,7 +124,11 @@ condense.pansim <-  function(object, add_reports=TRUE, keep_all=FALSE, ...) {
     dd <- add_col(dd,"ICU","^ICU")
     dd <- data.frame(dd,R=object[["R"]])
     dd <- add_col(dd,"discharge","discharge")
-    dd <- data.frame(dd,D=object[["D"]])
+    if (diff_deaths) {
+        dd <- data.frame(dd,d=c(NA,diff(object[["D"]])))
+    } else {
+        dd <- data.frame(dd,D=object[["D"]])
+    }
     if (add_reports) {
         params <- attr(object,"params")
         if (!"c_delay_mean" %in% names(params)) {

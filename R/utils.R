@@ -63,6 +63,8 @@ rename_params <- function(p) {
 
 
 ## dictionary; internal name, graph label
+## general convention: capital letters for prevalences or cumulative values
+## lowercase for incidences
 label_dict <- read.csv(stringsAsFactors=FALSE,
 text="
 Symbol,Label,Regex
@@ -74,7 +76,8 @@ Im,Infectious/mild,NA
 Is,Infectious/severe,NA
 H,Hospital,Hosp.*
 ICU,ICU,ICU.*
-D,Deaths,[Dd]e.*
+D,Deaths,^[Dd]e.*
+d,New deaths,newDeath.*
 R,Recovered,NA
 report,Case reports,newConf.*
 ")

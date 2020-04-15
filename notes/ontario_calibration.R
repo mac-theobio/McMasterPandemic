@@ -8,12 +8,14 @@ library(tidyverse)
 library(anytime)
 
 ## 
-source("notes/ontario_clean.R")
-keep_vars <- c("H","ICU","D","report", "incidence","newTests")
+load("notes/ontario_clean.RData")
+keep_vars <- c("H","ICU","d","report", "incidence","newTests")
 ont_recent_sub <- (ont_recent
     %>% mutate_at("var",trans_state_vars)
     %>% filter(var %in% keep_vars)
 )
+
+unique(ont_recent_sub$var)
 
 ## adjust mean GI
 params <- fix_pars(read_params("ICU1.csv")
@@ -55,5 +57,11 @@ t1 <- system.time(g1 <- calibrate(data=ont_recent_sub
       )
       ) ## system.time
 
-# rdsave("t1","opt_pars","g1","bd","ont_recent_sub","params","keep_vars")
+ont_recent_hosp <- filter(ont_recent_sub, var=="H")
+
+## FIXME: break this out into a separate file? (risk of atomization/confusion?)
+g2 <- update(g1,  data=ont_recent_hosp)
+# rdsave("t1","opt_pars","g1", "g2", "bd","ont_recent_sub","params","keep_vars")
+
+
 

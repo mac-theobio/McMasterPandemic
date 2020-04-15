@@ -431,6 +431,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                           debug_plot=FALSE)
                           
 {
+    cc <- match.call()
     if (debug) {
         cat("start date: ", format(start_date),
             "; end_date: ", format(end_date), "\n")
@@ -493,8 +494,19 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                        fixed_pars,
                                        sim_args,
                                        aggregate_args)
+    attr(opt,"call") <- cc
     class(opt) <- c("fit_pansim",class(opt))
     return(opt)
+}
+
+##' @export
+update.fit_pansim <- function(object, ...) {
+    cc <- attr(object, "call")
+    L <- list(...)
+    for (i in seq_along(L)) {
+        cc[[names(L)[i]]] <- L[[i]]
+    }
+    eval.parent(cc)
 }
 
 
