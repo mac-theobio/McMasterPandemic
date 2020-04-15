@@ -11,6 +11,8 @@
 
 \item{add_reports}{add incidence and case reports?}
 
+\item{diff_deaths}{compute first differences of death series to get daily deaths?}
+
 \item{keep_all}{keep unaggregated variables in data frame as well?}
 
 \item{...}{additional args}

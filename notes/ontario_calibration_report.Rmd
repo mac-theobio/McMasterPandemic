@@ -349,8 +349,8 @@ print(gg1 <- ggplot(epiestim_fit,aes(date, y=med))
       )
 ```
 
-## q25/q75 from EpiEstim are nonsense, not sure why?
-## CIs on 
+* q25/q75 from EpiEstim are nonsense, not sure why? -->
+* CIs on mle-cal R0?
 
 
 ## next

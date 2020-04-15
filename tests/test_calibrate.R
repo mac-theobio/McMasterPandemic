@@ -22,7 +22,7 @@ sim1S <- run_sim(cparams, cstate, start_date="1-Mar-2020",
 ## aggregate/subset simulated data to a short time window (15 Mar - 29 Mar)/
 simdat <- (pivot(condense(sim1S))
     %>% filter(date>as.Date("2020-03-15") & date<as.Date("2020-03-29"),
-               var %in% c("H","ICU","D","report"))
+               var %in% c("H","ICU","d","report"))
 )
 
 ## simdat %>% filter(date==as.Date("2020-03-17"),var=="D")
@@ -94,7 +94,7 @@ print(gg1
 
 
 ## what is the actual r?
-simAgg <- condense(simScal)[,c("H","ICU","D")]
+simAgg <- condense(simScal)[,c("H","ICU","d")]
 n <- nrow(simAgg)
 print(log(unlist(simAgg[n,]/simAgg[n-10,]))/10)
 ##         H       ICU         D 
