@@ -92,7 +92,7 @@ pivot <- function (object, ...)  {
 ##' @importFrom dplyr %>%
 pivot.pansim <- function(object, ...) {
     dd <- (object
-        %>% as_tibble()
+        %>% dplyr::as_tibble()
         %>% tidyr::pivot_longer(names_to="var",-date)
     )
     return(dd)

@@ -383,42 +383,6 @@ make_state <- function(N=params[["N"]],
     return(state)
 }
 
-##' run simulation with specified parameters; extract results
-##' matching dates and variable order in data
-## FIXME: can this be made into a predict method??
-##   with newdata, newparams, newinit
-## not sure where to put these ...
-##' @param beta0 baseline transmission
-##' @param E0 starting value
-##' @param data data (for subsetting/matching)
-##' @param params parameters
-##' @param start_date start date
-##' @param values_only return a vector rather than a data frame
-##' @importFrom dplyr mutate mutate_at %>% as_tibble right_join
-##' @export
-predfun <- function(beta0,E0,data,
-                    params,
-                    start_date="10-Feb-2020",
-                    values_only=TRUE) {
-    ## global variables
-    beta0 <- E0 <- data <- params <- start_date <- values_only <- NULL
-    var <- value <- NULL
-    ## substitute values into base parameter vector
-    params[["beta0"]] <- beta0
-    params[["E0"]] <- E0  ## unnecessary?
-    state <- make_state(N=params[["N"]],E0=E0) ## assume type==ICU1 for now
-    res <- run_sim(params,state,start_date=start_date,
-                   end_date=max(data$date)) ## FIXME: pass args?
-    ## browser()
-    dcomp <- select(data,var,date) %>% mutate_at("var",as.character)
-    res2 <- (aggregate(res)
-        %>% as_tibble()
-        %>% tidyr::pivot_longer(-date,names_to="var")
-        %>% right_join(dcomp,by=c("date","var"))
-    )
-    if (values_only) return(pull(res2,value))
-    return(res2)
-}
 
 ##' Run simulation across a range of times
 ##' @inheritParams do_step

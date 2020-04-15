@@ -44,7 +44,7 @@ load("ontario_calibration.RData")
 ```
 
 Reading data from Michael Li's [curated Canadian COVID data repository](https://wzmli.github.io/COVID19-Canada)
-harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0) and [hospitalization cumulative counts](http://wzmli.github.io/COVID19-Canada/PHO.csv) gathered from [Public Health Ontario Epidemiological Summary](https://files.ontario.ca/moh-covid-19-report-en-2020-04-07.pdf). (Latest data in this example are from `r format(max(ont_recent_sub$date))`.)
+harvested from official sources such as [this](https://www.ontario.ca/page/2019-novel-coronavirus#section-0). (Latest data in this example are from `r format(max(ont_recent_sub$date))`.)
 
 ## Basic visualization
 
@@ -85,7 +85,7 @@ We don't use this for calibration any more, but it is of some interest to fit lo
 fit1 <- glmmTMB(value~var-1 + var:vday
   , family=nbinom2
   , dispformula=~var-1
-  , data=ont_recent
+  , data=droplevels(filter(ont_recent,var!="newTests"))
 )
 ```
 
@@ -168,9 +168,9 @@ What if we want to estimate `beta0`, `E0`, and more than one breakpoint at the s
 
 Break points
 
-- [March 17th closures](https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html)
-- [March 23rd closure](https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html)
-- [March 23rd closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
+- [March 17th school closures](https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html)
+- [March 23rd country closures](https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html)
+- [March 23rd country closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
 - [March 28th prohibits gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
 
 ```{r}
@@ -285,7 +285,7 @@ plotfun <- function(data,
     force(dlspace)
     force(limspace)
     (gg4 %+% data
-          + geom_dl(method=list(dl.trans(x=x+1),cex=1,"last.points"),
+          + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
                     aes(label=var))
           + expand_limits(x=max(data$date)+limspace))
 }
@@ -300,7 +300,7 @@ plotfun(forecast1)
     + geom_hline(data=capac_info,aes(yintercept=value,
                                      colour=var),lty=3)
     + geom_text(data=capac_info,aes(y=value,x=min(ont_recent_sub$date),
-                               label=lab))
+                               label=lab),vjust=-1)
 )
                                
 ```
