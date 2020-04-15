@@ -10,7 +10,7 @@ library(ggplot2)
 first_date <- as.Date("2020-03-15")
 end_date <- as.Date("2020-03-25")
 dd <- data.frame(date = as.Date(first_date:end_date)
-    , value = c(100,105,120,160,200,300,200,150,125,100,50)
+    , value = c(100,105,120,160,200,300,200,150,200,300,350)
     # , value = c(30,300,40,50,60,65,70,60,45,55,50)
     , var = "newConfirmations"
 )
@@ -25,17 +25,17 @@ params <- fix_pars(read_params("ICU1.csv")
 params[["N"]] <- 19.5e6  ## reset pop to Ontario
 
 ## breakpoints
-schoolClose <- "20-Mar-2020"
-#schoolClose <- "19-Mar-2020"
+change1 <- "20-Mar-2020"
+change2 <- "22-Mar-2020"
 
 
 (ggplot(dd,aes(x=date,y=value))
     + geom_line()
     + geom_point()
-    + geom_vline(xintercept=as.Date("2020-03-20"))
+    + geom_vline(xintercept=as.Date(c("2020-03-20","2020-03-22")))
 )
 
-bd <- anydate(c(schoolClose))
+bd <- anydate(c(change1,change2))
 ## print(bd)
 
 opt_pars <- list(
