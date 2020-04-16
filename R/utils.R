@@ -225,3 +225,13 @@ put_attr <- function(x, a) {
     class(x) <- c("pansim", class(x))
     return(x)
 }
+
+check_dots <- function(..., action="stop") {
+    L <- list(...)
+    if (length(L)>0) {
+        FUN <- get(action)
+        FUN("unknown arguments: ",
+            paste(names(...), collapse=","))
+    }
+    return(NULL)
+}

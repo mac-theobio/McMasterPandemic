@@ -101,7 +101,6 @@ pivot <- function (object, ...)  {
 pivot.pansim <- function(object, ...) {
     dd <- (object
         %>% dplyr::as_tibble()
-        %>% dplyr::mutate_at("date",anydate)
         %>% tidyr::pivot_longer(names_to="var",-date)
     )
     return(dd)
@@ -219,8 +218,8 @@ aggregate.pansim <- function(x,
             ## FIXME: fix order of columns?
         } ## loop over agg_fun elements
         dd <- do.call(data.frame,c(list(date=unique(na.omit(agg_period))),dd_tmp))
-        dd$date <- as.Date(dd$date)
     } ## agg_fun is a list
+    dd$date <- as.Date(dd$date)
     dd <- put_attr(dd,aa)
     return(dd)
 }

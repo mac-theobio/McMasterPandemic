@@ -1,15 +1,15 @@
 use_hosp <- FALSE
-weekly <- FALSE
+weekly <- TRUE
 
 library(McMasterPandemic)
 library(anytime)
 library(ggplot2); theme_set(theme_bw())
 library(dplyr)
-source("notes/ontario_clean.R") ## add an ON data set to pkg?
+source("../ontario/ontario_clean.R") ## add an ON data set to pkg?
 dd <- dplyr::filter(ont_recent,
           var==if (!use_hosp) "newConfirmations" else "Hospitalization")
 if (weekly) {
-    dd <- (dd 
+    dd <- (ont_all 
         %>% mutate(week = format(date, "%Y-%U"))
         %>% group_by(week,var)
         %>% summarise(date = max(date)

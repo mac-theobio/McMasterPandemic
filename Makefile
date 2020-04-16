@@ -34,13 +34,6 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-# Try to break out aggfun stuff
-aggfuns.Rout: notes/aggfuns.R
-	$(run-R)
-
-ontario_clean.Rout: notes/ontario_clean.R
-	$(run-R)
-
 package:
 	sudo R CMD INSTALL .
 
