@@ -194,7 +194,7 @@ Now forecast using the fitted parameters.
 
 ## R0 estimates
 
-![](epiestim_plot.png)
+![](epiestim_plot.Rout.png)
 
 
 
