@@ -169,6 +169,7 @@ The \code{obs_disp} parameter is the dispersion parameter for a negative
 binomial.
 
 <<run_sim_obs_noise,fig.width=8>>=
+set.seed(101)
 params1obs <- update(params1, obs_disp=200)
 res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
                    stoch=c(obs=TRUE, proc=FALSE))
@@ -179,13 +180,21 @@ plot_grid(plot(res1obs, log=TRUE),
 @
 (We leave out deaths for now; we simulate observation error on the cumulative death process and then difference it to come up with daily deaths, which doesn't really make sense.)
 
-To simulate with process error,
+To simulate with process error, use \code{stoch_obs(..., proc=TRUE)}. By default, this simulates only demographic stochasticity, which has little effect in a large epidemic.
 
-<<>>=
-params1proc <- update(params1,proc_disp=0.1, E0=200)
+<<proc1>>=
+params1proc <- update(params1,E0=200)
 res1proc <- run_sim(params1proc, start_date=sdate, end_date=edate,
-                   stoch=c(obs=FALSE, proc=TRUE))
-plot_grid(plot(res1proc, log=TRUE), plot(res1proc))
+                    stoch=c(obs=FALSE, proc=TRUE))
+@
+
+Adding a \code{proc_disp} value to the set of arguments simulates with additional process noise:
+
+<<proc2>>=
+params1proc2 <- update(params1,E0=200,proc_disp=0.5)
+res1proc2 <- run_sim(params1proc2, start_date=sdate, end_date=edate,
+                    stoch=c(obs=FALSE, proc=TRUE))
+plot_grid(plot(res1proc2, log=TRUE), plot(res1proc2))
 @
 
 \subsection{Time-dependent transmission rate}
