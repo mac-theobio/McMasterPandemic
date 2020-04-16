@@ -18,6 +18,8 @@ Sources += $(wildcard */*.R)
 
 Sources += $(wildcard man/*.Rd) NAMESPACE
 
+Sources += dottarget.mk
+
 ######################################################################
 
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
