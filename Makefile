@@ -29,9 +29,14 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-notes/ontario_calibration_report.html: notes/ontario_clean.RData notes/ontario_calibration.RData notes/ontario_calibration_report.Rmd notes/epiestim.RData
+output/ontario_nbfit.Rout: output/ontario_nbfit.R output/ontario_clean.RData
+	$(run-R)
 
-notes/ontario_calibration_report_mli.html: notes/ontario_clean.RData notes/ontario_calibration.RData notes/ontario_calibration_report_mli.Rmd
+output/ontario_cal_plots.Rout: output/ontario_cal_plots.R output/ontario_calibration.RData output/ontario_clean.RData
+
+output/epiestim_plot.Rout: output/ontario_clean.RData output/ontario_calibration.RData output/epiestim.RData output/epiestim_plot.R
+
+notes/ontario_calibration_report.html: output/ontario_clean.RData output/ontario_calibration.RData notes/ontario_calibration_report.Rmd output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout
 
 comb_calib.Rout: notes/comb_calib.R
 	$(run-R)

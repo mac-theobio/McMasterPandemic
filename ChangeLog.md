@@ -11,3 +11,11 @@
 * `invlink_trans()` is now recursive
 * `update.params_pansim` works for named vectors as well as individual elements
 
+
+## 2020 April 15
+
+* switched to `anytime::anydate()`: gradually moving all dates over to %Y-%m-%d or %Y-%b-%d
+* EpiEstim fits
+* use daily deaths rather than total (cumulative) deaths for calibration
+* fit full calibration to all data, not just recent data (early case reports are needed to calibrate growth rate before the 17 March breakpoint
+* alternatively try hospital-only calibration, but without the 17 March breakpoint

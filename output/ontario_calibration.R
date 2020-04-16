@@ -9,13 +9,18 @@ library(anytime)
 
 ## 
 load("notes/ontario_clean.RData")
-keep_vars <- c("H","ICU","d","report", "incidence","newTests")
+keep_vars <- c("H","ICU","d","report")
 ont_recent_sub <- (ont_recent
     %>% mutate_at("var",trans_state_vars)
     %>% filter(var %in% keep_vars)
 )
 
-unique(ont_recent_sub$var)
+ont_all_sub <- (ont_all
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% keep_vars)
+)
+
+## unique(ont_recent_sub$var)
 
 ## adjust mean GI
 params <- fix_pars(read_params("ICU1.csv")
@@ -25,9 +30,9 @@ params <- fix_pars(read_params("ICU1.csv")
 params[["N"]] <- 19.5e6  ## reset pop to Ontario
 
 ## breakpoints
-schoolClose <- "17-Mar-2020"
-countryClose <- "23-Mar-2020"
-socialClose <- "28-Mar-2020"
+schoolClose <- "2020-Mar-17"
+countryClose <- "2020-Mar-23"
+socialClose <- "2020-Mar-28"
 
 bd <- anydate(c(schoolClose,countryClose,socialClose))
 ## print(bd)
@@ -48,7 +53,7 @@ opt_pars <- list(
     log_rel_beta0 = rep(-1, length(bd)),
     log_nb_disp=0)
 
-t1 <- system.time(g1 <- calibrate(data=ont_recent_sub
+t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
     , base_params=params
     , optim_args=list(control=list(maxit=10000),hessian=TRUE)
     , opt_pars = opt_pars,
@@ -57,11 +62,15 @@ t1 <- system.time(g1 <- calibrate(data=ont_recent_sub
       )
       ) ## system.time
 
-ont_recent_hosp <- filter(ont_recent_sub, var=="H")
+ont_recent_hosp <- na.omit(filter(ont_all_sub, var=="H"))
+opt_pars_2brk <- opt_pars
+opt_pars_2brk$log_rel_beta0 <- rep(-1,2)
+bd2 <- bd[-1]
+
 
 ## FIXME: break this out into a separate file? (risk of atomization/confusion?)
-g2 <- update(g1,  data=ont_recent_hosp)
-# rdsave("t1","opt_pars","g1", "g2", "bd","ont_recent_sub","params","keep_vars")
+ont_cal2 <- update(ont_cal1,  data=ont_recent_hosp, opt_pars=opt_pars_2brk, break_dates=bd2)
+# rdsave("t_ont_cal1","opt_pars","ont_cal1", "ont_cal2", "bd","ont_recent_sub","params","keep_vars")
 
 
 

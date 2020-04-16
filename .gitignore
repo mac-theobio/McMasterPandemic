@@ -27,3 +27,7 @@ cache
 *.so
 */*.wrapR.rout
 *.Rlog
+*.Rout.pdf
+*.Rout.png
+*.png
+*/*.RData

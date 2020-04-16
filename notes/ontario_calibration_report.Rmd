@@ -36,8 +36,9 @@ scale_fill_discrete <- function(...) {
 ## Getting data
 
 ```{r get_data, message=FALSE, warning=FALSE}
-L1 <- load("ontario_clean.RData")
-L2 <- load("ontario_calibration.RData")  ## g1=calib to all, g2=hospital only
+L1 <- load("../output/ontario_clean.RData")
+L2 <- load("../output/ontario_calibration.RData")  ## g1=calib to all, g2=hospital only
+L3 <- load("../output/epiestim.RData")
 ## FIXME: better documentation about what these pieces are doing?
 ## move the keep_vars/ont_recent_sub stuff to ontario_clean.R ?
 ```
@@ -85,52 +86,9 @@ print(gg2 <- ggplot(ont_recent_nt,aes(vday,value,colour=var))
 
 We don't use this for calibration any more, but it is of some interest to fit log-quadratic curves to the data (this closely parallels the well-known IHME model ...). Use raw polynomials to parameterize in terms of initial slope rather than average slope.
 
-```{r nbfit2, warning=FALSE}
-fitfun <- function(d,key) {
-    fit <- glmmTMB(value~poly(vday,2,raw=TRUE),
-                    family=nbinom2,
-                   data=d)
-    ## assume that non-pos-def result is caused by nbinom ...
-    if (is.na(AIC(fit))) {
-        fit <- update(fit, family=poisson)
-    }
-    return(fit)
-}
-ont_recent_ntv <- filter(ont_recent_nt, var != "Ventilator")
-fit2Q <- setNames(dplyr::group_map(group_by(ont_recent_ntv,var), fitfun),
-                  unique(ont_recent_ntv$var))
-```
-"False convergence" warnings ... (can these be resolved?)
-
-
-```{r tidying_fits, message=FALSE, warning=FALSE}
-fix_term <- function(x) {
-  gsub("poly(vday, 2, raw = TRUE)","Poly" , x, fixed=TRUE)
-}
-t0 <- (map_dfr(fit2Q,tidy,conf.int=TRUE,.id="var")
-    %>% mutate_at("term",fix_term)
-    %>% mutate(type=case_when(term=="(Intercept)" ~ "int", 
-                              grepl("1$", term) ~ "linear",
-                              TRUE ~ "quad")
-             , var=factor(var,levels=rev(
-                                  c("newConfirmations","Hospitalization","ICU","newDeaths")
-                              ))
-               )
-    %>% select(-c(effect,component,statistic,p.value))
-)
-
-```
-
 Coefficient plot with tidied frame
 
-```{r coefplot, warning=FALSE, message=FALSE}
-print(gg3 <- ggplot(t0,aes(y=var,x=estimate,xmin=conf.low,xmax=conf.high))
-    + geom_pointrange()
-    + facet_wrap(~type,scale="free",ncol=1)
-    + geom_vline(xintercept=0,lty=2)
-    + labs(y="")
-)
-```
+![](../output/ontario_nbfit.Rout.png)
 
 - intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
 - slopes are similar (newConfirmations maybe a little slower?)
@@ -170,41 +128,35 @@ Break points
 - [March 23rd country closures](https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html)
 - [March 28th prohibits gathering](https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html)
 
-```{r}
-L <- load("ontario_calibration.RData")
-## loads: t1 (fitting time), opt_pars, g1 (fit), bd (break dates),
-## ont_recent_sub (data with 
-```
-
-The fit takes `r round(t1[["elapsed"]])` seconds.
+The fit takes `r round(t_ont_cal1[["elapsed"]])` seconds.
 
 Initially tried to fit `c_prop` (proportion of cases reported) and `phi2` (proportion of ICU dying) but got ridiculous answers and non-pos-def Hessians: real non-identifiability or just wonky data? Or some outcome of some of the other shortcuts/problems in the fitting (e.g. equal dispersion parameters per variable)?
 
 Estimated parameters:
 
 ```{r pars}
-invlink_trans(restore(g1$par,opt_pars))
+invlink_trans(restore(ont_cal1$par,opt_pars))
 ```
 
 There are strong positive correlations (0.9 - 0.97) among the breakpoint effects, and strong negative correlations (-0.97 - -0.99) between the breakpoint effects and the initial growth rate - this is presumably saying that the initial growth rate is very uncertain while the growth rates after the breakpoints (which are $\exp(\beta_0 + \Delta \beta_i)$) are relatively certain ...
 
 ```{r corrs, eval=FALSE}
-vv <- solve(g1$hessian)
+vv <- solve(ont_cal1$hessian)
 corrplot::corrplot.mixed(cov2cor(vv),lower="number",upper="ellipse")
 ```
 
 What are the implied R0 values here?
 
 ```{r R0_summary}
-ss <- summary(g1)
+ss <- summary(ont_cal1)
 knitr::kable(data.frame(date=ss$start_date,round(ss[,-1],3)))
 saveRDS(ss,file="../git_push/ontario_R0_cal1.rds")
 ```
 
 ```{r out_params}
 ## assemble table of fitted+assumed parameters
-f_args <-attr(g1,"forecast_args")
-i1 <- invlink_trans(restore(g1$par,f_args$opt_pars))
+f_args <-attr(ont_cal1,"forecast_args")
+i1 <- invlink_trans(restore(ont_cal1$par,f_args$opt_pars))
 params_fitted <- update(params,i1$params)
 ## hack to get names of params used to adjust Gbar
 moment_params <- eval(formals(fix_pars)$pars_adj)[[2]]
@@ -222,127 +174,22 @@ out <- (describe_params(params_fitted)
 
 Now forecast using the fitted parameters.
 
-```{r rerun_forecast, message=FALSE, warning=FALSE}
-get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report","d"),
-                                "inc","prev"))
-mk_fc <- function(new_end=NULL) {
-    if (!is.null(new_end)) {
-        f_args$end_date <- new_end
-    }
-    fc <- (do.call(forecast_sim,
-                      c(list(p=g1$par), f_args))
-        %>% dplyr::filter(var %in% keep_vars)
-        %>% get_type()
-    )
-    return(fc)
-}
-forecast1 <- mk_fc()
-## pivot and unpivot to rescale newTests ...
-ont_recent_sub2 <- (ont_recent_sub
-    %>% select(-c(day,vday))
-    %>% pivot_wider(names_from="var",values_from="value",id_cols="date")
-    %>% mutate(`newTests/1000`=newTests/1000)
-    %>% select(-newTests)
-    %>% pivot_longer(names_to="var",-date)
-    %>% get_type()
-)
-newtest_lab <-data.frame(date=as.Date("2020-04-10"),
-                         value=10,
-                         vtype="prev",
-                         var="newTests/1000",
-                         lab="newTests/1000")
-capac_info <- data.frame(value=c(630,1300),
-                         vtype="prev",
-                         var="ICU",
-                         lab=c("current","expanded"))
-```
-
-
-```{r plot_forecast,fig.width=6,fig.height=7, warning=FALSE}
-## FIXME: forecast1 can't use plot.pansim method ATM
-gg4 <- (ggplot(forecast1,aes(date,value,colour=var))
-    + geom_line()
-    + scale_y_log10(limits=c(1,NA),oob=scales::squish)
-    + geom_point(data=ont_recent_sub2)
-    + geom_line(data=ont_recent_sub2,alpha=0.2)
-    + geom_vline(xintercept=bd,lty=2)
-    + facet_wrap(~vtype,ncol=1,scale="free_y")
-    + labs(y="")
-    + theme(legend.position="none",
-            ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
-            strip.background = element_blank(),
-            strip.text = element_blank())
-)
-## trying to fix spacing on the fly: kluge!
-## geom_dl() must do weird evaluation env stuff
-plotfun <- function(data,
-                    dlspace=1,
-                    limspace=10) {
-    (gg4 %+% data
-          + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
-                    aes(label=var))
-          + expand_limits(x=max(data$date)+limspace))
-}
-plotfun(forecast1)  + geom_text(data=newtest_lab, aes(label=lab))
-```
-
+![](../output/ont_cal1.png)
 
 ### forecast farther ahead
 
-```{r forecast_long,warning=FALSE,fig.width=6,fig.height=7}
-(plotfun(mk_fc(new_end="2020-05-15"),limspace=20)
-    + geom_hline(data=capac_info,aes(yintercept=value,
-                                     colour=var),lty=3)
-    + geom_text(data=capac_info,aes(y=value,x=min(ont_recent_sub$date),
-                               label=lab),vjust=-1)
-)
-```
+![](../output/ont_cal2.png)
 
 ### forecast much farther ahead
 
-```{r forecast_longlong,fig.width=6,fig.height=7, warning=FALSE}
-plotfun(mk_fc(new_end="2020-10-01"),limspace=50)
-```
+![](../output/ont_cal3.png)
 
-* have cheated here on displaying breakpoints (we *might* be off by one day?)
 * confidence intervals not for public consumption (since they include only a subset of parametric uncertainty)
 * As expected, since R0>1 at the end of our time series, the epidemic just keeps going ...
 
 ## R0 estimates
 
-```{r}
-load("epiestim.RData")
-mle_cal0 <- (ss
-    %>% rename(date="start_date")
-    ## HACK: scale_x_date has no oob argument?
-    ## set first date to a more recent time
-    %>% mutate(date=c(min(epiestim_fit$date)-5,as.Date(date[-1])))
-    %>% bind_rows(tibble(date=max(ont_recent$date),
-                         r0=tail(.$r0,1),
-                         R0=tail(.$R0,1),
-                         Gbar=tail(.$Gbar,1),
-                         dbl_time=tail(.$dbl_time,1)))
-)
-    
-mle_cal1 <- (mle_cal0
-    %>% full_join(tibble(date=seq.Date(min(.$date),max(.$date),by="1 day")),by="date")
-    %>% arrange(date)
-    %>% select(date,R0)   ## other columns too?
-    %>% tidyr::fill(R0)
-    ## OK to use base_params (we haven't calibrated anything about reporting delay)
-    %>% mutate(R0conv=calc_conv(R0,update(f_args$base_params,c_prop=1)))
-)
-
-print(gg1 <- ggplot(epiestim_fit,aes(date, y=med))
-      + geom_line()
-      + geom_ribbon(aes(ymin=q05,ymax=q95),colour=NA,alpha=0.5,fill="red")
-      + geom_ribbon(aes(ymin=q025,ymax=q975),colour=NA,alpha=0.2,fill="blue")
-      + scale_y_log10(breaks=c(0.75, 1, 1.1, 1.3, 1.5, 2, 3, 5))
-      + geom_vline(xintercept=bd,lty=2)
-      + geom_line(data=mle_cal1,aes(y=R0conv),
-                  lwd=2,alpha=0.3)
-      )
-```
+![](../output/epiestim_plot.png)
 
 * q25/q75 from EpiEstim are nonsense, not sure why? -->
 * CIs on mle-cal R0?

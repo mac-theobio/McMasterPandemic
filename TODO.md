@@ -2,8 +2,9 @@
 
 ### short term
 
+* reorganize into output + reports/notes
+* process error
 * epiestim: delay-convolve beta curve
-* check off-by-one-day in breakpoints?
 
 * `condense` option for including/not including ICU in H output
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?
