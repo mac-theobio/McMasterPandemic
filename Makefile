@@ -29,6 +29,14 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
+subdirs += ontario
+
+ontario/%:
+	$(makethere)
+
+######################################################################
+
+## Deprecated 2020 Apr 16 (Thu)
 output/ontario_nbfit.Rout: output/ontario_nbfit.R output/ontario_clean.RData
 	$(run-R)
 
