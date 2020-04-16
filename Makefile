@@ -29,16 +29,6 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-ontario/ontario_nbfit.Rout: ontario/ontario_clean.Rout ontario/ontario_nbfit.R
-	$(run-R)
-
-ontario/ontario_calibration.Rout:  ontario/ontario_clean.Rout ontario/ontario_calibration.R
-ontario/ontario_cal_plots.Rout: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/ontario_cal_plots.R
-
-ontario/epiestim_plot.Rout: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/epiestim.Rout ontario/epiestim_plot.R
-
-notes/ontario_calibration_report.html: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/epiestim.RData ontario/epiestim_plot.Rout ontario/ontario_cal_plots.Rout ontario/ontario_nbfit.Rout.png ontario/ont_cal1.png notes/ontario_calibration_report.Rmd
-
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
 
