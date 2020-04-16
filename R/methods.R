@@ -101,7 +101,7 @@ pivot <- function (object, ...)  {
 pivot.pansim <- function(object, ...) {
     dd <- (object
         %>% dplyr::as_tibble()
-        %>% mutate(date = as.Date(date))
+        %>% dplyr::mutate_at("date",anydate)
         %>% tidyr::pivot_longer(names_to="var",-date)
     )
     return(dd)
@@ -181,9 +181,9 @@ aggregate.pansim <- function(x,
                              ...) {
     aa <- get_attr(x)
     dd <- x
-    start <- agg_list[["t_agg_start"]] 
-    period <- agg_list[["t_agg_period"]]
-    FUN <- agg_list$t_agg_fun
+    ## start <- agg_list[["t_agg_start"]] 
+    ## period <- agg_list[["t_agg_period"]]
+    ## FUN <- agg_list$t_agg_fun
     agg_datevec <- seq.Date(anydate(start),max(dd$date)+extend,
                             by=period)
     agg_period <- cut.Date(dd$date,agg_datevec)
