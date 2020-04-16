@@ -16,7 +16,6 @@
 	* ont_all from clean, not calib?
 	* dotdir
 
-
 * `condense` option for including/not including ICU in H output
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?
 
