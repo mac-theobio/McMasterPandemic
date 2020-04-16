@@ -34,6 +34,8 @@ subdirs += ontario
 ontario/%:
 	$(makethere)
 
+alldirs += $(subdirs)
+
 ######################################################################
 
 ## Deprecated 2020 Apr 16 (Thu)
