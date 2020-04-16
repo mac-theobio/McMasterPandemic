@@ -204,8 +204,8 @@ do_step <- function(state, params, ratemat, dt=1,
         for (i in seq(length(state))) {
             ## FIXME: allow Dirichlet-multinomial ?
             dW <- dt
-            if (!is.na(proc_noise <- params["proc_noise"])) {
-                dW <- pomp::rgammawn(sigma=proc_noise,dt=dt)
+            if (!is.na(proc_disp <- params["proc_disp"])) {
+                dW <- pomp::rgammawn(sigma=proc_disp,dt=dt)
             }
             flows[i,-i] <- pomp::reulermultinom(n=1,
                                  size=state[[i]],
@@ -240,7 +240,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
 ##'                    params_timevar=time_pars)
 ##' res2 <- update(res,stoch=c(obs=FALSE,proc=TRUE))
-##' params2 <- update(params,proc_noise=0.5)
+##' params2 <- update(params,proc_disp=0.5)
 ##' res3 <- update(res2,params=params2)
 ##' plot(res3)
 ##' summary(res)

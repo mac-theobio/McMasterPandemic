@@ -169,13 +169,23 @@ The \code{obs_disp} parameter is the dispersion parameter for a negative
 binomial.
 
 <<run_sim_obs_noise,fig.width=8>>=
-params1obs <- params1
-params1obs[["obs_disp"]] <- 200
+params1obs <- update(params1, obs_disp=200)
 res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
                    stoch=c(obs=TRUE, proc=FALSE))
+res1obs <- dplyr::select(res1obs,-D)
 summary(res1obs)
 plot_grid(plot(res1obs, log=TRUE),
           plot(res1obs))
+@
+(We leave out deaths for now; we simulate observation error on the cumulative death process and then difference it to come up with daily deaths, which doesn't really make sense.)
+
+To simulate with process error,
+
+<<>>=
+params1proc <- update(params1,proc_disp=0.1, E0=200)
+res1proc <- run_sim(params1proc, start_date=sdate, end_date=edate,
+                   stoch=c(obs=FALSE, proc=TRUE))
+plot_grid(plot(res1proc, log=TRUE), plot(res1proc))
 @
 
 \subsection{Time-dependent transmission rate}
@@ -208,5 +218,6 @@ will differ under various intervention scenarios.
 The natural approach is to find a set of parameters that lies within
 the estimated constraints and best fits the observed part of the
 epidemic.
+
 
 \end{document}
