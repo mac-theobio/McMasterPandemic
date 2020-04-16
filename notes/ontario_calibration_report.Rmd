@@ -187,17 +187,20 @@ Now forecast using the fitted parameters.
 * confidence intervals not for public consumption (since they include only a subset of parametric uncertainty)
 * As expected, since R0>1 at the end of our time series, the epidemic just keeps going ...
 
+## comparison of all-var and hospital fitting
+
+![](../output/ont_cal4.png)
+
+**fixme**: restore legend, make sure that we're not fitting silly parameters (should be fixed to sensible values)
+
 ## R0 estimates
 
 ![](../output/epiestim_plot.png)
 
+* **fixme**: check, adjust time base
 * q25/q75 from EpiEstim are nonsense, not sure why? -->
 * CIs on mle-cal R0?
 
-
-## next
-
-1. better/different approaches to estimating time-varying beta?
 
 
 
