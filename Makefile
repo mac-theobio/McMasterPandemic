@@ -34,6 +34,7 @@ break_test.Rout: notes/break_test.R
 subdirs += ontario
 
 ontario/%:
+	cd ontario &&$(MAKE) Makefile
 	$(makethere)
 
 alldirs += $(subdirs)
