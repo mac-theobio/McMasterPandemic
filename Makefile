@@ -18,6 +18,8 @@ Sources += $(wildcard */*.R)
 
 Sources += $(wildcard man/*.Rd) NAMESPACE
 
+Sources += dottarget.mk
+
 ######################################################################
 
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
@@ -28,6 +30,25 @@ break_test.Rout: notes/break_test.R
 	$(run-R)
 
 ######################################################################
+
+subdirs += ontario
+
+ontario/%:
+	$(makethere)
+
+alldirs += $(subdirs)
+
+######################################################################
+
+## Deprecated 2020 Apr 16 (Thu)
+output/ontario_nbfit.Rout: output/ontario_nbfit.R output/ontario_clean.RData
+	$(run-R)
+
+output/ontario_cal_plots.Rout: output/ontario_cal_plots.R output/ontario_calibration.RData output/ontario_clean.RData
+
+output/epiestim_plot.Rout: output/ontario_clean.RData output/ontario_calibration.RData output/epiestim.RData output/epiestim_plot.R
+
+notes/ontario_calibration_report.html: output/ontario_clean.RData output/ontario_calibration.RData notes/ontario_calibration_report.Rmd output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout
 
 comb_calib.Rout: notes/comb_calib.R
 	$(run-R)
