@@ -51,35 +51,13 @@ opt_pars <- list(
     log_rel_beta0 = rep(-1, length(bd)),
     log_nb_disp=0)
 
-# t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
-#     , base_params=params
-#     , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-#     , opt_pars = opt_pars
-#     , break_dates = bd
-#     ## , debug=TRUE
-#       )
-#       ) ## system.time
+t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
+    , base_params=params
+    , optim_args=list(control=list(maxit=10000),hessian=TRUE)
+    , opt_pars = opt_pars
+    , break_dates = bd
+    ## , debug=TRUE
+      )
+      ) ## system.time
 
 # rdsave("t_ont_cal1","opt_pars","ont_cal1", "bd","ont_recent_sub","params","keep_vars", "ont_all_sub")
-
-
-agg_start <- anydate("15-Mar-2020")
-agg_list <- list(start=agg_start,period="1 day",FUN=sum)
-t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
-                          , base_params=params
-                          , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-                          , opt_pars = opt_pars
-                          , break_dates = bd
-                          , aggregate_args = agg_list
-                          ## , debug=TRUE
-)
-)
-# 
-# f_args <- attr(ont_cal1,"forecast_arg")
-# f_args_agg <- attr(ont_cal1_agg,"forecast_arg")
-# 
-# fc <- (do.call(forecast_sim,c(list(p=ont_cal1$par), f_args)))
-# fc_agg <- (do.call(forecast_sim,c(list(p=ont_cal1_agg$par), f_args_agg)))
-# 
-# 
-# 
