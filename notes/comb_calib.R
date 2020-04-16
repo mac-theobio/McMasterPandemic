@@ -21,7 +21,7 @@ if (weekly) {
     )
     ## set start values to (initial date in data set - 6 days) to make *end* of first
     ## aggregation period line up correctly
-    agg_list <- list(t_agg_start=min(dd$date)-6,t_agg_period="7 days",t_agg_fun=sum)
+    agg_list <- list(start=min(dd$date)-6,period="7 days",FUN=sum)
 } else {
     dd <- dd %>% dplyr::filter(date>as.Date("2020-03-15"))
     agg_list <- NULL
