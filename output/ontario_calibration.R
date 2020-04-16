@@ -8,7 +8,6 @@ library(tidyverse)
 library(anytime)
 
 ## 
-load("notes/ontario_clean.RData")
 keep_vars <- c("H","ICU","d","report")
 ont_recent_sub <- (ont_recent
     %>% mutate_at("var",trans_state_vars)

@@ -1,7 +1,6 @@
 library(EpiEstim)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
-load("notes/ontario_clean.RData")
 incid <- (ont_recent
     %>% filter(var=="newConfirmations")
     %>% select(date,value)

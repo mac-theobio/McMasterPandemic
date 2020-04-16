@@ -4,7 +4,7 @@
 
 * process error: pomp `dW <- rgammawn(sigma=sigma,dt=dt); dn <- reulermultinom(size=N,rate=r*dW/dt,dt=dt)`
 * epiestim: delay-convolve beta curve
-* check hospital-only calibration
+* check hospital-only calibration (don't try to calibrate)
 
 * `condense` option for including/not including ICU in H output
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?
