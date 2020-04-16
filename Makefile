@@ -29,14 +29,15 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-output/ontario_nbfit.Rout: output/ontario_nbfit.R output/ontario_clean.RData
+output/ontario_nbfit.Rout: output/ontario_clean.Rout output/ontario_nbfit.R
 	$(run-R)
 
-output/ontario_cal_plots.Rout: output/ontario_cal_plots.R output/ontario_calibration.RData output/ontario_clean.RData
+output/ontario_calibration.Rout:  output/ontario_clean.Rout output/ontario_calibration.R
+output/ontario_cal_plots.Rout: output/ontario_clean.Rout output/ontario_calibration.Rout output/ontario_cal_plots.R
 
-output/epiestim_plot.Rout: output/ontario_clean.RData output/ontario_calibration.RData output/epiestim.RData output/epiestim_plot.R
+output/epiestim_plot.Rout: output/ontario_clean.Rout output/ontario_calibration.Rout output/epiestim.Rout output/epiestim_plot.R
 
-notes/ontario_calibration_report.html: output/ontario_clean.RData output/ontario_calibration.RData notes/ontario_calibration_report.Rmd output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout
+notes/ontario_calibration_report.html: output/ontario_clean.Rout output/ontario_calibration.Rout output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout output/ontario_nbfit.Rout.png output/ont_cal1.png notes/ontario_calibration_report.Rmd
 
 comb_calib.Rout: notes/comb_calib.R
 	$(run-R)
