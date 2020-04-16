@@ -99,6 +99,7 @@ pivot <- function (object, ...)  {
 ##' @export
 ##' @importFrom dplyr %>%
 pivot.pansim <- function(object, ...) {
+    check_dots(...)
     dd <- (object
         %>% dplyr::as_tibble()
         %>% tidyr::pivot_longer(names_to="var",-date)
@@ -114,6 +115,7 @@ pivot.pansim <- function(object, ...) {
 ##' @param ... additional args
 ##' @export
 condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_all=FALSE, ...) {
+    check_dots(...)
     aa <- get_attr(object)
     ## condense columns and add, if present
     add_col <- function(dd,name,regex) {
@@ -178,6 +180,7 @@ aggregate.pansim <- function(x,
                              fixed_vars=TRUE,
                              extend=30,
                              ...) {
+    check_dots(...)
     aa <- get_attr(x)
     dd <- x
     ## start <- agg_list[["t_agg_start"]] 
@@ -229,6 +232,7 @@ aggregate.pansim <- function(x,
 ##' @param ... unused
 ##' @export
 summary.params_pansim <- function(object, ...) {
+    check_dots(...)
     ## FIXME: include kappa once we know what works
     ## (analytical vs kernel vs ...)
     res <- c(r0=get_r(object),R0=get_R0(object),Gbar=get_Gbar(object))
@@ -238,6 +242,7 @@ summary.params_pansim <- function(object, ...) {
 
 ##' @export
 summary.pansim <- function(object, ...) {
+    check_dots(...)
     ## global variables
     ICU <- H <- NULL
     ## FIXME: get ventilators by multiplying ICU by 0.86?
@@ -316,6 +321,7 @@ describe_params <- function(x) {
 ##' @export
 ## FIXME: prettier printing, e.g. detect "1/" or "proportion"
 print.params_pansim <- function( x, describe=FALSE, ... ) {
+    check_dots(...)
     if (!describe) {
         attr(x,"description") <- NULL
         print(unclass(x))
@@ -343,7 +349,7 @@ update.params_pansim <- function(object, ...) {
 
 ##' @export
 summary.fit_pansim <- function(object, ...) {
-    
+    check_dots(...)    
     f_args <- attr(object,"forecast_args")
     pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
     pp <- list()
