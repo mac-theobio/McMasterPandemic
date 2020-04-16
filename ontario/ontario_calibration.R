@@ -54,13 +54,10 @@ opt_pars <- list(
 t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
     , base_params=params
     , optim_args=list(control=list(maxit=10000),hessian=TRUE)
-    , opt_pars = opt_pars,
+    , opt_pars = opt_pars
     , break_dates = bd
     ## , debug=TRUE
       )
       ) ## system.time
 
 # rdsave("t_ont_cal1","opt_pars","ont_cal1", "bd","ont_recent_sub","params","keep_vars", "ont_all_sub")
-
-
-
