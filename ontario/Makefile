@@ -16,23 +16,27 @@ vim_session:
 
 Sources += $(wildcard */*.R)
 
-Sources += $(wildcard man/*.Rd) NAMESPACE
-
 pkgdesc = $(../DESCRIPTION)
+
 ######################################################################
 
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
+
 ontario_calibration.Rout:  ontario_clean.Rout ontario_calibration.R $(pkgdesc)
-ontario_calibration_hosponly.Rout:  ontario_clean.RData ontario_calibration.RData
+
+ontario_calibration_hosponly.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.R
+
+ont_cal%.png: ontario_cal_plots.Rout ;
+ont_cal%.pdf: ontario_cal_plots.Rout ;
 ontario_cal_plots.Rout: ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.Rout ontario_cal_plots.R
+
 epiestim.Rout: ontario_clean.Rout
 epiestim_plot.Rout: ontario_clean.Rout ontario_calibration.Rout epiestim.Rout epiestim_plot.R
 
-ontario_calibration_report.html: ontario_clean.RData ontario_calibration.RData epiestim.RData epiestim_plot.Rout.png ontario_cal_plots.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
+ontario_calibration_report.html: ontario_clean.RData ontario_calibration.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
 
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
-
 
 ### Makestuff
 
@@ -45,10 +49,6 @@ Ignore += makestuff
 msrepo = https://github.com/dushoff
 Makefile: makestuff/Makefile
 makestuff/Makefile:
-	git clone $(msrepo)/makestuff
-	ls $@
-
-localstuff: 
 	ln -s ../makestuff .
 	ls $@
 
