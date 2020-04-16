@@ -39,6 +39,10 @@ output/epiestim_plot.Rout: output/ontario_clean.Rout output/ontario_calibration.
 
 notes/ontario_calibration_report.html: output/ontario_clean.Rout output/ontario_calibration.Rout output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout output/ontario_nbfit.Rout.png output/ont_cal1.png notes/ontario_calibration_report.Rmd
 
+## Try to make these unnecessary
+output/epiestim.Rout: notes/ontario_clean.RData
+output/ontario_calibration.Rout: notes/ontario_clean.RData
+
 comb_calib.Rout: notes/comb_calib.R
 	$(run-R)
 
