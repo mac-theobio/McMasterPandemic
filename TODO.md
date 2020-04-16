@@ -2,9 +2,20 @@
 
 ### short term
 
-* process error: pomp `dW <- rgammawn(sigma=sigma,dt=dt); dn <- reulermultinom(size=N,rate=r*dW/dt,dt=dt)`
-* epiestim: delay-convolve beta curve
+* general fitting
+   * case report delay should be longer: current mean is 5 days, this needs to include exposed period !
+* process error
+   * implemented but not well-documented
+   * overdispersion (beyond demog stoch) is global, not per-transition or per-state variable ... 
+   * allowing per-trans overdisp means thinking about including vectors in a parameter list - what if anything will this break?
+* epiestim
+   * delay-convolve beta curve
 * check hospital-only calibration (don't try to calibrate)
+* Makiness: 
+    * depend on package version
+	* ont_all from clean, not calib?
+	* dotdir
+
 
 * `condense` option for including/not including ICU in H output
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?

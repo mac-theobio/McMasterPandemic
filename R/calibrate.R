@@ -499,17 +499,6 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     return(opt)
 }
 
-##' @export
-update.fit_pansim <- function(object, ...) {
-    cc <- attr(object, "call")
-    L <- list(...)
-    for (i in seq_along(L)) {
-        cc[[names(L)[i]]] <- L[[i]]
-    }
-    eval.parent(cc)
-}
-
-
 ##' find confidence envelopes by simulation
 ##' @param fit output from \code{calibrate}
 ##' @param nsim number of simulations

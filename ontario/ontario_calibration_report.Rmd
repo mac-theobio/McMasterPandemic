@@ -196,9 +196,6 @@ Now forecast using the fitted parameters.
 
 ![](epiestim_plot.png)
 
-* **fixme**: check, adjust time base
-* q25/q75 from EpiEstim are nonsense, not sure why? -->
-* CIs on mle-cal R0?
 
 
 

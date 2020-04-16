@@ -365,3 +365,17 @@ summary.fit_pansim <- function(object, ...) {
     return(ret)
 }
 
+
+##' @export
+update.fit_pansim <- function(object, ...) {
+    cc <- attr(object, "call")
+    L <- list(...)
+    for (i in seq_along(L)) {
+        cc[[names(L)[i]]] <- L[[i]]
+    }
+    eval.parent(cc)
+}
+
+## same strategy: find call in attribute
+##' @export
+update.pansim <- update.fit_pansim

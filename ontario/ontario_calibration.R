@@ -2,7 +2,6 @@
 ## possible params to set/command-line arguments:
 ##  Gbar = 6
 ##  which vars to fit?
-
 library(McMasterPandemic)
 library(tidyverse)
 library(anytime)
@@ -61,15 +60,7 @@ t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
       )
       ) ## system.time
 
-ont_recent_hosp <- na.omit(filter(ont_all_sub, var=="H"))
-opt_pars_2brk <- opt_pars
-opt_pars_2brk$log_rel_beta0 <- rep(-1,2)
-bd2 <- bd[-1]
-
-
-## FIXME: break this out into a separate file? (risk of atomization/confusion?)
-ont_cal2 <- update(ont_cal1,  data=ont_recent_hosp, opt_pars=opt_pars_2brk, break_dates=bd2)
-# rdsave("t_ont_cal1","opt_pars","ont_cal1", "ont_cal2", "bd","ont_recent_sub","params","keep_vars")
+# rdsave("t_ont_cal1","opt_pars","ont_cal1", "bd","ont_recent_sub","params","keep_vars", "ont_all_sub")
 
 
 

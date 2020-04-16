@@ -97,8 +97,8 @@ plotfun <- function(forecast, data=ont_all_sub, breaks=bd,
 }
 
 save_both <- function(gg, fn) {
-    ggsave(gg, file=sprintf("output/%s.pdf",fn))
-    ggsave(gg, file=sprintf("output/%s.png",fn))
+    ggsave(gg, file=sprintf("%s.pdf",fn))
+    ggsave(gg, file=sprintf("%s.png",fn))
 }
 forecast1 <- mk_fc()
 gg_cal1 <- plotfun(forecast1,limspace=15,add_tests=TRUE)
@@ -117,3 +117,5 @@ forecast4 <- mk_fc(fit=ont_cal2)
 comb_fc <- dplyr::bind_rows(list(all=forecast1,H_only=forecast4),.id="calib_vars")
 gg_cal4 <- plotfun(comb_fc, mult_var="calib_vars")
 save_both(gg_cal4,"ont_cal4")
+
+print(gg_cal4)

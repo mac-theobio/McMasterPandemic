@@ -167,39 +167,57 @@ update_foi <- function(state, params) {
 ##' @param do_hazard use hazard calculation?
 ##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
 ##' @param stoch stochastic simulation? logical vector for observation and process noise
-## (if we do the hazard calculations we can plug in pomp:::reulermultinom()
-##  [or overdispersed analogue] directly)
+##' @examples
+##' params1 <- read_params("ICU1.csv")
+##' state1 <- make_state(params=params)
+##' M <- make_ratemat(params=params1, state=state1)
+##' s1A <- do_step(state1,params1, M, stoch=c(obs=FALSE,proc=TRUE))
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE),
                     do_exponential=FALSE) {
 
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
-    if (!do_hazard) {
-        ## from per capita rates to absolute changes
-        flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
-    } else {
-        ## use hazard function: assumes exponential change
-        ## (constant per capita flows) rather than linear change
-        ## (constant absolute flows) within time steps
-        ## handle this as in pomp::reulermultinom,
-        ## i.e.
-        ##    S = sum(r_i)   ## total rate
-        ##    p_{ij}=(1-exp(-S*dt))*r_j/S
-        ##    p_{ii}= exp(-S*dt)
-        S <- rowSums(ratemat)
-        E <- exp(-S*dt)
-        ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
-        norm_sum <- ifelse(S==0, 0, state/S)
-        flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
-        diag(flows) <- 0  ## no flow
-    }
     if (!stoch[["proc"]]) {
-        outflow <- rowSums(flows)
-        if (do_exponential) outflow[["S"]] <- 0
-        inflow <-  colSums(flows)
-        state <- state - outflow + inflow
+        if (!do_hazard) {
+            ## from per capita rates to absolute changes
+            flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
+        } else {
+            ## use hazard function: assumes exponential change
+            ## (constant per capita flows) rather than linear change
+            ## (constant absolute flows) within time steps
+            ## handle this as in pomp::reulermultinom,
+            ## i.e.
+            ##    S = sum(r_i)   ## total rate
+            ##    p_{ij}=(1-exp(-S*dt))*r_j/S
+            ##    p_{ii}= exp(-S*dt)
+            S <- rowSums(ratemat)
+            E <- exp(-S*dt)
+            ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
+            norm_sum <- ifelse(S==0, 0, state/S)
+            flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
+            diag(flows) <- 0  ## no flow
+        }
+    } else {
+        flows <- ratemat ## copy structure
+        flows[] <- 0
+        for (i in seq(length(state))) {
+            ## FIXME: allow Dirichlet-multinomial ?
+            dW <- dt
+            if (!is.na(proc_noise <- params["proc_noise"])) {
+                dW <- pomp::rgammawn(sigma=proc_noise,dt=dt)
+            }
+            flows[i,-i] <- pomp::reulermultinom(n=1,
+                                 size=state[[i]],
+                                 rate=ratemat[i,-i],
+                                 dt=dW)
+            
+        }
     }
+    outflow <- rowSums(flows)
+    if (do_exponential) outflow[["S"]] <- 0
+    inflow <-  colSums(flows)
+    state <- state - outflow + inflow
     return(state)
 }
 
@@ -221,6 +239,10 @@ do_step <- function(state, params, ratemat, dt=1,
 ##'                        Relative_value=c(0.7,0.1))
 ##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
 ##'                    params_timevar=time_pars)
+##' res2 <- update(res,stoch=c(obs=FALSE,proc=TRUE))
+##' params2 <- update(params,proc_noise=0.5)
+##' res3 <- update(res2,params=params2)
+##' plot(res3)
 ##' summary(res)
 ##' @importFrom stats rnbinom
 ##' @importFrom anytime anydate

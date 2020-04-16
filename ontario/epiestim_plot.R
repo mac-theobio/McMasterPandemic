@@ -36,6 +36,4 @@ gg1 <- (ggplot(epiestim_fit,aes(date, y=med))
                   lwd=2,alpha=0.3)
 
 )
-
-ggsave(gg1,filename="output/epiestim_plot.png")
-ggsave(gg1,filename="output/epiestim_plot.pdf")
+print(gg1)

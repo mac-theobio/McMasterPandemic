@@ -53,5 +53,9 @@ time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
                        Relative_value=c(0.7,0.1))
 res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
                    params_timevar=time_pars)
+res2 <- update(res,stoch=c(obs=FALSE,proc=TRUE))
+params2 <- update(params,proc_noise=0.5)
+res3 <- update(res2,params=params2)
+plot(res3)
 summary(res)
 }
