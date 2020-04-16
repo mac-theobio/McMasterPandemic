@@ -36,9 +36,9 @@ scale_fill_discrete <- function(...) {
 ## Getting data
 
 ```{r get_data, message=FALSE, warning=FALSE}
-L1 <- load("../output/ontario_clean.RData")
-L2 <- load("../output/ontario_calibration.RData")  ## g1=calib to all, g2=hospital only
-L3 <- load("../output/epiestim.RData")
+L1 <- load("ontario_clean.RData")
+L2 <- load("ontario_calibration.RData")  ## g1=calib to all, g2=hospital only
+L3 <- load("epiestim.RData")
 ## FIXME: better documentation about what these pieces are doing?
 ## move the keep_vars/ont_recent_sub stuff to ontario_clean.R ?
 ```
@@ -88,7 +88,7 @@ We don't use this for calibration any more, but it is of some interest to fit lo
 
 Coefficient plot with tidied frame
 
-![](../output/ontario_nbfit.Rout.png)
+![](ontario_nbfit.Rout.png)
 
 - intercepts for variables other than newConfirmations describe sensitivity (how small a non-zero value is actually reported?
 - slopes are similar (newConfirmations maybe a little slower?)
@@ -150,7 +150,6 @@ What are the implied R0 values here?
 ```{r R0_summary}
 ss <- summary(ont_cal1)
 knitr::kable(data.frame(date=ss$start_date,round(ss[,-1],3)))
-saveRDS(ss,file="../git_push/ontario_R0_cal1.rds")
 ```
 
 ```{r out_params}
@@ -174,28 +173,28 @@ out <- (describe_params(params_fitted)
 
 Now forecast using the fitted parameters.
 
-![](../output/ont_cal1.png)
+![](ont_cal1.png)
 
 ### forecast farther ahead
 
-![](../output/ont_cal2.png)
+![](ont_cal2.png)
 
 ### forecast much farther ahead
 
-![](../output/ont_cal3.png)
+![](ont_cal3.png)
 
 * confidence intervals not for public consumption (since they include only a subset of parametric uncertainty)
 * As expected, since R0>1 at the end of our time series, the epidemic just keeps going ...
 
 ## comparison of all-var and hospital fitting
 
-![](../output/ont_cal4.png)
+![](ont_cal4.png)
 
 **fixme**: restore legend, make sure that we're not fitting silly parameters (should be fixed to sensible values)
 
 ## R0 estimates
 
-![](../output/epiestim_plot.png)
+![](epiestim_plot.png)
 
 * **fixme**: check, adjust time base
 * q25/q75 from EpiEstim are nonsense, not sure why? -->

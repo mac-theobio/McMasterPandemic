@@ -29,22 +29,15 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-output/ontario_nbfit.Rout: output/ontario_clean.Rout output/ontario_nbfit.R
+ontario/ontario_nbfit.Rout: ontario/ontario_clean.Rout ontario/ontario_nbfit.R
 	$(run-R)
 
-output/ontario_calibration.Rout:  output/ontario_clean.Rout output/ontario_calibration.R
-output/ontario_cal_plots.Rout: output/ontario_clean.Rout output/ontario_calibration.Rout output/ontario_cal_plots.R
+ontario/ontario_calibration.Rout:  ontario/ontario_clean.Rout ontario/ontario_calibration.R
+ontario/ontario_cal_plots.Rout: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/ontario_cal_plots.R
 
-output/epiestim_plot.Rout: output/ontario_clean.Rout output/ontario_calibration.Rout output/epiestim.Rout output/epiestim_plot.R
+ontario/epiestim_plot.Rout: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/epiestim.Rout ontario/epiestim_plot.R
 
-notes/ontario_calibration_report.html: output/ontario_clean.Rout output/ontario_calibration.Rout output/epiestim.RData output/epiestim_plot.Rout output/ontario_cal_plots.Rout output/ontario_nbfit.Rout.png output/ont_cal1.png notes/ontario_calibration_report.Rmd
-
-## Try to make these unnecessary
-output/epiestim.Rout: notes/ontario_clean.RData
-output/ontario_calibration.Rout: notes/ontario_clean.RData
-
-comb_calib.Rout: notes/comb_calib.R
-	$(run-R)
+notes/ontario_calibration_report.html: ontario/ontario_clean.Rout ontario/ontario_calibration.Rout ontario/epiestim.RData ontario/epiestim_plot.Rout ontario/ontario_cal_plots.Rout ontario/ontario_nbfit.Rout.png ontario/ont_cal1.png notes/ontario_calibration_report.Rmd
 
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
