@@ -167,9 +167,10 @@ update_foi <- function(state, params) {
 ##' @param do_hazard use hazard calculation?
 ##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
 ##' @param stoch stochastic simulation? logical vector for observation and process noise
+##' @export
 ##' @examples
 ##' params1 <- read_params("ICU1.csv")
-##' state1 <- make_state(params=params)
+##' state1 <- make_state(params=params1)
 ##' M <- make_ratemat(params=params1, state=state1)
 ##' s1A <- do_step(state1,params1, M, stoch=c(obs=FALSE,proc=TRUE))
 do_step <- function(state, params, ratemat, dt=1,

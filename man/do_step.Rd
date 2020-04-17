@@ -34,7 +34,7 @@ Take a single simulation time step
 }
 \examples{
 params1 <- read_params("ICU1.csv")
-state1 <- make_state(params=params)
+state1 <- make_state(params=params1)
 M <- make_ratemat(params=params1, state=state1)
 s1A <- do_step(state1,params1, M, stoch=c(obs=FALSE,proc=TRUE))
 }

@@ -19,3 +19,10 @@
 * use daily deaths rather than total (cumulative) deaths for calibration
 * fit full calibration to all data, not just recent data (early case reports are needed to calibrate growth rate before the 17 March breakpoint
 * alternatively try hospital-only calibration, but without the 17 March breakpoint
+* major reorganization
+
+## 2020 April 16
+
+* continued reorganization
+* process error
+* improve hospital-only calibration
