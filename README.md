@@ -4,7 +4,7 @@ Compartmental epidemic models for forecasting and analysis of infectious disease
 
 ### Installation
 
-`remotes:install_github("bbolker/McMasterPandemic")` (you have to install the `remotes` package first, if you don't have it)
+The repository contains an R package and various workflows/analyses. You can fork/clone the repository and install locally or use `remotes:install_github("bbolker/McMasterPandemic")` to install the package.
 
 ### For developers
 
