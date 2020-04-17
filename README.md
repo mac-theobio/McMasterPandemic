@@ -1,10 +1,6 @@
 # McMasterPandemic
 
-Compartmental epidemic models for forecasting and analysis of infectious disease pandemics.
-
-Please send any comments to
-- Ben Bolker <bolker@mcmaster.ca>
-- David Earn <earn@math.mcmaster.ca>
+Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Mike Li (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/bbolker/McMasterPandemic/issues), or e-mail us.
 
 ### Installation
 
@@ -18,8 +14,5 @@ Please send any comments to
 
 ### DISCLAIMER
 
-We expect this package to be valuable primarily for _qualitative_
-understanding, which can help to guide planning during a pandemic.
-Quantitative forecasts are only as good as the parameter estimates,
-which are very challenging to make.
+All use of this package is at your own risk. Quantitative forecasts are only as good as their parameter estimates.
 
