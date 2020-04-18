@@ -286,7 +286,12 @@ param_meanings <- c(
     phi2 = "proportion of ICU patients who die",
     psi1 = "1 / mean days in ICU if survive",
     psi2 = "1 / mean days in ICU if die",
-    psi3 = "1 / mean days post-ICU until discharge"
+    psi3 = "1 / mean days post-ICU until discharge",
+    ## summary parameters:
+    r0 = "initial epidemic growth rate",
+    R0 = "basic reproduction number",
+    Gbar = "mean generation interval",
+    dbl_time = "doubling time"
 )
 
 ##' Describe parameters
