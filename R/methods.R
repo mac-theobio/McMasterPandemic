@@ -407,10 +407,13 @@ texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
     ##x <- gsub("fun","",x,fixed=TRUE)
     return(x)
   }
+  x <- gsub("E0","E(0)",x,fixed=TRUE)
   x <- gsub("R0","{\\mathcal R}_0",x,fixed=TRUE)
   x <- gsub("r0","r_0",x,fixed=TRUE)
   x <- gsub("Gbar","\\bar{G}",x,fixed=TRUE)
   x <- gsub("dbl_time","T_2",x,fixed=TRUE)
+  x <- gsub("beta0","beta_0",x,fixed=TRUE)
+  x <- gsub("phi1","phi_1",x,fixed=TRUE)
   ##FIX: the following would be better using a table of
   ##     Greek letters and/or a table of TeX symbols
   x <- gsub("alpha","\\alpha",x,fixed=TRUE)
@@ -420,6 +423,7 @@ texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
   x <- gsub("epsilon","\\varepsilon",x,fixed=TRUE)
   x <- gsub("nu","\\nu",x,fixed=TRUE)
   x <- gsub("mu","\\mu",x,fixed=TRUE)
+  x <- gsub("phi","\\phi",x,fixed=TRUE)
   if (dollars) x <- paste0("$",x,"$")
   return(x)
 }
