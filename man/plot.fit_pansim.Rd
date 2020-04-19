@@ -14,7 +14,7 @@
   add_ICU_cap = FALSE,
   mult_var = NULL,
   predict_args = NULL,
-  directlabels = FALSE,
+  directlabels = TRUE,
   ...
 )
 }
@@ -22,6 +22,8 @@
 \item{x}{a calibrated object (result from \code{\link{calibrate}})}
 
 \item{data}{original time series data}
+
+\item{break_dates}{breakpoints}
 
 \item{dlspace}{spacing for direct labels (not working)}
 
@@ -33,11 +35,11 @@
 
 \item{mult_var}{variable in data set indicating multiple forecast types to compare}
 
+\item{predict_args}{arguments to pass to predict method}
+
 \item{directlabels}{use direct labels?}
 
-\item{breaks}{breakpoints}
-
-\item{add_data}{include data as points?}
+\item{...}{extra arguments (unused)}
 }
 \description{
 plot forecasts from fits

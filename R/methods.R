@@ -392,7 +392,7 @@ update.pansim <- update.fit_pansim
 ##' @param stoch stochasticity
 ##' @param keep_vars ...
 ##' @param ensemble run ensemble?
-##' @param ... extra args (disregarded)
+##' @param ... extra args (passed to forecast_ensemble)
 ##' @export
 ##' @examples
 ##' predict(ont_cal1)
@@ -403,7 +403,8 @@ predict.fit_pansim <- function(object
                              , keep_vars=c("H","ICU","d","incidence","report","newTests/1000")
                               , ensemble = FALSE,
                                ... ) {
-    
+
+    var <- . <- NULL
     get_type <- (.
         %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
                                  "inc","prev"))
@@ -447,14 +448,15 @@ capac_info <- data.frame(value=c(630,1300),
 ##' plot forecasts from fits
 ##' @param x a calibrated object (result from \code{\link{calibrate}})
 ##' @param data original time series data
-##' @param breaks breakpoints
+##' @param break_dates breakpoints
 ##' @param dlspace spacing for direct labels (not working)
 ##' @param limspace extra space (in days) to add to make room for direct labels
 ##' @param add_tests plot newTests/1000?
-##' @param add_data include data as points?
+##' @param predict_args arguments to pass to predict method
 ##' @param add_ICU_cap include horizontal lines showing ICU capacity?
 ##' @param mult_var variable in data set indicating multiple forecast types to compare
 ##' @param directlabels use direct labels?
+##' @param ... extra arguments (unused)
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
 ##' @importFrom directlabels geom_dl dl.trans
 ##' @examples
@@ -466,6 +468,7 @@ capac_info <- data.frame(value=c(630,1300),
 ##' \donttest{
 ##' plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
 ##' }
+##' @importFrom stats predict
 ##' @export
 plot.fit_pansim <- function(x,
                     data=NULL,
@@ -476,8 +479,10 @@ plot.fit_pansim <- function(x,
                     add_ICU_cap=FALSE,
                     mult_var=NULL,
                     predict_args = NULL,
-                    directlabels=FALSE,
+                    directlabels=TRUE,
                     ...) {
+    check_dots(...)
+    lwr <- upr <- lab <- var <- . <- NULL
     f_args <- attr(x,"forecast_args")
     if (is.null(break_dates)) break_dates <- f_args$break_dates
     forecast <- do.call(predict,c(list(x),predict_args))
@@ -545,6 +550,7 @@ sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 
 
 scale_newtests <- function(x) {
+    newTests <- NULL
     xx  <- (x
         %>% dplyr::mutate_at("var",trans_state_vars)
         %>% tidyr::pivot_wider(names_from="var",values_from="value",id_cols="date")
