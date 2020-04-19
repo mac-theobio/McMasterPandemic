@@ -10,7 +10,8 @@ forecast_ensemble(
   forecast_args = attr(fit, "forecast_args"),
   qvec = c(0.05, 0.5, 0.95),
   qnames = c("lwr", "value", "upr"),
-  seed = NULL
+  seed = NULL,
+  .progress = if (interactive()) "text" else "none"
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ forecast_ensemble(
 \item{qnames}{quantile names}
 
 \item{seed}{random-number seed}
+
+\item{.progress}{progress bar?}
 }
 \description{
 find confidence envelopes by simulation

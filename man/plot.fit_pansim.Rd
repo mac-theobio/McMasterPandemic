@@ -14,6 +14,7 @@
   add_ICU_cap = FALSE,
   mult_var = NULL,
   predict_args = NULL,
+  directlabels = FALSE,
   ...
 )
 }
@@ -30,6 +31,8 @@
 
 \item{mult_var}{variable in data set indicating multiple forecast types to compare}
 
+\item{directlabels}{use direct labels?}
+
 \item{forecast}{a forecast data frame}
 
 \item{breaks}{breakpoints}
@@ -41,5 +44,8 @@ plot forecasts from fits
 }
 \examples{
 plot(ont_cal1)
-plot(ont_cal1,data=ont_all_sub)
+ont_trans <- trans_state_vars(ont_all)
+plot(ont_cal1,data=ont_trans)
+plot(ont_cal1,data=ont_trans, add_tests=TRUE)
+plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
 }
