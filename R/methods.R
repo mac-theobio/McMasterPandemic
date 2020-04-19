@@ -445,7 +445,7 @@ capac_info <- data.frame(value=c(630,1300),
                          lab=c("current","expanded"))
 
 ##' plot forecasts from fits
-##' @param forecast a forecast data frame
+##' @param x a calibrated object (result from \code{\link{calibrate}})
 ##' @param data original time series data
 ##' @param breaks breakpoints
 ##' @param dlspace spacing for direct labels (not working)
@@ -462,7 +462,10 @@ capac_info <- data.frame(value=c(630,1300),
 ##' ont_trans <- trans_state_vars(ont_all)
 ##' plot(ont_cal1,data=ont_trans)
 ##' plot(ont_cal1,data=ont_trans, add_tests=TRUE)
+##' plot(ont_cal1,data=ont_trans, predict_args=list(end_date="2020-07-01"))
+##' \donttest{
 ##' plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
+##' }
 ##' @export
 plot.fit_pansim <- function(x,
                     data=NULL,

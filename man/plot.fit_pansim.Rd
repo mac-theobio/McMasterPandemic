@@ -19,6 +19,8 @@
 )
 }
 \arguments{
+\item{x}{a calibrated object (result from \code{\link{calibrate}})}
+
 \item{data}{original time series data}
 
 \item{dlspace}{spacing for direct labels (not working)}
@@ -33,8 +35,6 @@
 
 \item{directlabels}{use direct labels?}
 
-\item{forecast}{a forecast data frame}
-
 \item{breaks}{breakpoints}
 
 \item{add_data}{include data as points?}
@@ -47,5 +47,8 @@ plot(ont_cal1)
 ont_trans <- trans_state_vars(ont_all)
 plot(ont_cal1,data=ont_trans)
 plot(ont_cal1,data=ont_trans, add_tests=TRUE)
+plot(ont_cal1,data=ont_trans, predict_args=list(end_date="2020-07-01"))
+\donttest{
 plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
+}
 }
