@@ -12,6 +12,10 @@ namespace-update
 install
 *.log
 *.tex
+*.aux
+*.bbl
+*.blg
+*.out
 *.synctex*
 *.toc
 *.pdf
