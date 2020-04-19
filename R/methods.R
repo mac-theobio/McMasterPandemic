@@ -42,7 +42,7 @@ calc_reports <- function(x,params) {
 ##' @param log plot y-axis on log scale?
 ##' @param show_times indicate times when parameters changed?
 ##' @param ... additional arguments to \code{\link{condense.pansim}}
-##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10
+##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
 ##' @importFrom dplyr one_of
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
@@ -386,23 +386,30 @@ update.fit_pansim <- function(object, ...) {
 update.pansim <- update.fit_pansim
 
 
-## make forecast with specified end date
+##' make forecasts from sim
+##' @param object a fitted object
+##' @param end_date ending date for sim
+##' @param stoch stochasticity
+##' @param keep_vars ...
+##' @param ensemble run ensemble?
+##' @param ... extra args (disregarded)
+##' @export
+##' @examples
+##' predict(ont_cal1)
+##' predict(ont_cal_2brks,ensemble=TRUE)
 predict.fit_pansim <- function(object
-                             , end_date
+                             , end_date=NULL
                              , stoch=NULL
                              , keep_vars=c("H","ICU","d","incidence","report","newTests/1000")
                               , ensemble = FALSE,
                                ... ) {
     
-    check_dots(...)    
     get_type <- (.
         %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
                                  "inc","prev"))
     )
     sub_vars <- (. %>% dplyr::filter(var %in% keep_vars)
     )
-
-
     f_args <- attr(object, "forecast_args")
     if (!is.null(end_date)) {
         f_args$end_date <- end_date
@@ -410,14 +417,21 @@ predict.fit_pansim <- function(object
     if (!is.null(stoch)) {
         f_args$stoch <- stoch
     }
-    fc <- (do.call(forecast_sim,
-                      c(list(p=object$par), f_args))
+    if (!ensemble) {
+        fc <- (do.call(forecast_sim,
+                       c(list(p=object$par), f_args, list(...))))
+    } else {
+        argList <- c(list(fit=object, forecast_args=f_args), list(...))
+        fc <- do.call(forecast_ensemble, argList)
+    }
+    fc <- (fc
         %>% sub_vars()
         %>% get_type()
     )
     return(fc)
 }
 
+## FIXME: don't hard-code!
 ## data frame for labeling new tests
 newtest_lab <-data.frame(date=as.Date("2020-04-10"),
                          value=10,
@@ -440,11 +454,15 @@ capac_info <- data.frame(value=c(630,1300),
 ##' @param add_data include data as points?
 ##' @param add_ICU_cap include horizontal lines showing ICU capacity?
 ##' @param mult_var variable in data set indicating multiple forecast types to compare
+##' @param directlabels use direct labels?
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
 ##' @importFrom directlabels geom_dl dl.trans
 ##' @examples
 ##' plot(ont_cal1)
-##' plot(ont_cal1,data=ont_all_sub)
+##' ont_trans <- trans_state_vars(ont_all)
+##' plot(ont_cal1,data=ont_trans)
+##' plot(ont_cal1,data=ont_trans, add_tests=TRUE)
+##' plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
 ##' @export
 plot.fit_pansim <- function(x,
                     data=NULL,
@@ -455,12 +473,12 @@ plot.fit_pansim <- function(x,
                     add_ICU_cap=FALSE,
                     mult_var=NULL,
                     predict_args = NULL,
+                    directlabels=FALSE,
                     ...) {
-    f_args <- attr(x,"break_dates")
+    f_args <- attr(x,"forecast_args")
     if (is.null(break_dates)) break_dates <- f_args$break_dates
-    forecast <- do.call(predict,c(list(x,predict_args)))
+    forecast <- do.call(predict,c(list(x),predict_args))
     var <- date <- value <- mult_var <- NULL
-    check_dots(...)
     p <- (ggplot(forecast,aes(date,value,colour=var))
         + scale_y_log10(limits=c(1,NA),oob=scales::squish)
         + facet_wrap(~vtype,ncol=1,scales="free_y")
@@ -478,9 +496,15 @@ plot.fit_pansim <- function(x,
     } else {
         p <- p + geom_line(aes_string(lty=mult_var))
     }
+    if (all(c("lwr","upr") %in% names(forecast))) {
+        p <- (p
+            + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var),
+                          colour=NA, alpha=0.2)
+        )
+    }
     if (!is.null(data)) {
+        if (add_tests) data <- scale_newtests(data)
         data <- get_type(sub_vars(data))
-        if (!add_tests) data <- dplyr::filter(data,var!="newTests/1000")
         p <- (p + geom_point(data=data)
             + geom_line(data=data,alpha=0.2)
         )
@@ -499,10 +523,14 @@ plot.fit_pansim <- function(x,
     ## trying to fix spacing on the fly: kluge!
     ## dlspace not found
     ## geom_dl() must do weird evaluation env stuff
-    return(p + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
-                       aes(label=var))
-           + expand_limits(x=max(forecast$date)+limspace)
-           )
+    if (directlabels) {
+        p <- (p
+            + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
+                      aes(label=var))
+            + expand_limits(x=max(forecast$date)+limspace)
+        )
+    }
+    return(p)
 }
 
 ## FIXME: less hard-coding
@@ -512,3 +540,14 @@ get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d
                                        "inc","prev"))
 sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 
+
+scale_newtests <- function(x) {
+    xx  <- (x
+        %>% dplyr::mutate_at("var",trans_state_vars)
+        %>% tidyr::pivot_wider(names_from="var",values_from="value",id_cols="date")
+        %>% dplyr::mutate(`newTests/1000`=newTests/1000)
+        %>% dplyr::select(-newTests)
+        %>% tidyr::pivot_longer(names_to="var",-date)
+    )
+    return(xx)
+}

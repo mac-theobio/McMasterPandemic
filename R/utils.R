@@ -92,7 +92,9 @@ label_dict$Label <-  ff(label_dict$Label)
 ##' @param x a vector of state variables (factor or character)
 ##' @export
 trans_state_vars <- function(x) {
-    if (inherits(x,"data.frame")) stop("trans_state_vars should be applied to a vector, not a data frame")
+    if (inherits(x,"data.frame")) {
+        return(dplyr::mutate_at(x,"var",trans_state_vars))
+    }
     x <- as.character(x)
     D <- na.omit(label_dict)
     matches <- lapply(D$Regex,grep,x=unique(x))

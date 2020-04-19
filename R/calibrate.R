@@ -506,6 +506,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param forecast_args arguments to pass to \code{forecast_sim}
 ##' @param qvec vector of quantiles
 ##' @param qnames quantile names
+##' @param .progress progress bar?
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 ## FIXME: use bbmle::pop_pred_samp?
@@ -514,7 +515,8 @@ forecast_ensemble <- function(fit,
                               forecast_args=attr(fit,"forecast_args"),
                               qvec=c(0.05,0.5,0.95),
                               qnames=c("lwr","value","upr"),
-                              seed=NULL
+                              seed=NULL,
+                              .progress=if (interactive()) "text" else "none"
                               ) {
 
     var <- NULL
@@ -548,7 +550,8 @@ forecast_ensemble <- function(fit,
     ## tried with purrr::pmap but too much of a headache
     t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars)
                                          , .margins=1
-                                         , .fun=ff))
+                                         , .fun=ff
+                                         , .progress=.progress  ))
     ## get quantiles per observation
     e_res2 <- (e_res %>% dplyr::bind_cols()
         %>% apply(1,stats::quantile,qvec,na.rm=TRUE)

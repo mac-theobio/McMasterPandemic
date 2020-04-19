@@ -26,6 +26,8 @@ ontario_calibration.Rout:  ontario_clean.Rout ontario_calibration.R $(pkgdesc)
 
 ontario_calibration_hosponly.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.R
 
+ontario_calibration_2brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_2brks.R
+
 ont_cal%.png: ontario_cal_plots.Rout ;
 ont_cal%.pdf: ontario_cal_plots.Rout ;
 ontario_cal_plots.Rout: ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.Rout ontario_cal_plots.R

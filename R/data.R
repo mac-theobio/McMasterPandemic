@@ -11,3 +11,9 @@
 #' @format a calibrated object ...
 #' Sample COVID19 calibration
 "ont_cal1"
+
+#' @rdname ontario_data
+#' @name ont_2brks
+#' @format a calibrated object ...
+#' Sample COVID19 calibration - only two breakpoints
+"ont_cal_2brks"
