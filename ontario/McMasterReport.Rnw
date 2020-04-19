@@ -47,14 +47,21 @@ knitr::opts_chunk$set(
 
 \tableofcontents
 
+\bigskip\noindent
+\david{\texttt{Makefile} doesn't know to check for new data in Mike's repo.
+\texttt{touch ontario\_clean.R} before compiling this document.}
 
 \section{Summary of Ontario analysis}
 
 \begin{itemize}
+\item \david{Date of latest data update should be noted here.  This
+    could be extracted by finding the last observation time in the
+    relevant \texttt{RData} file.}
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially, but do not appear to
   have reached the point of suppression (we still estimate $\R_t>1$
-  with 95\% confidence).
+  with 95\% confidence).  \david{The fits are quite unstable.  With
+    just 3 more days of data, we predict that we have already peaked.}
 \item The peak of the epidemic could still be months away, after a
   slow and shallow rise.
 \item Because $\R_t$ is estimated to be close to 1, any modelling
@@ -86,7 +93,8 @@ knitr::opts_chunk$set(
 \item ICU counts continue to diverge fairly sharply from the model
   predictions, which is a phenomenon that we do not understand.  This
   is not well explained by saturation of capacity -- the current
-  counts are still well below capacity.
+  counts are still well below capacity.  (The puzzling patterns are in
+  relation to hospitalizations and ICU, not deaths.)
   \begin{itemize}
   \item \emph{Note:} The model assumes that a constant fraction of
     infections are severe, a constant fraction of severe infections
@@ -94,6 +102,13 @@ knitr::opts_chunk$set(
     are transferred to the ICU.  Consequently, the model cannot
     predict a flattening of the ICU curve before everything else
     flattens.
+  \item Is it possible that the epidemic is actually burning out in
+    LTCFs?  If so, this could potentially explain the drop we're
+    seeing.  What fraction of cases are HCWs vs LTCF residents?  How
+    much under-reporting is there in LTCFs?  If LTCF epidemic is
+    peaking earlier, is this because infection rate was
+    extraordinarily high in LTCFs, or that lockdown has a particularly
+    strong effect on LTCFs?
   \end{itemize}
 \end{itemize}
 
