@@ -88,6 +88,7 @@ plotfun <- function(forecast, data=ont_all_sub, breaks=bd,
                                              colour=var),lty=3)
             + geom_text(data=capac_info,aes(y=value,x=min(data$date),
                                             label=lab),vjust=-1)
+            ##NOTE: vjust controls label placement; see ?geom_text
         )
     }
     return(p + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
