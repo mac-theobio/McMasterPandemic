@@ -1,0 +1,223 @@
+%\VignetteIndexEntry{getting started}
+%\VignetteEngine{knitr::knitr}
+%\VignetteEncoding{UTF-8}
+\documentclass[12pt]{article}
+\input{nlipreamble}
+\usepackage{longtable}
+
+%% code listing
+\usepackage{listings}
+\usepackage{color}
+\lstset{
+    showstringspaces=false,
+    basicstyle=\ttfamily,
+    commentstyle=\color[grey]{0.6},
+    stringstyle=\color[RGB]{255,150,75}
+}
+\newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
+\renewcommand{\code}[1]{\inlinecode{R}{#1}}
+
+<<setup,include=FALSE>>=
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  fig.height = 4,
+  dev = "pdf",
+  ##dev = "tikz",
+  cache = FALSE,
+  ## error=TRUE,  ## allow run to continue with error (good for debugging1)
+  ##warning=FALSE,
+  comment = "#>"
+)
+@
+
+\title{COVID-19 modelling report from McMaster:\\
+{\bfseries Ontario} analysis and forecasting}
+
+\author{Ben Bolker, Jonathan Dushoff, Michael Li and David Earn\\
+  \href{mailto:earn@math.mcmaster.ca?subject=McMaster_COVID-19_modelling}{earn@math.mcmaster.ca}}
+%% ?subject=McMaster_COVID-19_modelling
+
+\begin{document}
+\linenumbers
+
+\maketitle
+
+%%\begin{abstract}
+%%\end{abstract}
+
+\tableofcontents
+
+
+\section{Summary of Ontario analysis}
+
+\begin{itemize}
+\item Social distancing measures have reduced the effective
+  reproduction number ($\R_t$) substantially, but not to the point of
+  suppression (we still estimate $\R_t>1$ with 95\% confidence).
+\item The peak of the epidemic could still be months away, after a
+  slow and shallow rise.
+\item Because $\R_t$ is estimated to be close to 1, any modelling
+  improvements are likely to lead to forecasting an earlier epidemic
+  peak.  If $\R_t$ is actually $< 1$ then we should see decline very
+  soon; if $\R_t$ is larger than we currently estimate then the peak
+  can be expected to be higher as well as sooner.
+\item Any relaxation of social distancing will likely speed the
+  approach to the peak and increase its height.
+\end{itemize}
+
+\section{Questions arising from modelling}
+
+\begin{itemize}
+\item Can we figure out how to ``plug the leaks''?
+  \begin{itemize}
+  \item Where and why are people being infected?  Can we quantify
+    transmission (contributions to $\R_0$) by age? location?
+    population density? \dots
+  \item Are infected people not self-isolating?
+  \item Are travellers not self-quarantining?
+  \item Is PPE inadequate?
+  \item Are non-public data sufficiently detailed that we can
+    potentially answer some of these questions?  \david{Kevin Brown at
+      PHO is looking at this; looks like Toronto is a problem; they
+      believe (based on bluedot data) that people coming from the US
+      are not self-quarantining.}
+  \end{itemize}
+\item ICU counts continue to diverge fairly sharply from the model
+  predictions, which is a phenomenon that we do not understand.  This
+  is not well explained by saturation of capacity -- the current
+  counts are still well below capacity.
+  \begin{itemize}
+  \item \emph{Note:} The model assumes that a constant fraction of
+    infections are severe, a constant fraction of severe infections
+    are hospitalized, and a constant fraction of hospitalized cases
+    are transferred to the ICU.  Consequently, the model cannot
+    predict a flattening of the ICU curve before everything else
+    flattens.
+  \end{itemize}
+\end{itemize}
+
+\section{Limitations and concerns}
+
+\begin{itemize}
+\item Analysis presented here is based on the {\bfseries public data}
+  that is compiled and cleaned daily by Michael Li;
+  see \url{https://wzmli.github.io/COVID19-Canada/}.
+\item The quality of the data is unclear.
+  \david{Ask Kevin which columns can be trusted.}
+\item Testing lags for HCWs are likely much shorter than the general
+  public.
+\item A large proportion of deaths are residents of long term care
+  facilities (LTCFs), which are not modelled explicitly.
+\item At present, we do not attempt to model any heterogeneities of
+  transmission associated with age.
+\item We now have access to PHO's non-public data, but have not yet
+  incorporated it.
+\end{itemize}
+
+\section{Analysis framework}
+
+\begin{itemize}
+\item Compartmental mechanistic model:
+  susceptible-exposed-infectious-removed (SEIR), with additional
+  compartments for individuals in hospitals in acute care (H) or
+  intensive care (ICU).  Infections can be asymptomatic, mildly
+  symptomatic or severely symptomatic.  All symptomatic individuals
+  are presumed to have had a period of presymptomatic infectiousness.
+\item Model calibration is performed using
+  \protect{\href{https://en.wikipedia.org/wiki/Maximum_likelihood_estimation}{maximum
+      likelihood estimation}} (MLE) by matching deterministic
+  trajectories to reported cases, hospitalizations and deaths, assuming
+  \protect{\href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
+      binomial}} observation error.
+\item Model forecasts take account of the inherent randomness of the processes
+  of transmission, recovery, \emph{etc.} (``process error'').
+\end{itemize}
+
+\section{Code improvements since last report}
+
+\begin{itemize}
+\item Forecasts include demographic stochasticity (``process error'').
+\david{This is now possible, but currently not shown.}
+\end{itemize}
+
+\section{Current results}
+
+\subsection{Estimated parameters}
+
+<<parameter_estimates, echo=FALSE>>=
+library(McMasterPandemic)
+load("ontario_calibration.RData")
+param_table <- describe_params(summary(params))
+beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
+param_table <- beautify(param_table)
+estimated_params <- invlink_trans(restore(ont_cal1$par,opt_pars))
+main_estparam_table <- beautify(describe_params(estimated_params$params))
+##Rt_params <- 
+@ 
+
+<<estimated_parameter_table, echo=FALSE, results="asis">>=
+Hmisc::latex(main_estparam_table, file="", label="estparmtab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Estimated Parameters.}  Times are given in days."
+             )
+@ 
+
+<<summary_parameter_table, echo=FALSE, results="asis">>=
+Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Derived estimates.}  Times are given in days."
+             )
+@ 
+
+Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
+\david{This needs to be organized better.  $\bar{G}$ is not estimated
+  or derived here, but is important to state.}
+
+<<make_Rt_table, echo=FALSE>>=
+rel_Rt_table <- data.frame( bd = bd, 
+                            rel_beta0 = estimated_params$rel_beta0 )
+rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
+colnames(rel_Rt_table) <- c("Intervention Date","Change in ${\\mathcal R}_t$")
+@ 
+
+Table~\ref{Rttab} shows estimated relative changes in $\R_t$ on the
+dates on which social distancing interventions were implemented.  We
+assumed $\R_t$ changes abruptly on each of these dates and found the
+best fit change.
+<<Rt_table, echo=FALSE, results="asis">>=
+Hmisc::latex(rel_Rt_table, file="", label="Rttab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Relative changes in effective reproduction number $\\R_t$.}"
+             )
+@ 
+
+
+\subsection{Forecasts}
+
+Figure~\ref{fig:forecast} shows our current projections.
+\david{I guess this is based on fitting to ICU? or heavily weighting ICU?}
+
+The vertical lines show the times of implementation of different social distancing measures
+(\emph{cf.}~Table~\ref{Rttab}).
+The horizontal dashed lines 
+%%in the short-term plot 
+represent COVID ICU capacity.
+%%
+There are no confidence bands on these plots and they would be very large.  
+\david{Last week I said: 
+We are working on that, and should have confidence bands on forecasts next week.}
+
+\begin{figure}
+  \includegraphics{ont_cal2.pdf}
+  \caption{COVID-19 forecasts.
+    Dots show reported data.  Curves show forecasts.
+    \emph{Top panel:} Incidence, reported cases, deaths.
+    \david{we might as well write ``death'' rather than ``d''}
+    \emph{Bottom panel:} Hospitalizations in acute care (H) 
+    and intensive care (ICU).}
+  \label{fig:forecast}
+\end{figure}
+
+\david{The current graphs don't look like our best estimates.  I think
+we should display, say, 20 realizations of the simulation with process
+error in very light colours under the deterministic curves.  Some kind
+of CI on peak time and peak height is important too.}
+
+\end{document}
