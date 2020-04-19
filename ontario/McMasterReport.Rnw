@@ -93,7 +93,7 @@ knitr::opts_chunk$set(
     are hospitalized, and a constant fraction of hospitalized cases
     are transferred to the ICU.  Consequently, the model cannot
     predict a flattening of the ICU curve before everything else
-    flattens.
+    flattens. 
   \end{itemize}
 \end{itemize}
 

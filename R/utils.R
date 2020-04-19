@@ -236,3 +236,57 @@ check_dots <- function(..., action="stop") {
     }
     return(NULL)
 }
+
+#' Convert expression string to TeX format
+#'
+#' This has very limited capabilities and is intended
+#' mainly to convert parameter names in mathematical expression strings
+#' to associated TeX symbols so they look good when \code{\link{tikz}}
+#' is in use.
+#'
+#' @param x character string to be interpreted
+#' @param dollars if \code{TRUE} then surround output string in \code{$} signs
+#' @param force if \code{TRUE} then convert to TeX even if \code{\link{dev_is_tikz}} returns \code{FALSE}
+#' @examples
+#' texify("R0 = beta/gamma")
+#' texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
+#' 
+#' @seealso \code{\link{latexTranslate}}
+#' @export
+texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
+  if (!is.character(x)) return(x)
+  if (!force) {
+    ##x <- gsub("fun","",x,fixed=TRUE)
+    return(x)
+  }
+  x <- gsub("E0","E(0)",x,fixed=TRUE)
+  x <- gsub("R0","{\\mathcal R}_0",x,fixed=TRUE)
+  x <- gsub("r0","r_0",x,fixed=TRUE)
+  x <- gsub("Gbar","\\bar{G}",x,fixed=TRUE)
+  x <- gsub("dbl_time","T_2",x,fixed=TRUE)
+  x <- gsub("beta0","beta_0",x,fixed=TRUE)
+  x <- gsub("phi1","phi_1",x,fixed=TRUE)
+  ##FIX: the following would be better using a table of
+  ##     Greek letters and/or a table of TeX symbols
+  x <- gsub("alpha","\\alpha",x,fixed=TRUE)
+  x <- gsub("beta","\\beta",x,fixed=TRUE)
+  x <- gsub("gamma","\\gamma",x,fixed=TRUE)
+  x <- gsub("delta","\\delta",x,fixed=TRUE)
+  x <- gsub("epsilon","\\varepsilon",x,fixed=TRUE)
+  x <- gsub("nu","\\nu",x,fixed=TRUE)
+  x <- gsub("mu","\\mu",x,fixed=TRUE)
+  x <- gsub("phi","\\phi",x,fixed=TRUE)
+  if (dollars) x <- paste0("$",x,"$")
+  return(x)
+}
+
+#' Is \code{\link{tikzDevice}} currently in use?
+#'
+#' Convenient for dealing with text in graphics,
+#' which can be rendered much more professionally with \code{\link[tikzDevice]{tikz}}.
+#' @return logical
+#' @export
+dev_is_tikz <- function() {
+  return(names(grDevices::dev.cur()) == "tikz output")
+}
+

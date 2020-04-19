@@ -385,56 +385,129 @@ update.fit_pansim <- function(object, ...) {
 ##' @export
 update.pansim <- update.fit_pansim
 
-#' Convert expression string to TeX format
-#'
-#' This has very limited capabilities and is intended
-#' mainly to convert parameter names in mathematical expression strings
-#' to associated TeX symbols so they look good when \code{\link{tikz}}
-#' is in use.
-#'
-#' @param x character string to be interpreted
-#' @param dollars if \code{TRUE} then surround output string in \code{$} signs
-#' @param force if \code{TRUE} then convert to TeX even if \code{\link{dev_is_tikz}} returns \code{FALSE}
-#' @examples
-#' texify("R0 = beta/gamma")
-#' texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
-#' 
-#' @seealso \code{\link{latexTranslate}}
-#' @export
-texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
-  if (!is.character(x)) return(x)
-  if (!force) {
-    ##x <- gsub("fun","",x,fixed=TRUE)
-    return(x)
-  }
-  x <- gsub("E0","E(0)",x,fixed=TRUE)
-  x <- gsub("R0","{\\mathcal R}_0",x,fixed=TRUE)
-  x <- gsub("r0","r_0",x,fixed=TRUE)
-  x <- gsub("Gbar","\\bar{G}",x,fixed=TRUE)
-  x <- gsub("dbl_time","T_2",x,fixed=TRUE)
-  x <- gsub("beta0","beta_0",x,fixed=TRUE)
-  x <- gsub("phi1","phi_1",x,fixed=TRUE)
-  ##FIX: the following would be better using a table of
-  ##     Greek letters and/or a table of TeX symbols
-  x <- gsub("alpha","\\alpha",x,fixed=TRUE)
-  x <- gsub("beta","\\beta",x,fixed=TRUE)
-  x <- gsub("gamma","\\gamma",x,fixed=TRUE)
-  x <- gsub("delta","\\delta",x,fixed=TRUE)
-  x <- gsub("epsilon","\\varepsilon",x,fixed=TRUE)
-  x <- gsub("nu","\\nu",x,fixed=TRUE)
-  x <- gsub("mu","\\mu",x,fixed=TRUE)
-  x <- gsub("phi","\\phi",x,fixed=TRUE)
-  if (dollars) x <- paste0("$",x,"$")
-  return(x)
+
+## make forecast with specified end date
+predict.fit_pansim <- function(object
+                             , end_date
+                             , stoch=NULL
+                             , keep_vars=c("H","ICU","d","incidence","report","newTests/1000")
+                              , ensemble = FALSE,
+                               ... ) {
+    
+    check_dots(...)    
+    get_type <- (.
+        %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
+                                 "inc","prev"))
+    )
+    sub_vars <- (. %>% dplyr::filter(var %in% keep_vars)
+    )
+
+
+    f_args <- attr(object, "forecast_args")
+    if (!is.null(end_date)) {
+        f_args$end_date <- end_date
+    }
+    if (!is.null(stoch)) {
+        f_args$stoch <- stoch
+    }
+    fc <- (do.call(forecast_sim,
+                      c(list(p=object$par), f_args))
+        %>% sub_vars()
+        %>% get_type()
+    )
+    return(fc)
 }
 
-#' Is \code{\link{tikzDevice}} currently in use?
-#'
-#' Convenient for dealing with text in graphics,
-#' which can be rendered much more professionally with \code{\link{tikz}}.
-#' @return logical
-#' @export
-dev_is_tikz <- function() {
-  return(names(dev.cur()) == "tikz output")
+## data frame for labeling new tests
+newtest_lab <-data.frame(date=as.Date("2020-04-10"),
+                         value=10,
+                         vtype="prev",
+                         var="newTests/1000",
+                         lab="newTests/1000")
+## data frame for labeling ICU capacities
+capac_info <- data.frame(value=c(630,1300),
+                         vtype="prev",
+                         var="ICU",
+                         lab=c("current","expanded"))
+
+##' plot forecasts from fits
+##' @param forecast a forecast data frame
+##' @param data original time series data
+##' @param breaks breakpoints
+##' @param dlspace spacing for direct labels (not working)
+##' @param limspace extra space (in days) to add to make room for direct labels
+##' @param add_tests plot newTests/1000?
+##' @param add_data include data as points?
+##' @param add_ICU_cap include horizontal lines showing ICU capacity?
+##' @param mult_var variable in data set indicating multiple forecast types to compare
+##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
+##' @importFrom directlabels geom_dl dl.trans
+##' @examples
+##' plot(ont_cal1)
+##' plot(ont_cal1,data=ont_all_sub)
+##' @export
+plot.fit_pansim <- function(x,
+                    data=NULL,
+                    break_dates=NULL,
+                    dlspace=1,
+                    limspace=10,
+                    add_tests=FALSE,
+                    add_ICU_cap=FALSE,
+                    mult_var=NULL,
+                    predict_args = NULL,
+                    ...) {
+    f_args <- attr(x,"break_dates")
+    if (is.null(break_dates)) break_dates <- f_args$break_dates
+    forecast <- do.call(predict,c(list(x,predict_args)))
+    var <- date <- value <- mult_var <- NULL
+    check_dots(...)
+    p <- (ggplot(forecast,aes(date,value,colour=var))
+        + scale_y_log10(limits=c(1,NA),oob=scales::squish)
+        + facet_wrap(~vtype,ncol=1,scales="free_y")
+        + labs(y="")
+        + theme(legend.position="none",
+                ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
+                strip.background = element_blank(),
+                strip.text = element_blank())
+    )
+    if (!is.null(break_dates)) {
+        p <- p + geom_vline(xintercept=break_dates,lty=2)
+    }
+    if (is.null(mult_var)) {
+        p <- p + geom_line()
+    } else {
+        p <- p + geom_line(aes_string(lty=mult_var))
+    }
+    if (!is.null(data)) {
+        data <- sub_vars(data)
+        if (!add_tests) data <- dplyr::filter(data,var!="newTests/1000")
+        p <- (p + geom_point(data=data)
+            + geom_line(data=data,alpha=0.2)
+        )
+        if (add_tests) {
+            p <- p + geom_text(data=newtest_lab,aes(label=lab))
+        }
+    }
+    if (add_ICU_cap) {
+        p <- (p
+            + geom_hline(data=capac_info,aes(yintercept=value,
+                                             colour=var),lty=3)
+            + geom_text(data=capac_info,aes(y=value,x=min(data$date),
+                                            label=lab),vjust=-1)
+        )
+    }
+    ## trying to fix spacing on the fly: kluge!
+    ## dlspace not found
+    ## geom_dl() must do weird evaluation env stuff
+    return(p + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
+                       aes(label=var))
+           + expand_limits(x=max(forecast$date)+limspace)
+           )
 }
+
+keep_vars <- c("H","ICU","d","incidence","report","newTests/1000")
+
+get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
+                                       "inc","prev"))
+sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 

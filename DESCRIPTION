@@ -8,10 +8,11 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"))
 Depends: R (>= 3.5.0)
-Imports: Matrix, igraph, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods, memoise, plyr, purrr, anytime, pomp
-Suggests: knitr, testthat, cowplot
+Imports: Matrix, igraph, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods, memoise, plyr, purrr, anytime, pomp, directlabels
+Suggests: knitr, testthat, cowplot, tikzDevice
 RoxygenNote: 7.1.0
 Encoding: UTF-8
 License: GPL
+LazyData: yes
 VignetteBuilder: knitr
 URL: https://github.com/bbolker/McMasterPandemic
