@@ -392,7 +392,8 @@ update.pansim <- update.fit_pansim
 ##' @param stoch stochasticity
 ##' @param keep_vars ...
 ##' @param ensemble run ensemble?
-##' @param ... extra args (disregarded)
+##' @param new_params parameters to update in base parameters (e.g. adding stochastic parameters)
+##' @param ... extra args (passed to forecast_ensemble)
 ##' @export
 ##' @examples
 ##' predict(ont_cal1)
@@ -401,9 +402,11 @@ predict.fit_pansim <- function(object
                              , end_date=NULL
                              , stoch=NULL
                              , keep_vars=c("H","ICU","d","incidence","report","newTests/1000")
-                              , ensemble = FALSE,
-                               ... ) {
-    
+                             , ensemble = FALSE
+                             , new_params=NULL  
+                             , ... ) {
+
+    var <- . <- NULL
     get_type <- (.
         %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
                                  "inc","prev"))
@@ -417,6 +420,9 @@ predict.fit_pansim <- function(object
     if (!is.null(stoch)) {
         f_args$stoch <- stoch
     }
+    if (!is.null(new_params)) {
+        f_args$base_params <- update(f_args$base_params, new_params)
+    }
     if (!ensemble) {
         fc <- (do.call(forecast_sim,
                        c(list(p=object$par), f_args, list(...))))
@@ -428,6 +434,7 @@ predict.fit_pansim <- function(object
         %>% sub_vars()
         %>% get_type()
     )
+    class(fc) <- c("predict_pansim", class(fc))
     return(fc)
 }
 
@@ -445,16 +452,16 @@ capac_info <- data.frame(value=c(630,1300),
                          lab=c("current","expanded"))
 
 ##' plot forecasts from fits
-##' @param x a calibrated object (result from \code{\link{calibrate}})
+##' @param x a calibrated object (result from \code{\link{calibrate}}) or a prediction (from \code{\link{predict.fit_pansim}})
 ##' @param data original time series data
-##' @param breaks breakpoints
+##' @param break_dates breakpoints
 ##' @param dlspace spacing for direct labels (not working)
 ##' @param limspace extra space (in days) to add to make room for direct labels
 ##' @param add_tests plot newTests/1000?
-##' @param add_data include data as points?
 ##' @param add_ICU_cap include horizontal lines showing ICU capacity?
 ##' @param mult_var variable in data set indicating multiple forecast types to compare
 ##' @param directlabels use direct labels?
+##' @param ... extra arguments (unused)
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
 ##' @importFrom directlabels geom_dl dl.trans
 ##' @examples
@@ -464,10 +471,15 @@ capac_info <- data.frame(value=c(630,1300),
 ##' plot(ont_cal1,data=ont_trans, add_tests=TRUE)
 ##' plot(ont_cal1,data=ont_trans, predict_args=list(end_date="2020-07-01"))
 ##' \donttest{
-##' plot(ont_cal_2brks,predict_args=list(ensemble=TRUE))
+##' pp <- predict(ont_cal_2brks, ensemble=TRUE)
+##' plot(pp)
+##' plot(pp, data=ont_trans)
+##' pp_stoch <- predict(ont_cal_2brks, ensemble=TRUE,
+##'      )
 ##' }
+##' @importFrom stats predict
 ##' @export
-plot.fit_pansim <- function(x,
+plot.predict_pansim <- function(x,
                     data=NULL,
                     break_dates=NULL,
                     dlspace=1,
@@ -475,14 +487,14 @@ plot.fit_pansim <- function(x,
                     add_tests=FALSE,
                     add_ICU_cap=FALSE,
                     mult_var=NULL,
-                    predict_args = NULL,
-                    directlabels=FALSE,
+                    directlabels=TRUE,
                     ...) {
+    check_dots(...)
+    lwr <- upr <- lab <- var <- . <- NULL
     f_args <- attr(x,"forecast_args")
     if (is.null(break_dates)) break_dates <- f_args$break_dates
-    forecast <- do.call(predict,c(list(x),predict_args))
     var <- date <- value <- mult_var <- NULL
-    p <- (ggplot(forecast,aes(date,value,colour=var))
+    p <- (ggplot(x,aes(date,value,colour=var))
         + scale_y_log10(limits=c(1,NA),oob=scales::squish)
         + facet_wrap(~vtype,ncol=1,scales="free_y")
         + labs(y="")
@@ -499,7 +511,7 @@ plot.fit_pansim <- function(x,
     } else {
         p <- p + geom_line(aes_string(lty=mult_var))
     }
-    if (all(c("lwr","upr") %in% names(forecast))) {
+    if (all(c("lwr","upr") %in% names(x))) {
         p <- (p
             + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var),
                           colour=NA, alpha=0.2)
@@ -530,7 +542,7 @@ plot.fit_pansim <- function(x,
         p <- (p
             + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
                       aes(label=var))
-            + expand_limits(x=max(forecast$date)+limspace)
+            + expand_limits(x=max(x$date)+limspace)
         )
     }
     return(p)
@@ -545,6 +557,7 @@ sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 
 
 scale_newtests <- function(x) {
+    newTests <- NULL
     xx  <- (x
         %>% dplyr::mutate_at("var",trans_state_vars)
         %>% tidyr::pivot_wider(names_from="var",values_from="value",id_cols="date")
@@ -554,3 +567,23 @@ scale_newtests <- function(x) {
     )
     return(xx)
 }
+
+## this hackery allows us to make plot.fit_pansim a thin layer around
+## plot.predict_pansim
+
+##' @rdname predict.fit_pansim
+##' @inheritParams plot.predict_pansim
+##' @param predict_args additional arguments to pass to predict
+##' @export
+plot.fit_pansim <- function(x,predict_args=NULL) {
+    mc <- match.call()
+    forecast <- do.call(predict,c(list(x),predict_args))
+    mc[[1]] <- quote(plot)
+    mc$x <- forecast
+    mc$predict_args <- NULL
+    eval.parent(mc)
+}
+
+fm0 <- formals(plot.fit_pansim)
+fm1 <- formals(plot.predict_pansim)
+formals(plot.fit_pansim) <- c(fm0, fm1[-1])

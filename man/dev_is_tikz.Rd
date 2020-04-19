@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{dev_is_tikz}
 \alias{dev_is_tikz}
-\title{Is \code{\link{tikzDevice}} currently in use?}
+\title{Is \code{\link[tikzDevice]{tikzDevice}} currently in use?}
 \usage{
 dev_is_tikz()
 }
