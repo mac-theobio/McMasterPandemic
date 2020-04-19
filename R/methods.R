@@ -532,7 +532,7 @@ plot.predict_pansim <- function(x,
             + geom_hline(data=capac_info,aes(yintercept=value,
                                              colour=var),lty=3)
             + geom_text(data=capac_info,aes(y=value,x=min(data$date),
-                                            label=lab),vjust=-1)
+                                            label=lab),vjust="middle")
         )
     }
     ## trying to fix spacing on the fly: kluge!
