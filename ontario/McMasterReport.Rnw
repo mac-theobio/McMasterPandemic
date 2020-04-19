@@ -52,8 +52,9 @@ knitr::opts_chunk$set(
 
 \begin{itemize}
 \item Social distancing measures have reduced the effective
-  reproduction number ($\R_t$) substantially, but not to the point of
-  suppression (we still estimate $\R_t>1$ with 95\% confidence).
+  reproduction number ($\R_t$) substantially, but do not appear to
+  have reached the point of suppression (we still estimate $\R_t>1$
+  with 95\% confidence).
 \item The peak of the epidemic could still be months away, after a
   slow and shallow rise.
 \item Because $\R_t$ is estimated to be close to 1, any modelling
@@ -110,8 +111,9 @@ knitr::opts_chunk$set(
   term care facilities (LTCFs, which are not modelled explicitly).
 \item At present, we do not attempt to model any heterogeneities of
   transmission associated with age.
-\item We now have access to PHO's non-public data, but have not yet
-  incorporated it.
+\item Preliminary analysis of Ontario Laboratory Information System
+  (OLIS) data from PHO reveals that many individuals have been tested
+  more than once.  The public testing data do not account for this.
 \end{itemize}
 
 \section{Analysis framework}
