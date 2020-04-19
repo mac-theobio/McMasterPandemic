@@ -104,10 +104,10 @@ knitr::opts_chunk$set(
   see \url{https://wzmli.github.io/COVID19-Canada/}.
 \item The quality of the data is unclear.
   \david{Ask Kevin which columns can be trusted.}
-\item Testing lags for HCWs are likely much shorter than the general
-  public.
-\item A large proportion of deaths are residents of long term care
-  facilities (LTCFs), which are not modelled explicitly.
+\item Testing lags for HCWs are likely much shorter than for the
+  general public.
+\item A large proportion of those who have died were residents of long
+  term care facilities (LTCFs, which are not modelled explicitly).
 \item At present, we do not attempt to model any heterogeneities of
   transmission associated with age.
 \item We now have access to PHO's non-public data, but have not yet
@@ -122,7 +122,7 @@ knitr::opts_chunk$set(
   compartments for individuals in hospitals in acute care (H) or
   intensive care (ICU).  Infections can be asymptomatic, mildly
   symptomatic or severely symptomatic.  All symptomatic individuals
-  are presumed to have had a period of presymptomatic infectiousness.
+  are presumed to have had a period of pre-symptomatic infectiousness.
 \item Model calibration is performed using
   \protect{\href{https://en.wikipedia.org/wiki/Maximum_likelihood_estimation}{maximum
       likelihood estimation}} (MLE) by matching deterministic
@@ -175,13 +175,15 @@ Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
 rel_Rt_table <- data.frame( bd = bd, 
                             rel_beta0 = estimated_params$rel_beta0 )
 rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
-colnames(rel_Rt_table) <- c("Intervention Date","Change in ${\\mathcal R}_t$")
+colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")
 @ 
 
 Table~\ref{Rttab} shows estimated relative changes in $\R_t$ on the
 dates on which social distancing interventions were implemented.  We
-assumed $\R_t$ changes abruptly on each of these dates and found the
-best fit change.
+assumed $\R_t$ changed abruptly on each of these dates and found the
+best fit changes.  \david{We should state what interventions were
+  implement on each of these dates.}
+
 <<Rt_table, echo=FALSE, results="asis">>=
 Hmisc::latex(rel_Rt_table, file="", label="Rttab", rowlabel="", table.env=TRUE
             , caption="{\\bfseries Relative changes in effective reproduction number $\\R_t$.}"
@@ -217,7 +219,7 @@ We are working on that, and should have confidence bands on forecasts next week.
 
 \david{The current graphs don't look like our best estimates.  I think
 we should display, say, 20 realizations of the simulation with process
-error in very light colours under the deterministic curves.  Some kind
+error in very light colours under heavy deterministic curves.  Some kind
 of CI on peak time and peak height is important too.}
 
 \end{document}
