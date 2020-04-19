@@ -197,6 +197,30 @@ res1proc2 <- run_sim(params1proc2, start_date=sdate, end_date=edate,
 plot_grid(plot(res1proc2, log=TRUE), plot(res1proc2))
 @
 
+\paragraph{Technical note.}
+
+Demographic noise is included by calculating probabilities from the
+rates and then drawing a multinomial sample to determine how many
+individuals move from one compartment to each of the others.  With
+pure demographic noise, the CV is very small with only $\sim1000$
+individuals moving among compartments.  Process dispersion
+(\code{proc_disp}; ``overdispersed demographic stochasticity'') is
+implemented using \code{pomp::reulermultinom}, which adds gamma white
+noise to the event rates.  \david{See He \emph{et al.} (2010)
+  plug-and-play paper for some discussion of this (p.\,274 and
+  Appendix~A).}  the intensity of the gamma white noise process
+(\code{proc_disp}) has units (\emph{cf.}~$\sigma_{\rm SE}$ in He
+\emph{et al.}); it would be easier to think about the CV rather than
+sd.
+
+\david{Notes scribbed from discussion with BB: To get CIs on a
+  forecast, we could hack by adjusting \code{proc_disp} until getting
+  CIs that are plausibly wide; estimating this number is a can of
+  worms.  A slighty more principaled way to decide on that number: fit
+  params, then run sims with different combinations of obs and proc
+  noise that yield noise like in the data: then infer how observed
+  noise is divided btw proc and measurement error.}
+
 \subsection{Time-dependent transmission rate}
 
 Implementing known changes in transmission rate (e.g., resulting from
