@@ -235,7 +235,7 @@ We are working on that, and should have confidence bands on forecasts next week.
 
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
-<<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=8>>=
+<<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## see ?plot.fit_pansim
 ont_fit <- ont_cal1 # ont_cal1 is built in to pkg
 ont_trans <- trans_state_vars(ont_all)
@@ -257,16 +257,15 @@ plot(ont_fit
 \end{figure}
 
 \begin{figure}
-<<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=8>>=
+<<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## extend fit to August
-ont_fit_forecast <- ont_fit
-attr(ont_fit_forecast, "forecast_args")$end_date <- "2020-10-31"
-plot(ont_fit_forecast
+plot(ont_fit
      , data = ont_trans
      , add_tests = TRUE
      , add_ICU_cap = TRUE
      , directlabels = TRUE
      , limspace = 35
+     , predict_args = list(end_date="2020-09-01")
      )
 @ 
 \caption{COVID-19 forecast.  See caption to
