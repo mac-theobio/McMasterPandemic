@@ -202,7 +202,7 @@ plot_grid(plot(res1proc2, log=TRUE), plot(res1proc2))
 Demographic noise is included by calculating probabilities from the
 rates and then drawing a multinomial sample to determine how many
 individuals move from one compartment to each of the others.  With
-pure demographic noise, the CV is very small with only 1000
+pure demographic noise, the CV is very small with only $\sim1000$
 individuals moving among compartments.  Process dispersion
 (\code{proc_disp}; ``overdispersed demographic stochasticity'') is
 implemented using \code{pomp::reulermultinom}, which adds gamma white
