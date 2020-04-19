@@ -107,6 +107,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
     Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
+    ## default values, will be masked (on purpose) by unpacking params/state
+    nonhosp_mort <- 0
     ####
     np <- length(params)
     ns <- length(state)
@@ -134,11 +136,12 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         M["H","D"]   <- delta*rho
         M["H","R"]   <- (1-delta)*rho
     } else {
-	 		## FIXME: A better term than "acute" to mean the opposite of intensive?
-        ## * three-way split (acute care, ICU/survive, ICUD/die)
-        M["Is","H"] <- phi1*gamma_s
-        M["Is","ICUs"] <- (1-phi1)*(1-phi2)*gamma_s
-        M["Is","ICUd"] <- (1-phi1)*phi2*gamma_s
+        ## FIXME: A better term than "acute" to mean the opposite of intensive?
+        ## four-way split (direct to D, acute care, ICU/survive, ICUD/die)
+        M["Is","H"] <- (1-nonhosp_mort)*phi1*gamma_s
+        M["Is","ICUs"] <- (1-nonhosp_mort)*(1-phi1)*(1-phi2)*gamma_s
+        M["Is","ICUd"] <- (1-nonhosp_mort)*(1-phi1)*phi2*gamma_s
+        M["Is","D"] <- nonhosp_mort*gamma_s
         M["ICUs","H2"] <- psi1 ## ICU to post-ICU acute care
         M["ICUd","D"] <- psi2  ## ICU to death
         M["H2","R"]   <- psi3  ## post-ICU to discharge

@@ -6,7 +6,6 @@ library(directlabels)
 
 keep_vars <- c("H","ICU","d","incidence","report","newTests/1000")
 
-
 get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report","d"),
                                        "inc","prev"))
 sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
@@ -47,7 +46,18 @@ capac_info <- data.frame(value=c(630,1300),
                          lab=c("current","expanded"))
 
 
-plotfun <- function(forecast, data=ont_all_sub, breaks=bd,
+##' @param forecast a forecast data frame
+##' @param data original time series data
+##' @param breaks breakpoints
+##' @param dlspace spacing for direct labels (not working)
+##' @param limspace extra space (in days) to add to make room for direct labels
+##' @param add_tests plot newTests/1000?
+##' @param add_data include data as points?
+##' @param add_ICU_cap include horizontal lines showing ICU capacity?
+##' @param mult_var variable in data set indicating multiple forecast types to compare
+plotfun <- function(forecast,
+                    data=ont_all_sub,
+                    breaks=bd,
                     dlspace=1,
                     limspace=10,
                     add_tests=FALSE,

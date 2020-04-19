@@ -1,5 +1,5 @@
 # ICU base param set 1: Stanford parameters + ICU info + case delay params
-# Date: revised 6 April
+# Revised 19 April (deaths from severe cases w/o hospital)
 "Symbol","Value",Parameter
 "beta0",1,Baseline (non-intervention) transmission across categories
 "Ca",2/3,relative asymptomatic transmission (or contact)
@@ -17,6 +17,7 @@
 "mu",0.956,Fraction of symptomatic cases that are mild
 "N",1e6,Population size
 "E0",5,Initial number exposed
+"nonhosp_mort",0,probability of mortality without hospitalization
 "iso_m",0,Relative self-isolation/distancing of mild cases
 "iso_s",0,Relative self-isolation/distancing of severe cases
 "phi1",0.76,Fraction of hospital cases to acute care
