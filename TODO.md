@@ -4,6 +4,7 @@
 
 * general fitting
    * case report delay should be longer: current mean is 5 days, this needs to include exposed period !
+   * allow LTCH deaths (i.e. deaths not just through ICU)
 * process error
    * implemented but not well-documented
    * overdispersion (beyond demog stoch) is global, not per-transition or per-state variable ... 
