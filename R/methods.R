@@ -479,7 +479,7 @@ plot.fit_pansim <- function(x,
         p <- p + geom_line(aes_string(lty=mult_var))
     }
     if (!is.null(data)) {
-        data <- sub_vars(data)
+        data <- get_type(sub_vars(data))
         if (!add_tests) data <- dplyr::filter(data,var!="newTests/1000")
         p <- (p + geom_point(data=data)
             + geom_line(data=data,alpha=0.2)
@@ -505,6 +505,7 @@ plot.fit_pansim <- function(x,
            )
 }
 
+## FIXME: less hard-coding
 keep_vars <- c("H","ICU","d","incidence","report","newTests/1000")
 
 get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),

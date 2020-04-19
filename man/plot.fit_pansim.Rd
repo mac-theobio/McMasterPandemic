@@ -6,12 +6,11 @@
 \usage{
 \method{plot}{fit_pansim}(
   x,
-  data,
-  breaks,
+  data = NULL,
+  break_dates = NULL,
   dlspace = 1,
   limspace = 10,
   add_tests = FALSE,
-  add_data = TRUE,
   add_ICU_cap = FALSE,
   mult_var = NULL,
   predict_args = NULL,
@@ -21,27 +20,26 @@
 \arguments{
 \item{data}{original time series data}
 
-\item{breaks}{breakpoints}
-
 \item{dlspace}{spacing for direct labels (not working)}
 
 \item{limspace}{extra space (in days) to add to make room for direct labels}
 
 \item{add_tests}{plot newTests/1000?}
 
-\item{add_data}{include data as points?}
-
 \item{add_ICU_cap}{include horizontal lines showing ICU capacity?}
 
 \item{mult_var}{variable in data set indicating multiple forecast types to compare}
 
 \item{forecast}{a forecast data frame}
+
+\item{breaks}{breakpoints}
+
+\item{add_data}{include data as points?}
 }
 \description{
 plot forecasts from fits
 }
 \examples{
-load("../data/ONcalib_2020apr18.rda")
-load("../data/ONdata_2020apr18.rda")
+plot(ont_cal1)
 plot(ont_cal1,data=ont_all_sub)
 }
