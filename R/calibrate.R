@@ -537,7 +537,9 @@ forecast_ensemble <- function(fit,
 
     ## Wald sample
     ## FIXME: count number of distribution params
-    parnum <- length(fit$par) - 1
+    parnum <- length(fit$par)
+	 ## If we fix nbdisp, we don't need the -1
+#	 parnum <- length(fit$par) - 1 
     e_pars <- as.data.frame(MASS::mvrnorm(nsim,
                                           mu=fit$par[1:parnum],
                                           Sigma=solve(fit$hessian[1:parnum,1:parnum])))
