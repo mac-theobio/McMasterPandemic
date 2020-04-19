@@ -35,3 +35,4 @@ cache
 *.Rout.png
 *.png
 */*.RData
+.DS_Store
