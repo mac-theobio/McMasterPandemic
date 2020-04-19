@@ -35,8 +35,13 @@ epiestim_plot.Rout: ontario_clean.Rout ontario_calibration.Rout epiestim.Rout ep
 
 ontario_calibration_report.html: ontario_clean.RData ontario_calibration.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
 
+McMasterReport.pdf: McMasterReport.Rnw ont_cal1.pdf ontario_calibration.Rout
+
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
+
+%.pdf: %.Rnw
+	Rscript -e 'knitr::knit2pdf("$<")'
 
 ### Makestuff
 
