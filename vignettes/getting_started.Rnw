@@ -122,7 +122,7 @@ knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 \paragraph{Initial conditions}
 
 The initial state must also be set, but it is sufficient to specify
-the parameter set (a \code{params_pansim} object), in which case 
+the parameter set (a \code{params_pansim} object), in which case
 the population size and initially exposed population will be taken from the parameters (in this case all non-exposed individuals
 are assumed to be susceptible).
 
