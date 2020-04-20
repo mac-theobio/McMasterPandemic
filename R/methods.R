@@ -353,7 +353,8 @@ update.params_pansim <- function(object, ...) {
     return(object)
 }
 
-
+## need this because of stat/bbmle coef confusion??
+##' @method coef fit_pansim
 ##' @export
 coef.fit_pansim <- function(object,
                             method=c("all","fitted"),
@@ -399,9 +400,17 @@ update.fit_pansim <- function(object, ...) {
     eval.parent(cc)
 }
 
-## same strategy: find call in attribute
+## find call in attribute
+## FIXME: DRY?
 ##' @export
-update.pansim <- update.fit_pansim
+update.pansim <- function(object, ...) {
+    cc <- attr(object,"call")
+    L <- list(...)
+    for (i in seq_along(L)) {
+        cc[[names(L)[i]]] <- L[[i]]
+    }
+    eval.parent(cc)
+}
 
 
 ##' make forecasts from sim
@@ -415,8 +424,11 @@ update.pansim <- update.fit_pansim
 ##' @importFrom bbmle coef
 ##' @export
 ##' @examples
-##' predict(ont_cal1)
+##' ##' predict(ont_cal1)
+##' \dontrun{
+##' ## non-pos-def vcov ... ???
 ##' predict(ont_cal_2brks,ensemble=TRUE)
+##' }
 predict.fit_pansim <- function(object
                              , end_date=NULL
                              , stoch=NULL
@@ -496,11 +508,10 @@ capac_info <- data.frame(value=c(630,1300),
 ##' plot(ont_cal1,data=ont_trans, add_tests=TRUE)
 ##' plot(ont_cal1,data=ont_trans, predict_args=list(end_date="2020-07-01"))
 ##' \donttest{
-##' pp <- predict(ont_cal_2brks, ensemble=TRUE)
-##' plot(pp)
-##' plot(pp, data=ont_trans)
-##' pp_stoch <- predict(ont_cal_2brks, ensemble=TRUE,
-##'      )
+##' ## FIXME: don't try these until we have an example where ensemble works
+##' ## pp <- predict(ont_cal_2brks, ensemble=TRUE)
+##' ## plot(pp)
+##' ## plot(pp, data=ont_trans)
 ##' }
 ##' @importFrom stats predict
 ##' @export

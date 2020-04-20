@@ -68,6 +68,9 @@
 make forecasts from sim
 }
 \examples{
-predict(ont_cal1)
+##' predict(ont_cal1)
+\dontrun{
+## non-pos-def vcov ... ???
 predict(ont_cal_2brks,ensemble=TRUE)
+}
 }

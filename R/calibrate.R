@@ -413,7 +413,7 @@ mle_fun <- function(p,data,debug_plot=FALSE,
     ## opt_pars <- base_params <- start_date <- end_date <- NULL
     ## break_dates <- sim_args <- aggregate_args <- NULL
     if (debug) cat(p,"\n")
-    var <- NULL 
+    var <- pred <- value <- NULL 
     r <- (do.call(forecast_sim,
                   nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
                         sim_args, aggregate_args))
@@ -441,7 +441,8 @@ mle_fun <- function(p,data,debug_plot=FALSE,
         }
     }
     ## need this for NB parameter
-    pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
+    ## FIXME: fixed params can now be handled through mle2?
+    pp <- invlink_trans(restore(p, opt_pars))
     dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
     ret <- -sum(dvals)
     ## FIXME: add evaluation number?
@@ -546,7 +547,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ## FIXME: use bbmle::pop_pred_samp?
 forecast_ensemble <- function(fit,
                               nsim=200,
-                              forecast_args=attr(fit,"forecast_args"),
+                              forecast_args=fit$forecast_args,
                               qvec=c(0.05,0.5,0.95),
                               qnames=c("lwr","value","upr"),
                               seed=NULL,
@@ -569,16 +570,14 @@ forecast_ensemble <- function(fit,
     }
 
     ## baseline fit
-    r <- ff(fit$par, return_val="aggsim")
+    r <- ff(coef(fit$mle2), return_val="aggsim")
 
     ## Wald sample
-    ## FIXME: count number of distribution params
-    parnum <- length(fit$par)
-	 ## If we fix nbdisp, we don't need the -1
-#	 parnum <- length(fit$par) - 1 
+    ## FIXME: count number of distribution params?
+    ## FIXME: use pop_pred_samp()?
     e_pars <- as.data.frame(MASS::mvrnorm(nsim,
-                                          mu=fit$par[1:parnum],
-                                          Sigma=solve(fit$hessian[1:parnum,1:parnum])))
+                                          mu=coef(fit$mle2),
+                                          Sigma=bbmle::vcov(fit$mle2)))
 
     ## run for all param vals in ensemble
     ## tried with purrr::pmap but too much of a headache

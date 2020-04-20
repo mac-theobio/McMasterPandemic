@@ -7,7 +7,7 @@
 forecast_ensemble(
   fit,
   nsim = 200,
-  forecast_args = attr(fit, "forecast_args"),
+  forecast_args = fit$forecast_args,
   qvec = c(0.05, 0.5, 0.95),
   qnames = c("lwr", "value", "upr"),
   seed = NULL,
