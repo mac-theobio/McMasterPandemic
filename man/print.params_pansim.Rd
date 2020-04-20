@@ -17,7 +17,7 @@
 If the detailed description is requested, it is returned as a data frame.
 }
 \examples{
-params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+params <- read_params("ICU1.csv")
 print(params)
 print(params,describe=TRUE)
 }

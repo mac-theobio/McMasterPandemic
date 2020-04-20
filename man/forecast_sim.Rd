@@ -12,6 +12,7 @@ forecast_sim(
   end_date,
   break_dates,
   fixed_pars = NULL,
+  stoch = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
   return_val = c("aggsim", "vals_only")
@@ -31,6 +32,8 @@ forecast_sim(
 \item{break_dates}{specified breakpoints in beta0}
 
 \item{fixed_pars}{parameters to fix}
+
+\item{stoch}{stochastic settings (see \code{\link{run_sim}})}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 

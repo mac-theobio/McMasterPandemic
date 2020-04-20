@@ -364,15 +364,24 @@ sim_fun <- function(target, base_params,
 ##' @importFrom stats update
 ##' @inheritParams calibrate
 ##' @param p vector of parameters
+##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
 ##' @export
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
                          fixed_pars = NULL,
+                         stoch = NULL,
                          sim_args=NULL, aggregate_args=NULL,
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"))
 {
     return_val <- match.arg(return_val)
+    if (!is.null(stoch)) {
+        if (is.null(sim_args)) {
+            sim_args <- list(stoch=stoch)
+        } else {
+            sim_args <- c(sim_args, list(stoch=stoch))
+        }
+    }
     ## restructure and inverse-link parameters
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters

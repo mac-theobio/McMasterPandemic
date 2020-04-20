@@ -320,7 +320,7 @@ describe_params <- function(x) {
 ##' @param describe print full description?
 ##' @param ... (unused, for generic consistency)
 ##' @examples
-##' params <- read_params(system.file("params","ICU1.csv",package="McMasterPandemic"))
+##' params <- read_params("ICU1.csv")
 ##' print(params)
 ##' print(params,describe=TRUE)
 ##' @export
@@ -421,7 +421,8 @@ predict.fit_pansim <- function(object
         f_args$stoch <- stoch
     }
     if (!is.null(new_params)) {
-        f_args$base_params <- update(f_args$base_params, new_params)
+        f_args$base_params <- do.call(update.params_pansim,
+            c(list(f_args$base_params), new_params))
     }
     if (!ensemble) {
         fc <- (do.call(forecast_sim,
@@ -569,7 +570,9 @@ scale_newtests <- function(x) {
 }
 
 ## this hackery allows us to make plot.fit_pansim a thin layer around
-## plot.predict_pansim
+## plot.predict_pansim, with the same arguments (except predict_args,
+## which gets used to call predict() and then removed from the argument
+## list before calling the predict method for the forecast
 
 ##' @rdname predict.fit_pansim
 ##' @inheritParams plot.predict_pansim
