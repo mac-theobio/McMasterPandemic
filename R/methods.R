@@ -291,7 +291,8 @@ param_meanings <- c(
     r0 = "initial epidemic growth rate",
     R0 = "basic reproduction number",
     Gbar = "mean generation interval",
-    dbl_time = "doubling time"
+    dbl_time = "doubling time",
+    nb_disp = "dispersion of negative binomial distribution" # size arg of rnbinom()
 )
 
 ##' Describe parameters

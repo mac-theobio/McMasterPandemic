@@ -171,8 +171,9 @@ param_table <- describe_params(summary(params))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
 estimated_params <- invlink_trans(restore(ont_cal1$par,opt_pars))
-main_estparam_table <- beautify(describe_params(estimated_params$params))
-##Rt_params <- 
+## estimated params other than relative Rt params:
+pp <- c(estimated_params$params, nb_disp=estimated_params$nb_disp)
+main_estparam_table <- beautify(describe_params(pp))
 @ 
 
 <<estimated_parameter_table, echo=FALSE, results="asis">>=
@@ -220,14 +221,13 @@ Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
              )
 @ 
 
-
 \subsection{Forecasts}
 
 Figure~\ref{fig:forecast} shows our current projections.
 \david{I guess this is based on fitting to ICU? or heavily weighting ICU?}
 
 The vertical lines show the times of implementation of different social distancing measures
-(\emph{cf.}~Table~\ref{Rttab}).
+(\emph{cf.}~Tables~\ref{relRttab} and \ref{phasetab}).
 The horizontal dashed lines 
 %%in the short-term plot 
 represent COVID ICU capacity.
