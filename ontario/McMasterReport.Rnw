@@ -60,8 +60,11 @@ knitr::opts_chunk$set(
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially, but do not appear to
   have reached the point of suppression (we still estimate $\R_t>1$
-  with 95\% confidence).  \david{The fits are quite unstable.  With
-    just 3 more days of data, we predict that we have already peaked.}
+  with 95\% confidence).  \david{The fits are quite unstable with all
+    three break points: with just 3 more days of data, we predict that
+    we have already peaked.  Ignoring the first break point, we get a
+    very decent-looking fit (which is what we're doing at the
+    moment).}
 \item The peak of the epidemic could still be months away, after a
   slow and shallow rise.
 \item Because $\R_t$ is estimated to be close to 1, any modelling
@@ -195,7 +198,7 @@ rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
 colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")
 @ 
 
-Table~\ref{Rttab} shows estimated relative changes in $\R_t$ on the
+Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
 dates on which social distancing interventions were implemented.  We
 assumed $\R_t$ changed abruptly on each of these dates and found the
 best fit changes.  \david{We should state what interventions were
@@ -232,6 +235,7 @@ represent COVID ICU capacity.
 There are no confidence bands on these plots and they would be very large.  
 \david{Last week I said: 
 We are working on that, and should have confidence bands on forecasts next week.}
+
 
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
