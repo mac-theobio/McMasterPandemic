@@ -475,8 +475,15 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         ## compute negative log-likelihood
         ## FIXME assuming a single nb_disp for now
         if (do_plot) {
-            plot(value~date, data=r2, log="y")
-            with(r2,lines(date,pred))
+            vv <- unique(r2$var)
+            if (length(vv)==1) {
+                plot(value~date, data=r2, log="y")
+                with(r2,lines(date,pred))
+            } else {
+                with(r2,plot(date,value,col=as.numeric(factor(var)),log="y"))
+                r2s <- split(r2,r2$var)
+                invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
+            }
         }
         ## need this for NB parameter
         pp <- invlink_trans(restore(p, opt_pars, fixed_pars))

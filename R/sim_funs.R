@@ -217,6 +217,7 @@ do_step <- function(state, params, ratemat, dt=1,
                                  dt=dW)
             
         }
+        browser()
     }
     outflow <- rowSums(flows)
     if (do_exponential) outflow[["S"]] <- 0
