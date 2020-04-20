@@ -2,10 +2,13 @@
 % Please edit documentation in R/make_flowchart.R
 \name{make_flowchart}
 \alias{make_flowchart}
-\title{display flow chart}
+\title{display flow chart on current graphics device}
 \usage{
-make_flowchart()
+make_flowchart(params = read_params("ICU1.csv"))
+}
+\arguments{
+\item{params}{parameters (flowchart is determined by non-zero flows)}
 }
 \description{
-display flow chart
+display flow chart on current graphics device
 }

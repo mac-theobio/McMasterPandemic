@@ -1,6 +1,6 @@
 ## FIXME: clean up/minimize
 
-##' display flow chart
+##' display flow chart on current graphics device
 ##' @importFrom igraph graph_from_adjacency_matrix layout_as_tree
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
