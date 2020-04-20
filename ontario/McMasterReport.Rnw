@@ -30,6 +30,14 @@ knitr::opts_chunk$set(
 )
 @
 
+<<pkg_load,warning=FALSE,message=FALSE,echo=FALSE>>=
+library(McMasterPandemic)
+library(dplyr)
+library(ggplot2); theme_set(theme_bw())
+load("ontario_calibration_2brks.RData")
+fit <- ont_cal_2brks
+@ 
+
 \title{COVID-19 modelling report from McMaster:\\
 {\bfseries Ontario} analysis and forecasting}
 
@@ -53,10 +61,12 @@ knitr::opts_chunk$set(
 
 \section{Summary of Ontario analysis}
 
+<<date_range,echo=FALSE>>=
+f_args <- attr(fit,"forecast_args")
+date_range <- with(f_args,c(start_date,end_date))
+@ 
 \begin{itemize}
-\item \david{Date of latest data update should be noted here.  This
-    could be extracted by finding the last observation time in the
-    relevant \texttt{RData} file.}
+\item Date range for calibration: \Sexpr{date_range[1]} -- \Sexpr{date_range[2]}
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially, but do not appear to
   have reached the point of suppression (we still estimate $\R_t>1$
@@ -169,12 +179,11 @@ knitr::opts_chunk$set(
 \subsection{Estimated parameters}
 
 <<parameter_estimates, echo=FALSE>>=
-library(McMasterPandemic)
-load("ontario_calibration.RData")
-param_table <- describe_params(summary(params))
+param_table <- describe_params(coef(fit))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
-estimated_params <- invlink_trans(restore(ont_cal1$par,opt_pars))
+f_args <- attr(fit,"forecast_args")
+estimated_params <- invlink_trans(restore(fit$par, f_args$opt_pars))
 ## estimated params other than relative Rt params:
 pp <- c(estimated_params$params, nb_disp=estimated_params$nb_disp)
 main_estparam_table <- beautify(describe_params(pp))
@@ -186,8 +195,19 @@ Hmisc::latex(main_estparam_table, file="", label="estparmtab", rowlabel="", tabl
              )
 @ 
 
+<<summary_parameter_table, echo=FALSE, results="asis">>=
+Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Derived estimates.}  Times are given in days."
+             )
+@ 
+
+Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
+\david{This needs to be organized better.  $\bar{G}$ is not estimated
+  or derived here, but is important to state.}
+\ben{see stuff in ontario calibration report, which includes what is calibrated how}
+
 <<make_Rt_table, echo=FALSE>>=
-rel_Rt_table <- data.frame( bd = bd, 
+rel_Rt_table <- data.frame( bd = f_args$break_dates, 
                             rel_beta0 = estimated_params$rel_beta0 )
 rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
 colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")
@@ -208,8 +228,15 @@ Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{relRttab}.
 Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
 dates on which social distancing interventions were implemented.  We
 assumed $\R_t$ changed abruptly on each of these dates and found the
-best fit changes.  \david{We should state what interventions were
-  implement on each of these dates.}
+best fit changes.
+
+\begin{itemize}
+
+\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html}{March 17th school closures}
+  \item \href{https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html}{March 23rd country closures}
+\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html}{March 23rd country closures}
+\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{March 28th prohibits gathering}
+\end{itemize}
 
 Table~\ref{parmtab} lists parameters derived from the fitted
 parameters.  \david{Actually, how are these numbers calculated?  $r_0$
@@ -218,7 +245,7 @@ parameters.  \david{Actually, how are these numbers calculated?  $r_0$
 
 Finally, Table~\ref{phasetab} shows the growth rates and reproduction numbers during phases of the outbreak during which different social distancing measures were in place.
 <<phasetab, echo=FALSE, results="asis">>=
-dd <- summary(ont_cal1)
+dd <- summary(fit)
 dd[,-1] <- round(dd[,-1], 2)
 names(dd) <- texify(names(dd), force=TRUE)
 names(dd)[1] <- "Start Date"
@@ -249,10 +276,9 @@ We are working on that, and should have confidence bands on forecasts next week.
   %%\includegraphics{ont_cal2.pdf}
 <<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## see ?plot.fit_pansim
-ont_fit <- ont_cal1 # ont_cal1 is built in to pkg
 ont_trans <- trans_state_vars(ont_all)
 ## show fit up to end of current data
-plot(ont_fit
+plot(fit
      , data = ont_trans
      , add_tests = TRUE
      , add_ICU_cap = TRUE
@@ -271,7 +297,7 @@ plot(ont_fit
 \begin{figure}
 <<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## extend fit to August
-plot(ont_fit
+plot(fit
      , data = ont_trans
      , add_tests = TRUE
      , add_ICU_cap = TRUE

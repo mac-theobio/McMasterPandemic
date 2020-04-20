@@ -136,7 +136,7 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
     dd <- data.frame(dd,R=object[["R"]])
     dd <- add_col(dd,"discharge","discharge")
     if (diff_deaths) {
-        dd <- data.frame(dd,d=c(NA,diff(object[["D"]])))
+        dd <- data.frame(dd,death=c(NA,diff(object[["D"]])))
     } else {
         dd <- data.frame(dd,D=object[["D"]])
     }
@@ -171,7 +171,7 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
 ##' first <- dplyr::first
 ##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
 ##'         FUN=list(mean=c("H","ICU","I"),
-##'                sum=c("report","d")))
+##'                sum=c("report","death")))
 ##' @export
 aggregate.pansim <- function(x,
                              start=NULL,
@@ -353,11 +353,22 @@ update.params_pansim <- function(object, ...) {
     return(object)
 }
 
+
+##' @export
+coef.fit_pansim <- function(object, ...) {
+    check_dots(...)
+    f_args <- attr(object,"forecast_args")
+    opt_pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
+    params <- update(f_args$base_params, opt_pars$params)
+    return(params)
+}
+
 ##' @export
 summary.fit_pansim <- function(object, ...) {
-    check_dots(...)    
+    check_dots(...)
     f_args <- attr(object,"forecast_args")
     pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
+    ## construct table of R0 values etc. in different periods
     pp <- list()
     beta0 <- pars$params[["beta0"]]
     pp[[1]] <- update(f_args$base_params,beta0=beta0)
@@ -402,14 +413,15 @@ update.pansim <- update.fit_pansim
 predict.fit_pansim <- function(object
                              , end_date=NULL
                              , stoch=NULL
-                             , keep_vars=c("H","ICU","d","incidence","report","newTests/1000")
+                             , keep_vars=c("H","ICU","death",
+                                           "incidence","report","newTests/1000")
                              , ensemble = FALSE
                              , new_params=NULL  
                              , ... ) {
 
     var <- . <- NULL
     get_type <- (.
-        %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
+        %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death"),
                                  "inc","prev"))
     )
     sub_vars <- (. %>% dplyr::filter(var %in% keep_vars)
@@ -436,6 +448,7 @@ predict.fit_pansim <- function(object
         %>% sub_vars()
         %>% get_type()
     )
+    attr(fc,"forecast_args") <- attr(object,"forecast_args")
     class(fc) <- c("predict_pansim", class(fc))
     return(fc)
 }
@@ -455,8 +468,6 @@ capac_info <- data.frame(value=c(630,1300),
 
 ## FIXME: fix upstream/consistently
 ##  (trans_state_vars?)
-fix_death_name  <-
-    function(x) dplyr::mutate_at(x, "var", ~ ifelse(.=="d", "death", .))
 
 ##' plot forecasts from fits
 ##' @param x a calibrated object (result from \code{\link{calibrate}}) or a prediction (from \code{\link{predict.fit_pansim}})
@@ -502,9 +513,6 @@ plot.predict_pansim <- function(x,
     if (is.null(break_dates)) break_dates <- f_args$break_dates
     var <- date <- value <- mult_var <- NULL
 
-
-    x <- fix_death_name(x)
-
     p <- (ggplot(x,aes(date,value,colour=var))
         + scale_y_log10(limits=c(1,NA),oob=scales::squish)
         + facet_wrap(~vtype,ncol=1,scales="free_y")
@@ -530,7 +538,6 @@ plot.predict_pansim <- function(x,
     }
     if (!is.null(data)) {
         if (add_tests) data <- scale_newtests(data)
-        data <- fix_death_name(data)
         data <- get_type(sub_vars(data))
         p <- (p + geom_point(data=data)
             + geom_line(data=data,alpha=0.2)
@@ -561,9 +568,10 @@ plot.predict_pansim <- function(x,
 }
 
 ## FIXME: less hard-coding
-keep_vars <- c("H","ICU","d","incidence","report","newTests/1000")
+keep_vars <- c("H","ICU","death",
+               "incidence","report","newTests/1000")
 
-get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","d"),
+get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death"),
                                        "inc","prev"))
 sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 

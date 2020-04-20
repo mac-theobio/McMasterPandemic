@@ -76,8 +76,8 @@ Im,Infectious/mild,NA
 Is,Infectious/severe,NA
 H,Hospital,Hosp.*
 ICU,ICU,ICU.*
-D,Deaths,^[Dd]e.*
-d,New deaths,newDeath.*
+D,Deaths,^(D|dec)
+death,New deaths,newDeath.*
 R,Recovered,NA
 report,Case reports,newConf.*
 ")

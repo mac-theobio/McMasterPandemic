@@ -9,7 +9,7 @@
   object,
   end_date = NULL,
   stoch = NULL,
-  keep_vars = c("H", "ICU", "d", "incidence", "report", "newTests/1000"),
+  keep_vars = c("H", "ICU", "death", "incidence", "report", "newTests/1000"),
   ensemble = FALSE,
   new_params = NULL,
   ...

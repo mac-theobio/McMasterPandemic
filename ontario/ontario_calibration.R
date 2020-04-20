@@ -10,7 +10,7 @@ library(anytime)
 ## load("ontario_clean.RData")
 ## translate variable names to internally used values
 ## drop unused variables
-keep_vars <- c("H","ICU","d","report")
+keep_vars <- c("H","ICU","death","report")
 ## data since 15 March
 ont_recent_sub <- (ont_recent
     %>% mutate_at("var",trans_state_vars)
