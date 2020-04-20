@@ -407,6 +407,48 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return(ret)
 }
 
+mle_fun <- function(p,data,debug_plot=FALSE,
+                    opt_pars, base_params, start_date, end_date, break_dates,
+                    sim_args, aggregate_args) {
+    ## opt_pars <- base_params <- start_date <- end_date <- NULL
+    ## break_dates <- sim_args <- aggregate_args <- NULL
+    if (debug) cat(p,"\n")
+    var <- NULL 
+    r <- (do.call(forecast_sim,
+                  nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
+                        sim_args, aggregate_args))
+        %>% dplyr::rename(pred="value")
+    )
+    ## match up sim results with specified data
+    ## FIXME: do these steps (names fix, filter) outside ?
+    names(data) <- tolower(names(data)) ## ugh
+    ## discard unused state variables
+    data2 <- dplyr::filter(data,var %in% unique(r$var))
+    ## keep only dates present in data
+    r2 <- (dplyr::left_join(data2,r,by=c("date","var"))
+        %>% tidyr::drop_na(value,pred))         ## FIXME: why do we have an NA in pred??
+    ## compute negative log-likelihood
+    ## FIXME assuming a single nb_disp for now
+    if (debug_plot) {
+        vv <- unique(r2$var)
+        if (length(vv)==1) {
+            plot(value~date, data=r2, log="y")
+            with(r2,lines(date,pred))
+        } else {
+            with(r2,plot(date,value,col=as.numeric(factor(var)),log="y"))
+            r2s <- split(r2,r2$var)
+            invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
+        }
+    }
+    ## need this for NB parameter
+    pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
+    dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
+    ret <- -sum(dvals)
+    ## FIXME: add evaluation number?
+    if (debug) cat(unlist(pp),ret,"\n")
+    return(ret)
+}
+
 ##' calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 ##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
 ##' @param start_date_offset days to go back before first data value
@@ -418,28 +460,31 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 ##' @param fixed_pars parameters to fix
 ##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
 ##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
-##' @param optim_args arguments passed to \code{\link{optim}}
+##' @param mle2_control control args for mle2
+##' @param mle2_method method arg for mle2
 ##' @param debug print debugging messages?
 ##' @param debug_plot plot debugging curves?
 ##' @importFrom graphics lines
+##' @importFrom bbmle parnames<- mle2
+## DON'T import stats::coef !
 ##' @export
 calibrate <- function(start_date=min(data$date)-start_date_offset,
-                          start_date_offset=15,
-                          end_date=max(data$date),
-                          break_dates=c("23-Mar-2020","30-Mar-2020"),
-                          base_params,
-                          data,
-                          opt_pars=list(params=c(log_E0=4,
-                                                 log_beta0=-1),
-                                        log_rel_beta0=c(-1,-1),
-                                        log_nb_disp=0),
-                          fixed_pars=NULL,
-                          sim_args=NULL,
-                          aggregate_args=NULL,
-                          optim_args=NULL,
-                          debug=FALSE,
-                          debug_plot=FALSE)
-                          
+                      start_date_offset=15,
+                      end_date=max(data$date),
+                      break_dates=c("23-Mar-2020","30-Mar-2020"),
+                      base_params,
+                      data,
+                      opt_pars=list(params=c(log_E0=4,
+                                             log_beta0=-1),
+                                    log_rel_beta0=c(-1,-1),
+                                    log_nb_disp=0),
+                      fixed_pars=NULL,
+                      sim_args=NULL,
+                      aggregate_args=NULL,
+                      debug=FALSE,
+                      debug_plot=FALSE,
+                      mle2_method="Nelder-Mead",
+                      mle2_control=list(maxit=10000))
 {
     cc <- match.call()
     if (debug) {
@@ -452,68 +497,40 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     data$var <- trans_state_vars(data$var)
     value <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
-    ## brute force
-    ## we are changing beta0 at a pre-specified set of break dates
-    ## (by an unknown amount)
     ## FIXME: allow for aggregation of reports etc.
-    ##  ?? build this as an optional argument to
-    ##   aggregate.pansim
-    mle_fun <- function(p,data,do_plot=FALSE) {
-        var <- NULL 
-        r <- (do.call(forecast_sim,
-                     nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
-                           sim_args, aggregate_args))
-            %>% dplyr::rename(pred="value")
-        )
-        ## match up sim results with specified data
-        ## FIXME: do these steps (names fix, filter) outside ?
-        names(data) <- tolower(names(data)) ## ugh
-        ## discard unused state variables
-        data2 <- dplyr::filter(data,var %in% unique(r$var))
-        ## keep only dates present in data
-        r2 <- (dplyr::left_join(data2,r,by=c("date","var"))
-            %>% tidyr::drop_na(value,pred))         ## FIXME: why do we have an NA in pred??
-        ## compute negative log-likelihood
-        ## FIXME assuming a single nb_disp for now
-        if (do_plot) {
-            vv <- unique(r2$var)
-            if (length(vv)==1) {
-                plot(value~date, data=r2, log="y")
-                with(r2,lines(date,pred))
-            } else {
-                with(r2,plot(date,value,col=as.numeric(factor(var)),log="y"))
-                r2s <- split(r2,r2$var)
-                invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
-            }
-        }
-        ## need this for NB parameter
-        pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
-        ret <- with(r2,-sum(dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE)))
-        ## FIXME: add evaluation number?
-        if (debug) cat(unlist(pp),ret,"\n")
-        return(ret)
-    }
+    ## MLE
     opt_inputs <- unlist(opt_pars)
-    if (!is.null(fixed_pars)) {
-        opt_inputs <- opt_inputs[setdiff(names(opt_inputs), names(unlist(fixed_pars)))]
-    }
-    ## use optim to start with; maybe switch to mle2 later
-    opt <- do.call(optim,
-            c(list(par=opt_inputs, fn=mle_fun, data=data,
-                   do_plot=debug_plot),
-              optim_args))
-    if (opt$convergence>0) warning("convergence problem in optim()")
-    attr(opt,"forecast_args") <- nlist(start_date,
-                                       end_date,
-                                       break_dates,
-                                       base_params,
-                                       opt_pars,
-                                       fixed_pars,
-                                       sim_args,
-                                       aggregate_args)
-    attr(opt,"call") <- cc
-    class(opt) <- c("fit_pansim",class(opt))
-    return(opt)
+    ## n.b.: this has to be hacked dynamically ...
+    parnames(mle_fun) <- names(opt_inputs)
+    mle_data <- nlist(start_date,
+          end_date,
+          break_dates,
+          base_params,
+          opt_pars,
+          sim_args,
+          fixed_pars,
+          aggregate_args,
+          debug,
+          data)
+    opt <- bbmle::mle2(
+        minuslogl=mle_fun
+      , start=opt_inputs
+      , data=mle_data
+      , vecpar=TRUE
+      , method=mle2_method
+      , control=mle2_control)
+    res <- list(mle2=opt,
+                forecast_args=nlist(start_date,
+                                    end_date,
+                                    break_dates,
+                                    base_params,
+                                    opt_pars,
+                                    fixed_pars,
+                                    sim_args,
+                                    aggregate_args),
+                call=cc)
+    class(res) <- "fit_pansim"
+    return(res)
 }
 
 ##' find confidence envelopes by simulation

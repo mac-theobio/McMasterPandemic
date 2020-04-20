@@ -408,6 +408,7 @@ make_state <- function(N=params[["N"]],
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ee <- round(get_evec(params)*E0)
+            if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
                 ee[["E"]] <- 1
                 warning('initial values too small for rounding')

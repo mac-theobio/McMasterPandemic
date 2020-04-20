@@ -35,5 +35,7 @@ ont_recent <- (ont_all
 ont_recent_nt <- filter(ont_recent,var != "newTests")
 ont_all_nt <- filter(ont_all,var != "newTests")
 
+save("ont_all", file=sprintf("ONdata_%s.rda",
+                              format(Sys.time(),"%Y%b%d")))
 # rdsave("ont_all", "ont_recent", "ont_all_nt", "ont_recent_nt", "start_date")
 

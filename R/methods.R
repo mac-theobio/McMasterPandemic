@@ -355,10 +355,16 @@ update.params_pansim <- function(object, ...) {
 
 
 ##' @export
-coef.fit_pansim <- function(object, ...) {
+coef.fit_pansim <- function(object,
+                            method=c("all","fitted"),
+                            ...) {
+    method <- match.arg(method)
     check_dots(...)
-    f_args <- attr(object,"forecast_args")
-    opt_pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
+    f_args <- object$forecast_args
+    opt_pars <- invlink_trans(restore(coef(object$mle2),
+                                      f_args$opt_pars,
+                                      f_args$fixed_pars))
+    if (method=="fitted") return(opt_pars)
     params <- update(f_args$base_params, opt_pars$params)
     return(params)
 }
@@ -366,8 +372,8 @@ coef.fit_pansim <- function(object, ...) {
 ##' @export
 summary.fit_pansim <- function(object, ...) {
     check_dots(...)
-    f_args <- attr(object,"forecast_args")
-    pars <- invlink_trans(restore(object$par,f_args$opt_pars,f_args$fixed_pars))
+    f_args <- object$forecast_args
+    pars <- coef(object, method="fitted")
     ## construct table of R0 values etc. in different periods
     pp <- list()
     beta0 <- pars$params[["beta0"]]
@@ -385,7 +391,7 @@ summary.fit_pansim <- function(object, ...) {
 
 ##' @export
 update.fit_pansim <- function(object, ...) {
-    cc <- attr(object, "call")
+    cc <- object$call
     L <- list(...)
     for (i in seq_along(L)) {
         cc[[names(L)[i]]] <- L[[i]]
@@ -406,6 +412,7 @@ update.pansim <- update.fit_pansim
 ##' @param ensemble run ensemble?
 ##' @param new_params parameters to update in base parameters (e.g. adding stochastic parameters)
 ##' @param ... extra args (passed to forecast_ensemble)
+##' @importFrom bbmle coef
 ##' @export
 ##' @examples
 ##' predict(ont_cal1)
@@ -426,7 +433,7 @@ predict.fit_pansim <- function(object
     )
     sub_vars <- (. %>% dplyr::filter(var %in% keep_vars)
     )
-    f_args <- attr(object, "forecast_args")
+    f_args <- object$forecast_args
     if (!is.null(end_date)) {
         f_args$end_date <- end_date
     }
@@ -439,7 +446,7 @@ predict.fit_pansim <- function(object
     }
     if (!ensemble) {
         fc <- (do.call(forecast_sim,
-                       c(list(p=object$par), f_args, list(...))))
+                       c(list(p=coef(object$mle2)), f_args, list(...))))
     } else {
         argList <- c(list(fit=object, forecast_args=f_args), list(...))
         fc <- do.call(forecast_ensemble, argList)

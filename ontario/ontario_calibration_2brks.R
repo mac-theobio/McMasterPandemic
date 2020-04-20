@@ -8,4 +8,7 @@ opt_pars_2brks$log_rel_beta0 <- rep(-1,2)  ## only two breakpoints (hosp data do
 bd2 <- bd[-1]  ## drop first breakpoint
 ont_cal_2brks <- update(ont_cal1,  opt_pars=opt_pars_2brks, break_dates=bd2)
 
+save("ont_cal_2brks", file=sprintf("ONcalib_2brks_%s.rda",
+                              format(Sys.time(),"%Y%b%d")))
+
 # rdsave("ont_cal_2brks", "opt_pars_2brks", "bd2")

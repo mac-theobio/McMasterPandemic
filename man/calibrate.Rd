@@ -16,9 +16,10 @@ calibrate(
   fixed_pars = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
-  optim_args = NULL,
   debug = FALSE,
-  debug_plot = FALSE
+  debug_plot = FALSE,
+  mle2_method = "Nelder-Mead",
+  mle2_control = list(maxit = 10000)
 )
 }
 \arguments{
@@ -42,11 +43,13 @@ calibrate(
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
 
-\item{optim_args}{arguments passed to \code{\link{optim}}}
-
 \item{debug}{print debugging messages?}
 
 \item{debug_plot}{plot debugging curves?}
+
+\item{mle2_method}{method arg for mle2}
+
+\item{mle2_control}{control args for mle2}
 }
 \description{
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters

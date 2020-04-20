@@ -2,6 +2,7 @@ library("McMasterPandemic")
 library(dplyr)
 library(tidyr)
 library(ggplot2); theme_set(theme_bw())
+library(anytime)
 
 L <- load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
 summary(cparams)
@@ -104,4 +105,46 @@ summary(ccS$params)
 ## LESSON: *small* details in simulation procedure (do_hazard or not, ndt) change the initial
 ##  stages considerably, which leads to problems in brute-force
 
+## too slow for now ...
+if (FALSE) {
+schoolClose <- "2020-Mar-17"
+countryClose <- "2020-Mar-23"
+socialClose <- "2020-Mar-28"
+bd <- anydate(c(schoolClose,countryClose,socialClose))
 
+opt_pars <- list(
+    ## these params are part of the main parameter vector: go to run_sim()
+    params=c(log_E0=4      ## initial exposed
+           , log_beta0=-1  ## initial baseline transmission
+             ## fraction of mild (non-hosp) cases
+           , log_mu=log(cparams[["mu"]])
+             ## fraction of incidence reported
+             ## logit_c_prop=qlogis(params[["c_prop"]]),
+             ## fraction of hosp to acute (non-ICU)
+             , logit_phi1=qlogis(cparams[["phi1"]])
+             ## fraction of ICU cases dying
+             ## logit_phi2=qlogis(params[["phi2"]])
+             ),
+    ## changes in beta at breakpoints
+    log_rel_beta0 = rep(-1, length(bd)),
+    ## NB dispersion
+    log_nb_disp=0)
+
+
+ont_all_sub <- (ont_all
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% c("H","ICU","death","report"))
+)
+
+params <- fix_pars(read_params("ICU1.csv")
+    , target=c(Gbar=6)
+    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
+)
+params[["N"]] <- 14.57e6  ## reset pop to Ontario
+
+cc1 <- calibrate(data=ont_all_sub
+    , base_params=params
+    , opt_pars = opt_pars
+    , break_dates = bd
+)
+}
