@@ -182,35 +182,37 @@ Hmisc::latex(main_estparam_table, file="", label="estparmtab", rowlabel="", tabl
              )
 @ 
 
-<<summary_parameter_table, echo=FALSE, results="asis">>=
-Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
-            , caption="{\\bfseries Derived estimates.}  Times are given in days."
-             )
-@ 
-
-Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
-\david{This needs to be organized better.  $\bar{G}$ is not estimated
-  or derived here, but is important to state.}
-
 <<make_Rt_table, echo=FALSE>>=
 rel_Rt_table <- data.frame( bd = bd, 
                             rel_beta0 = estimated_params$rel_beta0 )
 rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
 colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")
 @ 
-
-Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
-dates on which social distancing interventions were implemented.  We
-assumed $\R_t$ changed abruptly on each of these dates and found the
-best fit changes.  \david{We should state what interventions were
-  implement on each of these dates.}
-
 <<Rt_table, echo=FALSE, results="asis">>=
 Hmisc::latex(rel_Rt_table, file="", label="relRttab", rowlabel="", table.env=TRUE
             , caption="{\\bfseries Relative changes in effective reproduction number $\\R_t$.}"
              )
 @ 
 
+<<derived_parameter_table, echo=FALSE, results="asis">>=
+Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Derived estimates.}  Times are given in days."
+             )
+@ 
+
+Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{relRttab}.
+Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
+dates on which social distancing interventions were implemented.  We
+assumed $\R_t$ changed abruptly on each of these dates and found the
+best fit changes.  \david{We should state what interventions were
+  implement on each of these dates.}
+
+Table~\ref{parmtab} lists parameters derived from the fitted
+parameters.  \david{Actually, how are these numbers calculated?  $r_0$
+  and $\R_0$ don't agree with any phase of the outbreak.  $\bar{G}$ is
+  not estimated or derived here, but is important to state.}
+
+Finally, Table~\ref{phasetab} shows the growth rates and reproduction numbers during phases of the outbreak during which different social distancing measures were in place.
 <<phasetab, echo=FALSE, results="asis">>=
 dd <- summary(ont_cal1)
 dd[,-1] <- round(dd[,-1], 2)
@@ -224,7 +226,9 @@ Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
 \subsection{Forecasts}
 
 Figure~\ref{fig:forecast} shows our current projections.
-\david{I guess this is based on fitting to ICU? or heavily weighting ICU?}
+\david{based on ignoring the first $\R_t$ change time.  So why
+are there three relative $\R_t$ estimates (Table~\ref{relRttab}) and
+four absolute $\R_t$ estimates (Table~\ref{parmtab})?}
 
 The vertical lines show the times of implementation of different social distancing measures
 (\emph{cf.}~Tables~\ref{relRttab} and \ref{phasetab}).
