@@ -387,7 +387,8 @@ make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
                        type="ICU1",
                        state_names=NULL,
-                       params,
+                       use_eigvec=!is.null(params),
+                       params=NULL,
                        x=NULL) {
     ## select vector of state names
     state_names <- switch(type,
@@ -398,7 +399,11 @@ make_state <- function(N=params[["N"]],
     state <- setNames(numeric(length(state_names)),state_names)
     if (is.null(x)) {
         state[["S"]] <- N-E0
-        state[["E"]] <- E0
+        if (!use_eigvec) {
+            state[["E"]] <- E0
+        } else {
+            ee <- get_evec(params)
+        }
     } else {
         if (length(names(x))==0) {
             stop("provided state vector must be named")
