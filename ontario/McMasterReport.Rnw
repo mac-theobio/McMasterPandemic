@@ -62,9 +62,9 @@ knitr::opts_chunk$set(
   have reached the point of suppression (we still estimate $\R_t>1$
   with 95\% confidence).  \david{The fits are quite unstable with all
     three break points: with just 3 more days of data, we predict that
-    we have already peaked.  Ignoring the first break point, we get a
-    very decent-looking fit (which is what we're doing at the
-    moment).}
+    we have already peaked.  Ignoring the first break point (what
+    we're doing now), we get a very decent-looking fit.  Note that DC
+    uses only one break point at the start of social distancing.}
 \item The peak of the epidemic could still be months away, after a
   slow and shallow rise.
 \item Because $\R_t$ is estimated to be close to 1, any modelling
@@ -132,6 +132,10 @@ knitr::opts_chunk$set(
 \item Preliminary analysis of Ontario Laboratory Information System
   (OLIS) data from PHO reveals that many individuals have been tested
   more than once.  The public testing data do not account for this.
+\item \david{We are currently assuming a 5 day lag between infection
+    and report.  In contrast, DC (following advice from Kevin Brown)
+    uses a 9 day lag between symptom onset and report.  The lag for
+    HCWs is ``much shorter''.}
 \end{itemize}
 
 \section{Analysis framework}

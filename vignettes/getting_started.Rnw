@@ -213,13 +213,22 @@ noise to the event rates.  \david{See He \emph{et al.} (2010)
 \emph{et al.}); it would be easier to think about the CV rather than
 sd.
 
-\david{Notes scribbed from discussion with BB: To get CIs on a
+\david{Notes scribbled from discussion with BB: To get CIs on a
   forecast, we could hack by adjusting \code{proc_disp} until getting
   CIs that are plausibly wide; estimating this number is a can of
   worms.  A slighty more principaled way to decide on that number: fit
   params, then run sims with different combinations of obs and proc
   noise that yield noise like in the data: then infer how observed
-  noise is divided btw proc and measurement error.}
+  noise is divided btw proc and measurement error.}  
+
+\david{DC commented on 19 Apr 2020 (`MP updates' thread): ``5/ I have
+  had the same question for a while regarding noise amplitude… I
+  usually look at the variance of the data as a guidance, but never
+  did anything formal.  6/ I often find myself starting with MCMC,
+  just to give it up for ABC or something else a few days/weeks dow
+  the road because I end up spending way too much time in trying to
+  fix more or less technical issues regarding convergence (I use Stan
+  nearly all the time, maybe that’s why…).''}
 
 \subsection{Time-dependent transmission rate}
 
