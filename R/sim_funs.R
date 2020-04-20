@@ -179,7 +179,7 @@ update_foi <- function(state, params) {
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE),
                     do_exponential=FALSE) {
-
+    ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
     if (!stoch[["proc"]]) {
@@ -402,7 +402,7 @@ make_state <- function(N=params[["N"]],
        )
     state <- setNames(numeric(length(state_names)),state_names)
     if (is.null(x)) {
-        state[["S"]] <- N-E0
+        state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
             state[["E"]] <- E0
         } else {

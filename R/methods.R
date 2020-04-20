@@ -612,6 +612,6 @@ formals(plot.fit_pansim) <- c(fm0, fm1[-1])
 
 #' @export
 vcov.fit_pansim <- function(object, ...) {
-    v <- try(solve(x$hessian))
+    v <- try(solve(object$hessian))
     return(v)
 }
