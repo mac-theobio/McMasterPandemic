@@ -564,6 +564,8 @@ scale_newtests <- function(x) {
         %>% dplyr::mutate(`newTests/1000`=newTests/1000)
         %>% dplyr::select(-newTests)
         %>% tidyr::pivot_longer(names_to="var",-date)
+        ## FIXME: [DE] maybe not the best place to do this:
+        %>% dplyr::mutate(var = ifelse(var =="d", "death", var))
     )
     return(xx)
 }
