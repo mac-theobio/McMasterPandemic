@@ -9,7 +9,8 @@ make_state(
   E0 = params[["E0"]],
   type = "ICU1",
   state_names = NULL,
-  params,
+  use_eigvec = !is.null(params),
+  params = NULL,
   x = NULL
 )
 }
@@ -23,10 +24,12 @@ for (e.g., \code{"ICU1"}, \code{"CI"}); determines state names}
 
 \item{state_names}{vector of state names, must include S and E}
 
+\item{use_eigvec}{use dominant eigenvector to distribute non-Susc values
+to zero}
+
 \item{params}{parameter vector (looked in for N and E0)}
 
-\item{x}{proposed (named) state vector; missing values will be set
-to zero}
+\item{x}{proposed (named) state vector; missing values will be set}
 }
 \description{
 retrieve parameters from a CSV file
@@ -49,4 +52,9 @@ generate initial state vector
 \note{
 \code{"CI"} refers to the Stanford group's
     "covid intervention" model.
+}
+\examples{
+p <- read_params("ICU1.csv")
+make_state(N=1e6,E0=1)
+make_state(params=p)
 }

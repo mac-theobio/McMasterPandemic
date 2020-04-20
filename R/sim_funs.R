@@ -378,11 +378,15 @@ run_sim <- function(params
 ##' @param state_names vector of state names, must include S and E
 ##' @param params parameter vector (looked in for N and E0)
 ##' @param x proposed (named) state vector; missing values will be set
+##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
 ##'     to zero
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
 ##' @export
-##'
+##' @examples
+##' p <- read_params("ICU1.csv")
+##' make_state(N=1e6,E0=1)
+##' make_state(params=p)
 ##  FIXME: can pass x, have a name check, fill in zero values
 make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
@@ -403,7 +407,13 @@ make_state <- function(N=params[["N"]],
         if (!use_eigvec) {
             state[["E"]] <- E0
         } else {
-            ee <- get_evec(params)
+            ## distribute 'E0' value based on dominant eigenvector
+            ee <- round(get_evec(params)*E0)
+            if (all(ee==0)) {
+                ee[["E"]] <- 1
+                warning('initial values too small for rounding')
+            }
+            state[names(ee)] <- ee
         }
     } else {
         if (length(names(x))==0) {
