@@ -609,3 +609,9 @@ plot.fit_pansim <- function(x,predict_args=NULL) {
 fm0 <- formals(plot.fit_pansim)
 fm1 <- formals(plot.predict_pansim)
 formals(plot.fit_pansim) <- c(fm0, fm1[-1])
+
+#' @export
+vcov.fit_pansim <- function(object, ...) {
+    v <- try(solve(x$hessian))
+    return(v)
+}
