@@ -177,7 +177,7 @@ params <- coef(fit)
 \subsection{Estimated parameters}
 
 <<parameter_estimates, echo=FALSE>>=
-param_table <- describe_params(coef(fit))
+param_table <- describe_params(summary(coef(fit)))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
 f_args <- attr(fit,"forecast_args")
