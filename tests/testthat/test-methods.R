@@ -33,3 +33,17 @@ test_that("basic aggregation", {
                              sum=c("report","death")))
     expect_equal(dim(a1), c(10,6))
 })
+
+test_that("trans_labels", {
+    vv <- c("H", "ICU", "Ventilator", "report", "newTests", "death")
+    expect_equal(unique((tv <- trans_state_vars(ont_all))$var),
+                 vv)
+    ## idempotent ..
+    expect_equal(unique(trans_state_vars(tv)$var), vv)
+})
+
+test_that("fit methods", {
+    suppressWarnings(plot(ont_cal1))
+    suppressWarnings(plot(ont_cal1,data=trans_state_vars(ont_all)))
+    suppressWarnings(plot(ont_cal_2brks,data=trans_state_vars(ont_all)))
+})

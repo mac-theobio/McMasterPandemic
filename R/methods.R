@@ -136,7 +136,7 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
     dd <- data.frame(dd,R=object[["R"]])
     dd <- add_col(dd,"discharge","discharge")
     if (diff_deaths) {
-        dd <- data.frame(dd,d=c(NA,diff(object[["D"]])))
+        dd <- data.frame(dd,death=c(NA,diff(object[["D"]])))
     } else {
         dd <- data.frame(dd,D=object[["D"]])
     }
@@ -447,7 +447,7 @@ predict.fit_pansim <- function(object
         %>% sub_vars()
         %>% get_type()
     )
-    attr(fc,"break_dates") <- attr(object,"break_dates")
+    attr(fc,"forecast_args") <- attr(object,"forecast_args")
     class(fc) <- c("predict_pansim", class(fc))
     return(fc)
 }
@@ -511,9 +511,6 @@ plot.predict_pansim <- function(x,
     f_args <- attr(x,"forecast_args")
     if (is.null(break_dates)) break_dates <- f_args$break_dates
     var <- date <- value <- mult_var <- NULL
-
-
-    x <- fix_death_name(x)
 
     p <- (ggplot(x,aes(date,value,colour=var))
         + scale_y_log10(limits=c(1,NA),oob=scales::squish)
