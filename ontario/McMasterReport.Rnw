@@ -161,13 +161,18 @@ knitr::opts_chunk$set(
 
 \subsection{Estimated parameters}
 
-<<parameter_estimates, echo=FALSE>>=
+<<pkgs,warning=FALSE,message=FALSE>>=
 library(McMasterPandemic)
-load("ontario_calibration.RData")
-param_table <- describe_params(summary(params))
+library(dplyr)
+@ 
+<<parameter_estimates, echo=FALSE>>=
+load("ontario_calibration_2brks.RData")
+fit <- ont_cal_2brks
+param_table <- describe_params(coef(fit))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
-estimated_params <- invlink_trans(restore(ont_cal1$par,opt_pars))
+f_args <- attr(fit,"forecast_args")
+estimated_params <- invlink_trans(restore(fit$par, f_args$opt_pars))
 main_estparam_table <- beautify(describe_params(estimated_params$params))
 ##Rt_params <- 
 @ 
@@ -189,7 +194,7 @@ Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
   or derived here, but is important to state.}
 
 <<make_Rt_table, echo=FALSE>>=
-rel_Rt_table <- data.frame( bd = bd, 
+rel_Rt_table <- data.frame( bd = f_args$break_dates, 
                             rel_beta0 = estimated_params$rel_beta0 )
 rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
 colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")
@@ -208,7 +213,7 @@ Hmisc::latex(rel_Rt_table, file="", label="relRttab", rowlabel="", table.env=TRU
 @ 
 
 <<phasetab, echo=FALSE, results="asis">>=
-dd <- summary(ont_cal1)
+dd <- summary(fit)
 dd[,-1] <- round(dd[,-1], 2)
 names(dd) <- texify(names(dd), force=TRUE)
 names(dd)[1] <- "Start Date"
@@ -237,10 +242,9 @@ We are working on that, and should have confidence bands on forecasts next week.
   %%\includegraphics{ont_cal2.pdf}
 <<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## see ?plot.fit_pansim
-ont_fit <- ont_cal1 # ont_cal1 is built in to pkg
 ont_trans <- trans_state_vars(ont_all)
 ## show fit up to end of current data
-plot(ont_fit
+plot(fit
      , data = ont_trans
      , add_tests = TRUE
      , add_ICU_cap = TRUE

@@ -3,7 +3,7 @@ library(McMasterPandemic)
 ## load("ontario_calibration.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
 ## use hospitalization data only
 print(unique(ont_all_sub$var))
-ont_recent_hosp <- na.omit(dplyr::filter(ont_all_sub, var=="H"))  ## var %in% c("H","ICU","d")  OR var != "report"
+ont_recent_hosp <- na.omit(dplyr::filter(ont_all_sub, var=="H"))  ## var %in% c("H","ICU","death")  OR var != "report"
 print(opt_pars)  ## original parameter settings
 opt_pars_2brk <- opt_pars
 opt_pars_2brk$log_rel_beta0 <- rep(-1,2)  ## only two breakpoints (hosp data doesn't even start until after brk 1)

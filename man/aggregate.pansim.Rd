@@ -42,5 +42,5 @@ a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
 first <- dplyr::first
 a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
         FUN=list(mean=c("H","ICU","I"),
-               sum=c("report","d")))
+               sum=c("report","death")))
 }

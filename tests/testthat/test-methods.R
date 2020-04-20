@@ -24,12 +24,12 @@ test_that("basic aggregation", {
     expect_error(condense(s,junk=TRUE), "unknown arguments")
     expect_equal(dim(c1),c(62,10))
     expect_equal(names(c1),
-                 c("date", "S", "E", "I", "H", "ICU", "R", "d",
+                 c("date", "S", "E", "I", "H", "ICU", "R", "death",
                    "incidence", "report"))
     first <<- dplyr::first
     expect_error(aggregate(s,junk=TRUE), "unknown arguments")
     a1 <- aggregate(condense(s), start="12-Feb-2020", period="7 days",
                     FUN=list(mean=c("H","ICU","I"),
-                             sum=c("report","d")))
+                             sum=c("report","death")))
     expect_equal(dim(a1), c(10,6))
 })

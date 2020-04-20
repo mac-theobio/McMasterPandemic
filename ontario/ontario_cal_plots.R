@@ -4,9 +4,9 @@ library(tidyr)
 library(ggplot2); theme_set(theme_bw())
 library(directlabels)
 
-keep_vars <- c("H","ICU","d","incidence","report","newTests/1000")
+keep_vars <- c("H","ICU","death","incidence","report","newTests/1000")
 
-get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report","d"),
+get_type <- . %>%  mutate(vtype=ifelse(var %in% c("incidence","report","death"),
                                        "inc","prev"))
 sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 
