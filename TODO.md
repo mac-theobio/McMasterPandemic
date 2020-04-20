@@ -2,6 +2,7 @@
 
 ### short term
 
+* pipeline for copying up-to-date calibrations and data into package
 * plot method for forecasts
 * stochastic ensembles plus plotting
 * general fitting
