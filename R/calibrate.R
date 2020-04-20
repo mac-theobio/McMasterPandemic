@@ -421,6 +421,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 ##' @param optim_args arguments passed to \code{\link{optim}}
 ##' @param debug print debugging messages?
 ##' @param debug_plot plot debugging curves?
+##' @importFrom graphics lines
 ##' @export
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                           start_date_offset=15,
