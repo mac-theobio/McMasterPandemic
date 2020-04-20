@@ -202,8 +202,18 @@ best fit changes.  \david{We should state what interventions were
   implement on each of these dates.}
 
 <<Rt_table, echo=FALSE, results="asis">>=
-Hmisc::latex(rel_Rt_table, file="", label="Rttab", rowlabel="", table.env=TRUE
+Hmisc::latex(rel_Rt_table, file="", label="relRttab", rowlabel="", table.env=TRUE
             , caption="{\\bfseries Relative changes in effective reproduction number $\\R_t$.}"
+             )
+@ 
+
+<<phasetab, echo=FALSE, results="asis">>=
+dd <- summary(ont_cal1)
+dd[,-1] <- round(dd[,-1], 2)
+names(dd) <- texify(names(dd), force=TRUE)
+names(dd)[1] <- "Start Date"
+Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Estimated parameter changes during each phase of social distancing.}"
              )
 @ 
 
@@ -224,13 +234,42 @@ There are no confidence bands on these plots and they would be very large.
 We are working on that, and should have confidence bands on forecasts next week.}
 
 \begin{figure}
-  \includegraphics{ont_cal2.pdf}
-  \caption{COVID-19 forecasts.
-    Dots show reported data.  Curves show forecasts.
+  %%\includegraphics{ont_cal2.pdf}
+<<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
+## see ?plot.fit_pansim
+ont_fit <- ont_cal1 # ont_cal1 is built in to pkg
+ont_trans <- trans_state_vars(ont_all)
+## show fit up to end of current data
+plot(ont_fit
+     , data = ont_trans
+     , add_tests = TRUE
+     , add_ICU_cap = TRUE
+     , directlabels = TRUE
+     )
+@ 
+  \caption{COVID-19 calibration.
+    Dots show reported data.  Curves show the fitted model trajectory.
     \emph{Top panel:} Incidence, reported cases, deaths.
     \david{we might as well write ``death'' rather than ``d''}
     \emph{Bottom panel:} Hospitalizations in acute care (H) 
     and intensive care (ICU).}
+  \label{fig:calibration}
+\end{figure}
+
+\begin{figure}
+<<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
+## extend fit to August
+plot(ont_fit
+     , data = ont_trans
+     , add_tests = TRUE
+     , add_ICU_cap = TRUE
+     , directlabels = TRUE
+     , limspace = 35
+     , predict_args = list(end_date="2020-09-01")
+     )
+@ 
+\caption{COVID-19 forecast.  See caption to
+  Figure~\ref{fig:calibration}.}
   \label{fig:forecast}
 \end{figure}
 

@@ -533,7 +533,7 @@ plot.predict_pansim <- function(x,
             + geom_hline(data=capac_info,aes(yintercept=value,
                                              colour=var),lty=3)
             + geom_text(data=capac_info,aes(y=value,x=min(data$date),
-                                            label=lab),vjust=-1)
+                                            label=lab),vjust="middle")
         )
     }
     ## trying to fix spacing on the fly: kluge!
@@ -565,6 +565,8 @@ scale_newtests <- function(x) {
         %>% dplyr::mutate(`newTests/1000`=newTests/1000)
         %>% dplyr::select(-newTests)
         %>% tidyr::pivot_longer(names_to="var",-date)
+        ## FIXME: [DE] maybe not the best place to do this:
+        %>% dplyr::mutate(var = ifelse(var =="d", "death", var))
     )
     return(xx)
 }
