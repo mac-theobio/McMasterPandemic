@@ -452,6 +452,11 @@ capac_info <- data.frame(value=c(630,1300),
                          var="ICU",
                          lab=c("current","expanded"))
 
+## FIXME: fix upstream/consistently
+##  (trans_state_vars?)
+fix_death_name  <-
+    function(x) dplyr::mutate_at(x, "var", ~ ifelse(.=="d", "death", .))
+
 ##' plot forecasts from fits
 ##' @param x a calibrated object (result from \code{\link{calibrate}}) or a prediction (from \code{\link{predict.fit_pansim}})
 ##' @param data original time series data
@@ -495,6 +500,10 @@ plot.predict_pansim <- function(x,
     f_args <- attr(x,"forecast_args")
     if (is.null(break_dates)) break_dates <- f_args$break_dates
     var <- date <- value <- mult_var <- NULL
+
+
+    x <- fix_death_name(x)
+
     p <- (ggplot(x,aes(date,value,colour=var))
         + scale_y_log10(limits=c(1,NA),oob=scales::squish)
         + facet_wrap(~vtype,ncol=1,scales="free_y")
@@ -520,6 +529,7 @@ plot.predict_pansim <- function(x,
     }
     if (!is.null(data)) {
         if (add_tests) data <- scale_newtests(data)
+        data <- fix_death_name(data)
         data <- get_type(sub_vars(data))
         p <- (p + geom_point(data=data)
             + geom_line(data=data,alpha=0.2)
@@ -565,8 +575,6 @@ scale_newtests <- function(x) {
         %>% dplyr::mutate(`newTests/1000`=newTests/1000)
         %>% dplyr::select(-newTests)
         %>% tidyr::pivot_longer(names_to="var",-date)
-        ## FIXME: [DE] maybe not the best place to do this:
-        %>% dplyr::mutate(var = ifelse(var =="d", "death", var))
     )
     return(xx)
 }
