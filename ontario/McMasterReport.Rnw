@@ -180,8 +180,8 @@ params <- coef(fit)
 param_table <- describe_params(summary(coef(fit)))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
-f_args <- attr(fit,"forecast_args")
-estimated_params <- invlink_trans(restore(fit$par, f_args$opt_pars))
+f_args <- fit$forecast_args
+estimated_params <- invlink_trans(restore(bbmle::coef(fit$mle2), f_args$opt_pars))
 ## estimated params other than relative Rt params:
 pp <- c(estimated_params$params, nb_disp=estimated_params$nb_disp)
 main_estparam_table <- beautify(describe_params(pp))
