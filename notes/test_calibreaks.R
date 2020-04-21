@@ -22,11 +22,12 @@ sim1break <- run_sim_break(params
 plot(sim1break)
 
 simdat <- pivot(condense(sim1break))
-simdat <- simdat %>% filter(var %in% c("report","I"))
+simdat <- simdat %>% filter(var %in% c("report","I","incidence"))
 print(ggsim <- ggplot(simdat,aes(x=date,y=value,color=var))
    + geom_line()
    + geom_vline(xintercept = bd)
    + scale_y_log10()
+   + geom_point()
 )
 
 ## What is wrong with the break date? Why isn't it turning at the break?
