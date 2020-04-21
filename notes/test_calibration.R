@@ -28,7 +28,7 @@ params[["N"]] <- 1e7
 nsim <- 20
 
 sim_cali <- function(x){
-   
+   # x <- 1
    set.seed(x)
    sim1break <- run_sim(params
       , start_date=start_date
