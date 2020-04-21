@@ -276,20 +276,31 @@ get_break <- function(start_date=anydate("1-Mar-2020"),
 ##' @param params parameters
 ##' @param break_dates dates of breakpoints in transmission
 ##' @param rel_beta0 numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint
+##' @examples
+##' params <- read_params("ICU1.csv")
+##' r1 <- run_sim_break(params, break_dates="2020-03-01",
+##'                    start_date="2020-02-01", end_date="2020-04-01",
+##'                    rel_beta0 = 0.5)
+##' plot(r1,log=TRUE)
+##' r2 <- run_sim_break(params, 
+##'                    start_date="2020-02-01", end_date="2020-04-01")
+##' plot(r2,log=TRUE)
 ##' @export
 run_sim_break <- function(params,
-                          break_dates,
+                          break_dates=NULL,
                           rel_beta0,
                           ...) {
-    ## construct time-varying frame, parameters
-    timevar <- data.frame(Date=break_dates,
-                          Symbol="beta0",
-                          Relative_value=rel_beta0)
     sim_args <- c(list(...),
                   nlist(params,
-                        params_timevar=timevar,
-                        state=make_state(params=params))
-                  )
+                        state=make_state(params=params)))
+    if (!is.null(break_dates)) {
+        ## construct time-varying frame, parameters
+        timevar <- data.frame(Date=break_dates,
+                              Symbol="beta0",
+                              Relative_value=rel_beta0)
+        sim_args <- c(sim_args,
+                      list(params_timevar=timevar))
+    }
     do.call(run_sim,sim_args)
 }
                         
@@ -512,6 +523,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           fixed_pars,
           aggregate_args,
           debug,
+          debug_plot,
           data)
     opt <- bbmle::mle2(
         minuslogl=mle_fun

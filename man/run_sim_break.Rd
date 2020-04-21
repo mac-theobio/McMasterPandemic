@@ -4,7 +4,7 @@
 \alias{run_sim_break}
 \title{run simulation with one or more breakpoints}
 \usage{
-run_sim_break(params, break_dates, rel_beta0, ...)
+run_sim_break(params, break_dates = NULL, rel_beta0, ...)
 }
 \arguments{
 \item{params}{parameters}
@@ -17,4 +17,14 @@ run_sim_break(params, break_dates, rel_beta0, ...)
 }
 \description{
 run simulation with one or more breakpoints
+}
+\examples{
+params <- read_params("ICU1.csv")
+r1 <- run_sim_break(params, break_dates="2020-03-01",
+                   start_date="2020-02-01", end_date="2020-04-01",
+                   rel_beta0 = 0.5)
+plot(r1,log=TRUE)
+r2 <- run_sim_break(params, 
+                   start_date="2020-02-01", end_date="2020-04-01")
+plot(r2,log=TRUE)
 }

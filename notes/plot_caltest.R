@@ -3,6 +3,7 @@ library(ggplot2)
 library(tidyverse)
 library(anytime)
 
+L <- load("run_caltest.RData")
 ## setup 
 
 params <- fix_pars(read_params("ICU1.csv"))
@@ -29,50 +30,27 @@ opt_pars <- list(
 )
 params[["N"]] <- 1e7
 
-nsim <- 20
-
-sim_cali <- function(x){
-
-   set.seed(x)
-   sim1break <- run_sim_break(params
-      , start_date=start_date
-      , end_date=end_date
-      , break_dates = bd
-      , rel_beta0= rel_break1
-      , stoch = c(obs = TRUE, proc=FALSE)
-      )
-
-   simdat <- pivot(condense(sim1break))
-   simdat <- simdat %>% filter(var %in% c("report"))
-
-    ## Need to round value because of negative binomial fit
-    dd <- (simdat 
-        %>% filter(!is.na(value)) 
-        %>% mutate(value = round(value))
-        %>% filter(between(date,cutoff_start, cutoff_end))
-    )
-
-    g1 <- calibrate(data=dd, base_params=params
-                  , opt_pars = opt_pars
-                  , break_dates = bd
-                    )
-
-    res_dat <- data.frame(bbmle::confint(g1$mle2, method="quad", level=0.95)
-                        , estimate = bbmle::coef(g1$mle2)
-                        , seed = x
-                        , pars = names(g1$mle2@coef)
-                          )
-
-    return(res_dat)
-}
-
-ll <- lapply(1:nsim,function(x)sim_cali(x))
-
 truedf <- data.frame(pars = c("params.log_E0","params.log_beta0","log_rel_beta0","log_nb_disp")
-   , trueval = c(log(params[["E0"]]), log(params[["beta0"]]), log(rel_break1), log(params[["obs_disp"]]))
+                   , trueval = log(c(params[c("E0","beta0")]
+                                    , rel_break1
+                                    , params[["obs_disp"]])))
+
+
+names(res) <- seq_along(res) ## seeds
+simvals <- (map_dfr(res,~left_join(rename(.$simdat,sim=value),
+                                   rename(.$pred,pred=value),
+                                   by=c("date","var")),.id="seed")
+    %>% select(-vtype)
+    %>% pivot_longer(names_to="type",cols=c("sim","pred"))
 )
 
-simdf <- (bind_rows(ll)
+ggplot(simvals, aes(date,value,lty=type)) +
+    geom_line() +
+    facet_wrap(~seed) +
+    scale_y_log10() +
+    geom_vline(xintercept=bd,colour="red")
+
+simdf <- (map_dfr(res,pluck,"pars")
    %>% left_join(.,truedf)  
    %>% rowwise()
    %>% transmute(pars
@@ -97,4 +75,10 @@ ggmilli <- (ggplot(simdf, aes(x=ind,y=estimate,color=inCI))
    + scale_color_manual(values=c("red","blue","black"))
 )
 print(ggmilli)
-save.image("calibreak_out.RData")
+
+simwide <- (simdf
+    %>% select(pars,estimate,seed)
+    %>% pivot_wider(names_from="pars",values_from="estimate")
+)
+
+pairs(simwide[,-1],gap=FALSE)
