@@ -5,8 +5,9 @@ library(anytime)
 library(parallel)
 
 use_true_start <- TRUE
-nsim <- 30
-options(mc.cores=4)
+cut_dates <- FALSE
+nsim <- 24
+options(mc.cores=6)
 
 ## setup 
 
@@ -20,7 +21,7 @@ cutoff_start <- anydate("2020-02-01")
 cutoff_end <- anydate("2020-03-08")
 
 break1 <- "2020-02-15"
-bd <- anydate(c(break1))
+bd <- anydate(break1)
 rel_break1 <- 0.2
 
 if (use_true_start) {
@@ -65,15 +66,22 @@ sim_cali <- function(x){
    dd <- (simdat 
        %>% filter(!is.na(value)) 
        %>% mutate(value = round(value))
-       %>% filter(between(date,cutoff_start, cutoff_end))
    )
 
-   g1 <- calibrate(data=dd, base_params=params
-                 , opt_pars = opt_pars
-                 , break_dates = bd
-                 , debug_plot=TRUE
-                   )
+    ## WORKS FINE if we don't limit the dates?
+    ## OVERSHOOTS TERRIBLY if we do
+    if (cut_dates) {
+        dd <- filter(dd,between(date,cutoff_start, cutoff_end))
+    }
 
+    g1 <- calibrate(data=dd
+                  , base_params=params
+                  , opt_pars = opt_pars
+                  , break_dates = bd
+                  , debug_plot=TRUE
+                    )
+
+    
     pp <- predict(g1)
 
     if (FALSE) {
@@ -92,9 +100,9 @@ sim_cali <- function(x){
                         , seed = x
                         , pars = names(g1$mle2@coef)
                           )
-    return(list(simdat=simdat,fit=g1,pars=res_dat,pred=pp))
+    return(list(simdat=simdat,fit=g1,pars=res_dat,pred=pp, fullsim=sim1break))
 }
 
 ## mclapply()
-res <- lapply(1:nsim, sim_cali)
-save("res", file="run_caltest.RData")
+res <- mclapply(1:nsim, sim_cali)
+# rdsave("bd","params","res", "rel_break1")

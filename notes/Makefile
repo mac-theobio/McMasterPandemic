@@ -22,6 +22,8 @@ pkgdesc = $(../DESCRIPTION)
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
+plot_caltest.Rout: run_caltest.RData
+
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
 
