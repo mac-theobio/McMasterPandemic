@@ -34,8 +34,8 @@ knitr::opts_chunk$set(
 library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
-load("ontario_calibration_2brks.RData")
-fit <- ont_cal_2brks
+load("ontario_calibration_hosponly.RData")
+fit <- ont_cal2
 @ 
 
 \title{COVID-19 modelling report from McMaster:\\
@@ -62,7 +62,7 @@ fit <- ont_cal_2brks
 \section{Summary of Ontario analysis}
 
 <<date_range,echo=FALSE>>=
-f_args <- attr(fit,"forecast_args")
+f_args <- fit$forecast_args
 date_range <- with(f_args,c(start_date,end_date))
 params <- coef(fit)
 @ 

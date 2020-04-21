@@ -32,10 +32,6 @@ ontario_calibration_1brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ont
 
 ontario_calibration_2brks_ndt.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_2brks_ndt.R
 
-ont_cal%.png: ontario_cal_plots.Rout ;
-ont_cal%.pdf: ontario_cal_plots.Rout ;
-ontario_cal_plots.Rout: ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.Rout ontario_cal_plots.R
-
 epiestim.Rout: ontario_clean.Rout
 epiestim_plot.Rout: ontario_clean.Rout ontario_calibration.Rout epiestim.Rout epiestim_plot.R
 
