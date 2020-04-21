@@ -9,53 +9,52 @@ start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-04-01")
 break1 <- "2020-02-22"
 bd <- anydate(c(break1))
-rel_break1 <- 0.3
+rel_break1 <- 0.2
 
 params[["N"]] <- 1e7
 
-sim1S <- run_sim_break(params
+sim1break <- run_sim_break(params
    , start_date=start_date
    , end_date=end_date
    , break_dates = bd
    , rel_beta0= rel_break1
      )
-plot(sim1S)
+plot(sim1break)
 
-simI <- (sim1S
-   %>% transmute(date
-      , I = S*foi 
-      )         
-)
-
-## Is it suppose to look like this?
-
-print(ggplot(simI,aes(x=date,y=I))
-   + geom_line()
-   + geom_vline(xintercept = bd)
-)
-
-pp <- pivot(sim1S) %>% filter(! var %in% c("S","t"))
-print(gg_all <- ggplot(pp,aes(x=date,y=value,colour=var)) 
+simdat <- pivot(condense(sim1break))
+simdat <- simdat %>% filter(var %in% c("report","I"))
+print(ggsim <- ggplot(simdat,aes(x=date,y=value,color=var))
    + geom_line()
    + geom_vline(xintercept = bd)
    + scale_y_log10()
 )
 
+## What is wrong with the break date? Why isn't it turning at the break?
 
-sim1S2 <- run_sim_break(params
-   , start_date=start_date
-   , end_date=end_date
+## Need to round value because of negative binomial fit
+dd <- (simdat 
+   %>% filter(var == "report") 
+   %>% filter(!is.na(value)) 
+   %>% mutate(value = round(value))
+)
+
+opt_pars <- list(
+   ## these params go to run_sim
+   params=c(log_E0=4, log_beta0=-1)
+   , log_rel_beta0 = rep(-1, length(bd))
+   , log_nb_disp=0
+)
+
+g1 <- calibrate(data=dd, base_params=params
+   , opt_pars = opt_pars
    , break_dates = bd
-   , rel_beta0= rel_break1
-    , ndt=20
-     )
+)
 
-pp2 <- (pivot(sim1S2)
-    %>% filter(! var %in% c("S","t"))
-    %>% mutate(foi=(var=="foi"))
-    %>% filter(date >= as.Date("2020-02-20"), date <= as.Date("2020-03-01"))
-)
-print(gg_all  %+% pp2
-      + geom_point()
-      + facet_wrap(~foi,scale="free_y")
-)
+pp <- invlink_trans(restore(g1$mle2@coef,opt_pars))
+
+print(pp)
+
+print(rel_break1)
+
+print(plot(g1))
+print(ggsim)
