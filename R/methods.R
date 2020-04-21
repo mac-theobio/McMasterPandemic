@@ -467,7 +467,7 @@ predict.fit_pansim <- function(object
         %>% sub_vars()
         %>% get_type()
     )
-    attr(fc,"forecast_args") <- attr(object,"forecast_args")
+    attr(fc,"forecast_args") <- object$forecast_args
     class(fc) <- c("predict_pansim", class(fc))
     return(fc)
 }
