@@ -3,7 +3,6 @@
 ### short term
 
 * pipeline for copying up-to-date calibrations and data into package
-* plot method for forecasts
 * stochastic ensembles plus plotting
 * general fitting
    * case report delay should be longer: current mean is 5 days, this needs to include exposed period !
