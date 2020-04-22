@@ -5,8 +5,8 @@ library(bbmle)
 library(parallel)
 
 use_true_start <- TRUE
-nsim <- 50
-options(mc.cores=6)
+nsim <- 1
+options(mc.cores=1)
 
 ## setup 
 
@@ -19,6 +19,12 @@ summary(params)  ## v. high R0 (6.7)
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
+break1 <- anytime("2020-02-01")
+# break1 <- NULL
+bd <- break1
+rel_break1 <- 0.2
+
+
 ## Start with true parameters
 ##    optimization breaks if factor of true value is > about 1.5 ... ?
 opt_pars <- list(
@@ -26,30 +32,39 @@ opt_pars <- list(
   , log_nb_disp = log(params[["obs_disp"]])
 )
 
+if(!is.null(bd)){
+opt_pars <- list(params=c(log_beta0=log(params[["beta0"]]*1.2))
+	, logit_rel_beta0 = qlogis(rel_break1)
+  	, log_nb_disp = log(params[["obs_disp"]])
+)
+}
+
 sim_cali <- function(seed) {
-    cat(seed,"\n")
-    set.seed(seed)
-    simdat <- run_sim(params
-                    , start_date=start_date
-                    , end_date=end_date
-                    , stoch = c(obs = TRUE, proc=FALSE)
-                      )
+	cat(seed,"\n")
+   set.seed(seed)
+   simdat <- forecast_sim(params
+   	, opt_pars = opt_pars
+		, base_params = params
+		, start_date=start_date
+   	, end_date=end_date
+   	, break_dates = bd
+   # , rel_beta0= rel_break1
+   	, stoch = c(obs = TRUE, proc=FALSE)
+	)
     ## plot(simdat, log=TRUE)
-    simdat <- (simdat
-	%>% condense()
-	%>% pivot()
-	%>% filter(var %in% c("report"))
+   simdat <- (simdat
+   %>% filter(var %in% c("report"))
 	%>% filter(!is.na(value)) 
 	%>% mutate(value = round(value))
-    )
+   )
 
     ## print(params)
     ## print(opt_pars)
     g1 <- calibrate(data=simdat, base_params=params
                   , start_date = start_date
                   , opt_pars = opt_pars
-                  , break_dates = NULL
-                    ## , debug_plot=TRUE
+                  , break_dates = bd
+                    , debug_plot=TRUE
                     ## , debug=TRUE
                     ## , mle2_args=list(browse_obj=TRUE)
                     )

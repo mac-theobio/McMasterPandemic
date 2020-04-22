@@ -33,6 +33,11 @@ Sources += $(wildcard *.R)
 run_caltest_nobreak.Rout: run_caltest_nobreak.R
 	$(run-R)
 
+## Mike's one break stuff
+
+run_caltest_1break.Rout: run_caltest_1break.R
+	$(run-R)
+
 ## Plot many sims at once
 plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
 	$(run-R)
