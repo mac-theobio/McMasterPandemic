@@ -71,8 +71,12 @@ params <- coef(fit)
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially, but do not appear to
   have reached the point of suppression (we still estimate $\R_t>1$
-  with 95\% confidence).  \ben{The fits are \textbf{still} quite unstable,
-    even with only two break ponts \ldots}
+  with 95\% confidence).  \ben{The fits are \textbf{still} quite
+    unstable, even with only two break ponts \ldots} \david{Would it
+    be reasonable to add: ``It is important to note that the fits are
+    unstable, in the sense that relatively small changes in unknown
+    parameter values (e.g., mean time from infection to symptom onset)
+    can yield large changes in peak time and peak height.''}
 \item The peak of the epidemic could still be months away, after a
   slow and shallow rise.
 \item Because $\R_t$ is estimated to be close to 1, any modelling
@@ -140,7 +144,8 @@ params <- coef(fit)
 \item Preliminary analysis of Ontario Laboratory Information System
   (OLIS) data from PHO reveals that many individuals have been tested
   more than once.  The public testing data do not account for this.
-\item We are currently using a \Sexpr{params[["c_delay_mean"]]} day lag between incidence (infection) and case reports.
+\item The mean lag between incidence (infection) and reporting a case
+  is currently assumed to be \Sexpr{params[["c_delay_mean"]]} days.
   \david{DC (following advice from Kevin Brown)
     uses a 9 day lag between symptom onset and report.  The lag for
     HCWs is ``much shorter''.}
@@ -176,6 +181,54 @@ params <- coef(fit)
 
 \subsection{Estimated parameters}
 
+Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
+\david{This needs to be organized better.  $\bar{G}$ is not estimated
+  or derived here, but is important to state.}
+\ben{see stuff in ontario calibration report, which includes what is calibrated how}
+
+Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{relRttab}.
+Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
+dates on which social distancing interventions were implemented in Ontario:
+\begin{itemize}
+\item
+  \href{https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html}{17
+    March 2020.  Declaration of Emergency} (schools ordered to stay closed
+  after March Break)
+\item
+  \href{https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html}{23
+    March 2020.  At-Risk Workplaces}
+\item
+  \href{https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html}{23
+    March 2020.  All Non-Essential Workplaces}
+\item
+  \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{28
+    March 2020. Gatherings of More Than Five People with Strict Exceptions}
+\end{itemize}
+We assumed $\R_t$ changed abruptly on a subset of these dates and found
+the best fit changes.
+\david{Need to make clear how many and which break dates we ended up
+  including and why we ignored the other(s).  It is not clear that the
+state of emergency had a big impact.  Kids were on March Break and
+were not distancing.  Genuine closures didn't happen until 23 March.}
+
+Table~\ref{parmtab} lists parameters derived from the fitted
+parameters.  \david{Actually, how are these numbers calculated?  $r_0$
+  and $\R_0$ don't agree with any phase of the outbreak.  $\bar{G}$ is
+  not estimated or derived here, but is important to state.}
+
+Finally, Table~\ref{phasetab} shows the growth rates and reproduction numbers during phases of the outbreak during which different social distancing measures were in place.
+\david{suppressed warnings (caused by meaningless doubling time when
+  growth rate is negative) in construction of Table~\ref{phasetab}}
+<<phasetab, echo=FALSE, results="asis", warning=FALSE>>=
+dd <- summary(fit)
+dd[,-1] <- round(dd[,-1], 2)
+names(dd) <- texify(names(dd), force=TRUE)
+names(dd)[1] <- "Start Date"
+Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
+            , caption="{\\bfseries Estimated parameter changes during each phase of social distancing.}"
+             )
+@ 
+
 <<parameter_estimates, echo=FALSE>>=
 param_table <- describe_params(summary(coef(fit)))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
@@ -193,12 +246,6 @@ Hmisc::latex(main_estparam_table, file="", label="estparmtab", rowlabel="", tabl
              )
 @ 
 
-
-Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
-\david{This needs to be organized better.  $\bar{G}$ is not estimated
-  or derived here, but is important to state.}
-\ben{see stuff in ontario calibration report, which includes what is calibrated how}
-
 <<make_Rt_table, echo=FALSE>>=
 rel_Rt_table <- data.frame( bd = f_args$break_dates, 
                             rel_beta0 = estimated_params$rel_beta0 )
@@ -214,36 +261,6 @@ Hmisc::latex(rel_Rt_table, file="", label="relRttab", rowlabel="", table.env=TRU
 <<derived_parameter_table, echo=FALSE, results="asis">>=
 Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
             , caption="{\\bfseries Derived estimates.}  Times are given in days."
-             )
-@ 
-
-Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{relRttab}.
-Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
-dates on which social distancing interventions were implemented.  We
-assumed $\R_t$ changed abruptly on each of these dates and found the
-best fit changes.
-
-\begin{itemize}
-
-\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html}{March 17th school closures}
-  \item \href{https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html}{March 23rd country closures}
-\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html}{March 23rd country closures}
-\item \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{March 28th prohibits gathering}
-\end{itemize}
-
-Table~\ref{parmtab} lists parameters derived from the fitted
-parameters.  \david{Actually, how are these numbers calculated?  $r_0$
-  and $\R_0$ don't agree with any phase of the outbreak.  $\bar{G}$ is
-  not estimated or derived here, but is important to state.}
-
-Finally, Table~\ref{phasetab} shows the growth rates and reproduction numbers during phases of the outbreak during which different social distancing measures were in place.
-<<phasetab, echo=FALSE, results="asis">>=
-dd <- summary(fit)
-dd[,-1] <- round(dd[,-1], 2)
-names(dd) <- texify(names(dd), force=TRUE)
-names(dd)[1] <- "Start Date"
-Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
-            , caption="{\\bfseries Estimated parameter changes during each phase of social distancing.}"
              )
 @ 
 
