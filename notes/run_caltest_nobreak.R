@@ -2,12 +2,9 @@ library(McMasterPandemic)
 library(ggplot2)
 library(tidyverse)
 library(anytime)
-library(parallel)
 
 use_true_start <- TRUE
-nsim <- 100
-options(mc.cores=2)
-
+nsim <- 30
 ## setup 
 
 params <- fix_pars(read_params("ICU1.csv"))
@@ -17,7 +14,7 @@ start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
 break1 <- NULL
-bd <- anydate(c(break1))
+bd <- NULL
 
 if (use_true_start) {
    opt_pars <- list(
@@ -89,6 +86,7 @@ sim_cali <- function(x){
    return(list(simdat=simdat,fit=g1,pars=res_dat,pred=pp))
 }
 
+
 ## mclapply()
-res <- mclapply(1:nsim, sim_cali)
-save("res", file="run_caltest_nobreak.RData")
+res <- lapply(1:nsim, function(x)sim_cali(x))
+#rdsave(res)

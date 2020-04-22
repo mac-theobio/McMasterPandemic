@@ -24,6 +24,12 @@ stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forec
 
 plot_caltest.Rout: run_caltest.RData
 
+run_caltest_nobreak.Rout: run_caltest_nobreak.R
+	$(run-R)
+
+plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
+	$(run-R)
+
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
 
