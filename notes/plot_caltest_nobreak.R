@@ -4,9 +4,6 @@ library(tidyverse)
 library(anytime)
 library(bbmle)
 
-params <- fix_pars(read_params("ICU1.csv"))
-params[["obs_disp"]] <- 100 ## BMB: less noise
-
 truedf <- data.frame(pars = c("params.log_beta0","log_nb_disp")
 	, trueval = c(log(params["beta0"]),log(params[["obs_disp"]]))
 )
