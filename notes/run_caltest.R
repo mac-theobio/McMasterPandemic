@@ -105,5 +105,5 @@ sim_cali <- function(x){
 }
 
 ## mclapply()
-res <- mclapply(1:nsim, sim_cali)
+res <- mclapply(seq(nsim), sim_cali)
 # rdsave("bd","params","res", "rel_break1")
