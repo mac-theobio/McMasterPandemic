@@ -24,9 +24,16 @@ stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forec
 
 plot_caltest.Rout: run_caltest.RData
 
+######################################################################
+
+## Mike's nobreak stuff
+
+Sources += $(wildcard *.R)
+
 run_caltest_nobreak.Rout: run_caltest_nobreak.R
 	$(run-R)
 
+## Plot many sims at once
 plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
 	$(run-R)
 
