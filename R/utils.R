@@ -161,12 +161,15 @@ write_params <- function(params, fn, label) {
 ##' invlink_trans(c(log_p1=0,logit_p2=0))
 ##' invlink_trans(list(log_p1=c(0,0),logit_p2=c(0,0,0)))
 ##' invlink_trans(list(p1=c(log_a=0,log_b=0),p2=4))
+##' tst <- list(params = c(log_beta0 = 0.693147180559945), log_nb_disp = 4.60517018598809)
+##' invlink_trans(tst)
 ##' @export
 invlink_trans <- function(p) {
     r <- vector("list",length(p))
     for (i in seq_along(p)) {
         ## recurse if necessary
-        if (length(p[[i]])>1 && !is.null(names(p[[i]]))) {
+        ## if ((length(p[[i]])>1 || is.list(p[[i]])) && !is.null(names(p[[i]]))) {
+        if (!is.null(names(p[[i]]))) {
             r[[i]] <- invlink_trans(p[[i]])
         } else {
             nm <- names(p)[i]

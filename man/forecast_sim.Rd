@@ -15,7 +15,8 @@ forecast_sim(
   stoch = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
-  return_val = c("aggsim", "vals_only")
+  return_val = c("aggsim", "vals_only"),
+  debug = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ forecast_sim(
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
 
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
+
+\item{debug}{print debugging messages?}
 }
 \description{
 simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting

@@ -19,7 +19,8 @@ calibrate(
   debug = FALSE,
   debug_plot = FALSE,
   mle2_method = "Nelder-Mead",
-  mle2_control = list(maxit = 10000)
+  mle2_control = list(maxit = 10000),
+  mle2_args = list()
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ calibrate(
 \item{mle2_method}{method arg for mle2}
 
 \item{mle2_control}{control args for mle2}
+
+\item{mle2_args}{additional arguments for mle2}
 }
 \description{
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters

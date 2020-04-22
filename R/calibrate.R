@@ -383,7 +383,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
                          stoch = NULL,
                          sim_args=NULL, aggregate_args=NULL,
                          ## FIXME: return_val is redundant with sim_fun
-                         return_val=c("aggsim","vals_only"))
+                         return_val=c("aggsim","vals_only"),
+                         debug = FALSE)
 {
     return_val <- match.arg(return_val)
     if (!is.null(stoch)) {
@@ -396,7 +397,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     ## restructure and inverse-link parameters
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters
-    params <- update(base_params, params=pp$params)
+    params <- update(base_params, params=pp$params, .list=TRUE)
+    if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
     r <- do.call(run_sim_break,
                  c(nlist(params,
@@ -429,9 +431,10 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     var <- pred <- value <- NULL 
     r <- (do.call(forecast_sim,
                   nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
-                        sim_args, aggregate_args))
+                        sim_args, aggregate_args, debug))
         %>% dplyr::rename(pred="value")
     )
+    ## ggplot(r,aes(date,pred,colour=var)) + geom_line() + scale_y_log10() + geom_point(data=data,aes(y=value))
     ## match up sim results with specified data
     ## FIXME: do these steps (names fix, filter) outside ?
     names(data) <- tolower(names(data)) ## ugh
@@ -445,7 +448,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     if (debug_plot) {
         vv <- unique(r2$var)
         if (length(vv)==1) {
-            plot(value~date, data=r2, log="y")
+            suppressWarnings(plot(value~date, data=r2, log="y"))
             with(r2,lines(date,pred))
         } else {
             with(r2,plot(date,value,col=as.numeric(factor(var)),log="y"))
@@ -457,6 +460,8 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
     dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
+    ## clamp NaN/NA values to worst obs
+    dvals[is.na(dvals)] <- min(dvals,na.rm=TRUE)
     ret <- -sum(dvals)
     if (!is.null(priors)) {
         browser()
@@ -479,6 +484,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
 ##' @param mle2_control control args for mle2
 ##' @param mle2_method method arg for mle2
+##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
 ##' @param debug_plot plot debugging curves?
 ##' @importFrom graphics lines
@@ -501,7 +507,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       debug=FALSE,
                       debug_plot=FALSE,
                       mle2_method="Nelder-Mead",
-                      mle2_control=list(maxit=10000))
+                      mle2_control=list(maxit=10000),
+                      mle2_args=list())
 {
     cc <- match.call()
     if (debug) {
@@ -530,13 +537,18 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           debug,
           debug_plot,
           data)
-    opt <- bbmle::mle2(
-        minuslogl=mle_fun
-      , start=opt_inputs
-      , data=mle_data
-      , vecpar=TRUE
-      , method=mle2_method
-      , control=mle2_control)
+    ## unnecessary
+    ## if (utils::packageVersion("bbmle")<"1.0.23.2") stop("please remotes::install('bbolker/bbmle') to get newest version")
+    opt <- do.call(bbmle::mle2,
+                   c(list(minuslogl=mle_fun
+                        , start=opt_inputs
+                        , data=mle_data
+                        , vecpar=TRUE
+                        , method=mle2_method
+                        , control=mle2_control
+                        ## , namedrop_hack = FALSE  ## unnecessary
+                          ),
+                     mle2_args))
     res <- list(mle2=opt,
                 forecast_args=nlist(start_date,
                                     end_date,

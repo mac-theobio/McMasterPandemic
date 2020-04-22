@@ -26,6 +26,7 @@
   add_ICU_cap = FALSE,
   mult_var = NULL,
   directlabels = TRUE,
+  log = TRUE,
   ...
 )
 }
@@ -63,6 +64,8 @@
 \item{mult_var}{variable in data set indicating multiple forecast types to compare}
 
 \item{directlabels}{use direct labels?}
+
+\item{log}{use a log10 scale for the y axis?}
 }
 \description{
 make forecasts from sim
