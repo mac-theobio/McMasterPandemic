@@ -2,17 +2,21 @@ library(McMasterPandemic)
 library(ggplot2)
 library(tidyverse)
 library(anytime)
+library(bbmle)
 library(parallel)
 
 use_true_start <- TRUE
-cut_dates <- FALSE
+cut_dates <- TRUE
 nsim <- 24
+start_date_offset <- 7
 ## FIXME option setting for rel_break on log vs logit scale
 options(mc.cores=6)
 
 ## setup 
 
-params <- fix_pars(read_params("ICU1.csv"))
+params <- fix_pars(read_params("ICU1.csv"), target=c(R0=3, Gbar=6))
+## params[["beta0"]] <- 2
+params[["beta0"]] <- 0.9   ## slightly rounded for convenience
 params[["obs_disp"]] <- 100 ## BMB: less noise
 
 start_date <- anydate("2020-01-01")
@@ -79,7 +83,8 @@ sim_cali <- function(x){
                   , base_params=params
                   , opt_pars = opt_pars
                   , break_dates = bd
-                  , debug_plot=TRUE
+                  ## , debug_plot=TRUE
+                  , start_date_offset = start_date_offset
                     )
 
     
