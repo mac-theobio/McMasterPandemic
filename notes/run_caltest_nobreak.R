@@ -16,7 +16,7 @@ end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
 ## Start with true parameters
 opt_pars <- list(
-	params=c(log_beta0=log(3))
+	params=c(log_beta0=log(4))
 	, log_nb_disp = log(params[["obs_disp"]])
 )
 

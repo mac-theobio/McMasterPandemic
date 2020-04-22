@@ -7,6 +7,7 @@ library(parallel)
 use_true_start <- TRUE
 cut_dates <- FALSE
 nsim <- 24
+## FIXME option setting for rel_break on log vs logit scale
 options(mc.cores=6)
 
 ## setup 
@@ -27,14 +28,14 @@ rel_break1 <- 0.2
 if (use_true_start) {
     opt_pars <- list(
         params=c(log_E0=log(params[["E0"]]), log_beta0=log(params[["beta0"]]))
-      , log_rel_beta0 = rel_break1
+      , logit_rel_beta0 = qlogis(rel_break1)
       , log_nb_disp = log(params[["obs_disp"]])
     )
 }  else {
     opt_pars <- list(
         ## these params go to run_sim
         params=c(log_E0=4, log_beta0=-1)
-      , log_rel_beta0 = rep(-1, length(bd))
+      , logit_rel_beta0 = rep(-1, length(bd))
       , log_nb_disp=0
     )
 }

@@ -420,7 +420,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 
 mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     opt_pars, base_params, start_date, end_date, break_dates=NULL,
-                    sim_args=NULL, aggregate_args=NULL, ...) {
+                    sim_args=NULL, aggregate_args=NULL,
+                    priors=NULL, ...) {
     ## ... is to drop any extra crap that gets in there
     ## opt_pars <- base_params <- start_date <- end_date <- NULL
     ## break_dates <- sim_args <- aggregate_args <- NULL
@@ -457,6 +458,9 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     pp <- invlink_trans(restore(p, opt_pars))
     dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
     ret <- -sum(dvals)
+    if (!is.null(priors)) {
+        browser()
+    }
     ## FIXME: add evaluation number?
     if (debug) cat(unlist(pp),ret,"\n")
     return(ret)

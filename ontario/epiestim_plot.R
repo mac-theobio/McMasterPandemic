@@ -3,7 +3,7 @@ library(ggplot2); theme_set(theme_bw())
 library(dplyr)
 library(tidyr)
 
-f_args <- attr(ont_cal1,"forecast_args")
+f_args <- ont_cal1$forecast_args
 ss <- summary(ont_cal1)
 mle_cal0 <- (ss
     %>% rename(date="start_date")

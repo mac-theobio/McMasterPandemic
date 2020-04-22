@@ -55,7 +55,7 @@ opt_pars <- list(
              ## logit_phi2=qlogis(params[["phi2"]])
              ),
     ## changes in beta at breakpoints
-    log_rel_beta0 = rep(-1, length(bd)),
+    logit_rel_beta0 = rep(-1, length(bd)),
     ## NB dispersion
     log_nb_disp=0)
 

@@ -524,6 +524,7 @@ plot.predict_pansim <- function(x,
                     add_ICU_cap=FALSE,
                     mult_var=NULL,
                     directlabels=TRUE,
+                    log=TRUE,
                     ...) {
     check_dots(...)
     lwr <- upr <- lab <- var <- . <- NULL
@@ -532,7 +533,6 @@ plot.predict_pansim <- function(x,
     var <- date <- value <- mult_var <- NULL
 
     p <- (ggplot(x,aes(date,value,colour=var))
-        + scale_y_log10(limits=c(1,NA),oob=scales::squish)
         + facet_wrap(~vtype,ncol=1,scales="free_y")
         + labs(y="")
         + theme(legend.position="none",
@@ -540,6 +540,9 @@ plot.predict_pansim <- function(x,
                 strip.background = element_blank(),
                 strip.text = element_blank())
     )
+    if (log) {
+        p <- p + scale_y_log10(limits=c(1,NA),oob=scales::squish)
+    }
     if (!is.null(break_dates)) {
         p <- p + geom_vline(xintercept=break_dates,lty=2)
     }

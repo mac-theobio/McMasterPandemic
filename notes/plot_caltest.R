@@ -7,10 +7,10 @@ library(bbmle)
 L <- load("run_caltest.RData")
 ## setup 
 
-truedf <- data.frame(pars = c("params.log_E0","params.log_beta0","log_rel_beta0","log_nb_disp")
-                   , trueval = log(c(params[c("E0","beta0")]
-                                    , rel_break1
-                                    , params[["obs_disp"]])))
+truedf <- data.frame(pars = c("params.log_E0","params.log_beta0","logit_rel_beta0","log_nb_disp")
+                   , trueval = c(log(params[c("E0","beta0")])
+                               , qlogis(rel_break1)
+                               , log(params[["obs_disp"]])))
 
 names(res) <- seq_along(res) ## seeds
 
@@ -47,7 +47,7 @@ simdf <- (map_dfr(res,pluck,"pars")
     %>% filter(pars != "params.log_E0")
 )
 simrank <- (simdf
-    %>% filter(pars=="log_rel_beta0")
+    %>% filter(pars=="logit_rel_beta0")
     %>% mutate(ind =rank(estimate))
     %>% select(seed, ind)
 )

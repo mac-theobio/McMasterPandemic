@@ -44,7 +44,7 @@ eigen(vcov(fit))$vec[,np]
 eigen(solve(fit$hessian[-np,-np]))$val
 heatmap(fit$hessian,Rowv=NA,Colv=NA)
 fit$par
-f_args <- attr(fit, "forecast_args")
+f_args <- fit$forecast_args
 p1 <- predict(fit, ensemble=TRUE)
 p1_obs <- predict(fit, ensemble=TRUE,
                   stoch=c(proc=FALSE,obs=TRUE),
