@@ -418,9 +418,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return(ret)
 }
 
-mle_fun <- function(p,data,debug_plot=FALSE,
-                    opt_pars, base_params, start_date, end_date, break_dates,
-                    sim_args, aggregate_args) {
+mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
+                    opt_pars, base_params, start_date, end_date, break_dates=NULL,
+                    sim_args=NULL, aggregate_args=NULL, ...) {
+    ## ... is to drop any extra crap that gets in there
     ## opt_pars <- base_params <- start_date <- end_date <- NULL
     ## break_dates <- sim_args <- aggregate_args <- NULL
     if (debug) cat(p,"\n")

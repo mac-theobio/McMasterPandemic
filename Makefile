@@ -94,6 +94,8 @@ namespace-update: R/*.R
 	echo "suppressWarnings(roxygen2::roxygenize('.',roclets = 'namespace'))" | $(R) --slave
 	@touch $@
 
+pkgall: doc-update namespace-update install pkgcheck
+
 pkgtest:
 	echo "devtools::test('.')" | $(R) --slave
 
