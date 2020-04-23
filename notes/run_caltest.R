@@ -8,8 +8,11 @@ library(parallel)
 use_true_start <- TRUE
 cut_dates <- TRUE
 nsim <- 24
-start_date_offset <- 2
+start_date_offset <- 7
 ## FIXME option setting for rel_break on log vs logit scale
+## mclapply will use getOption("mc.cores",2) by default
+##   set options(mc.cores=...) upstream (e.g. in Rprofile)
+## but wrapR seems to ignore this?
 options(mc.cores=6)
 
 ## setup 
@@ -50,7 +53,8 @@ params[["N"]] <- 1e7
 sim_cali <- function(x){
     set.seed(x)
     cat("seed ",x,"\n")
-    suppressWarnings(sim1break <- run_sim_break(params
+    suppressWarnings(
+        sim1break <- run_sim_break(params
       , start_date=start_date
       , end_date=end_date
       , break_dates = bd
@@ -60,23 +64,13 @@ sim_cali <- function(x){
         )
 
    ## plot(sim1break,log=TRUE)
-   simdat <- (sim1break
-       %>% condense()
-       %>% pivot()
-       %>% filter(var %in% c("report"))
-   )
+    simdat <- (sim1break
+        %>% pivot()
+        %>% filter(var %in% c("report"))
+    )
 
-    
-   ## Need to round value because of negative binomial fit
-   dd <- (simdat 
-       %>% filter(!is.na(value)) 
-       %>% mutate(value = round(value))
-   )
-
-    ## WORKS FINE if we don't limit the dates?
-    ## OVERSHOOTS TERRIBLY if we do
     if (cut_dates) {
-        dd <- filter(dd,between(date,cutoff_start, cutoff_end))
+        dd <- filter(simdat,between(date,cutoff_start, cutoff_end))
     }
 
     g1 <- calibrate(data=dd
