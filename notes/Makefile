@@ -30,12 +30,10 @@ plot_caltest.Rout: run_caltest.RData
 
 Sources += $(wildcard *.R)
 
-run_caltest_nobreak.Rout: run_caltest_nobreak.R
-	$(run-R)
+run_params.Rout: run_params.R
+   $(run-R)
 
-## Mike's one break stuff
-
-run_caltest_1break.Rout: run_caltest_1break.R
+run_caltest_nobreak.Rout: run_params.Rout run_caltest_nobreak.R
 	$(run-R)
 
 ## Plot many sims at once

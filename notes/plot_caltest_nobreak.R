@@ -5,7 +5,8 @@ library(anytime)
 library(bbmle)
 
 truedf <- data.frame(pars = c("params.log_beta0","log_nb_disp")
-	, trueval = c(log(params["beta0"]),log(params[["obs_disp"]]))
+#	, trueval = c(exp(true_pars[1]),true_pars[2])
+	, trueval = true_pars
 )
 
 names(res) <- seq_along(res) ## seeds
