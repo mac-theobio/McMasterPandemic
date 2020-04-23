@@ -135,7 +135,7 @@ Initially tried to fit `c_prop` (proportion of cases reported) and `phi2` (propo
 Estimated parameters:
 
 ```{r pars}
-invlink_trans(restore(ont_cal1$par,opt_pars))
+coef(ont_cal1,"fitted")
 ```
 
 There are strong positive correlations (0.9 - 0.97) among the breakpoint effects, and strong negative correlations (-0.97 - -0.99) between the breakpoint effects and the initial growth rate - this is presumably saying that the initial growth rate is very uncertain while the growth rates after the breakpoints (which are $\exp(\beta_0 + \Delta \beta_i)$) are relatively certain ...
@@ -154,9 +154,9 @@ knitr::kable(data.frame(date=ss$start_date,round(ss[,-1],3)))
 
 ```{r out_params}
 ## assemble table of fitted+assumed parameters
-f_args <-attr(ont_cal1,"forecast_args")
-i1 <- invlink_trans(restore(ont_cal1$par,f_args$opt_pars))
-params_fitted <- update(params,i1$params)
+f_args <- ont_cal1$forecast_args
+i1 <- coef(ont_cal1,"fitted")
+params_fitted <- coef(ont_cal1)
 ## hack to get names of params used to adjust Gbar
 moment_params <- eval(formals(fix_pars)$pars_adj)[[2]]
 out <- (describe_params(params_fitted)

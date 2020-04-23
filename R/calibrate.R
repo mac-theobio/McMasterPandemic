@@ -184,10 +184,9 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     sim_args=NULL, aggregate_args=NULL,
                     priors=NULL, ...) {
     ## ... is to drop any extra crap that gets in there
-    ## opt_pars <- base_params <- start_date <- end_date <- NULL
-    ## break_dates <- sim_args <- aggregate_args <- NULL
     if (debug) cat("mle_fun: ",p,"\n")
-    var <- pred <- value <- NULL 
+    var <- pred <- value <- NULL    ## defeat global-variable checkers
+    ## pass everything to forecaster
     r <- (do.call(forecast_sim,
                   nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
                         sim_args, aggregate_args, debug))
@@ -215,7 +214,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
             invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
         }
     }
-    ## need this for NB parameter
+    ## need to reconstruct parameter set to get NB parameter
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
     dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
@@ -223,7 +222,11 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     dvals[is.na(dvals)] <- min(dvals,na.rm=TRUE)
     ret <- -sum(dvals)
     if (!is.null(priors)) {
-        browser()
+        for (pr in priors) {
+            pr <- pr[[2]] ## drop tilde
+            pr$log <- TRUE
+            ret <- ret - eval(pr,list2env(pp))
+        }
     }
     ## FIXME: add evaluation number?
     if (debug) cat(unlist(pp),ret,"\n")
@@ -246,6 +249,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
 ##' @param debug_plot plot debugging curves?
+##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
@@ -258,11 +262,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       data,
                       opt_pars=list(params=c(log_E0=4,
                                              log_beta0=-1),
-                                    log_rel_beta0=c(-1,-1),
+                                    logit_rel_beta0=c(-1,-1),
                                     log_nb_disp=0),
                       fixed_pars=NULL,
                       sim_args=NULL,
                       aggregate_args=NULL,
+                      priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
                       mle2_method="Nelder-Mead",
@@ -295,7 +300,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           aggregate_args,
           debug,
           debug_plot,
-          data)
+          data,
+          priors)
     ## unnecessary
     ## if (utils::packageVersion("bbmle")<"1.0.23.2") stop("please remotes::install('bbolker/bbmle') to get newest version")
     opt <- do.call(bbmle::mle2,

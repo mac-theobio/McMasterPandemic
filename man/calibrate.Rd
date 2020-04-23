@@ -11,11 +11,12 @@ calibrate(
   break_dates = c("23-Mar-2020", "30-Mar-2020"),
   base_params,
   data,
-  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), log_rel_beta0 = c(-1, -1),
+  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_rel_beta0 = c(-1, -1),
     log_nb_disp = 0),
   fixed_pars = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
+  priors = NULL,
   debug = FALSE,
   debug_plot = FALSE,
   mle2_method = "Nelder-Mead",
@@ -43,6 +44,8 @@ calibrate(
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+
+\item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{debug}{print debugging messages?}
 
