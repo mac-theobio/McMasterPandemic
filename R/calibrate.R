@@ -130,7 +130,7 @@ run_sim_break <- function(params,
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 ##' @importFrom stats update
 ##' @inheritParams calibrate
-##' @param p vector of parameters
+##' @param p vector of parameters - on the link (log/logit) scale as appropriate; these are the parameters that will be adjusted during calibration
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
@@ -152,6 +152,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
         }
     }
     ## restructure and inverse-link parameters
+    if (debug) cat("forecast 0",opt_pars[["log_beta0"]],"\n")
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters
     params <- update(base_params, params=pp$params, .list=TRUE)
@@ -185,7 +186,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     ## ... is to drop any extra crap that gets in there
     ## opt_pars <- base_params <- start_date <- end_date <- NULL
     ## break_dates <- sim_args <- aggregate_args <- NULL
-    if (debug) cat(p,"\n")
+    if (debug) cat("mle_fun: ",p,"\n")
     var <- pred <- value <- NULL 
     r <- (do.call(forecast_sim,
                   nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
@@ -234,7 +235,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param start_date_offset days to go back before first data value
 ##' @param end_date ending date
 ##' @param break_dates specified breakpoints in beta0
-##' @param base_params baseline parameters
+##' @param base_params baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)
 ##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
 ##' @param opt_pars starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters
 ##' @param fixed_pars parameters to fix

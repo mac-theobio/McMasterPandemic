@@ -33,10 +33,10 @@ opt_pars <- list(
 )
 
 if(!is.null(bd)){
-opt_pars <- list(params=c(log_beta0=log(params[["beta0"]]*1.2))
-	, logit_rel_beta0 = qlogis(rel_break1)
-  	, log_nb_disp = log(params[["obs_disp"]])
-)
+    opt_pars <- list(params=c(log_beta0=log(params[["beta0"]]*1.2))
+                   , logit_rel_beta0 = qlogis(rel_break1)
+                   , log_nb_disp = log(params[["obs_disp"]])
+                     )
 }
 
 sim_cali <- function(seed) {
@@ -66,8 +66,8 @@ sim_cali <- function(seed) {
                   , start_date = start_date
                   , opt_pars = opt_pars
                   , break_dates = bd
-                    , debug_plot=TRUE
-                    ## , debug=TRUE
+                  , debug_plot=TRUE
+                  , debug=TRUE
                     ## , mle2_args=list(browse_obj=TRUE)
                     )
 

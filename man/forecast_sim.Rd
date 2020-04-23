@@ -21,11 +21,11 @@ forecast_sim(
 )
 }
 \arguments{
-\item{p}{vector of parameters}
+\item{p}{vector of parameters - on the link (log/logit) scale as appropriate; these are the parameters that will be adjusted during calibration}
 
 \item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
 
-\item{base_params}{baseline parameters}
+\item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
 
 \item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
 

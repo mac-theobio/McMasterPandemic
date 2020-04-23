@@ -32,7 +32,7 @@ calibrate(
 
 \item{break_dates}{specified breakpoints in beta0}
 
-\item{base_params}{baseline parameters}
+\item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
 
 \item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
 

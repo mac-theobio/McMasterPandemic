@@ -205,7 +205,12 @@ invlink_trans <- function(p) {
 ##' restore(unlist(opt_pars),opt_pars)
 ##' invlink_trans(restore(unlist(opt_pars),opt_pars))
 ##' @export
+## FIXME: fixed param might be obsolete (and we could go back to just using relist()
+## now that we're using mle2 with its own fixed capabilities?
 restore <- function(flesh, skeleton, fixed=NULL) {
+    if (length(nf <- names(flesh))>0) {
+        ## FIXME: add test here for matching names?
+    }
     flesh <- unlist(flesh)  ## just in case ...
     if (is.null(fixed)) return(utils::relist(flesh,skeleton))
     ## rely on name-matching for now ... fragile?
