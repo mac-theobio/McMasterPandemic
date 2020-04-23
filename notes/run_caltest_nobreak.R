@@ -14,15 +14,15 @@ params <- fix_pars(read_params("ICU1.csv"), target=c(R0=3, Gbar=6))
 ## params[["beta0"]] <- 2
 params[["beta0"]] <- 0.9   ## slightly rounded for convenience
 params[["obs_disp"]] <- 100 ## BMB: less noise
-params[["N"]] <- 1e7
+params[["N"]] <- 1e8
 summary(params)  ## v. high R0 (6.7)
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
-break1 <- anytime("2020-02-01")
-# break1 <- NULL
+break1 <- anydate("2020-01-22")
+break1 <- NULL
 bd <- break1
-rel_break1 <- 0.2
+rel_break1 <- 0.0000001
 
 
 ## Start with true parameters
@@ -57,6 +57,8 @@ sim_cali <- function(seed) {
 	%>% filter(!is.na(value)) 
 	%>% mutate(value = round(value))
    )
+   
+   plot(ggplot(simdat,aes(date,value))+geom_point())
 
     ## print(params)
     ## print(opt_pars)
