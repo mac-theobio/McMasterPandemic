@@ -58,7 +58,7 @@ sim_cali <- function(seed) {
 	%>% mutate(value = round(value))
    )
    
-   plot(ggplot(simdat,aes(date,value))+geom_point())
+   plot(ggplot(simdat,aes(date,value))+geom_point()+scale_y_log10())
 
     ## print(params)
     ## print(opt_pars)
