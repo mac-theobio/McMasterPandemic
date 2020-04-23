@@ -9,6 +9,10 @@ use_true_start <- TRUE
 cut_dates <- TRUE
 nsim <- 24
 start_date_offset <- 7
+priors <- list(~dnorm(qlogis(rel_beta0[1]),mean=1,sd=1.5))
+## +/- 2 sigma = 2% to 88% drop
+
+## true value below is -1.38 (near the lower bound ... pnorm() = 0.056
 ## FIXME option setting for rel_break on log vs logit scale
 ## mclapply will use getOption("mc.cores",2) by default
 ##   set options(mc.cores=...) upstream (e.g. in Rprofile)
@@ -79,6 +83,7 @@ sim_cali <- function(x){
                   , break_dates = bd
                   ## , debug_plot=TRUE
                   , start_date_offset = start_date_offset
+                  , priors = priors
                     )
 
     
