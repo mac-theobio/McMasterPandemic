@@ -8,7 +8,7 @@
   x,
   drop_states = c("t", "S", "R", "E", "I", "incidence"),
   keep_states = NULL,
-  condense = TRUE,
+  condense = FALSE,
   log = FALSE,
   show_times = TRUE,
   ...

@@ -8,7 +8,7 @@ library(parallel)
 use_true_start <- TRUE
 cut_dates <- TRUE
 nsim <- 24
-start_date_offset <- 7
+start_date_offset <- 2
 ## FIXME option setting for rel_break on log vs logit scale
 options(mc.cores=6)
 

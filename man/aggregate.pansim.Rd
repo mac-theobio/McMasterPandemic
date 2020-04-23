@@ -40,7 +40,6 @@ res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
 a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
 ## column-specific aggregation
 first <- dplyr::first
-a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
-        FUN=list(mean=c("H","ICU","I"),
-               sum=c("report","death")))
+agg_funs <- list(mean=c("H","ICU","I"), sum=c("report","death"))
+a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days", FUN=agg_funs)
 }

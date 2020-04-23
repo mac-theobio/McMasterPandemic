@@ -46,15 +46,12 @@ calc_reports <- function(x,params) {
 ##' @importFrom dplyr one_of
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
-                        keep_states=NULL, condense=TRUE,
+                        keep_states=NULL, condense=FALSE,
                         log=FALSE, show_times=TRUE, ...) {
     ## global variables
     var <- value <- NULL
     ## attributes get lost somewhere below ...
     ptv <- attr(x,"params_timevar")
-    if (condense) {
-        x <- condense(x)
-    }
     if (!is.null(keep_states)) {
         drop_states <- setdiff(names(x), c(keep_states,"date"))
     }
@@ -107,14 +104,21 @@ pivot.pansim <- function(object, ...) {
     return(dd)
 }
 
+## test whether variables have already been condensed
+is_condensed <- function(x) "I" %in% names(x)
+
 ##' Condense columns (infected, ICU, hospitalized) in a pansim output
 ##' @param object a pansim object
 ##' @param add_reports add incidence and case reports?
 ##' @param diff_deaths compute first differences of death series to get daily deaths?
 ##' @param keep_all keep unaggregated variables in data frame as well?
+##' @param params parameters (for defining convolution kernel for reports)
 ##' @param ... additional args
 ##' @export
-condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_all=FALSE, ...) {
+condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_all=FALSE,
+                             params = attr(object,"params"),
+                             ...)
+{
     check_dots(...)
     aa <- get_attr(object)
     ## condense columns and add, if present
@@ -125,23 +129,33 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
         }
         return(dd)
     }
-    if (keep_all) {
+    ## FIXME: rearrange logic?
+    if (is_condensed(object)) {
         dd <- object
     } else {
-        dd <- object[c("date","S","E")]
+        if (keep_all) {
+            dd <- object
+        } else {
+            dd <- object[c("date","S","E")]
+        }
+        dd <- add_col(dd,"I","^I[^C]")
+        dd <- add_col(dd,"H","^H")
+        dd <- add_col(dd,"ICU","^ICU")
+        dd <- data.frame(dd,R=object[["R"]])
+        ## FIXME: rearrange order; condensation distinct from diff_deaths?
+        if (diff_deaths) {
+            dd <- data.frame(dd,death=c(NA,diff(object[["D"]])))
+        } else {
+            dd <- data.frame(dd,D=object[["D"]])
+        }
+        ## keep foi ... might need it for future add_reports ...
+        dd <- data.frame(dd,foi=object[["foi"]])
     }
-    dd <- add_col(dd,"I","^I[^C]")
-    dd <- add_col(dd,"H","^H")
-    dd <- add_col(dd,"ICU","^ICU")
-    dd <- data.frame(dd,R=object[["R"]])
-    dd <- add_col(dd,"discharge","discharge")
-    if (diff_deaths) {
-        dd <- data.frame(dd,death=c(NA,diff(object[["D"]])))
-    } else {
-        dd <- data.frame(dd,D=object[["D"]])
-    }
-    if (add_reports) {
-        params <- attr(object,"params")
+
+    if (add_reports &&
+        !("report" %in% names(object))  ## don't add reports if already there ...
+        )
+    {
         if (!"c_delay_mean" %in% names(params)) {
             warning("add_reports requested but delay parameters missing")
         } else {
@@ -169,9 +183,8 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
 ##' a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
 ##' ## column-specific aggregation
 ##' first <- dplyr::first
-##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days",
-##'         FUN=list(mean=c("H","ICU","I"),
-##'                sum=c("report","death")))
+##' agg_funs <- list(mean=c("H","ICU","I"), sum=c("report","death"))
+##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days", FUN=agg_funs)
 ##' @export
 aggregate.pansim <- function(x,
                              start=NULL,
@@ -247,14 +260,18 @@ summary.pansim <- function(object, ...) {
     ICU <- H <- NULL
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
-    xa <- condense(object)
-    unpack(xa)
-    res <- data.frame(peak_ICU_date=xa$date[which.max(ICU)],
+    p <- attr(object,"params") ## extract params before condensing
+    ## test for previous condensation (FIXME)
+    if (!"I" %in% names(object)) {
+        object <- condense(object)
+    }
+    unpack(object)
+    res <- data.frame(peak_ICU_date=date[which.max(ICU)],
              peak_ICU_val=round(max(ICU)),
-             peak_H_date=xa$date[which.max(H)],
+             peak_H_date=date[which.max(H)],
              peak_H_val=round(max(H)))
     ## FIXME: report time-varying R0
-    if (!is.null(p <- attr(object,"params"))) {
+    if (!is.null(p)) {
         res <- data.frame(res,R0=get_R0(p))
     }
     class(res) <- c("summary.pansim","data.frame")

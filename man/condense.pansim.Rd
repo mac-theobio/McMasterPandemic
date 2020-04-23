@@ -4,7 +4,14 @@
 \alias{condense.pansim}
 \title{Condense columns (infected, ICU, hospitalized) in a pansim output}
 \usage{
-\method{condense}{pansim}(object, add_reports = TRUE, diff_deaths = TRUE, keep_all = FALSE, ...)
+\method{condense}{pansim}(
+  object,
+  add_reports = TRUE,
+  diff_deaths = TRUE,
+  keep_all = FALSE,
+  params = attr(object, "params"),
+  ...
+)
 }
 \arguments{
 \item{object}{a pansim object}
@@ -14,6 +21,8 @@
 \item{diff_deaths}{compute first differences of death series to get daily deaths?}
 
 \item{keep_all}{keep unaggregated variables in data frame as well?}
+
+\item{params}{parameters (for defining convolution kernel for reports)}
 
 \item{...}{additional args}
 }

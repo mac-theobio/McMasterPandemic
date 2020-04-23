@@ -2,13 +2,14 @@
 
 ### short term
 
+* move obs error outside of dynamics
+* change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
+* allow per-variable dispersion parameters
 * pipeline for copying up-to-date calibrations and data into package
-* stochastic ensembles plus plotting
-* general fitting
-   * case report delay should be longer: current mean is 5 days, this needs to include exposed period !
-   * allow LTCH deaths (i.e. deaths not just through ICU)
-   * priors ??
-   * MCMC
+* `condense` option for including/not including ICU in H output
+* hospital admissions
+* priors ??
+* MCMC
 * carry along last date as metadata in calibrations (what data were used?)
 * process error
    * implemented but not well-documented
@@ -22,7 +23,6 @@
 	* ont_all from clean, not calib?
 	* dotdir
 
-* `condense` option for including/not including ICU in H output
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?
 
 * fit to hospitalization only? or just leave out ICU?

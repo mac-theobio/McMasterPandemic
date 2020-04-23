@@ -14,7 +14,9 @@ run_sim(
   ndt = 1,
   stoch = c(obs = FALSE, proc = FALSE),
   ratemat_args = NULL,
-  step_args = NULL,
+  step_args = list(),
+  condense = TRUE,
+  condense_args = NULL,
   verbose = FALSE
 )
 }
@@ -33,11 +35,15 @@ run_sim(
 
 \item{ndt}{number of internal time steps per time step}
 
-\item{stoch}{stochastic simulation? logical vector for observation and process noise}
+\item{stoch}{a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)}
 
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
 
 \item{step_args}{additional arguments to pass to \code{do_step}}
+
+\item{condense}{condense results?}
+
+\item{condense_args}{arguments to pass to \code{\link{condense}} (before adding observation error)}
 
 \item{verbose}{print messages (e.g. about time-varying parameters)?}
 }
@@ -46,16 +52,15 @@ Run pandemic simulation
 }
 \examples{
 params <- read_params("ICU1.csv")
+paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 state <- make_state(params=params)
 sdate <- "10-Feb-2020" ## arbitrary!
 time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
                        Symbol=c("beta0","beta0"),
                        Relative_value=c(0.7,0.1))
-res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
-                   params_timevar=time_pars)
-res2 <- update(res,stoch=c(obs=FALSE,proc=TRUE))
-params2 <- update(params,proc_disp=0.5)
-res3 <- update(res2,params=params2)
-plot(res3)
-summary(res)
+res1 <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
+res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
+res1_t <- update(res1, params_timevar=time_pars)
+res1_S_t <- update(res1_S, params_timevar=time_pars)
+res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
 }

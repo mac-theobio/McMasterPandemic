@@ -169,20 +169,20 @@ update_foi <- function(state, params) {
 ##' @param dt time step (days)
 ##' @param do_hazard use hazard calculation?
 ##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
-##' @param stoch stochastic simulation? logical vector for observation and process noise
+##' @param stoch_proc stochastic process error?
 ##' @export
 ##' @examples
 ##' params1 <- read_params("ICU1.csv")
 ##' state1 <- make_state(params=params1)
 ##' M <- make_ratemat(params=params1, state=state1)
-##' s1A <- do_step(state1,params1, M, stoch=c(obs=FALSE,proc=TRUE))
+##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
 do_step <- function(state, params, ratemat, dt=1,
-                    do_hazard=FALSE, stoch=c(obs=FALSE,proc=FALSE),
+                    do_hazard=FALSE, stoch_proc=FALSE,
                     do_exponential=FALSE) {
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
-    if (!stoch[["proc"]]) {
+    if (!stoch_proc) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
             flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
@@ -234,21 +234,23 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @param ndt number of internal time steps per time step
+##' @param stoch a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)
+##' @param condense condense results?
+##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @examples
 ##' params <- read_params("ICU1.csv")
+##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 ##' state <- make_state(params=params)
 ##' sdate <- "10-Feb-2020" ## arbitrary!
 ##' time_pars <- data.frame(Date=c("20-Mar-2020","25-Mar-2020"),
 ##'                        Symbol=c("beta0","beta0"),
 ##'                        Relative_value=c(0.7,0.1))
-##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020",
-##'                    params_timevar=time_pars)
-##' res2 <- update(res,stoch=c(obs=FALSE,proc=TRUE))
-##' params2 <- update(params,proc_disp=0.5)
-##' res3 <- update(res2,params=params2)
-##' plot(res3)
-##' summary(res)
-##' @importFrom stats rnbinom
+##' res1 <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
+##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
+##' res1_t <- update(res1, params_timevar=time_pars)
+##' res1_S_t <- update(res1_S, params_timevar=time_pars)
+##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
+##' @importFrom stats rnbinom na.exclude napredict
 ##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
@@ -263,7 +265,9 @@ run_sim <- function(params
         , dt=1, ndt=1  ## FIXME: change default after testing?
         , stoch=c(obs=FALSE,proc=FALSE)
         , ratemat_args=NULL
-        , step_args=NULL
+        , step_args=list()
+        , condense = TRUE
+        , condense_args=NULL
         , verbose = FALSE
 ) {
     call <- match.call()
@@ -276,6 +280,7 @@ run_sim <- function(params
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
+    step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
@@ -297,7 +302,7 @@ run_sim <- function(params
                     do.call(run_sim_range,
                             nlist(params,state,
                                   nt=nt*ndt,
-                                  dt=dt/ndt,M,stoch,
+                                  dt=dt/ndt,M,
                                   ratemat_args,step_args
                                   )
                             ))
@@ -324,7 +329,7 @@ run_sim <- function(params
                         nlist(params,
                               state,
                               nt=(times[i+1]-times[i]+1)*ndt,
-                              dt=dt/ndt,M,stoch,
+                              dt=dt/ndt,M,
                               ratemat_args,step_args)))
             )
             state <- attr(resList[[i]],"state")
@@ -335,10 +340,22 @@ run_sim <- function(params
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }
-
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
+    ## condense here
+    if (condense) {
+        res <- do.call(condense.pansim,c(list(res,params=params0),condense_args))
+    }
+    if (stoch[["obs"]]) {
+        ## do observation error here
+        ## FIXME: allow per-variable obs dispersion; switch to a column-wise operation??
+        ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
+        mu <- na.exclude(unlist(res[,-1]))
+        mu_S <- rnbinom(length(mu), mu=mu, size=params[["obs_disp"]])
+        mu_S <- napredict(attr(mu,"na.action"),mu_S)  ## restore NA values
+        res[,-1] <- mu_S
+    }
     ## store everything as attributes
     attr(res,"params") <- params0
     attr(res,"state0") <- state0
@@ -445,7 +462,6 @@ run_sim_range <- function(params
 	, nt=100
         , dt=1
         , M = NULL
-	, stoch=c(obs=FALSE,proc=FALSE)
 	, ratemat_args=NULL
         , step_args=NULL
           ) {
@@ -468,16 +484,10 @@ run_sim_range <- function(params
                                , params
                                , ratemat = M
                                , dt
-                               , stoch),
-                           step_args))
+                                 )
+                           , step_args))
         foi[[i]] <- update_foi(state, params)
-        if (!stoch[["obs"]]) {
-            res[i,] <- state
-        } else {
-            res[i,] <- rnbinom(length(state),
-                               mu=state,
-                               size=params[["obs_disp"]])
-        }
+        res[i,] <- state
     }
     res <- data.frame(t=seq(nt),res,foi)
     ## need to know true state - for cases with obs error

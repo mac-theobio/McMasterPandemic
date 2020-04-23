@@ -15,6 +15,7 @@ forecast_sim(
   stoch = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
+  condense_args = NULL,
   return_val = c("aggsim", "vals_only"),
   debug = FALSE
 )
@@ -39,6 +40,8 @@ forecast_sim(
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+
+\item{condense_args}{arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})}
 
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
 

@@ -10,7 +10,7 @@ do_step(
   ratemat,
   dt = 1,
   do_hazard = FALSE,
-  stoch = c(obs = FALSE, proc = FALSE),
+  stoch_proc = FALSE,
   do_exponential = FALSE
 )
 }
@@ -25,7 +25,7 @@ do_step(
 
 \item{do_hazard}{use hazard calculation?}
 
-\item{stoch}{stochastic simulation? logical vector for observation and process noise}
+\item{stoch_proc}{stochastic process error?}
 
 \item{do_exponential}{prevent outflow of susceptibles, to create a pure-exponential process?}
 }
@@ -36,5 +36,5 @@ Take a single simulation time step
 params1 <- read_params("ICU1.csv")
 state1 <- make_state(params=params1)
 M <- make_ratemat(params=params1, state=state1)
-s1A <- do_step(state1,params1, M, stoch=c(obs=FALSE,proc=TRUE))
+s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
 }
