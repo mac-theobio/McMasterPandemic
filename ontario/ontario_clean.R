@@ -11,7 +11,9 @@ ddPHO <- read_csv(PHOurl)
 ont_all <- (dd
     %>% filter(Province=="ON")
     %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
-    %>% mutate(newDeaths=c(NA,diff(deceased)))
+    %>% mutate(newDeaths=c(NA,diff(deceased)),
+               ## ON hosp includes ICU, our model compartment is just acute care
+               Hospitalization=Hospitalization-ICU)
     %>% select(-deceased)
     %>% pivot_longer(-Date,names_to="var")
     %>% setNames(tolower(names(.)))
