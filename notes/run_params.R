@@ -5,7 +5,8 @@ library(bbmle)
 library(parallel)
 
 use_true_start <- TRUE
-nsim <- 100
+use_cut <- TRUE
+nsim <- 1
 options(mc.cores=1)
 
 ## setup 
@@ -19,6 +20,9 @@ summary(params)
 
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
+
+cut_start <- anydate("2020-01-15")
+cut_end <- anydate("2020-03-01")
 
 
 breaks <- TRUE

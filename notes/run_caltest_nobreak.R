@@ -23,16 +23,18 @@ sim_cali <- function(seed) {
 	%>% mutate(value = round(value))
    )
    
+   simdat <- simdat %>% filter(between(date, cut_start, cut_end))
+   
    plot(ggplot(simdat,aes(date,value))+geom_point()+scale_y_log10())
 
     ## print(params)
     ## print(opt_pars)
     g1 <- calibrate(data=simdat, base_params=params
-                  , start_date = start_date
+                  , start_date = cut_start
                   , opt_pars = opt_pars
                   , break_dates = bd
                   , debug_plot=TRUE
-                  , debug=TRUE
+                  , debug=FALSE
                     ## , mle2_args=list(browse_obj=TRUE)
                     )
 
@@ -45,6 +47,8 @@ sim_cali <- function(seed) {
                         , seed = seed
                         , pars = names(g1$mle2@coef)
                           )
+    print(true_pars)
+    print(res_dat)
     return(list(simdat=simdat,fit=g1,pars=res_dat,pred=pp, fullsim=simdat))
 }
 
