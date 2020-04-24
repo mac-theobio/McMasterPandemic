@@ -41,16 +41,21 @@ ggsave(plot=gg2,"compare_calib.noICU.pdf",width=10,height=7)
 fit <- ont_cal_noICU_2brks_prior
 summary(fit)
 sqrt(diag(vcov(fit$mle2)))
-debug(pop_pred_samp)
-pop_pred_samp(fit$mle2,PDify=TRUE,return_wts=TRUE)
-pred1 <- predict(fit,ensemble=TRUE)
-plot(pred1)
+## pop_pred_samp(fit$mle2,PDify=TRUE,return_wts=TRUE,n=200)
 
-pred1S <- predict(fit,ensemble=TRUE,
-                  stoch=c(proc=TRUE,obs=TRUE),
-                  new_params=list(obs_disp=20,proc_disp=1),
-                  end_date="1-July-2020") 
-(plot(pred1S)
+## stuff below will fail if vcov is not PD ...
+try({
+
+    pred1 <- predict(fit,ensemble=TRUE)
+    plot(pred1)
+
+    pred1S <- predict(fit,ensemble=TRUE,
+                   stoch=c(proc=TRUE,obs=TRUE),
+                   new_params=list(obs_disp=20,proc_disp=1),
+                   end_date="1-July-2020") 
+ print(plot(pred1S)
     + geom_line(data=pred1,lty=2)
-    + geom_point(data=filter(trans_state_vars(ont_all), var %in% keep_vars))
-)
+     + geom_point(data=filter(trans_state_vars(ont_all), var %in% keep_vars))
+ )
+})
+
