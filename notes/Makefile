@@ -36,8 +36,14 @@ run_params.Rout: run_params.R
 run_caltest_nobreak.Rout: run_params.Rout run_caltest_nobreak.R
 	$(run-R)
 
+run_caltest_1break.Rout: run_params.Rout run_caltest_nobreak.R
+	$(run-R)
+
 ## Plot many sims at once
 plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
+	$(run-R)
+
+plot_caltest_1break.Rout: run_caltest_1break.Rout plot_caltest_nobreak.R
 	$(run-R)
 
 %.html: %.Rmd

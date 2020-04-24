@@ -21,9 +21,9 @@ start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
 
-breaks <- FALSE
-break1 <- anydate("2020-01-22")
-rel_break1 <- 0.01
+breaks <- TRUE
+break1 <- anydate("2020-02-01")
+rel_break1 <- 0.5
 bd <- NULL
 
 ## Start with true parameters
