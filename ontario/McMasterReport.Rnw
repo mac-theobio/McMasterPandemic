@@ -282,6 +282,8 @@ There are no confidence bands on these plots and they would be very large.
 We are working on that, and should have confidence bands on forecasts next week.}
 
 
+Using hospitalization-only fit (2 breaks, no priors) right now.
+
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
 <<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
@@ -298,7 +300,6 @@ plot(fit
   \caption{COVID-19 calibration.
     Dots show reported data.  Curves show the fitted model trajectory.
     \emph{Top panel:} Incidence, reported cases, deaths.
-    \david{we might as well write ``death'' rather than ``d''}
     \emph{Bottom panel:} Hospitalizations in acute care (H) 
     and intensive care (ICU).}
   \label{fig:calibration}

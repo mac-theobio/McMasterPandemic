@@ -2,39 +2,47 @@ library(McMasterPandemic)
 library(tidyverse)
 library(directlabels)
 library(bbmle)
-load("ontario_calibration.RData")  ## ont_cal1, 3 breaks, all types
-load("ontario_calibration_1brks.RData")  ## ont_cal_1brks
-load("ontario_calibration_2brks.RData")  ## ont_cal_2brks
-load("ontario_calibration_hosponly.RData") 
-load("ontario_calibration_noICU.RData") 
-load("ontario_calibration_noICU_1brks.RData")
-load("ontario_calibration_noICU_2brks.RData")
-load("ontario_calibration_hosponly.RData")
-load("ontario_calibration_HD_2brks.RData")
-load("ontario_clean.RData")
+library(ggplot2); theme_set(theme_bw())
+dl_offset <- 25
+
+## files loaded via wrapR
 
 cal_list <- nlist(ont_cal1,ont_cal_1brks,ont_cal_2brks,hosponly=ont_cal2,
                   ont_cal_noICU, ont_cal_noICU_1brks, ont_cal_noICU_2brks,
-                  ont_cal_HD_2brks)
+                  ont_cal_HD_2brks,
+                  ont_cal_noICU_2brks_prior)
+
+## abbreviate names
+names(cal_list) <- gsub("ont_cal_?","",names(cal_list))
+names(cal_list)[names(cal_list)=="1"] <- "3brks"
+
 keep_vars <- c("death","H","ICU","report")
 pp <- (map_dfr(cal_list,predict,.id="cal")
     %>% dplyr::filter(var %in% keep_vars
              , date>as.Date("2020-03-01"))
 )
-(gg1 <- ggplot(pp, aes(date,value,colour=var))
+gg1 <- (ggplot(pp, aes(date,value,colour=var))
     + geom_line(aes(lty=cal))
     + facet_wrap(~var,scales="free")
     + scale_y_log10(limits=c(1,NA))
     + geom_point(data=filter(trans_state_vars(ont_all), var %in% keep_vars))
     + geom_dl(method="last.bumpup",aes(label=cal))
-    + expand_limits(x=as.Date("2020-05-01"))
+    + expand_limits(x=max(pp$date)+dl_offset)
 )
+ggsave(plot=gg1,"compare_calib.1.pdf",width=10,height=7)
 
-print(gg1 %+% filter(pp,grepl("noICU|HD",cal)))
+pp2 <- (pp
+    %>% filter(grepl("noICU|HD",cal))
+    %>% mutate_at("cal",~gsub("noICU_","",.))
+)
+gg2 <- gg1 %+% pp2
+ggsave(plot=gg2,"compare_calib.noICU.pdf",width=10,height=7)
 
-fit <- ont_cal_noICU_2brks
+fit <- ont_cal_noICU_2brks_prior
 summary(fit)
 sqrt(diag(vcov(fit$mle2)))
+debug(pop_pred_samp)
+pop_pred_samp(fit$mle2,PDify=TRUE,return_wts=TRUE)
 pred1 <- predict(fit,ensemble=TRUE)
 plot(pred1)
 

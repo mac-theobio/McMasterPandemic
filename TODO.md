@@ -2,11 +2,11 @@
 
 ### short term
 
-* move obs error outside of dynamics
 * change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
 * allow per-variable dispersion parameters
+* subtract ICU from H when processing data (Ontario hosp occupancy includes ICU, not just acute care)
 * pipeline for copying up-to-date calibrations and data into package
-* `condense` option for including/not including ICU in H output
+
 * hospital admissions
 * priors ??
 * MCMC
