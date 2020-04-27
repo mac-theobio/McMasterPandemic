@@ -4,23 +4,6 @@ library(anytime)
 library(bbmle)
 library(parallel)
 
-if(grepl("nobreak",rtargetname,ignore.case = TRUE)){
-	add_breaks <- FALSE
-}
-
-if(!add_breaks){
-	true_pars <- list(
-   	params=c(log_beta0=log(params[["beta0"]]))
-      	, log_nb_disp = log(params[["obs_disp"]])
-	)
-	opt_pars <- list(
-   	params=c(log_beta0=log(params[["beta0"]]*1.2))
-      	, log_nb_disp = log(params[["obs_disp"]])
-	)
-	true_pars <- unlist(true_pars)
-	bd <- NULL
-}
-
 sim_cali <- function(seed) {
 	cat(seed,"\n")
    set.seed(seed)
