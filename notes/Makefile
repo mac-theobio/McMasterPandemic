@@ -33,19 +33,17 @@ Sources += $(wildcard *.R)
 run_params.Rout: run_params.R
    $(run-R)
 
-run_caltest_nobreak.Rout: run_params.Rout run_caltest_nobreak.R
+run_caltest_nobreak.Rout: run_params.Rout run_caltest.R
 	$(run-R)
 
-run_caltest_1break.Rout: run_params.Rout run_caltest_nobreak.R
+run_caltest_breaks.Rout: run_params.Rout run_caltest.R
 	$(run-R)
-
-test_pps.Rout: test_pps.R mli_pps.Rout
 
 ## Plot many sims at once
-plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
+plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest.R
 	$(run-R)
 
-plot_caltest_1break.Rout: run_caltest_1break.Rout plot_caltest_nobreak.R
+plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 	$(run-R)
 
 %.html: %.Rmd
