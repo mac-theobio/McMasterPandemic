@@ -218,12 +218,15 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     ## need to reconstruct parameter set to get NB parameter(s)
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
+    if (length(names(pp$nb_disp))>0) {
+        ## FIXME: invlink_trans doesn't handle this case correctly!
+        ##  for now, manually exp() ...
+        pp$nb_disp <- exp(pp$nb_disp)
+    }
     if (length(pp$nb_disp)==1) {
         dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))        
     } else {
-        ## FIXME: invlink_trans doesn't handle this case correctly!
-        ##  for now, manually exp() ...
-        r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=exp(pp$nb_disp)),
+        r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
                     by="var")
         dvals <- with(r2,dnbinom(value,mu=pred,size=exp(nb_disp),log=TRUE))
     }
@@ -265,7 +268,8 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @examples
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
-##' opt_pars <- list(params=c(log_E0=4, log_beta0=-1, log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
+##' opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
+##'           log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
 ##'                                   logit_rel_beta0=c(-1,-1),
 ##'                                   log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
@@ -360,6 +364,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param imp_wts use importance weighting, i.e. weight ensemble based on log-likelihood?
 ##' @param qvec vector of quantiles
 ##' @param qnames quantile names
+##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
@@ -371,7 +376,7 @@ forecast_ensemble <- function(fit,
                               qnames=c("lwr","value","upr"),
                               seed=NULL,
                               imp_wts=FALSE,
-                              fix_nbdisp=TRUE,
+                              fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
                               ) {
 
@@ -400,13 +405,21 @@ forecast_ensemble <- function(fit,
     ##                                       mu=coef(fit$mle2),
     ##                                       Sigma=bbmle::vcov(fit$mle2)))
 
-    
+
+    if (is.null(fix_pars_re)) {
+        fix_pars <- NULL
+    } else {
+        fix_pars <- grep(fix_pars_re, names(coef(fit$mle2)), value=TRUE)
+    }
+
     pps_args <- c(list(fit$mle2
                      , n=nsim
                      , PDify =TRUE
                      , return_wts=imp_wts
-                     , data=fit$mle2@data$data)
+                     , data=fit$mle2@data$data
+                     , fix_params=fix_pars)
                 , forecast_args[c("opt_pars","base_params","start_date","end_date")])
+
 
     e_pars <- do.call(bbmle::pop_pred_samp, pps_args)
 
