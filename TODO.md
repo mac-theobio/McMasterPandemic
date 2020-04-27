@@ -2,11 +2,10 @@
 
 ### short term
 
+* figure out calibration; capture late flattening? vcov/weights?
 * change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
 * allow per-variable dispersion parameters
-* subtract ICU from H when processing data (Ontario hosp occupancy includes ICU, not just acute care)
 * pipeline for copying up-to-date calibrations and data into package
-
 * hospital admissions
 * priors ??
 * MCMC
@@ -15,8 +14,9 @@
    * implemented but not well-documented
    * overdispersion (beyond demog stoch) is global, not per-transition or per-state variable ... 
    * allowing per-trans overdisp means thinking about including vectors in a parameter list - what if anything will this break?
-* epiestim
+* R(t)
    * delay-convolve beta curve
+   * consider other estimation machinery?
 * check hospital-only calibration (don't try to calibrate)
 * Makiness: 
     * depend on package version
@@ -25,9 +25,7 @@
 
 * add global options for condense: diff-deaths, hospital incl ICU, etc. ?
 
-* fit to hospitalization only? or just leave out ICU?
 * add testing intensity?
-* MCMC
 * arrange caching for MLi data (want to be able to replicate if data gets weird)
 * make `get_r` work for r<1 ...
 * distributions in `calibrate`
