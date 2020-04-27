@@ -18,4 +18,6 @@ invlink_trans(list(log_p1=c(0,0),logit_p2=c(0,0,0)))
 invlink_trans(list(p1=c(log_a=0,log_b=0),p2=4))
 tst <- list(params = c(log_beta0 = 0.693147180559945), log_nb_disp = 4.60517018598809)
 invlink_trans(tst)
+tst2 <- list(params=c(log_E0=1,log_beta0=1),log_nb_disp=c(H=0,report=0,death=0))
+invlink_trans(tst2)
 }

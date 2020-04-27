@@ -12,6 +12,7 @@ forecast_ensemble(
   qnames = c("lwr", "value", "upr"),
   seed = NULL,
   imp_wts = FALSE,
+  fix_nbdisp = TRUE,
   .progress = if (interactive()) "text" else "none"
 )
 }

@@ -17,7 +17,7 @@ ont_recent_sub <- (ont_recent
     %>% filter(var %in% keep_vars)
 )
 
-## all available data
+
 ont_all_sub <- (ont_all
     %>% mutate_at("var",trans_state_vars)
     %>% filter(var %in% keep_vars)

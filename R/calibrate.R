@@ -209,15 +209,24 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
             suppressWarnings(plot(value~date, data=r2, log="y"))
             with(r2,lines(date,pred))
         } else {
-            with(r2,plot(date,value,col=as.numeric(factor(var)),log="y"))
+            with(subset(r2,value>0),
+                 plot(date,value,col=as.numeric(factor(var)),log="y"))
             r2s <- split(r2,r2$var)
             invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
         }
     }
-    ## need to reconstruct parameter set to get NB parameter
+    ## need to reconstruct parameter set to get NB parameter(s)
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
-    dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
+    if (length(pp$nb_disp)==1) {
+        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))        
+    } else {
+        ## FIXME: invlink_trans doesn't handle this case correctly!
+        ##  for now, manually exp() ...
+        r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=exp(pp$nb_disp)),
+                    by="var")
+        dvals <- with(r2,dnbinom(value,mu=pred,size=exp(nb_disp),log=TRUE))
+    }
     ## clamp NaN/NA values to worst obs
     dvals[is.na(dvals)] <- min(dvals,na.rm=TRUE)
     ret <- -sum(dvals)
@@ -253,17 +262,28 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
+##' @examples
+##' library(dplyr)
+##' params <- fix_pars(read_params("ICU1.csv"))
+##' opt_pars <- list(params=c(log_E0=4, log_beta0=-1, log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
+##'                                   logit_rel_beta0=c(-1,-1),
+##'                                   log_nb_disp=NULL)
+##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
+##' \donttest{
+##' calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE)
+##' }
+
 ##' @export
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
-                      break_dates=c("23-Mar-2020","30-Mar-2020"),
+                      break_dates=c("2020-Mar-23","2020-Mar-30"),
                       base_params,
                       data,
                       opt_pars=list(params=c(log_E0=4,
                                              log_beta0=-1),
                                     logit_rel_beta0=c(-1,-1),
-                                    log_nb_disp=0),
+                                    log_nb_disp=NULL),
                       fixed_pars=NULL,
                       sim_args=NULL,
                       aggregate_args=NULL,
@@ -283,6 +303,10 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     ## translate state variables names in data to expected internal names (e.g. newConfirmations -> reports)
     ## FIXME: should this be external?
     data$var <- trans_state_vars(data$var)
+    if (is.null(opt_pars$log_nb_disp)) {
+        nvar <- length(var_names <- unique(data$var))
+        opt_pars$log_nb_disp <- setNames(rep(0,nvar),var_names)
+    }
     value <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
     ## FIXME: allow for aggregation of reports etc.
@@ -347,6 +371,7 @@ forecast_ensemble <- function(fit,
                               qnames=c("lwr","value","upr"),
                               seed=NULL,
                               imp_wts=FALSE,
+                              fix_nbdisp=TRUE,
                               .progress=if (interactive()) "text" else "none"
                               ) {
 
@@ -375,6 +400,7 @@ forecast_ensemble <- function(fit,
     ##                                       mu=coef(fit$mle2),
     ##                                       Sigma=bbmle::vcov(fit$mle2)))
 
+    
     pps_args <- c(list(fit$mle2
                      , n=nsim
                      , PDify =TRUE
