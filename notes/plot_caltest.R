@@ -4,18 +4,14 @@ library(tidyverse)
 library(anytime)
 library(bbmle)
 
-L <- load("run_caltest.RData")
-## setup 
-
-truedf <- data.frame(pars = c("params.log_E0","params.log_beta0","logit_rel_beta0","log_nb_disp")
-                   , trueval = c(log(params[c("E0","beta0")])
-                               , qlogis(rel_break1)
-                               , log(params[["obs_disp"]])))
+truedf <- data.frame(pars = names(true_pars)
+	, trueval = true_pars
+)
 
 names(res) <- seq_along(res) ## seeds
 
 likvals <- suppressWarnings(
-    map_dfr(res,~tibble(NLL=-logLik(.$fit$mle2)),.id="seed")
+    map_dfr(res,~tibble(NLL=-bbmle::logLik(.$fit$mle2)),.id="seed")
 )
 seed_order <- likvals %>% arrange(NLL) %>% pull(seed)
 
@@ -29,8 +25,7 @@ simvals <- (map_dfr(res,~left_join(rename(.$simdat,sim=value),
 
 gg1 <- ggplot(simvals, aes(date,value,lty=type)) +
     geom_line() +
-    facet_wrap(~seed) +
-    geom_vline(xintercept=bd,colour="red")
+    facet_wrap(~seed)
 
 ## print(gg1)
 print(gg1 + scale_y_log10())
@@ -44,10 +39,12 @@ simdf <- (map_dfr(res,pluck,"pars")
                              TRUE ~ "no"
                              )
                )
-    %>% filter(pars != "params.log_E0")
 )
+
+print(simdf)
+
 simrank <- (simdf
-    %>% filter(pars=="logit_rel_beta0")
+    %>% filter(pars=="params.log_beta0")
     %>% mutate(ind =rank(estimate))
     %>% select(seed, ind)
 )

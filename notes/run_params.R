@@ -21,40 +21,26 @@ summary(params)
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
-cut_start <- anydate("2020-01-15")
+cut_start <- anydate("2020-01-01")
 cut_end <- anydate("2020-03-01")
 
 
-breaks <- TRUE
-break1 <- anydate("2020-02-01")
-rel_break1 <- 0.5
-bd <- NULL
+add_breaks <- TRUE
+breaks <- anydate("2020-02-01")
+rel_breaks <- 0.5
 
-## Start with true parameters
 
-true_pars <- list(
-    params=c(log_beta0=log(params[["beta0"]]))
-	   , log_nb_disp = log(params[["obs_disp"]])
-) 
-
-##    optimization breaks if factor of true value is > about 1.5 ... ?
-opt_pars <- list(
-   params=c(log_beta0=log(params[["beta0"]]*1.2))
-		, log_nb_disp = log(params[["obs_disp"]])
+true_pars <- list(params = c(log_beta0 = log(params[["beta0"]]))
+	, logit_rel_beta0 = qlogis(rel_breaks)
+	, log_nb_disp = log(params[["obs_disp"]])
 )
 
-if(breaks){
-	true_pars <- list(params = c(log_beta0 = log(params[["beta0"]]))
-		, logit_rel_beta0 = qlogis(rel_break1)
-		, log_nb_disp = log(params[["obs_disp"]])
-	)
-
-	opt_pars <- list(params=c(log_beta0=log(params[["beta0"]]*1.2))
-		, logit_rel_beta0 = qlogis(rel_break1)
-		, log_nb_disp = log(params[["obs_disp"]])
-		)
-	bd <- break1
-}
+opt_pars <- list(params=c(log_beta0=log(params[["beta0"]]*1.2))
+	, logit_rel_beta0 = qlogis(rel_breaks)
+	, log_nb_disp = log(params[["obs_disp"]])
+)
+	
+bd <- breaks
 
 true_pars <- unlist(true_pars)
 
