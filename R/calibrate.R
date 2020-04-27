@@ -333,6 +333,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param nsim number of simulations
 ##' @param seed random-number seed
 ##' @param forecast_args arguments to pass to \code{forecast_sim}
+##' @param imp_wts use importance weighting, i.e. weight ensemble based on log-likelihood?
 ##' @param qvec vector of quantiles
 ##' @param qnames quantile names
 ##' @param .progress progress bar?
@@ -345,6 +346,7 @@ forecast_ensemble <- function(fit,
                               qvec=c(0.05,0.5,0.95),
                               qnames=c("lwr","value","upr"),
                               seed=NULL,
+                              imp_wts=FALSE,
                               .progress=if (interactive()) "text" else "none"
                               ) {
 
@@ -369,9 +371,27 @@ forecast_ensemble <- function(fit,
     ## Wald sample
     ## FIXME: count number of distribution params?
     ## FIXME: use pop_pred_samp()?
-    e_pars <- as.data.frame(MASS::mvrnorm(nsim,
-                                          mu=coef(fit$mle2),
-                                          Sigma=bbmle::vcov(fit$mle2)))
+    ## e_pars <- as.data.frame(MASS::mvrnorm(nsim,
+    ##                                       mu=coef(fit$mle2),
+    ##                                       Sigma=bbmle::vcov(fit$mle2)))
+
+    pps_args <- c(list(fit$mle2
+                     , n=nsim
+                     , PDify =TRUE
+                     , return_wts=imp_wts
+                     , data=fit$mle2@data$data)
+                , forecast_args[c("opt_pars","base_params","start_date","end_date")])
+
+    e_pars <- do.call(bbmle::pop_pred_samp, pps_args)
+
+    wts <- rep(1, nsim)
+    if (imp_wts) {
+        wts <- e_pars[,"wts"]
+        if (attr(e_pars,"eff_samp")<10) warning("low effective sample size of importance weights")
+    }
+
+    np <- length(unlist(forecast_args$opt_pars[c("params","logit_rel_beta0")]))
+    e_pars <- e_pars[,seq(np)]
 
     ## run for all param vals in ensemble
     ## tried with purrr::pmap but too much of a headache
@@ -379,9 +399,15 @@ forecast_ensemble <- function(fit,
                                          , .margins=1
                                          , .fun=ff
                                          , .progress=.progress  ))
+    
     ## get quantiles per observation
-    e_res2 <- (e_res %>% dplyr::bind_cols()
-        %>% apply(1,stats::quantile,qvec,na.rm=TRUE)
+    e_res2 <- e_res %>% dplyr::bind_cols()
+    if (imp_wts) {
+        e_res3 <- apply(e_res2,1,Hmisc::wtd.quantile,weights=wts,probs=qvec,na.rm=TRUE)
+    } else {
+        e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec,na.rm=TRUE)
+    }        
+    e_res4 <- (e_res3 
         %>% t()
         %>% dplyr::as_tibble()
         %>% setNames(qnames)
@@ -392,6 +418,6 @@ forecast_ensemble <- function(fit,
         %>% dplyr::as_tibble()
     )
     ## combine quantiles with the original date/var columns
-    e_res3 <- dplyr::bind_cols(e0, e_res2)
+    e_res3 <- dplyr::bind_cols(e0, e_res4)
     return(e_res3)
 }

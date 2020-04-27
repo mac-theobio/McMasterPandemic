@@ -8,35 +8,6 @@ fit <- ont_cal1
 fit <- ont_cal2  ## hosp only
 p0 <- predict(fit)
 
-## pp <- coef(fit)
-## s0 <- make_state(params=pp)
-## M <- make_ratemat(params=pp,state=s0)
-
-## myEM <- function(n, size, rate, dt) {
-##     S  <- sum(rate)
-##     p0 <- (1-exp(-S*dt))
-##     p  <- c(1-p0,p0*rate/S)
-##     return(rmultinom(n,size=size, prob=p)[-1,,drop=FALSE])
-## }
-
-
-## ## checking hand-rolled version vs pomp version
-## set.seed(101)
-## pomp_res <- pomp::reulermultinom(100,size=10000,rate=c(a=1,b=2,c=3),dt=0.1)
-## set.seed(101)
-## my_res <- myEM(100,size=10000,rate=c(a=1,b=2,c=3),dt=0.1)
-## all.equal(pomp_res,my_res)
-
-## dump(c("s0","M"),file="dumpdata.txt")
-## source("dumpdata.txt")
-## i <- 1
-
-## floor(s0[[1]]+0.5)==s0[[1]]
-## (s0[[1]]+0.5) - s0[[1]]
-## floor(s0[[1]]+0.5) - s0[[1]]
-
-## pomp::reulermultinom(n=1,size=s0[[1]],rate=M[i,-i],dt=1)
-## myEM(n=1,size=s0[[1]],rate=M[i,-i],dt=1)
 
 eigen(vcov(fit))
 np <- nrow(vcov(fit))

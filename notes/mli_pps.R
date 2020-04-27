@@ -34,7 +34,16 @@ forecast_ensemble_mli <- function(fit,
     e_pars <- as.data.frame(MASS::mvrnorm(nsim,
                                           mu=coef(fit$mle2),
                                           Sigma=bbmle::vcov(fit$mle2)))
-    e_pars <- pop_pred_samp_mli(fit$mle2,n=nsim,PDify=TRUE,return_wts=TRUE)	
+
+    pps_args <- c(list(fit$mle2
+                     , n=nsim
+                     , PDify =TRUE
+                     , return_wts=TRUE
+                     , data=fit$mle2@data$data)
+                , forecast_args[c("opt_pars","base_params","start_date","end_date")])
+
+    e_pars <- do.call(bbmle::pop_pred_samp, pps_args)
+
 	 wts <- e_pars[,"wts"]
 	 if(equalwts){wts <- rep(1,nsim)}
 	 e_pars <- e_pars[,1:(ncol(e_pars)-1)]

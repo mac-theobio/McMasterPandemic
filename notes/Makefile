@@ -39,6 +39,8 @@ run_caltest_nobreak.Rout: run_params.Rout run_caltest_nobreak.R
 run_caltest_1break.Rout: run_params.Rout run_caltest_nobreak.R
 	$(run-R)
 
+test_pps.Rout: test_pps.R mli_pps.Rout
+
 ## Plot many sims at once
 plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest_nobreak.R
 	$(run-R)

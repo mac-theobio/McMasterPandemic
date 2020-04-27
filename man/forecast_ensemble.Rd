@@ -11,6 +11,7 @@ forecast_ensemble(
   qvec = c(0.05, 0.5, 0.95),
   qnames = c("lwr", "value", "upr"),
   seed = NULL,
+  imp_wts = FALSE,
   .progress = if (interactive()) "text" else "none"
 )
 }
@@ -26,6 +27,8 @@ forecast_ensemble(
 \item{qnames}{quantile names}
 
 \item{seed}{random-number seed}
+
+\item{imp_wts}{use importance weighting, i.e. weight ensemble based on log-likelihood?}
 
 \item{.progress}{progress bar?}
 }
