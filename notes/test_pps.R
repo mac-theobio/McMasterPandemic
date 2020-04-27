@@ -1,7 +1,6 @@
 library(McMasterPandemic)
 
 source("run_params.R")
-source("mli_pps.R")
 
 seed <- 101
 set.seed(seed)
