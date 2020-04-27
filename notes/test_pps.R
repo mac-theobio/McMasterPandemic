@@ -52,3 +52,8 @@ pps1 <- predict(g1, ensemble=TRUE)
 plot(pps1)
 try(pps2 <- predict(g1, ensemble=TRUE, imp_wts=TRUE))
 
+load("../ontario/ontario_calibration_noICU_2brks_prior.RData")
+pps3 <- predict(ont_cal_noICU_2brks_prior, ensemble=TRUE, end_date="2020-06-01")
+plot(pps3)
+## pps4 <- predict(ont_cal_noICU_2brks_prior, ensemble=TRUE, end_date="2020-06-01",
+##                 imp_wts=TRUE)
