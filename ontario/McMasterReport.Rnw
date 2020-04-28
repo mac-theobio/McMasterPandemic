@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
   dev = "pdf",
   ##dev = "tikz",
   cache = FALSE,
-  ## error=TRUE,  ## allow run to continue with error (good for debugging1)
+  error=TRUE,  ## allow run to continue with error (good for debugging1)
   ##warning=FALSE,
   comment = "#>"
 )
@@ -327,7 +327,7 @@ plot(pp
 \label{fig:forecast}
 \end{figure}
 
-<<pred2,fig.width=10,cache=TRUE,echo=FALSE>>=
+<<pred2,fig.width=10,echo=FALSE>>=
 pp2 <- predict(fit
             , stoch=c(obs=TRUE,proc=TRUE)
             , ensemble=TRUE
