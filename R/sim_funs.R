@@ -182,7 +182,7 @@ do_step <- function(state, params, ratemat, dt=1,
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat["S","E"] <- update_foi(state,params)
-    if (!stoch_proc) {
+    if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
             flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
@@ -235,6 +235,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @param ndt number of internal time steps per time step
 ##' @param stoch a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)
+##' @param stoch_start date on which to enable stochasticity
 ##' @param condense condense results?
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @examples
@@ -249,6 +250,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res1_t <- update(res1, params_timevar=time_pars)
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
 ##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
+##' res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
 ##' @importFrom stats rnbinom na.exclude napredict
 ##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
@@ -263,6 +265,7 @@ run_sim <- function(params
         , params_timevar=NULL
         , dt=1, ndt=1  ## FIXME: change default after testing?
         , stoch=c(obs=FALSE,proc=FALSE)
+        , stoch_start=NULL
         , ratemat_args=NULL
         , step_args=list()
         , condense = TRUE
@@ -276,6 +279,7 @@ run_sim <- function(params
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
     start_date <- anydate(start_date); end_date <- anydate(end_date)
+    if (!is.null(stoch_start)) stoch_start <- anydate(stoch_start)
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
@@ -283,19 +287,32 @@ run_sim <- function(params
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     params0 <- params ## save baseline (time-0) values
-    if (is.null(params_timevar)) {
+    ## no explicit switches, and (no process error) or (process error for full time)
+    if (is.null(params_timevar) && (!stoch[["proc"]] || is.null(stoch_start))) {
         switch_times <- NULL
     } else {
-        ## check column names
-        ## FIXME:: tolower()?
-        stopifnot(all(c("Date","Symbol","Relative_value") %in%
-                      names(params_timevar)))
+        if (!is.null(params_timevar)) {
+            ## check column names
+            ## FIXME:: tolower()?
+            stopifnot(all(c("Date","Symbol","Relative_value") %in%
+                          names(params_timevar)))
+            params_timevar$Date <- anydate(params_timevar$Date)
+        } else {
+            params_timevar <- data.frame(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
+        }
+        if (stoch[["proc"]] && !is.null(stoch_start)) {
+            params_timevar <- rbind(params_timevar,
+                                    data.frame(Date=stoch_start,
+                                               Symbol="proc_disp",Relative_value=1))
+            params[["proc_disp"]] <- -1 ## special value: signal no proc error
+        }
         ## convert char to date
-        switch_dates <- params_timevar[["Date"]] <- anydate(params_timevar[["Date"]])
+        switch_dates <- params_timevar[["Date"]]
         ## match specified times with time sequence
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
-    }
+    } ## steps
+
     if (is.null(switch_times)) {
         res <- thin(ndt=ndt,
                     do.call(run_sim_range,
@@ -308,8 +325,7 @@ run_sim <- function(params
     } else {
         t_cur <- 1
         ## want to *include* end date 
-		  ## MLi: Does this mean you want to include nt+1 (yes, I agree you need that) or do you mean for the break ranges include up to the last day? If this is the case, then the effect will happen on the next day... I can going to hack this now to take effect right away.
-		  switch_times <- switch_times + 1
+        switch_times <- switch_times + 1
         times <- c(1,switch_times,nt+1)
         resList <- list()
         for (i in seq(length(times)-1)) {
@@ -317,6 +333,9 @@ run_sim <- function(params
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
                 params[[s]] <- params0[[s]]*v
+                if (s=="proc_disp") {
+                    state <- round(state)
+                }
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
@@ -350,10 +369,15 @@ run_sim <- function(params
         ## do observation error here
         ## FIXME: allow per-variable obs dispersion; switch to a column-wise operation??
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
-        mu <- na.exclude(unlist(res[,-1]))
+        m <- res[,-1]
+        if (!is.null(stoch_start)) {
+            m <- m[res$date>stoch_start,]
+        }
+        m_rows <- nrow(m)
+        mu <- na.exclude(unlist(m))
         mu_S <- rnbinom(length(mu), mu=mu, size=params[["obs_disp"]])
         mu_S <- napredict(attr(mu,"na.action"),mu_S)  ## restore NA values
-        res[,-1] <- mu_S
+        res[seq(nrow(res)-m_rows+1,nrow(res)),-1] <- mu_S
     }
     ## store everything as attributes
     attr(res,"params") <- params0
@@ -443,7 +467,6 @@ make_state <- function(N=params[["N"]],
     class(state) <- "state_pansim"
     return(state)
 }
-
 
 ##' Run simulation across a range of times
 ##' @inheritParams do_step

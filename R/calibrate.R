@@ -152,11 +152,11 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
         }
     }
     ## restructure and inverse-link parameters
-    if (debug) cat("forecast 0",opt_pars[["log_beta0"]],"\n")
+    ## if (debug) cat("forecast 0",opt_pars[["log_beta0"]],"\n")
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters
     params <- update(base_params, params=pp$params, .list=TRUE)
-    if (debug) cat("forecast ",params[["beta0"]],"\n")
+    ## if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
     r <- do.call(run_sim_break,
                  c(nlist(params,
@@ -265,8 +265,14 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
-##' @param debug_plot plot debugging curves?
+##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
 ##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
+##' @param seed random-number seed (for DE)
+##' @param use_DEoptim use differential evolution as first stage?
+##' @param DE_args arguments for \code{\link{DEoptim}}
+##' @param DE_lwr lower bounds for DE optimization
+##' @param DE_upr upper bounds, ditto
+##' @param DE_cores number of parallel workers for DE
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
@@ -278,10 +284,15 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##'                                   logit_rel_beta0=c(-1,-1),
 ##'                                   log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
-##' \donttest{
-##' calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE)
+##' \dontrun{
+##' cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+##' cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE,use_DEoptim=TRUE)
+##' if (require(bbmle)) {
+##'    -logLik(cal2$mle2)
 ##' }
+##' attr(cal2,"de")$optim$bestval
 ##' @export
+##' @importFrom stats var vcov
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
@@ -298,9 +309,15 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
+                      use_DEoptim=FALSE,
                       mle2_method="Nelder-Mead",
                       mle2_control=list(maxit=10000),
-                      mle2_args=list())
+                      mle2_args=list(),
+                      seed=NULL,
+                      DE_args=list(),
+                      DE_lwr=NULL,
+                      DE_upr=NULL,
+                      DE_cores=getOption("mc.cores",2))
 {
     cc <- match.call()
     if (debug) {
@@ -319,7 +336,47 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     ## FIXME: check order of dates?
     ## FIXME: allow for aggregation of reports etc.
     ## MLE
+    mle_args <- nlist(start_date, end_date,
+                      break_dates,
+                      base_params,
+                      opt_pars,
+                      sim_args,
+                      aggregate_args,
+                      debug,
+                      debug_plot,
+                      data,
+                      priors)
     opt_inputs <- unlist(opt_pars)
+    de_cal1 <- NULL
+    if (use_DEoptim) {
+        if (is.null(DE_lwr)) {
+            DE_lwr <- opt_inputs
+            DE_lwr[] <- -1
+            DE_lwr[["params.log_E0"]] <- 1
+        }
+        if (is.null(DE_upr)) {
+            DE_upr <- opt_inputs
+            DE_upr[] <- 1
+            DE_upr[grepl("rel_beta0",names(DE_upr))] <- 4
+            DE_upr[grepl("nb_disp|E0",names(DE_upr))] <- 5
+        }
+        cl <- parallel::makeCluster(DE_cores)
+        de_arglist <- c(list(fn=mle_fun, lower=DE_lwr, upper=DE_upr,
+                             control=DEoptim::DEoptim.control(storepopfrom=1,
+                                                              cluster=cl,
+                                                packages=list("McMasterPandemic","bbmle"))),
+                        DE_args,mle_args)
+        de_time <- system.time(de_cal1 <- do.call(DEoptim::DEoptim,de_arglist))
+        parallel::stopCluster(cl)
+        opt_inputs <- de_cal1$optim$bestmem   ## set input for MLE to best
+        M <- de_cal1$member$pop
+        ## FIXME: can we avoid re-running likelihoods to threshold?
+        nll_vals <- apply(M,1,
+                          function(x) do.call(mle_fun,c(list(x),mle_args)))
+        M <- M[log10(nll_vals-min(nll_vals))<1.5,]
+        ## attach to de object
+        de_cal1$member$Sigma <- var(M)
+    }
     ## n.b.: this has to be hacked dynamically ...
     parnames(mle_fun) <- names(opt_inputs)
     mle_data <- nlist(start_date,
@@ -356,6 +413,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                     sim_args,
                                     aggregate_args),
                 call=cc)
+    attr(res,"de") <- de_cal1
     class(res) <- "fit_pansim"
     return(res)
 }
@@ -370,6 +428,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param qnames quantile names
 ##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
+##' @param Sigma covariance matrix to pass to \code{\link{pop_pred_samp}}
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 ## FIXME: use bbmle::pop_pred_samp?
@@ -380,6 +439,7 @@ forecast_ensemble <- function(fit,
                               qnames=c("lwr","value","upr"),
                               seed=NULL,
                               imp_wts=FALSE,
+                              Sigma=bbmle::vcov(fit$mle2),
                               fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
                               ) {
@@ -402,12 +462,7 @@ forecast_ensemble <- function(fit,
     ## baseline fit
     r <- ff(coef(fit$mle2), return_val="aggsim")
 
-    ## Wald sample
     ## FIXME: count number of distribution params?
-    ## FIXME: use pop_pred_samp()?
-    ## e_pars <- as.data.frame(MASS::mvrnorm(nsim,
-    ##                                       mu=coef(fit$mle2),
-    ##                                       Sigma=bbmle::vcov(fit$mle2)))
 
 
     if (is.null(fix_pars_re)) {
@@ -419,6 +474,7 @@ forecast_ensemble <- function(fit,
     pps_args <- c(list(fit$mle2
                      , n=nsim
                      , PDify =TRUE
+                     , Sigma = Sigma
                      , return_wts=imp_wts
                      , data=fit$mle2@data$data
                      , fix_params=fix_pars)

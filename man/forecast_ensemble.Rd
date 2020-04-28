@@ -12,6 +12,7 @@ forecast_ensemble(
   qnames = c("lwr", "value", "upr"),
   seed = NULL,
   imp_wts = FALSE,
+  Sigma = bbmle::vcov(fit$mle2),
   fix_pars_re = "nb_disp",
   .progress = if (interactive()) "text" else "none"
 )
@@ -30,6 +31,8 @@ forecast_ensemble(
 \item{seed}{random-number seed}
 
 \item{imp_wts}{use importance weighting, i.e. weight ensemble based on log-likelihood?}
+
+\item{Sigma}{covariance matrix to pass to \code{\link{pop_pred_samp}}}
 
 \item{fix_pars_re}{a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble}
 

@@ -28,3 +28,4 @@
 "c_prop",1/10,fraction of incidence reported as positive tests
 "c_delay_mean",11,average delay between incidence and test report
 "c_delay_cv",0.25,coefficient of variation of testing delay
+"proc_disp",0,dispersion parameter for process error (0=demog stoch only)

@@ -34,8 +34,8 @@ knitr::opts_chunk$set(
 library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
-load("ontario_calibration_hosponly.RData")
-fit <- ont_cal2
+load("ontario_calibration_noICU_2brks_prior.RData")
+fit <- ont_cal_noICU_2brks_prior
 @ 
 
 \title{COVID-19 modelling report from McMaster:\\
@@ -288,6 +288,7 @@ Using hospitalization-only fit (2 breaks, no priors) right now.
   %%\includegraphics{ont_cal2.pdf}
 <<ont_calibration_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## see ?plot.fit_pansim
+L <- load(".ontario_clean.RData")
 ont_trans <- trans_state_vars(ont_all)
 ## show fit up to end of current data
 plot(fit
@@ -327,4 +328,10 @@ we should display, say, 20 realizations of the simulation with process
 error in very light colours under heavy deterministic curves.  Some kind
 of CI on peak time and peak height is important too.}
 
+<<>>=
+pp <- predict(fit,
+              ensemble=TRUE)
+
+
+@ 
 \end{document}

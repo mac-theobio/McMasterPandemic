@@ -13,6 +13,7 @@ run_sim(
   dt = 1,
   ndt = 1,
   stoch = c(obs = FALSE, proc = FALSE),
+  stoch_start = NULL,
   ratemat_args = NULL,
   step_args = list(),
   condense = TRUE,
@@ -36,6 +37,8 @@ run_sim(
 \item{ndt}{number of internal time steps per time step}
 
 \item{stoch}{a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)}
+
+\item{stoch_start}{date on which to enable stochasticity}
 
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
 
@@ -62,4 +65,5 @@ res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 res1_t <- update(res1, params_timevar=time_pars)
 res1_S_t <- update(res1_S, params_timevar=time_pars)
 res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
+res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
 }

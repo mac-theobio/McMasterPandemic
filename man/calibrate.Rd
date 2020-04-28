@@ -19,9 +19,15 @@ calibrate(
   priors = NULL,
   debug = FALSE,
   debug_plot = FALSE,
+  use_DEoptim = FALSE,
   mle2_method = "Nelder-Mead",
   mle2_control = list(maxit = 10000),
-  mle2_args = list()
+  mle2_args = list(),
+  seed = NULL,
+  DE_args = list(),
+  DE_lwr = NULL,
+  DE_upr = NULL,
+  DE_cores = getOption("mc.cores", 2)
 )
 }
 \arguments{
@@ -49,26 +55,26 @@ calibrate(
 
 \item{debug}{print debugging messages?}
 
-\item{debug_plot}{plot debugging curves?}
+\item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+
+\item{use_DEoptim}{use differential evolution as first stage?}
 
 \item{mle2_method}{method arg for mle2}
 
 \item{mle2_control}{control args for mle2}
 
 \item{mle2_args}{additional arguments for mle2}
+
+\item{seed}{random-number seed (for DE)}
+
+\item{DE_args}{arguments for \code{\link{DEoptim}}}
+
+\item{DE_lwr}{lower bounds for DE optimization}
+
+\item{DE_upr}{upper bounds, ditto}
+
+\item{DE_cores}{number of parallel workers for DE}
 }
 \description{
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
-}
-\examples{
-library(dplyr)
-params <- fix_pars(read_params("ICU1.csv"))
-opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
-          log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
-                                  logit_rel_beta0=c(-1,-1),
-                                  log_nb_disp=NULL)
-dd <- (ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("report", "death", "H")))
-\donttest{
-calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE)
-}
 }

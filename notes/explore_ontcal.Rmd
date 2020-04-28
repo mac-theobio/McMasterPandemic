@@ -104,11 +104,28 @@ colnames(M) <- names(de_cal1$optim$bestmem)
 pairs(M,gap=FALSE)
 ```
 
-```{r pop_lik, cache=TRUE}
+```{r pop_lik, cache=TRUE, warning=FALSE}
 tmpf <- function(p) do.call(mle_fun,c(list(p,data=fit1$mle2@data$data),ff))
 tmpf(de_cal1$optim$bestmem)
 nll_vec <- apply(M,1,tmpf)
-hist(log10(nll_vec-min(nll_vec)+0.1))
+nll_off <- log10(nll_vec-min(nll_vec))
+hist(nll_off)
 ```
 
-What if we make a forecasting ensemble based on this?
+```{r warning=FALSE}
+par(las=1)
+plot(10^sort(nll_off),log="y",
+     ylab="likelihood ratio")
+abline(h=10^c(1.5,2),lty=2)
+```
+
+```{r}
+pairs(M,gap=FALSE,col=ifelse(nll_off<1.5,"black","red"))
+```
+
+```{r}
+car::scatterplotMatrix(M[nll_off<1.5,],ellipse=TRUE,
+                       regLine=FALSE,smooth=FALSE)
+```
+
+Cane we make a forecasting ensemble based on this?

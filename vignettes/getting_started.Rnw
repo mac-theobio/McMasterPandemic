@@ -181,12 +181,12 @@ plot_grid(plot(res1obs, log=TRUE),
 To simulate with process error, use \code{stoch_obs(..., proc=TRUE)}. By default, this simulates only demographic stochasticity, which has little effect in a large epidemic.
 
 <<proc1>>=
-params1proc <- update(params1,E0=200)
+params1proc <- update(params1,E0=200,proc_disp=0)  ## demog stoch only
 res1proc <- run_sim(params1proc, start_date=sdate, end_date=edate,
                     stoch=c(obs=FALSE, proc=TRUE))
 @
 
-Adding a \code{proc_disp} value to the set of arguments simulates with additional process noise:
+Making \code{proc_disp} positive simulates with additional process noise:
 
 <<proc2>>=
 params1proc2 <- update(params1,E0=200,proc_disp=0.5)

@@ -446,6 +446,11 @@ update.pansim <- function(object, ...) {
     eval.parent(cc)
 }
 
+## FIXME: do better than this?
+##' @export
+print.fit_pansim <- function(x, ...) {
+    print(x$mle2)
+}
 
 ##' make forecasts from sim
 ##' @param object a fitted object
@@ -495,6 +500,9 @@ predict.fit_pansim <- function(object
                        c(list(p=coef(object$mle2)), f_args, list(...))))
     } else {
         argList <- c(list(fit=object, forecast_args=f_args), list(...))
+        if (!is.null(de <- attr(object,"de"))) {
+            argList <- c(argList,list(Sigma=de$member$Sigma))
+        }
         fc <- do.call(forecast_ensemble, argList)
     }
     fc <- (fc
