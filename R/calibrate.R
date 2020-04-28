@@ -502,25 +502,38 @@ forecast_ensemble <- function(fit,
                                          , .margins=1
                                          , .fun=ff
                                          , .progress=.progress  ))
-    
-    ## get quantiles per observation
-    e_res2 <- e_res %>% dplyr::bind_cols()
-    if (imp_wts) {
-        e_res3 <- apply(e_res2,1,Hmisc::wtd.quantile,weights=wts,probs=qvec,na.rm=TRUE)
+
+    if (is.null(qvec)) {
+        ## return as array
+        nv <- length(unique(r$var))
+        nt <- length(unique(r$date))
+        aa <- array(unlist(e_res),dim=c(nv,nt,nsim))
+        dimnames(aa) <- list(var=unique(r$var),
+                             date=format(unique(r$date)),
+                             sim=seq(nsim))
+        if (imp_wts) attr(aa,"imp_wts") <- wts
+        return(aa)
     } else {
-        e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec,na.rm=TRUE)
-    }        
-    e_res4 <- (e_res3 
-        %>% t()
-        %>% dplyr::as_tibble()
-        %>% setNames(qnames)
-    )
+        e_res2 <- e_res %>% dplyr::bind_cols()
+
+        ## get quantiles per observation
+        if (imp_wts) {
+            e_res3 <- apply(e_res2,1,Hmisc::wtd.quantile,weights=wts,probs=qvec,na.rm=TRUE)
+        } else {
+            e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec,na.rm=TRUE)
+        }        
+        e_res4 <- (e_res3 
+            %>% t()
+            %>% dplyr::as_tibble()
+            %>% setNames(qnames)
+        )
     
-    ## date/var values
-    e0 <- (dplyr::select(r,date,var)
-        %>% dplyr::as_tibble()
-    )
-    ## combine quantiles with the original date/var columns
-    e_res3 <- dplyr::bind_cols(e0, e_res4)
-    return(e_res3)
+        ## date/var values
+        e0 <- (dplyr::select(r,date,var)
+            %>% dplyr::as_tibble()
+        )
+        ## combine quantiles with the original date/var columns
+        e_res3 <- dplyr::bind_cols(e0, e_res4)
+        return(e_res3)
+    }
 }

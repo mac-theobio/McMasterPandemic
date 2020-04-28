@@ -327,9 +327,25 @@ plot(pp
 \label{fig:forecast}
 \end{figure}
 
-\david{The current graphs don't look like our best estimates.  I think
-we should display, say, 20 realizations of the simulation with process
-error in very light colours under heavy deterministic curves.  Some kind
-of CI on peak time and peak height is important too.}
+<<pred2,fig.width=10,cache=TRUE,echo=FALSE>>=
+pp2 <- predict(fit
+            , stoch=c(obs=TRUE,proc=TRUE)
+            , ensemble=TRUE
+            , stoch_start=max(ont_trans$date)
+            , end_date="2020-09-01"
+            , qvec=NULL
+            , new_params=c(proc_disp=1,obs_disp=100)
+            , nsim=20
+              )
+pp2L <- (reshape2::melt(pp2[c("H","death","report"),,])
+    %>% as_tibble()
+    %>% mutate_at("date",as.Date)
+)
+print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
+      + geom_line(alpha=0.5)
+      + facet_wrap(~var,scale="free")
+      + scale_y_log10(limits=c(1,NA))
+      )
+@
 
 \end{document}

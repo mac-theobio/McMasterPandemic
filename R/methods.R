@@ -484,7 +484,8 @@ predict.fit_pansim <- function(object
         %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death"),
                                  "inc","prev"))
     )
-    sub_vars <- (. %>% dplyr::filter(var %in% keep_vars)
+    sub_vars <- (.
+        %>% dplyr::filter(var %in% keep_vars)
     )
     f_args <- object$forecast_args
     if (!is.null(end_date)) {
@@ -508,6 +509,7 @@ predict.fit_pansim <- function(object
         }
         fc <- do.call(forecast_ensemble, argList)
     }
+    if (inherits(fc,"array")) return(fc)
     fc <- (fc
         %>% sub_vars()
         %>% get_type()
