@@ -45,6 +45,7 @@ plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 
 alt_cal.Rout:  ../ontario/ontario_calibration.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData alt_cal.R
 
+explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData explore_ontcal.R
 
 
 %.html: %.Rmd
