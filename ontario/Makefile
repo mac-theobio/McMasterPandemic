@@ -42,6 +42,7 @@ ontario_calibration_2brks_ndt.Rout:  ontario_clean.Rout ontario_calibration.Rout
 
 ontario_calibration_noICU_2brks_prior.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_2brks_prior.R
 
+ontario_de_cal.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_2brks_prior.Rout ontario_de_cal.R
 
 compare_calib.Rout:  ontario_clean.Rout ontario_calibration.RData ontario_calibration_noICU_1brks.RData ontario_calibration_noICU_2brks.RData ontario_calibration_noICU.RData ontario_calibration_2brks.RData ontario_calibration_1brks.RData ontario_calibration_hosponly.RData ontario_calibration_HD_2brks.RData ontario_calibration_noICU_2brks_prior.RData
 
@@ -49,6 +50,7 @@ epiestim.Rout: ontario_clean.Rout
 epiestim_plot.Rout: ontario_clean.Rout ontario_calibration.Rout epiestim.Rout epiestim_plot.R
 
 ontario_calibration_report.html: ontario_clean.RData ontario_calibration.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
+
 
 McMasterReport.pdf: McMasterReport.Rnw ontario_calibration.RData ontario_calibration_2brks.RData ontario_calibration_hosponly.RData
 

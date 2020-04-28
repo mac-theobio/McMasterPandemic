@@ -179,6 +179,11 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return(ret)
 }
 
+##' negative log-likelihood function
+##' @param p parameter vector (in unlisted form)
+##' @param ... unused (but useful in case junk needs to be discarded)
+##' @inheritParams calibrate
+##' @export
 mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     opt_pars, base_params, start_date, end_date, break_dates=NULL,
                     sim_args=NULL, aggregate_args=NULL,
@@ -276,7 +281,6 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' \donttest{
 ##' calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE)
 ##' }
-
 ##' @export
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
@@ -332,16 +336,16 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           priors)
     ## unnecessary
     ## if (utils::packageVersion("bbmle")<"1.0.23.2") stop("please remotes::install('bbolker/bbmle') to get newest version")
-    opt <- do.call(bbmle::mle2,
-                   c(list(minuslogl=mle_fun
+    opt_args <- c(list(minuslogl=mle_fun
                         , start=opt_inputs
                         , data=mle_data
                         , vecpar=TRUE
                         , method=mle2_method
                         , control=mle2_control
                         ## , namedrop_hack = FALSE  ## unnecessary
-                          ),
-                     mle2_args))
+                       ),
+                  mle2_args)
+    opt <- do.call(bbmle::mle2,opt_args)
     res <- list(mle2=opt,
                 forecast_args=nlist(start_date,
                                     end_date,

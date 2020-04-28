@@ -57,7 +57,7 @@ opt_pars <- list(
     ## changes in beta at breakpoints
     logit_rel_beta0 = rep(-1, length(bd)),
     ## NB dispersion
-    log_nb_disp=0)
+    log_nb_disp=NULL)
 
 ## do the calibration
 t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub

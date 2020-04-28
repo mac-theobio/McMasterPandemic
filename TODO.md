@@ -6,7 +6,6 @@
 * fix errors
 * figure out calibration; capture late flattening? vcov/weights?
 * change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
-* allow per-variable dispersion parameters
 * pipeline for copying up-to-date calibrations and data into package
 * hospital admissions
 * priors ??

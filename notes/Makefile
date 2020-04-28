@@ -43,6 +43,10 @@ plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest.R
 plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 	$(run-R)
 
+alt_cal.Rout:  ../ontario/ontario_calibration.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData alt_cal.R
+
+
+
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
 

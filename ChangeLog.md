@@ -26,3 +26,8 @@
 * continued reorganization
 * process error
 * improve hospital-only calibration
+
+## 2020 April 27
+
+* per-variable observation error
+* switched to using `mle2` internally

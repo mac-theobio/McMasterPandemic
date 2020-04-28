@@ -1,4 +1,5 @@
 library(McMasterPandemic)
+library(bbmle)
 
 ## load("ontario_calibration.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
 print(unique(ont_all_sub$var))
@@ -9,6 +10,8 @@ opt_pars_2brks$logit_rel_beta0 <- rep(-1,2)  ## only two breakpoints (hosp data 
 bd2 <- bd[-1]  ## drop first breakpoint
 priors <- list(~dnorm(qlogis(rel_beta0[1]),mean=1,sd=1.5))
 ont_cal_noICU_2brks_prior <- update(ont_cal1,  opt_pars=opt_pars_2brks, break_dates=bd2, data=ont_noICU,
-                              priors=priors)
+                                    priors=priors)
 
-# rdsave("ont_cal_noICU_2brks_prior")
+summary(ont_cal_noICU_2brks_prior$mle2)
+-logLik(ont_cal_noICU_2brks_prior$mle2)
+# rdsave("ont_cal_noICU_2brks_prior", "ont_noICU","priors","opt_pars_2brks", "bd2")
