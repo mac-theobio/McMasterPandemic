@@ -1,0 +1,114 @@
+---
+title: "exploring calibration issues"
+---
+
+```{r pkgs, message=FALSE}
+library(McMasterPandemic)
+library(bbmle)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(purrr)
+library(dotwhisker)
+```
+
+
+```{r utils}
+keep_vars <- c("H","death","report")
+kv <- . %>% filter(var %in% keep_vars)
+gt <- McMasterPandemic:::get_type
+```
+
+Fighting with calibration.
+* Nelder-Mead *appears* to converge, but refitting gives a (much) better answer!
+* a few earlier trials of BFGS were absolutely awful
+* profiling and numeric Hessians (numDeriv::hessian) are very badly behaved (exposes lots of rough edges with how profiling that finds new minima are handled
+* decreasing `reltol` doesn't seem to make much difference
+
+```{r}
+load("../ontario/ontario_calibration_noICU_2brks_prior.RData")
+load("../ontario/ontario_clean.RData")
+load("alt_cal.RData")
+load("../ontario/ontario_de_cal.RData")
+```
+
+Comparing "refit" (restart from fitted parameters)
+```{r}
+fit_list <- list(orig=fit1,refit=fit2,tol_12=fit3, tol_16=fit4)
+m <- map_dbl(fit_list, ~ -logLik(.$mle2))
+print(m - min(m))
+print(de_cal1$optim$bestval-min(m))  ## 10 log-likelihood units better!
+## Nelder-Mead _thinks_ it converged every time!
+conv <- map_int(fit_list, ~.$mle2@details$conv)
+print(conv)
+```
+
+**todo** can we make `slice1D` work to see if these at least *look* like local min? (tried `numDeriv::hessian()`, doesn't do anything nice)
+
+```{r tidy, warning=FALSE} 
+tt <- map_dfr(fit_list, ~tidy(.$mle2), .id="fit")
+pd <- ggstance::position_dodgev(height=0.25)
+print(gg1 <- ggplot(tt,aes(x=estimate,xmin=estimate-2*std.error,
+              xmax=estimate+2*std.error,
+              y=term,colour=fit))
+      + geom_point(position=pd)
+      + geom_linerange(position=pd) 
+      )
+```
+
+
+```{r pred_tbl}
+## extract auxiliary info
+f_args <- fit1$forecast_args
+ff <- f_args[!names(f_args)=="fixed_pars"]
+dd <- ont_all %>% trans_state_vars() %>% kv() %>% gt()
+pred_tbl <- (map_dfr(fit_list, ~predict(.) %>% kv() %>% filter(date>min(dd$date)),
+                     .id="fit"))
+## predict from DE fit
+de_pred <- (do.call(forecast_sim, c(list(p = de_cal1$optim$bestmem), f_args)) %>% kv() %>% gt()
+    %>% filter(date>min(ont_noICU$date)) %>% mutate(fit="DE")
+)
+## combine with other preds
+pred_tbl <- bind_rows(pred_tbl,de_pred)
+## combine with data
+pred_tbl2 <- (pred_tbl
+    %>% rename(pred="value")
+    %>% inner_join(ont_noICU,by=c("date","var"))
+    %>% na.omit()
+)
+```
+
+```{r plot, fig.width=8}
+gg2 <- (ggplot(pred_tbl2, aes(date,colour=var))
+    + geom_line(aes(lty=fit,y=pred))
+    + scale_y_log10()
+    + facet_wrap(~var,scale="free")
+    + geom_point(aes(y=value))
+    + geom_vline(xintercept=fit1$forecast_args$break_dates)
+)
+print(gg2)
+```
+
+Bad Hessian:
+
+```{r bad_hess, cache=TRUE}
+vv <- do.call(numDeriv::hessian,
+              c(list(func=mle_fun,x=de_cal1$optim$bestmem,data=fit1$mle2@data$data),
+                ff))
+sqrt(diag(vv))
+```
+
+```{r last_pop}
+M <- de_cal1$member$pop
+colnames(M) <- names(de_cal1$optim$bestmem)
+pairs(M,gap=FALSE)
+```
+
+```{r pop_lik, cache=TRUE}
+tmpf <- function(p) do.call(mle_fun,c(list(p,data=fit1$mle2@data$data),ff))
+tmpf(de_cal1$optim$bestmem)
+nll_vec <- apply(M,1,tmpf)
+hist(log10(nll_vec-min(nll_vec)+0.1))
+```
+
+What if we make a forecasting ensemble based on this?

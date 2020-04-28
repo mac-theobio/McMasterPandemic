@@ -11,7 +11,11 @@ keep_vars <- c("H","death","report")
 kv <- . %>% filter(var %in% keep_vars)
 gt <- McMasterPandemic:::get_type
 
-## fighting with calibration.  Nelder-Mead **appears* to converge, but refitting gives a (much) better answer!
+## fighting with calibration.
+## * Nelder-Mead **appears* to converge, but refitting gives a (much) better answer!
+## * profiling and numeric Hessians (numDeriv::hessian) are very badly behaved (exposes lots
+##   of rough edges with how profiling that finds new minima are handled
+## * decreasing 'reltol' doesn't seem to make much difference
 
 L <- load("../ontario/ontario_calibration_noICU_2brks_prior.RData")
 load("../ontario/ontario_clean.RData")
