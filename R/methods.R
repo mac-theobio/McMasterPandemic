@@ -456,6 +456,7 @@ print.fit_pansim <- function(x, ...) {
 ##' @param object a fitted object
 ##' @param end_date ending date for sim
 ##' @param stoch stochasticity
+##' @param stoch_start stoch starting date
 ##' @param keep_vars ...
 ##' @param ensemble run ensemble?
 ##' @param new_params parameters to update in base parameters (e.g. adding stochastic parameters)
@@ -471,6 +472,7 @@ print.fit_pansim <- function(x, ...) {
 predict.fit_pansim <- function(object
                              , end_date=NULL
                              , stoch=NULL
+                             , stoch_start = NULL
                              , keep_vars=c("H","ICU","death",
                                            "incidence","report","newTests/1000")
                              , ensemble = FALSE
@@ -490,6 +492,7 @@ predict.fit_pansim <- function(object
     }
     if (!is.null(stoch)) {
         f_args$stoch <- stoch
+        f_args$stoch_start <- stoch_start
     }
     if (!is.null(new_params)) {
         f_args$base_params <- do.call(update.params_pansim,

@@ -130,6 +130,7 @@ run_sim_break <- function(params,
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 ##' @importFrom stats update
 ##' @inheritParams calibrate
+##' @inheritParams run_sim
 ##' @param p vector of parameters - on the link (log/logit) scale as appropriate; these are the parameters that will be adjusted during calibration
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
@@ -138,6 +139,7 @@ run_sim_break <- function(params,
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
                          fixed_pars = NULL,
                          stoch = NULL,
+                         stoch_start = NULL,
                          sim_args=NULL, aggregate_args=NULL, condense_args=NULL,
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"),
@@ -146,9 +148,9 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     return_val <- match.arg(return_val)
     if (!is.null(stoch)) {
         if (is.null(sim_args)) {
-            sim_args <- list(stoch=stoch)
+            sim_args <- nlist(stoch, stoch_start)
         } else {
-            sim_args <- c(sim_args, list(stoch=stoch))
+            sim_args <- c(sim_args, nlist(stoch=stoch, stoch_start))
         }
     }
     ## restructure and inverse-link parameters
@@ -285,12 +287,14 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##'                                   log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
-##' cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-##' cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug=TRUE,debug_plot=TRUE,use_DEoptim=TRUE)
-##' if (require(bbmle)) {
-##'    -logLik(cal2$mle2)
+##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
+##' 
+##'    if (require(bbmle)) {
+##'      -logLik(cal2$mle2)
+##'    }
+##'    attr(cal2,"de")$optim$bestval
 ##' }
-##' attr(cal2,"de")$optim$bestval
 ##' @export
 ##' @importFrom stats var vcov
 calibrate <- function(start_date=min(data$date)-start_date_offset,

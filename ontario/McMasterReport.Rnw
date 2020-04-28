@@ -307,20 +307,24 @@ plot(fit
 \end{figure}
 
 \begin{figure}
-<<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
+<<ont_forecast_plot, echo=FALSE, warning=FALSE, cache=TRUE, fig.height=9>>=
 ## extend fit to August
-plot(fit
-     , data = ont_trans
-     , add_tests = TRUE
-     , add_ICU_cap = TRUE
-     , directlabels = TRUE
-     , limspace = 35
-     , predict_args = list(end_date="2020-09-01")
-     )
+pp <- predict(fit
+            , stoch=c(obs=TRUE,proc=TRUE)
+            , ensemble=TRUE
+            , stoch_start=max(ont_trans$date)
+            , end_date="2020-09-01"
+            , new_params=c(proc_disp=1,obs_disp=100))
+plot(pp
+   , data=ont_trans
+   , add_tests = TRUE
+   , add_ICU_cap = TRUE
+   , directlabels = TRUE
+   , limspace = 35
+)
 @ 
-\caption{COVID-19 forecast.  See caption to
-  Figure~\ref{fig:calibration}.}
-  \label{fig:forecast}
+\caption{COVID-19 forecast.  See caption to Figure~\ref{fig:calibration}.}
+\label{fig:forecast}
 \end{figure}
 
 \david{The current graphs don't look like our best estimates.  I think
@@ -328,10 +332,4 @@ we should display, say, 20 realizations of the simulation with process
 error in very light colours under heavy deterministic curves.  Some kind
 of CI on peak time and peak height is important too.}
 
-<<>>=
-pp <- predict(fit,
-              ensemble=TRUE)
-
-
-@ 
 \end{document}

@@ -78,3 +78,21 @@ calibrate(
 \description{
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 }
+\examples{
+library(dplyr)
+params <- fix_pars(read_params("ICU1.csv"))
+opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
+          log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
+                                  logit_rel_beta0=c(-1,-1),
+                                  log_nb_disp=NULL)
+dd <- (ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("report", "death", "H")))
+\dontrun{
+   cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+  cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
+
+   if (require(bbmle)) {
+     -logLik(cal2$mle2)
+   }
+   attr(cal2,"de")$optim$bestval
+}
+}

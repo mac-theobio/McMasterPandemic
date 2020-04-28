@@ -9,6 +9,7 @@
   object,
   end_date = NULL,
   stoch = NULL,
+  stoch_start = NULL,
   keep_vars = c("H", "ICU", "death", "incidence", "report", "newTests/1000"),
   ensemble = FALSE,
   new_params = NULL,
@@ -36,6 +37,8 @@
 \item{end_date}{ending date for sim}
 
 \item{stoch}{stochasticity}
+
+\item{stoch_start}{stoch starting date}
 
 \item{keep_vars}{...}
 

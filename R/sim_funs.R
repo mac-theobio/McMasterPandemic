@@ -509,6 +509,7 @@ run_sim_range <- function(params
                                  )
                            , step_args))
         foi[[i]] <- update_foi(state, params)
+        if (!identical(colnames(res),names(state))) browser()
         res[i,] <- state
     }
     res <- data.frame(t=seq(nt),res,foi)

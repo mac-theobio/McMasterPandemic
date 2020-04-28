@@ -13,6 +13,7 @@ forecast_sim(
   break_dates,
   fixed_pars = NULL,
   stoch = NULL,
+  stoch_start = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
   condense_args = NULL,
@@ -36,6 +37,8 @@ forecast_sim(
 \item{fixed_pars}{parameters to fix}
 
 \item{stoch}{stochastic settings (see \code{\link{run_sim}})}
+
+\item{stoch_start}{date on which to enable stochasticity}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
