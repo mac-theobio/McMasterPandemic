@@ -351,7 +351,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       data,
                       priors)
     opt_inputs <- unlist(opt_pars)
-    de_cal1 <- NULL
+    de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         if (is.null(DE_lwr)) {
             DE_lwr <- opt_inputs
