@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
   fig.height = 4,
   dev = "pdf",
   ##dev = "tikz",
+  echo = FALSE,
   cache = FALSE,
   error=TRUE,  ## allow run to continue with error (good for debugging1)
   ##warning=FALSE,
@@ -30,7 +31,7 @@ knitr::opts_chunk$set(
 )
 @
 
-<<pkg_load,warning=FALSE,message=FALSE,echo=FALSE>>=
+<<pkg_load,warning=FALSE,message=FALSE>>=
 library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
@@ -61,7 +62,7 @@ fit <- ont_cal_noICU_2brks_prior
 
 \section{Summary of Ontario analysis}
 
-<<date_range,echo=FALSE>>=
+<<date_range>>=
 f_args <- fit$forecast_args
 date_range <- with(f_args,c(start_date,end_date))
 params <- coef(fit)
@@ -309,12 +310,13 @@ plot(fit
 \begin{figure}
 <<ont_forecast_plot, echo=FALSE, warning=FALSE, cache=TRUE, fig.height=9>>=
 ## extend fit to August
+set.seed(101)
 pp <- predict(fit
-            , stoch=c(obs=TRUE,proc=TRUE)
+            , stoch=c(obs=FALSE,proc=TRUE)
             , ensemble=TRUE
             , stoch_start=max(ont_trans$date)
             , end_date="2020-09-01"
-            , new_params=c(proc_disp=1,obs_disp=100))
+            , new_params=c(proc_disp=0.5,obs_disp=100))
 plot(pp
    , data=ont_trans
    , add_tests = TRUE
@@ -327,7 +329,7 @@ plot(pp
 \label{fig:forecast}
 \end{figure}
 
-<<pred2,fig.width=10,echo=FALSE>>=
+<<pred2,fig.width=10>>=
 pp2 <- predict(fit
             , stoch=c(obs=TRUE,proc=TRUE)
             , ensemble=TRUE
@@ -348,4 +350,30 @@ print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
       )
 @
 
+CIs on peak/peak timing?
+<<peakCI>>=
+max_time <- apply(pp2,c(1,3),which.max)
+maxt2 <- round(t(apply(max_time[c("H","death","incidence","report"),],
+                       1,quantile,c(0.025,0.975)))
+               )
+maxdate <- maxt2
+maxdate[] <- dimnames(pp2)[["date"]][maxt2]
+knitr::kable(maxdate)
+@
+
+<<peakheight>>=
+max_val <- apply(pp2,c(1,3),max,na.rm=TRUE)
+maxv2 <- round(t(apply(max_val[c("H","death","incidence","report"),],
+                       1,quantile,c(0.025,0.975)))
+               )
+knitr::kable(maxv2)
+@
+
+\textbf{caveats}
+\begin{itemize}
+\item not doing importance weighting yet
+\item param CIs are probably too small \ldots
+\item amount of noise is not calibrated
+\item death looks weird if noise is too large
+\end{itemize}
 \end{document}

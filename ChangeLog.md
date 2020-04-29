@@ -31,3 +31,10 @@
 
 * per-variable observation error
 * switched to using `mle2` internally
+
+## 2020 April 28
+
+* built initial `DEoptim` step into pipeline
+* `stoch_start` var allows us to turn stochasticity in partway through a sim
+* `forecast_ensemble` returns an array if `qval=NULL`
+

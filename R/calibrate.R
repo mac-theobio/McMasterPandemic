@@ -418,6 +418,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                     aggregate_args),
                 call=cc)
     attr(res,"de") <- de_cal1
+    attr(res,"de_time") <- de_time
     class(res) <- "fit_pansim"
     return(res)
 }

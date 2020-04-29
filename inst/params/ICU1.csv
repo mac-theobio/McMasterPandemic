@@ -10,7 +10,7 @@
 "sigma",1/5.2,1/time in exposed class
 "gamma_a",1/7,1/time for asymptomatic recovery
 "gamma_m",1/7,1/time for mildly symptomatic recovery
-"gamma_s",1/5.72,1/time for severely symptomatic recovery
+"gamma_s",1/5.72,1/time for severely symptomatic transition to hospital/death
 "gamma_p",2,1/time in pre-symptomatic class
 "rho",1/10,1/time in hospital (acute care)
 "delta",0,Fraction of acute-care cases that are fatal

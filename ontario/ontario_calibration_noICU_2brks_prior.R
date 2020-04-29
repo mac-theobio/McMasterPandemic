@@ -15,7 +15,8 @@ ont_cal_noICU_2brks_prior <- update(ont_cal1
                                  , data=ont_noICU
                                  , priors=priors
                                  , use_DEoptim=TRUE
-                                 , DE_cores=6)
+                                   ##, DE_cores=6
+                                   )
 
 summary(ont_cal_noICU_2brks_prior$mle2)
 -logLik(ont_cal_noICU_2brks_prior$mle2)
