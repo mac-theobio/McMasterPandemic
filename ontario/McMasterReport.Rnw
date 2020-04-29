@@ -283,7 +283,7 @@ There are no confidence bands on these plots and they would be very large.
 We are working on that, and should have confidence bands on forecasts next week.}
 
 
-Using hospitalization-only fit (2 breaks, no priors) right now.
+Using no-ICU fit (2 breaks, priors on relative transmission) right now.
 
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
@@ -336,7 +336,7 @@ pp2 <- predict(fit
             , stoch_start=max(ont_trans$date)
             , end_date="2020-09-01"
             , qvec=NULL
-            , new_params=c(proc_disp=1,obs_disp=100)
+            , new_params=c(proc_disp=0.5,obs_disp=100)
             , nsim=20
               )
 pp2L <- (reshape2::melt(pp2[c("H","death","report"),,])
