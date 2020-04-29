@@ -1,10 +1,7 @@
-
-## OBSOLETE, replaced by anytime::anydate
-## attempt to convert x to a date unless it already is one
-## @param x a date, or a character string in some day-month-year format that \code{lubridate::dmy} can handle
-## @keywords internal
-## @export
-## ldmy <- function(x) if (inherits(x,"Date")) x else lubridate::dmy(x)
+## FIXME: less hard-coding
+keep_vars <- c("H","ICU","death", "incidence","report","newTests/1000")
+get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death","newTests/1000"),  "inc","prev"))
+sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
 
 ##' self-naming list (copied from lme4:::namedList)
 ##' @param ... a list of objects

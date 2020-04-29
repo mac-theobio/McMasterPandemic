@@ -480,13 +480,7 @@ predict.fit_pansim <- function(object
                              , ... ) {
 
     var <- . <- NULL
-    get_type <- (.
-        %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death"),
-                                 "inc","prev"))
-    )
-    sub_vars <- (.
-        %>% dplyr::filter(var %in% keep_vars)
-    )
+    
     f_args <- object$forecast_args
     if (!is.null(end_date)) {
         f_args$end_date <- end_date
@@ -523,9 +517,9 @@ predict.fit_pansim <- function(object
 ## data frame for labeling new tests
 newtest_lab <-data.frame(date=as.Date("2020-04-10"),
                          value=10,
-                         vtype="prev",
                          var="newTests/1000",
                          lab="newTests/1000")
+
 ## data frame for labeling ICU capacities
 capac_info <- data.frame(value=c(630,1300),
                          vtype="prev",
@@ -612,7 +606,7 @@ plot.predict_pansim <- function(x,
             + geom_line(data=data,alpha=0.2)
         )
         if (add_tests) {
-            p <- p + geom_text(data=newtest_lab,aes(label=lab))
+            p <- p + geom_text(data=newtest_lab %>% get_type(),aes(label=lab))
         }
     }
     if (add_ICU_cap) {
@@ -635,15 +629,6 @@ plot.predict_pansim <- function(x,
     }
     return(p)
 }
-
-## FIXME: less hard-coding
-keep_vars <- c("H","ICU","death",
-               "incidence","report","newTests/1000")
-
-get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death"),
-                                       "inc","prev"))
-sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
-
 
 scale_newtests <- function(x) {
     newTests <- NULL

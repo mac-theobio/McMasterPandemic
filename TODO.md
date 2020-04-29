@@ -2,13 +2,14 @@
 
 ### short term
 
+* arrange consistent factor ordering/colour palette throughout
 * simulations with per-variable obs error, ¿process error?
 * test bad one-break cases (short time series) with DEoptim
 * figure out calibration; capture late flattening? vcov/weights?
 * change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
 * hospital admissions
 * pipeline for copying up-to-date calibrations and data into package
-* priors ??
+* priors on r/R0/etc.?
 * MCMC
 * carry along last date as metadata in calibrations (what data were used?)
 * process error

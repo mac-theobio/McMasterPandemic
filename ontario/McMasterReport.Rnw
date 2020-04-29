@@ -308,7 +308,7 @@ plot(fit
 \end{figure}
 
 \begin{figure}
-<<ont_forecast_plot, echo=FALSE, warning=FALSE, cache=TRUE, fig.height=9>>=
+<<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## extend fit to August
 set.seed(101)
 pp <- predict(fit
@@ -319,7 +319,7 @@ pp <- predict(fit
             , new_params=c(proc_disp=0.5,obs_disp=100))
 plot(pp
    , data=ont_trans
-   , add_tests = TRUE
+   , add_tests = FALSE
    , add_ICU_cap = TRUE
    , directlabels = TRUE
    , limspace = 35
@@ -329,9 +329,10 @@ plot(pp
 \label{fig:forecast}
 \end{figure}
 
-<<pred2,fig.width=10>>=
+\begin{figure}
+<<pred2,fig.width=10,warning=FALSE>>=
 pp2 <- predict(fit
-            , stoch=c(obs=TRUE,proc=TRUE)
+            , stoch=c(obs=FALSE,proc=TRUE)
             , ensemble=TRUE
             , stoch_start=max(ont_trans$date)
             , end_date="2020-09-01"
@@ -349,8 +350,11 @@ print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
       + scale_y_log10(limits=c(1,NA))
       )
 @
+\caption{forecast showing trajectories rather than quantiles}
+\end{figure}
 
-CIs on peak/peak timing?
+CIs on peak/peak timing.
+
 <<peakCI>>=
 max_time <- apply(pp2,c(1,3),which.max)
 maxt2 <- round(t(apply(max_time[c("H","death","incidence","report"),],
