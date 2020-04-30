@@ -28,7 +28,9 @@ calc_conv <- function(i,params) {
 ## compute incidence and reports (as convolution of incidence)
 calc_reports <- function(x,params) {
     incidence <- x$foi*x$S
-    ret <- data.frame(incidence, report=calc_conv(incidence,params))
+    report <- calc_conv(incidence,params)
+    cumRep <- cumsum(ifelse(!is.na(report), report, 0)) 
+    ret <- data.frame(incidence, report, cumRep)
     return(ret)
 }
 
@@ -159,7 +161,8 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
         if (!"c_delay_mean" %in% names(params)) {
             warning("add_reports requested but delay parameters missing")
         } else {
-            dd <- data.frame(dd, calc_reports(object,params))
+            cr <- calc_reports(object,params)
+            dd <- data.frame(dd, cr)
         }
     }
     dd <- put_attr(dd,aa)
@@ -474,7 +477,7 @@ predict.fit_pansim <- function(object
                              , stoch=NULL
                              , stoch_start = NULL
                              , keep_vars=c("H","ICU","death",
-                                           "incidence","report","newTests/1000")
+                                           "incidence","report", "cumRep", "newTests/1000")
                              , ensemble = FALSE
                              , new_params=NULL  
                              , ... ) {
