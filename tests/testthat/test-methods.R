@@ -59,6 +59,6 @@ test_that("predict", {
     pp2 <- predict(ont_cal1,stoch=c(proc=TRUE,obs=TRUE),
                    stoch_start=c(proc="2020-04-10",obs="2020-01-30"),
                    new_params=c(proc_disp=5,obs_disp=100))
-          expect_is(pp1,"predict_pansim")
-          plot(pp1)
+    expect_is(pp2,"predict_pansim")
+    plot(pp2)
 })

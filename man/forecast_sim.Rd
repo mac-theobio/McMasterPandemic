@@ -39,7 +39,7 @@ forecast_sim(
 
 \item{stoch}{stochastic settings (see \code{\link{run_sim}})}
 
-\item{stoch_start}{date on which to enable stochasticity}
+\item{stoch_start}{dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
