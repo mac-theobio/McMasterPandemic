@@ -36,7 +36,7 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
-subdirs += ontario
+subdirs += ontario notes
 
 ontario/%:
 	cd ontario &&$(MAKE) Makefile

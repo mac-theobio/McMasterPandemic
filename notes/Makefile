@@ -24,6 +24,8 @@ stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forec
 
 plot_caltest.Rout: run_caltest.RData
 
+test0.Rout: test0.R
+
 ######################################################################
 
 ## Mike's nobreak stuff
