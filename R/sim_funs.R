@@ -235,7 +235,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @param ndt number of internal time steps per time step
 ##' @param stoch a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)
-##' @param stoch_start date on which to enable stochasticity
+##' @param stoch_start dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')
 ##' @param condense condense results?
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @examples
@@ -279,7 +279,11 @@ run_sim <- function(params
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
     start_date <- anydate(start_date); end_date <- anydate(end_date)
-    if (!is.null(stoch_start)) stoch_start <- anydate(stoch_start)
+    if (!is.null(stoch_start)) {
+        ## anydate() strips names ...
+        stoch_start <- setNames(anydate(stoch_start),names(stoch_start))
+    }
+    if (length(stoch_start)==1) stoch_start <- c(obs=stoch_start, proc=stoch_start)
     date_vec <- seq(start_date,end_date,by=dt)
     state0 <- state
     nt <- length(date_vec)
@@ -302,7 +306,7 @@ run_sim <- function(params
         }
         if (stoch[["proc"]] && !is.null(stoch_start)) {
             params_timevar <- rbind(params_timevar,
-                                    data.frame(Date=stoch_start,
+                                    data.frame(Date=stoch_start[["proc"]],
                                                Symbol="proc_disp",Relative_value=1))
             params[["proc_disp"]] <- -1 ## special value: signal no proc error
         }
@@ -371,7 +375,7 @@ run_sim <- function(params
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
         m <- res[,-1]
         if (!is.null(stoch_start)) {
-            m <- m[res$date>stoch_start,]
+            m <- m[res$date>stoch_start[["obs"]],]
         }
         m_rows <- nrow(m)
         mu <- na.exclude(unlist(m))
