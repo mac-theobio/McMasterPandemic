@@ -47,3 +47,8 @@ test_that("fit methods", {
     suppressWarnings(plot(ont_cal1,data=trans_state_vars(ont_all)))
     suppressWarnings(plot(ont_cal_2brks,data=trans_state_vars(ont_all)))
 })
+
+test_that("predict", {
+          expect_equal(unique(predict(ont_cal1)$var),c("H","ICU","death","incidence","report"))
+          expect_equal(length(unique(predict(ont_cal1,keep_vars="all")$var)),10L)
+})
