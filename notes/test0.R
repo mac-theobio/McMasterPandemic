@@ -1,8 +1,7 @@
+library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
-library(devtools)
-
-load.all("../mac")
+## load("forecast.RData")
 
 co <- structure(c(beta0 = 0.337130113192467, Ca = 0.75, Cp = 1, Cs = 0.06, 
 Cm = 0.92, alpha = 0.75, sigma = 0.333333333333333, gamma_p = 0.5, 
