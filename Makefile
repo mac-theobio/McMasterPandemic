@@ -22,6 +22,11 @@ Sources += dottarget.mk
 
 ######################################################################
 
+Sources += $(wildcard sandbox/*.R) sandbox/sim.RData
+
+jaggy.Rout: sandbox/sim.RData sandbox/jaggy.R
+	$(run-R)
+
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
 tests/moments.Rout:
