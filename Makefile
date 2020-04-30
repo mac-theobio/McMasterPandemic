@@ -63,8 +63,8 @@ comb_calib.Rout: notes/comb_calib.R
 aggfuns.Rout: notes/aggfuns.R
 	$(run-R)
 
-ontario_clean.Rout: notes/ontario_clean.R
-	$(run-R)
+lpackage:
+	R CMD INSTALL .
 
 package:
 	sudo R CMD INSTALL .
