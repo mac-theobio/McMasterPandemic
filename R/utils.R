@@ -1,7 +1,8 @@
 ## FIXME: less hard-coding
 keep_vars <- c("H","ICU","death", "incidence","report","newTests/1000")
 get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death","newTests/1000"),  "inc","prev"))
-sub_vars <- . %>% dplyr::filter(var %in% keep_vars)
+## un-tidyverse this because I don't want to learn how to do NSE right now
+sub_vars <- function(x,kv=keep_vars) { if (identical(kv,"all")) x else x[x$var %in% kv,]  }
 
 ##' self-naming list (copied from lme4:::namedList)
 ##' @param ... a list of objects

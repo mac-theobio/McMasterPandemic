@@ -93,8 +93,9 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 }
 
 ##' run simulation with one or more breakpoints
-## FIXME: make rel_beta0 part of params??? probably
+## FIXME: make rel_beta0 part of params???
 ## FIXME: roll into run_sim?
+## FIXME: generalize
 ##' @param ... additional arguments to \code{run_sim}
 ##' @param params parameters
 ##' @param break_dates dates of breakpoints in transmission
@@ -110,6 +111,29 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 ##' plot(r2,log=TRUE)
 ##' @export
 run_sim_break <- function(params,
+                          break_dates=NULL,
+                          rel_beta0,
+                          ...) {
+    sim_args <- c(list(...),
+                  nlist(params,
+                        state=make_state(params=params)))
+    if (!is.null(break_dates)) {
+        ## construct time-varying frame, parameters
+        timevar <- data.frame(Date=break_dates,
+                              Symbol="beta0",
+                              Relative_value=rel_beta0)
+        sim_args <- c(sim_args,
+                      list(params_timevar=timevar))
+    }
+    do.call(run_sim,sim_args)
+}
+
+## keep rel_beta0 as time-varying params argument (now misnamed)
+## PRIORS final = 0.2 - 0.5  plogis norm(mean=-0.75,sd=0.75/2)
+## initial = 1
+## date = day 63 (= 2020-03-19)
+## scale: 1.9 to 2.3 days  ( Norm (2.1, sd=0.1))
+run_sim_decay <- function(params,
                           break_dates=NULL,
                           rel_beta0,
                           ...) {
@@ -143,6 +167,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
                          sim_args=NULL, aggregate_args=NULL, condense_args=NULL,
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"),
+                         sim_fun=run_sim_break,
                          debug = FALSE)
 {
     return_val <- match.arg(return_val)
@@ -160,7 +185,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     params <- update(base_params, params=pp$params, .list=TRUE)
     ## if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
-    r <- do.call(run_sim_break,
+    r <- do.call(sim_fun,
                  c(nlist(params,
                          start_date,
                          end_date,

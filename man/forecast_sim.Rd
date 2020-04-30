@@ -18,6 +18,7 @@ forecast_sim(
   aggregate_args = NULL,
   condense_args = NULL,
   return_val = c("aggsim", "vals_only"),
+  sim_fun = run_sim_break,
   debug = FALSE
 )
 }

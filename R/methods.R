@@ -505,7 +505,7 @@ predict.fit_pansim <- function(object
     }
     if (inherits(fc,"array")) return(fc)
     fc <- (fc
-        %>% sub_vars()
+        %>% sub_vars(keep_vars)
         %>% get_type()
     )
     attr(fc,"forecast_args") <- object$forecast_args
