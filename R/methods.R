@@ -488,7 +488,8 @@ predict.fit_pansim <- function(object
     new_args <- list(...)
     ## FIXME:: dangerous
     for (n in intersect(names(new_args),names(f_args))) {
-        f_args[[n]] <- NULL
+        f_args[[n]] <- new_args[[n]]
+        new_args[[n]] <- NULL
     }
     if (!is.null(end_date)) {
         f_args$end_date <- end_date
