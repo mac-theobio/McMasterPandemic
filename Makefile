@@ -38,11 +38,13 @@ break_test.Rout: notes/break_test.R
 
 subdirs += ontario notes
 
+Ignore += $(subdirs)
 ontario/%:
 	cd ontario &&$(MAKE) Makefile
 	$(makethere)
 
 alldirs += $(subdirs)
+Ignore += $(subdirs)
 
 ######################################################################
 
