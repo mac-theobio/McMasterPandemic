@@ -7,8 +7,8 @@
 run_sim(
   params,
   state = make_state(params[["N"]], params[["E0"]]),
-  start_date = "20-Mar-2020",
-  end_date = "1-May-2020",
+  start_date = "2020-Mar-20",
+  end_date = "2020-May-1",
   params_timevar = NULL,
   dt = 1,
   ndt = 1,

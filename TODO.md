@@ -2,7 +2,7 @@
 
 ### short term
 
-* move `pop_pred_samp` to this package to avoid GitHub/bbmle dependency?
+* protect against `stringsAsFactors=TRUE`! (maybe only necessary in timevars dfs?)
 * arrange consistent factor ordering/colour palette throughout
 * simulations with per-variable obs error, ¿process error?
 * test bad one-break cases (short time series) with DEoptim

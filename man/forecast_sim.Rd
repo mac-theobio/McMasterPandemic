@@ -49,6 +49,8 @@ forecast_sim(
 
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
 
+\item{sim_fun}{function for simulating a single run}
+
 \item{debug}{print debugging messages?}
 }
 \description{

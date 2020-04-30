@@ -159,6 +159,7 @@ run_sim_decay <- function(params,
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
+##' @param sim_fun function for simulating a single run
 ##' @export
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
                          fixed_pars = NULL,
