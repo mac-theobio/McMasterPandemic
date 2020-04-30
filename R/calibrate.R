@@ -426,15 +426,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           debug_plot,
           data,
           priors)
-    ## unnecessary
-    ## if (utils::packageVersion("bbmle")<"1.0.23.2") stop("please remotes::install('bbolker/bbmle') to get newest version")
     opt_args <- c(list(minuslogl=mle_fun
                         , start=opt_inputs
                         , data=mle_data
                         , vecpar=TRUE
                         , method=mle2_method
                         , control=mle2_control
-                        ## , namedrop_hack = FALSE  ## unnecessary
                        ),
                   mle2_args)
     opt <- do.call(bbmle::mle2,opt_args)
