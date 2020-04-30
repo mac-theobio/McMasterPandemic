@@ -49,6 +49,16 @@ test_that("fit methods", {
 })
 
 test_that("predict", {
-          expect_equal(unique(predict(ont_cal1)$var),c("H","ICU","death","incidence","report"))
-          expect_equal(length(unique(predict(ont_cal1,keep_vars="all")$var)),10L)
+    expect_equal(unique(predict(ont_cal1)$var),c("H","ICU","death","incidence","report"))
+    pp0 <- predict(ont_cal1,keep_vars="all",sim_args=list(condense=FALSE))
+    pp0_v <- unique(pp0$var)
+    expect_equal(length(pp0_v),14L)
+    pp1 <- predict(ont_cal1,keep_vars="all")
+    pp1_v <- unique(pp1$var)
+    expect_equal(length(pp1_v),10L)
+    pp2 <- predict(ont_cal1,stoch=c(proc=TRUE,obs=TRUE),
+                   stoch_start=c(proc="2020-04-10",obs="2020-01-30"),
+                   new_params=c(proc_disp=5,obs_disp=100))
+    expect_is(pp2,"predict_pansim")
+    plot(pp2)
 })

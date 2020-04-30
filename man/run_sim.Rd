@@ -38,7 +38,7 @@ run_sim(
 
 \item{stoch}{a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)}
 
-\item{stoch_start}{date on which to enable stochasticity}
+\item{stoch_start}{dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')}
 
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
 

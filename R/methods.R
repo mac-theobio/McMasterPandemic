@@ -482,6 +482,11 @@ predict.fit_pansim <- function(object
     var <- . <- NULL
     
     f_args <- object$forecast_args
+    new_args <- list(...)
+    ## FIXME:: dangerous
+    for (n in intersect(names(new_args),names(f_args))) {
+        f_args[[n]] <- NULL
+    }
     if (!is.null(end_date)) {
         f_args$end_date <- end_date
     }
@@ -494,10 +499,10 @@ predict.fit_pansim <- function(object
             c(list(f_args$base_params), new_params))
     }
     if (!ensemble) {
-        fc <- (do.call(forecast_sim,
-                       c(list(p=coef(object$mle2)), f_args, list(...))))
+        fc <- do.call(forecast_sim,
+                      c(list(p=coef(object$mle2)), f_args, new_args))
     } else {
-        argList <- c(list(fit=object, forecast_args=f_args), list(...))
+        argList <- c(list(fit=object, forecast_args=f_args), new_args)
         if (!is.null(de <- attr(object,"de"))) {
             argList <- c(argList,list(Sigma=de$member$Sigma))
         }

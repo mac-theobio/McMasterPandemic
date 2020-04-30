@@ -164,7 +164,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
                          fixed_pars = NULL,
                          stoch = NULL,
                          stoch_start = NULL,
-                         sim_args=NULL, aggregate_args=NULL, condense_args=NULL,
+                         sim_args=NULL,
+                         aggregate_args=NULL,
+                         ##condense = TRUE,
+                         condense_args=NULL,  ## FIXME: ???
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"),
                          sim_fun=run_sim_break,
@@ -193,8 +196,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
                          rel_beta0=pp$rel_beta0,
                          condense_args),
                    sim_args))
+    ## FIXME: remove? already condensed?
+    ## if (condense) r_agg <- condense(r)
+    r_agg <- r
     ## aggregate
-    r_agg <- condense(r)
     if (!is.null(aggregate_args)) {
         r_agg <- do.call(aggregate, c(list(r_agg),aggregate_args))
     }
@@ -458,7 +463,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param qnames quantile names
 ##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
-##' @param Sigma covariance matrix to pass to \code{\link{pop_pred_samp}}
+##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 ## FIXME: use bbmle::pop_pred_samp?
@@ -511,7 +516,8 @@ forecast_ensemble <- function(fit,
                 , forecast_args[c("opt_pars","base_params","start_date","end_date")])
 
 
-    e_pars <- do.call(bbmle::pop_pred_samp, pps_args)
+    ## use internal pop_pred_samp not bbmle version
+    e_pars <- do.call(pop_pred_samp, pps_args)
 
     wts <- rep(1, nsim)
     if (imp_wts) {

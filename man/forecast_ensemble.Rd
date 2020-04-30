@@ -32,7 +32,7 @@ forecast_ensemble(
 
 \item{imp_wts}{use importance weighting, i.e. weight ensemble based on log-likelihood?}
 
-\item{Sigma}{covariance matrix to pass to \code{\link{pop_pred_samp}}}
+\item{Sigma}{covariance matrix to pass to \code{pop_pred_samp}}
 
 \item{fix_pars_re}{a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble}
 
