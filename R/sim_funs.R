@@ -365,6 +365,7 @@ run_sim <- function(params
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- data.frame(date=seq(start_date,end_date,by=dt),res)
+    res <- res[,names(res)!="t"]  ## we never want the internal time vector ...
     ## condense here
     if (condense) {
         res <- do.call(condense.pansim,c(list(res,params=params0),condense_args))
