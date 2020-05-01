@@ -57,14 +57,14 @@ true_pars <- unlist(true_pars)
 ### DEoptim setups
 
 lwr <- c(
-	params.log_E0 = 1
+	params.log_E0 = 1,
 	params.log_beta0=-1
 	, logit_rel_beta01=-1
 	, log_nb_disp = 1
 )
 
 upr <- c(
-	params.log_E0 = 7
+	params.log_E0 = 5,
 	params.log_beta0=1
 	, logit_rel_beta01 = 4
 	, log_nb_disp = 7
