@@ -35,7 +35,13 @@ Sources += $(wildcard *.R)
 run_caltest_nobreak.Rout: run_params_nobreak.Rout run_caltest.R
 	$(run-R)
 
+run_params_breaks.Rout: run_params_breaks.R
+	$(run-R)
+
 run_caltest_breaks.Rout: run_params_breaks.Rout run_caltest.R
+	$(run-R)
+
+run_DEoptim_breaks.Rout: run_params_breaks.Rout run_DEoptim.R
 	$(run-R)
 
 ## Plot many sims at once
@@ -44,6 +50,10 @@ plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest.R
 
 plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 	$(run-R)
+
+plot_DEoptim_breaks.Rout: run_DEoptim_breaks.Rout plot_caltest.R
+	$(run-R)
+
 
 alt_cal.Rout:  ../ontario/ontario_calibration.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData alt_cal.R
 
