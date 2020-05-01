@@ -16,6 +16,7 @@ calibrate(
   fixed_pars = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
+  condense_args = NULL,
   priors = NULL,
   debug = FALSE,
   debug_plot = FALSE,
@@ -50,6 +51,8 @@ calibrate(
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+
+\item{condense_args}{arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]}
 
 \item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 

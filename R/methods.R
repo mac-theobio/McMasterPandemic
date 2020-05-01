@@ -26,11 +26,14 @@ calc_conv <- function(i,params) {
 }
 
 ## compute incidence and reports (as convolution of incidence)
-calc_reports <- function(x,params) {
+calc_reports <- function(x,params, add_cumrep=FALSE) {
     incidence <- x$foi*x$S
     report <- calc_conv(incidence,params)
-    cumRep <- cumsum(ifelse(!is.na(report), report, 0)) 
-    ret <- data.frame(incidence, report, cumRep)
+    ret <- data.frame(incidence, report)
+    if (add_cumrep) {
+        cumRep <- cumsum(ifelse(!is.na(report), report, 0))
+        ret <- data.frame(ret, cumRep)
+    }
     return(ret)
 }
 
@@ -114,10 +117,14 @@ is_condensed <- function(x) "I" %in% names(x)
 ##' @param add_reports add incidence and case reports?
 ##' @param diff_deaths compute first differences of death series to get daily deaths?
 ##' @param keep_all keep unaggregated variables in data frame as well?
+##' @param cum_reports compute cumulative reports?
 ##' @param params parameters (for defining convolution kernel for reports)
 ##' @param ... additional args
 ##' @export
-condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_all=FALSE,
+condense.pansim <-  function(object, add_reports=TRUE,
+                             diff_deaths=TRUE,
+                             cum_reports=TRUE,
+                             keep_all=FALSE,
                              params = attr(object,"params"),
                              ...)
 {
@@ -161,7 +168,7 @@ condense.pansim <-  function(object, add_reports=TRUE, diff_deaths=TRUE, keep_al
         if (!"c_delay_mean" %in% names(params)) {
             warning("add_reports requested but delay parameters missing")
         } else {
-            cr <- calc_reports(object,params)
+            cr <- calc_reports(object,params, add_cumrep=cum_reports)
             dd <- data.frame(dd, cr)
         }
     }

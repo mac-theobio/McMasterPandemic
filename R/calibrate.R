@@ -280,6 +280,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     }
     ## FIXME: add evaluation number?
     if (debug) cat(unlist(pp),ret,"\n")
+    if (!is.finite(ret)) ret <- Inf  ## DEoptim hack
     return(ret)
 }
 
@@ -306,6 +307,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param DE_lwr lower bounds for DE optimization
 ##' @param DE_upr upper bounds, ditto
 ##' @param DE_cores number of parallel workers for DE
+##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
@@ -341,6 +343,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       fixed_pars=NULL,
                       sim_args=NULL,
                       aggregate_args=NULL,
+                      condense_args=NULL,
                       priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
@@ -395,14 +398,16 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             DE_upr[grepl("rel_beta0",names(DE_upr))] <- 4
             DE_upr[grepl("nb_disp|E0",names(DE_upr))] <- 5
         }
-        cl <- parallel::makeCluster(DE_cores)
         de_arglist <- c(list(fn=mle_fun, lower=DE_lwr, upper=DE_upr,
-                             control=DEoptim::DEoptim.control(storepopfrom=1,
-                                                              cluster=cl,
+                             control=DEoptim::DEoptim.control( ## storepopfrom=1,
                                                 packages=list("McMasterPandemic","bbmle"))),
                         DE_args,mle_args)
+        if (DE_cores>1) {
+            cl <- parallel::makeCluster(DE_cores)
+            de_arglist$cluster <- cl
+        }
         de_time <- system.time(de_cal1 <- do.call(DEoptim::DEoptim,de_arglist))
-        parallel::stopCluster(cl)
+        if (DE_cores>1) parallel::stopCluster(cl)
         opt_inputs <- de_cal1$optim$bestmem   ## set input for MLE to best
         M <- de_cal1$member$pop
         ## FIXME: can we avoid re-running likelihoods to threshold?
@@ -443,7 +448,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                     opt_pars,
                                     fixed_pars,
                                     sim_args,
-                                    aggregate_args),
+                                    aggregate_args,
+                                    condense_args),
                 call=cc)
     attr(res,"de") <- de_cal1
     attr(res,"de_time") <- de_time

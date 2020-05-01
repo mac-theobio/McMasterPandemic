@@ -22,7 +22,7 @@ test_that("Jacobian/r/etc", {
 test_that("basic aggregation", {
     c1 <- condense(s)
     expect_error(condense(s,junk=TRUE), "unknown arguments")
-    expect_equal(dim(c1),c(62,11))
+    expect_equal(dim(c1),c(62,12))
     expect_equal(names(c1),
                  c("date", "S", "E", "I", "H", "ICU", "R", "death", "foi",
                    "incidence", "report"))
@@ -49,13 +49,13 @@ test_that("fit methods", {
 })
 
 test_that("predict", {
-    expect_equal(unique(predict(ont_cal1)$var),c("H","ICU","death","incidence","report"))
+    expect_equal(unique(predict(ont_cal1)$var),c("H","ICU","death","incidence","report","cumRep"))
     pp0 <- predict(ont_cal1,keep_vars="all",sim_args=list(condense=FALSE))
     pp0_v <- unique(pp0$var)
-    expect_equal(length(pp0_v),14L)
+    expect_equal(length(pp0_v),13L)
     pp1 <- predict(ont_cal1,keep_vars="all")
     pp1_v <- unique(pp1$var)
-    expect_equal(length(pp1_v),10L)
+    expect_equal(length(pp1_v),11L)
     pp2 <- predict(ont_cal1,stoch=c(proc=TRUE,obs=TRUE),
                    stoch_start=c(proc="2020-04-10",obs="2020-01-30"),
                    new_params=c(proc_disp=5,obs_disp=100))

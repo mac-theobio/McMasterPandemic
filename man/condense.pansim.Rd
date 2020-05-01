@@ -8,6 +8,7 @@
   object,
   add_reports = TRUE,
   diff_deaths = TRUE,
+  cum_reports = TRUE,
   keep_all = FALSE,
   params = attr(object, "params"),
   ...
@@ -19,6 +20,8 @@
 \item{add_reports}{add incidence and case reports?}
 
 \item{diff_deaths}{compute first differences of death series to get daily deaths?}
+
+\item{cum_reports}{compute cumulative reports?}
 
 \item{keep_all}{keep unaggregated variables in data frame as well?}
 
