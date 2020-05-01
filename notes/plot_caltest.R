@@ -3,6 +3,7 @@ library(ggplot2)
 library(tidyverse)
 library(anytime)
 library(bbmle)
+library(DEoptim)
 
 truedf <- data.frame(pars = names(true_pars)
 	, trueval = true_pars
@@ -10,9 +11,15 @@ truedf <- data.frame(pars = names(true_pars)
 
 names(res) <- seq_along(res) ## seeds
 
+
 likvals <- suppressWarnings(
     map_dfr(res,~tibble(NLL=-bbmle::logLik(.$fit$mle2)),.id="seed")
 )
+
+print(likvals)
+
+quit()
+
 seed_order <- likvals %>% arrange(NLL) %>% pull(seed)
 
 simvals <- (map_dfr(res,~left_join(rename(.$simdat,sim=value),
