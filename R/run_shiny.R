@@ -1,12 +1,13 @@
+#' run shiny app
+#' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
+#' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
+#' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
+#' @importFrom shiny renderTable shinyApp
+#' @importFrom ggplot2 scale_y_continuous
+#' @importFrom scales log10_trans trans_breaks trans_format math_format
+#' @importFrom ggplot2 element_text
 #' @export
 run_shiny <- function(){
-  library("shiny")
-  library("dplyr")
-  library("ggplot2")
-  library("tidyr")
-  library("stringr")
-  library("anytime")
-  library("scales")
 #How I want stuff to look. Also collect input and things.
   ui <- fluidPage(
     titlePanel("McMasterPandemic Shiny"),
@@ -249,7 +250,6 @@ run_shiny <- function(){
         else{
           params <- read_params(system.file("params", input$fn, package="ShinySimulations"))
         }
-        library("lubridate")
         if (input$timeChanges == 'Yes'){
           time_pars <- get_factor_timePars()
           sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed, params_timevar = time_pars))
@@ -263,7 +263,8 @@ run_shiny <- function(){
           plot.title = element_text(color = "black", size = input$titleSize, face = "bold"),
           axis.title.x = element_text(color = "black", size = input$Xsize, face = "bold"),
           axis.title.y = element_text(color = "black", size = input$Ysize, face = "bold"))
-        #Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
+        ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
+        .x <- NULL ## undefined variable check
         if (input$use_logYscale == 1){
           p + scale_y_continuous(trans = log10_trans(),
                                  breaks = trans_breaks("log10", function(x) 10^x),
