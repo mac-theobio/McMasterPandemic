@@ -7,7 +7,9 @@ library(anytime)
 library(bbmle)
 
 load("run_caltest.RData")
-worst <- res[[12]]
+NLL <- map_dbl(res,~-logLik(.$fit$mle2))
+which.max(NLL)
+worst <- res[[which.max(NLL)]]
 
 pdf("explore_caltest.pdf")
 ## how bad is it?
@@ -35,6 +37,7 @@ tmpf <- function(p=p0) {
 }
 tmpf()
 
+## constructing a big log-likelihood surface
 n <- c(5,31,31,5)
 lwr <- rep(0.8,4)
 upr <- rep(1.2,4)
