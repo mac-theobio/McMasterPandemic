@@ -5,6 +5,14 @@ library(anytime)
 library(bbmle)
 library(DEoptim)
 
+## DEoptim calibrated object is not working with the pipeline
+
+# load("run_DEoptim_breaks.RData")
+
+## Old working example
+
+# load("run_caltest_nobreak.RData")
+
 truedf <- data.frame(pars = names(true_pars)
 	, trueval = true_pars
 )
@@ -17,8 +25,6 @@ likvals <- suppressWarnings(
 )
 
 print(likvals)
-
-quit()
 
 seed_order <- likvals %>% arrange(NLL) %>% pull(seed)
 
