@@ -1,0 +1,128 @@
+---
+title: refactoring
+---
+
+How do we go about modifying/refactoring the code to allow it to more flexibly/generally handle different models of time-varying parameters? 
+
+## issues
+
+- Clarity and maintainability. The more layers we have, the harder it is to figure out how everything fits together
+- Performance. Things that will slow down runs (we don't care that much, except that we often run lots of sims for ensembles, estimation, etc.):
+    - adding lots of compartments (e.g. Erlang-ization, age structure, spatial structure)
+	- many layers of function calls, e.g. calling `run_sim_range` for every day?
+- maintaining possibility to recode for speed/latent-ization (pomp, odin, Rcpp, TMB ...)
+    - avoid date manipulations in innermost loop
+	- avoid character/factor processing (e.g. use `enum`-based switches if necessary)
+- how do we pass information/parameters along the chain; via `...` or `do.call()` (or stored info in objects)?
+- storing metadata (as attribute, or list element, or ...)
+    - attributes leave the behaviour of the original object unchanged
+	- list elements are a little more transparent, but may add another layer of extraction
+	- accessor/extractor methods??
+	- don't even talk about S4
+- post-processing of state variables
+    - condensation (i.e. collapsing multiple state variables to one)
+	- differencing
+	- cumulating
+- processing of parameters
+    - unlisting/relisting
+	- linking/inverse-linking
+
+I'm thinking about generalizing `run_sim_break` by allowing other functions to specify the time pattern of parameters
+
+```{r plot_graph,message=FALSE,echo=FALSE,fig.width=8,fig.height=8}
+library(mvbutils)
+library(igraph)
+library(McMasterPandemic)
+pos <- which(search()=="package:McMasterPandemic")
+## FIXME: include predict methods?
+funs <- grep("mle_fun|forecast|calibrate$|run_|do_step",ls(pos=pos),value=TRUE)
+funs <- c(funs,"predict.fit_pansim")
+ff <- foodweb(where=pos,
+              funs=funs,
+              ## rprune="forecast|calibrate|run_",
+              plotting=FALSE, ancestors=FALSE,descendents=FALSE)
+## HACK: foodweb doesn't recognize do.call() or ... ?
+M <- ff$funmat
+M["predict.fit_pansim",c("forecast_sim","forecast_ensemble")] <- 1
+## HACK: set up another function parallel to run_sim_break
+M <- rbind(M,0)
+M <- cbind(M,0)
+rownames(M)[nrow(M)] <- "OTHER_TIMEFUN"
+colnames(M)[ncol(M)] <- "OTHER_TIMEFUN"
+M[,"OTHER_TIMEFUN"] <- M[,"run_sim_break"]
+M["OTHER_TIMEFUN",] <- M["run_sim_break",]
+g <- igraph::graph_from_adjacency_matrix(M)
+plot(g,layout=layout.graphopt) ## fruchterman.reingold
+```
+
+
+### `calibrate`
+
+```{r echo=FALSE}
+show_args <- function(f) {
+    p <- paste(names(formals(f)), collapse=", ")
+    cat("**parameters:** ",strwrap(p),sep="\n")
+}
+```
+
+takes data and a set of starting parameters/structure/etc. and uses `DEoptim` and `mle2` to estimate parameters by trajectory matching
+
+```{r echo=FALSE,results="asis"}
+show_args(calibrate)
+```
+
+### `mle_fun`
+
+takes data and a set of starting parameters/structure/etc. and returns a negative log-likelihood (or a log-posterior-probability)
+
+
+```{r echo=FALSE,results="asis"}
+show_args(mle_fun)
+```
+
+### `forecast_sim`
+
+inverse-link transforms parameters, re-lists them into the format of `opt_pars`, then calls `run_sim_break`; then condenses/aggregates/pivots results to match data format 
+
+```{r echo=FALSE,results="asis"}
+show_args(forecast_sim)
+```
+`p` (numeric, named parameter vector); `opt_pars` (list: starting values *and structure* for "re-listing")
+
+
+### `run_sim_break`
+
+
+Thin wrapper for `run_sim`: converts `break_dates` plus relative beta information (`rel_beta0`) into a data frame of points at which parameters change, then passes that info plus parameters to `run_sim`. `OTHER_TIMEFUN` would set up different time-dependence in parameters based on dates, parameters (and other covariates such as mobility?)
+
+```{r echo=FALSE,results="asis"}
+show_args(run_sim_break)
+```
+ 
+### `run_sim`
+
+Constructs rate matrix; processes information about when to turn on stochasticity. Loops over change points, calling `run_sim_range` repeatedly. Currently assumes that only foi changes
+
+```{r echo=FALSE,results="asis"}
+show_args(run_sim)
+```
+
+
+### `run_sim_range`
+
+Run multiple simulation steps. Assumes constant *per capita* rates (except for foi, which is updated at each step)
+
+
+```{r echo=FALSE,results="asis"}
+show_args(run_sim_range)
+```
+
+### `do_step`
+
+Run a single simulation step. Updates foi (redundantly?); generates total flows/derivatives from rate matrix and applies them
+
+```{r echo=FALSE,results="asis"}
+show_args(do_step)
+```
+
+ 
