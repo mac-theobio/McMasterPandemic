@@ -27,7 +27,11 @@ How do we go about modifying/refactoring the code to allow it to more flexibly/g
     - unlisting/relisting
 	- linking/inverse-linking
 
-I'm thinking about generalizing `run_sim_break` by allowing other functions to specify the time pattern of parameters
+## possibilities
+
+- I'm thinking about generalizing `run_sim_break` by allowing other functions to specify the time variation of parameters (see `OTHER_TIMEFUN` below)
+- collapse some of `run_sim`/`run_sim_range`/`do_step`?  Calling `run_sim_range` for every step, as we would have to do with more continuously time-varying parameters, seems awkward. On the other hand, `run_sim_range` was created in the first place so that we didn't have to deal with date-processing at the lowest level.  Maybe `run_sim` could process dates into a zero-based numeric format/find numeric offsets for parameters, so that `run_sim_range` was continuous but low-level (i.e. suitable for coding in TMB/Stan/etc.)?
+- collapse `forecast_sim`/`run_sim_break`? This made more sense before I started thinking about adding tracks parallel to `run_sim_break` ...
 
 ```{r plot_graph,message=FALSE,echo=FALSE,fig.width=8,fig.height=8}
 library(mvbutils)
@@ -73,7 +77,9 @@ show_args(calibrate)
 
 ### `mle_fun`
 
-takes data and a set of starting parameters/structure/etc. and returns a negative log-likelihood (or a log-posterior-probability)
+- takes data and a set of starting parameters/structure/etc. and returns a negative log-likelihood (or a log-posterior-probability)
+- it's useful to have this defined separately from/outside `calibrate` so that we can do other things with the log-likelihood (e.g. calculate importance weights for ensembles)
+
 
 
 ```{r echo=FALSE,results="asis"}
@@ -88,6 +94,14 @@ inverse-link transforms parameters, re-lists them into the format of `opt_pars`,
 show_args(forecast_sim)
 ```
 `p` (numeric, named parameter vector); `opt_pars` (list: starting values *and structure* for "re-listing")
+
+### `forecast_ensemble`
+
+Calls `forecast_sim` repeatedly to generate an ensemble of trajectories, then computes (possibly weighted) quantiles (alternately may return an array of (replicate $\times$ time $\times$ variable).  May also (indirectly) call `mle_fun` if importance weights are requested.
+
+```{r echo=FALSE,results="asis"}
+show_args(forecast_ensemble)
+```
 
 
 ### `run_sim_break`
@@ -125,4 +139,3 @@ Run a single simulation step. Updates foi (redundantly?); generates total flows/
 show_args(do_step)
 ```
 
- 
