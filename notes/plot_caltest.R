@@ -8,7 +8,7 @@ library(DEoptim)
 ## DEoptim calibrated object is not working with the pipeline
 
 # load("run_DEoptim_breaks.RData")
-
+# res <- res[c(1,3,5,7,9,11,13,15,17,19)]
 ## Old working example
 
 # load("run_caltest_nobreak.RData")

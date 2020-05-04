@@ -6,12 +6,13 @@ library(parallel)
 
 use_true_start <- TRUE
 use_cut <- TRUE
-nsim <- 1
+nsim <- 30
 options(mc.cores=1)
 
 ## setup 
 
 params <- fix_pars(read_params("ICU1.csv"), target=c(R0=3, Gbar=6))
+params[["E0"]] <- 10
 params[["beta0"]] <- 0.9   ## slightly rounded for convenience
 params[["obs_disp"]] <- 100 ## BMB: less noise
 params[["N"]] <- 1e8
@@ -29,13 +30,17 @@ add_breaks <- FALSE
 bd <- NULL
 
 true_pars <- list(
-	params=c(log_beta0=log(params[["beta0"]]))
-   	, log_nb_disp = log(params[["obs_disp"]])
+	params=c(
+		log_E0 = log(params[["E0"]]), 
+		log_beta0=log(params[["beta0"]]))
+#   	, log_nb_disp = log(params[["obs_disp"]])
 )
 	
 opt_pars <- list(
-	params=c(log_beta0=log(params[["beta0"]]*1.2))
-   	, log_nb_disp = log(params[["obs_disp"]])
+	params=c(
+		log_E0 = log(params[["E0"]]), 
+		log_beta0=log(params[["beta0"]]*1.2))
+#  	, log_nb_disp = log(params[["obs_disp"]])
 )
 	
 true_pars <- unlist(true_pars)

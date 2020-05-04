@@ -6,7 +6,7 @@ library(parallel)
 
 use_true_start <- TRUE
 use_cut <- TRUE
-nsim <- 20
+nsim <- 5
 options(mc.cores=1)
 
 ## setup 
@@ -32,7 +32,7 @@ rel_breaks <- 0.5
 
 
 true_pars <- list(params = c(
-	log_E0 = log(params[["E0"]]), 
+#	log_E0 = log(params[["E0"]]), 
 	log_beta0 = log(params[["beta0"]])
 	)
 	, logit_rel_beta0 = qlogis(rel_breaks)
@@ -40,7 +40,7 @@ true_pars <- list(params = c(
 )
 
 opt_pars <- list(params=c(
-	log_E0 = log(params[["E0"]]*2), 
+#	log_E0 = log(params[["E0"]]*2), 
 	log_beta0=log(params[["beta0"]]*1.2)
 	)
 	, logit_rel_beta0 = qlogis(rel_breaks)
