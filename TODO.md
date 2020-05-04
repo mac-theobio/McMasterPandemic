@@ -2,6 +2,10 @@
 
 ### short term
 
+* pack `break_dates` into `opt_pars` ?
+* change/document that parameters should *not* contain underscores (or use a different delimiter for invlink prefixes, e.g. .. or __ or |
+* rename fix_pars to fix_params?
+* print start, end dates in print.fit_pansim method
 * protect against `stringsAsFactors=TRUE`! (maybe only necessary in timevars dfs?)
 * arrange consistent factor ordering/colour palette throughout
 * simulations with per-variable obs error, ¿process error?

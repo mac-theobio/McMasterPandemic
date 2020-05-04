@@ -92,6 +92,31 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
     return(p_new)
 }
 
+run_sim_mobility <- function(params,
+                             mob_value,
+                             mob_power,
+                             mob_startdate,
+                             ...) {
+    ## FIXME: DRY from run_sim_breaks
+    other_args <- list(...)
+    ## FIXME:: HACK for now
+    other_args <- other_args[!grepl("nb_disp",names(other_args))]
+    sim_args <- c(other_args,
+                  nlist(params,
+                        state=make_state(params=params)))
+    if (!is.null(break_dates)) {
+        ## construct time-varying frame, parameters
+        timevar <- data.frame(Date=seq.Date(mob_startdate,
+                                            length.out=length(mob_value),
+                                            by="1 day"),
+                              Symbol="beta0",
+                              Relative_value=mob_value^mob_power)
+        sim_args <- c(sim_args,
+                      list(params_timevar=timevar))
+    }
+    do.call(run_sim,sim_args)
+}
+    
 ##' run simulation with one or more breakpoints
 ## FIXME: make rel_beta0 part of params???
 ## FIXME: roll into run_sim?
@@ -114,7 +139,10 @@ run_sim_break <- function(params,
                           break_dates=NULL,
                           rel_beta0,
                           ...) {
-    sim_args <- c(list(...),
+    other_args <- list(...)
+    ## FIXME:: HACK for now
+    other_args <- other_args[!grepl("nb_disp",names(other_args))]
+    sim_args <- c(other_args,
                   nlist(params,
                         state=make_state(params=params)))
     if (!is.null(break_dates)) {
@@ -160,6 +188,12 @@ run_sim_decay <- function(params,
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
 ##' @param sim_fun function for simulating a single run
+##' @examples
+##' ff <- ont_cal1$forecast_args
+##' op <- ff$opt_pars
+##' p <- unlist(op)
+##' params <- fix_pars(read_params("ICU1.csv"))
+##' forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date, ff$break_dates)
 ##' @export
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
                          fixed_pars = NULL,
@@ -187,6 +221,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters
     params <- update(base_params, params=pp$params, .list=TRUE)
+    ## now drop params from pp, send everything else to sim_fun()
+    pp <- pp[names(pp)!="params"]
     ## if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
     r <- do.call(sim_fun,
@@ -194,8 +230,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
                          start_date,
                          end_date,
                          break_dates,
-                         rel_beta0=pp$rel_beta0,
                          condense_args),
+                   pp,
                    sim_args))
     ## FIXME: remove? already condensed?
     ## if (condense) r_agg <- condense(r)

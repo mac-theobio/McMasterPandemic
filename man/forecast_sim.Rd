@@ -56,3 +56,10 @@ forecast_sim(
 \description{
 simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 }
+\examples{
+ff <- ont_cal1$forecast_args
+op <- ff$opt_pars
+p <- unlist(op)
+params <- fix_pars(read_params("ICU1.csv"))
+forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date, ff$break_dates)
+}
