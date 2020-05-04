@@ -48,6 +48,9 @@ run_DEoptim_breaks.Rout: run_params_breaks.Rout run_DEoptim.R
 plot_caltest_nobreak.Rout: run_caltest_nobreak.Rout plot_caltest.R
 	$(run-R)
 
+explore_nobreaks.Rout: run_caltest_nobreak.Rout explore_nobreaks.R
+	$(run-R)
+
 plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 	$(run-R)
 
