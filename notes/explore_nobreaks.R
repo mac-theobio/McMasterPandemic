@@ -10,29 +10,29 @@ library(bbmle)
 # load("run_caltest_nobreak.RData")
 
 NLL <- map_dbl(res,~-logLik(.$fit$mle2))
-which.max(NLL)
-worst <- res[[which.max(NLL)]]
+which.min(NLL)
+bestfit <- res[[which.min(NLL)]]
 
 ## how bad is it?
-print(ggplot(filter(worst$pred,var=="report"),
+print(ggplot(filter(bestfit$pred,var=="report"),
         aes(date,value))
     + geom_line()
     + scale_y_log10()
-    + geom_point(data=worst$simdat)
+    + geom_point(data=bestfit$simdat)
 )
 
 m <- McMasterPandemic:::mle_fun
-f <- worst$fit$forecast_args
+f <- bestfit$fit$forecast_args
 f <- f[!names(f) == "fixed_pars"]
--logLik(worst$fit$mle2)
+-logLik(bestfit$fit$mle2)
 
-dd <- (worst$simdat
+dd <- (bestfit$simdat
     %>% filter(!is.na(value)) 
     %>% mutate(value = round(value))
 )
 
 
-p0=coef(worst$fit$mle2)
+p0=coef(bestfit$fit$mle2)
 tmpf <- function(p=p0) {
     do.call(m,c(list(p,data=dd),f))
 }
@@ -60,7 +60,7 @@ p1 <- subset(xx,res==min(res,na.rm=TRUE))
 gg1 <- (ggplot(xx,
         aes(x=params.log_beta0,y=params.log_E0))
     + facet_wrap(~log_nb_disp ,labeller=label_both)
-    + geom_raster(aes(fill=sres))
+    + geom_tile(aes(fill=sres))
     + scale_fill_viridis_c()
     + scale_x_continuous(expand=expansion(0,0))
     + scale_y_continuous(expand=expansion(0,0))
@@ -94,7 +94,7 @@ print(gg1
 # print(gg1 %+% xx2 + geom_contour(aes(z=sres))
 #       + geom_point(colour="blue",data=as_tibble(rbind(p0)),size=3)
 #       + ggtitle(sprintf("zoom in further on MLE fit ('bad', NLL=%1.2f)",
-#                         -round(c(logLik(worst$fit$mle2),2))))
+#                         -round(c(logLik(bestfit$fit$mle2),2))))
 # )
 # 
 # x3_args <- Map(
@@ -109,6 +109,6 @@ print(gg1
 # xx3$sres <- log10(xx3$res-max(xx3$res,na.rm=TRUE)+0.001)
 # print(gg1 %+% xx3 + geom_contour(aes(z=sres))
 #       + geom_point(colour="red",data=p1,size=3)
-#       + ggtitle(sprintf("zoom in further on worst fit ('better', NLL=%1.2f)",
+#       + ggtitle(sprintf("zoom in further on bestfit fit ('better', NLL=%1.2f)",
 #                         round(max(xx3$res,na.rm=TRUE),2)))
 #       )
