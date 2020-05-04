@@ -6,7 +6,7 @@ library(parallel)
 
 use_true_start <- TRUE
 use_cut <- TRUE
-nsim <- 10
+nsim <- 50
 options(mc.cores=1)
 
 ## setup 

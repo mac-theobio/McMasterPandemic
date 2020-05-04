@@ -70,7 +70,7 @@ print(gg1
       + geom_point(colour="red",data=p1,size=3)
       + geom_point(colour="blue",data=as_tibble(rbind(p0)),size=3)
 		+ geom_point(colour="black",data=as_tibble(rbind(true_pars)),size=3)
-      + ggtitle("full range: blue=MLE fit, red=worst, true=black")
+      + ggtitle("full range: blue=MLE fit, red=best, true=black")
       )
 # print(gg1 %+% filter(xx,params.log_E0==median(params.log_E0),
 #                      log_nb_disp==median(log_nb_disp))
