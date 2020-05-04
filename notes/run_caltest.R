@@ -4,7 +4,9 @@ library(anytime)
 library(bbmle)
 library(parallel)
 
-sim_cali <- function(seed) {
+if (!exists("use_DEoptim")) use_DEoptim <- FALSE
+
+sim_cali <- function(seed, do_plots=FALSE) {
 	cat(seed,"\n")
    set.seed(seed)
    simdat <- forecast_sim(p=true_pars
@@ -24,7 +26,7 @@ sim_cali <- function(seed) {
    
    simdat <- simdat %>% filter(between(date, cut_start, cut_end))
    
-   plot(ggplot(simdat,aes(date,value))+geom_point()+scale_y_log10())
+   if (do_plots) plot(ggplot(simdat,aes(date,value))+geom_point()+scale_y_log10())
 
     ## print(params)
     ## print(opt_pars)
@@ -32,8 +34,10 @@ sim_cali <- function(seed) {
                   , start_date = cut_start
                   , opt_pars = opt_pars
                   , break_dates = bd
-                  , debug_plot=TRUE
-                  , debug=FALSE
+                  ## , debug_plot=TRUE
+                  ## , debug=FALSE
+                  , use_DEoptim = use_DEoptim
+                  , DE_cores = 1 ## don't fight with mclapply
                     ## , mle2_args=list(browse_obj=TRUE)
                     )
 
@@ -51,6 +55,7 @@ sim_cali <- function(seed) {
     return(list(simdat=simdat,fit=g1,pars=res_dat,pred=pp, fullsim=simdat))
 }
 
+## sim_cali(1)
 res <- mclapply(seq(nsim), sim_cali)
 
 print(res)
