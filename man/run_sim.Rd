@@ -59,7 +59,8 @@ paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 state <- make_state(params=params)
 time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
                        Symbol=c("beta0","beta0"),
-                       Relative_value=c(0.7,0.1))
+                       Relative_value=c(0.7,0.1),
+                       stringsAsFactors=FALSE)
 res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
 res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 res1_t <- update(res1, params_timevar=time_pars)

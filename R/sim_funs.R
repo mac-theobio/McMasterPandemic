@@ -244,7 +244,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' state <- make_state(params=params)
 ##' time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
 ##'                        Symbol=c("beta0","beta0"),
-##'                        Relative_value=c(0.7,0.1))
+##'                        Relative_value=c(0.7,0.1),
+##'                        stringsAsFactors=FALSE)
 ##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
@@ -302,11 +303,11 @@ run_sim <- function(params
                           names(params_timevar)))
             params_timevar$Date <- anydate(params_timevar$Date)
         } else {
-            params_timevar <- data.frame(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
+            params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
         }
         if (stoch[["proc"]] && !is.null(stoch_start)) {
             params_timevar <- rbind(params_timevar,
-                                    data.frame(Date=stoch_start[["proc"]],
+                                    dfs(Date=stoch_start[["proc"]],
                                                Symbol="proc_disp",Relative_value=1))
             params[["proc_disp"]] <- -1 ## special value: signal no proc error
         }
@@ -364,7 +365,7 @@ run_sim <- function(params
     }
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
-    res <- data.frame(date=seq(start_date,end_date,by=dt),res)
+    res <- dfs(date=seq(start_date,end_date,by=dt),res)
     res <- res[,names(res)!="t"]  ## we never want the internal time vector ...
     ## condense here
     if (condense) {
@@ -517,7 +518,7 @@ run_sim_range <- function(params
         if (!identical(colnames(res),names(state))) browser()
         res[i,] <- state
     }
-    res <- data.frame(t=seq(nt),res,foi)
+    res <- dfs(t=seq(nt),res,foi)
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
     return(res)

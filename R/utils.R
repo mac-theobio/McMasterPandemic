@@ -301,3 +301,5 @@ dev_is_tikz <- function() {
   return(names(grDevices::dev.cur()) == "tikz output")
 }
 
+## especially for 3.6/4.0 compatibility
+dfs <- function(...) data.frame(..., stringsAsFactors=FALSE)
