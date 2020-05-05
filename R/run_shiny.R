@@ -49,14 +49,8 @@ run_shiny <- function(){
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
-      checkboxInput(inputId = "includeProcError",
-                      label = "Include process error",
-                      value = FALSE),
-      checkboxInput(inputId = "includeObsError",
-                    label = "Include observation error",
-                    value = FALSE),
-        textInput("procError", label = "Enter the relevant parameter", placeholder = "Something"),
-        textInput("ObsError", label = "Enter the relevant parameter", placeholder = "Something")
+        textInput("procError", label = "Enter the process error", value = 0),
+        textInput("ObsError", label = "Enter the observation error", value = 0)
       ),
       tabPanel(
         title = "Simulation Parameters",
@@ -250,13 +244,16 @@ run_shiny <- function(){
         else{
           params <- read_params(system.file("params", input$fn, package="ShinySimulations"))
         }
+        #Throw in proc and obs error as zero by default.
+        params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         if (input$timeChanges == 'Yes'){
           time_pars <- get_factor_timePars()
-          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed, params_timevar = time_pars))
+          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
         else{
-          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed))
+          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
+        #Allow for process and observation error, set to zero by default.
         p <- plot.pansim(sim) +
         labs(title = "Pandemic Simulation") +
         ggplot2::theme(
