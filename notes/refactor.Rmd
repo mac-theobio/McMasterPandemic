@@ -75,6 +75,8 @@ takes data and a set of starting parameters/structure/etc. and uses `DEoptim` an
 show_args(calibrate)
 ```
 
+- `sim_args` is passed down, eventually to `run_sim`. Can we also use it for arguments to `sim_fun` (the one with time-varying stuff) and strip those arguments before passing it down - or use `...` to catch junk in `run_sim`?
+
 ### `mle_fun`
 
 - takes data and a set of starting parameters/structure/etc. and returns a negative log-likelihood (or a log-posterior-probability)

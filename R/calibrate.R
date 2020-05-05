@@ -99,7 +99,7 @@ run_sim_mobility <- function(params,
                              ...) {
     ## FIXME: DRY from run_sim_breaks
     other_args <- list(...)
-    ## FIXME:: HACK for now
+    ## FIXME:: HACK for now.  Where is ... going?
     other_args <- other_args[!grepl("nb_disp",names(other_args))]
     sim_args <- c(other_args,
                   nlist(params,
@@ -123,11 +123,11 @@ run_sim_mobility <- function(params,
 ## FIXME: generalize
 ##' @param ... additional arguments to \code{run_sim}
 ##' @param params parameters
-##' @param break_dates dates of breakpoints in transmission
+##' @param time_args list containing \code{break_dates}
 ##' @param rel_beta0 numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' r1 <- run_sim_break(params, break_dates="2020-03-01",
+##' r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
 ##'                    start_date="2020-02-01", end_date="2020-04-01",
 ##'                    rel_beta0 = 0.5)
 ##' plot(r1,log=TRUE)
@@ -136,20 +136,24 @@ run_sim_mobility <- function(params,
 ##' plot(r2,log=TRUE)
 ##' @export
 run_sim_break <- function(params,
-                          break_dates=NULL,
-                          rel_beta0,
+                          extra_pars=NULL,
+                          time_args,
+                          sim_args=list(),
                           ...) {
-    other_args <- list(...)
     ## FIXME:: HACK for now
-    other_args <- other_args[!grepl("nb_disp",names(other_args))]
-    sim_args <- c(other_args,
+    ## other_args <- other_args[!grepl("nb_disp",names(other_args))]
+    sim_args <- c(sim_args,
                   nlist(params,
                         state=make_state(params=params)))
-    if (!is.null(break_dates)) {
+    if (length(time_args)==1 && is.null(names(time_args))) {
+        ## HACK:: namedrop() problems in mle2????
+        names(time_args) <- "break_dates"
+    }
+    if (!is.null(time_args$break_dates)) {
         ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=break_dates,
+        timevar <- data.frame(Date=time_args$break_dates,
                               Symbol="beta0",
-                              Relative_value=rel_beta0)
+                              Relative_value=extra_pars$rel_beta0)
         sim_args <- c(sim_args,
                       list(params_timevar=timevar))
     }
@@ -193,9 +197,11 @@ run_sim_decay <- function(params,
 ##' op <- ff$opt_pars
 ##' p <- unlist(op)
 ##' params <- fix_pars(read_params("ICU1.csv"))
-##' forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date, ff$break_dates)
+##' forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date,
+##'     time_args=ff$time_args)
 ##' @export
-forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_dates,
+forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
+                         time_args = NULL,
                          fixed_pars = NULL,
                          stoch = NULL,
                          stoch_start = NULL,
@@ -227,9 +233,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
     ## run simulation (uses params to set initial values)
     r <- do.call(sim_fun,
                  c(nlist(params,
+                         extra_pars=pp,
                          start_date,
                          end_date,
-                         break_dates,
+                         time_args,
                          condense_args),
                    pp,
                    sim_args))
@@ -254,15 +261,17 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date, break_d
 ##' @inheritParams calibrate
 ##' @export
 mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
-                    opt_pars, base_params, start_date, end_date, break_dates=NULL,
-                    sim_args=NULL, aggregate_args=NULL,
+                    opt_pars, base_params, start_date, end_date,
+                    time_args=NULL,
+                    sim_args=NULL,
+                    aggregate_args=NULL,
                     priors=NULL, ...) {
     ## ... is to drop any extra crap that gets in there
     if (debug) cat("mle_fun: ",p,"\n")
     var <- pred <- value <- NULL    ## defeat global-variable checkers
     ## pass everything to forecaster
     r <- (do.call(forecast_sim,
-                  nlist(p, opt_pars, base_params, start_date, end_date, break_dates,
+                  nlist(p, opt_pars, base_params, start_date, end_date, time_args,
                         sim_args, aggregate_args, debug))
         %>% dplyr::rename(pred="value")
     )
@@ -292,20 +301,14 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     ## need to reconstruct parameter set to get NB parameter(s)
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
-    if (length(names(pp$nb_disp))>0) {
-        ## FIXME: invlink_trans doesn't handle this case correctly!
-        ##  for now, manually exp() ...
-        pp$nb_disp <- exp(pp$nb_disp)
-    }
     if (length(pp$nb_disp)==1) {
-        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))        
-    } else {
+        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))           } else {
         r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
                     by="var")
         dvals <- with(r2,dnbinom(value,mu=pred,size=exp(nb_disp),log=TRUE))
     }
     ## clamp NaN/NA values to worst obs
-    dvals[is.na(dvals)] <- min(dvals,na.rm=TRUE)
+    dvals[!is.finite(dvals)] <- min(dvals[is.finite(dvals)])
     ret <- -sum(dvals)
     if (!is.null(priors)) {
         for (pr in priors) {
@@ -350,13 +353,14 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @examples
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
-##' opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
+##'  opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
 ##'           log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
 ##'                                   logit_rel_beta0=c(-1,-1),
-##'                                   log_nb_disp=NULL)
+##'                                    log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
 ##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE, use_DEoptim=TRUE, DE_cores=1)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 ##' 
 ##'    if (require(bbmle)) {
@@ -369,7 +373,8 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
-                      break_dates=c("2020-Mar-23","2020-Mar-30"),
+                      time_args=list(
+                          break_dates=c("2020-Mar-23","2020-Mar-30")),
                       base_params,
                       data,
                       opt_pars=list(params=c(log_E0=4,
@@ -404,22 +409,23 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     data$var <- trans_state_vars(data$var)
     if (is.null(opt_pars$log_nb_disp)) {
         nvar <- length(var_names <- unique(data$var))
-        opt_pars$log_nb_disp <- setNames(rep(0,nvar),var_names)
+        opt_pars$log_nb_disp <- setNames(rep(0,nvar),paste0("log_",var_names))
     }
     value <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
     ## FIXME: allow for aggregation of reports etc.
     ## MLE
-    mle_args <- nlist(start_date, end_date,
-                      break_dates,
-                      base_params,
-                      opt_pars,
-                      sim_args,
-                      aggregate_args,
-                      debug,
-                      debug_plot,
-                      data,
-                      priors)
+    mle_args <- nlist(start_date
+                    , end_date
+                    , time_args
+                    , base_params
+                    , opt_pars
+                    , sim_args
+                    , aggregate_args
+                    , debug
+                    , debug_plot
+                    , data
+                    , priors)
     opt_inputs <- unlist(opt_pars)
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
@@ -434,10 +440,13 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             DE_upr[grepl("rel_beta0",names(DE_upr))] <- 4
             DE_upr[grepl("nb_disp|E0",names(DE_upr))] <- 5
         }
-        de_arglist <- c(list(fn=mle_fun, lower=DE_lwr, upper=DE_upr,
-                             control=DEoptim::DEoptim.control( ## storepopfrom=1,
-                                                packages=list("McMasterPandemic","bbmle"))),
-                        DE_args,mle_args)
+        de_arglist <- c(list(fn=mle_fun
+                           , lower=DE_lwr
+                           , upper=DE_upr
+                           , control=DEoptim::DEoptim.control( ## storepopfrom=1,
+                                                  packages=list("McMasterPandemic","bbmle")))
+                      , DE_args
+                      , mle_args)
         if (DE_cores>1) {
             cl <- parallel::makeCluster(DE_cores)
             de_arglist$cluster <- cl
@@ -454,14 +463,15 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         de_cal1$member$Sigma <- var(M)
     }
     ## n.b.: this has to be hacked dynamically ...
+    ## FIXME: same as mle_args?
     parnames(mle_fun) <- names(opt_inputs)
     mle_data <- nlist(start_date,
           end_date,
-          break_dates,
+          time_args,
           base_params,
           opt_pars,
           sim_args,
-          fixed_pars,
+          fixed_pars, ## only diff from mle_args?
           aggregate_args,
           debug,
           debug_plot,
@@ -479,7 +489,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     res <- list(mle2=opt,
                 forecast_args=nlist(start_date,
                                     end_date,
-                                    break_dates,
+                                    time_args,
                                     base_params,
                                     opt_pars,
                                     fixed_pars,
