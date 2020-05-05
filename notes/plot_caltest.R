@@ -17,7 +17,7 @@ truedf <- data.frame(pars = names(true_pars)
 	, trueval = true_pars
 )
 
-rescombo <- c(res[c(2,4,6,8,10)],res2[c(2,4,6,8,10)])
+rescombo <- c(res,res2)
 
 names(rescombo) <- seq_along(rescombo) ## seeds
 
@@ -43,7 +43,7 @@ gg1 <- ggplot(simvals, aes(date,value,lty=type)) +
     facet_wrap(~seed)
 
 ## print(gg1)
-print(gg1 + scale_y_log10())
+# print(gg1 + scale_y_log10())
 
 simdf <- (map_dfr(rescombo,pluck,"pars")
     %>% left_join(.,truedf)
@@ -57,7 +57,7 @@ simdf <- (map_dfr(rescombo,pluck,"pars")
 )
 
 print(simdf)
-simdf$type <- rep(c("NM","DEoptim"),each=20)
+simdf$type <- rep(c("NM","DEoptim"),each=4*length(res))
 
 #simrank <- (simdf
 #    %>% filter(pars=="params.log_beta0")
@@ -66,7 +66,7 @@ simdf$type <- rep(c("NM","DEoptim"),each=20)
 #)
 #simdf <- full_join(simdf, simrank, by="seed")
 
-ggmilli <- (ggplot(simdf, aes(x=factor(seed),y=estimate,color=type))
+ggmilli <- (ggplot(simdf, aes(x=seed,y=estimate,color=type))
    + geom_point()
    + geom_pointrange(aes(ymin=lwr,ymax=upr))
    + geom_hline(aes(yintercept = trueval))

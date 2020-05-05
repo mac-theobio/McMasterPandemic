@@ -58,7 +58,7 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=FALSE) {
 ## sim_cali(1)
 #res <- mclapply(seq(nsim), sim_cali)
 res <- mclapply(seq(nsim), sim_cali)
-res2 <- mclapply(seq(nsim),function(x)sim_cali(seed=x,use_DEoptim=TRUE))
+res2 <- lapply(seq(nsim),function(x)sim_cali(seed=x,use_DEoptim=TRUE))
 
 print(res)
 print(res2)
