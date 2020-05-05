@@ -49,8 +49,8 @@ run_shiny <- function(){
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
-        textInput("procError", label = "Enter the relevant parameter", value = 0),
-        textInput("ObsError", label = "Enter the relevant parameter", value = 0)
+        textInput("procError", label = "Enter the process error", value = 0),
+        textInput("ObsError", label = "Enter the observation error", value = 0)
       ),
       tabPanel(
         title = "Simulation Parameters",
