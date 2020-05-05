@@ -5,13 +5,18 @@ library(anytime)
 library(bbmle)
 library(DEoptim)
 
-## DEoptim calibrated object is not working with the pipeline
+trueNLL <- function(x){
+	m <- McMasterPandemic:::mle_fun
+	f <- x[["fit"]]$forecast_args
+	f <- f[!names(f) == "fixed_pars"]
+	dd <- (x[["simdat"]]
+   	%>% filter(!is.na(value)) 
+    	%>% mutate(value = round(value))
+	)
+	NLL <- do.call(m,c(list(true_pars,data=dd),f))
+	return(NLL)
+}
 
-# load("run_DEoptim_breaks.RData")
-# res <- res[c(1,3,5,7,9,11,13,15,17,19)]
-## Old working example
-
-# load("run_caltest_nobreak.RData")
 
 truedf <- data.frame(pars = names(true_pars)
 	, trueval = true_pars
@@ -21,7 +26,17 @@ rescombo <- c(res,res2)
 
 names(rescombo) <- seq_along(rescombo) ## seeds
 
+NLL <- map_dbl(rescombo,~-logLik(.$fit$mle2))
+NLLtrue <- map_dbl(rescombo,~trueNLL(.))
 
+LLdat <- data.frame(seed = c(1:100,1:100)
+	, type = rep(c("Nelder-Mead","DEoptim"),each=100)
+	, NLL = NLL
+	, NLLtrue = NLLtrue
+	, NLL_diff = NLL - NLLtrue
+)
+	
+	
 likvals <- suppressWarnings(
     map_dfr(rescombo,~tibble(NLL=-bbmle::logLik(.$fit$mle2)),.id="seed")
 )
@@ -84,3 +99,12 @@ simwide <- (simdf
 ## all 'converged' except fit 3
 map_dbl(res, ~.$fit$mle2@details$convergence)
 ## local conv?
+
+ggLL <- (ggplot(LLdat, aes(x=seed, y=NLL_diff,color=type))
+	+ geom_point()
+	+ geom_hline(yintercept = 0)
+	+ scale_color_manual(values = c("red","blue"))
+	+ theme_bw()
+)
+
+print(ggLL)
