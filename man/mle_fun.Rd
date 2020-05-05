@@ -13,7 +13,7 @@ mle_fun(
   base_params,
   start_date,
   end_date,
-  break_dates = NULL,
+  time_args = NULL,
   sim_args = NULL,
   aggregate_args = NULL,
   priors = NULL,
@@ -36,8 +36,6 @@ mle_fun(
 \item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
 
 \item{end_date}{ending date}
-
-\item{break_dates}{specified breakpoints in beta0}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 

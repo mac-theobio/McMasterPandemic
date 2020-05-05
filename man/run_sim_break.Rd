@@ -4,23 +4,23 @@
 \alias{run_sim_break}
 \title{run simulation with one or more breakpoints}
 \usage{
-run_sim_break(params, break_dates = NULL, rel_beta0, ...)
+run_sim_break(params, extra_pars = NULL, time_args, sim_args = list(), ...)
 }
 \arguments{
 \item{params}{parameters}
 
-\item{break_dates}{dates of breakpoints in transmission}
-
-\item{rel_beta0}{numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint}
+\item{time_args}{list containing \code{break_dates}}
 
 \item{...}{additional arguments to \code{run_sim}}
+
+\item{rel_beta0}{numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint}
 }
 \description{
 run simulation with one or more breakpoints
 }
 \examples{
 params <- read_params("ICU1.csv")
-r1 <- run_sim_break(params, break_dates="2020-03-01",
+r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
                    start_date="2020-02-01", end_date="2020-04-01",
                    rel_beta0 = 0.5)
 plot(r1,log=TRUE)

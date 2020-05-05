@@ -248,7 +248,7 @@ Hmisc::latex(main_estparam_table, file="", label="estparmtab", rowlabel="", tabl
 @ 
 
 <<make_Rt_table, echo=FALSE>>=
-rel_Rt_table <- data.frame( bd = f_args$break_dates, 
+rel_Rt_table <- data.frame( bd = f_args$time_args$break_dates, 
                             rel_beta0 = estimated_params$rel_beta0 )
 rel_Rt_table[,"rel_beta0"] <- round(rel_Rt_table[,"rel_beta0"], 2)
 colnames(rel_Rt_table) <- c("Intervention Date","\\qquad Relative change in ${\\mathcal R}_t$")

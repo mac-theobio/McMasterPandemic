@@ -4,7 +4,6 @@
 ##  which vars to fit?
 library(McMasterPandemic)
 library(tidyverse)
-library(anytime)
 
 ## clean Ontario data are automatically loaded
 ## load("ontario_clean.RData")
@@ -37,7 +36,7 @@ schoolClose <- "2020-Mar-17"
 countryClose <- "2020-Mar-23"
 socialClose <- "2020-Mar-28"
 
-bd <- anydate(c(schoolClose,countryClose,socialClose))
+bd <- c(schoolClose,countryClose,socialClose)
 ## print(bd)
 
 ## choose parameters to fit: starting values
@@ -63,8 +62,7 @@ opt_pars <- list(
 t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
     , base_params=params
     , opt_pars = opt_pars
-    , break_dates = bd
-    ## , debug=TRUE
+    , time_args=list(break_dates = bd)
       )
       ) ## system.time
 

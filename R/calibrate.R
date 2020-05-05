@@ -97,23 +97,21 @@ run_sim_mobility <- function(params,
                              mob_power,
                              mob_startdate,
                              ...) {
-    ## FIXME: DRY from run_sim_breaks
+    ## FIXME: DRY from run_sim_break
     other_args <- list(...)
     ## FIXME:: HACK for now.  Where is ... going?
     other_args <- other_args[!grepl("nb_disp",names(other_args))]
     sim_args <- c(other_args,
                   nlist(params,
                         state=make_state(params=params)))
-    if (!is.null(break_dates)) {
-        ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=seq.Date(mob_startdate,
-                                            length.out=length(mob_value),
-                                            by="1 day"),
-                              Symbol="beta0",
-                              Relative_value=mob_value^mob_power)
-        sim_args <- c(sim_args,
-                      list(params_timevar=timevar))
-    }
+    ## construct time-varying frame, parameters
+    timevar <- data.frame(Date=seq.Date(mob_startdate,
+                                        length.out=length(mob_value),
+                                        by="1 day"),
+                          Symbol="beta0",
+                          Relative_value=mob_value^mob_power)
+    sim_args <- c(sim_args,
+                  list(params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
     
@@ -151,7 +149,7 @@ run_sim_break <- function(params,
     }
     if (!is.null(time_args$break_dates)) {
         ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=time_args$break_dates,
+        timevar <- data.frame(Date=anydate(time_args$break_dates),
                               Symbol="beta0",
                               Relative_value=extra_pars$rel_beta0)
         sim_args <- c(sim_args,
@@ -205,7 +203,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          fixed_pars = NULL,
                          stoch = NULL,
                          stoch_start = NULL,
-                         sim_args=NULL,
+                         sim_args=list(),
                          aggregate_args=NULL,
                          ##condense = TRUE,
                          condense_args=NULL,  ## FIXME: ???
@@ -215,12 +213,9 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          debug = FALSE)
 {
     return_val <- match.arg(return_val)
+    sim_args <- c(sim_args,nlist(start_date, end_date))
     if (!is.null(stoch)) {
-        if (is.null(sim_args)) {
-            sim_args <- nlist(stoch, stoch_start)
-        } else {
-            sim_args <- c(sim_args, nlist(stoch=stoch, stoch_start))
-        }
+        sim_args <- c(sim_args, nlist(stoch, stoch_start))
     }
     ## restructure and inverse-link parameters
     ## if (debug) cat("forecast 0",opt_pars[["log_beta0"]],"\n")
@@ -237,9 +232,9 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          start_date,
                          end_date,
                          time_args,
-                         condense_args),
-                   pp,
-                   sim_args))
+                         condense_args,
+                         sim_args),
+                   pp))
     ## FIXME: remove? already condensed?
     ## if (condense) r_agg <- condense(r)
     r_agg <- r
@@ -327,13 +322,15 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
 ##' @param start_date_offset days to go back before first data value
 ##' @param end_date ending date
-##' @param break_dates specified breakpoints in beta0
+##' @param time_args list containing \code{break_dates} or other information needed for time-dependent variation
 ##' @param base_params baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)
 ##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
 ##' @param opt_pars starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters
 ##' @param fixed_pars parameters to fix
 ##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
 ##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
+##' @param time_args arguments passed to \code{sim_fun}
+##' @param break_dates legacy
 ##' @param mle2_control control args for mle2
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
@@ -346,6 +343,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param DE_lwr lower bounds for DE optimization
 ##' @param DE_upr upper bounds, ditto
 ##' @param DE_cores number of parallel workers for DE
+##' @param DE_nll_thresh threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
@@ -354,13 +352,13 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
 ##'  opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
-##'           log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
+##'         log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
 ##'                                   logit_rel_beta0=c(-1,-1),
 ##'                                    log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
 ##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE, use_DEoptim=TRUE, DE_cores=1)
+##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE, use_DEoptim=TRUE, DE_cores=1, DE_args=list(control=list(itermax=10)), DE_nll_thresh=Inf)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 ##' 
 ##'    if (require(bbmle)) {
@@ -375,6 +373,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       end_date=max(data$date),
                       time_args=list(
                           break_dates=c("2020-Mar-23","2020-Mar-30")),
+                      break_dates=NULL,
                       base_params,
                       data,
                       opt_pars=list(params=c(log_E0=4,
@@ -396,8 +395,13 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       DE_args=list(),
                       DE_lwr=NULL,
                       DE_upr=NULL,
-                      DE_cores=getOption("mc.cores",2))
+                      DE_cores=getOption("mc.cores",2),
+                      DE_nll_thresh=1.5)
 {
+    if (!is.null(break_dates)) {
+        warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
+        time_args <- list(break_dates=break_dates)
+    }
     cc <- match.call()
     if (debug) {
         cat("start date: ", format(start_date),
@@ -440,27 +444,38 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             DE_upr[grepl("rel_beta0",names(DE_upr))] <- 4
             DE_upr[grepl("nb_disp|E0",names(DE_upr))] <- 5
         }
+        de_ctrl_args <- list(packages=list("McMasterPandemic","bbmle"))
+        if (!is.null(DE_args$control)) {
+            for (n in names(DE_args$control)) {
+                de_ctrl_args[[n]] <- DE_args$control[[n]]
+            }
+            DE_args$control <- NULL
+        }
+        de_ctrl <- do.call(DEoptim::DEoptim.control,de_ctrl_args)
         de_arglist <- c(list(fn=mle_fun
                            , lower=DE_lwr
                            , upper=DE_upr
-                           , control=DEoptim::DEoptim.control( ## storepopfrom=1,
-                                                  packages=list("McMasterPandemic","bbmle")))
+                           , control=de_ctrl)
                       , DE_args
                       , mle_args)
         if (DE_cores>1) {
             cl <- parallel::makeCluster(DE_cores)
-            de_arglist$cluster <- cl
+            de_arglist$control$cluster <- cl
         }
         de_time <- system.time(de_cal1 <- do.call(DEoptim::DEoptim,de_arglist))
         if (DE_cores>1) parallel::stopCluster(cl)
         opt_inputs <- de_cal1$optim$bestmem   ## set input for MLE to best
         M <- de_cal1$member$pop
         ## FIXME: can we avoid re-running likelihoods to threshold?
-        nll_vals <- apply(M,1,
-                          function(x) do.call(mle_fun,c(list(x),mle_args)))
-        M <- M[log10(nll_vals-min(nll_vals))<1.5,]
+        if (is.finite(DE_nll_thresh)) {
+            nll_vals <- apply(M,1,
+                              function(x) do.call(mle_fun,c(list(x),mle_args)))
+            M <- M[log10(nll_vals-min(nll_vals))<DE_nll_thresh,,drop=TRUE]
+        }
+        vM <- var(M)
+        dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
-        de_cal1$member$Sigma <- var(M)
+        de_cal1$member$Sigma <- vM
     }
     ## n.b.: this has to be hacked dynamically ...
     ## FIXME: same as mle_args?

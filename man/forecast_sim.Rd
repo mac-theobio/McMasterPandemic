@@ -10,7 +10,7 @@ forecast_sim(
   base_params,
   start_date,
   end_date,
-  break_dates,
+  time_args = NULL,
   fixed_pars = NULL,
   stoch = NULL,
   stoch_start = NULL,
@@ -32,8 +32,6 @@ forecast_sim(
 \item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
 
 \item{end_date}{ending date}
-
-\item{break_dates}{specified breakpoints in beta0}
 
 \item{fixed_pars}{parameters to fix}
 
@@ -61,5 +59,6 @@ ff <- ont_cal1$forecast_args
 op <- ff$opt_pars
 p <- unlist(op)
 params <- fix_pars(read_params("ICU1.csv"))
-forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date, ff$break_dates)
+forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date,
+    time_args=ff$time_args)
 }

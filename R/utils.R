@@ -303,3 +303,9 @@ dev_is_tikz <- function() {
 
 ## especially for 3.6/4.0 compatibility
 dfs <- function(...) data.frame(..., stringsAsFactors=FALSE)
+
+## support switch in break_dates specification
+legacy_bd <- function(x) {
+    if ("break_dates" %in% names(x)) x$break_dates else x$time_args$break_dates
+}
+
