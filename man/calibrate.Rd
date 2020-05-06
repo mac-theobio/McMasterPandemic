@@ -2,7 +2,8 @@
 % Please edit documentation in R/calibrate.R
 \name{calibrate}
 \alias{calibrate}
-\title{calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters}
+\title{estimate parameters from data
+calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters}
 \usage{
 calibrate(
   start_date = min(data$date) - start_date_offset,
@@ -15,6 +16,7 @@ calibrate(
   opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_rel_beta0 = c(-1, -1),
     log_nb_disp = NULL),
   fixed_pars = NULL,
+  sim_fun = run_sim_break,
   sim_args = NULL,
   aggregate_args = NULL,
   condense_args = NULL,
@@ -52,6 +54,8 @@ calibrate(
 
 \item{fixed_pars}{parameters to fix}
 
+\item{sim_fun}{function for simulating a single run}
+
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
@@ -85,6 +89,7 @@ calibrate(
 \item{DE_nll_thresh}{threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate}
 }
 \description{
+estimate parameters from data
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 }
 \examples{

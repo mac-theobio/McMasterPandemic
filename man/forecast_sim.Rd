@@ -2,7 +2,8 @@
 % Please edit documentation in R/calibrate.R
 \name{forecast_sim}
 \alias{forecast_sim}
-\title{simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting}
+\title{simulate/forecast a single trajectory
+simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting}
 \usage{
 forecast_sim(
   p,
@@ -54,6 +55,7 @@ forecast_sim(
 \item{debug}{print debugging messages?}
 }
 \description{
+simulate/forecast a single trajectory
 simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 }
 \examples{

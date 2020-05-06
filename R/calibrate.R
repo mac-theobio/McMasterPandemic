@@ -92,26 +92,32 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
     return(p_new)
 }
 
+
+##' run with transmission propto relative mobility 
+##' @inheritParams run_sim_break
+##' @export
 run_sim_mobility <- function(params,
-                             mob_value,
-                             mob_power,
-                             mob_startdate,
+                             extra_pars=NULL,
+                             time_args=NULL,
+                             sim_args=list(),
                              ...) {
     ## FIXME: DRY from run_sim_break
-    other_args <- list(...)
-    ## FIXME:: HACK for now.  Where is ... going?
-    other_args <- other_args[!grepl("nb_disp",names(other_args))]
-    sim_args <- c(other_args,
-                  nlist(params,
-                        state=make_state(params=params)))
+    mob_value <- mob_startdate <- NULL
+    unpack(time_args) ## mob_value, mob_startdate
+    ## strip
+    mob_power <- extra_pars$mob_power
+    extra_pars$mob_power <- NULL
     ## construct time-varying frame, parameters
-    timevar <- data.frame(Date=seq.Date(mob_startdate,
+    timevar <- dfs(Date=seq.Date(from=mob_startdate,
                                         length.out=length(mob_value),
                                         by="1 day"),
                           Symbol="beta0",
-                          Relative_value=mob_value^mob_power)
-    sim_args <- c(sim_args,
-                  list(params_timevar=timevar))
+                   Relative_value=mob_value^mob_power)
+    sim_args <- c(sim_args
+                , extra_pars
+                , nlist(params,
+                        state=make_state(params=params),
+                        params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
     
@@ -197,7 +203,6 @@ run_sim_decay <- function(params,
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
-##' @param sim_fun function for simulating a single run
 ##' @examples
 ##' ff <- ont_cal1$forecast_args
 ##' op <- ff$opt_pars
@@ -267,15 +272,27 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     opt_pars, base_params, start_date, end_date,
                     time_args=NULL,
                     sim_args=NULL,
+                    sim_fun=run_sim_break,
                     aggregate_args=NULL,
                     priors=NULL, ...) {
     ## ... is to drop any extra crap that gets in there
     if (debug) cat("mle_fun: ",p,"\n")
     var <- pred <- value <- NULL    ## defeat global-variable checkers
     ## pass everything to forecaster
+    ##  *except* distribution parameters
+    ##  (proc, obs error disp are safely inside params)
+    opt_pars2 <- opt_pars[!grepl("nb_disp",names(opt_pars))]
     r <- (do.call(forecast_sim,
-                  nlist(p, opt_pars, base_params, start_date, end_date, time_args,
-                        sim_args, aggregate_args, debug))
+                  nlist(p,
+                        opt_pars=opt_pars2
+                      , base_params
+                      , start_date
+                      , end_date
+                      , time_args
+                      , sim_args
+                      , aggregate_args
+                      , debug
+                      , sim_fun))
         %>% dplyr::rename(pred="value")
     )
     ## ggplot(r,aes(date,pred,colour=var)) + geom_line() + scale_y_log10() + geom_point(data=data,aes(y=value))
@@ -354,6 +371,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param DE_cores number of parallel workers for DE
 ##' @param DE_nll_thresh threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
+##' @param sim_fun function for simulating a single run
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
@@ -390,6 +408,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                     logit_rel_beta0=c(-1,-1),
                                     log_nb_disp=NULL),
                       fixed_pars=NULL,
+                      sim_fun=run_sim_break,
                       sim_args=NULL,
                       aggregate_args=NULL,
                       condense_args=NULL,
@@ -438,7 +457,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , debug
                     , debug_plot
                     , data
-                    , priors)
+                    , priors
+                    , sim_fun)
     opt_inputs <- unlist(opt_pars)
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
@@ -500,7 +520,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
           debug,
           debug_plot,
           data,
-          priors)
+          priors,
+          sim_fun)
     opt_args <- c(list(minuslogl=mle_fun
                         , start=opt_inputs
                         , data=mle_data

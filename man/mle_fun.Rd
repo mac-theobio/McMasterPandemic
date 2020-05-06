@@ -15,6 +15,7 @@ mle_fun(
   end_date,
   time_args = NULL,
   sim_args = NULL,
+  sim_fun = run_sim_break,
   aggregate_args = NULL,
   priors = NULL,
   ...
@@ -40,6 +41,8 @@ mle_fun(
 \item{time_args}{arguments passed to \code{sim_fun}}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
+
+\item{sim_fun}{function for simulating a single run}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
 
