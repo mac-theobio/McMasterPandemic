@@ -420,17 +420,20 @@ summary.fit_pansim <- function(object, ...) {
     f_args <- object$forecast_args
     pars <- coef(object, method="fitted")
     bd <- legacy_bd(f_args)
-    ## construct table of R0 values etc. in different periods
-    pp <- list()
-    beta0 <- pars$params[["beta0"]]
-    pp[[1]] <- update(f_args$base_params,beta0=beta0)
-    for (i in seq_along(bd)) {
-        pp[[i+1]] <- update(pp[[1]],
-                            beta0=beta0*pars$rel_beta0[i])
+    if (!is.null(bd)) {
+        ## construct table of R0 values etc. in different periods
+        pp <- list()
+        beta0 <- pars$params[["beta0"]]
+        pp[[1]] <- update(f_args$base_params,beta0=beta0)
+        for (i in seq_along(bd)) {
+            pp[[i+1]] <- update(pp[[1]],
+                                beta0=beta0*pars$rel_beta0[i])
+        }
+        ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
+        names(pp) <- c(format(f_args$start_date),format(bd))
+        ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
+    } else {
     }
-    ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
-    names(pp) <- c(format(f_args$start_date),format(bd))
-    ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
     return(ret)
 }
 

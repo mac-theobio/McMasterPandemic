@@ -35,6 +35,7 @@ knitr::opts_chunk$set(
 library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
+library(bbmle)
 load("ontario_calibration_noICU_2brks_prior.RData")
 fit <- ont_cal_noICU_2brks_prior
 @ 
@@ -372,6 +373,52 @@ maxv2 <- round(t(apply(max_val[c("H","death","incidence","report"),],
                )
 knitr::kable(maxv2)
 @
+
+\section{Fitting to mobility data}
+
+<<loadmob,warning=FALSE>>=
+load("mobility1.RData")
+mob_pwr <- coef(ont_cal_mob1,"fitted")$mob_power
+mob_pwr_ci <- plogis(confint(ont_cal_mob1$mle2,method="quad")["logit_mob_power",])
+@ 
+Fitting to averaged mobility data, with relative transmission as a power of relative mobility: $\beta = \beta_0 m^\alpha$.
+Estimating $\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI: \Sexpr{round(mob_pwr_ci[1],2)} - \Sexpr{round(mob_pwr_ci[2],2)}.
+
+<<mobplot1,warning=FALSE>>=
+fit <- ont_cal_mob1
+data <- ont_all
+kv <- c("H", "death", "report", "newTests/1000")
+dd <- trans_state_vars(data) ##  %>% filter(var %in% kv)
+## show fit up to end of current data
+plot(fit
+       , predict_args=list(keep_vars = kv[1:3])
+       , data = dd %>% filter(var != "ICU")
+       , add_tests = TRUE
+       , directlabels = TRUE
+     )
+@
+
+<<mobfc,cache=TRUE,warning=FALSE>>=
+set.seed(101)
+pp <- predict(fit
+            , stoch=c(obs=FALSE,proc=TRUE)
+            , ensemble=TRUE
+            , nsim=100,
+            , stoch_start=max(data$date)
+            , end_date="2020-09-01"
+            , new_params=c(proc_disp=1,obs_disp=100))
+@
+
+
+<<mobfcplot,warning=FALSE>>=
+pp <- pp %>% filter(var %in% kv)
+plot(pp
+   , data=dd
+   , add_tests = FALSE
+   , directlabels = TRUE
+   , limspace = 35
+     )
+@ 
 
 \textbf{caveats}
 \begin{itemize}

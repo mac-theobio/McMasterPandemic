@@ -100,6 +100,7 @@ run_sim_mobility <- function(params,
                              extra_pars=NULL,
                              time_args=NULL,
                              sim_args=list(),
+                             return_timevar=FALSE,
                              ...) {
     ## FIXME: DRY from run_sim_break
     mob_value <- mob_startdate <- NULL
@@ -113,6 +114,7 @@ run_sim_mobility <- function(params,
                                         by="1 day"),
                           Symbol="beta0",
                    Relative_value=mob_value^mob_power)
+    if (return_timevar) return(timevar)
     sim_args <- c(sim_args
                 , extra_pars
                 , nlist(params,
@@ -235,8 +237,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
     pp <- invlink_trans(restore(p, opt_pars, fixed_pars))
     ## substitute into parameters
     params <- update(base_params, params=pp$params, .list=TRUE)
-    ## now drop params from pp, send everything else to sim_fun()
-    pp <- pp[names(pp)!="params"]
+    ## now drop params and dispersion parameters from pp, send everything else to sim_fun()
+    pp <- pp[!grepl("^params$|nb_disp",names(pp))]
     ## if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
     r <- do.call(sim_fun,
@@ -534,7 +536,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     res <- list(mle2=opt,
                 forecast_args=nlist(start_date,
                                     end_date,
-                                    run_sim,
+                                    sim_fun,
                                     time_args,
                                     base_params,
                                     opt_pars,
@@ -602,6 +604,8 @@ forecast_ensemble <- function(fit,
         fix_pars <- grep(fix_pars_re, names(coef(fit$mle2)), value=TRUE)
     }
 
+    f_args <- forecast_args
+    f_args <- f_args[!names(f_args) %in% c("stoch", "stoch_start", "fixed_pars", "base_params")]
     pps_args <- c(list(fit$mle2
                      , n=nsim
                      , PDify =TRUE
@@ -609,7 +613,7 @@ forecast_ensemble <- function(fit,
                      , return_wts=imp_wts
                      , data=fit$mle2@data$data
                      , fix_params=fix_pars)
-                , forecast_args[c("opt_pars","base_params","start_date","end_date")])
+                , f_args)
 
 
     ## use internal pop_pred_samp not bbmle version
@@ -621,8 +625,7 @@ forecast_ensemble <- function(fit,
         if (attr(e_pars,"eff_samp")<10) warning("low effective sample size of importance weights")
     }
 
-    np <- length(unlist(forecast_args$opt_pars[c("params","logit_rel_beta0")]))
-    e_pars <- e_pars[,seq(np)]
+    e_pars <- e_pars[,setdiff(colnames(e_pars),fix_pars)]
 
     ## run for all param vals in ensemble
     ## tried with purrr::pmap but too much of a headache
