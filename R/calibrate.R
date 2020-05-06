@@ -188,6 +188,7 @@ run_sim_decay <- function(params,
     do.call(run_sim,sim_args)
 }
 
+##' simulate/forecast a single trajectory
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 ##' @importFrom stats update
 ##' @inheritParams calibrate
@@ -325,6 +326,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     return(ret)
 }
 
+##' estimate parameters from data
 ##' calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
 ##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
 ##' @param start_date_offset days to go back before first data value

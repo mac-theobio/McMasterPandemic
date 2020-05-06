@@ -18,8 +18,13 @@ opt_pars <- list(params=c(log_E0=4
                  mob_value=comb_sub2$rel_activity,
                  mob_startdate=comb_sub2$date[1],
                  logit_mob_power=0.5,
-                 logit_rel_beta0=c(-1,-1),
-##'                                   log_nb_disp=NULL)
-##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
-##' \dontrun{
-##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+                 log_nb_disp=NULL)
+
+dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
+
+debug(calibrate)
+
+calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE,
+          time_args = list(mob_value=comb_sub2$rel_activity,
+                           mob_startdate=comb_sub2$date[1]),
+          sim_fun=run_sim_mobility)
