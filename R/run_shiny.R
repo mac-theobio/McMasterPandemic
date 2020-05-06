@@ -172,7 +172,12 @@ run_shiny <- function(){
       column(2,
              sliderInput("YtextSize", "Y axis title size:",
                          min = 0, max = 25,
-                         value = 10))
+                         value = 10)),
+      column(2,
+             sliderInput("lineThickness", "Line thickness:",
+                         min = 0, max = 10,
+                         step = 0.25,
+                         value = 1))
     )),
   width = 12),
     fluidRow(
@@ -300,7 +305,8 @@ run_shiny <- function(){
         ggplot2::theme(
           plot.title = element_text(color = "black", size = input$titleSize, face = "bold"),
           axis.title.x = element_text(color = "black", size = input$XtextSize, face = "bold"),
-          axis.title.y = element_text(color = "black", size = input$YtextSize, face = "bold"))
+          axis.title.y = element_text(color = "black", size = input$YtextSize, face = "bold")) +
+          geom_line(size = input$lineThickness)
         ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
         .x <- NULL ## undefined variable check
         if (input$use_logYscale == 1){
