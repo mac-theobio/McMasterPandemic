@@ -304,8 +304,22 @@ dev_is_tikz <- function() {
 ## especially for 3.6/4.0 compatibility
 dfs <- function(...) data.frame(..., stringsAsFactors=FALSE)
 
+legacy <- function(x, nm, other) {
+    if (nm %in% names(x)) x[[nm]] else other
+}
 ## support switch in break_dates specification
-legacy_bd <- function(x) {
-    if ("break_dates" %in% names(x)) x$break_dates else x$time_args$break_dates
+legacy_bd <- function(x, update=FALSE) {
+    r <- legacy(x, "break_dates", x$time_args$break_dates)
+    if (!update) return(r)
+    x$time_args$break_date <- r
+    return(x)
+}
+
+## support switch in break_dates specification
+legacy_sim_fun <- function(x) {
+    legacy(x, "sim_fun", run_sim_break)
+    if (!update) return(r)
+    x$sim_fun <- r
+    return(x)
 }
 

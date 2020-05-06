@@ -9,6 +9,7 @@ run_sim_mobility(
   extra_pars = NULL,
   time_args = NULL,
   sim_args = list(),
+  return_timevar = FALSE,
   ...
 )
 }
@@ -20,6 +21,8 @@ run_sim_mobility(
 \item{time_args}{list containing \code{break_dates}}
 
 \item{sim_args}{parameters to pass to \code{\link{run_sim}}}
+
+\item{return_timevar}{return data frame of beta by time?}
 
 \item{...}{additional arguments to \code{run_sim}}
 }

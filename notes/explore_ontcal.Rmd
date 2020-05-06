@@ -128,4 +128,4 @@ car::scatterplotMatrix(M[nll_off<1.5,],ellipse=TRUE,
                        regLine=FALSE,smooth=FALSE)
 ```
 
-Cane we make a forecasting ensemble based on this?
+Can we make a forecasting ensemble based on this?

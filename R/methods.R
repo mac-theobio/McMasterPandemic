@@ -419,6 +419,7 @@ summary.fit_pansim <- function(object, ...) {
     check_dots(...)
     f_args <- object$forecast_args
     pars <- coef(object, method="fitted")
+    sim_fun <- legacy_sim_fun(f_args)
     bd <- legacy_bd(f_args)
     if (!is.null(bd)) {
         ## construct table of R0 values etc. in different periods

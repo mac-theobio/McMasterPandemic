@@ -104,8 +104,10 @@ run_sim_mobility <- function(params,
                              ...) {
     ## FIXME: DRY from run_sim_break
     mob_value <- mob_startdate <- NULL
-    unpack(time_args) ## mob_value, mob_startdate
-    ## strip
+    unpack(time_args)
+    ## mob_value: numeric vector of relative mobility per day (starting at 1 and decreasing)
+    ## mob_startdate: starting date for the relative mobility sequence (anything before this == 1 rel mobility)
+    ## strip 
     mob_power <- extra_pars$mob_power
     extra_pars$mob_power <- NULL
     ## construct time-varying frame, parameters
@@ -133,6 +135,7 @@ run_sim_mobility <- function(params,
 ##' @param sim_args parameters to pass to \code{\link{run_sim}}
 ##' @param extra_pars ??
 ##' @param break_dates obsolete
+##' @param return_timevar return data frame of beta by time?
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
@@ -148,6 +151,7 @@ run_sim_break <- function(params,
                           time_args=NULL,
                           break_dates=NULL,
                           sim_args=list(),
+                          return_timevar=FALSE,
                           ...) {
     if (!is.null(break_dates)) {
         warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
@@ -167,6 +171,7 @@ run_sim_break <- function(params,
         timevar <- data.frame(Date=anydate(time_args$break_dates),
                               Symbol="beta0",
                               Relative_value=extra_pars$rel_beta0)
+        if (return_timevar) return(timevar)
         sim_args <- c(sim_args,
                       list(params_timevar=timevar))
     }
@@ -373,7 +378,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' @param DE_cores number of parallel workers for DE
 ##' @param DE_nll_thresh threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
-##' @param sim_fun function for simulating a single run
+##' @param sim_fun function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
 ##' @importFrom bbmle parnames<- mle2
 ## DON'T import stats::coef !
@@ -496,17 +501,25 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         de_time <- system.time(de_cal1 <- do.call(DEoptim::DEoptim,de_arglist))
         if (DE_cores>1) parallel::stopCluster(cl)
         opt_inputs <- de_cal1$optim$bestmem   ## set input for MLE to best
-        M <- de_cal1$member$pop
+        M <- de_cal1$member$pop   ## find the population of parameter sets at the last step
         ## FIXME: can we avoid re-running likelihoods to threshold?
+        nll_vals <- NULL
         if (is.finite(DE_nll_thresh)) {
+            ## recalculate neg log-likelihoods
             nll_vals <- apply(M,1,
                               function(x) do.call(mle_fun,c(list(x),mle_args)))
-            M <- M[log10(nll_vals-min(nll_vals))<DE_nll_thresh,,drop=TRUE]
+            ## drop 'extreme' values (default threshold is 10^1.5)
+            ## should we use an 'absolute' NLL thresold (e.g. 20 log-likelihood units) instead?
+            keep <- log10(nll_vals-min(nll_vals))<DE_nll_thresh
+            M <- M[keep,,drop=TRUE]
+            nll_vals <- nll_vals[keep]
+            
         }
         vM <- var(M)
         dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
         de_cal1$member$Sigma <- vM
+        de_cal1$member$nll_vals <- nll_vals
     }
     ## n.b.: this has to be hacked dynamically ...
     ## FIXME: same as mle_args?
@@ -648,8 +661,16 @@ forecast_ensemble <- function(fit,
         e_res2 <- e_res %>% dplyr::bind_cols()
 
         ## get quantiles per observation
+        ## safe version of wtd quantile
+        wq <- function(x,w,probs) {
+            bad <- !is.finite(x)
+            if (all(bad)) {
+                return(rep(NA,length.out=length(probs)))
+            }
+            return(Hmisc::wtd.quantile(x[!bad], w[!bad], probs))
+        }
         if (imp_wts) {
-            e_res3 <- apply(e_res2,1,Hmisc::wtd.quantile,weights=wts,probs=qvec,na.rm=TRUE)
+            e_res3 <- apply(e_res2,1,FUN=wq,weights=wts,probs=qvec,na.rm=TRUE)
         } else {
             e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec,na.rm=TRUE)
         }        

@@ -10,6 +10,7 @@ run_sim_break(
   time_args = NULL,
   break_dates = NULL,
   sim_args = list(),
+  return_timevar = FALSE,
   ...
 )
 }
@@ -23,6 +24,8 @@ run_sim_break(
 \item{break_dates}{obsolete}
 
 \item{sim_args}{parameters to pass to \code{\link{run_sim}}}
+
+\item{return_timevar}{return data frame of beta by time?}
 
 \item{...}{additional arguments to \code{run_sim}}
 }
