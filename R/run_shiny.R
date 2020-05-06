@@ -1,11 +1,14 @@
-#' run shiny app
+#' Run the McMasterPandemic Shiny
+#'
 #' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
 #' @importFrom shiny renderTable shinyApp
 #' @importFrom ggplot2 scale_y_continuous
+#' @importFrom directlabels direct.label
 #' @importFrom scales log10_trans trans_breaks trans_format math_format
 #' @importFrom ggplot2 element_text
+#' @return NULL
 #' @export
 run_shiny <- function(){
 #How I want stuff to look. Also collect input and things.
@@ -30,11 +33,11 @@ run_shiny <- function(){
                                          "stanford_estimates.csv"), selected = "ICU1.csv"))),
         fluidRow(
           column(2,
-                 textInput("sd", "Simulation Start Date (lubridate mdy)", value = "01-01-2020")),
+                 textInput("sd", "Simulation Start Date (lubridate ymd)", value = "2020-01-01")),
           column(2,
-                 textInput("ed", "Simulation End Date  (lubridate mdy)", value = "06-01-2020")),
+                 textInput("ed", "Simulation End Date  (lubridate ymd)", value = "2020-06-01")),
           column(2,
-                 selectInput("timeChanges", "Include time-changing transmission rates", c("Yes", "No"), selected = "No"))
+                 radioButtons("timeChanges", "Include time-changing transmission rates", choices = c("Yes", "No"), selected = "No"))
         ),
   #Only show the selector to input parameters if that's selected.
     tabsetPanel(
@@ -42,9 +45,9 @@ run_shiny <- function(){
       tabPanel(
         title = "Time changing transmission rates",
         value = "tcr",
-          textInput("timeParsDates", label = "Enter dates of changes here, in lubridate ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02"),
-          textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha"),
-          textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "0.5, 0.1, 0.01")
+          textInput("timeParsDates", label = "Enter dates of changes here, in lubridate ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-01-01"),
+          textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0"),
+          textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "0.5, 0.1, 0.01", value = 1)
       ),
       tabPanel(
         title = "Process and Observation error",
@@ -57,83 +60,120 @@ run_shiny <- function(){
         value = "manualParams",
           column(5,
                  textInput("beta0",
-                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "beta0","meaning"]),
+                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "beta0","meaning"],
+                           value = read_params("ICU1.csv")["beta0"]),
                  textInput("Ca",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Ca","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Ca","meaning"],
+                           value = read_params("ICU1.csv")["Ca"]),
                  textInput("Cp",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cp","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cp","meaning"],
+                           value = read_params("ICU1.csv")["Cp"]),
                 textInput("Cs",
-                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cs","meaning"]),
+                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cs","meaning"],
+                          value = read_params("ICU1.csv")["Cs"]),
                 textInput("Cm",
-                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cm","meaning"])),
+                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cm","meaning"],
+                          value = read_params("ICU1.csv")["Cm"])),
           column(5,
                  textInput("alpha",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "alpha","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "alpha","meaning"],
+                           value = read_params("ICU1.csv")["alpha"]),
                  textInput("sigma",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "sigma","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "sigma","meaning"],
+                           value = read_params("ICU1.csv")["sigma"]),
                  textInput("gamma_a",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_a","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_a","meaning"],
+                           value = read_params("ICU1.csv")["gamma_a"]),
                  textInput("gamma_s",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_s","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_s","meaning"],
+                           value = read_params("ICU1.csv")["gamma_s"]),
                  textInput("gamma_m",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_m","meaning"])),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_m","meaning"],
+                           value = read_params("ICU1.csv")["gamma_m"])),
           column(5,
                  textInput("gamma_p",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_p","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_p","meaning"],
+                           value = read_params("ICU1.csv")["gamma_p"]),
                  textInput("rho",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "rho","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "rho","meaning"],
+                           value = read_params("ICU1.csv")["rho"]),
                  textInput("delta",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "delta","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "delta","meaning"],
+                           value = read_params("ICU1.csv")["delta"]),
                  textInput("mu",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "mu","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "mu","meaning"],
+                           value = read_params("ICU1.csv")["mu"]),
                  textInput("N",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "N","meaning"])),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "N","meaning"],
+                           value = read_params("ICU1.csv")["N"])),
           column(5,
                  textInput("E0",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "E0","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "E0","meaning"],
+                           value = read_params("ICU1.csv")["E0"]),
+                 textInput("nonhosp_mort",
+                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "nonhosp_mort","meaning"],
+                          value = read_params("ICU1.csv")["nonhosp_mort"]),
                  textInput("iso_m",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_m","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_m","meaning"],
+                           value = read_params("ICU1.csv")["iso_m"]),
                  textInput("iso_s",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_s","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_s","meaning"],
+                           value = read_params("ICU1.csv")["iso_s"]),
                  textInput("phi1",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi1","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi1","meaning"],
+                           value = read_params("ICU1.csv")["phi1"]),
                  textInput("phi2",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi2","meaning"])),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi2","meaning"],
+                           value = read_params("ICU1.csv")["phi2"])),
           column(5,
                  textInput("psi1",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi1","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi1","meaning"],
+                           value = read_params("ICU1.csv")["psi1"]),
                  textInput("psi2",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi2","meaning"]),
-                 textInput("c_prop",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"]),
-                 textInput("c_delay_mean",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_mean","meaning"]),
-                 textInput("c_delay_cv",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_cv","meaning"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi2","meaning"],
+                           value = read_params("ICU1.csv")["psi2"]),
                  textInput("psi3",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi3","meaning"]))),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi3","meaning"],
+                           value = read_params("ICU1.csv")["psi3"]),
+                 textInput("c_delay_mean",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_mean","meaning"],
+                           value = read_params("ICU1.csv")["c_delay_mean"]),
+                 textInput("c_delay_cv",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_cv","meaning"],
+                           value = read_params("ICU1.csv")["c_delay_cv"]),
+                 textInput("c_prop",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"],
+                           value = read_params("ICU1.csv")["c_prop"]))),
     tabPanel(
       title = "Plot controls",
       value = "plotControls",
       fluidRow(
         column(2,
-        sliderInput("titleSize", "Title size:",
-                       min = 0, max = 25,
-                       value = 20)),
-      column(2,
-           sliderInput("XtextSize", "X axis title size:",
-                       min = 0, max = 25,
-                       value = 10)),
-      column(2,
-           sliderInput("YtextSize", "Y axis title size:",
-                       min = 0, max = 25,
-                       value = 10)
-           ),
-      column(2,
         checkboxInput(inputId = "use_logYscale",
                     label = "Use log-y scale",
-                    value = FALSE))
-      ))),
+                    value = FALSE)),
+        column(2,
+        radioButtons(inputId = "use_directLabels",
+                      label = ("Use direct labels or a legend"),
+                      choices = list("Use direct labels" = 1, "Use a legend" = 2),
+                      selected = 1))
+      )),
+    tabPanel(
+      title = "Plot aesthetics",
+      value = "plotaes",
+      column(2,
+             sliderInput("titleSize", "Title size:",
+                         min = 0, max = 25,
+                         value = 20)),
+      column(2,
+             sliderInput("XtextSize", "X axis title size:",
+                         min = 0, max = 25,
+                         value = 10)),
+      column(2,
+             sliderInput("YtextSize", "Y axis title size:",
+                         min = 0, max = 25,
+                         value = 10))
+    )),
   width = 12),
     fluidRow(
       actionButton("startButton", "Click to start the simulation")
@@ -200,7 +240,6 @@ run_shiny <- function(){
           input$sigma,
           input$gamma_a,
           input$gamma_s,
-          input$gamma_s,
           input$gamma_m,
           input$gamma_p,
           input$rho,
@@ -208,6 +247,7 @@ run_shiny <- function(){
           input$mu,
           input$N,
           input$E0,
+          input$nonhosp_mort,
           input$iso_m,
           input$iso_s,
           input$phi1,
@@ -217,7 +257,8 @@ run_shiny <- function(){
           input$psi3,
           input$c_prop,
           input$c_delay_mean,
-          input$c_delay_cv)
+          input$c_delay_cv,
+          input$procError)
           return(params)
         })
 #In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
@@ -246,29 +287,35 @@ run_shiny <- function(){
         }
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-        if (input$timeChanges == 'Yes'){
+        if (input$timeChanges == "Yes"){
           time_pars <- get_factor_timePars()
-          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
+          sim = run_sim(params, start_date = lubridate::ymd(input$sd), end_date = lubridate::ymd(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
         else{
-          sim = run_sim(params, start_date = lubridate::mdy(input$sd), end_date = lubridate::mdy(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
+          sim = run_sim(params, start_date = lubridate::ymd(input$sd), end_date = lubridate::ymd(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
         #Allow for process and observation error, set to zero by default.
         p <- plot.pansim(sim) +
         labs(title = "Pandemic Simulation") +
         ggplot2::theme(
           plot.title = element_text(color = "black", size = input$titleSize, face = "bold"),
-          axis.title.x = element_text(color = "black", size = input$Xsize, face = "bold"),
-          axis.title.y = element_text(color = "black", size = input$Ysize, face = "bold"))
+          axis.title.x = element_text(color = "black", size = input$XtextSize, face = "bold"),
+          axis.title.y = element_text(color = "black", size = input$YtextSize, face = "bold"))
         ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
         .x <- NULL ## undefined variable check
         if (input$use_logYscale == 1){
-          p + scale_y_continuous(trans = log10_trans(),
+          p <- p + scale_y_continuous(trans = log10_trans(),
                                  breaks = trans_breaks("log10", function(x) 10^x),
                                  labels = trans_format("log10", math_format(10^.x)))
         }
         else{
-          p
+        }
+        if (input$use_directLabels == 1){
+        p <- direct.label(p)
+        p
+        }
+        else{
+        p
         }
       })
       if (input$useOwnParams == 1){
@@ -279,7 +326,7 @@ run_shiny <- function(){
         params <- read_params(system.file("params", input$fn, package="ShinySimulations"))
       }
       output$summary <-renderTable({
-        data.frame("Simulation Parameters" = names(summary(params)),"Value" = summary(params))
+        data.frame("Simulation Parameters" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
         })
       })
 #Run.
