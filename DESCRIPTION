@@ -1,15 +1,15 @@
 Package: McMasterPandemic
 Title: pandemic model 
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.9
+Version: 0.0.10
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"))
 Depends: R (>= 3.5.0)
-Imports: Matrix, igraph, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods, memoise, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny
-Suggests: knitr, testthat, cowplot, tikzDevice
+Imports: Matrix, lubridate, forcats, MASS, dplyr, ggplot2, tidyr, methods, memoise, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny
+Suggests: knitr, testthat, cowplot, tikzDevice, igraph
 RoxygenNote: 7.1.0
 Encoding: UTF-8
 License: GPL

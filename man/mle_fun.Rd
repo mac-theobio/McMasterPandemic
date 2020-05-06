@@ -37,6 +37,8 @@ mle_fun(
 
 \item{end_date}{ending date}
 
+\item{time_args}{arguments passed to \code{sim_fun}}
+
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}

@@ -14,7 +14,7 @@ forecast_sim(
   fixed_pars = NULL,
   stoch = NULL,
   stoch_start = NULL,
-  sim_args = NULL,
+  sim_args = list(),
   aggregate_args = NULL,
   condense_args = NULL,
   return_val = c("aggsim", "vals_only"),
@@ -32,6 +32,8 @@ forecast_sim(
 \item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
 
 \item{end_date}{ending date}
+
+\item{time_args}{arguments passed to \code{sim_fun}}
 
 \item{fixed_pars}{parameters to fix}
 

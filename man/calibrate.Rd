@@ -9,6 +9,7 @@ calibrate(
   start_date_offset = 15,
   end_date = max(data$date),
   time_args = list(break_dates = c("2020-Mar-23", "2020-Mar-30")),
+  break_dates = NULL,
   base_params,
   data,
   opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_rel_beta0 = c(-1, -1),
@@ -38,6 +39,10 @@ calibrate(
 \item{start_date_offset}{days to go back before first data value}
 
 \item{end_date}{ending date}
+
+\item{time_args}{arguments passed to \code{sim_fun}}
+
+\item{break_dates}{legacy}
 
 \item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
 
@@ -78,8 +83,6 @@ calibrate(
 \item{DE_cores}{number of parallel workers for DE}
 
 \item{DE_nll_thresh}{threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate}
-
-\item{break_dates}{specified breakpoints in beta0}
 }
 \description{
 calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
@@ -94,7 +97,7 @@ params <- fix_pars(read_params("ICU1.csv"))
 dd <- (ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("report", "death", "H")))
 \dontrun{
    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE, use_DEoptim=TRUE, DE_cores=1, DE_args=list(control=list(itermax=10)), DE_nll_thresh=Inf)
+cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 
    if (require(bbmle)) {

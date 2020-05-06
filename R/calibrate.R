@@ -122,22 +122,29 @@ run_sim_mobility <- function(params,
 ##' @param ... additional arguments to \code{run_sim}
 ##' @param params parameters
 ##' @param time_args list containing \code{break_dates}
-##' @param rel_beta0 numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint
+##' @param sim_args parameters to pass to \code{\link{run_sim}}
+##' @param extra_pars ??
+##' @param break_dates obsolete
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
-##'                    start_date="2020-02-01", end_date="2020-04-01",
-##'                    rel_beta0 = 0.5)
+##'                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
+##'                    extra_pars=list(rel_beta0 = 0.5))
 ##' plot(r1,log=TRUE)
-##' r2 <- run_sim_break(params, 
-##'                    start_date="2020-02-01", end_date="2020-04-01")
+##' ## can also use it to run without breaks ...
+##' r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))
 ##' plot(r2,log=TRUE)
 ##' @export
 run_sim_break <- function(params,
                           extra_pars=NULL,
-                          time_args,
+                          time_args=NULL,
+                          break_dates=NULL,
                           sim_args=list(),
                           ...) {
+    if (!is.null(break_dates)) {
+        warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
+        time_args <- list(break_dates=break_dates)
+    }
     ## FIXME:: HACK for now
     ## other_args <- other_args[!grepl("nb_disp",names(other_args))]
     sim_args <- c(sim_args,
@@ -358,7 +365,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
 ##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE, use_DEoptim=TRUE, DE_cores=1, DE_args=list(control=list(itermax=10)), DE_nll_thresh=Inf)
+##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 ##' 
 ##'    if (require(bbmle)) {

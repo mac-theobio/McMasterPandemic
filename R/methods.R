@@ -493,6 +493,11 @@ predict.fit_pansim <- function(object
     var <- . <- NULL
     
     f_args <- object$forecast_args
+    if ("break_dates" %in% names(f_args)) {
+        warning("using old object; switch to time_args(break_dates=...)")
+        f_args$time_args <- list(break_dates=f_args$break_dates)
+        f_args$break_dates <- NULL
+    }
     new_args <- list(...)
     ## FIXME:: dangerous
     for (n in intersect(names(new_args),names(f_args))) {

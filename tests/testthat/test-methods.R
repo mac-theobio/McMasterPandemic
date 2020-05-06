@@ -26,7 +26,6 @@ test_that("basic aggregation", {
     expect_equal(names(c1),
                  c("date", "S", "E", "I", "H", "ICU", "R", "death", "foi",
                    "incidence", "report", "cumRep"))
-    first <<- dplyr::first
     expect_error(aggregate(s,junk=TRUE), "unknown arguments")
     a1 <- aggregate(condense(s), start="12-Feb-2020", period="7 days",
                     FUN=list(mean=c("H","ICU","I"),

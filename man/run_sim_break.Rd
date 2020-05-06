@@ -4,16 +4,27 @@
 \alias{run_sim_break}
 \title{run simulation with one or more breakpoints}
 \usage{
-run_sim_break(params, extra_pars = NULL, time_args, sim_args = list(), ...)
+run_sim_break(
+  params,
+  extra_pars = NULL,
+  time_args = NULL,
+  break_dates = NULL,
+  sim_args = list(),
+  ...
+)
 }
 \arguments{
 \item{params}{parameters}
 
+\item{extra_pars}{??}
+
 \item{time_args}{list containing \code{break_dates}}
 
-\item{...}{additional arguments to \code{run_sim}}
+\item{break_dates}{obsolete}
 
-\item{rel_beta0}{numeric vector (same length as \code{break_dates}): transmission relative to original value after each breakpoint}
+\item{sim_args}{parameters to pass to \code{\link{run_sim}}}
+
+\item{...}{additional arguments to \code{run_sim}}
 }
 \description{
 run simulation with one or more breakpoints
@@ -21,10 +32,10 @@ run simulation with one or more breakpoints
 \examples{
 params <- read_params("ICU1.csv")
 r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
-                   start_date="2020-02-01", end_date="2020-04-01",
-                   rel_beta0 = 0.5)
+                   sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
+                   extra_pars=list(rel_beta0 = 0.5))
 plot(r1,log=TRUE)
-r2 <- run_sim_break(params, 
-                   start_date="2020-02-01", end_date="2020-04-01")
+## can also use it to run without breaks ...
+r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))
 plot(r2,log=TRUE)
 }

@@ -12,16 +12,17 @@ opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
                                     log_nb_disp=NULL)
 dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 
-cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars,
+suppressWarnings(cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars,
                      use_DEoptim=TRUE,
                      DE_cores=1,
                      DE_args=list(control=list(itermax=10)), DE_nll_thresh=Inf)
+                 )
 
 de <- attr(cal1_DE,"de")
 
 test_that("DE components are present", {
     expect_is(attr(cal1_DE,"de_time"),"proc_time")
     expect_is(de,"DEoptim")
-    expect(!is.null(de$Sigma),failure_message="Sigma component missing")
+    expect(!is.null(de$member$Sigma),failure_message="Sigma component missing")
 })
 ## test parallel?

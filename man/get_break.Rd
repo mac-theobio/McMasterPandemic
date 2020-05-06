@@ -20,7 +20,7 @@ get_break(
 
 \item{end_date}{ending date of sim}
 
-\item{break_dates}{specified breakpoints in beta0}
+\item{break_dates}{legacy}
 
 \item{params}{parameters}
 
