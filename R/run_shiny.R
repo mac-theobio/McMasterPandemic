@@ -33,9 +33,9 @@ run_shiny <- function(){
                                          "stanford_estimates.csv"), selected = "ICU1.csv"))),
         fluidRow(
           column(2,
-                 textInput("sd", "Simulation Start Date (lubridate ymd)", value = "2020-01-01")),
+                 textInput("sd", "Simulation Start Date (ymd)", value = "2020-01-01")),
           column(2,
-                 textInput("ed", "Simulation End Date  (lubridate ymd)", value = "2020-06-01")),
+                 textInput("ed", "Simulation End Date  (ymd)", value = "2020-06-01")),
           column(2,
                  radioButtons("timeChanges", "Include time-changing transmission rates", choices = c("Yes", "No"), selected = "No"))
         ),
@@ -45,7 +45,7 @@ run_shiny <- function(){
       tabPanel(
         title = "Time changing transmission rates",
         value = "tcr",
-          textInput("timeParsDates", label = "Enter dates of changes here, in lubridate ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-01-01"),
+          textInput("timeParsDates", label = "Enter dates of changes here, in ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-01-01"),
           textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0"),
           textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "0.5, 0.1, 0.01", value = 1)
       ),
@@ -208,7 +208,7 @@ run_shiny <- function(){
             justValues <- c(justValues, justValue)
           }
           if (mode == "dates"){
-            justValue <- lubridate::ymd(justValueString)
+            justValue <- anytime::anydate(justValueString)
             justValues <- c(justValues, justValue)
           }
           if (mode == "symbols"){
@@ -289,10 +289,10 @@ run_shiny <- function(){
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         if (input$timeChanges == "Yes"){
           time_pars <- get_factor_timePars()
-          sim = run_sim(params, start_date = lubridate::ymd(input$sd), end_date = lubridate::ymd(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
+          sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
         else{
-          sim = run_sim(params, start_date = lubridate::ymd(input$sd), end_date = lubridate::ymd(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
+          sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
         #Allow for process and observation error, set to zero by default.
         p <- plot.pansim(sim) +

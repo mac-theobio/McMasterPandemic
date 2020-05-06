@@ -2,10 +2,10 @@
 % Please edit documentation in R/run_shiny.R
 \name{run_shiny}
 \alias{run_shiny}
-\title{run shiny app}
+\title{Run the McMasterPandemic Shiny}
 \usage{
 run_shiny()
 }
 \description{
-run shiny app
+Run the McMasterPandemic Shiny
 }
