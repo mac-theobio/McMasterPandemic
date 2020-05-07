@@ -4,7 +4,7 @@
 "beta0",1,Baseline (non-intervention) transmission across categories
 "Ca",2/3,relative asymptomatic transmission (or contact)
 "Cp",1,relative presymptomatic transmission (or contact)
-"Cm",1,relative mildly sympomatic transmission (or contact)
+"Cm",1,relative mildly symptomatic transmission (or contact)
 "Cs",1,relative severely symptomatic transmission (or contact)
 "alpha",1/3,Fraction of asymptomatic case
 "sigma",1/5.2,1/time in exposed class
