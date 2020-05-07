@@ -2,14 +2,27 @@
 
 ### short term
 
+* calibrate uncertainty
+    * DEoptim pop/imp wt experiments
+	* full Bayes?
+* match up with EpiEstim
+* LTCF: data, model compartments
+
+### strategic/architectural
+
+* Erlangization/chain trick
+* TMB/Stan implementations
+    * compartmental
+    * renewal
+* testing (distributions, compartmental)	
+	
+### technical dept/consistency
+
 * change/document that parameters should *not* contain underscores (or use a different delimiter for invlink prefixes, e.g. .. or __ or |
 * rename fix_pars to fix_params?
 * print start, end dates in print.fit_pansim method
 * arrange consistent factor ordering/colour palette throughout
 * simulations with per-variable obs error, ¿process error?
-* test bad one-break cases (short time series) with DEoptim
-* figure out calibration; capture late flattening? vcov/weights?
-* change LTHC deaths parameter >0  (allow direct trans from severe cases to death)
 * hospital admissions
 * pipeline for copying up-to-date calibrations and data into package
 * priors on r/R0/etc.?
@@ -28,10 +41,7 @@
 	* ont_all from clean, not calib?
 	* dotdir
 
-* add global options for condense: diff-deaths, hospital incl ICU, etc. ?
-
 * add testing intensity?
-* arrange caching for MLi data (want to be able to replicate if data gets weird)
 * make `get_r` work for r<1 ...
 * distributions in `calibrate`
      * implement Poisson?

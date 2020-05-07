@@ -54,7 +54,7 @@ calibrate(
 
 \item{fixed_pars}{parameters to fix}
 
-\item{sim_fun}{function for simulating a single run}
+\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 

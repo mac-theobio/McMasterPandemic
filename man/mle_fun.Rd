@@ -42,7 +42,7 @@ mle_fun(
 
 \item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
 
-\item{sim_fun}{function for simulating a single run}
+\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
 
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
 

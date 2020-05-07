@@ -50,7 +50,7 @@ forecast_sim(
 
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
 
-\item{sim_fun}{function for simulating a single run}
+\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
 
 \item{debug}{print debugging messages?}
 }
