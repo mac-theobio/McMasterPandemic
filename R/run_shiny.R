@@ -4,7 +4,7 @@
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
 #' @importFrom shiny renderTable shinyApp
-#' @importFrom ggplot2 scale_y_continuous
+#' @importFrom ggplot2 scale_y_continuous theme_gray
 #' @importFrom directlabels direct.label
 #' @importFrom scales log10_trans trans_breaks trans_format math_format
 #' @importFrom ggplot2 element_text
@@ -175,7 +175,17 @@ run_shiny <- function(){
              sliderInput("lineThickness", "Line thickness:",
                          min = 0, max = 10,
                          step = 0.25,
-                         value = 1))
+                         value = 1)),
+      column(2,
+             radioButtons(inputId = "automaticSize",
+                          label = ("Manually change plot elements size or use an automatic slider"),
+                          choices = list("Manual" = 1, "Automatic" = 2),
+                          selected = 1),
+             conditionalPanel(condition = "input.automaticSize == 2",
+                              sliderInput("Globalsize", "Global Size:",
+                                          min = 5, max = 25,
+                                          step = 0.25,
+                                          value = 15)))
     )),
   width = 12),
     fluidRow(
@@ -329,10 +339,15 @@ run_shiny <- function(){
         }
         if (input$use_directLabels == 1){
         p <- direct.label(p)
+        }
+        else{
+        }
+        if (input$automaticSize == 2){
+        p <- p + theme_gray(base_size = input$Globalsize)
         p
         }
         else{
-        p
+          p
         }
       })
       if (input$useOwnParams == 1){
