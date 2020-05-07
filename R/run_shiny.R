@@ -28,9 +28,7 @@ run_shiny <- function(){
                              choices = c("CI_base.csv",
                                          "CI_updApr1.csv",
                                          "ICU1.csv",
-                                         "ICU_diffs.csv",
-                                         "midas_estimates.csv",
-                                         "stanford_estimates.csv"), selected = "ICU1.csv"))),
+                                         "ICU_diffs.csv"), selected = "ICU1.csv"))),
         fluidRow(
           column(2,
                  textInput("sd", "Simulation Start Date (ymd)", value = "2020-01-01")),
@@ -288,7 +286,20 @@ run_shiny <- function(){
         }
         #If we're using params from a file.
         else{
-          params <- read_params(system.file("params", input$fn, package="ShinySimulations"))
+          Inputparams <- read_params(system.file("params", input$fn, package="ShinySimulations"))
+          numMissing <- sum(is.na(Inputparams))
+          #Also account for the fact that data might just be missing from the file entirely and not recorded as NA values.
+          if (numMissing != 0 || length(Inputparams) < 26){
+            #If the parameters file is missing info, fill in defaults for the missing values.
+            DefaultParams <- read_params(system.file("params", "ICU1.csv", package = "ShinySimulations"))
+            NonMissingparams <- Inputparams[!is.na(Inputparams)]
+            NonMissingparamNames <- names(NonMissingparams)
+            DefaultParams[NonMissingparamNames] <- NonMissingparams
+            params <- DefaultParams
+          }
+          else{
+            params <- Inputparams
+          }
         }
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
