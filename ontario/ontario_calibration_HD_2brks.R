@@ -10,7 +10,7 @@ bd2 <- bd[-1]  ## drop first breakpoint
 priors <- list(~dnorm(qlogis(rel_beta0[1]),mean=1,sd=1.5))
 ont_cal_HD_2brks <- update(ont_cal1
                         , opt_pars=opt_pars_2brks
-                        , break_dates=bd2
+                        , time_args=list(break_dates=bd2)
                         , data=ont_HD
                         , priors=priors
                         , use_DEoptim=TRUE

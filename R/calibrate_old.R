@@ -208,13 +208,15 @@ calib2 <- function(base_params,
 }
 
 
+## FIXME: originally called sim_fun, maybe used by some obsolete code
+## its existence as sim_fun() confuses byte compiler ...
 ##' calibrate and run simulation
 ##' obsolete, replaced by forecast_sim?
 ##' @inheritParams calib2
 ##' @param end_date ending date for simulation
 ##' @param return_val return values: "sim"=full simulation (wide format); "aggsim"=aggregated and pivoted simulation output, "vals_only" = vector containing only values output from simulation
 ##' @export
-sim_fun <- function(target, base_params,
+sim_fun_old <- function(target, base_params,
                     start_date="1-Mar-2020",
                     reg_date,
                     end_date="1-May-2020",

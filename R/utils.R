@@ -308,7 +308,7 @@ legacy <- function(x, nm, other) {
     if (nm %in% names(x)) x[[nm]] else other
 }
 ## support switch in break_dates specification
-legacy_bd <- function(x, update=FALSE) {
+legacy_break_dates <- function(x, update=FALSE) {
     r <- legacy(x, "break_dates", x$time_args$break_dates)
     if (!update) return(r)
     x$time_args$break_date <- r
@@ -316,10 +316,17 @@ legacy_bd <- function(x, update=FALSE) {
 }
 
 ## support switch in break_dates specification
-legacy_sim_fun <- function(x) {
-    legacy(x, "sim_fun", run_sim_break)
+legacy_sim_fun <- function(x, update=FALSE) {
+    r <- legacy(x, "sim_fun", run_sim_break)
     if (!update) return(r)
     x$sim_fun <- r
+    return(x)
+}
+
+legacy_time_args <- function(x, update=FALSE) {
+    r <- legacy(x, "time_args", list(break_dates=legacy_break_dates(x)))
+    if (!update) return(r)
+    x$time_args <- r
     return(x)
 }
 

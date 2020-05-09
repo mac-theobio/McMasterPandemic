@@ -419,22 +419,23 @@ summary.fit_pansim <- function(object, ...) {
     check_dots(...)
     f_args <- object$forecast_args
     pars <- coef(object, method="fitted")
-    sim_fun <- legacy_sim_fun(f_args)
-    bd <- legacy_bd(f_args)
-    if (!is.null(bd)) {
-        ## construct table of R0 values etc. in different periods
-        pp <- list()
-        beta0 <- pars$params[["beta0"]]
-        pp[[1]] <- update(f_args$base_params,beta0=beta0)
-        for (i in seq_along(bd)) {
-            pp[[i+1]] <- update(pp[[1]],
-                                beta0=beta0*pars$rel_beta0[i])
-        }
-        ## r_jac <- suppressWarnings(vapply(pp,get_r,method="analytic",numeric(1)))
-        names(pp) <- c(format(f_args$start_date),format(bd))
-        ret <- purrr::map_dfr(pp,~as.data.frame(rbind(summary(.))),.id="start_date")
-    } else {
+    f_args <- legacy_sim_fun(f_args, update=TRUE)
+    f_args <- legacy_time_args(f_args, update=TRUE)
+    pp <- coef(object,"fitted")
+    extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
+    ## FIXME: get 
+    time_tab <- with(f_args,sim_fun(params,
+                                    extra_pars=extra_pars,
+                                    time_args=time_args,
+                                    return_timevar=TRUE))
+    pp_list <- list(coef(object))
+    beta0 <- coef(object)[["beta0"]]
+    for (i in seq(nrow(time_tab))) {
+        pp_list[[i+1]] <- update(pp_list[[1]],
+                                 beta0=beta0*pars$rel_beta0[i])
     }
+    names(pp_list) <- c(format(f_args$start_date),format(time_tab$Date))
+    ret <- purrr::map_dfr(pp_list,~as.data.frame(rbind(summary(.))),.id="start_date")
     return(ret)
 }
 
@@ -597,7 +598,7 @@ plot.predict_pansim <- function(x,
     check_dots(...)
     lwr <- upr <- lab <- var <- . <- NULL
     f_args <- attr(x,"forecast_args")
-    if (is.null(break_dates)) break_dates <- legacy_bd(f_args)
+    if (is.null(break_dates)) break_dates <- legacy_break_dates(f_args)
     var <- date <- value <- mult_var <- NULL
 
     p <- (ggplot(x,aes(date,value,colour=var))
