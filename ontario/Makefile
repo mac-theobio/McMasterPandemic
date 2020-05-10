@@ -44,10 +44,10 @@ ont_cal_noICU_2brks_prior.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_2
 
 ontario_de_cal.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_2brks_prior.Rout ontario_de_cal.R
 
-mobility1.Rout: ontario_clean.Rout mobility1.R
+ont_cal_mob1.Rout: ontario_clean.Rout ont_cal_mob1.R
 	$(run-R)
 
-mobility1_HD.Rout: ontario_clean.Rout mobility1.Rout mobility1_HD.R
+ont_cal_mob1_HD.Rout: ontario_clean.Rout ont_cal_mob1.Rout onb_cal_mob1_HD.R
 
 compare_calib.Rout:  ontario_clean.Rout ont_cal.RData ont_cal_noICU_1brks.RData ont_cal_noICU_2brks.RData ont_cal_noICU.RData ont_cal_2brks.RData ont_cal_1brks.RData ont_cal_H.RData ont_cal_HD_2brks.RData ont_cal_noICU_2brks_prior.RData mobility1.RData mobility1_HD.RData
 
