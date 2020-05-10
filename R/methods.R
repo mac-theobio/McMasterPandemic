@@ -432,7 +432,7 @@ summary.fit_pansim <- function(object, ...) {
     beta0 <- coef(object)[["beta0"]]
     for (i in seq(nrow(time_tab))) {
         pp_list[[i+1]] <- update(pp_list[[1]],
-                                 beta0=beta0*pars$rel_beta0[i])
+                                 beta0=beta0*time_tab[i,"Relative_value"])
     }
     names(pp_list) <- c(format(f_args$start_date),format(time_tab$Date))
     ret <- purrr::map_dfr(pp_list,~as.data.frame(rbind(summary(.))),.id="start_date")

@@ -22,42 +22,42 @@ pkgdesc = $(../DESCRIPTION)
 
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
 
-ontario_calibration.Rout:  ontario_clean.Rout ontario_calibration.R $(pkgdesc)
+ont_cal.Rout:  ontario_clean.Rout ont_cal.R $(pkgdesc)
 
-ontario_calibration_hosponly.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_hosponly.R
+ont_cal_H.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_H.R
 
-ontario_calibration_2brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_2brks.R
+ont_cal_2brks.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_2brks.R
 
-ontario_calibration_1brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_1brks.R
+ont_cal_1brks.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_1brks.R
 
-ontario_calibration_noICU.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU.R
+ont_cal_noICU.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU.R
 
-ontario_calibration_noICU_1brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_1brks.R
+ont_cal_noICU_1brks.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_1brks.R
 
-ontario_calibration_noICU_2brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_2brks.R
+ont_cal_noICU_2brks.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_2brks.R
 
-ontario_calibration_HD_2brks.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_HD_2brks.R
+ont_cal_HD_2brks.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_HD_2brks.R
 
-ontario_calibration_2brks_ndt.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_2brks_ndt.R
+ont_cal_2brks_ndt.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_2brks_ndt.R
 
-ontario_calibration_noICU_2brks_prior.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_2brks_prior.R
+ont_cal_noICU_2brks_prior.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_2brks_prior.R
 
-ontario_de_cal.Rout:  ontario_clean.Rout ontario_calibration.Rout ontario_calibration_noICU_2brks_prior.Rout ontario_de_cal.R
+ontario_de_cal.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_noICU_2brks_prior.Rout ontario_de_cal.R
 
 mobility1.Rout: ontario_clean.Rout mobility1.R
 	$(run-R)
 
 mobility1_HD.Rout: ontario_clean.Rout mobility1.Rout mobility1_HD.R
 
-compare_calib.Rout:  ontario_clean.Rout ontario_calibration.RData ontario_calibration_noICU_1brks.RData ontario_calibration_noICU_2brks.RData ontario_calibration_noICU.RData ontario_calibration_2brks.RData ontario_calibration_1brks.RData ontario_calibration_hosponly.RData ontario_calibration_HD_2brks.RData ontario_calibration_noICU_2brks_prior.RData mobility1.RData mobility1_HD.RData
+compare_calib.Rout:  ontario_clean.Rout ont_cal.RData ont_cal_noICU_1brks.RData ont_cal_noICU_2brks.RData ont_cal_noICU.RData ont_cal_2brks.RData ont_cal_1brks.RData ont_cal_H.RData ont_cal_HD_2brks.RData ont_cal_noICU_2brks_prior.RData mobility1.RData mobility1_HD.RData
 
 epiestim.Rout: ontario_clean.Rout
-epiestim_plot.Rout: ontario_clean.Rout ontario_calibration.Rout epiestim.Rout epiestim_plot.R
+epiestim_plot.Rout: ontario_clean.Rout ont_cal.Rout epiestim.Rout epiestim_plot.R
 
-ontario_calibration_report.html: ontario_clean.RData ontario_calibration.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
+ontario_calibration_report.html: ontario_clean.RData ont_cal.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
 
 
-McMasterReport.pdf: McMasterReport.Rnw ontario_calibration.RData ontario_calibration_2brks.RData ontario_calibration_hosponly.RData ontario_calibration_noICU_2brks_prior.RData
+McMasterReport.pdf: McMasterReport.Rnw ont_cal.RData ont_cal_2brks.RData ont_cal_H.RData ont_cal_noICU_2brks_prior.RData ont_cal_mob1.RData
 
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'

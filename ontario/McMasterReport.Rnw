@@ -36,7 +36,7 @@ library(McMasterPandemic)
 library(dplyr)
 library(ggplot2); theme_set(theme_bw())
 library(bbmle)
-load("ontario_calibration_noICU_2brks_prior.RData")
+load("ont_cal_noICU_2brks_prior.RData")
 fit <- ont_cal_noICU_2brks_prior
 @ 
 
@@ -377,7 +377,7 @@ knitr::kable(maxv2)
 \section{Fitting to mobility data}
 
 <<loadmob,warning=FALSE>>=
-load("mobility1.RData")
+load("ont_cal_mob1.RData")
 mob_pwr <- coef(ont_cal_mob1,"fitted")$mob_power
 mob_pwr_ci <- plogis(confint(ont_cal_mob1$mle2,method="quad")["logit_mob_power",])
 @ 
