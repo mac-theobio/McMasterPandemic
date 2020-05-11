@@ -14,14 +14,16 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=FALSE) {
 		, base_params = params
 		, start_date=start_date
    	, end_date=end_date
-   	, break_dates = bd
    	, stoch = c(obs = TRUE, proc=FALSE)
+   	, time_args = list(mob_value=mob_vals   ## mob_value can't be same length as TS
+   		, mob_startdate=mob_start
+   		)
+      , sim_fun=run_sim_mobility
 	)
     ## plot(simdat, log=TRUE)
    simdat <- (simdat
    %>% filter(var %in% c("report"))
 	%>% filter(!is.na(value)) 
-	%>% mutate(value = round(value))
    )
    
    simdat <- simdat %>% filter(between(date, cut_start, cut_end))
@@ -31,15 +33,17 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=FALSE) {
     ## print(params)
     ## print(opt_pars)
     g1 <- calibrate(data=simdat, base_params=params
-                  , start_date = cut_start
-                  , opt_pars = opt_pars
-                  , break_dates = bd
-                  ## , debug_plot=TRUE
-                  ## , debug=FALSE
-                  , use_DEoptim = use_DEoptim
-                  , DE_cores = 1 ## don't fight with mclapply
-                    ## , mle2_args=list(browse_obj=TRUE)
-                    )
+    	, start_date = cut_start
+      , opt_pars = opt_pars
+      , debug_plot=FALSE
+      ## , debug=FALSE
+      , use_DEoptim = use_DEoptim
+      , DE_cores = 1 ## don't fight with mclapply
+      ## , mle2_args=list(browse_obj=TRUE)
+      , time_args = list(mob_value=mob_vals
+      	, mob_startdate=mob_start)
+      , sim_fun=run_sim_mobility
+      )
 
     print(bbmle::coef(g1$mle2))
 

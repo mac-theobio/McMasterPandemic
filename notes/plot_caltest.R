@@ -29,8 +29,8 @@ names(rescombo) <- seq_along(rescombo) ## seeds
 NLL <- map_dbl(rescombo,~-logLik(.$fit$mle2))
 NLLtrue <- map_dbl(rescombo,~trueNLL(.))
 
-LLdat <- data.frame(seed = c(1:100,1:100)
-	, type = rep(c("Nelder-Mead","DEoptim"),each=100)
+LLdat <- data.frame(seed = c(1:length(res),1:length(res))
+	, type = rep(c("Nelder-Mead","DEoptim"),each=length(res))
 	, NLL = NLL
 	, NLLtrue = NLLtrue
 	, NLL_diff = NLL - NLLtrue

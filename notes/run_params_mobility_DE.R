@@ -7,7 +7,7 @@ library(parallel)
 
 use_true_start <- TRUE
 use_cut <- TRUE
-nsim <- 1
+nsim <- 20
 options(mc.cores=1)
 
 ## setup 
@@ -23,28 +23,32 @@ print(params)
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") ## BMB: don't run as long
 
-cut_start <- anydate("2020-01-01")
-cut_end <- anydate("2020-03-01")
+mob_length <- length(start_date:end_date)
+mob_vals <- (1:mob_length)^(-0.3)
 
+noresponse <- 15
+mob_vals <- c(rep(1,noresponse),mob_vals[1:(mob_length-noresponse-1)])
+mob_start <- anydate("2020-01-01")
+
+cut_start <- anydate("2020-01-01")
+cut_end <- anydate("2020-03-31")
 
 
 true_pars <- list(params = c(
-        log_E0 = log(params[["E0"]]), 
+	log_E0 = log(params[["E0"]]), 
 	log_beta0 = log(params[["beta0"]])
 	)
-	, logit_rel_beta0 = qlogis(rel_breaks)
+	, logit_mob_power=0.5
 	, log_nb_disp = log(params[["obs_disp"]])
 )
 
 opt_pars <- list(params=c(
-                     log_E0 = log(params[["E0"]]*2), 
-                     log_beta0=log(params[["beta0"]]*1.2)
-                 )
-               , logit_rel_beta0 = qlogis(rel_breaks)
-               , log_nb_disp = log(params[["obs_disp"]])
-                 )
-	
-priors <- list(~dnorm(qlogis(rel_breaks),mean=1,sd=1.5))
+	log_E0 = log(params[["E0"]]*2), 
+   log_beta0=log(params[["beta0"]]*1.2)
+   )
+	, logit_mob_power=0.5
+   , log_nb_disp = log(params[["obs_disp"]])
+)
 
 true_pars <- unlist(true_pars)
 
@@ -67,4 +71,8 @@ upr <- c(
   , log_nb_disp = 7
 )
 
-use_DEoptim <- TRUE
+
+
+
+use_DEoptim <- FALSE
+do_plots=FALSE

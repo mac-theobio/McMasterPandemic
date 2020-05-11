@@ -22,7 +22,7 @@ pkgdesc = $(../DESCRIPTION)
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
-run_caltest.Rout: run_params_breaks_DE.Rout run_caltest.R
+run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
 	$(run-R)
 
 plot_caltest.Rout: run_caltest.RData plot_caltest.R
