@@ -58,7 +58,7 @@ gg1 <- ggplot(simvals, aes(date,value,lty=type)) +
     facet_wrap(~seed)
 
 ## print(gg1)
-# print(gg1 + scale_y_log10())
+print(gg1 + scale_y_log10())
 
 simdf <- (map_dfr(rescombo,pluck,"pars")
     %>% left_join(.,truedf)
