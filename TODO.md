@@ -1,4 +1,4 @@
-## to do
+n## to do
 
 ### short term
 
@@ -7,6 +7,8 @@
 	* full Bayes?
 * match up with EpiEstim
 * LTCF: data, model compartments
+* implement 'hospital admissions' compartment
+* trans vars for Secret Place
 
 ### strategic/architectural
 
