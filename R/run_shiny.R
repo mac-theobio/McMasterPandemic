@@ -28,9 +28,7 @@ run_shiny <- function(){
           column(2,
                  textInput("sd", "Simulation Start Date (ymd)", value = "2020-01-01")),
           column(2,
-                 textInput("ed", "Simulation End Date  (ymd)", value = "2020-06-01")),
-          column(2,
-                 radioButtons("timeChanges", "Include time-changing transmission rates", choices = c("Yes", "No"), selected = "No"))
+                 textInput("ed", "Simulation End Date  (ymd)", value = "2020-08-01"))
         ),
   #Only show the selector to input parameters if that's selected.
     tabsetPanel(
@@ -38,9 +36,9 @@ run_shiny <- function(){
       tabPanel(
         title = "Time changing transmission rates",
         value = "tcr",
-          textInput("timeParsDates", label = "Enter dates of changes here, in ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-01-01"),
-          textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0"),
-          textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "0.5, 0.1, 0.01", value = 1)
+          textInput("timeParsDates", label = "Enter dates of changes here, in ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
+          textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
+          textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "1, 1, 1", value = "1, 1, 1")
       ),
       tabPanel(
         title = "Process and Observation error",
@@ -276,14 +274,27 @@ run_shiny <- function(){
         #Do this after because changing the numbers from strings removes their names.
         return(params)
       }
-      observeEvent(TRUE, {
       output$plot <- renderPlot({
         #Make the params
         params <- makeParams()
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-        if (input$timeChanges == "Yes"){
-          time_pars <- get_factor_timePars()
+        #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
+        time_pars <- get_factor_timePars()
+        defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"))
+        if (length(time_pars$Date) != length(defaultTCParams$Date)){
+          #To avoid errors when the default parameters are a different length than the input ones, such as when we don't want three time changing parameter value changes, if the default values were shortened, that's still counted as a change.
+          useTimeChanges <- TRUE
+        }
+        else{
+          #Do these individually to account for different sizes of data.frames.
+          #If the number of different elements between the not equal to zero, something has been changed.
+          datesDifferent <- sum(time_pars$Date != defaultTCParams$Date) != 0
+          symbolsDifferent <- sum(time_pars$Symbol != defaultTCParams$Symbol) != 0
+          valuesDifferent <- sum(time_pars$Relative_value != defaultTCParams$Relative_value) != 0
+          useTimeChanges <- datesDifferent || symbolsDifferent || valuesDifferent
+        }
+        if (useTimeChanges){
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
         else{
@@ -313,18 +324,18 @@ run_shiny <- function(){
         }
         if (input$use_directLabels == 1){
           #Use a positioning metho to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.1)))
+          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
           p
         }
         else{
           p
         }
       })
-      params <- makeParams()
-      output$summary <-renderTable({
+            output$summary <-renderTable({
+            params <- makeParams()
+            params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         data.frame("Simulation Parameters" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
         })
-      })
 #Run.
   }
   shinyApp(ui, server)
