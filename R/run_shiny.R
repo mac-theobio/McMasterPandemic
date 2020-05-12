@@ -3,7 +3,7 @@
 #' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-#' @importFrom shiny renderTable shinyApp
+#' @importFrom shiny renderTable shinyApp uiOutput
 #' @importFrom ggplot2 scale_y_continuous theme_gray
 #' @importFrom directlabels direct.label
 #' @importFrom scales log10_trans trans_breaks trans_format math_format
@@ -16,19 +16,14 @@ run_shiny <- function(){
     titlePanel("McMasterPandemic Shiny"),
     mainPanel(
       fluidRow(
-        radioButtons("useOwnParams", label = h3("Use file for parameters? Or input own"),
-                     choices = list("Input parameters" = 1, "Use file" = 2),
-                     selected = 2),
         #Only show the selector for the parameter file to upload if that's selected.
-        conditionalPanel(
-          condition = "input.useOwnParams == 2",
           column(2,
                  selectInput("fn",
                              label = "Chose file containing parameters",
                              choices = c("CI_base.csv",
                                          "CI_updApr1.csv",
                                          "ICU1.csv",
-                                         "ICU_diffs.csv"), selected = "ICU1.csv"))),
+                                         "ICU_diffs.csv"), selected = "ICU1.csv")),
         fluidRow(
           column(2,
                  textInput("sd", "Simulation Start Date (ymd)", value = "2020-01-01")),
@@ -53,25 +48,25 @@ run_shiny <- function(){
         textInput("procError", label = "Enter the process error", value = 0),
         textInput("ObsError", label = "Enter the observation error", value = 0)
       ),
-      tabPanel(
-        title = "Simulation Parameters",
-        value = "manualParams",
+        tabPanel(
+          title = "Simulation Parameters",
+          value = "parametersPanel",
           column(5,
                  textInput("beta0",
-                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "beta0","meaning"],
-                           value = read_params("ICU1.csv")["beta0"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "beta0","meaning"],
+                           value = read_params(system.file("params", "ICU1.csv", package="ShinySimulations"))["beta0"]),
                  textInput("Ca",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Ca","meaning"],
                            value = read_params("ICU1.csv")["Ca"]),
                  textInput("Cp",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cp","meaning"],
                            value = read_params("ICU1.csv")["Cp"]),
-                textInput("Cs",
-                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cs","meaning"],
-                          value = read_params("ICU1.csv")["Cs"]),
-                textInput("Cm",
-                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cm","meaning"],
-                          value = read_params("ICU1.csv")["Cm"])),
+                 textInput("Cs",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cs","meaning"],
+                           value = read_params("ICU1.csv")["Cs"]),
+                 textInput("Cm",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cm","meaning"],
+                           value = read_params("ICU1.csv")["Cm"])),
           column(5,
                  textInput("alpha",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "alpha","meaning"],
@@ -109,8 +104,8 @@ run_shiny <- function(){
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "E0","meaning"],
                            value = read_params("ICU1.csv")["E0"]),
                  textInput("nonhosp_mort",
-                          label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "nonhosp_mort","meaning"],
-                          value = read_params("ICU1.csv")["nonhosp_mort"]),
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "nonhosp_mort","meaning"],
+                           value = read_params("ICU1.csv")["nonhosp_mort"]),
                  textInput("iso_m",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_m","meaning"],
                            value = read_params("ICU1.csv")["iso_m"]),
@@ -142,11 +137,11 @@ run_shiny <- function(){
                  textInput("c_prop",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"],
                            value = read_params("ICU1.csv")["c_prop"]))),
-    tabPanel(
-      title = "Plot controls",
-      value = "plotControls",
-      fluidRow(
-        column(2,
+      tabPanel(
+        title = "Plot controls",
+        value = "plotControls",
+        fluidRow(
+          column(2,
         checkboxInput(inputId = "use_logYscale",
                     label = "Use log-y scale",
                     value = FALSE)),
@@ -160,37 +155,34 @@ run_shiny <- function(){
       title = "Plot aesthetics",
       value = "plotaes",
       column(2,
+      sliderInput("Globalsize", "Text size:",
+                  min = 5, max = 45,
+                  step = 0.25,
+                  value = 12),
+      sliderInput("lineThickness", "Line thickness:",
+                  min = 0, max = 10,
+                  step = 0.25,
+                  value = 3)),
+      column(2,
+      radioButtons(inputId = "automaticSize",
+                   label = ("Change individual text elements size"),
+                   choices = list("No" = 1, "Yes" = 2),
+                   selected = 1)),
+      conditionalPanel(condition = "input.automaticSize == 2",
+        column(2,
              sliderInput("titleSize", "Title size:",
                          min = 0, max = 25,
                          value = 20)),
-      column(2,
+        column(2,
              sliderInput("XtextSize", "X axis title size:",
                          min = 0, max = 25,
                          value = 10)),
-      column(2,
+        column(2,
              sliderInput("YtextSize", "Y axis title size:",
                          min = 0, max = 25,
-                         value = 10)),
-      column(2,
-             sliderInput("lineThickness", "Line thickness:",
-                         min = 0, max = 10,
-                         step = 0.25,
-                         value = 1)),
-      column(2,
-             radioButtons(inputId = "automaticSize",
-                          label = ("Manually change plot elements size or use an automatic slider"),
-                          choices = list("Manual" = 1, "Automatic" = 2),
-                          selected = 1),
-             conditionalPanel(condition = "input.automaticSize == 2",
-                              sliderInput("Globalsize", "Global Size:",
-                                          min = 5, max = 25,
-                                          step = 0.25,
-                                          value = 15)))
-    )),
+                         value = 10))
+        ))),
   width = 12),
-    fluidRow(
-      actionButton("startButton", "Click to start the simulation")
-    ),
   fluidRow(
     tableOutput("summary")
     ),
@@ -198,6 +190,8 @@ run_shiny <- function(){
     plotOutput("plot")
   )
 ))
+
+
 
 #Everything else.
   server <- function(input, output){
@@ -242,45 +236,39 @@ run_shiny <- function(){
       currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues)
       return(currentPars)
     })
-    #Gather input params, if that option is selected.
-    gatherValues <- reactive({
-          params <- c(input$beta0,
-          input$Ca,
-          input$Cp,
-          input$Cs,
-          input$Cm,
-          input$alpha,
-          input$sigma,
-          input$gamma_a,
-          input$gamma_s,
-          input$gamma_m,
-          input$gamma_p,
-          input$rho,
-          input$delta,
-          input$mu,
-          input$N,
-          input$E0,
-          input$nonhosp_mort,
-          input$iso_m,
-          input$iso_s,
-          input$phi1,
-          input$phi2,
-          input$psi1,
-          input$psi2,
-          input$psi3,
-          input$c_prop,
-          input$c_delay_mean,
-          input$c_delay_cv,
-          input$procError)
-          return(params)
-        })
-#In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
-#Reactivity of the gatherValues makes this work.
-#Fighting with namespaces, reactive expressions seem to complicate things a little bit.
+      #Render the parameter tab server-side, to enable reactivity and to let us edit things.
+
+      #In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
-        params <- gatherValues()
+        params <- c(input$beta0,
+                    input$Ca,
+                    input$Cp,
+                    input$Cs,
+                    input$Cm,
+                    input$alpha,
+                    input$sigma,
+                    input$gamma_a,
+                    input$gamma_s,
+                    input$gamma_m,
+                    input$gamma_p,
+                    input$rho,
+                    input$delta,
+                    input$mu,
+                    input$N,
+                    input$E0,
+                    input$nonhosp_mort,
+                    input$iso_m,
+                    input$iso_s,
+                    input$phi1,
+                    input$phi2,
+                    input$psi1,
+                    input$psi2,
+                    input$psi3,
+                    input$c_prop,
+                    input$c_delay_mean,
+                    input$c_delay_cv,
+                    input$procError)
         paramNames <- describe_params(read_params("ICU1.csv"))$symbol
-        params <- gatherValues()
         #I don't want numbers to be strings
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
         names(params) <- paramNames
@@ -288,29 +276,10 @@ run_shiny <- function(){
         #Do this after because changing the numbers from strings removes their names.
         return(params)
       }
-    observeEvent(input$startButton, {
+      observeEvent(TRUE, {
       output$plot <- renderPlot({
-        #If we're using the params we put in.
-        if (input$useOwnParams == 1){
-          params <- makeParams()
-        }
-        #If we're using params from a file.
-        else{
-          Inputparams <- read_params(system.file("params", input$fn, package="ShinySimulations"))
-          numMissing <- sum(is.na(Inputparams))
-          #Also account for the fact that data might just be missing from the file entirely and not recorded as NA values.
-          if (numMissing != 0 || length(Inputparams) < 26){
-            #If the parameters file is missing info, fill in defaults for the missing values.
-            DefaultParams <- read_params(system.file("params", "ICU1.csv", package = "ShinySimulations"))
-            NonMissingparams <- Inputparams[!is.na(Inputparams)]
-            NonMissingparamNames <- names(NonMissingparams)
-            DefaultParams[NonMissingparamNames] <- NonMissingparams
-            params <- DefaultParams
-          }
-          else{
-            params <- Inputparams
-          }
-        }
+        #Make the params
+        params <- makeParams()
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         if (input$timeChanges == "Yes"){
@@ -321,13 +290,18 @@ run_shiny <- function(){
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
         #Allow for process and observation error, set to zero by default.
-        p <- plot.pansim(sim) +
-        labs(title = "Pandemic Simulation") +
-        ggplot2::theme(
-          plot.title = element_text(color = "black", size = input$titleSize, face = "bold"),
-          axis.title.x = element_text(color = "black", size = input$XtextSize, face = "bold"),
-          axis.title.y = element_text(color = "black", size = input$YtextSize, face = "bold")) +
-          geom_line(size = input$lineThickness)
+        p <- plot.pansim(sim) + labs(title = "Pandemic Simulation")
+        if (input$automaticSize == 2){
+        p <- p + ggplot2::theme(
+          plot.title = element_text(color = "black", size = input$titleSize),
+          axis.title.x = element_text(color = "black", size = input$XtextSize),
+          axis.title.y = element_text(color = "black", size = input$YtextSize))
+        }
+        else{
+          p <- p + theme_gray(base_size = input$Globalsize)
+        }
+        #Line thickness is applied regardless.
+        p <- p + geom_line(size = input$lineThickness)
         ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
         .x <- NULL ## undefined variable check
         if (input$use_logYscale == 1){
@@ -338,25 +312,15 @@ run_shiny <- function(){
         else{
         }
         if (input$use_directLabels == 1){
-        p <- direct.label(p)
-        }
-        else{
-        }
-        if (input$automaticSize == 2){
-        p <- p + theme_gray(base_size = input$Globalsize)
-        p
+          #Use a positioning metho to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
+          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.1)))
+          p
         }
         else{
           p
         }
       })
-      if (input$useOwnParams == 1){
-        params <- makeParams()
-      }
-      #If we're using params from a file.
-      else{
-        params <- read_params(system.file("params", input$fn, package="ShinySimulations"))
-      }
+      params <- makeParams()
       output$summary <-renderTable({
         data.frame("Simulation Parameters" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
         })
