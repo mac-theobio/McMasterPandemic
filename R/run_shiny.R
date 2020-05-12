@@ -4,6 +4,7 @@
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
 #' @importFrom shiny renderTable shinyApp uiOutput
+#' @importFrom anytime anytime
 #' @importFrom ggplot2 scale_y_continuous theme_gray
 #' @importFrom directlabels direct.label
 #' @importFrom scales log10_trans trans_breaks trans_format math_format
@@ -36,10 +37,13 @@ run_shiny <- function(){
       tabPanel(
         title = "Time changing transmission rates",
         value = "tcr",
+        column(8,
           textInput("timeParsDates", label = "Enter dates of changes here, in ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
           textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
           textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "1, 1, 1", value = "1, 1, 1")
       ),
+      column(8,
+             plotOutput("paramsPlot"))),
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
@@ -331,10 +335,25 @@ run_shiny <- function(){
           p
         }
       })
-            output$summary <-renderTable({
+        output$summary <-renderTable({
             params <- makeParams()
             params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-        data.frame("Simulation Parameters" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
+        data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
+        })
+        output$paramsPlot <- renderPlot({
+          parameterChanges <- get_factor_timePars()
+          #We want all the symbols to have a line starting from the begining of the graph regardless of whether that was actually specified or not.
+          for (symbol in parameterChanges$Symbol){
+            if (sum(parameterChanges$Symbol == symbol) < nrow(parameterChanges)){
+              parameterChanges <- rbind(data.frame("Date" = parameterChanges[1, "Date"], "Symbol" = symbol, "Relative_value" = 1), parameterChanges)
+            }
+            else{
+            }
+          }
+          p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_line(size = 2)
+          p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Parameter changes over time", x = "Date", y = "Relative value")
+          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
+          p
         })
 #Run.
   }
