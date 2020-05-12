@@ -40,9 +40,9 @@ run_shiny <- function(){
         title = "Time changing transmission rates",
         value = "tcr",
         column(8,
-          textInput("timeParsDates", label = "Enter dates of changes here, in ymd format, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
-          textInput("timeParsSymbols", label = "Enter the corresponding symbol for each date that you'd like to change here, separated by commas", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
-          textInput("timeParsRelativeValues", label = "Enter relative value changes here, separated by commas", placeholder = "1, 1, 1", value = "1, 1, 1")
+          textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
+          textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
+          textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1")
       ),
       column(8,
              plotOutput("paramsPlot"))),
