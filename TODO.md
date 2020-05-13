@@ -2,12 +2,12 @@ n## to do
 
 ### short term
 
+* implement 'hospital admissions' compartment
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
 * match up with EpiEstim
 * LTCF: data, model compartments
-* implement 'hospital admissions' compartment
 * trans vars for Secret Place
 
 ### strategic/architectural

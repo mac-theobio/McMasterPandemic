@@ -102,7 +102,7 @@ make_jac <- function(params, state=NULL) {
 ##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE) {
     ## circumvent test code analyzers ... problematic ...
-    S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
+    S <- E <- Ia <- Ip <- Im <- Is <- H  <- hosp <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
     Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
@@ -148,6 +148,11 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         ## H now means 'acute care' only; all H survive & are discharged
         M["H","D"]   <- 0
         M["H","R"] <- rho ## all acute-care survive
+        if ("hosp" %in% names(state)) {
+            M["Is","hosp"] <- M["Is","H"]+M["Is","ICUs"]+M["Is","ICUd"]
+            M["hosp","X"] <- 1
+            ## assuming that hosp admissions mean *all* (acute-care + ICU)
+        }
     }            
     return(M)
 }
@@ -435,17 +440,19 @@ run_sim <- function(params
 ##  FIXME: can pass x, have a name check, fill in zero values
 make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
-                       type="ICU1",
+                       type="ICU1h",
                        state_names=NULL,
                        use_eigvec=!is.null(params),
                        params=NULL,
                        x=NULL) {
     ## select vector of state names
     state_names <- switch(type,
-       ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
-       CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
-       stop("unknown type")
-       )
+                          ## hosp is a hospital-admissions compartment; "X" is a junk compartment
+                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","hosp","ICUs","ICUd", "D","R","X"),
+                          ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
+                          CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
+                          stop("unknown type")
+                          )
     state <- setNames(numeric(length(state_names)),state_names)
     if (is.null(x)) {
         state[["S"]] <- round(N-E0)
