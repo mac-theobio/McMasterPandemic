@@ -3,7 +3,7 @@
 #' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-#' @importFrom shiny renderTable shinyApp uiOutput
+#' @importFrom shiny renderTable shinyApp uiOutput textOutput
 #' @importFrom anytime anytime
 #' @importFrom ggplot2 scale_y_continuous theme_gray
 #' @importFrom directlabels direct.label
@@ -26,10 +26,10 @@ run_shiny <- function(){
                                          "ICU1.csv",
                                          "ICU_diffs.csv"), selected = "ICU1.csv")),
         fluidRow(
-          column(2,
-                 textInput("sd", "Simulation Start Date (ymd)", value = "2020-01-01")),
-          column(2,
-                 textInput("ed", "Simulation End Date  (ymd)", value = "2020-08-01"))
+          column(5,
+                 textInput("sd", "Simulation Start Date (yyyy-mm-dd)", value = "2020-01-01")),
+          column(5,
+                 textInput("ed", "Simulation End Date  (yyyy-mm-dd)", value = "2020-08-01"))
         ),
   #Only show the selector to input parameters if that's selected.
     tabsetPanel(
@@ -39,6 +39,7 @@ run_shiny <- function(){
       tabPanel(
         title = "Time changing transmission rates",
         value = "tcr",
+        textOutput("trmsg"),
         column(8,
           textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
           textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
@@ -307,7 +308,7 @@ run_shiny <- function(){
                  textInput("c_prop",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"],
                            value = loadParams("c_prop")))})
-
+      output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
         #Make the params
         params <- makeParams()
