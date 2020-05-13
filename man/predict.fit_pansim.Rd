@@ -10,7 +10,8 @@
   end_date = NULL,
   stoch = NULL,
   stoch_start = NULL,
-  keep_vars = c("H", "ICU", "death", "incidence", "report", "cumRep", "newTests/1000"),
+  keep_vars = c("H", "ICU", "death", "hosp", "incidence", "report", "cumRep",
+    "newTests/1000"),
   ensemble = FALSE,
   new_params = NULL,
   ...

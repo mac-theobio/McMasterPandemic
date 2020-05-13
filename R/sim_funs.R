@@ -252,7 +252,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ##'                        Relative_value=c(0.7,0.1),
 ##'                        stringsAsFactors=FALSE)
 ##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
-##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",condense_args=list(keep_all=TRUE))
+##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",
+##'                  condense_args=list(keep_all=TRUE))
 ##' plot(res1X$hosp)
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
@@ -373,7 +374,7 @@ run_sim <- function(params
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- dfs(date=seq(start_date,end_date,by=dt),res)
-    res <- res[,names(res)!="t"]  ## we never want the internal time vector ...
+    res <- res[,!names(res) %in% c("t","X")]  ## we never want the internal time vector or the 'clean-up' state
     ## condense here
     if (condense) {
         res <- do.call(condense.pansim,c(list(res,params=params0),condense_args))

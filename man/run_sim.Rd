@@ -62,6 +62,9 @@ time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
                        Relative_value=c(0.7,0.1),
                        stringsAsFactors=FALSE)
 res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
+res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",
+                 condense_args=list(keep_all=TRUE))
+plot(res1X$hosp)
 res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 res1_t <- update(res1, params_timevar=time_pars)
 res1_S_t <- update(res1_S, params_timevar=time_pars)

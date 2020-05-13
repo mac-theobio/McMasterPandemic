@@ -50,7 +50,7 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
 ##' @importFrom dplyr one_of
 ##' @export
-plot.pansim <- function(x, drop_states=c("t","S","R","E","I","incidence"),
+plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
                         keep_states=NULL, condense=FALSE,
                         log=FALSE, show_times=TRUE, ...) {
     ## global variables
@@ -149,6 +149,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
         }
         dd <- add_col(dd,"I","^I[^C]")
         dd <- add_col(dd,"H","^H")
+        dd <- add_col(dd,"hosp","^hosp")
         dd <- add_col(dd,"ICU","^ICU")
         dd <- data.frame(dd,R=object[["R"]])
         ## FIXME: rearrange order; condensation distinct from diff_deaths?
@@ -489,7 +490,7 @@ predict.fit_pansim <- function(object
                              , end_date=NULL
                              , stoch=NULL
                              , stoch_start = NULL
-                             , keep_vars=c("H","ICU","death",
+                             , keep_vars=c("H","ICU","death", "hosp",
                                            "incidence","report", "cumRep", "newTests/1000")
                              , ensemble = FALSE
                              , new_params=NULL  

@@ -1,6 +1,6 @@
-## FIXME: less hard-coding
-keep_vars <- c("H","ICU","death", "incidence","report","newTests/1000")
-get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death","newTests/1000"),  "inc","prev"))
+## FIXME: less hard-coding!!!
+keep_vars <- c("H","ICU","death", "incidence","report","newTests/1000", "hosp")
+get_type <- . %>%  dplyr::mutate(vtype=ifelse(var %in% c("incidence","report","death","newTests/1000", "hosp"),  "inc","prev"))
 ## un-tidyverse this because I don't want to learn how to do NSE right now
 sub_vars <- function(x,kv=keep_vars) { if (identical(kv,"all")) x else x[x$var %in% kv,]  }
 

@@ -3,19 +3,10 @@
 \docType{data}
 \name{ont_all}
 \alias{ont_all}
-\alias{ont_cal1}
-\alias{ont_2brks}
-\alias{ont_cal_2brks}
 \alias{comb_sub}
 \title{Sample data and fit from Ontario (up to 18 April 2020)}
 \format{
 a data frame ...
-
-a calibrated object ...
-Sample COVID19 calibration
-
-a calibrated object ...
-Sample COVID19 calibration - only two breakpoints
 
 a data frame containing date rel_activity
 Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces
@@ -25,10 +16,6 @@ mike's repo
 }
 \usage{
 ont_all
-
-ont_cal1
-
-ont_cal_2brks
 
 comb_sub
 }

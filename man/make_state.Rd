@@ -7,7 +7,7 @@
 make_state(
   N = params[["N"]],
   E0 = params[["E0"]],
-  type = "ICU1",
+  type = "ICU1h",
   state_names = NULL,
   use_eigvec = !is.null(params),
   params = NULL,

@@ -3,7 +3,7 @@
 #' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
 #' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-#' @importFrom shiny renderTable shinyApp uiOutput textOutput
+#' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText
 #' @importFrom anytime anytime
 #' @importFrom ggplot2 scale_y_continuous theme_gray
 #' @importFrom directlabels direct.label
@@ -118,8 +118,10 @@ run_shiny <- function(){
 
 
 #Everything else.
-  server <- function(input, output){
-    #Take a string of a list of numbers and turn that into an actual list of numbers. Let's fix the input for the time-varying transmission option.
+    server <- function(input, output){
+         ## non-standard eval; circumvent 'no visible binding' check
+        x <- Date <- Symbol <- Relative_value <- NULL 
+    ## Take a string of a list of numbers and turn that into an actual list of numbers. Let's fix the input for the time-varying transmission option.
     justValues_f <- function(valuesString, mode){
       #Put a comma at the end to make life easier.
       valuesString <- paste(valuesString, ",", sep = "")

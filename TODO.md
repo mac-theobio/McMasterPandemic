@@ -2,16 +2,24 @@ n## to do
 
 ### short term
 
+* log-linear-model interface for calibrate
+     * spline basis
+	 * breakpoints (dummies for date inequalities)
+	 * log(S/N)^alpha doesn't quite fit in because it depends on a dynamic variable ($S$)
+	 * (suboptimal) try N or eff-prop as a parameter?
 * implement 'hospital admissions' compartment
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
 * match up with EpiEstim
 * LTCF: data, model compartments
-* trans vars for Secret Place
+* extend trans_state_vars() for Secret Place variable names; refactor?
 
 ### strategic/architectural
 
+* allow browser()/debugging in mle_fun (circumvent mle2 problems)?
+* condense shouldn't be so hard-coded; refactor. Enforce conventions for var names (I vs ICU)?
+* think about condensation/diff/cum (cumRep, hosp admission.  Can cumulate during or post-run; need something that makes obs error correct and is efficient)
 * Erlangization/chain trick
 * TMB/Stan implementations
     * compartmental
