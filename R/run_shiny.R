@@ -115,8 +115,6 @@ run_shiny <- function(){
   )
 ))
 
-
-
 #Everything else.
     server <- function(input, output){
          ## non-standard eval; circumvent 'no visible binding' check
@@ -159,7 +157,7 @@ run_shiny <- function(){
       relValues <- justValues_f(input$timeParsRelativeValues, mode = "values")
       dates <- justValues_f(input$timeParsDates, mode = "dates")
       symbols <- justValues_f(input$timeParsSymbols, mode = "symbols")
-      currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues)
+      currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
       return(currentPars)
     })
       #In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
@@ -312,25 +310,23 @@ run_shiny <- function(){
                            value = loadParams("c_prop")))})
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
+        #Do time-changing transmission rates first, so we can change the file after and it will still update the simulation.
+        #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
+        time_pars <- get_factor_timePars()
+        defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
+        #If the length was changed from the default length, the parameters were definetly changed.
+        if(nrow(time_pars) != nrow(defaultTCParams)){
+          useTimeChanges <- FALSE
+        }
+        else{
+          #Are there any elements different from their default values?
+          useTimeChanges <- sum(time_pars != defaultTCParams) != 0
+        }
         #Make the params
         params <- makeParams()
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-        #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
-        time_pars <- get_factor_timePars()
-        defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"))
-        if (length(time_pars$Date) != length(defaultTCParams$Date)){
-          #To avoid errors when the default parameters are a different length than the input ones, such as when we don't want three time changing parameter value changes, if the default values were shortened, that's still counted as a change.
-          useTimeChanges <- TRUE
-        }
-        else{
-          #Do these individually to account for different sizes of data.frames.
-          #If the number of different elements between the not equal to zero, something has been changed.
-          datesDifferent <- sum(time_pars$Date != defaultTCParams$Date) != 0
-          symbolsDifferent <- sum(time_pars$Symbol != defaultTCParams$Symbol) != 0
-          valuesDifferent <- sum(time_pars$Relative_value != defaultTCParams$Relative_value) != 0
-          useTimeChanges <- datesDifferent || symbolsDifferent || valuesDifferent
-        }
+
         if (useTimeChanges){
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
