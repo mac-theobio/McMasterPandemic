@@ -252,6 +252,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##'                        Relative_value=c(0.7,0.1),
 ##'                        stringsAsFactors=FALSE)
 ##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
+##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",condense_args=list(keep_all=TRUE))
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
