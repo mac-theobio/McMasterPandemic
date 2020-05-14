@@ -2,19 +2,17 @@ n## to do
 
 ### short term
 
-* refactor invlink_trans so we can have params with _; if it doesn't match ignore it rather than throwing error? warn? (current hack is to use only a *single* underscore as separator)
-* log-linear-model interface for calibrate
-     * spline basis
-	 * breakpoints (dummies for date inequalities)
-	 * log(S/N)^alpha doesn't quite fit in because it depends on a dynamic variable ($S$)
-	 * (suboptimal) try N or eff-prop as a parameter?
-* implement 'hospital admissions' compartment
+* debug update/parallel DE_cores
+* document invlink_trans better
+* test 'zeta' model log(S/N)^zeta
+* (suboptimal) try N or eff-prop as a parameter?
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
 * match up with EpiEstim
 * LTCF: data, model compartments
 * extend trans_state_vars() for Secret Place variable names; refactor?
+* (LOW) test log-linear-model with date dummies?
 
 ### strategic/architectural
 

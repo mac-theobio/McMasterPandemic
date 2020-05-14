@@ -33,7 +33,7 @@ run_sim_loglin(params=params, extra_pars=opt_pars_spline1["time_beta"],
                sim_args=list(start_date=min(ont_all_sub$date)-15,
                              end_date=max(ont_all_sub$date)))
 ## do the calibration
-t_ont_cal_spline1 <- system.time(ont_cal_spline1 <-
+t_ont_cal_spline1_noDE <- system.time(ont_cal_spline1_noDE <-
                                      calibrate(data=ont_noICU
                                              , use_DEoptim=FALSE
                                              , debug_plot = TRUE
@@ -44,5 +44,18 @@ t_ont_cal_spline1 <- system.time(ont_cal_spline1 <-
                                         )
                                  ) ## system.time
 
+## switched parameter bounds for spline from [-3,3] to [-2,2] (still too loose?)
+t_ont_cal_spline1 <- system.time(ont_cal_spline1 <-
+                                     update(ont_cal_spline1_noDE
+                                         ,  DE_cores=1
+                                         , prior=pen_prior
+                                           ## 
+                                           ## , DE_cores=4   ## not working with parallel yet?
+                                          , use_DEoptim=TRUE))
 
+## penalization on beta parameters ... could be working but not sure?
+pen_prior <- list(~sum(dnorm(time_beta,mean=0,sd=1)))
+t_ont_cal_splinepen1 <- system.time(ont_cal_splinepen1 <-
+                                     update(ont_cal_spline1_noDE
+                                          , prior=pen_prior))
 

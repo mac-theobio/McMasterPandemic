@@ -373,7 +373,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     if (!is.null(priors)) {
         for (pr in priors) {
             pr <- pr[[2]] ## drop tilde
-            pr$log <- TRUE
+            pr <- add_d_log(pr)
             ret <- ret - eval(pr,list2env(pp))
         }
     }

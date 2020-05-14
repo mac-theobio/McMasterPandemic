@@ -343,11 +343,11 @@ legacy_time_args <- function(x, update=FALSE) {
 
 get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
                         special=list(lwr=c("params.log_E0"=1,zeta=-2,
-                                           "time_beta"=-3),
+                                           "time_beta"=-2),
                                      upr=c("rel_beta0"=4,
                                            "nb_disp|E0"=5,
                                            "zeta"=5,
-                                           "time_beta"=3))) {
+                                           "time_beta"=2))) {
     opt_inputs <- unlist(opt_pars)
     lwr <- opt_inputs  ## get all names
     lwr[] <- default[["lwr"]]
@@ -360,4 +360,20 @@ get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
         upr[grepl(names(S)[i],names(upr))] <- S[[i]]
     }
     return(list(lwr=lwr,upr=upr))
+}
+
+##' recursively log-ify expressions
+##' @param x an expression
+##' @examples
+##' add_d_log(
+add_d_log <- function(x) {
+    if (length(x)==1) return(x)
+    nm <- deparse(x[[1]])
+    if (substr(nm,1,1)=="d" && nm %in% ls("package:stats")) {
+        x$log <- TRUE
+    }
+    for (i in 2:length(x)) {
+        x[[i]] <- add_d_log(x[[i]])
+    }
+    return(x)
 }
