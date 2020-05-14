@@ -342,10 +342,12 @@ legacy_time_args <- function(x, update=FALSE) {
 
 
 get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
-                        special=list(lwr=c("params.log_E0"=1,zeta=-2),
+                        special=list(lwr=c("params.log_E0"=1,zeta=-2,
+                                           "time_beta"=-3),
                                      upr=c("rel_beta0"=4,
                                            "nb_disp|E0"=5,
-                                           "zeta"=5))) {
+                                           "zeta"=5,
+                                           "time_beta"=3))) {
     opt_inputs <- unlist(opt_pars)
     lwr <- opt_inputs  ## get all names
     lwr[] <- default[["lwr"]]
