@@ -164,8 +164,13 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params) {
     ## update infection rate
-    with(c(as.list(state),as.list(params)),
-         beta0/N*(Ca*Ia+Cp*Ip+(1-iso_m)*Cm*Im+(1-iso_s)*Cs*Is))
+    with(c(as.list(state),as.list(params)), {
+        foi <- beta0/N*(Ca*Ia+Cp*Ip+(1-iso_m)*Cm*Im+(1-iso_s)*Cs*Is)
+        if ("zeta" %in% names(params)) {
+            foi <- foi*(S/N)^zeta
+        }
+        foi
+    })
 }
 
 ##' Take a single simulation time step
