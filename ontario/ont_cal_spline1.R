@@ -9,7 +9,8 @@ ont_noICU <- dplyr::filter(ont_all_sub, var != "ICU")
 
 X_date <- unique(ont_noICU$date)
 t_vec <- as.numeric(X_date-min(X_date))
-X <- model.matrix(~ns(t_vec,knots=seq(7,length(t_vec),by=14))-1)
+kvec <- seq(7,length(t_vec),by=14)
+X <- model.matrix(~ns(t_vec,knots=kvec)-1)
 matplot(t_vec,X,type="l")
 opt_pars_spline1 <- list(
     ## these params are part of the main parameter vector: go to run_sim()
