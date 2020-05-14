@@ -118,7 +118,7 @@ run_shiny <- function(){
 #Everything else.
     server <- function(input, output){
          ## non-standard eval; circumvent 'no visible binding' check
-        x <- Date <- Symbol <- Relative_value <- NULL 
+        x <- Date <- Symbol <- Relative_value <- NULL
     ## Take a string of a list of numbers and turn that into an actual list of numbers. Let's fix the input for the time-varying transmission option.
     justValues_f <- function(valuesString, mode){
       #Put a comma at the end to make life easier.
@@ -189,7 +189,8 @@ run_shiny <- function(){
                     input$c_prop,
                     input$c_delay_mean,
                     input$c_delay_cv,
-                    input$procError)
+                    input$procError,
+                    input$zeta)
         paramNames <- describe_params(read_params("ICU1.csv"))$symbol
         #I don't want numbers to be strings
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
@@ -305,6 +306,9 @@ run_shiny <- function(){
                  textInput("c_delay_cv",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_cv","meaning"],
                            value = loadParams("c_delay_cv")),
+                 textInput("zeta",
+                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "zeta","meaning"],
+                           value = loadParams("zeta")),
                  textInput("c_prop",
                            label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"],
                            value = loadParams("c_prop")))})
