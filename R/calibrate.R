@@ -93,6 +93,36 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 }
 
 
+##' run with log-linear model applied to beta
+##' @inheritParams run_sim_break
+##' @export
+run_sim_loglin <- function(params,
+                           extra_pars=NULL,
+                           time_args=NULL,
+                           sim_args=list(),
+                           return_timevar=FALSE,
+                           ...) {
+    ## FIXME: DRY from run_sim_break/run_sim_mobility
+    unpack(time_args)
+    ## X: model matrix
+    ## X_date: dates corresponding to rows of model matrix
+    ## strip 
+    time_beta <- extra_pars$time_beta
+    extra_pars$time_beta <- NULL
+    ## construct time-varying frame, parameters
+    timevar <- dfs(Date=anydate(X_date),
+                          Symbol="beta0",
+                   Relative_value=exp(X %*% time_beta))
+    if (return_timevar) return(timevar)
+    sim_args <- c(sim_args
+                , extra_pars
+                , nlist(params,
+                        state=make_state(params=params),
+                        params_timevar=timevar))
+    do.call(run_sim,sim_args)
+}
+
+run_sim_loglin <- 
 ##' run with transmission propto relative mobility 
 ##' @inheritParams run_sim_break
 ##' @export
