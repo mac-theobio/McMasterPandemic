@@ -5,10 +5,10 @@ library(ggplot2)
 context("very basic simulation")
 
 params <- read_params("ICU1.csv")
-state <- make_state(params=params)
+state <- make_state(params=params,type="ICU1")
 
 test_that("basic examples", {
-    expect_is(params,"params_pansim")
+   expect_is(params,"params_pansim")
     s0 <- run_sim_range(params,state, nt=100)
     expect_is(s0,"data.frame")
     expect_is(state,"state_pansim")

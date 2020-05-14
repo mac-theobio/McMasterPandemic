@@ -67,14 +67,14 @@ rExp <- function(par, steps=100, ndt=1,
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E0=1e-5)
+	state <- make_state(N=1, E0=1e-5, type="ICU1")
 	r <- run_sim_range(par, state
                          , nt=steps*ndt
                          , step_args = list(do_hazard=do_hazard,
                                             do_exponential=TRUE))
         nn <- ndt*steps
         ## DRY: get_evec()
-        drop_vars <- c("date","t","S","R","D","foi")
+        drop_vars <- c("date","t","S","R","D","foi","X")
         uf <- function(x,pos) unlist(x[pos,!names(r) %in% drop_vars])
         r_last <- uf(r,nn)
         r_nextlast <- uf(r,nn-1)

@@ -122,7 +122,6 @@ run_sim_loglin <- function(params,
     do.call(run_sim,sim_args)
 }
 
-run_sim_loglin <- 
 ##' run with transmission propto relative mobility 
 ##' @inheritParams run_sim_break
 ##' @export

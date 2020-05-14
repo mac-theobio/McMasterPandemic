@@ -35,7 +35,7 @@ get_evec <- function(p, method=c("expsim","analytical")) {
                       v <- ee$vectors
                       rownames(v) <- rownames(J)
                       dom_vec <- v[,which.max(ee$values)]
-                      drop_vars <- c("date","t","S","R","D","foi")
+                      drop_vars <- c("date","t","S","R","D","foi","hosp","X")
                       dd <- abs(dom_vec[!names(dom_vec) %in% drop_vars])
                       dd/sum(dd)
                   })
