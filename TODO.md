@@ -2,6 +2,7 @@ n## to do
 
 ### short term
 
+* refactor invlink_trans so we can have params with _; if it doesn't match ignore it rather than throwing error? warn? (current hack is to use only a *single* underscore as separator)
 * log-linear-model interface for calibrate
      * spline basis
 	 * breakpoints (dummies for date inequalities)

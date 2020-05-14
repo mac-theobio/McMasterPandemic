@@ -103,9 +103,11 @@ run_sim_loglin <- function(params,
                            return_timevar=FALSE,
                            ...) {
     ## FIXME: DRY from run_sim_break/run_sim_mobility
+    X <- X_date <- NULL  ## variable checker
     unpack(time_args)
     ## X: model matrix
     ## X_date: dates corresponding to rows of model matrix
+    ## 
     ## strip 
     time_beta <- extra_pars$time_beta
     extra_pars$time_beta <- NULL
@@ -358,10 +360,12 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
     if (length(pp$nb_disp)==1) {
-        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))           } else {
+        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
+    } else {
         r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
                     by="var")
-        dvals <- with(r2,dnbinom(value,mu=pred,size=exp(nb_disp),log=TRUE))
+        ## FIXED nb_disp hack, don't need to exponentiate any more ...
+        dvals <- with(r2,dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
     }
     ## clamp NaN/NA values to worst obs
     dvals[!is.finite(dvals)] <- min(dvals[is.finite(dvals)])
@@ -477,7 +481,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     data$var <- trans_state_vars(data$var)
     if (is.null(opt_pars$log_nb_disp)) {
         nvar <- length(var_names <- unique(data$var))
-        opt_pars$log_nb_disp <- setNames(rep(0,nvar),paste0("log_",var_names))
+        opt_pars$log_nb_disp <- setNames(rep(0,nvar),var_names)
     }
     value <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
@@ -498,16 +502,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     opt_inputs <- unlist(opt_pars)
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
+        DE_lims <- get_DE_lims(opt_pars)
         if (is.null(DE_lwr)) {
-            DE_lwr <- opt_inputs
-            DE_lwr[] <- -1
-            DE_lwr[["params.log_E0"]] <- 1
+            DE_lwr <- DE_lims[["lwr"]]
         }
         if (is.null(DE_upr)) {
-            DE_upr <- opt_inputs
-            DE_upr[] <- 1
-            DE_upr[grepl("rel_beta0",names(DE_upr))] <- 4
-            DE_upr[grepl("nb_disp|E0",names(DE_upr))] <- 5
+            DE_upr <- DE_lims[["upr"]]
         }
         de_ctrl_args <- list(packages=list("McMasterPandemic","bbmle"))
         if (!is.null(DE_args$control)) {

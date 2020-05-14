@@ -329,6 +329,10 @@ run_sim <- function(params
         ## match specified times with time sequence
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
+        if (any(switch_times==length(date_vec))) {
+            ## drop switch times on final day (should we warn???)
+            switch_times <- switch_times[switch_times<length(date_vec)]
+        }
     } ## steps
 
     if (is.null(switch_times)) {
@@ -521,17 +525,19 @@ run_sim_range <- function(params
     res[1,] <- state
     foi[[1]] <- update_foi(state,params)
     ## loop
-    for (i in 2:nt) {
-        state <- do.call(do_step,
-                         c(nlist(state
-                               , params
-                               , ratemat = M
-                               , dt
-                                 )
-                           , step_args))
-        foi[[i]] <- update_foi(state, params)
-        if (!identical(colnames(res),names(state))) browser()
-        res[i,] <- state
+    if (nt>1) {
+        for (i in 2:nt) {
+            state <- do.call(do_step,
+                             c(nlist(state
+                                   , params
+                                   , ratemat = M
+                                   , dt
+                                     )
+                             , step_args))
+            foi[[i]] <- update_foi(state, params)
+            if (!identical(colnames(res),names(state))) browser()
+            res[i,] <- state
+        }
     }
     res <- dfs(t=seq(nt),res,foi)
     ## need to know true state - for cases with obs error

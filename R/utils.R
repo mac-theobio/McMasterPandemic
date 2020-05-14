@@ -163,32 +163,42 @@ write_params <- function(params, fn, label) {
 ##' invlink_trans(tst)
 ##' tst2 <- list(params=c(log_E0=1,log_beta0=1),log_nb_disp=c(H=0,report=0,death=0))
 ##' invlink_trans(tst2)
+##' invlink_trans(c(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
 ##' @export
-invlink_trans <- function(p) {
+invlink_trans <- function(p, unknown_link="ignore", links=c("log","log10","logit")) {
     r <- vector("list",length(p))
     for (i in seq_along(p)) {
+        nm <- names(p)[i]
+        invlink <- gsub("^([^_]+)_.*","\\1",nm)
+        has_link <- invlink %in% links
         ## recurse if necessary
         ## if ((length(p[[i]])>1 || is.list(p[[i]])) && !is.null(names(p[[i]]))) {
         if (!is.null(names(p[[i]]))) {
-            r[[i]] <- invlink_trans(p[[i]])
+            pp <- p[[i]]
+            ## attach link name to sub-parameters
+            if (has_link) pp <- setNames(pp,paste(invlink,names(p[[i]]),sep="_"))
+            r[[i]] <- invlink_trans(pp)
+            names(r)[[i]] <- gsub("^[^_]+_","",nm)  ## ?? not sure
         } else {
-            nm <- names(p)[i]
-            if (!grepl("_",nm)) {
+            if (!has_link) {
                 ## identity; should be able to do this with a better regex?
                 r[[i]] <- p[[i]]
+                names(r)[i] <- nm
             } else {
-                invlink <- gsub("^([^_]+).*","\\1",names(p)[i])
                 ## cat(invlink,"\n")
                 r[[i]] <- switch(invlink,
                                  log=exp(p[[i]]),
                                  log10=10^(p[[i]]),
                                  logit=plogis(p[[i]]),
-                                 stop("unknown link"))
-                ## FIXME: add cloglog? user-specified links?
+                                 { if (unknown_link=="stop") stop("unknown link: %s",invlink)
+                                     if (unknown_link=="warn") warning("unknown link: %s",invlink)
+                                     p[[i]]
+                                 })
+                names(r)[i] <- gsub("^[^_]+_","",nm)
+                ## FIXME: add cloglog? user-specified links
             } ## contains link
         }  ## atomic
     } ## loop over p
-    names(r) <- gsub("^[^_]+_","",names(p))
     if (is.numeric(p)) r <- unlist(r)
     return(r)
 }
@@ -330,3 +340,22 @@ legacy_time_args <- function(x, update=FALSE) {
     return(x)
 }
 
+
+get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
+                        special=list(lwr=c("params.log_E0"=1,zeta=-2),
+                                     upr=c("rel_beta0"=4,
+                                           "nb_disp|E0"=5,
+                                           "zeta"=5))) {
+    opt_inputs <- unlist(opt_pars)
+    lwr <- opt_inputs  ## get all names
+    lwr[] <- default[["lwr"]]
+    for (i in seq_along(S <- special[["lwr"]])) {
+        lwr[grepl(names(S)[i],names(lwr))] <- S[[i]]
+    }
+    upr <- opt_inputs  ## get all names
+    upr[] <- default[["upr"]]
+    for (i in seq_along(S <- special[["upr"]])) {
+        upr[grepl(names(S)[i],names(upr))] <- S[[i]]
+    }
+    return(list(lwr=lwr,upr=upr))
+}
