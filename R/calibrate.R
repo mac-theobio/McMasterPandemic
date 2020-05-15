@@ -113,8 +113,8 @@ run_sim_loglin <- function(params,
     extra_pars$time_beta <- NULL
     ## construct time-varying frame, parameters
     timevar <- dfs(Date=anydate(X_date),
-                          Symbol="beta0",
-                   Relative_value=exp(X %*% time_beta))
+                   Symbol="beta0",
+                   Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     if (return_timevar) return(timevar)
     sim_args <- c(sim_args
                 , extra_pars

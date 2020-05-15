@@ -1,5 +1,4 @@
 library(McMasterPandemic)
-library(splines)
 
 load("ontario_clean.RData")
 load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
@@ -23,19 +22,16 @@ opt_pars_zeta1 <- list(
     , log_nb_disp=NULL
 )
 
-run_sim_loglin(params=params, extra_pars=opt_pars_spline1["time_beta"],
-               time_args=nlist(X,X_date),
-               sim_args=list(start_date=min(ont_all_sub$date)-15,
-                             end_date=max(ont_all_sub$date)))
-## do the calibration
-t_ont_cal_spline1 <- system.time(ont_cal_spline1 <-
-                                     calibrate(data=ont_noICU
-                                             , use_DEoptim=FALSE
-                                             , debug_plot = TRUE
-                                             , base_params=params
-                                             , opt_pars = opt_pars_spline1
-                                             , time_args=nlist(X,X_date)
-                                             , sim_fun = run_sim_loglin
+t_ont_cal_zeta1 <- system.time(ont_cal_zeta1 <-
+                                   calibrate(data=ont_noICU
+                                           , use_DEoptim=TRUE
+                                           , DE_cores=4
+                                           ## , debug_plot = TRUE
+                                           ## , debug=TRUE
+                                           , base_params=params
+                                           , opt_pars = opt_pars_zeta1
+                                           , time_args = NULL
+                                             ## default is run_sim_break
                                         )
                                  ) ## system.time
 

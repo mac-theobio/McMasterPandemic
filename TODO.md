@@ -2,6 +2,7 @@ n## to do
 
 ### short term
 
+* update 'refactor' doc
 * debug update/parallel DE_cores
 * document invlink_trans better
 * test 'zeta' model log(S/N)^zeta
