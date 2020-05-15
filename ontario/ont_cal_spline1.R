@@ -17,8 +17,12 @@ t_vec <- as.numeric(X_date-min(X_date))
 kvec <- seq(7,length(t_vec),by=14)
 ## spline basis with no intercept (the intercept is the main (log_)beta0 parameter)
 X <- model.matrix(~ns(t_vec,knots=kvec)-1)
+X2 <- model.matrix(~ns(t_vec,df=7)-1)
+X3 <- model.matrix(~bs(t_vec,df=7)-1)
 ## take a look at the spline basis
 matplot(t_vec,X,type="l")
+matpoints(t_vec,X2)
+matpoints(t_vec,X3)
 
 opt_pars_spline1 <- list(
     ## these params are part of the main parameter vector: go to run_sim()
@@ -49,7 +53,7 @@ t_ont_cal_spline1_noDE <- system.time(ont_cal_spline1_noDE <-
                                              , debug_plot = TRUE
                                              , base_params=params
                                              , opt_pars = opt_pars_spline1
-                                             , time_args=nlist(X,X_date)  ## model matrix and date vector
+                                             , time_args=nlist(X=X3,X_date)  ## model matrix and date vector
                                              , sim_fun = run_sim_loglin
                                         )
                                  ) ## system.time

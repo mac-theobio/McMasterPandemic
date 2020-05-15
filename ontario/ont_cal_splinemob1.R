@@ -1,5 +1,6 @@
 library(McMasterPandemic)
 library(splines)
+library(dplyr)
 
 load("ontario_clean.RData")
 load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
@@ -37,15 +38,16 @@ opt_pars_splinemob1 <- list(
              ## logit_c_prop=qlogis(params[["c_prop"]]),
              ## fraction of hosp to acute (non-ICU)
            , logit_phi1=qlogis(params[["phi1"]])
+           ## , log_zeta=-1 ## enable zeta
              )
   , time_beta=rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     ## NB dispersion
   , log_nb_disp=NULL
 )
 
-run_sim_loglin(params=params, extra_pars=opt_pars_spline1["time_beta"]
+run_sim_loglin(params=params, extra_pars=opt_pars_splinemob1["time_beta"]
              , time_args=nlist(X,X_date=comb_sub3$date)
-             ,  time_args=nlist(X,X_date)0
+               ## ,  time_args=nlist(X,X_date)
              , sim_args=list(start_date=min(ont_all_sub$date)-15
                            , end_date=max(ont_all_sub$date)))
 ## do the calibration
@@ -59,6 +61,3 @@ t_ont_cal_splinemob1 <- system.time(ont_cal_splinemob1 <-
                                              , sim_fun = run_sim_loglin
                                         )
                                  ) ## system.time
-
-
-
