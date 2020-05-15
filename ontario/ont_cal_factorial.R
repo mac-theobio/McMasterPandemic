@@ -1,6 +1,8 @@
 library(McMasterPandemic)
 library(splines)
 library(dplyr)
+library(parallel)
+
 
 load("ontario_clean.RData")
 load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
@@ -87,10 +89,10 @@ res <- list(mod = x, time = t_ont_cal_fac, fit = ont_cal_fac, data=ont_noICU)
 factorial_combos <- c("0001", "0010", "0100"
 	, "0011", "0110", "0101"
 	, "0111"
-	, "1001", "1010", "1100"
-	, "1011", "1110", "1101"
-	, "1111"
+	# , "1001", "1010", "1100"  ## Failed at 1100
+	# , "1011", "1110", "1101"
+	# , "1111"
 )
-res_list <- lapply(factorial_combos, function(x){run_cali(x)})
+res_list <- mclapply(factorial_combos, function(x){run_cali(x)},mc.cores=3)
 
 #rdsave(res_list, factorial_combos)

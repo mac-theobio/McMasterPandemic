@@ -55,6 +55,8 @@ compare_calib.Rout:  ontario_clean.Rout ont_cal.RData ont_cal_noICU_1brks.RData 
 ont_cal_factorial.Rout: ont_cal_factorial.R
 	$(run-R)
 
+ont_cal_factorial_plot.Rout: ont_cal_factorial.Rout ont_cal_factorial_plot.R
+	$(run-R)
 
 epiestim.Rout: ontario_clean.Rout
 epiestim_plot.Rout: ontario_clean.Rout ont_cal.Rout epiestim.Rout epiestim_plot.R
