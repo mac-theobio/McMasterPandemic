@@ -49,12 +49,16 @@ ff <- foodweb(where=pos,
 M <- ff$funmat
 M["predict.fit_pansim",c("forecast_sim","forecast_ensemble")] <- 1
 ## HACK: set up another function parallel to run_sim_break
-M <- rbind(M,0)
-M <- cbind(M,0)
-rownames(M)[nrow(M)] <- "OTHER_TIMEFUN"
-colnames(M)[ncol(M)] <- "OTHER_TIMEFUN"
-M[,"OTHER_TIMEFUN"] <- M[,"run_sim_break"]
-M["OTHER_TIMEFUN",] <- M["run_sim_break",]
+## M <- rbind(M,0)
+## M <- cbind(M,0)
+## rownames(M)[nrow(M)] <- "OTHER_TIMEFUN"
+## colnames(M)[ncol(M)] <- "OTHER_TIMEFUN"
+## M[,"OTHER_TIMEFUN"] <- M[,"run_sim_break"]
+## M["OTHER_TIMEFUN",] <- M["run_sim_break",]
+## HACK: calibrate effectively calls the other run_sim
+run_sim_funs <- setdiff(grep("run_sim_",rownames(M),value=TRUE),"run_sim_range")
+M["forecast_sim",run_sim_funs] <- 1
+M[run_sim_funs,"run_sim"] <- 1
 g <- igraph::graph_from_adjacency_matrix(M)
 plot(g,layout=layout.graphopt) ## fruchterman.reingold
 ```
