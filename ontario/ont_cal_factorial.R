@@ -62,7 +62,8 @@ run_cali <- function(flags) {
     X <- model.matrix(form, data = comb_sub3)
 
     matplot(comb_sub3$t_vec,X,type="l",lwd=2)
-    opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    ## opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    opt_pars$time_beta <- (0:(ncol(X)-1))/10  ## hack so we can see what's going on
     time_args <- nlist(X,X_date=comb_sub3$date)
 
     r0 <- run_sim_loglin(params=params, extra_pars=opt_pars["time_beta"] ## n.b. single brackets here are on purpose
@@ -72,13 +73,15 @@ run_cali <- function(flags) {
 
     plot(r0,break_dates=NULL,log=TRUE)
     ## do the calibration
+    debug <- !use_DEoptim
     t_ont_cal_fac <- system.time(ont_cal_fac <-
                                      calibrate(data=ont_noICU
                                              , use_DEoptim=use_DEoptim
                                              , DE_cores = 1
                                              , debug_plot = TRUE
-                                              , debug = TRUE
+                                             , debug = debug
                                              , base_params=params
+                                             ## , mle2_control = list(maxit = 1000),
                                              , opt_pars = opt_pars
                                              , time_args=time_args
                                              , sim_fun = run_sim_loglin
@@ -91,22 +94,66 @@ run_cali <- function(flags) {
 
 ## testing
 if (FALSE) {
+    library(bbmle)
     r1 <- run_cali("0001")
     plot(r1$fit, data=ont_noICU)
     r2 <- run_cali("0010")
+    saveRDS(r2,file="r2_tmp.rds")
+    r2H <- r2
+    names(r2H$fit$forecast_args$opt_pars)
+    r2H$fit$forecast_args$opt_pars$log_nb_disp <- NULL
+    r2H$fit$forecast_args$opt_pars
     plot(r2$fit,data=r2$data)
+    plot(r2H$fit,data=r2$data)
+    p <- coef(r2$fit$mle2)
+    invlink_trans(restore(p,r2$fit$forecast_args$opt_pars))
+    invlink_trans(restore(p,r2H$fit$forecast_args$opt_pars))
+    coef(r2$fit$mle2)
+    opt_pars2 <- opt_pars
+    opt_pars2$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    ## what is different e.g. between last call to 
+    f_args <- r2$fit$forecast_args
+    f_args2 <- readRDS(".mle_checkpoint.rds")
+    setdiff(names(f_args), names(f_args2))
+    setdiff(names(f_args2), names(f_args))
+    nm <- intersect(names(f_args),names(f_args2))
+    setNames(lapply(nm,function(n)all.equal(f_args[[n]], f_args2[[n]])), nm)
+    ff <- (do.call(forecast_sim, f_args2)
+        %>% filter(var %in% McMasterPandemic:::keep_vars)
+    )
+    ff_pred <- (do.call(forecast_sim,
+                        c(list(p=f_args2$p)
+                               ## coef(r2$fit$mle2))
+                             , f_args))
+        %>% filter(var %in% McMasterPandemic:::keep_vars)
+    )
+    f_args3 <- f_args
+    f_args3$opt_pars <- f_args2$opt_pars
+    f_args3$p <- f_args2$p
+    ff_hybrid <- (do.call(forecast_sim, f_args3)
+        %>% filter(var %in% McMasterPandemic:::keep_vars)
+    )
+    
+    print(ggplot(bind_rows(forecast=ff,pred=ff_pred,hybrid=ff_hybrid,.id="source"),
+           aes(date,value,colour=var,lty=source,shape=source))
+          + geom_line()
+          + geom_point()
+          + scale_y_log10()
+          + facet_wrap(~source)
+          )
     pp <- predict(r2$fit)
-    plot(pp)
-    plot(r2$fit, data=ont_noICU)
+    r2fix <- r2
+    r2fix$fit$forecast_args$opt_pars <- f_args2$opt_pars
+    plot(r2fix$fit, data=ont_noICU)
 }
 
 factorial_combos <- c("0001", "0010", "0100"
                     , "0011", "0110", "0101"
                     , "0111"
-                                        # , "1001", "1010", "1100"  ## Failed at 1100
-                                        # , "1011", "1110", "1101"
-                                        # , "1111"
+                      ## , "1001", "1010", "1100"  ## Failed at 1100
+                      ## , "1011", "1110", "1101"
+                      ## , "1111"
                       )
-res_list <- mclapply(factorial_combos, run_cali, mc.cores=3)
+res_list <- mclapply(factorial_combos, run_cali, mc.cores=5)
 
 #rdsave(res_list, factorial_combos)

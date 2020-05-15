@@ -314,26 +314,27 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     time_args=NULL,
                     sim_args=NULL,
                     sim_fun=run_sim_break,
+                    checkpoint=FALSE,
                     aggregate_args=NULL,
                     priors=NULL, ...) {
+    ## browser()
     ## ... is to drop any extra crap that gets in there
     if (debug) cat("mle_fun: ",p,"\n")
     var <- pred <- value <- NULL    ## defeat global-variable checkers
-    ## pass everything to forecaster
-    ##  *except* distribution parameters
-    ##  (proc, obs error disp are safely inside params)
-    opt_pars2 <- opt_pars[!grepl("nb_disp",names(opt_pars))]
-    r <- (do.call(forecast_sim,
-                  nlist(p,
-                        opt_pars=opt_pars2
-                      , base_params
-                      , start_date
-                      , end_date
-                      , time_args
-                      , sim_args
-                      , aggregate_args
-                      , debug
-                      , sim_fun))
+    ## pass ALL of opt_pars and p to forecaster
+    ##  nb_disp stuff isn't necessary within forecaster but we need p and opt_pars to stay in sync!
+    f_args <- nlist(p
+                  , opt_pars
+                  , base_params
+                  , start_date
+                  , end_date
+                  , time_args
+                  , sim_args
+                  , aggregate_args
+                  , debug
+                  , sim_fun)
+    if (checkpoint) saveRDS(f_args,file=".mle_checkpoint.rds")
+    r <- (do.call(forecast_sim, f_args)
         %>% dplyr::rename(pred="value")
     )
     ## ggplot(r,aes(date,pred,colour=var)) + geom_line() + scale_y_log10() + geom_point(data=data,aes(y=value))
@@ -578,18 +579,11 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                        ),
                   mle2_args)
     opt <- do.call(bbmle::mle2,opt_args)
-    res <- list(mle2=opt,
-                forecast_args=nlist(start_date,
-                                    end_date,
-                                    sim_fun,
-                                    time_args,
-                                    base_params,
-                                    opt_pars,
-                                    fixed_pars,
-                                    sim_args,
-                                    aggregate_args,
-                                    condense_args),
-                call=cc)
+    res <- list(mle2=opt
+              , forecast_args = mle_data[setdiff(names(mle_data),
+                            ## leave these out, they're needed for mle but not forecast
+                            c("debug","debug_plot","fixed_pars","data","priors"))]
+              , call = cc)
     attr(res,"de") <- de_cal1
     attr(res,"de_time") <- de_time
     class(res) <- "fit_pansim"
