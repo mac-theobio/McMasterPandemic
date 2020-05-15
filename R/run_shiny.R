@@ -5,13 +5,14 @@
 #' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
 #' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText
 #' @importFrom anytime anytime
-#' @importFrom ggplot2 scale_y_continuous theme_gray
+#' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
 #' @importFrom directlabels direct.label
 #' @importFrom scales log10_trans trans_breaks trans_format math_format
 #' @importFrom ggplot2 element_text
 #' @return NULL
 #' @export
 run_shiny <- function(){
+  #Keep track of the first time the app opens.
 #How I want stuff to look. Also collect input and things.
   ui <- fluidPage(
     titlePanel("McMasterPandemic Shiny"),
@@ -20,7 +21,7 @@ run_shiny <- function(){
         #Only show the selector for the parameter file to upload if that's selected.
           column(2,
                  selectInput("fn",
-                             label = "Chose file containing parameters",
+                             label = "Default parameters from file:",
                              choices = c("CI_base.csv",
                                          "CI_updApr1.csv",
                                          "ICU1.csv",
@@ -29,83 +30,18 @@ run_shiny <- function(){
           column(5,
                  textInput("sd", "Simulation Start Date (yyyy-mm-dd)", value = "2020-01-01")),
           column(5,
-                 textInput("ed", "Simulation End Date  (yyyy-mm-dd)", value = "2020-08-01"))
-        ),
+                 textInput("ed", "Simulation End Date  (yyyy-mm-dd)", value = "2020-08-01")),
+            column(2,
+                   checkboxInput(inputId = "use_logYscale",
+                                 label = "Use log-y scale",
+                                 value = FALSE)),
+            column(2,
+                   radioButtons(inputId = "use_directLabels",
+                                label = ("Use direct labels or a legend"),
+                                choices = list("Use direct labels" = 1, "Use a legend" = 2),
+                                selected = 1))),
   #Only show the selector to input parameters if that's selected.
-    tabsetPanel(
-      #The parameters panel needs to be the default selected panel. This is so it Shiny can render the panel first. The input slots aren't created until the panel is created.
-      #So keep the default to be the parametersPanel to avoid ugly errors.
-      selected = "parametersPanel",
-      tabPanel(
-        title = "Time changing transmission rates",
-        value = "tcr",
-        textOutput("trmsg"),
-        column(8,
-          textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
-          textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
-          textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1")
-      ),
-      column(8,
-             plotOutput("paramsPlot"))),
-      tabPanel(
-        title = "Process and Observation error",
-        value = "procObsErr",
-        textInput("procError", label = "Enter the process error", value = 0),
-        textInput("ObsError", label = "Enter the observation error", value = 0)
-      ),
-      tabPanel(title = "Simulation Parameters",
-              value = "parametersPanel",
-              uiOutput("tabPanelFirst"),
-              uiOutput("tabPanelSecond"),
-              uiOutput("tabPanelThird"),
-              uiOutput("tabPanelFourth"),
-              uiOutput("tabPanelFifth")
-      ),
-      tabPanel(
-        title = "Plot controls",
-        value = "plotControls",
-        fluidRow(
-          column(2,
-        checkboxInput(inputId = "use_logYscale",
-                    label = "Use log-y scale",
-                    value = FALSE)),
-        column(2,
-        radioButtons(inputId = "use_directLabels",
-                      label = ("Use direct labels or a legend"),
-                      choices = list("Use direct labels" = 1, "Use a legend" = 2),
-                      selected = 1))
-      )),
-    tabPanel(
-      title = "Plot aesthetics",
-      value = "plotaes",
-      column(2,
-      sliderInput("Globalsize", "Text size:",
-                  min = 5, max = 45,
-                  step = 0.25,
-                  value = 12),
-      sliderInput("lineThickness", "Line thickness:",
-                  min = 0, max = 10,
-                  step = 0.25,
-                  value = 3)),
-      column(2,
-      radioButtons(inputId = "automaticSize",
-                   label = ("Change individual text elements size"),
-                   choices = list("No" = 1, "Yes" = 2),
-                   selected = 1)),
-      conditionalPanel(condition = "input.automaticSize == 2",
-        column(2,
-             sliderInput("titleSize", "Title size:",
-                         min = 0, max = 25,
-                         value = 20)),
-        column(2,
-             sliderInput("XtextSize", "X axis title size:",
-                         min = 0, max = 25,
-                         value = 10)),
-        column(2,
-             sliderInput("YtextSize", "Y axis title size:",
-                         min = 0, max = 25,
-                         value = 10))
-        ))),
+    uiOutput("maintabPanel"),
   width = 12),
   fluidRow(
     tableOutput("summary")
@@ -116,9 +52,9 @@ run_shiny <- function(){
 ))
 
 #Everything else.
-    server <- function(input, output){
-         ## non-standard eval; circumvent 'no visible binding' check
-        x <- Date <- Symbol <- Relative_value <- NULL
+  server <- function(input, output, session){
+    ## non-standard eval; circumvent 'no visible binding' check
+    x <- Date <- Symbol <- Relative_value <- NULL
     ## Take a string of a list of numbers and turn that into an actual list of numbers. Let's fix the input for the time-varying transmission option.
     justValues_f <- function(valuesString, mode){
       #Put a comma at the end to make life easier.
@@ -160,9 +96,80 @@ run_shiny <- function(){
       currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
       return(currentPars)
     })
+    #Render the tab panel server-side to force tab changes the way we'd like.
+    output$maintabPanel <- renderUI({
+      tabsetPanel(
+      #Use this to force the tab to change.
+      id = "tabs",
+      #The parameters panel needs to be the default selected panel. This is so it Shiny can render the panel first. The input slots aren't created until the panel is created.
+      #So keep the default to be the parametersPanel to avoid ugly errors.
+      selected = "parametersPanel",
+      tabPanel(
+        title = "Time changing transmission rates",
+        value = "tcr",
+        textOutput("trmsg"),
+        column(8,
+               textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
+               textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
+               textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1")
+        ),
+        column(8,
+               plotOutput("paramsPlot"))),
+      tabPanel(
+        title = "Process and Observation error",
+        value = "procObsErr",
+        textInput("procError", label = "Enter the process error", value = 0),
+        textInput("ObsError", label = "Enter the observation error", value = 0)
+      ),
+      tabPanel(title = "Simulation Parameters",
+               value = "parametersPanel",
+               uiOutput("tabPanelFirst"),
+               uiOutput("tabPanelSecond"),
+               uiOutput("tabPanelThird"),
+               uiOutput("tabPanelFourth"),
+               uiOutput("tabPanelFifth")
+      ),
+      tabPanel(
+        title = "Plot aesthetics",
+        value = "plotaes",
+        column(2,
+               sliderInput("Globalsize", "Text size:",
+                           min = 5, max = 45,
+                           step = 0.25,
+                           value = 12),
+               sliderInput("lineThickness", "Line thickness:",
+                           min = 0, max = 10,
+                           step = 0.25,
+                           value = 3)),
+        column(2,
+               radioButtons(inputId = "automaticSize",
+                            label = ("Change individual text elements size"),
+                            choices = list("No" = 1, "Yes" = 2),
+                            selected = 1)),
+        conditionalPanel(condition = "input.automaticSize == 2",
+                         column(2,
+                                sliderInput("titleSize", "Title size:",
+                                            min = 0, max = 25,
+                                            value = 20)),
+                         column(2,
+                                sliderInput("XtextSize", "X axis title size:",
+                                            min = 0, max = 25,
+                                            value = 10)),
+                         column(2,
+                                sliderInput("YtextSize", "Y axis title size:",
+                                            min = 0, max = 25,
+                                            value = 10))
+        )))})
       #In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
-        params <- c(input$beta0,
+        #Catch the errors we get before these variables are all initialized, by assigning the params to be those from read_params until the panel is fully loaded.
+        if (is.null(input$beta0)){
+          params <- read_params("ICU1.csv")
+          return(params)
+        }
+        else{
+          #Otherwise, package and make the params the way we'd like them.
+          params <- c(input$beta0,
                     input$Ca,
                     input$Cp,
                     input$Cs,
@@ -198,6 +205,7 @@ run_shiny <- function(){
         class(params) <- "params_pansim"
         #Do this after because changing the numbers from strings removes their names.
         return(params)
+        }
       }
     #Load a parameter from a file. If the file doesn't have the param, fill in the missing ones from "ICU1.csv," which has them all.
     loadParams <- function(param){
@@ -216,7 +224,13 @@ run_shiny <- function(){
         params <- Inputparams
       }
       return(params[param])
-  }
+    }
+    #Force the tab panel to be the parameters panel every time the default parameters drop down is changed.
+    observeEvent(input$fn, {
+      shiny::updateTabsetPanel(session, "tabs",
+                        selected = "parametersPanel"
+      )
+    })
       #Render the parameter tabs server-side, to make possible the load-edit functionality we'd like. We'll do this column by column.
       output$tabPanelFirst <- renderUI({
           column(5,
@@ -314,23 +328,21 @@ run_shiny <- function(){
                            value = loadParams("c_prop")))})
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
-        #Do time-changing transmission rates first, so we can change the file after and it will still update the simulation.
         #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
         time_pars <- get_factor_timePars()
         defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
         #If the length was changed from the default length, the parameters were definetly changed.
         if(nrow(time_pars) != nrow(defaultTCParams)){
-          useTimeChanges <- FALSE
+          useTimeChanges <- TRUE
         }
         else{
           #Are there any elements different from their default values?
           useTimeChanges <- sum(time_pars != defaultTCParams) != 0
         }
-        #Make the params
+        #Make the params.
         params <- makeParams()
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-
         if (useTimeChanges){
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
@@ -375,17 +387,30 @@ run_shiny <- function(){
         })
         output$paramsPlot <- renderPlot({
           parameterChanges <- get_factor_timePars()
-          #We want all the symbols to have a line starting from the begining of the graph regardless of whether that was actually specified or not.
-          for (symbol in parameterChanges$Symbol){
-            if (sum(parameterChanges$Symbol == symbol) < nrow(parameterChanges)){
+          #Make the plot more descriptive by adding begining and ending points for every symbol.
+          for (symbol in unique(parameterChanges$Symbol)){
+            missingBegining <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] == parameterChanges[1, "Date"]) == 0
+            missingEnd <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] == parameterChanges[nrow(parameterChanges), "Date"]) == 0
+            #If we're missing the begining, populate it with the starting date and a default value of one.
+            if (missingBegining){
               parameterChanges <- rbind(data.frame("Date" = parameterChanges[1, "Date"], "Symbol" = symbol, "Relative_value" = 1), parameterChanges)
             }
-            else{
+            else {
             }
+            #Order by date to avoid confusion.
+            parameterChanges <- parameterChanges[order(parameterChanges$Date),]
+            #If we're missing the end, populate the last date with the last relative value we put in.
+            if (missingEnd){
+              parameterChanges <- rbind(data.frame("Date" = parameterChanges[nrow(parameterChanges), "Date"], "Symbol" = symbol, "Relative_value" = parameterChanges[parameterChanges$Symbol == symbol,][nrow(parameterChanges[parameterChanges$Symbol == symbol,]), "Relative_value"]), parameterChanges)
+            }
+            else {
+            }
+            #Order by date again to avoid confusion.
+            parameterChanges <- parameterChanges[order(parameterChanges$Date),]
           }
-          p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_line(size = 2)
+          p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_step(size = 2)
           p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Parameter changes over time", x = "Date", y = "Relative value")
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
+          p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
           p
         })
 #Run.
