@@ -320,7 +320,7 @@ run_shiny <- function(){
         defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
         #If the length was changed from the default length, the parameters were definetly changed.
         if(nrow(time_pars) != nrow(defaultTCParams)){
-          useTimeChanges <- FALSE
+          useTimeChanges <- TRUE
         }
         else{
           #Are there any elements different from their default values?
@@ -330,7 +330,6 @@ run_shiny <- function(){
         params <- makeParams()
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-
         if (useTimeChanges){
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
       }
