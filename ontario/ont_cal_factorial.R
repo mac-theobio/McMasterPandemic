@@ -46,9 +46,9 @@ print(x)
 
 ## flags
 use_DEoptim <-as.numeric(substr(x,1,1))
-use_mobility <- as.numeric(substr(x,1,1))
-use_spline <- as.numeric(substr(x,2,2))
-use_zeta <- as.numeric(substr(x,3,3))
+use_mobility <- as.numeric(substr(x,2,2))
+use_spline <- as.numeric(substr(x,3,3))
+use_zeta <- as.numeric(substr(x,4,4))
 
 ## now modify opt_pars according to flags
 if (use_zeta) opt_pars$params <- c(opt_pars$params,log_zeta=-1)
