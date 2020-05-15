@@ -365,7 +365,8 @@ get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
 ##' recursively log-ify expressions
 ##' @param x an expression
 ##' @examples
-##' add_d_log(
+##' add_d_log(~dnorm(a,b,c))
+##' add_d_log(~sum(dnorm(a,b,c)))
 add_d_log <- function(x) {
     if (length(x)==1) return(x)
     nm <- deparse(x[[1]])
