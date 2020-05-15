@@ -385,7 +385,7 @@ run_shiny <- function(){
           }
           p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_line(size = 2)
           p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Parameter changes over time", x = "Date", y = "Relative value")
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
+          p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
           p
         })
 #Run.
