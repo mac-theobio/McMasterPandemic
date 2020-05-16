@@ -7,6 +7,7 @@ library(McMasterPandemic)
 library(tidyverse)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
+library(corrplot)
 ```
 
 ```{r setup, include=FALSE}
@@ -71,11 +72,11 @@ sumtab <- (tibble(mod=factorial_combos
 
 Parms: 
 
-	- 4 (init size + baseline transmission + fraction mild vs severe [determines hosp] + fraction acute [determines death])
+- 4 (init size + baseline transmission + fraction mild vs severe [determines hosp] + fraction acute [determines death])
 - +3 for NB dispersion parameters
 - +1 for mobility (beta $\propto \text{rel mobility}^p$)
 - +1 for phenom het (beta $\propto (S/N)^{1+\zeta}$)
-- +5 for spline
+- +6 for spline
 
 ```{r sumtab_print, results="asis"}
 knitr::kable(sumtab,digits=2)
@@ -102,4 +103,21 @@ gg1 <- (ggplot(filter(pp,obs>=1 & value >=0.5),
     + theme(panel.spacing=grid::unit(0,"lines"))
 )
 print(gg1)
+```
+
+## basis
+
+```{r X_plot}
+x <- res_list[["0111"]]
+par(las=1,bty="l")
+with(x$fit$forecast_args$time_args,
+     matplot(X_date,X,type="l",lwd=2))
+```
+
+```{r corrplot}
+X <- x$fit$forecast_args$time_args$X
+cc <- cov2cor(var(X))
+cn <- c("mobility",paste0("spline",1:6))
+dimnames(cc)  <- list(cn,cn)
+corrplot::corrplot.mixed(cc,"number","ellipse")
 ```
