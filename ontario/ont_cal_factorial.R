@@ -5,6 +5,7 @@ library(parallel)
 
 ## SHORTCUT for debugging
 ## mle2_control <- list(maxit = 500)
+mle2_control <- list(maxit=10000)
 
 load("ontario_clean.RData")
 load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
