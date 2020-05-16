@@ -1,0 +1,105 @@
+---
+title: "fitting plots"
+---
+
+```{r pkgs}
+library(McMasterPandemic)
+library(tidyverse)
+library(ggplot2); theme_set(theme_bw())
+library(colorspace)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r get_data}
+f <- list.files(pattern="ont_fac_[01]")
+res_list <- map(f,readRDS)
+mods <- stringr::str_extract(f,"[01]+")
+## or
+## purrr::map_chr(res_list,~.$mod)
+## also: 
+## L <- load("ont_cal_factorial.RData")
+```
+
+```{r rearrange}
+ss <- function(mod,i) as.logical(as.numeric(substr(mod,i,i)))
+get_term_simple <- function(mod) {
+    terms <- character(0)
+    if (ss(mod,2))  terms <- c(terms,"mobility")
+    if (ss(mod,3)) terms <- c(terms,"spline")
+    if (ss(mod,4)) terms <- c(terms,"phenomhet")
+    if (length(terms)==0) terms <- "nothing"
+    res <- paste(terms,collapse="/")
+    pref <- ifelse(ss(mod,1),"DEoptim","NMonly")
+    return(paste(pref,res,sep="_"))
+}
+
+get_zeta <- function(x) {
+    cc <- coef(x$fit)
+    return(unname(cc["zeta"])) ## returns NA if not present
+}
+get_mobpower <- function(x) {
+    if (!ss(x$mod,2)) NA else coef(x$fit,"fitted")$time_beta[1]
+}
+predfun <- function(r) {
+    predict(r$fit) %>% filter(var %in% c("H","death","report"))
+    ## FIXME: restrict to dates for each var? right_join etc.
+}
+bad <- sapply(res_list, inherits, "try-error")
+## no bad ones in this version
+terms <- map2(factorial_combos[!bad],res_list[!bad],
+              ~get_term(.x, coef(.y$fit,"fitted")))
+## factorial_combos[bad]  ## phenom_het only; mobility + phenom_het
+res_list <- setNames(res_list[!bad], factorial_combos[!bad])
+```
+
+```{r sumtab}
+sumtab <- (tibble(mod=factorial_combos
+                , het_power=map_dbl(res_list,get_zeta)
+                , mob_power=map_dbl(res_list,get_mobpower)
+                , term=map_chr(mod, get_term_simple))
+    %>% mutate(AIC=map_dbl(res_list,~AIC(.$fit$mle2)),
+               dAIC=AIC-min(AIC),
+               npar=map_int(res_list,~length(unlist(coef(.$fit,"fitted")))))
+    %>% select(-AIC)
+    %>% arrange(dAIC)
+    %>% separate(term,c("optim","desc"),sep="_")
+)
+```
+
+Parms: 
+
+	- 4 (init size + baseline transmission + fraction mild vs severe [determines hosp] + fraction acute [determines death])
+- +3 for NB dispersion parameters
+- +1 for mobility (beta $\propto \text{rel mobility}^p$)
+- +1 for phenom het (beta $\propto (S/N)^{1+\zeta}$)
+- +5 for spline
+
+```{r sumtab_print, results="asis"}
+knitr::kable(sumtab,digits=2)
+```
+
+```{r preds}
+pp <- (purrr::map_dfr(res_list, predfun, .id="mod")
+    %>% full_join(select(sumtab,c(mod,optim,desc)),by="mod")
+    ## data is identical for all facets
+    %>% right_join(na.omit(rename(res_list[[1]]$data,obs="value")),
+                   by=c("date","var"))
+)
+```
+
+```{r plot, fig.width=8,fig.height=8}
+gg1 <- (ggplot(filter(pp,obs>=1 & value >=0.5),
+               aes(date,value,colour=var,shape=var))
+    + geom_line(aes(lty=optim))
+    + facet_wrap(~desc)
+    + scale_y_log10()
+    + geom_point(aes(y=obs),alpha=0.5)
+    ## limit dates to those with available data
+    + scale_colour_discrete_qualitative()
+    + theme(panel.spacing=grid::unit(0,"lines"))
+)
+print(gg1)
+```

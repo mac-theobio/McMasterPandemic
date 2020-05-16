@@ -102,6 +102,8 @@ run_cali <- function(flags) {
 
 ## testing
 if (FALSE) {
+    r1 <- run_cali("1001")
+    r2 <- run_cali("0001")
     library(bbmle)
     r1 <- run_cali("0001")
     plot(r1$fit, data=ont_noICU)

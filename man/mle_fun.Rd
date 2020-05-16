@@ -16,6 +16,7 @@ mle_fun(
   time_args = NULL,
   sim_args = NULL,
   sim_fun = run_sim_break,
+  checkpoint = FALSE,
   aggregate_args = NULL,
   priors = NULL,
   ...

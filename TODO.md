@@ -2,15 +2,15 @@ n## to do
 
 ### short term
 
-* update 'refactor' doc
-* debug update/parallel DE_cores
-* document invlink_trans better
-* test 'zeta' model log(S/N)^zeta
-* (suboptimal) try N or eff-prop as a parameter?
+* update summary() to account for S changes (with or without zeta)
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
-* match up with EpiEstim
+* update 'refactor' doc
+* debug update/parallel DE_cores
+* document invlink_trans better
+* (suboptimal) try N or eff-prop as a parameter?
+wp* match up with EpiEstim
 * LTCF: data, model compartments
 * extend trans_state_vars() for Secret Place variable names; refactor?
 * (LOW) test log-linear-model with date dummies?
