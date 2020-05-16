@@ -74,11 +74,12 @@ run_cali <- function(flags) {
     plot(r0,break_dates=NULL,log=TRUE)
     ## do the calibration
     debug <- !use_DEoptim
+
     t_ont_cal_fac <- system.time(ont_cal_fac <-
                                      calibrate(data=ont_noICU
                                              , use_DEoptim=use_DEoptim
                                              , DE_cores = 1
-                                             , debug_plot = TRUE
+                                             , debug_plot = interactive()
                                              , debug = debug
                                              , base_params=params
                                              ## , mle2_control = list(maxit = 1000),
@@ -88,7 +89,11 @@ run_cali <- function(flags) {
                                                )
                                  ) ## system.time
 
+    
     res <- list(mod = flags, time = t_ont_cal_fac, fit = ont_cal_fac, data=ont_noICU)
+    ## checkpoint
+    saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
+    return(res)  ## return after saving!!!!
 }
 
 
