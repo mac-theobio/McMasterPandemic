@@ -207,101 +207,51 @@ run_shiny <- function(){
                         selected = "parametersPanel"
       )
     })
+    dp <- describe_params(read_params("ICU1.csv"))
+    textInput_param <- function(dp, param ) {
+      return(textInput(param,
+                        label = dp[dp$symbol == param,"meaning"],
+                        value = loadParams(param)))
+    }
       #Render the parameter tabs server-side, to make possible the load-edit functionality we'd like. We'll do this column by column.
       output$tabPanelFirst <- renderUI({
           column(5,
-                 textInput("beta0",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "beta0","meaning"],
-                           value = loadParams("beta0")),
-                 textInput("Ca",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Ca","meaning"],
-                           value = loadParams("Ca")),
-                 textInput("Cp",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cp","meaning"],
-                           value = loadParams("Cp")),
-                 textInput("Cs",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cs","meaning"],
-                           value = loadParams("Cs")),
-                 textInput("Cm",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "Cm","meaning"],
-                           value = loadParams("Cm")))})
+                 textInput_param(dp, "beta0"),
+                 textInput_param(dp, "Ca"),
+                 textInput_param(dp, "Cp"),
+                 textInput_param(dp, "Cs"),
+                 textInput_param(dp, "Cm"))})
       output$tabPanelSecond <- renderUI({
           column(5,
-                 textInput("alpha",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "alpha","meaning"],
-                           value = loadParams("alpha")),
-                 textInput("sigma",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "sigma","meaning"],
-                           value = loadParams("sigma")),
-                 textInput("gamma_a",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_a","meaning"],
-                           value = loadParams("gamma_a")),
-                 textInput("gamma_s",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_s","meaning"],
-                           value = loadParams("gamma_s")),
-                 textInput("gamma_m",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_m","meaning"],
-                           value = loadParams("gamma_m")))})
+                 textInput_param(dp, "alpha"),
+                 textInput_param(dp, "sigma"),
+                 textInput_param(dp, "gamma_a"),
+                 textInput_param(dp, "gamma_s"),
+                 textInput_param(dp, "gamma_m"))})
       output$tabPanelThird <- renderUI({
           column(5,
-                 textInput("gamma_p",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "gamma_p","meaning"],
-                           value = loadParams("gamma_p")),
-                 textInput("rho",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "rho","meaning"],
-                           value = loadParams("rho")),
-                 textInput("delta",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "delta","meaning"],
-                           value = loadParams("delta")),
-                 textInput("mu",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "mu","meaning"],
-                           value = loadParams("mu")),
-                 textInput("N",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "N","meaning"],
-                           value = loadParams("N")))})
+                 textInput_param(dp, "gamma_p"),
+                 textInput_param(dp, "rho"),
+                 textInput_param(dp, "delta"),
+                 textInput_param(dp, "mu"),
+                 textInput_param(dp, "N"))})
       output$tabPanelFourth <- renderUI({
           column(5,
-                 textInput("E0",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "E0","meaning"],
-                           value = loadParams("E0")),
-                 textInput("nonhosp_mort",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "nonhosp_mort","meaning"],
-                           value = loadParams("nonhosp_mort")),
-                 textInput("iso_m",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_m","meaning"],
-                           value = loadParams("iso_m")),
-                 textInput("iso_s",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "iso_s","meaning"],
-                           value = loadParams("iso_s")),
-                 textInput("phi1",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi1","meaning"],
-                           value = loadParams("phi1")),
-                 textInput("phi2",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "phi2","meaning"],
-                           value = loadParams("phi2")))})
+                 textInput_param(dp, "E0"),
+                 textInput_param(dp, "nonhosp_mort"),
+                 textInput_param(dp, "iso_m"),
+                 textInput_param(dp, "iso_s"),
+                 textInput_param(dp, "phi1"),
+                 textInput_param(dp, "phi2"))})
       output$tabPanelFifth <- renderUI({
           column(5,
-                 textInput("psi1",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi1","meaning"],
-                           value = loadParams("psi1")),
-                 textInput("psi2",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi2","meaning"],
-                           value = loadParams("psi2")),
-                 textInput("psi3",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "psi3","meaning"],
-                           value = loadParams("psi3")),
-                 textInput("c_delay_mean",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_mean","meaning"],
-                           value = loadParams("c_delay_mean")),
-                 textInput("c_delay_cv",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_delay_cv","meaning"],
-                           value = loadParams("c_delay_cv")),
-                 textInput("zeta",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "zeta","meaning"],
-                           value = loadParams("zeta")),
-                 textInput("c_prop",
-                           label = describe_params(read_params("ICU1.csv"))[describe_params(read_params("ICU1.csv"))$symbol == "c_prop","meaning"],
-                           value = loadParams("c_prop")))})
+                 textInput_param(dp, "psi1"),
+                 textInput_param(dp, "psi2"),
+                 textInput_param(dp, "psi3"),
+                 textInput_param(dp, "c_delay_mean"),
+                 textInput_param(dp, "c_delay_cv"),
+                 textInput_param(dp, "zeta"),
+                 textInput_param(dp, "c_prop"))})
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
         #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
