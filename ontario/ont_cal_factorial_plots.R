@@ -2,7 +2,12 @@ library(McMasterPandemic)
 library(tidyverse)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
-L <- load("ont_cal_factorial.RData")
+
+f <- list.files(pattern="ont_fac_0")
+res_list <- map(f,readRDS)
+factorial_combos <- stringr::str_extract(f,"[01]+")
+
+## L <- load("ont_cal_factorial.RData")
 
 ss <- function(flags,i) as.logical(as.numeric(substr(flags,i,i)))
 get_term <- function(flags,coefs) {
@@ -32,9 +37,9 @@ gg1 <- (ggplot(pp,aes(date,value,colour=var,shape=var,lty=var))
     + facet_wrap(~model)
     + scale_y_log10()
     ## data is identical for all facets
-    + geom_point(data=r_list[[1]]$data,alpha=0.5)
+    + geom_point(data=res_list[[1]]$data,alpha=0.5)
     ## limit dates to those with available data
-    + scale_x_date(limits=range(r_list[[1]]$data$date))
+    + scale_x_date(limits=range(res_list[[1]]$data$date))
     + scale_colour_discrete_qualitative()
 )
 ggsave(gg1,file="fac_plot.pdf")
