@@ -3,6 +3,8 @@ library(splines)
 library(dplyr)
 library(parallel)
 
+## SHORTCUT for debugging
+## mle2_control <- list(maxit = 500)
 
 load("ontario_clean.RData")
 load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
@@ -62,8 +64,8 @@ run_cali <- function(flags) {
     X <- model.matrix(form, data = comb_sub3)
 
     matplot(comb_sub3$t_vec,X,type="l",lwd=2)
-    ## opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
-    opt_pars$time_beta <- (0:(ncol(X)-1))/10  ## hack so we can see what's going on
+    opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    ## opt_pars$time_beta <- (0:(ncol(X)-1))/10  ## hack so we can see what's going on
     time_args <- nlist(X,X_date=comb_sub3$date)
 
     r0 <- run_sim_loglin(params=params, extra_pars=opt_pars["time_beta"] ## n.b. single brackets here are on purpose
@@ -82,7 +84,7 @@ run_cali <- function(flags) {
                                              , debug_plot = interactive()
                                              , debug = debug
                                              , base_params=params
-                                             ## , mle2_control = list(maxit = 1000),
+                                             , mle2_control = mle2_control
                                              , opt_pars = opt_pars
                                              , time_args=time_args
                                              , sim_fun = run_sim_loglin
@@ -161,4 +163,7 @@ factorial_combos <- c("0001", "0010", "0100"
                       )
 res_list <- mclapply(factorial_combos, run_cali, mc.cores=5)
 
+## options(error=recover)
+## r <- run_cali("0101")
+## r2 <- run_cali("0001")
 #rdsave(res_list, factorial_combos)

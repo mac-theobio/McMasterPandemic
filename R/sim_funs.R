@@ -312,8 +312,10 @@ run_sim <- function(params
         if (!is.null(params_timevar)) {
             ## check column names
             ## FIXME:: tolower()?
-            stopifnot(all(c("Date","Symbol","Relative_value") %in%
-                          names(params_timevar)))
+            npt <- names(params_timevar)
+            if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
+                stop("bad names in params_timevar: ",paste(npt,collapse=","))
+            }
             params_timevar$Date <- anydate(params_timevar$Date)
         } else {
             params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
