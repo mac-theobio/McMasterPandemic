@@ -160,44 +160,21 @@ run_shiny <- function(){
                                             min = 0, max = 25,
                                             value = 10))
         )))})
-      #In conjunction with the reactive gatherValues, take input from the app and package it in a params_pansim object that run_sim and the like can read.
+      #Take input and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
-        #Catch the errors we get before these variables are all initialized, by assigning the params to be those from read_params until the panel is fully loaded.
-        if (is.null(input$beta0)){
-          params <- read_params("ICU1.csv")
-          return(params)
+        params <- c()
+        for (param in describe_params(read_params("ICU1.csv"))$symbol){
+          #grab the value of the input slot.
+          paramValue <- eval(parse(text = paste0("input$", param)))
+          #If it's null beacause the panel hasn't been initialized yet, grab a default value to use a a placeholder.
+          if (is.null(paramValue)){
+            params <- c(params, read_params("ICU1.csv")[param])
+          }
+          else{
+            #Otherwise, package and make the params the way we'd like them. Changed for conciceness.
+              params <- c(params, paramValue)
+          }
         }
-        else{
-          #Otherwise, package and make the params the way we'd like them.
-          params <- c(input$beta0,
-                    input$Ca,
-                    input$Cp,
-                    input$Cs,
-                    input$Cm,
-                    input$alpha,
-                    input$sigma,
-                    input$gamma_a,
-                    input$gamma_s,
-                    input$gamma_m,
-                    input$gamma_p,
-                    input$rho,
-                    input$delta,
-                    input$mu,
-                    input$N,
-                    input$E0,
-                    input$nonhosp_mort,
-                    input$iso_m,
-                    input$iso_s,
-                    input$phi1,
-                    input$phi2,
-                    input$psi1,
-                    input$psi2,
-                    input$psi3,
-                    input$c_prop,
-                    input$c_delay_mean,
-                    input$c_delay_cv,
-                    input$procError,
-                    input$zeta)
         paramNames <- describe_params(read_params("ICU1.csv"))$symbol
         #I don't want numbers to be strings
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
@@ -205,7 +182,6 @@ run_shiny <- function(){
         class(params) <- "params_pansim"
         #Do this after because changing the numbers from strings removes their names.
         return(params)
-        }
       }
     #Load a parameter from a file. If the file doesn't have the param, fill in the missing ones from "ICU1.csv," which has them all.
     loadParams <- function(param){
