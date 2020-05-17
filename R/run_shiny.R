@@ -315,11 +315,11 @@ run_shiny <- function(){
           parameterChanges <- get_factor_timePars()
           #Make the plot more descriptive by adding begining and ending points for every symbol.
           for (symbol in unique(parameterChanges$Symbol)){
-            missingBegining <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] == parameterChanges[1, "Date"]) == 0
-            missingEnd <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] == parameterChanges[nrow(parameterChanges), "Date"]) == 0
+            missingBegining <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] == input$sd) == 0
+            missingEnd <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] ==  input$ed) == 0
             #If we're missing the begining, populate it with the starting date and a default value of one.
             if (missingBegining){
-              parameterChanges <- rbind(data.frame("Date" = parameterChanges[1, "Date"], "Symbol" = symbol, "Relative_value" = 1), parameterChanges)
+              parameterChanges <- rbind(data.frame("Date" = justValues_f(input$sd, mode = "dates"), "Symbol" = symbol, "Relative_value" = 1, stringsAsFactors = FALSE), parameterChanges)
             }
             else {
             }
@@ -327,7 +327,7 @@ run_shiny <- function(){
             parameterChanges <- parameterChanges[order(parameterChanges$Date),]
             #If we're missing the end, populate the last date with the last relative value we put in.
             if (missingEnd){
-              parameterChanges <- rbind(data.frame("Date" = parameterChanges[nrow(parameterChanges), "Date"], "Symbol" = symbol, "Relative_value" = parameterChanges[parameterChanges$Symbol == symbol,][nrow(parameterChanges[parameterChanges$Symbol == symbol,]), "Relative_value"]), parameterChanges)
+              parameterChanges <- rbind(data.frame("Date" = justValues_f(input$ed, mode = "dates"), "Symbol" = symbol, "Relative_value" = parameterChanges[parameterChanges$Symbol == symbol,][nrow(parameterChanges[parameterChanges$Symbol == symbol,]), "Relative_value"], stringsAsFactors = FALSE), parameterChanges)
             }
             else {
             }
