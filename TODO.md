@@ -2,6 +2,8 @@ n## to do
 
 ### short term
 
+* fix mobility/spline/DEoptim factorial fit
+    * replace NA values with worst non-NA value rather than dropping them?
 * update summary() to account for S changes (with or without zeta)
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments

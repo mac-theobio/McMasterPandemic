@@ -1,8 +1,9 @@
 ---
 title: "fitting plots"
+date: "`r format(Sys.time(),'%d %b %Y')`"
 ---
 
-```{r pkgs}
+```{r pkgs,message=FALSE}
 library(McMasterPandemic)
 library(tidyverse)
 library(ggplot2); theme_set(theme_bw())
@@ -33,7 +34,7 @@ get_term_simple <- function(mod) {
     if (ss(mod,4)) terms <- c(terms,"phenomhet")
     if (length(terms)==0) terms <- "nothing"
     res <- paste(terms,collapse="/")
-    pref <- ifelse(ss(mod,1),"DEoptim","NMonly")
+    pref <- ifelse(ss(mod,1),"DEoptim+NM","NM")
     return(paste(pref,res,sep="_"))
 }
 
@@ -44,23 +45,28 @@ get_zeta <- function(x) {
 get_mobpower <- function(x) {
     if (!ss(x$mod,2)) NA else coef(x$fit,"fitted")$time_beta[1]
 }
+get_conv <- function(x) {
+    x$fit$mle2@details$convergence
+}
+
 predfun <- function(r) {
     predict(r$fit) %>% filter(var %in% c("H","death","report"))
     ## FIXME: restrict to dates for each var? right_join etc.
 }
 bad <- sapply(res_list, inherits, "try-error")
 ## no bad ones in this version
-terms <- map2(factorial_combos[!bad],res_list[!bad],
-              ~get_term(.x, coef(.y$fit,"fitted")))
-## factorial_combos[bad]  ## phenom_het only; mobility + phenom_het
-res_list <- setNames(res_list[!bad], factorial_combos[!bad])
+## terms <- map2(mods[!bad],res_list[!gbad],
+##               ~get_term(.x, coef(.y$fit,"fitted")))
+## mods[bad]  ## phenom_het only; mobility + phenom_het
+res_list <- setNames(res_list[!bad], mods[!bad])
 ```
 
 ```{r sumtab}
-sumtab <- (tibble(mod=factorial_combos
+sumtab <- (tibble(mod=mods
                 , het_power=map_dbl(res_list,get_zeta)
                 , mob_power=map_dbl(res_list,get_mobpower)
-                , term=map_chr(mod, get_term_simple))
+                , term=map_chr(mod, get_term_simple)
+                , conv=map_int(res_list,get_conv))
     %>% mutate(AIC=map_dbl(res_list,~AIC(.$fit$mle2)),
                dAIC=AIC-min(AIC),
                npar=map_int(res_list,~length(unlist(coef(.$fit,"fitted")))))

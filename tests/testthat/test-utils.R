@@ -15,7 +15,7 @@ test_that("invlink_trans", {
           expect_equal(invlink_trans(tst),
                        list(params=c(beta0=2),nb_disp=100))
           tst2 <- list(params=c(log_E0=1,log_beta0=1),
-                       log_nb_disp=c(log_H=0,log_report=0,log_death=0))
+                       log_nb_disp=c(H=0,report=0,death=0))
           expect_equal(invlink_trans(tst2),
          list(params = c(E0 = 2.71828182845905, beta0 = 2.71828182845905
                          ), nb_disp = c(H = 1, report = 1, death = 1)))

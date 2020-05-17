@@ -6,6 +6,7 @@
 #' @source mike's repo
 "ont_all"
 
+#' Fitted models to Ontario data
 #' @rdname ontario_fits
 #' @name ont_cal1
 #' @format a calibrated object ...

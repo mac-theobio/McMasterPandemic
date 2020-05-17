@@ -307,6 +307,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
 ##' negative log-likelihood function
 ##' @param p parameter vector (in unlisted form)
 ##' @param ... unused (but useful in case junk needs to be discarded)
+##' @param checkpoint save file containing call information?
 ##' @inheritParams calibrate
 ##' @export
 mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
@@ -316,7 +317,9 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     sim_fun=run_sim_break,
                     checkpoint=FALSE,
                     aggregate_args=NULL,
-                    priors=NULL, ...) {
+                    priors=NULL,
+                    na_penalty=1000,
+                    ...) {
     ## browser()
     ## ... is to drop any extra crap that gets in there
     if (debug) cat("mle_fun: ",p,"\n")
@@ -369,11 +372,11 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
         r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
                     by="var")
         ## FIXED nb_disp hack, don't need to exponentiate any more ...
-        dvals <- with(r2,dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
+        dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
     }
     ## clamp NaN/NA values to worst obs
-    dvals[!is.finite(dvals)] <- min(dvals[is.finite(dvals)])
-    ret <- -sum(dvals)
+    dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)])+na_penalty
+    ret <- sum(dvals)
     if (!is.null(priors)) {
         for (pr in priors) {
             pr <- pr[[2]] ## drop tilde

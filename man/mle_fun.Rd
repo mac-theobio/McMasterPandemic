@@ -45,6 +45,8 @@ mle_fun(
 
 \item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
 
+\item{checkpoint}{save file containing call information?}
+
 \item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
 
 \item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}

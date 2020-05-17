@@ -154,7 +154,9 @@ write_params <- function(params, fn, label) {
 }
 
 ##' apply inverse-link functions to parameter vector or list based on names
-##' @param p a named vector or list of parameter values with names of the form <linkfun>_name
+##' @param p a named vector or list of parameter values with names of the form \code{linkfun_name}
+##' @param unknown_link action to take when unknown link is specified (ignored)
+##' @param links allowed link prefixes
 ##' @examples
 ##' invlink_trans(c(log_p1=0,logit_p2=0))
 ##' invlink_trans(list(log_p1=c(0,0),logit_p2=c(0,0,0)))
@@ -363,10 +365,12 @@ get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
 }
 
 ##' recursively log-ify expressions
+##' @export
 ##' @param x an expression
 ##' @examples
 ##' add_d_log(~dnorm(a,b,c))
 ##' add_d_log(~sum(dnorm(a,b,c)))
+##' @keywords internal
 add_d_log <- function(x) {
     if (length(x)==1) return(x)
     nm <- deparse(x[[1]])

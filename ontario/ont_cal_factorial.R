@@ -157,16 +157,9 @@ if (FALSE) {
     plot(r2fix$fit, data=ont_noICU)
 }
 
-factorial_combos <- c("0001", "0010", "0100"
-                    , "0011", "0110", "0101"
-                    , "0111"
-                      ## , "1001", "1010", "1100"  ## Failed at 1100
-                      ## , "1011", "1110", "1101"
-                      ## , "1111"
-                      )
+factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),
+                1,paste,collapse="")
 res_list <- mclapply(factorial_combos, run_cali, mc.cores=5)
 
-## options(error=recover)
-## r <- run_cali("0101")
-## r2 <- run_cali("0001")
+run_cali("1110")
 #rdsave(res_list, factorial_combos)

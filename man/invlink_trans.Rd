@@ -7,7 +7,11 @@
 invlink_trans(p, unknown_link = "ignore", links = c("log", "log10", "logit"))
 }
 \arguments{
-\item{p}{a named vector or list of parameter values with names of the form <linkfun>_name}
+\item{p}{a named vector or list of parameter values with names of the form \code{linkfun_name}}
+
+\item{unknown_link}{action to take when unknown link is specified (ignored)}
+
+\item{links}{allowed link prefixes}
 }
 \description{
 apply inverse-link functions to parameter vector or list based on names
