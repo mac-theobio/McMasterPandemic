@@ -96,7 +96,14 @@ run_shiny <- function(){
       currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
       return(currentPars)
     })
-    #Render the tab panel server-side to force tab changes the way we'd like.
+    #Helper functions for loading parameter inputs.
+    dp_1 <- describe_params(read_params("ICU1.csv"))
+    textInput_param <- function(param, dp = dp_1){
+      return(textInput(param,
+                       label = dp[dp$symbol == param,"meaning"],
+                       value = loadParams(param)))
+    }
+    #Render the tab panel server-side to force tab changes the way we'd like, and give us the load-edit functionality we're after.
     output$maintabPanel <- renderUI({
       tabsetPanel(
       #Use this to force the tab to change.
@@ -123,11 +130,16 @@ run_shiny <- function(){
       ),
       tabPanel(title = "Simulation Parameters",
                value = "parametersPanel",
-               uiOutput("tabPanelFirst"),
-               uiOutput("tabPanelSecond"),
-               uiOutput("tabPanelThird"),
-               uiOutput("tabPanelFourth"),
-               uiOutput("tabPanelFifth")
+               #Using names to avoid factors getting passed as inputs to textInput_param.
+               column(5,
+                      lapply(names(read_params("ICU1.csv"))[1:15],
+                             FUN = textInput_param)
+                      ),
+               #Split the parameter entry tab into two columns.
+               column(5,
+                      lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
+                             FUN = textInput_param)
+                      )
       ),
       tabPanel(
         title = "Plot aesthetics",
@@ -207,51 +219,6 @@ run_shiny <- function(){
                         selected = "parametersPanel"
       )
     })
-    dp <- describe_params(read_params("ICU1.csv"))
-    textInput_param <- function(dp, param ) {
-      return(textInput(param,
-                        label = dp[dp$symbol == param,"meaning"],
-                        value = loadParams(param)))
-    }
-      #Render the parameter tabs server-side, to make possible the load-edit functionality we'd like. We'll do this column by column.
-      output$tabPanelFirst <- renderUI({
-          column(5,
-                 textInput_param(dp, "beta0"),
-                 textInput_param(dp, "Ca"),
-                 textInput_param(dp, "Cp"),
-                 textInput_param(dp, "Cs"),
-                 textInput_param(dp, "Cm"))})
-      output$tabPanelSecond <- renderUI({
-          column(5,
-                 textInput_param(dp, "alpha"),
-                 textInput_param(dp, "sigma"),
-                 textInput_param(dp, "gamma_a"),
-                 textInput_param(dp, "gamma_s"),
-                 textInput_param(dp, "gamma_m"))})
-      output$tabPanelThird <- renderUI({
-          column(5,
-                 textInput_param(dp, "gamma_p"),
-                 textInput_param(dp, "rho"),
-                 textInput_param(dp, "delta"),
-                 textInput_param(dp, "mu"),
-                 textInput_param(dp, "N"))})
-      output$tabPanelFourth <- renderUI({
-          column(5,
-                 textInput_param(dp, "E0"),
-                 textInput_param(dp, "nonhosp_mort"),
-                 textInput_param(dp, "iso_m"),
-                 textInput_param(dp, "iso_s"),
-                 textInput_param(dp, "phi1"),
-                 textInput_param(dp, "phi2"))})
-      output$tabPanelFifth <- renderUI({
-          column(5,
-                 textInput_param(dp, "psi1"),
-                 textInput_param(dp, "psi2"),
-                 textInput_param(dp, "psi3"),
-                 textInput_param(dp, "c_delay_mean"),
-                 textInput_param(dp, "c_delay_cv"),
-                 textInput_param(dp, "zeta"),
-                 textInput_param(dp, "c_prop"))})
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
         #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
@@ -270,8 +237,8 @@ run_shiny <- function(){
         #Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         if (useTimeChanges){
-          sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
-      }
+          sim = run_sim(params, start_date = justValues_f(input$sd, mode = "dates"), end_date = justValues_f(input$ed, mode = "dates"), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
+        }
         else{
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
@@ -309,7 +276,7 @@ run_shiny <- function(){
         output$summary <-renderTable({
             params <- makeParams()
             params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-        data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
+          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params))
         })
         output$paramsPlot <- renderPlot({
           parameterChanges <- get_factor_timePars()
