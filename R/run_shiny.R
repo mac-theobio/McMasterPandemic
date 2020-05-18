@@ -115,12 +115,14 @@ run_shiny <- function(){
         title = "Time changing transmission rates",
         value = "tcr",
         textOutput("trmsg"),
-        column(8,
+        br(),
+        br(),
+        column(4,
                textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
                textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
                textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1")
         ),
-        column(8,
+        column(6,
                plotOutput("paramsPlot"))),
       tabPanel(
         title = "Process and Observation error",
