@@ -1,7 +1,15 @@
-n## to do
+## to do
 
 ### short term
 
+
+* NYC debug plot vs predict plot Q
+* ?switch to turn off N-M?
+* update calibration plots to order by AIC, include flags, etc.
+
+* write calibration with different numbers of knots & knot spacing
+* add last debug plot
+* weighted covariance
 
 * scenario-based projections
 * inference about R
