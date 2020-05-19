@@ -1,55 +1,59 @@
-#' Run the McMasterPandemic Shiny
-#'
-#' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
-#' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
-#' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-#' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText
-#' @importFrom anytime anytime
-#' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
-#' @importFrom directlabels direct.label
-#' @importFrom scales log10_trans trans_breaks trans_format math_format
-#' @importFrom ggplot2 element_text
-#' @return NULL
-#' @export
-run_shiny <- function(){
-  #Keep track of the first time the app opens.
-#How I want stuff to look. Also collect input and things.
-  ui <- fluidPage(
-    titlePanel("McMasterPandemic Shiny"),
-    mainPanel(
-      fluidRow(
-        #Only show the selector for the parameter file to upload if that's selected.
-          column(2,
-                 selectInput("fn",
-                             label = "Default parameters from file:",
-                             choices = c("CI_base.csv",
-                                         "CI_updApr1.csv",
-                                         "ICU1.csv",
-                                         "ICU_diffs.csv"), selected = "ICU1.csv")),
+
+parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
+default.parameter.file <- "ICU1.csv"
+default.start.date <- "2020-01-01"
+
+##' Run the McMasterPandemic Shiny
+##'
+##' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
+##' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
+##' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
+##' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText
+##' @importFrom anytime anytime
+##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
+##' @importFrom directlabels direct.label
+##' @importFrom scales log10_trans trans_breaks trans_format math_format
+##' @importFrom ggplot2 element_text
+##' @return NULL
+##' @export
+run_shiny <- function() {
+    ## The ui (user interface) is what the user is shown when running
+    ## the shiny.  The ui also gathers input that is the passed to the
+    ## server (e.g., filling in boxes or sliders).
+    ui <- fluidPage(
+        titlePanel("McMasterPandemic Shiny"),
+        mainPanel(
+            fluidRow(
+                column(2,
+                       selectInput("fn",
+                                   label = "Default parameter file:",
+                                   choices = parameter.files, selected = default.parameter.file))),
+            fluidRow(
+                column(5,
+                       textInput("sd", "Simulation Start Date (yyyy-mm-dd)",
+                                 value = default.start.date)),
+                column(5,
+                       textInput("ed", "Simulation End Date  (yyyy-mm-dd)",
+                                 value = "2020-08-01")),
+                column(2,
+                       checkboxInput(inputId = "use_logYscale",
+                                     label = "Use log-y scale",
+                                     value = FALSE)),
+                column(2,
+                       radioButtons(inputId = "use_directLabels",
+                                    label = ("Direct labels or legend?"),
+                                    choices = list("Direct labels" = 1, "Legend" = 2),
+                                    selected = 1))),
+            ## Only show the selector to input parameters if that's selected.
+            uiOutput("maintabPanel"),
+            width = 12),
         fluidRow(
-          column(5,
-                 textInput("sd", "Simulation Start Date (yyyy-mm-dd)", value = "2020-01-01")),
-          column(5,
-                 textInput("ed", "Simulation End Date  (yyyy-mm-dd)", value = "2020-08-01")),
-            column(2,
-                   checkboxInput(inputId = "use_logYscale",
-                                 label = "Use log-y scale",
-                                 value = FALSE)),
-            column(2,
-                   radioButtons(inputId = "use_directLabels",
-                                label = ("Use direct labels or a legend"),
-                                choices = list("Use direct labels" = 1, "Use a legend" = 2),
-                                selected = 1))),
-  #Only show the selector to input parameters if that's selected.
-    uiOutput("maintabPanel"),
-  width = 12),
-  fluidRow(
-    tableOutput("summary")
-    ),
-  fluidRow(
-    plotOutput("plot")
-  )
-))
+            tableOutput("summary")
+        ),
+        fluidRow(
+            plotOutput("plot")
+        )
+    ))
 
 #Everything else.
   server <- function(input, output, session){
