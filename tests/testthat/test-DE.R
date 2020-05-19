@@ -15,7 +15,7 @@ dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "
 suppressWarnings(cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars,
                      use_DEoptim=TRUE,
                      DE_cores=1,
-                     DE_args=list(control=list(itermax=10)), DE_nll_thresh=Inf)
+                     DE_args=list(control=list(itermax=5,trace=FALSE)), DE_nll_thresh=Inf)
                  )
 
 de <- attr(cal1_DE,"de")
