@@ -108,6 +108,23 @@ params <- coef(fit)
   speed the approach to the peak and increase its height.
 \end{itemize}
 
+\section{Prospects for predicting effects of ``de-escalation'' of
+  social distancing}
+
+\david{I don't see what we can do other than cautiously make
+  qualitative points about plausible impacts of re-opening in various
+  ways. We don't have much hope of reliable forecasts before we've
+  seen how the pattern of spread changes after re-opening something.}
+
+\ben{I mostly agree with David's last point about not being to
+  project, but we might be able to guess a *little* bit by fitting a
+  mobility effect that only applies after most of the shutdown happens
+  (e.g.  what effects do the increases in mobility post-April appear
+  to have?)}
+
+\jd{Also agree about projections. We had talked about ``counterfactual''
+  or just scenario-based projections.}
+
 \section{Questions arising from modelling}
 
 \begin{itemize}
@@ -193,6 +210,13 @@ params <- coef(fit)
 \section{Code improvements since last report}
 
 \begin{itemize}
+\item Model includes phenomenological heterogeneity ($S^{1+\zeta}$).
+\item Calibration includes mobility data, not just break points in
+  $\R_t$ on dates when policies were announced.
+  \david{note from Ben in thread ``factorial plots'':}\ben{relative $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$;  in the combined mobility + spline plots, $X$ includes a column for log(relative mobility) and a bunch of columns corresponding to a spline basis (with time as the covariate).  See last two plots in 
+    \texttt{ont\_cal\_factorial\_plots.html}
+(I thought mobility would be more strongly correlated with spline coeffs 3 + 4, but maybe that's because we haven't yet found the best fit?)}
+\item 
 \item Forecasts include demographic stochasticity (``process error'').
 \david{This is now possible, but currently not shown.}
 \end{itemize}
