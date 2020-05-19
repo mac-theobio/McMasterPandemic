@@ -304,13 +304,29 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
     return(ret)
 }
 
+## utility: debugging plot
+do_debug_plot <- function(r2) {
+    vv <- unique(r2$var)
+    if (length(vv)==1) {
+        suppressWarnings(plot(value~date, data=r2, log="y"))
+        with(r2,lines(date,pred))
+    } else {
+        with(subset(r2,value>0),
+             plot(date,value,col=as.numeric(factor(var)),log="y"))
+        r2s <- split(r2,r2$var)
+        invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
+    }
+}
+
 ##' negative log-likelihood function
 ##' @param p parameter vector (in unlisted form)
 ##' @param ... unused (but useful in case junk needs to be discarded)
 ##' @param checkpoint save file containing call information?
 ##' @inheritParams calibrate
 ##' @export
-mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
+mle_fun <- function(p, data,
+                    debug=FALSE,
+                    debug_plot=FALSE,
                     opt_pars, base_params, start_date, end_date,
                     time_args=NULL,
                     sim_args=NULL,
@@ -320,6 +336,7 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
                     priors=NULL,
                     na_penalty=1000,
                     ...) {
+
     ## browser()
     ## ... is to drop any extra crap that gets in there
     if (debug) cat("mle_fun: ",p,"\n")
@@ -350,18 +367,8 @@ mle_fun <- function(p, data, debug=FALSE, debug_plot=FALSE,
     r2 <- (dplyr::left_join(data2,r,by=c("date","var"))
         %>% tidyr::drop_na(value,pred))         ## FIXME: why do we have an NA in pred??
     ## compute negative log-likelihood
-    ## FIXME assuming a single nb_disp for now
     if (debug_plot) {
-        vv <- unique(r2$var)
-        if (length(vv)==1) {
-            suppressWarnings(plot(value~date, data=r2, log="y"))
-            with(r2,lines(date,pred))
-        } else {
-            with(subset(r2,value>0),
-                 plot(date,value,col=as.numeric(factor(var)),log="y"))
-            r2s <- split(r2,r2$var)
-            invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
-        }
+        do_debug_plot(r2)
     }
     ## need to reconstruct parameter set to get NB parameter(s)
     ## FIXME: fixed params can now be handled through mle2?
@@ -462,6 +469,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
+                      last_debug_plot=FALSE,
                       use_DEoptim=FALSE,
                       mle2_method="Nelder-Mead",
                       mle2_control=list(maxit=10000),
@@ -546,12 +554,17 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                               function(x) do.call(mle_fun,c(list(x),mle_args)))
             ## drop 'extreme' values (default threshold is 10^1.5)
             ## should we use an 'absolute' NLL thresold (e.g. 20 log-likelihood units) instead?
+            ## FIXME: compute weighted variances instead of thresholding
             keep <- log10(nll_vals-min(nll_vals))<DE_nll_thresh
             M <- M[keep,,drop=TRUE]
             nll_vals <- nll_vals[keep]
             
         }
-        vM <- var(M)
+        if (nrow(M)>2) {
+            vM <- var(M)
+        } else {
+            vM <- matrix(NA,length(opt_inputs),length(opt_inputs))
+        }
         dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
         de_cal1$member$Sigma <- vM
@@ -560,19 +573,9 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     ## n.b.: this has to be hacked dynamically ...
     ## FIXME: same as mle_args?
     parnames(mle_fun) <- names(opt_inputs)
-    mle_data <- nlist(start_date,
-          end_date,
-          time_args,
-          base_params,
-          opt_pars,
-          sim_args,
-          fixed_pars, ## only diff from mle_args?
-          aggregate_args,
-          debug,
-          debug_plot,
-          data,
-          priors,
-          sim_fun)
+    mle_data <- mle_args
+    ## FIXME: is this even necessary?
+    mle_data$fixed_pars <- mle_data$fixed_pars
     opt_args <- c(list(minuslogl=mle_fun
                         , start=opt_inputs
                         , data=mle_data
@@ -582,6 +585,11 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                        ),
                   mle2_args)
     opt <- do.call(bbmle::mle2,opt_args)
+    if (last_debug_plot) {
+        pdf(".debug_plot.pdf")
+        mle_args$debug_plot <- TRUE
+        do.call(mle_fun,c(list(coef(opt),mle_args)))
+    }
     res <- list(mle2=opt
               , forecast_args = mle_data[setdiff(names(mle_data),
                             ## leave these out, they're needed for mle but not forecast
