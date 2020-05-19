@@ -343,6 +343,31 @@ legacy_time_args <- function(x, update=FALSE) {
 }
 
 
+##' generate reasonable default opt_pars
+##' @param params baseline parameters
+##' @param vars which variables are being fitted to?
+##' @examples
+##' params <- read_params("ICU1.csv")
+##' get_opt_pars(params)
+##' get_opt_pars(params,vars="hosp")
+##' @export
+get_opt_pars <- function(params,vars=c("hosp","death","report")) {
+    opt_pars <- list(params =  c(log_E0=4
+                               , log_beta0=-1))
+    if ("death" %in% vars && any(c("hosp","H") %in% vars)) {
+        ## fraction of hosp to acute (non-ICU) (\propto death)
+        opt_pars$params <- c(opt_pars$params,
+                             logit_phi1=qlogis(params[["phi1"]]))
+    }
+    ## fraction of mild (non-hosp) cases (\propto hosp)
+    if (any(c("hosp","H") %in% vars)) {
+        opt_pars$params <- c(opt_pars$params, log_mu=log(params[["mu"]]))
+    }
+    ## per-parameter dispersion
+    opt_pars$log_nb_disp <- setNames(rep(0,length(vars)),vars)
+    return(opt_pars)
+}
+
 get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
                         special=list(lwr=c("params.log_E0"=1,zeta=-2,
                                            "time_beta"=-2),
