@@ -53,7 +53,7 @@ run_shiny <- function() {
         fluidRow(
             plotOutput("plot")
         )
-    ))
+    )
 
 #Everything else.
   server <- function(input, output, session){

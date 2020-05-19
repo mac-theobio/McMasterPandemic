@@ -2,6 +2,13 @@ n## to do
 
 ### short term
 
+
+* scenario-based projections
+* inference about R
+    
+* fitting
+* R0*(S/N)^(1+alpha)
+
 * fix mobility/spline/DEoptim factorial fit
     * replace NA values with worst non-NA value rather than dropping them?
 * update summary() to account for S changes (with or without zeta)

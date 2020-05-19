@@ -161,5 +161,5 @@ factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),
                 1,paste,collapse="")
 res_list <- mclapply(factorial_combos, run_cali, mc.cores=5)
 
-run_cali("1110")
+## run_cali("1111")
 #rdsave(res_list, factorial_combos)
