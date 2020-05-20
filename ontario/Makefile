@@ -22,7 +22,14 @@ pkgdesc = $(../DESCRIPTION)
 
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
 
-ont_cal.Rout:  ontario_clean.Rout ont_cal.R $(pkgdesc)
+ontario_clean.Rout: ontario_clean.R
+	$(run-R)
+
+ont_keep.Rout: ontario_clean.Rout ont_keep.R
+	$(run-R)
+
+ont_cal.Rout:  ont_keep.Rout ont_cal.R
+	$(run-R)
 
 ont_cal_H.Rout:  ontario_clean.Rout ont_cal.Rout ont_cal_H.R
 
@@ -52,7 +59,7 @@ ont_cal_spline.Rout: ontario_clean.Rout ont_cal_spline1.R
 
 compare_calib.Rout:  ontario_clean.Rout ont_cal.RData ont_cal_noICU_1brks.RData ont_cal_noICU_2brks.RData ont_cal_noICU.RData ont_cal_2brks.RData ont_cal_1brks.RData ont_cal_H.RData ont_cal_HD_2brks.RData ont_cal_noICU_2brks_prior.RData mobility1.RData mobility1_HD.RData
 
-ont_cal_factorial.Rout: ont_cal_factorial.R
+ont_cal_factorial.Rout: ont_keep.Rout ont_cal_factorial.R
 	$(run-R)
 
 ont_cal_factorial_plot.Rout: ont_cal_factorial.Rout ont_cal_factorial_plot.R

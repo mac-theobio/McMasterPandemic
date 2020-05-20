@@ -5,9 +5,6 @@ library(parallel)
 
 ## FIXME: check consistency whether using mobility time series or full time series for spline basis ... ?
 
-load("ontario_clean.RData")
-load("ont_cal.RData")  ## baseline calibration: ont_cal1 (calibrated object), bd (breakpoint dates)
-
 
 ## select the part of the mobility data that lies within the calibration data set
 comb_sub2 <- (comb_sub
@@ -63,6 +60,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
     if (use_spline) {
         spline_df <- round(length(comb_sub3$t_vec)/spline_days)
+        tmp_dat <- dat %>% select(date) %>% distinct() %>% mutate(t_vec=as.numeric(date-min(date)))
         if (length(knot_quantile_var)==0) {
             spline_term <- sprintf("bs(t_vec,df=spline_df)")
         } else {
@@ -114,7 +112,8 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
     return(res)  ## return after saving!!!!
 }
-
+debug(run_cali)
+run_cali("1011")
 ## TEST of spline options
 ## should be VERY short run (with maxit=5) - although we do have a high dimension/
 ##  lots of vertices to compute per iteration
