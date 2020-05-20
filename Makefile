@@ -117,7 +117,7 @@ CPP_SRC=
 ## FIXME: depend on ??
 build-package: $(TARBALL)
 $(TARBALL): ./NAMESPACE
-	$(R) CMD build --resave-data=no .
+	$(R) CMD build .
 	mv $@ ..
 
 install: $(TARBALL)

@@ -37,7 +37,7 @@ library(dplyr)
 library(ggplot2); theme_set(theme_bw())
 library(bbmle)
 load("ont_cal_noICU_2brks_prior.RData")
-fit <- ont_cal_noICU_2brks_prior
+fit0 <- ont_cal_noICU_2brks_prior
 @ 
 
 \title{COVID-19 modelling report from McMaster:\\
@@ -64,9 +64,9 @@ fit <- ont_cal_noICU_2brks_prior
 \section{Summary of Ontario analysis}
 
 <<date_range>>=
-f_args <- fit$forecast_args
+f_args <- fit0$forecast_args
 date_range <- with(f_args,c(start_date,end_date))
-params <- coef(fit)
+params <- coef(fit0)
 @ 
 \begin{itemize}
 \item Initially, all our analyses were based on the {\bfseries public
@@ -84,7 +84,7 @@ params <- coef(fit)
   reproduction number ($\R_t$) substantially.  Our estimate of how
   substantial the effects have been depends on what we do:
   \begin{itemize}
-  \item When we fit immediate changes in $\R_t$ on the dates when
+  \item \ben{this is out of date \ldots} When we fit immediate changes in $\R_t$ on the dates when
     changes in social distancing policies were announced, we still get
     $\R_t>1$ with high confidence.  It is important to note that these
     fits are unstable, in the sense that relatively small changes in
@@ -115,7 +115,7 @@ params <- coef(fit)
   to fit.  We anticipate this will work because many deaths occur in
   LTCFs and not via ICUs.
 \item If $\R_t>1$ then any relaxation of social distancing will likely
-  speed the approach to the peak and increase its height.
+  speed the approach to the peak and increase its height. \ben{also out of date?}
 
   \david{Technical status: We are continuing to look at combinations
     spline, mobility, and phenomenological heterogeneity, making sure
@@ -253,7 +253,7 @@ params <- coef(fit)
 \section{Latest code improvements}
 
 \begin{itemize}
-\item Model includes phenomenological heterogeneity ($S^{1+\zeta}$).
+\item Model includes phenomenological heterogeneity ($(S/N)^{1+\zeta}$).
 \item Calibration includes mobility data, not just break points in
   $\R_t$ on dates when policies were announced.  $\beta_0$ is assumed
   to be correlated with a power of observed mobility, \ie (relative
@@ -261,6 +261,10 @@ params <- coef(fit)
     0.3-0.5.}  The mobility data we use are from Apple (for Toronto)
   and Google (for Ontario as a whole).  The specific mobility measures
   we include are driving, retail and recreation, and workplaces.
+  \ben{Need to make sure we keep the mobility data up to date \ldots
+    is there an issue with Google provision of data? (last date is 13 May ...
+    don't know whether that's just lag or whether they have stopped providing
+    it. On the other hand the web page does say ``Reports created 2020-05-19''.). Apple data need to be manually downloaded ?}
   
   \david{note from Ben in thread ``factorial plots'':}\ben{relative
     $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$;
@@ -387,7 +391,7 @@ return to trying to fit ICU counts after implementing compartments
 L <- load(".ontario_clean.RData")
 ont_trans <- trans_state_vars(ont_all)
 ## show fit up to end of current data
-plot(fit
+plot(fit0
      , data = ont_trans
      , add_tests = TRUE
      , add_ICU_cap = TRUE
@@ -490,7 +494,7 @@ $\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI:
 
 \begin{figure}
 <<mobplot1,warning=FALSE>>=
-fit <- ont_cal_mob1
+fit_mob1 <- ont_cal_mob1
 data <- ont_all
 kv <- c("H", "death", "report", "newTests/1000")
 dd <- trans_state_vars(data) ##  %>% filter(var %in% kv)
@@ -505,7 +509,7 @@ plot(fit
 
 <<mobfc,cache=TRUE,warning=FALSE>>=
 set.seed(101)
-pp <- predict(fit
+pp <- predict(fit_mob1
             , stoch=c(obs=FALSE,proc=TRUE)
             , ensemble=TRUE
             , nsim=100,

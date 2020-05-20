@@ -614,7 +614,7 @@ plot.predict_pansim <- function(x,
         p <- p + scale_y_log10(limits=c(1,NA),oob=scales::squish)
     }
     if (!is.null(break_dates)) {
-        p <- p + geom_vline(xintercept=break_dates,lty=2)
+        p <- p + geom_vline(xintercept=anydate(break_dates),lty=2)
     }
     if (is.null(mult_var)) {
         p <- p + geom_line()
