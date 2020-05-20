@@ -8,7 +8,6 @@
 * update calibration plots to order by AIC, include flags, etc.
 
 * write calibration with different numbers of knots & knot spacing
-* add last debug plot
 * weighted covariance
 
 * scenario-based projections

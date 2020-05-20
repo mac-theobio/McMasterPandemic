@@ -13,7 +13,7 @@ system.time(cal0 <- suppressWarnings(calibrate(data=dd0,
                                    opt_pars=opt_pars0,
                                    time_args=NULL,
                                    mle2_control=list(maxit=5),
-                                   use_DEoptim=FALSE))
+                                   use_DEoptim=FALSE)))
 
 ## FIXME: test something other than "runs without errors"
 

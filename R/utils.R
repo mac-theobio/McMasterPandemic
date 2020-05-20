@@ -350,6 +350,7 @@ legacy_time_args <- function(x, update=FALSE) {
 ##' params <- read_params("ICU1.csv")
 ##' get_opt_pars(params)
 ##' get_opt_pars(params,vars="hosp")
+##' @importFrom stats qlogis
 ##' @export
 get_opt_pars <- function(params,vars=c("hosp","death","report")) {
     opt_pars <- list(params =  c(log_E0=4
