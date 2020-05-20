@@ -588,7 +588,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     if (last_debug_plot) {
         pdf(".debug_plot.pdf")
         mle_args$debug_plot <- TRUE
-        do.call(mle_fun,c(list(coef(opt),mle_args)))
+        do.call(mle_fun,c(list(coef(opt)), mle_args))
+        dev.off()
     }
     res <- list(mle2=opt
               , forecast_args = mle_data[setdiff(names(mle_data),

@@ -23,6 +23,7 @@ calibrate(
   priors = NULL,
   debug = FALSE,
   debug_plot = FALSE,
+  last_debug_plot = FALSE,
   use_DEoptim = FALSE,
   mle2_method = "Nelder-Mead",
   mle2_control = list(maxit = 10000),
