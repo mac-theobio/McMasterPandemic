@@ -69,10 +69,20 @@ date_range <- with(f_args,c(start_date,end_date))
 params <- coef(fit)
 @ 
 \begin{itemize}
-\item Date range for calibration: \Sexpr{date_range[1]} -- \Sexpr{date_range[2]}
+\item Initially, all our analyses were based on the {\bfseries public
+    data} that is compiled and cleaned daily by Michael Li; see
+  \url{https://wzmli.github.io/COVID19-Canada/}.  Michael continues to
+  update these data for general use, but we now work with more
+  detailed data that PHO has made available to us.  Important details
+  available in the PHO data include specific onset, hospitalization
+  and death dates for most patients (as opposed a single, ambiguous
+  ``episode date'' in the public data), and age of each patient
+  (rather than a broad age class).
+\item Current date range for forecast calibration:
+  \Sexpr{date_range[1]} -- \Sexpr{date_range[2]}.
 \item Social distancing measures have reduced the effective
-  reproduction number ($\R_t$) substantially.  
-  How substantial depends on what we do:
+  reproduction number ($\R_t$) substantially.  How substantial depends
+  on what we do:
   \begin{itemize}
   \item When we fit immediate changes in $\R_t$ on the dates when
     changes in social distancing policies were announced, we still get
@@ -136,56 +146,72 @@ params <- coef(fit)
   \item Are infected people not self-isolating?
   \item Are travellers not self-quarantining?
   \item Is PPE inadequate?
-  \item Are non-public data sufficiently detailed that we can
-    potentially answer some of these questions?  \david{Kevin Brown at
-      PHO is looking at this; looks like Toronto is a problem; they
-      believe (based on bluedot data) that people coming from the US
-      are not self-quarantining.}
-  \end{itemize}
-\item ICU counts continue to diverge fairly sharply from the model
-  predictions, which is a phenomenon that we do not understand.  This
-  is not well explained by saturation of capacity -- the current
-  counts are still well below capacity.  (The puzzling patterns are in
-  relation to hospitalizations and ICU, not deaths.)
+  \item Are the non-public data from PHO sufficiently detailed that we
+    can potentially answer some of these questions? 
+    \begin{itemize}
+    \item There do not appear to be any relevant files in the PHO data
+      collection.  On the issue of importation, Kevin Brown mentioned
+      something (a few weeks ago) about data from
+      \href{https://bluedot.global/}{BlueDot} indicating that people
+      coming from the US were not self-quarantining.  There do not
+      appear to be data in the PHO collection that could back that up,
+      or that could help to determine how many people have entered
+      from the US and where they've gone.  \david{Kevin is scheduled
+        to present about mobility data from BlueDot in the weekly
+        meeting on Wed 20 May 2020.}
+    \end{itemize}
+\end{itemize}
+\item ICU counts diverge fairly sharply from our model predictions,
+  and are well below capacity, in spite of hospitalizations and deaths
+  being well fitted.  We believe the observed ICU count divergence
+  between model and data arises from two current limitations of the
+  model:
   \begin{itemize}
-  \item \emph{Note:} The model assumes that a constant fraction of
+  \item The model assumes that a constant fraction of
     infections are severe, a constant fraction of severe infections
     are hospitalized, and a constant fraction of hospitalized cases
     are transferred to the ICU.  Consequently, the model cannot
     predict a flattening of the ICU curve before everything else
     flattens.
-  \item Is it possible that the epidemic is actually burning out in
-    LTCFs?  If so, this could potentially explain the drop we're
-    seeing.  What fraction of cases are HCWs vs LTCF residents?  How
-    much under-reporting is there in LTCFs?  If LTCF epidemic is
-    peaking earlier, is this because infection rate was
-    extraordinarily high in LTCFs, or that lockdown has a particularly
-    strong effect on LTCFs?
+  \item Many residents of LTCFs die there without ever going to hospital.
+    To account for this, we need separate LTCF compartments in our
+    model.
+    
+    \david{The PHO data specify HCWs and LTCF residents.  We should be
+      able to include these data in the fits.}
   \end{itemize}
 \end{itemize}
 
 \section{Limitations and concerns}
 
 \begin{itemize}
-\item Analysis presented here is based on the {\bfseries public data}
-  that is compiled and cleaned daily by Michael Li;
-  see \url{https://wzmli.github.io/COVID19-Canada/}.
-\item The quality of the data is unclear.
-  \david{Ask Kevin which columns can be trusted.}
+\item The quality of the data is unclear, though it is much better now
+  that we have the detailed PHO data.  \david{Do we have concerns
+    about particular columns?  We could ask Kevin which columns can be
+    trusted.}
 \item Testing lags for HCWs are likely much shorter than for the
-  general public.
+  general public.  \david{Are tests currently included in
+    calibration?  For what precisely is this a problem?}
 \item A large proportion of those who have died were residents of long
-  term care facilities (LTCFs, which are not modelled explicitly).
+  term care facilities (LTCFs, which are not yet modelled explicitly).
 \item At present, we do not attempt to model any heterogeneities of
   transmission associated with age.
 \item Preliminary analysis of Ontario Laboratory Information System
   (OLIS) data from PHO reveals that many individuals have been tested
   more than once.  The public testing data do not account for this.
+  \david{How does this affect us?  How are we using OLIS?  Are we OK
+    now wrt testing after the various chats with ICES?}
 \item The mean lag between incidence (infection) and reporting a case
   is currently assumed to be \Sexpr{params[["c_delay_mean"]]} days.
   \david{DC (following advice from Kevin Brown)
     uses a 9 day lag between symptom onset and report.  The lag for
     HCWs is ``much shorter''.}
+\item Testing rates have been \emph{increasing}, yet we are
+  overpredicting cases.  One possible explanation is that control has
+  continued to improve---even without additional formal
+  restrictions---but hasn't yet shown up in hospitalization/deaths
+  (assuming that infection to report delay is smaller than infection
+  to hosp/death).
 \end{itemize}
 
 \section{Analysis framework}
@@ -203,35 +229,47 @@ params <- coef(fit)
   trajectories to reported cases, hospitalizations and deaths, assuming
   \protect{\href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
       binomial}} observation error.
-\item Model forecasts take account of the inherent randomness of the processes
-  of transmission, recovery, \emph{etc.} (``process error'').
+\item Model forecasts take account of the inherent randomness of the
+  processes of transmission, recovery, \emph{etc.} (``process
+  error'').  Even with fixed event rates, random fluctuations in
+  compartment sizes occur (demographic stochasticity); fluctuations of
+  larger amplitude are induced by random changes in the event rates
+  (which might arise from weather changes, aggregation of people at
+  sporting events, \emph{etc.}).
 \end{itemize}
 
-\section{Code improvements since last report}
+\section{Latest code improvements}
 
 \begin{itemize}
 \item Model includes phenomenological heterogeneity ($S^{1+\zeta}$).
 \item Calibration includes mobility data, not just break points in
-  $\R_t$ on dates when policies were announced.
-  \david{note from Ben in thread ``factorial plots'':}\ben{relative $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$;  in the combined mobility + spline plots, $X$ includes a column for log(relative mobility) and a bunch of columns corresponding to a spline basis (with time as the covariate).  See last two plots in 
-    \texttt{ont\_cal\_factorial\_plots.html}
-(I thought mobility would be more strongly correlated with spline coeffs 3 + 4, but maybe that's because we haven't yet found the best fit?)}
-\item 
-\item Forecasts include demographic stochasticity (``process error'').
-\david{This is now possible, but currently not shown.}
+  $\R_t$ on dates when policies were announced.  $\beta_0$ is assumed
+  to be correlated with a power of observed mobility, \ie (relative
+  mobility)$^{p_{\rm mob}}$.  \ben{$p_{\rm mob}\sim0.4$ 95\% Wald CI
+    0.3-0.5.}  The mobility data we use are from Apple (for Toronto)
+  and Google (for Ontario as a whole).  The specific mobility measures
+  we include are driving, retail and recreation, and workplaces.
+  
+  \david{note from Ben in thread ``factorial plots'':}\ben{relative
+    $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$;
+    in the combined mobility + spline plots, $X$ includes a column for
+    log(relative mobility) and a bunch of columns corresponding to a
+    spline basis (with time as the covariate).  See last two plots in
+    \texttt{ont\_cal\_factorial\_plots.html} (I thought mobility would
+    be more strongly correlated with spline coeffs 3 + 4, but maybe
+    that's because we haven't yet found the best fit?)}
+
+  \david{Forecasts can include process error but the current figures
+    don't.}
 \end{itemize}
 
 \section{Current results}
 
 \subsection{Estimated parameters}
 
-Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{parmtab}.
-\david{This needs to be organized better.  $\bar{G}$ is not estimated
-  or derived here, but is important to state.}
-\ben{see stuff in ontario calibration report, which includes what is calibrated how}
-
-Estimated parameters are listed in Tables~\ref{estparmtab} and \ref{relRttab}.
-Table~\ref{relRttab} shows estimated relative changes in $\R_t$ on the
+Estimates of the parameters that we always fit are given in Table~\ref{estparmtab}.
+In addition, Table~\ref{relRttab} lists estimated relative changes in
+$\R_t$ on the
 dates on which social distancing interventions were implemented in Ontario:
 \begin{itemize}
 \item
@@ -248,30 +286,23 @@ dates on which social distancing interventions were implemented in Ontario:
   \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{28
     March 2020. Gatherings of More Than Five People with Strict Exceptions}
 \end{itemize}
-We assumed $\R_t$ changed abruptly on a subset of these dates and found
-the best fit changes.
-\david{Need to make clear how many and which break dates we ended up
-  including and why we ignored the other(s).  It is not clear that the
-state of emergency had a big impact.  Kids were on March Break and
-were not distancing.  Genuine closures didn't happen until 23 March.}
+Our code allows us to model an abrupt effect on $\R_t$ on any subset of these
+dates and find the best fit changes.  In practice, we always ignore the
+initial declaration of emergency on 17 March 2020 because this
+occurred during March Break.  There were no genuine closures until 23 March.
+
+\david{Previously, the ``ontario calibration report'' explained what
+  is calibrated and how.  However, that document was last updated 23 Apr
+  2020.  Where should I be looking now for calibration details?}
 
 Table~\ref{parmtab} lists parameters derived from the fitted
-parameters.  \david{Actually, how are these numbers calculated?  $r_0$
-  and $\R_0$ don't agree with any phase of the outbreak.  $\bar{G}$ is
-  not estimated or derived here, but is important to state.}
+parameters.  An exception is the mean generation interval $\bar{G}$,
+which is taken to be known \emph{a priori} rather than estimated or
+derived.
 
-Finally, Table~\ref{phasetab} shows the growth rates and reproduction numbers during phases of the outbreak during which different social distancing measures were in place.
-\david{suppressed warnings (caused by meaningless doubling time when
-  growth rate is negative) in construction of Table~\ref{phasetab}}
-<<phasetab, echo=FALSE, results="asis", warning=FALSE>>=
-dd <- summary(fit)
-dd[,-1] <- round(dd[,-1], 2)
-names(dd) <- texify(names(dd), force=TRUE)
-names(dd)[1] <- "Start Date"
-Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
-            , caption="{\\bfseries Estimated parameter changes during each phase of social distancing.}"
-             )
-@ 
+Finally, Table~\ref{phasetab} shows the growth rates and reproduction
+numbers during phases of the outbreak during which different social
+distancing measures were in place.
 
 <<parameter_estimates, echo=FALSE>>=
 param_table <- describe_params(summary(coef(fit)))
@@ -304,29 +335,38 @@ Hmisc::latex(rel_Rt_table, file="", label="relRttab", rowlabel="", table.env=TRU
 
 <<derived_parameter_table, echo=FALSE, results="asis">>=
 Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
-            , caption="{\\bfseries Derived estimates.}  Times are given in days."
+            , caption="{\\bfseries Derived estimates.}  Times are given in days.  These are the values at the initial time.  Table~\\ref{phasetab} shows how they changed over time as a result of social distancing measures."
              )
 @ 
 
+<<phasetab, echo=FALSE, results="asis">>=
+dd <- summary(fit)
+dd[,-1] <- round(dd[,-1], 2)
+names(dd) <- texify(names(dd), force=TRUE)
+names(dd)[1] <- "Start Date"
+Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
+            , caption="{{\\bfseries Estimated parameter changes during each phase of social distancing.}  Parameter meanings are given in Table~\\ref{parmtab}, which is equivalent to the first row of this table.}"
+             )
+@ 
+
+\FloatBarrier
+
 \subsection{Forecasts}
 
-Figure~\ref{fig:forecast} shows our current projections.
-\david{based on ignoring the first $\R_t$ change time.  So why
-are there three relative $\R_t$ estimates (Table~\ref{relRttab}) and
-four absolute $\R_t$ estimates (Table~\ref{parmtab})?}
+Figure~\ref{fig:forecast} shows our current projections.  The vertical
+lines \david{missing!} show the times of implementation of different
+social distancing measures (\emph{cf.}~Tables~\ref{relRttab} and
+\ref{phasetab}).  The horizontal dashed lines represent COVID ICU
+capacity (current and maximum potential expansion).
 
-The vertical lines show the times of implementation of different social distancing measures
-(\emph{cf.}~Tables~\ref{relRttab} and \ref{phasetab}).
-The horizontal dashed lines 
-%%in the short-term plot 
-represent COVID ICU capacity.
-%%
-There are no confidence bands on these plots and they would be very large.  
-\david{Last week I said: 
-We are working on that, and should have confidence bands on forecasts next week.}
+\emph{Note:} We are not currently fitting the ICU data.  We will
+return to trying to fit ICU counts after implementing compartments
+(and data) for LTCFs.
 
+\david{What are the priors on relative transmission?}
 
-Using no-ICU fit (2 breaks, priors on relative transmission) right now.
+\david{Why are there no horizontal axis ticks and labels on Figures
+  \ref{fig:calibration} and \ref{fig:forecast}?}
 
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
@@ -396,8 +436,11 @@ print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
 \caption{forecast showing trajectories rather than quantiles}
 \end{figure}
 
-CIs on peak/peak timing.
+\subsection{Confidence intervals on peak time and peak height}
 
+\david{It would be better to include the MLE too}
+
+\subsubsection*{Peak Date}
 <<peakCI>>=
 max_time <- apply(pp2,c(1,3),which.max)
 maxt2 <- round(t(apply(max_time[c("H","death","incidence","report"),],
@@ -408,6 +451,7 @@ maxdate[] <- dimnames(pp2)[["date"]][maxt2]
 knitr::kable(maxdate)
 @
 
+\subsubsection*{Peak Height}
 <<peakheight>>=
 max_val <- apply(pp2,c(1,3),max,na.rm=TRUE)
 maxv2 <- round(t(apply(max_val[c("H","death","incidence","report"),],
@@ -418,13 +462,19 @@ knitr::kable(maxv2)
 
 \section{Fitting to mobility data}
 
+\david{This obviously needs work.  We need to chat and talk about what
+we want to present here before I write something.}
+
 <<loadmob,warning=FALSE>>=
 load("ont_cal_mob1.RData")
 mob_pwr <- coef(ont_cal_mob1,"fitted")$mob_power
 mob_pwr_ci <- plogis(confint(ont_cal_mob1$mle2,method="quad")["logit_mob_power",])
 @ 
-Fitting to averaged mobility data, with relative transmission as a power of relative mobility: $\beta = \beta_0 m^\alpha$.
-Estimating $\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI: \Sexpr{round(mob_pwr_ci[1],2)} - \Sexpr{round(mob_pwr_ci[2],2)}.
+
+Fitting to averaged mobility data, with relative transmission as a
+power of relative mobility: $\beta = \beta_0 m^\alpha$.  Estimating
+$\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI:
+\Sexpr{round(mob_pwr_ci[1],2)} -- \Sexpr{round(mob_pwr_ci[2],2)}).
 
 \begin{figure}
 <<mobplot1,warning=FALSE>>=
@@ -466,7 +516,7 @@ plot(pp
 \label{fig:mobility}
 \end{figure}
 
-\textbf{caveats}
+\subsubsection*{Caveats}
 \begin{itemize}
 \item not doing importance weighting yet
 \item param CIs are probably too small \ldots
