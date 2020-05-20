@@ -68,7 +68,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
         } else {
             ## df specified: pick (df-degree) knots
             tmp_dat <- na.omit(filter(dat,var==knot_quantile_var)) %>% mutate(cum=cumsum(value),t_vec=as.numeric(date-min(date)))
-            q_vec <- quantile(tmp_dat$cum,seq(1,spline_df)/(spline_df+1))
+            q_vec <- quantile(tmp_dat$cum,seq(1,spline_df-3)/(spline_df-2))
             ## find closest dates to times with these cum sums
             knot_t_vec <- with(tmp_dat,approx(cum,t_vec,xout=q_vec,ties=mean))$y
             cat("knots:",knot_t_vec,sep="\n","\n")
@@ -120,8 +120,9 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
 ##  lots of vertices to compute per iteration
 ##  (also computing hessian!)
 if (FALSE) {
-r1 <- run_cali("0010",knot_quantile_var="report", spline_days=21, maxit=2)
-r2 <- run_cali("0010",knot_quantile_var="report", maxit=2)
+    r1 <- run_cali("0010",knot_quantile_var="report", spline_days=21, maxit=2)
+    r2 <- run_cali("0010", spline_days=21, maxit=2)
+    r3 <- run_cali("0010",knot_quantile_var="report", maxit=2)
 }
 
 factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),
