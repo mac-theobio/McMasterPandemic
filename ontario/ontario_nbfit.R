@@ -8,7 +8,7 @@ fitfun <- function(d,key) {
                     family=nbinom2,
                    data=d)
     ## assume that non-pos-def result is caused by nbinom ...
-    if (is.na(AIC(fit))) {
+    if (is.na(logLik(fit))) {
         fit <- update(fit, family=poisson)
     }
     return(fit)
