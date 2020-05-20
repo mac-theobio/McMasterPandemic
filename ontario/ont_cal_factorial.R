@@ -115,8 +115,14 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     return(res)  ## return after saving!!!!
 }
 
-## TEST of uneven splines
-## r <- run_cali("0010",knot_quantile_var="report", maxit=50)
+## TEST of spline options
+## should be VERY short run (with maxit=5) - although we do have a high dimension/
+##  lots of vertices to compute per iteration
+##  (also computing hessian!)
+if (FALSE) {
+r1 <- run_cali("0010",knot_quantile_var="report", spline_days=21, maxit=2)
+r2 <- run_cali("0010",knot_quantile_var="report", maxit=2)
+}
 
 factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),
                 1,paste,collapse="")
