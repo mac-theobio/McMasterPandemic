@@ -16,6 +16,8 @@ vim_session:
 
 Sources += $(wildcard *.R)
 
+Ignore += $(wildcard *.rda)
+
 ######################################################################
 
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
