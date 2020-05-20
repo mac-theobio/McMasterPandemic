@@ -3,23 +3,14 @@
 ### short term
 
 
+* * update summary() to account for S changes (with or without zeta)/adjust summary R(t) for phenomhet
 * NYC debug plot vs predict plot Q
 * ?switch to turn off N-M?
 * update calibration plots to order by AIC, include flags, etc.
-
-* write calibration with different numbers of knots & knot spacing
-* add last debug plot
 * weighted covariance
-
-* scenario-based projections
-* inference about R
-    
-* fitting
-* R0*(S/N)^(1+alpha)
 
 * fix mobility/spline/DEoptim factorial fit
     * replace NA values with worst non-NA value rather than dropping them?
-* update summary() to account for S changes (with or without zeta)
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?

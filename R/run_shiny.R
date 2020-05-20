@@ -8,7 +8,7 @@ default.start.date <- "2020-01-01"
 ##' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
 ##' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
 ##' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-##' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText
+##' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText br
 ##' @importFrom anytime anytime
 ##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
 ##' @importFrom directlabels direct.label

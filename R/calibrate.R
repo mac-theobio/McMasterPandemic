@@ -306,6 +306,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
 
 ## utility: debugging plot
 do_debug_plot <- function(r2) {
+    value <- NULL ## global var check
     vv <- unique(r2$var)
     if (length(vv)==1) {
         suppressWarnings(plot(value~date, data=r2, log="y"))
@@ -322,6 +323,7 @@ do_debug_plot <- function(r2) {
 ##' @param p parameter vector (in unlisted form)
 ##' @param ... unused (but useful in case junk needs to be discarded)
 ##' @param checkpoint save file containing call information?
+##' @param na_penalty value to add to NLL for NA values in log-likelihood
 ##' @inheritParams calibrate
 ##' @export
 mle_fun <- function(p, data,
@@ -416,6 +418,7 @@ mle_fun <- function(p, data,
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
 ##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
+##' @param last_debug_plot plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)
 ##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
 ##' @param seed random-number seed (for DE)
 ##' @param use_DEoptim use differential evolution as first stage?
@@ -586,10 +589,10 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                   mle2_args)
     opt <- do.call(bbmle::mle2,opt_args)
     if (last_debug_plot) {
-        pdf(".debug_plot.pdf")
+        grDevices::pdf(".debug_plot.pdf")
         mle_args$debug_plot <- TRUE
         do.call(mle_fun,c(list(coef(opt)), mle_args))
-        dev.off()
+        grDevices::dev.off()
     }
     res <- list(mle2=opt
               , forecast_args = mle_data[setdiff(names(mle_data),

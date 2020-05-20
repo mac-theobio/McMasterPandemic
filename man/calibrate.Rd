@@ -69,6 +69,8 @@ calibrate(
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
 
+\item{last_debug_plot}{plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)}
+
 \item{use_DEoptim}{use differential evolution as first stage?}
 
 \item{mle2_method}{method arg for mle2}

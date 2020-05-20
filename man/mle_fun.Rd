@@ -52,6 +52,8 @@ mle_fun(
 
 \item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
+\item{na_penalty}{value to add to NLL for NA values in log-likelihood}
+
 \item{...}{unused (but useful in case junk needs to be discarded)}
 }
 \description{
