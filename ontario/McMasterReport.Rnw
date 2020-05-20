@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
   ##dev = "tikz",
   echo = FALSE,
   cache = FALSE,
-  error=TRUE,  ## allow run to continue with error (good for debugging1)
+  error=FALSE,  ## TRUE allows run to continue with error (good for debugging1)
   ##warning=FALSE,
   comment = "#>"
 )
@@ -309,11 +309,11 @@ numbers during phases of the outbreak during which different social
 distancing measures were in place.
 
 <<parameter_estimates, echo=FALSE>>=
-param_table <- describe_params(summary(coef(fit)))
+param_table <- describe_params(summary(coef(fit0)))
 beautify <- function(x) {x[,"symbol"] <- texify(as.character(x[,"symbol"]), force=TRUE); return(x)}
 param_table <- beautify(param_table)
-f_args <- fit$forecast_args
-estimated_params <- invlink_trans(restore(bbmle::coef(fit$mle2), f_args$opt_pars))
+f_args <- fit0$forecast_args
+estimated_params <- invlink_trans(restore(bbmle::coef(fit0$mle2), f_args$opt_pars))
 ## estimated params other than relative Rt params:
 pp <- c(estimated_params$params, nb_disp=estimated_params$nb_disp)
 main_estparam_table <- beautify(describe_params(pp))
@@ -344,7 +344,7 @@ Hmisc::latex(param_table, file="", label="parmtab", rowlabel="", table.env=TRUE
 @ 
 
 <<phasetab, echo=FALSE, results="asis">>=
-dd <- summary(fit)
+dd <- summary(fit0)
 dd[,-1] <- round(dd[,-1], 2)
 names(dd) <- texify(names(dd), force=TRUE)
 names(dd)[1] <- "Start Date"
@@ -398,7 +398,7 @@ plot(fit0
 <<ont_forecast_plot, echo=FALSE, warning=FALSE, fig.height=9>>=
 ## extend fit to August
 set.seed(101)
-pp <- predict(fit
+pp <- predict(fit0
             , stoch=c(obs=FALSE,proc=TRUE)
             , ensemble=TRUE
             , stoch_start=max(ont_trans$date)
@@ -418,7 +418,7 @@ plot(pp
 
 \begin{figure}
 <<pred2,fig.width=10,warning=FALSE>>=
-pp2 <- predict(fit
+pp2 <- predict(fit0
             , stoch=c(obs=FALSE,proc=TRUE)
             , ensemble=TRUE
             , stoch_start=max(ont_trans$date)
@@ -471,7 +471,8 @@ we want to present here before I write something.}
 
 <<loadmob,warning=FALSE>>=
 load("ont_cal_mob1.RData")
-mob_pwr <- coef(ont_cal_mob1,"fitted")$mob_power
+fit_mob1 <- ont_cal_mob1
+mob_pwr <- coef(fit_mob1,"fitted")$mob_power
 mob_pwr_ci <- plogis(confint(ont_cal_mob1$mle2,method="quad")["logit_mob_power",])
 @ 
 
@@ -482,12 +483,11 @@ $\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI:
 
 \begin{figure}
 <<mobplot1,warning=FALSE>>=
-fit_mob1 <- ont_cal_mob1
 data <- ont_all
 kv <- c("H", "death", "report", "newTests/1000")
 dd <- trans_state_vars(data) ##  %>% filter(var %in% kv)
 ## show fit up to end of current data
-plot(fit
+plot(fit_mob1
        , predict_args=list(keep_vars = kv[1:3])
        , data = dd %>% filter(var != "ICU")
        , add_tests = TRUE
