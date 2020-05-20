@@ -60,9 +60,6 @@ opt_pars <- list(
 
 print(comb_sub)
 
-quit()
-
-
 ## do the calibration
 t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
     , base_params=params
@@ -70,9 +67,6 @@ t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
     , time_args=list(break_dates = bd)
       )
       ) ## system.time
-
-
-
 
 save("ont_cal1", file=sprintf("ONcalib_%s.rda",
                               format(Sys.time(),"%Y%b%d")))
