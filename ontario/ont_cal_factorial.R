@@ -90,7 +90,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
 
     plot(r0,break_dates=NULL,log=TRUE)
     ## do the calibration
-    debug <- !use_DEoptim
+    debug <- use_DEoptim
 
     t_ont_cal_fac <- system.time(ont_cal_fac <-
                                      calibrate(data=dat
@@ -112,7 +112,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
     return(res)  ## return after saving!!!!
 }
-debug(run_cali)
+# debug(run_cali)
 run_cali("1011")
 ## TEST of spline options
 ## should be VERY short run (with maxit=5) - although we do have a high dimension/
