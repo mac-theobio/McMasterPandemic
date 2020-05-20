@@ -77,12 +77,13 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
         loglin_terms <- c(loglin_terms, spline_term)
     }
     form <- reformulate(loglin_terms)
-    X <- model.matrix(form, data = comb_sub3)
+    X_dat <- if (use_mobility) comb_sub3 else tmp_dat
+    X <- model.matrix(form, data = X_dat)
 
-    matplot(comb_sub3$t_vec,X,type="l",lwd=2)
+    matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     ## opt_pars$time_beta <- (0:(ncol(X)-1))/10  ## hack so we can see what's going on
-    time_args <- nlist(X,X_date=comb_sub3$date)
+    time_args <- nlist(X,X_date=X_dat$date)
 
     r0 <- run_sim_loglin(params=params, extra_pars=opt_pars["time_beta"] ## n.b. single brackets here are on purpose
                  , time_args=time_args
@@ -114,7 +115,8 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     return(res)  ## return after saving!!!!
 }
 
-r <- run_cali("0010",knot_quantile_var="report", maxit=50)
+## TEST of uneven splines
+## r <- run_cali("0010",knot_quantile_var="report", maxit=50)
 
 factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),
                 1,paste,collapse="")
