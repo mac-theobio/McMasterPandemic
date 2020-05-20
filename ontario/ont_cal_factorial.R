@@ -3,23 +3,21 @@ library(splines)
 library(dplyr)
 library(parallel)
 
-## FIXME: check consistency whether using mobility time series or full time series for spline basis ... ?
-
-
-## select the part of the mobility data that lies within the calibration data set
-comb_sub2 <- (comb_sub
-    %>% right_join(ont_all %>% select(date) %>% unique(),by="date")
-    %>% na.omit()
-    %>% mutate_at("rel_activity",pmin,1) ## cap relative mobility at 1
-)
-
 print(unique(ont_all_sub$var))
 ont_noICU <- dplyr::filter(ont_all_sub, var != "ICU")
 
 dat <- ont_noICU
+
+## subset mobility data to bounds of data
+comb_sub2 <- (comb_sub
+    %>% right_join(dat %>% select(date) %>% unique(),by="date")
+    %>% na.omit()
+    %>% mutate_at("rel_activity",pmin,1) ## cap relative mobility at 1
+)
+
 X_date <- unique(dat$date)
 
-## FIXME: should use full data set if not using mobility!
+## extend data set to full extent of data set
 comb_sub3 <- (full_join(unique(select(dat,date)),comb_sub2,by="date")
     ## assume missing data = constant at last value
     %>% mutate_at("rel_activity",zoo::na.locf)
@@ -60,12 +58,19 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
     if (use_spline) {
         spline_df <- round(length(comb_sub3$t_vec)/spline_days)
-        tmp_dat <- dat %>% select(date) %>% distinct() %>% mutate(t_vec=as.numeric(date-min(date)))
+        tmp_dat <- (dat
+            %>% select(date)
+            %>% distinct()
+            %>% mutate(t_vec=as.numeric(date-min(date)))
+        )
         if (length(knot_quantile_var)==0) {
             spline_term <- sprintf("bs(t_vec,df=spline_df)")
         } else {
             ## df specified: pick (df-degree) knots
-            tmp_dat <- na.omit(filter(dat,var==knot_quantile_var)) %>% mutate(cum=cumsum(value),t_vec=as.numeric(date-min(date)))
+            tmp_dat <- (filter(dat,var==knot_quantile_var)
+                %>% na.omit()
+                %>% mutate(cum=cumsum(value),t_vec=as.numeric(date-min(date)))
+            )
             q_vec <- quantile(tmp_dat$cum,seq(1,spline_df-3)/(spline_df-2))
             ## find closest dates to times with these cum sums
             knot_t_vec <- with(tmp_dat,approx(cum,t_vec,xout=q_vec,ties=mean))$y
@@ -80,15 +85,17 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
 
     matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
-    ## opt_pars$time_beta <- (0:(ncol(X)-1))/10  ## hack so we can see what's going on
     time_args <- nlist(X,X_date=X_dat$date)
 
-    r0 <- run_sim_loglin(params=params, extra_pars=opt_pars["time_beta"] ## n.b. single brackets here are on purpose
-                 , time_args=time_args
-                 , sim_args=list(start_date=min(ont_all_sub$date)-15
-                               , end_date=max(ont_all_sub$date)))
-
-    plot(r0,break_dates=NULL,log=TRUE)
+    if (FALSE) {
+        ## testing
+        ## n.b. single brackets below are on purpose
+        r0 <- run_sim_loglin(params=params, extra_pars=opt_pars["time_beta"] 
+                           , time_args=time_args
+                           , sim_args=list(start_date=min(dat$date)-15
+                                         , end_date=max(dat$date)))
+        plot(r0,break_dates=NULL,log=TRUE)
+    }
     ## do the calibration
     debug <- use_DEoptim
 
@@ -112,8 +119,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
     return(res)  ## return after saving!!!!
 }
-# debug(run_cali)
-run_cali("1011")
+
 ## TEST of spline options
 ## should be VERY short run (with maxit=5) - although we do have a high dimension/
 ##  lots of vertices to compute per iteration
