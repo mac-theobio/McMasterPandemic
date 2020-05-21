@@ -484,6 +484,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       DE_cores=getOption("mc.cores",2),
                       DE_nll_thresh=1.5)
 {
+    start_time <- proc.time()
     if (!is.null(break_dates)) {
         warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
         time_args <- list(break_dates=break_dates)
@@ -587,7 +588,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                         , control=mle2_control
                        ),
                   mle2_args)
-    opt <- do.call(bbmle::mle2,opt_args)
+    mle2_time <- system.time(opt <- do.call(bbmle::mle2,opt_args))
     if (last_debug_plot) {
         grDevices::pdf(".debug_plot.pdf")
         mle_args$debug_plot <- TRUE
@@ -599,8 +600,11 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                             ## leave these out, they're needed for mle but not forecast
                             c("debug","debug_plot","fixed_pars","data","priors"))]
               , call = cc)
+    end_time <- proc.time()
     attr(res,"de") <- de_cal1
     attr(res,"de_time") <- de_time
+    attr(res,"mle2_time") <- mle2_time
+    attr(res,"total_time") <- end_time-start_time
     class(res) <- "fit_pansim"
     return(res)
 }

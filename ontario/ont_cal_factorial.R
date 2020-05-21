@@ -47,22 +47,23 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
 
     ss <- function(flags,i) as.logical(as.numeric(substr(flags,i,i)))
     ## flags
-    use_DEoptim <-ss(flags,1)
+    use_DEoptim  <-ss(flags,1)
     use_mobility <- ss(flags,2)
-    use_spline <- ss(flags,3)
-    use_zeta <- ss(flags,4)
+    use_spline   <- ss(flags,3)
+    use_zeta     <- ss(flags,4)
 
     ## now modify opt_pars according to flags
     if (use_zeta) opt_pars$params <- c(opt_pars$params,log_zeta=1)
     loglin_terms <- "-1"
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
+    ## need tmp_dat ouside use_spline for non-spline, non-mob cases
+    tmp_dat <- (dat
+        %>% select(date)
+        %>% distinct()
+        %>% mutate(t_vec=as.numeric(date-min(date)))
+    )
     if (use_spline) {
         spline_df <- round(length(comb_sub3$t_vec)/spline_days)
-        tmp_dat <- (dat
-            %>% select(date)
-            %>% distinct()
-            %>% mutate(t_vec=as.numeric(date-min(date)))
-        )
         if (length(knot_quantile_var)==0) {
             spline_term <- sprintf("bs(t_vec,df=spline_df)")
         } else {
@@ -97,7 +98,8 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
         plot(r0,break_dates=NULL,log=TRUE)
     }
     ## do the calibration
-    debug <- use_DEoptim
+    ## debug <- use_DEoptim
+    debug <- FALSE
 
     t_ont_cal_fac <- system.time(ont_cal_fac <-
                                      calibrate(data=dat
@@ -117,7 +119,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
     res <- list(mod = flags, time = t_ont_cal_fac, fit = ont_cal_fac, data=dat)
     ## checkpoint
     saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
-    return(res)  ## return after saving!!!!
+    return(res)  ## return *after* saving!!!!
 }
 
 ## TEST of spline options

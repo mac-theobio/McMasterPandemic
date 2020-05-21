@@ -437,6 +437,8 @@ summary.fit_pansim <- function(object, ...) {
     }
     names(pp_list) <- c(format(f_args$start_date),format(time_tab$Date))
     ret <- purrr::map_dfr(pp_list,~as.data.frame(rbind(summary(.))),.id="start_date")
+    ##  ADD phenom_het stuff here if necessary
+    ## browser()
     return(ret)
 }
 

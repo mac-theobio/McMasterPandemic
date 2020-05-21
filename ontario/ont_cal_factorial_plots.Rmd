@@ -94,6 +94,7 @@ pp <- (purrr::map_dfr(res_list, predfun, .id="mod")
     ## data is identical for all facets
     %>% right_join(na.omit(rename(res_list[[1]]$data,obs="value")),
                    by=c("date","var"))
+    %>% mutate(mod=factor(mod,levels=sumtab$mod))
 )
 ```
 
@@ -123,7 +124,34 @@ with(x$fit$forecast_args$time_args,
 ```{r corrplot}
 X <- x$fit$forecast_args$time_args$X
 cc <- cov2cor(var(X))
-cn <- c("mobility",paste0("spline",1:6))
+cn <- c("mobility",paste0("spline",seq(nrow(cc)-1)))
 dimnames(cc)  <- list(cn,cn)
 corrplot::corrplot.mixed(cc,"number","ellipse")
+```
+
+## times
+
+```{r}
+timefun <- function(m) {
+    ff <- function(x) {
+        r <- aa[[paste0(x,"_time")]][["elapsed"]]
+        if (is.null(r)) r <- NA_real_
+        return(r)
+    }
+    aa <- attributes(m$fit)
+    tibble(total=ff("total"),mle2=ff("mle2"),de=ff("de"))
+}
+timetab <- (map_dfr(res_list,timefun,.id="mod")
+    %>% full_join(select(sumtab,mod,desc,npar,optim),by="mod")
+    %>% pivot_longer(cols=c(total,mle2,de),names_to="type")
+    %>% mutate(value=value/60)
+)
+
+ggplot(timetab,aes(value,desc,colour=type,size=npar,shape=optim))+
+    geom_point()+labs(y="",x="time (mins)")
+```
+
+```{r}
+ggplot(timetab,aes(npar,value,colour=type,shape=optim))+
+    geom_point()+labs(y="time (mins)",x="number of parameters")
 ```

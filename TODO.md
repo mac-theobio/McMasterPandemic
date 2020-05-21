@@ -2,8 +2,7 @@
 
 ### short term
 
-
-* * update summary() to account for S changes (with or without zeta)/adjust summary R(t) for phenomhet
+* update summary() to account for S changes (with or without zeta)/adjust summary R(t) for phenomhet
 * NYC debug plot vs predict plot Q
 * ?switch to turn off N-M?
 * update calibration plots to order by AIC, include flags, etc.
