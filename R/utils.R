@@ -409,3 +409,53 @@ add_d_log <- function(x) {
     return(x)
 }
 
+##' extract vector of effective Rt
+## FIXME: allow stoch/parameter uncertainty
+##' @param x a fitted object
+##' @export
+get_Rt <- function(x) {
+    ff <- x$fit
+    ## process args etc.
+    f_args <- ff$forecast_args
+    pp <- coef(ff,"fitted")
+    extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
+    ## calc R0 base, rel beta, S
+    R0_base <- summary(coef(ff))[["R0"]]
+    bb <- with(f_args,sim_fun(params=coef(ff),
+                              extra_pars=extra_pars,
+                              time_args=time_args,sim_args=sim_args,
+                              return_timevar=TRUE))
+    S_pred <- (predict(ff,keep_vars="S")
+        %>% select(date,value)
+        %>% rename(S="value")
+    )
+    ## combine rel_beta and S information
+    if (!is.null(bb)) {
+        bb <- (bb
+            %>% as_tibble()
+            %>% filter(Symbol=="beta0")
+            %>% select(-Symbol)
+            %>% rename(rel_beta0="Relative_value",date="Date")
+        )
+        x2 <- full_join(bb,S_pred,by="date") %>% arrange(date)
+    }  else {
+        x2 <- mutate(S_pred,rel_beta0=1)
+    }
+    ## fill in values preceding/following estimated beta0 values
+    x2_nona <- na.omit(x2)
+    x3 <- (x2 
+        %>% mutate_at("rel_beta0",
+                      ~ case_when(
+    is.na(.) & date<x2_nona$date[1] ~ x2_nona$rel_beta0[1],
+    is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
+    TRUE ~ .
+)))
+    zeta <- coef(ff)[["zeta"]]
+    N <- coef(ff)[["N"]]
+    x4 <- (x3
+        %>% transmute(date=date,
+                      R0=R0_base*rel_beta0*(S/N)^(1+zeta))
+    )
+    return(x4)
+}
+    

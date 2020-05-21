@@ -419,7 +419,6 @@ coef.fit_pansim <- function(object,
 summary.fit_pansim <- function(object, ...) {
     check_dots(...)
     f_args <- object$forecast_args
-    pars <- coef(object, method="fitted")
     f_args <- legacy_sim_fun(f_args, update=TRUE)
     f_args <- legacy_time_args(f_args, update=TRUE)
     pp <- coef(object,"fitted")
@@ -429,13 +428,18 @@ summary.fit_pansim <- function(object, ...) {
                                     extra_pars=extra_pars,
                                     time_args=time_args,
                                     return_timevar=TRUE))
+    if ("zeta" %in% names(pp$param)) {
+        S_vec <- with(f_args,sim_fun(params,
+                                     extra_pars=extra_pars,
+                                     time_args=time_args))
+    }
     pp_list <- list(coef(object))
     beta0 <- coef(object)[["beta0"]]
     for (i in seq(nrow(time_tab))) {
         pp_list[[i+1]] <- update(pp_list[[1]],
                                  beta0=beta0*time_tab[i,"Relative_value"])
     }
-    names(pp_list) <- c(format(f_args$start_date),format(time_tab$Date))
+    names(pp_list) <- format(c(f_args$start_date,time_tab$Date))
     ret <- purrr::map_dfr(pp_list,~as.data.frame(rbind(summary(.))),.id="start_date")
     ##  ADD phenom_het stuff here if necessary
     ## browser()

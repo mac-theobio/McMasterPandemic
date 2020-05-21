@@ -9,6 +9,7 @@ library(tidyverse)
 library(ggplot2); theme_set(theme_bw())
 library(colorspace)
 library(corrplot)
+library(directlabels)
 ```
 
 ```{r setup, include=FALSE}
@@ -16,13 +17,15 @@ knitr::opts_chunk$set(echo=FALSE)
 ```
 
 ```{r get_data}
-f <- list.files(pattern="ont_fac_[01]")
-res_list <- map(f,readRDS)
-mods <- stringr::str_extract(f,"[01]+")
-## or
-## purrr::map_chr(res_list,~.$mod)
+## f <- list.files(pattern="ont_fac_[01]")
+## res_list <- map(f,readRDS)
+## mods <- stringr::str_extract(f,"[01]+")
+
+L <- load("ont_cal_factorial.RData")
+mods <- purrr::map_chr(res_list,~.$mod)
+names(res_list) <- mods
 ## also: 
-## L <- load("ont_cal_factorial.RData")
+
 ```
 
 ```{r rearrange}
@@ -37,7 +40,6 @@ get_term_simple <- function(mod) {
     pref <- ifelse(ss(mod,1),"DEoptim+NM","NM")
     return(paste(pref,res,sep="_"))
 }
-
 get_zeta <- function(x) {
     cc <- coef(x$fit)
     return(unname(cc["zeta"])) ## returns NA if not present
@@ -48,7 +50,6 @@ get_mobpower <- function(x) {
 get_conv <- function(x) {
     x$fit$mle2@details$convergence
 }
-
 predfun <- function(r) {
     predict(r$fit) %>% filter(var %in% c("H","death","report"))
     ## FIXME: restrict to dates for each var? right_join etc.
@@ -131,7 +132,7 @@ corrplot::corrplot.mixed(cc,"number","ellipse")
 
 ## times
 
-```{r}
+```{r time_plot_1}
 timefun <- function(m) {
     ff <- function(x) {
         r <- aa[[paste0(x,"_time")]][["elapsed"]]
@@ -151,7 +152,21 @@ ggplot(timetab,aes(value,desc,colour=type,size=npar,shape=optim))+
     geom_point()+labs(y="",x="time (mins)")
 ```
 
-```{r}
+```{r time_plot_2}
 ggplot(timetab,aes(npar,value,colour=type,shape=optim))+
     geom_point()+labs(y="time (mins)",x="number of parameters")
+```
+
+## estimated Rt
+
+```{r Rt_plots}
+## exclude N-M fits, bogus 1111 fit
+short_list <- res_list[grepl("^1",names(res_list)) & names(res_list)!="1111"]
+all_R <- (purrr::map_dfr(short_list,get_Rt,.id="mod")
+    %>% full_join(select(sumtab,mod,desc),by="mod")
+)
+print(ggplot(all_R,aes(date,R0,colour=desc))
+      +geom_line()
+      +scale_colour_discrete_qualitative()
+      +geom_dl(aes(label=desc),method="smart.grid"))
 ```
