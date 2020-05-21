@@ -412,8 +412,10 @@ add_d_log <- function(x) {
 ##' extract vector of effective Rt
 ## FIXME: allow stoch/parameter uncertainty
 ##' @param x a fitted object
+##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble
 ##' @export
 get_Rt <- function(x) {
+    Symbol <- value <- rel_beta0 <- S <- NULL
     ff <- x$fit
     ## process args etc.
     f_args <- ff$forecast_args
@@ -433,8 +435,8 @@ get_Rt <- function(x) {
     if (!is.null(bb)) {
         bb <- (bb
             %>% as_tibble()
-            %>% filter(Symbol=="beta0")
-            %>% select(-Symbol)
+            %>% dplyr::filter(Symbol=="beta0")
+            %>% dplyr::select(-Symbol)
             %>% rename(rel_beta0="Relative_value",date="Date")
         )
         x2 <- full_join(bb,S_pred,by="date") %>% arrange(date)
