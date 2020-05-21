@@ -3,6 +3,7 @@ library(splines)
 library(dplyr)
 library(parallel)
 
+## load(".ont_keep.RData")
 print(unique(ont_all_sub$var))
 ont_noICU <- dplyr::filter(ont_all_sub, var != "ICU")
 
@@ -41,7 +42,8 @@ opt_pars <- list(
 )
 
 
-run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000) {
+run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL,
+                     maxit=10000, ...) {
 
     cat(flags, spline_days, knot_quantile_var,"\n",sep="\n")
 
@@ -112,6 +114,7 @@ run_cali <- function(flags, spline_days=14, knot_quantile_var=NULL, maxit=10000)
                                              , opt_pars = opt_pars
                                              , time_args=time_args
                                              , sim_fun = run_sim_loglin
+                                             , ...
                                                )
                                  ) ## system.time
 
@@ -130,6 +133,19 @@ if (FALSE) {
     r1 <- run_cali("0010",knot_quantile_var="report", spline_days=21, maxit=2)
     r2 <- run_cali("0010", spline_days=21, maxit=2)
     r3 <- run_cali("0010",knot_quantile_var="report", maxit=2)
+
+    load("ont_cal_factorial.RData")
+    names(res_list) <- purrr:::map_chr(res_list, ~.$mod)
+    rr <- res_list[["0111"]]
+    coef(rr$fit,"fitted")
+    OP <- rr$fit$forecast_args$opt_pars
+    DE_lims <- McMasterPandemic:::get_DE_lims(OP)
+    ## restrict limits some more
+    DE_lims$lwr[grepl("time_beta",names(DE_lims$lwr))] <- -1
+    DE_lims$upr[grepl("time_beta",names(DE_lims$upr))] <- 1
+    rr <- run_cali("1111",
+             DE_lwr=DE_lims$lwr,
+             DE_upr=DE_lims$upr)
 }
 
 factorial_combos <- apply(expand.grid(replicate(4,0:1,simplify=FALSE)),

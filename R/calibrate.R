@@ -366,8 +366,7 @@ mle_fun <- function(p, data,
     ## discard unused state variables
     data2 <- dplyr::filter(data,var %in% unique(r$var))
     ## keep only dates present in data
-    r2 <- (dplyr::left_join(data2,r,by=c("date","var"))
-        %>% tidyr::drop_na(value,pred))         ## FIXME: why do we have an NA in pred??
+    r2 <- (dplyr::left_join(data2,r,by=c("date","var")) %>% tidyr::drop_na(value))
     ## compute negative log-likelihood
     if (debug_plot) {
         do_debug_plot(r2)
@@ -380,6 +379,8 @@ mle_fun <- function(p, data,
     } else {
         r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
                     by="var")
+        ## FIXME: more principled solution to dnbinom warnings etc.?
+        ##  dnbinom wrapper that napredicts NAs?
         ## FIXED nb_disp hack, don't need to exponentiate any more ...
         dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
     }
