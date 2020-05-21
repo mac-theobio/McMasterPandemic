@@ -686,7 +686,7 @@ forecast_ensemble <- function(fit,
         if (attr(e_pars,"eff_samp")<10) warning("low effective sample size of importance weights")
     }
 
-    e_pars <- e_pars[,setdiff(colnames(e_pars),fix_pars)]
+    ## e_pars <- e_pars[,setdiff(colnames(e_pars),fix_pars)]
 
     ## run for all param vals in ensemble
     ## tried with purrr::pmap but too much of a headache
