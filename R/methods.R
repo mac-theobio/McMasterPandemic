@@ -499,7 +499,8 @@ predict.fit_pansim <- function(object
                              , keep_vars=c("H","ICU","death", "hosp",
                                            "incidence","report", "cumRep", "newTests/1000")
                              , ensemble = FALSE
-                             , new_params=NULL  
+                             , new_params=NULL
+                             , shrink_sigma=1
                              , ... ) {
 
     var <- . <- NULL
@@ -531,7 +532,7 @@ predict.fit_pansim <- function(object
         fc <- do.call(forecast_sim,
                       c(list(p=coef(object$mle2)), f_args, new_args))
     } else {
-        argList <- c(list(fit=object, forecast_args=f_args), new_args)
+        argList <- c(nlist(fit=object, forecast_args=f_args, shrink_sigma), new_args)
         if (!is.null(de <- attr(object,"de"))) {
             argList <- c(argList,list(Sigma=de$member$Sigma))
         }

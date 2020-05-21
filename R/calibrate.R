@@ -632,6 +632,7 @@ forecast_ensemble <- function(fit,
                               seed=NULL,
                               imp_wts=FALSE,
                               Sigma=bbmle::vcov(fit$mle2),
+                              shrink_sigma,
                               fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
                               ) {
@@ -671,7 +672,8 @@ forecast_ensemble <- function(fit,
                      , Sigma = Sigma
                      , return_wts=imp_wts
                      , data=fit$mle2@data$data
-                     , fix_params=fix_pars)
+                     , fix_params=fix_pars
+                     , shrink_sigma=shrink_sigma)
                 , f_args)
 
 

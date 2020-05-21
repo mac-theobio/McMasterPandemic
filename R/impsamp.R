@@ -27,6 +27,7 @@ pop_pred_samp <- function(object,
                      PDify=FALSE,
                      PDmethod=NULL,
                      Sigma=vcov(object),
+                     shrink_sigma=1,  ## HACK to scale covariance uniformly (divide by this)
                      tol = 1e-6,
                      return_all=FALSE,
                      rmvnorm_method=c("mvtnorm","MASS"),
@@ -94,6 +95,8 @@ pop_pred_samp <- function(object,
         }
     }
 
+    Sigma <- Sigma/shrink_sigma
+    
     mv_n <- if (impsamp) n_imp else n  ## take more samples if actually sampling
 
     ## draw MVN samples
