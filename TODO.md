@@ -2,8 +2,9 @@
 
 ### short term
 
-* add another layer 
-* ?switch to turn off N-M?
+* add another layer to incorporate ont_cal_factorial stuff
+* document Rt calculation (add to McMasterReport.pdf)
+* allow choice of Wald vs DEoptim cov matrices in forecast_ensemble
 * weighted covariance instead of cutoff in DEoptim pop selection
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
@@ -12,10 +13,12 @@
 * debug update/parallel DE_cores
 * document invlink_trans better
 * (suboptimal) try N or eff-prop as a parameter?
-wp* match up with EpiEstim
+* match up with EpiEstim
 * LTCF: data, model compartments
 * extend trans_state_vars() for Secret Place variable names; refactor?
 * (LOW) test log-linear-model with date dummies?
+
+* ?switch to turn off N-M?
 
 ### strategic/architectural
 
