@@ -330,7 +330,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
         )
         r_agg <- full_join(r_agg,x4, by="date")
     }
-    r_agg <- pivot(r_agg)
+    r_agg <- tidyr::pivot_longer(r_agg,-date, names_to="var")
     ret <- switch(return_val,
                 aggsim=r_agg,
                 vals_only=r_agg$value
