@@ -1,3 +1,62 @@
+##' Handle external browser options for the shiny.
+##'
+##'
+##' @import shiny
+##' @export
+##' @param openinBrowser a logical indicating whether the shiny app should be opened in the browser or not
+browserManager <- function(openinBrowser){
+  if (openinBrowser){
+    options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
+  }
+  else{
+    options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  }
+}
+
+##' Parse inputs from strings.
+##'
+##'
+##' Handle inputs from the time-varying transmission option, which are recieved as strings.
+##'
+##' @importFrom stringr str_length
+##' @importFrom anytime anydate
+##' @param valueString the string we'd like to extract values from.
+##' @param mode the type of data encoded in the string: either dates, symbols, or values
+##' @export
+justValues_f <- function(valuesString, mode){
+  #Put a comma at the end to make life easier.
+  valuesString <- paste(valuesString, ",", sep = "")
+  justValueCounter <- 1
+  justValueString <- ""
+  justValues <- c()
+  while (justValueCounter <= stringr::str_length(valuesString)){
+    ##Grab the current letter
+    currentLetter <- substr(valuesString, start = justValueCounter, stop = justValueCounter)
+    ##If the current letter is not a comma or a space, add it to the justValueString string
+    if (currentLetter != ',' && currentLetter != ' '){
+      justValueString <- paste(justValueString,  currentLetter, sep = "")
+    }
+    else if (currentLetter == ',' || currentLetter != ' '){
+      if (mode == "values"){
+        justValue <- as.numeric(justValueString)
+        justValues <- c(justValues, justValue)
+      }
+      if (mode == "dates"){
+        justValue <- anytime::anydate(justValueString)
+        justValues <- c(justValues, justValue)
+      }
+      if (mode == "symbols"){
+        justValue <- justValueString
+        justValues <- c(justValues, justValue)
+      }
+      ##Clear the working string after we add the value we want to the list.
+      justValueString = ""
+    }
+    justValueCounter <- justValueCounter + 1
+  }
+  return(justValues)
+}
+
 parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
@@ -71,54 +130,6 @@ run_shiny <- function(useBrowser) {
   server <- function(input, output, session){
     ## non-standard eval; circumvent 'no visible binding' check
     x <- Date <- Symbol <- Relative_value <- NULL
-    ## Take a string of a list of numbers and turn that into an actual list of numbers. Let's fix the input for the time-varying transmission option.
-    justValues_f <- function(valuesString, mode){
-      #Put a comma at the end to make life easier.
-      valuesString <- paste(valuesString, ",", sep = "")
-      justValueCounter <- 1
-      justValueString <- ""
-      justValues <- c()
-      while (justValueCounter <= stringr::str_length(valuesString)){
-        ##Grab the current letter
-        currentLetter <- substr(valuesString, start = justValueCounter, stop = justValueCounter)
-        ##If the current letter is not a comma or a space, add it to the justValueString string
-        if (currentLetter != ',' && currentLetter != ' '){
-          justValueString <- paste(justValueString,  currentLetter, sep = "")
-        }
-        else if (currentLetter == ',' || currentLetter != ' '){
-          if (mode == "values"){
-            justValue <- as.numeric(justValueString)
-            justValues <- c(justValues, justValue)
-          }
-          if (mode == "dates"){
-            justValue <- anytime::anydate(justValueString)
-            justValues <- c(justValues, justValue)
-          }
-          if (mode == "symbols"){
-            justValue <- justValueString
-            justValues <- c(justValues, justValue)
-          }
-          ##Clear the working string after we add the value we want to the list.
-          justValueString = ""
-        }
-        justValueCounter <- justValueCounter + 1
-      }
-      return(justValues)
-    }
-    get_factor_timePars <- reactive({
-      relValues <- justValues_f(input$timeParsRelativeValues, mode = "values")
-      dates <- justValues_f(input$timeParsDates, mode = "dates")
-      symbols <- justValues_f(input$timeParsSymbols, mode = "symbols")
-      currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
-      return(currentPars)
-    })
-    ##Helper functions for loading parameter inputs.
-    dp_1 <- describe_params(read_params("ICU1.csv"))
-    textInput_param <- function(param, dp = dp_1){
-      return(textInput(param,
-                       label = dp[dp$symbol == param,"meaning"],
-                       value = loadParams(param)))
-    }
     ##Render the tab panel server-side to force tab changes the way we'd like, and give us the load-edit functionality we're after.
     output$maintabPanel <- renderUI({
       tabsetPanel(
@@ -189,79 +200,22 @@ run_shiny <- function(useBrowser) {
                                 sliderInput("YtextSize", "Y axis title size:",
                                             min = 0, max = 25,
                                             value = 10))
-        )))})
-      ##Take input and package it in a params_pansim object that run_sim and the like can read.
-      makeParams <- function(){
-        params <- c()
-        for (param in describe_params(read_params("ICU1.csv"))$symbol){
-          ##Grab the value of the input slot.
-          paramValue <- eval(parse(text = paste0("input$", param)))
-          ##If it's null beacause the panel hasn't been initialized yet, grab a default value to use a a placeholder.
-          if (is.null(paramValue)){
-            params <- c(params, read_params("ICU1.csv")[param])
-          }
-          else{
-            ##Otherwise, package and make the params the way we'd like them. Changed for conciceness.
-              params <- c(params, paramValue)
-          }
-        }
-        output$plotColumn <- renderUI({
-          column(input$plotSize,
-            plotOutput("plot"))
-          })
-        paramNames <- describe_params(read_params("ICU1.csv"))$symbol
-        ##I don't want numbers to be strings
-        params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
-        names(params) <- paramNames
-        class(params) <- "params_pansim"
-        ##Do this after because changing the numbers from strings removes their names.
-        return(params)
-      }
-    ##Load a parameter from a file. If the file doesn't have the param, fill in the missing ones from "ICU1.csv," which has them all.
-    loadParams <- function(param){
-      Inputparams <- read_params(input$fn)
-      numMissing <- sum(is.na(Inputparams))
-      ##Also account for the fact that data might just be missing from the file entirely and not recorded as NA values.
-      if (numMissing != 0 || length(Inputparams) < 26){
-        #If the parameters file is missing info, fill in defaults for the missing values.
-        DefaultParams <- read_params("ICU1.csv")
-        NonMissingparams <- Inputparams[!is.na(Inputparams)]
-        NonMissingparamNames <- names(NonMissingparams)
-        DefaultParams[NonMissingparamNames] <- NonMissingparams
-        params <- DefaultParams
-      }
-      else{
-        params <- Inputparams
-      }
-      return(params[param])
-    }
+        ))
+      )})
     ##Force the tab panel to be the parameters panel every time the default parameters drop down is changed.
     observeEvent(input$fn, {
       shiny::updateTabsetPanel(session, "tabs",
                         selected = "parametersPanel"
       )
     })
-    ##Manage the states to drop.
-    getDropStates <- function(){
-      default_dropStates <- c("t","S","R","E","I","X","incidence")
-      for (state in setdiff(colnames(g)[2:length(g)], default_dropStates)){
-        stateVal <- eval(parse(text = paste0("input$", state)))
-        ##Catch loading errors.
-        if (is.null(stateVal)){
-          default_dropStates <- c("t","S","R","E","I","X","incidence", "cumRep")
-          return(default_dropStates)
-        }
-        else {
-        }
-        ##2 indicates we don't want to show the drop state.
-        if (stateVal  == 2){
-          default_dropStates <- c(default_dropStates, state)
-        }
-        else{
-        }
-      }
-      return(default_dropStates)
-    }
+    get_factor_timePars <- reactive({
+      relValues <- justValues_f(input$timeParsRelativeValues, mode = "values")
+      dates <- justValues_f(input$timeParsDates, mode = "dates")
+      symbols <- justValues_f(input$timeParsSymbols, mode = "symbols")
+      currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
+      return(currentPars)
+    })
+    dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
         ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
@@ -316,6 +270,46 @@ run_shiny <- function(useBrowser) {
           p
         }
       })
+      ##Take input and package it in a params_pansim object that run_sim and the like can read.
+      makeParams <- function(){
+        params <- c()
+        for (param in describe_params(read_params("ICU1.csv"))$symbol){
+          ##Grab the value of the input slot.
+          paramValue <- eval(parse(text = paste0("input$", param)))
+          ##If it's null beacause the panel hasn't been initialized yet, grab a default value to use a a placeholder.
+          if (is.null(paramValue)){
+            params <- c(params, read_params("ICU1.csv")[param])
+          }
+          else{
+            ##Otherwise, package and make the params the way we'd like them. Changed for conciceness.
+            params <- c(params, paramValue)
+          }
+        }
+        paramNames <- describe_params(read_params("ICU1.csv"))$symbol
+        ##I don't want numbers to be strings
+        params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
+        names(params) <- paramNames
+        class(params) <- "params_pansim"
+        ##Do this after because changing the numbers from strings removes their names.
+        return(params)
+      }
+      loadParams <- function(param){
+        Inputparams <- read_params(input$fn)
+        numMissing <- sum(is.na(Inputparams))
+        ##Also account for the fact that data might just be missing from the file entirely and not recorded as NA values.
+        if (numMissing != 0 || length(Inputparams) < 26){
+          #If the parameters file is missing info, fill in defaults for the missing values.
+          DefaultParams <- read_params("ICU1.csv")
+          NonMissingparams <- Inputparams[!is.na(Inputparams)]
+          NonMissingparamNames <- names(NonMissingparams)
+          DefaultParams[NonMissingparamNames] <- NonMissingparams
+          params <- DefaultParams
+        }
+        else{
+          params <- Inputparams
+        }
+        return(params[param])
+      }
         output$summary <-renderTable({
             params <- makeParams()
             params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
@@ -350,6 +344,34 @@ run_shiny <- function(useBrowser) {
           p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
           p
         })
+        textInput_param <- function(param, dp = dp_1){
+          return(textInput(param,
+                           label = dp[dp$symbol == param,"meaning"],
+                           value = loadParams(param)))}
+        ##Manage the states to drop.
+        getDropStates <- function(){
+          default_dropStates <- c("t","S","R","E","I","X","incidence")
+          couldDropStates <- setdiff(colnames(g)[2:length(g)], default_dropStates)
+          for (state in couldDropStates){
+            stateVal <- eval(parse(text = paste0("input$", state)))
+            ##Catch loading errors.
+            if (is.null(stateVal)){
+              default_dropStates <- c("t","S","R","E","I","X","incidence", "cumRep")
+              return(default_dropStates)
+            }
+            else {
+            }
+            ##2 indicates we don't want to show the drop state.
+            if (stateVal  == 2){
+              default_dropStates <- c(default_dropStates, state)
+            }
+            else{
+            }
+          }
+          return(default_dropStates)
+        }
+
+
         ##Create checkbuttons to display plots or not.
         checkButton_curve <- function(curve){
           #Don't show cum rep by default
@@ -383,6 +405,11 @@ run_shiny <- function(useBrowser) {
                           FUN = checkButton_curve))
           }
         }
+
+        output$plotColumn <- renderUI({
+          column(input$plotSize,
+                 plotOutput("plot"))
+        })
         ##Panel to toggle curves showing
         output$plotTogglePanel_left <- renderUI({
           create_toggleColumn("left")
@@ -391,17 +418,9 @@ run_shiny <- function(useBrowser) {
         output$plotTogglePanel_right <- renderUI({
           create_toggleColumn("right")
         })
-#Run.
   }
   ##Take a useBrowser logical argument and run the shiny app accordingly.
-  browserManager <- function(openinBrowser){
-    if (openinBrowser){
-      options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
-    }
-    else{
-      options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
-    }
-  }
+
   ##Set the viewing options first.
   browserManager(useBrowser)
   ##Run the shiny app. the default value of launch.browser looks for the option set by browserManager.
