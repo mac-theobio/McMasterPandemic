@@ -1,22 +1,19 @@
-
 parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 
 ##' Run the McMasterPandemic Shiny
 ##'
-##' @importFrom shiny fluidPage titlePanel mainPanel fluidRow radioButtons h3 conditionalPanel
-##' @importFrom shiny column selectInput textInput tabsetPanel tabPanel checkboxInput sliderInput
-##' @importFrom shiny actionButton tableOutput plotOutput reactive observeEvent renderPlot
-##' @importFrom shiny renderTable shinyApp uiOutput textOutput renderUI renderText br
+##' @import shiny
 ##' @importFrom anytime anytime
 ##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
 ##' @importFrom ggplot2 element_text
+##' @param useBrowser Open the shiny in the browser.
 ##' @return NULL
 ##' @export
-run_shiny <- function() {
+run_shiny <- function(useBrowser) {
     ## The ui (user interface) is what the user is shown when running
     ## the shiny.  The ui also gathers input that is the passed to the
     ## server (e.g., filling in boxes or sliders).
@@ -51,7 +48,12 @@ run_shiny <- function() {
             tableOutput("summary")
         ),
         fluidRow(
-            plotOutput("plot")
+            column(8,
+              plotOutput("plot")
+            ),
+            column(4,
+                   uiOutput("plotTogglePanel")
+                   )
         )
     )
 
@@ -225,6 +227,27 @@ run_shiny <- function() {
                         selected = "parametersPanel"
       )
     })
+    ##Manage the states to drop.
+    getDropStates <- function(){
+      default_dropStates <- c("t","S","R","E","I","X","incidence")
+      for (state in setdiff(colnames(g)[2:length(g)], default_dropStates)){
+        stateVal <- eval(parse(text = paste0("input$", state)))
+        #Catch loading errors.
+        if (is.null(stateVal)){
+          default_dropStates <- c("t","S","R","E","I","X","incidence", "cumRep")
+          return(default_dropStates)
+        }
+        else {
+        }
+        #2 indicates we don't want to show the drop state.
+        if (stateVal  == 2){
+          default_dropStates <- c(default_dropStates, state)
+        }
+        else{
+        }
+      }
+      return(default_dropStates)
+    }
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
       output$plot <- renderPlot({
         #Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
@@ -249,7 +272,7 @@ run_shiny <- function() {
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
         }
         #Allow for process and observation error, set to zero by default.
-        p <- plot.pansim(sim) + labs(title = "Pandemic Simulation")
+        p <- plot.pansim(sim, drop_states = getDropStates()) + labs(title = "Pandemic Simulation")
         if (input$automaticSize == 2){
         p <- p + ggplot2::theme(
           plot.title = element_text(color = "black", size = input$titleSize),
@@ -312,7 +335,48 @@ run_shiny <- function() {
           p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
           p
         })
+        #Create checkbuttons to display plots or not.
+        checkButton_curve <- function(curve){
+          #Don't show cum rep by default
+          if (curve == "cumRep"){
+            showByDefault <- 2
+          }
+          else{
+            showByDefault <- 1
+          }
+          return(radioButtons(curve,
+                           label = paste0("Display ", curve),
+                           choices = c("Yes" = 1, "No" = 2),
+                           inline = TRUE,
+                           selected = showByDefault))
+        }
+
+        ##Panel to toggle curves showing
+        output$plotTogglePanel <- renderUI({
+          ##Exclude the date as that's not a curve.
+          defsim <- run_sim(read_params("ICU1.csv"))
+          curves <- as.vector(colnames(defsim)[2:length(defsim)])
+          #Ignore curves that we're never going to show.
+          curves <- setdiff(curves, c("t","S","R","E","I","X","incidence"))
+          #Create the plot toggles
+          column(2,
+            lapply(curves,
+                        FUN = checkButton_curve))
+        })
+
 #Run.
   }
-  shinyApp(ui, server)
+  ##Take a useBrowser logical argument and run the shiny app accordingly.
+  browserManager <- function(openinBrowser){
+    if (openinBrowser){
+      options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
+    }
+    else{
+      options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+    }
+  }
+  ##Set the viewing options first.
+  browserManager(useBrowser)
+  ##Run the shiny app. the default value of launch.browser looks for the option set by browserManager.
+  shiny::runApp(appDir = shinyApp("ui" = ui, "server" = server), launch.browser = getOption("shiny.launch.browser", interactive()))
 }
