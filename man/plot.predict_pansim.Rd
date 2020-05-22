@@ -15,6 +15,7 @@
   mult_var = NULL,
   directlabels = TRUE,
   log = TRUE,
+  log_lwr = 1,
   ...
 )
 }
@@ -38,6 +39,8 @@
 \item{directlabels}{use direct labels?}
 
 \item{log}{use a log10 scale for the y axis?}
+
+\item{log_lwr}{lower limit when using log scale}
 
 \item{...}{extra arguments (unused)}
 }

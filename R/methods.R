@@ -578,6 +578,7 @@ capac_info <- data.frame(value=c(630,1300),
 ##' @param mult_var variable in data set indicating multiple forecast types to compare
 ##' @param directlabels use direct labels?
 ##' @param log use a log10 scale for the y axis?
+##' @param log_lwr lower limit when using log scale
 ##' @param ... extra arguments (unused)
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
 ##' @importFrom directlabels geom_dl dl.trans
@@ -605,6 +606,7 @@ plot.predict_pansim <- function(x,
                     mult_var=NULL,
                     directlabels=TRUE,
                     log=TRUE,
+                    log_lwr=1,
                     ...) {
     check_dots(...)
     lwr <- upr <- lab <- var <- . <- NULL
@@ -621,7 +623,7 @@ plot.predict_pansim <- function(x,
                 strip.text = element_blank())
     )
     if (log) {
-        p <- p + scale_y_log10(limits=c(1,NA),oob=scales::squish)
+        p <- p + scale_y_log10(limits=c(log_lwr,NA),oob=scales::squish)
     }
     if (!is.null(break_dates)) {
         p <- p + geom_vline(xintercept=anydate(break_dates),lty=2)
