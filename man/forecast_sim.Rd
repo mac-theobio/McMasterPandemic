@@ -20,6 +20,7 @@ forecast_sim(
   condense_args = NULL,
   return_val = c("aggsim", "vals_only"),
   sim_fun = run_sim_break,
+  calc_Rt = FALSE,
   debug = FALSE
 )
 }
@@ -51,6 +52,8 @@ forecast_sim(
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
 
 \item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
+
+\item{calc_Rt}{calculate and include R(t) in prediction/forecast?}
 
 \item{debug}{print debugging messages?}
 }

@@ -484,6 +484,7 @@ print.fit_pansim <- function(x, ...) {
 ##' @param ensemble run ensemble?
 ##' @param new_params parameters to update in base parameters (e.g. adding stochastic parameters)
 ##' @param ... extra args (passed to forecast_ensemble)
+##' @param scale_Sigma inflate/deflate covariance matrix
 ##' @importFrom bbmle coef
 ##' @export
 ##' @examples
@@ -500,7 +501,7 @@ predict.fit_pansim <- function(object
                                            "incidence","report", "cumRep", "newTests/1000")
                              , ensemble = FALSE
                              , new_params=NULL
-                             , shrink_sigma=1
+                             , scale_Sigma=1
                              , ... ) {
 
     var <- . <- NULL
@@ -534,7 +535,7 @@ predict.fit_pansim <- function(object
                       c(nlist(p=coef(object$mle2),
                              calc_Rt), f_args, new_args))
     } else {
-        argList <- c(nlist(fit=object, forecast_args=f_args, shrink_sigma, calc_Rt), new_args)
+        argList <- c(nlist(fit=object, forecast_args=f_args, scale_Sigma, calc_Rt), new_args)
         if (!is.null(de <- attr(object,"de"))) {
             argList <- c(argList,list(Sigma=de$member$Sigma))
         }

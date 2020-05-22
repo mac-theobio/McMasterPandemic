@@ -13,6 +13,8 @@ forecast_ensemble(
   seed = NULL,
   imp_wts = FALSE,
   Sigma = bbmle::vcov(fit$mle2),
+  scale_Sigma,
+  calc_Rt = FALSE,
   fix_pars_re = "nb_disp",
   .progress = if (interactive()) "text" else "none"
 )
@@ -24,7 +26,7 @@ forecast_ensemble(
 
 \item{forecast_args}{arguments to pass to \code{forecast_sim}}
 
-\item{qvec}{vector of quantiles}
+\item{qvec}{vector of quantiles: NULL to return an array (nt x nvars x nsims) instead of a tibble with date/var+ quantiles}
 
 \item{qnames}{quantile names}
 
@@ -33,6 +35,10 @@ forecast_ensemble(
 \item{imp_wts}{use importance weighting, i.e. weight ensemble based on log-likelihood?}
 
 \item{Sigma}{covariance matrix to pass to \code{pop_pred_samp}}
+
+\item{scale_Sigma}{multiplier for covariance matrix}
+
+\item{calc_Rt}{calculate and include R(t) in prediction/forecast?}
 
 \item{fix_pars_re}{a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble}
 

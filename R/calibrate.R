@@ -269,6 +269,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          calc_Rt = FALSE,
                          debug = FALSE)
 {
+    S <- Symbol <- rel_beta0 <- NULL ## global var checking
     return_val <- match.arg(return_val)
     sim_args <- c(sim_args,nlist(start_date, end_date))
     if (!is.null(stoch)) {
@@ -313,7 +314,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
             x2 <- (full_join(bb,select(r_agg,date,S),by="date")
                 %>% arrange(date))
         }  else {
-            x2 <- mutate(S_pred,rel_beta0=1)
+            x2 <- r_agg %>% select(date,S) %>% mutate(rel_beta0=1)
         }
         x2_nona <- na.omit(x2)
         x3 <- (x2 
@@ -644,7 +645,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 }
 
 ##' find confidence envelopes by simulation
-##' @inheritParams forecat_sim
+##' @inheritParams forecast_sim
 ##' @param fit output from \code{calibrate}
 ##' @param nsim number of simulations
 ##' @param seed random-number seed
@@ -655,6 +656,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
 ##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
+##' @param scale_Sigma multiplier for covariance matrix
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 forecast_ensemble <- function(fit,
@@ -665,7 +667,7 @@ forecast_ensemble <- function(fit,
                               seed=NULL,
                               imp_wts=FALSE,
                               Sigma=bbmle::vcov(fit$mle2),
-                              shrink_sigma,
+                              scale_Sigma,
                               calc_Rt=FALSE,
                               fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
@@ -700,14 +702,15 @@ forecast_ensemble <- function(fit,
 
     f_args <- forecast_args
     f_args <- f_args[!names(f_args) %in% c("stoch", "stoch_start", "fixed_pars", "base_params")]
-    pps_args <- c(list(fit$mle2
+    pps_args <- c(nlist(fit$mle2
                      , n=nsim
                      , PDify =TRUE
-                     , Sigma = Sigma
+                     , Sigma
                      , return_wts=imp_wts
                      , data=fit$mle2@data$data
                      , fix_params=fix_pars
-                     , shrink_sigma=shrink_sigma)
+                     , scale_Sigma
+                       )
                 , f_args)
 
 

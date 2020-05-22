@@ -14,6 +14,7 @@
     "newTests/1000"),
   ensemble = FALSE,
   new_params = NULL,
+  scale_Sigma = 1,
   ...
 )
 
@@ -46,6 +47,8 @@
 \item{ensemble}{run ensemble?}
 
 \item{new_params}{parameters to update in base parameters (e.g. adding stochastic parameters)}
+
+\item{scale_Sigma}{inflate/deflate covariance matrix}
 
 \item{...}{extra args (passed to forecast_ensemble)}
 
