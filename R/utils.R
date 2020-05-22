@@ -410,24 +410,24 @@ add_d_log <- function(x) {
 }
 
 ##' extract vector of effective Rt
-## FIXME: allow stoch/parameter uncertainty
+## FIXME: now redundant with code inside forecast_sim
+## if this gets erased, save the @importFrom stuff!
 ##' @param x a fitted object
 ##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble
 ##' @export
 get_Rt <- function(x) {
     Symbol <- value <- rel_beta0 <- S <- NULL
-    ff <- x$fit
     ## process args etc.
-    f_args <- ff$forecast_args
-    pp <- coef(ff,"fitted")
+    f_args <- x$forecast_args
+    pp <- coef(x,"fitted")
     extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
     ## calc R0 base, rel beta, S
-    R0_base <- summary(coef(ff))[["R0"]]
-    bb <- with(f_args,sim_fun(params=coef(ff),
+    R0_base <- summary(coef(x))[["R0"]]
+    bb <- with(f_args,sim_fun(params=coef(x),
                               extra_pars=extra_pars,
                               time_args=time_args,sim_args=sim_args,
                               return_timevar=TRUE))
-    S_pred <- (predict(ff,keep_vars="S")
+    S_pred <- (predict(x,keep_vars="S")
         %>% select(date,value)
         %>% rename(S="value")
     )
@@ -452,8 +452,8 @@ get_Rt <- function(x) {
     is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
     TRUE ~ .
 )))
-    zeta <- coef(ff)[["zeta"]]
-    N <- coef(ff)[["N"]]
+    zeta <- coef(x)[["zeta"]]
+    N <- coef(x)[["N"]]
     x4 <- (x3
         %>% transmute(date=date,
                       R0=R0_base*rel_beta0*(S/N)^(1+zeta))

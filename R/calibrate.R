@@ -244,6 +244,8 @@ run_sim_decay <- function(params,
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
+##' @param calc_Rt calculate and include R(t) in prediction/forecast?
+
 ##' @examples
 ##' ff <- ont_cal1$forecast_args
 ##' op <- ff$opt_pars
@@ -264,6 +266,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          ## FIXME: return_val is redundant with sim_fun
                          return_val=c("aggsim","vals_only"),
                          sim_fun=run_sim_break,
+                         calc_Rt = FALSE,
                          debug = FALSE)
 {
     return_val <- match.arg(return_val)
@@ -280,21 +283,51 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
     pp <- pp[!grepl("^params$|nb_disp",names(pp))]
     ## if (debug) cat("forecast ",params[["beta0"]],"\n")
     ## run simulation (uses params to set initial values)
-    r <- do.call(sim_fun,
-                 c(nlist(params,
+    all_sim_args <- c(nlist(params,
                          extra_pars=pp,
                          start_date,
                          end_date,
                          time_args,
                          condense_args,
                          sim_args),
-                   pp))
+                   pp)
+    r <- do.call(sim_fun, all_sim_args)
     ## FIXME: remove? already condensed?
     ## if (condense) r_agg <- condense(r)
     r_agg <- r
     ## aggregate
     if (!is.null(aggregate_args)) {
         r_agg <- do.call(aggregate, c(list(r_agg),aggregate_args))
+    }
+    if (calc_Rt) {
+        R0_base <- summary(params)[["R0"]]
+        ## retrieve time-varying beta
+        bb <- do.call(sim_fun,c(all_sim_args,list(return_timevar=TRUE)))
+        if (!is.null(bb)) {
+            bb <- (bb
+                %>% as_tibble()
+                %>% dplyr::filter(Symbol=="beta0")
+                %>% dplyr::select(-Symbol)
+                %>% rename(rel_beta0="Relative_value",date="Date")
+            )
+            x2 <- (full_join(bb,select(r_agg,date,S),by="date")
+                %>% arrange(date))
+        }  else {
+            x2 <- mutate(S_pred,rel_beta0=1)
+        }
+        x2_nona <- na.omit(x2)
+        x3 <- (x2 
+            %>% mutate_at("rel_beta0",
+                          ~ case_when(
+    is.na(.) & date<x2_nona$date[1] ~ x2_nona$rel_beta0[1],
+    is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
+    TRUE ~ .
+)))
+        x4 <- (x3
+            %>% transmute(date=date,
+                          Rt=R0_base*rel_beta0*(S/params[["N"]])^(1+params[["zeta"]]))
+        )
+        r_agg <- full_join(r_agg,x4, by="date")
     }
     r_agg <- pivot(r_agg)
     ret <- switch(return_val,
@@ -611,19 +644,19 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 }
 
 ##' find confidence envelopes by simulation
+##' @inheritParams forecat_sim
 ##' @param fit output from \code{calibrate}
 ##' @param nsim number of simulations
 ##' @param seed random-number seed
 ##' @param forecast_args arguments to pass to \code{forecast_sim}
 ##' @param imp_wts use importance weighting, i.e. weight ensemble based on log-likelihood?
-##' @param qvec vector of quantiles
+##' @param qvec vector of quantiles: NULL to return an array (nt x nvars x nsims) instead of a tibble with date/var+ quantiles
 ##' @param qnames quantile names
 ##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
 ##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
-## FIXME: use bbmle::pop_pred_samp?
 forecast_ensemble <- function(fit,
                               nsim=200,
                               forecast_args=fit$forecast_args,
@@ -633,6 +666,7 @@ forecast_ensemble <- function(fit,
                               imp_wts=FALSE,
                               Sigma=bbmle::vcov(fit$mle2),
                               shrink_sigma,
+                              calc_Rt=FALSE,
                               fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
                               ) {
@@ -649,7 +683,7 @@ forecast_ensemble <- function(fit,
     ## might help to fix it ...
     ff <- function(p, return_val="vals_only") {
         do.call(forecast_sim,
-                c(list(p,return_val=return_val),forecast_args))
+                c(nlist(p,return_val,calc_Rt),forecast_args))
     }
 
     ## baseline fit

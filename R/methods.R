@@ -3,7 +3,7 @@ print.pansim <- function(x,all=FALSE,...) {
     ## FIXME: is this the best way?
     ## use tibbles or not?
     class(x) <- "data.frame"
-    if (all) print(x)
+   if (all) print(x)
     attr(x,"params") <- NULL
     print(x)
 }
@@ -528,11 +528,13 @@ predict.fit_pansim <- function(object
         f_args$base_params <- do.call(update.params_pansim,
             c(list(f_args$base_params), new_params))
     }
+    calc_Rt <- "Rt" %in% keep_vars
     if (!ensemble) {
         fc <- do.call(forecast_sim,
-                      c(list(p=coef(object$mle2)), f_args, new_args))
+                      c(nlist(p=coef(object$mle2),
+                             calc_Rt), f_args, new_args))
     } else {
-        argList <- c(nlist(fit=object, forecast_args=f_args, shrink_sigma), new_args)
+        argList <- c(nlist(fit=object, forecast_args=f_args, shrink_sigma, calc_Rt), new_args)
         if (!is.null(de <- attr(object,"de"))) {
             argList <- c(argList,list(Sigma=de$member$Sigma))
         }

@@ -162,7 +162,7 @@ ggplot(timetab,aes(npar,value,colour=type,shape=optim))+
 ```{r Rt_plots}
 ## exclude N-M fits, bogus 1111 fit
 short_list <- res_list[grepl("^1",names(res_list)) & names(res_list)!="1111"]
-all_R <- (purrr::map_dfr(short_list,get_Rt,.id="mod")
+all_R <- (purrr::map_dfr(short_list,~get_Rt(.$fit),.id="mod")
     %>% full_join(select(sumtab,mod,desc),by="mod")
 )
 print(ggplot(all_R,aes(date,R0,colour=desc))
