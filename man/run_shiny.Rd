@@ -4,7 +4,10 @@
 \alias{run_shiny}
 \title{Run the McMasterPandemic Shiny}
 \usage{
-run_shiny()
+run_shiny(useBrowser)
+}
+\arguments{
+\item{useBrowser}{Open the shiny in the browser.}
 }
 \description{
 Run the McMasterPandemic Shiny
