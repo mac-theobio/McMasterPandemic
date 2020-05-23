@@ -20,7 +20,7 @@ browserManager <- function(openinBrowser){
 ##'
 ##' @importFrom stringr str_length
 ##' @importFrom anytime anydate
-##' @param valueString the string we'd like to extract values from.
+##' @param valuesString the string we'd like to extract values from.
 ##' @param mode the type of data encoded in the string: either dates, symbols, or values
 ##' @export
 justValues_f <- function(valuesString, mode){
@@ -351,7 +351,8 @@ run_shiny <- function(useBrowser) {
         ##Manage the states to drop.
         getDropStates <- function(){
           default_dropStates <- c("t","S","R","E","I","X","incidence")
-          couldDropStates <- setdiff(colnames(g)[2:length(g)], default_dropStates)
+          defSim <- run_sim(read_params("ICU1.csv"))
+          couldDropStates <- setdiff(colnames(defSim)[2:length(defSim)], default_dropStates)
           for (state in couldDropStates){
             stateVal <- eval(parse(text = paste0("input$", state)))
             ##Catch loading errors.
