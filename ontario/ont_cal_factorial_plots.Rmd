@@ -165,7 +165,7 @@ ggplot(timetab,aes(npar,value,colour=type,shape=optim))+
 
 ## estimated Rt
 
-```{r Rt_plots,fig.width=10}
+```{r Rt_plots,fig.width=10,warning=FALSE}
 Rt_pred2 <- (Rt_pred
     %>% full_join(select(sumtab,mod,desc),by="mod")
     %>% mutate(has_spline=grepl("spline",desc))

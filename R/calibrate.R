@@ -316,19 +316,13 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
         }  else {
             x2 <- r_agg %>% select(date,S) %>% mutate(rel_beta0=1)
         }
-        x2_nona <- na.omit(x2)
-        x3 <- (x2 
-            %>% mutate_at("rel_beta0",
-                          ~ case_when(
-    is.na(.) & date<x2_nona$date[1] ~ x2_nona$rel_beta0[1],
-    is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
-    TRUE ~ .
-)))
-        x4 <- (x3
+        if (!"zeta" %in% names(params)) params[["zeta"]] <- 0
+        x3 <- (x2
+            %>% mutate_at("rel_beta0", fill_edge_values)
             %>% transmute(date=date,
                           Rt=R0_base*rel_beta0*(S/params[["N"]])^(1+params[["zeta"]]))
         )
-        r_agg <- full_join(r_agg,x4, by="date")
+        r_agg <- full_join(r_agg, x3, by="date")
     }
     r_agg <- tidyr::pivot_longer(r_agg,-date, names_to="var")
     ret <- switch(return_val,
@@ -773,4 +767,90 @@ forecast_ensemble <- function(fit,
         e_res3 <- dplyr::bind_cols(e0, e_res4)
         return(e_res3)
     }
+}
+
+##' @export
+calibrate_comb <- function(data,
+                     params,
+                     mob_data=NULL,
+                     spline_days=14,
+                     spline_df=NA,
+                     knot_quantile_var=NA,
+                     spline_sd_pen=NA,
+                     maxit=10000,
+                     use_DEoptim=TRUE,
+                     DE_cores=1,
+                     use_mobility=FALSE,
+                     use_zeta=FALSE,
+                     use_spline=TRUE,
+                     debug_plot=interactive(),
+                     ...) {
+
+    opt_pars <- get_opt_pars(params,vars=unique(data$var))
+    if (use_zeta) opt_pars$params <- c(opt_pars$params,log_zeta=1)
+    loglin_terms <- "-1"
+    if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
+    ## need tmp_dat ouside use_spline for non-spline, non-mob cases
+    X_dat <- (data
+        %>% select(date)
+        %>% distinct()
+        %>% mutate(t_vec=as.numeric(date-min(date)))
+    )
+    if (use_spline) {
+        if (is.na(spline_df)) {
+            spline_df <- round(length(data$t_vec)/spline_days)
+        }
+        if (is.na(knot_quantile_var)) {
+            spline_term <- sprintf("bs(t_vec,df=spline_df)")
+        } else {
+            ## df specified: pick (df-degree) knots
+            knot_dat <- (filter(data,var==knot_quantile_var)
+                %>% na.omit()
+                %>% mutate(cum=cumsum(value),t_vec=as.numeric(date-min(date)))
+            )
+            q_vec <- quantile(knot_dat$cum,seq(1,spline_df-3)/(spline_df-2))
+            ## find closest dates to times with these cum sums
+            knot_t_vec <- with(knot_dat,approx(cum,t_vec,xout=q_vec,ties=mean))$y
+            cat("knots:",knot_t_vec,sep="\n","\n")
+            spline_term <- sprintf("bs(t_vec,knots=knot_t_vec)")
+        }
+        loglin_terms <- c(loglin_terms, spline_term)
+    }
+    form <- reformulate(loglin_terms)
+    if (use_mobility) {
+        X_dat <- full_join(X_dat,mob_dat,by="date") %>% mutate_at("rel_activity",fill_edge_values)
+    }
+    X <- model.matrix(form, data = X_dat)
+    ## matplot(X_dat$t_vec,X,type="l",lwd=2)
+    opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    time_args <- nlist(X,X_date=X_dat$date)
+    priors <- NULL
+    if (!is.na(spline_sd_pen)) {
+        spline_beg <- if (use_mobility) 2 else 1
+        spline_end <- ncol(X)
+        priors <- bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=spline_sd_pen)))
+    }
+    ## do the calibration
+    ## debug <- use_DEoptim
+    debug <- FALSE
+
+    argList <- c(nlist(data
+                     , use_DEoptim
+                     , DE_cores
+                     , debug_plot
+                     , debug
+                     , base_params=params
+                     , mle2_control = list(maxit=maxit)
+                     , opt_pars
+                     , time_args
+                     , sim_fun = run_sim_loglin)
+               , list(...))
+
+    res <- do.call(calibrate, argList)
+
+    ## FIXME: figure out descriptive string?
+
+    ## checkpoint
+    ## saveRDS(res,file=sprintf("ont_fac_%s_fit.rds",flags))
+    return(res)  ## return *after* saving!!!!
 }

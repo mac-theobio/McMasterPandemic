@@ -461,3 +461,16 @@ get_Rt <- function(x) {
     return(x4)
 }
     
+
+## replace values before first non-NA value with first non-NA value; na.locf everything else
+fill_edge_values <- function(x) {
+    first_val <- which(!is.na(x))[1]
+    if (first_val>1) {
+        x[seq(first_val-1)] <- x[first_val]
+    }
+    x <- zoo::na.locf(x)
+    return(x)
+}
+
+
+                             

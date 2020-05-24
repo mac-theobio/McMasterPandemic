@@ -7,9 +7,9 @@
 justValues_f(valuesString, mode)
 }
 \arguments{
-\item{mode}{the type of data encoded in the string: either dates, symbols, or values}
+\item{valuesString}{the string we'd like to extract values from.}
 
-\item{valueString}{the string we'd like to extract values from.}
+\item{mode}{the type of data encoded in the string: either dates, symbols, or values}
 }
 \description{
 Handle inputs from the time-varying transmission option, which are recieved as strings.

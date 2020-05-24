@@ -60,4 +60,7 @@ test_that("predict", {
                    new_params=c(proc_disp=5,obs_disp=100))
     expect_is(pp2,"predict_pansim")
     plot(pp2)
+    pred_Rt <- predict(ont_cal1, keep_vars="Rt")
+    ## don't wnat to test exact values, 
+    expect_equal(range(pred_
 })
