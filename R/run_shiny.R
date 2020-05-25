@@ -60,6 +60,9 @@ justValues_f <- function(valuesString, mode){
 parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
+default.dropstates <- c("t","S","R","E","I","X","incidence")
+default.sim <- run_sim(read_params("ICU1.csv"))
+
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -72,7 +75,7 @@ default.start.date <- "2020-01-01"
 ##' @param useBrowser Open the shiny in the browser.
 ##' @return NULL
 ##' @export
-run_shiny <- function(useBrowser) {
+run_shiny <- function(useBrowser = TRUE) {
     ## The ui (user interface) is what the user is shown when running
     ## the shiny.  The ui also gathers input that is the passed to the
     ## server (e.g., filling in boxes or sliders).
@@ -109,11 +112,8 @@ run_shiny <- function(useBrowser) {
         fluidRow(
           uiOutput("plotColumn"),
             column(2,
-                   uiOutput("plotTogglePanel_left")
-                   ),
-          column(2,
-                 uiOutput("plotTogglePanel_right")
-          )
+                   uiOutput("plotTogglePanel")
+                   )
         ),
         fluidRow(
           column(2,
@@ -350,74 +350,56 @@ run_shiny <- function(useBrowser) {
                            value = loadParams(param)))}
         ##Manage the states to drop.
         getDropStates <- function(){
-          default_dropStates <- c("t","S","R","E","I","X","incidence")
-          defSim <- run_sim(read_params("ICU1.csv"))
-          couldDropStates <- setdiff(colnames(defSim)[2:length(defSim)], default_dropStates)
+          couldDropStates <- setdiff(colnames(default.sim)[2:length(default.sim)], default.dropstates)
           for (state in couldDropStates){
             stateVal <- eval(parse(text = paste0("input$", state)))
             ##Catch loading errors.
             if (is.null(stateVal)){
-              default_dropStates <- c("t","S","R","E","I","X","incidence", "cumRep")
-              return(default_dropStates)
+              return(c(default.dropstates, "cumRep"))
             }
             else {
             }
             ##2 indicates we don't want to show the drop state.
-            if (stateVal  == 2){
-              default_dropStates <- c(default_dropStates, state)
+            if (!stateVal){
+              default.dropstates <- c(default.dropstates, state)
             }
             else{
             }
           }
-          return(default_dropStates)
+          return(default.dropstates)
         }
-
-
         ##Create checkbuttons to display plots or not.
         checkButton_curve <- function(curve){
           #Don't show cum rep by default
           if (curve == "cumRep"){
-            showByDefault <- 2
+            showByDefault <- FALSE
           }
           else{
-            showByDefault <- 1
+            showByDefault <- TRUE
           }
-          return(radioButtons(curve,
-                           label = paste0(curve, "?"),
-                           choices = c("Yes" = 1, "No" = 2),
-                           inline = TRUE,
-                           selected = showByDefault))
+          return(checkboxInput(curve,
+                           label = paste0(curve),
+                           value = showByDefault))
         }
-        create_toggleColumn <- function(side){
+        create_togglePanel <- function(){
           ##Exclude the date as that's not a curve.
           defsim <- run_sim(read_params("ICU1.csv"))
           curves <- as.vector(colnames(defsim)[2:length(defsim)])
           ##Ignore curves that we're never going to show.
           curves <- setdiff(curves, c("t","S","R","E","I","X","incidence"))
           ##Create the plot toggles according to which side we'd like
-          if (side == "left"){
             column(2,
-                 lapply(curves [1:3],
+                 lapply(curves,
                         FUN = checkButton_curve))
-          }
-          else{
-            column(2,
-                   lapply(curves[4:7],
-                          FUN = checkButton_curve))
-          }
-        }
 
+        }
         output$plotColumn <- renderUI({
           column(input$plotSize,
                  plotOutput("plot"))
         })
         ##Panel to toggle curves showing
-        output$plotTogglePanel_left <- renderUI({
-          create_toggleColumn("left")
-        })
-        ##Panel to toggle curves showing
-        output$plotTogglePanel_right <- renderUI({
-          create_toggleColumn("right")
+        output$plotTogglePanel <- renderUI({
+          create_togglePanel()
         })
   }
   ##Take a useBrowser logical argument and run the shiny app accordingly.
