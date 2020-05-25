@@ -61,8 +61,6 @@ parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","R","E","I","X","incidence")
-default.sim <- run_sim(read_params("ICU1.csv"))
-
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -350,6 +348,7 @@ run_shiny <- function(useBrowser = TRUE) {
                            value = loadParams(param)))}
         ##Manage the states to drop.
         getDropStates <- function(){
+          default.sim <- run_sim(read_params("ICU1.csv"))
           couldDropStates <- setdiff(colnames(default.sim)[2:length(default.sim)], default.dropstates)
           for (state in couldDropStates){
             stateVal <- eval(parse(text = paste0("input$", state)))
