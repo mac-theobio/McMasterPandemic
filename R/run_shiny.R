@@ -6,10 +6,11 @@
 ##' @param openinBrowser a logical indicating whether the shiny app should be opened in the browser or not
 browserManager <- function(openinBrowser){
   if (openinBrowser){
-    options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
+    ##Use get to circumvent the global binding errors.
+    options(shiny.launch.browser = get(".rs.invokeShinyWindowExternal", envir = as.environment("tools:rstudio")))
   }
   else{
-    options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+    options(shiny.launch.browser = get(".rs.invokeShinyWindowViewer", envir = as.environment("tools:rstudio")))
   }
 }
 
