@@ -2,10 +2,10 @@
 
 ### short term
 
-* add another layer to incorporate ont_cal_factorial stuff
+* document
 * document Rt calculation (add to McMasterReport.pdf) etc.
 * allow choice of Wald vs DEoptim cov matrices in forecast_ensemble
-* weighted covariance instead of cutoff in DEoptim pop selection
+* weighted covariance instead of cutoff in DEoptim pop selection (cov.wt in base R)
 * document invlink_trans better
 
 ## important

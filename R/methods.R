@@ -147,10 +147,10 @@ condense.pansim <-  function(object, add_reports=TRUE,
         } else {
             dd <- object[c("date","S","E")]
         }
-        dd <- add_col(dd,"I","^I[^C]")
-        dd <- add_col(dd,"H","^H")
-        dd <- add_col(dd,"hosp","^hosp")
-        dd <- add_col(dd,"ICU","^ICU")
+        dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
+        dd <- add_col(dd,"H","^H")     ## collapse all H* variables
+        dd <- add_col(dd,"hosp","^hosp")  ## all hosp* variables
+        dd <- add_col(dd,"ICU","^ICU")    ## ICU* variables
         dd <- data.frame(dd,R=object[["R"]])
         ## FIXME: rearrange order; condensation distinct from diff_deaths?
         if (diff_deaths) {

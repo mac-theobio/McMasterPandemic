@@ -71,6 +71,8 @@ epiestim_plot.Rout: ontario_clean.Rout ont_cal.Rout epiestim.Rout epiestim_plot.
 
 ontario_calibration_report.html: ontario_clean.RData ont_cal.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
 
+ont_cal_splinecomp_plots.Rout: ont_keep.Rout ont_cal_splinecomp.RData
+
 McMasterReport.pdf: McMasterReport.Rnw ont_cal.RData ont_cal_2brks.RData ont_cal_H.RData ont_cal_noICU_2brks_prior.RData ont_cal_mob1.RData ontario_clean.RData
 
 %.html: %.Rmd

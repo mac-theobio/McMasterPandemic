@@ -364,6 +364,9 @@ get_opt_pars <- function(params,vars=c("hosp","death","report")) {
     if (any(c("hosp","H") %in% vars)) {
         opt_pars$params <- c(opt_pars$params, log_mu=log(params[["mu"]]))
     }
+    if (identical(sort(vars), c("death","report"))) {
+        opt_pars$params <- c(opt_pars$params, logit_cprop=qlogis(params[["cprop"]]))
+    }
     ## per-parameter dispersion
     opt_pars$log_nb_disp <- setNames(rep(0,length(vars)),vars)
     return(opt_pars)
