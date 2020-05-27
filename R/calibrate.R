@@ -818,7 +818,7 @@ calibrate_comb <- function(data,
     }
     form <- reformulate(loglin_terms)
     if (use_mobility) {
-        X_dat <- full_join(X_dat,mob_dat,by="date") %>% mutate_at("rel_activity",fill_edge_values)
+        X_dat <- full_join(X_dat,mob_data,by="date") %>% mutate_at("rel_activity",fill_edge_values)
     }
     X <- model.matrix(form, data = X_dat)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
