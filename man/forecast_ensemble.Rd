@@ -13,7 +13,7 @@ forecast_ensemble(
   seed = NULL,
   imp_wts = FALSE,
   Sigma = bbmle::vcov(fit$mle2),
-  scale_Sigma,
+  scale_Sigma = 1,
   calc_Rt = FALSE,
   fix_pars_re = "nb_disp",
   .progress = if (interactive()) "text" else "none"

@@ -14,7 +14,9 @@ transKernel <- function(par, steps=100, do_hazard=TRUE,
 	))
 }
 ## allow caching of results
-transKernel <- memoise::memoise(transKernel)
+if (requireNamespace("memoise")) {
+    transKernel <- memoise::memoise(transKernel)
+}
 
 ## FIXME: kernel should ideally be an object with k and lag
 ## (a class with methods)

@@ -32,8 +32,7 @@ calibrate(
   DE_args = list(),
   DE_lwr = NULL,
   DE_upr = NULL,
-  DE_cores = getOption("mc.cores", 2),
-  DE_nll_thresh = 1.5
+  DE_cores = getOption("mc.cores", 2)
 )
 }
 \arguments{
@@ -88,8 +87,6 @@ calibrate(
 \item{DE_upr}{upper bounds, ditto}
 
 \item{DE_cores}{number of parallel workers for DE}
-
-\item{DE_nll_thresh}{threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate}
 }
 \description{
 estimate parameters from data

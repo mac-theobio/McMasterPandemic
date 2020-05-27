@@ -61,6 +61,6 @@ test_that("predict", {
     expect_is(pp2,"predict_pansim")
     plot(pp2)
     pred_Rt <- predict(ont_cal1, keep_vars="Rt")
-    ## don't wnat to test exact values, 
-    expect_equal(range(pred_
+    ## don't want to test exact values: what should we test? 
+    ## expect_equal(range(pred_
 })

@@ -584,7 +584,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                           function(x) do.call(mle_fun,c(list(x),mle_args)))
         ## weighted covariance based on *likelihoods*
         likvec <- exp(-nll_vals)
-        vM <- stats::cov.wt(M,wt=pmin(likvec,min(likvec[likvec>0])))$cov
+        vM <- stats::cov.wt(M,wt=pmax(likvec,min(likvec[likvec>0])))$cov
         dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
         de_cal1$member$Sigma <- vM
@@ -756,6 +756,18 @@ forecast_ensemble <- function(fit,
     }
 }
 
+##' top-level calibration based on mobility, splines, phenom het
+##' @param mob_data  mobility data
+##' @param spline_days days between spline knots
+##' @param spline_df overall spline degrees of freedom
+##' @param knot_quantile_var variable to use cum dist for knotspacing
+##' @param spline_pen penalization for spline
+##' @param use_mobility include mobility as a covariate in the model?
+##' @param use_phenomhet include phenomenological heterogeneity?
+##' @param use_spline include spline?
+##' @importFrom stats quantile reformulate model.matrix
+##' @importFrom dplyr distinct
+##' @inheritParams calibrate
 ##' @export
 calibrate_comb <- function(data,
                      params,
@@ -763,18 +775,18 @@ calibrate_comb <- function(data,
                      spline_days=14,
                      spline_df=NA,
                      knot_quantile_var=NA,
-                     spline_sd_pen=NA,
+                     spline_pen=0,
                      maxit=10000,
                      use_DEoptim=TRUE,
                      DE_cores=1,
                      use_mobility=FALSE,
-                     use_zeta=FALSE,
+                     use_phenomhet=FALSE,
                      use_spline=TRUE,
                      debug_plot=interactive(),
                      ...) {
-
+    value <- NULL ## global var check
     opt_pars <- get_opt_pars(params,vars=unique(data$var))
-    if (use_zeta) opt_pars$params <- c(opt_pars$params,log_zeta=1)
+    if (use_phenomhet) opt_pars$params <- c(opt_pars$params,log_zeta=1)
     loglin_terms <- "-1"
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
     ## need tmp_dat ouside use_spline for non-spline, non-mob cases
@@ -812,10 +824,11 @@ calibrate_comb <- function(data,
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     time_args <- nlist(X,X_date=X_dat$date)
     priors <- NULL
-    if (!is.na(spline_sd_pen)) {
+    if (spline_pen>0) {
+        ## FIXME: this is fragile
         spline_beg <- if (use_mobility) 2 else 1
         spline_end <- ncol(X)
-        priors <- bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=spline_sd_pen)))
+        priors <- bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=1/spline_pen)))
     }
     ## do the calibration
     ## debug <- use_DEoptim
