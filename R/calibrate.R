@@ -757,6 +757,9 @@ forecast_ensemble <- function(fit,
 }
 
 ##' top-level calibration based on mobility, splines, phenom het
+##' @param params parameters
+##' @param maxit maximum iterations for Nelder-Mead/optimization step
+##' @param ... extra args
 ##' @param mob_data  mobility data
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom

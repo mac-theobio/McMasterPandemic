@@ -25,6 +25,8 @@ calibrate_comb(
 \arguments{
 \item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
 
+\item{params}{parameters}
+
 \item{mob_data}{mobility data}
 
 \item{spline_days}{days between spline knots}
@@ -34,6 +36,8 @@ calibrate_comb(
 \item{knot_quantile_var}{variable to use cum dist for knotspacing}
 
 \item{spline_pen}{penalization for spline}
+
+\item{maxit}{maximum iterations for Nelder-Mead/optimization step}
 
 \item{use_DEoptim}{use differential evolution as first stage?}
 
@@ -46,6 +50,8 @@ calibrate_comb(
 \item{use_spline}{include spline?}
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+
+\item{...}{extra args}
 }
 \description{
 top-level calibration based on mobility, splines, phenom het
