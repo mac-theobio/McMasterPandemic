@@ -455,7 +455,6 @@ mle_fun <- function(p, data,
 ##' @param DE_lwr lower bounds for DE optimization
 ##' @param DE_upr upper bounds, ditto
 ##' @param DE_cores number of parallel workers for DE
-##' @param DE_nll_thresh threshold (log10 difference from best/minimum NLL) for removing samples from DE population variance estimate
 ##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
 ##' @param sim_fun function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
@@ -510,8 +509,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       DE_args=list(),
                       DE_lwr=NULL,
                       DE_upr=NULL,
-                      DE_cores=getOption("mc.cores",2),
-                      DE_nll_thresh=1.5)
+                      DE_cores=getOption("mc.cores",2))
 {
     start_time <- proc.time()
     if (!is.null(break_dates)) {
@@ -581,23 +579,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         M <- de_cal1$member$pop   ## find the population of parameter sets at the last step
         ## FIXME: can we avoid re-running likelihoods to threshold?
         nll_vals <- NULL
-        if (is.finite(DE_nll_thresh)) {
-            ## recalculate neg log-likelihoods
-            nll_vals <- apply(M,1,
-                              function(x) do.call(mle_fun,c(list(x),mle_args)))
-            ## drop 'extreme' values (default threshold is 10^1.5)
-            ## should we use an 'absolute' NLL thresold (e.g. 20 log-likelihood units) instead?
-            ## FIXME: compute weighted variances instead of thresholding
-            keep <- log10(nll_vals-min(nll_vals))<DE_nll_thresh
-            M <- M[keep,,drop=TRUE]
-            nll_vals <- nll_vals[keep]
-            
-        }
-        if (nrow(M)>2) {
-            vM <- var(M)
-        } else {
-            vM <- matrix(NA,length(opt_inputs),length(opt_inputs))
-        }
+        ## recalculate neg log-likelihoods
+        nll_vals <- apply(M,1,
+                          function(x) do.call(mle_fun,c(list(x),mle_args)))
+        ## weighted covariance based on *likelihoods*
+        likvec <- exp(-nll_vals)
+        vM <- stats::cov.wt(M,wt=pmin(likvec,min(likvec[likvec>0])))$cov
         dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
         de_cal1$member$Sigma <- vM
@@ -661,7 +648,7 @@ forecast_ensemble <- function(fit,
                               seed=NULL,
                               imp_wts=FALSE,
                               Sigma=bbmle::vcov(fit$mle2),
-                              scale_Sigma,
+                              scale_Sigma=1,
                               calc_Rt=FALSE,
                               fix_pars_re="nb_disp",
                               .progress=if (interactive()) "text" else "none"
