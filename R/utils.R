@@ -482,3 +482,12 @@ recompress <- function(fn) {
     L <- load(fn)
     save(list=L, file=fn, compress="xz")
 }
+
+
+
+#' extract and return original fitting data
+#' @param x a fitted object
+#' @export
+getData <- function(x) {
+    x$mle2@data$data
+}
