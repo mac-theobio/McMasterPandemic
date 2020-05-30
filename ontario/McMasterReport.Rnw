@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
   dev = "pdf",
   ##dev = "tikz",
   echo = FALSE,
-  cache = FALSE,
+  cache = TRUE,
   error=FALSE,  ## TRUE allows run to continue with error (good for debugging1)
   ##warning=FALSE,
   comment = "#>"
@@ -80,25 +80,75 @@ matplot(cbind(sqrt(diag(sfsmisc::posdefify(V2))),
 \david{\texttt{Makefile} doesn't know to check for new data in Mike's repo.
 \texttt{touch ontario\_clean.R} before compiling this document.}
 
-\section{Summary of Ontario analysis}
+\section{Data sources}
+
+\subsubsection*{Current date range for analysis and forecast calibration:}
 
 <<date_range>>=
 f_args <- fit0$forecast_args
 date_range <- with(f_args,c(start_date,end_date))
 params <- coef(fit0)
 @ 
-\begin{itemize}
-\item Initially, all our analyses were based on the {\bfseries public
-    data} that is compiled and cleaned daily by Michael Li; see
-  \url{https://wzmli.github.io/COVID19-Canada/}.  Michael continues to
-  update these data for general use, but we now work with more
-  detailed data that PHO has made available to us.  Important details
-  available in the PHO data include specific onset, hospitalization
-  and death dates for most patients (as opposed a single, ambiguous
-  ``episode date'' in the public data), and age of each patient
-  (rather than a broad age class).
-\item Current date range for forecast calibration:
+
+\begin{center}
+  \Large
   \Sexpr{date_range[1]} -- \Sexpr{date_range[2]}.
+\end{center}
+
+\subsubsection*{Public COVID-19 data for all Canadian provinces}
+
+Postdoctoral fellow Michael Li maintains a public web site containing
+Canadian COVID-19 data at the provincial level.  He compiles and
+cleans data from a variety of sources every day.  See
+\url{https://wzmli.github.io/COVID19-Canada/}.
+
+While the public data do include line lists of records for individual
+patients, there are several important limitations: 
+\begin{itemize}
+\item A single ``episode date'' is given, with no indication of
+  whether this refers to the date of onset of symptoms, date of
+  testing, date of report, \emph{etc.}
+\item Only a broad age class is given (e.g., 50--59), rather than the
+  exact age of each patient.
+\end{itemize}
+
+\subsubsection*{Detailed COVID-19 data for Ontario}
+
+Through Public Health Ontario
+(\href{https://www.publichealthontario.ca/}{PHO}), we have obtained access to
+data from a number of health databases.
+\begin{description}
+\item[iPHIS]A line list extracted from the integrated Public Health
+  Information System
+  (\href{https://www.publichealthontario.ca/en/diseases-and-conditions/infectious-diseases/ccm/iphis}{iPHIS})
+  includes, for most patients:
+  \begin{itemize}
+  \item dates of symptom onset, specimen collection, case report, ER
+    visit, hospital admission and discharge, ICU admission and
+    discharge, death;
+  \item gender; age; postal code.
+  \end{itemize}
+\item[OLIS]A line list extracted from the Ontario Laboratories
+  Information System
+  (\href{https://www.ehealthontario.on.ca/en/for-healthcare-professionals/ontario-laboratories-information-system-olis}{OLIS})
+  provides information on every COVID-19 test performed in Ontario.
+  (The records are unfortunately not linked to the iPHIS database.)
+\item[ICES]Through a secure data portal at
+  \href{https://www.ices.on.ca/}{ICES}, we can access data from the
+  Discharge Abstract Database
+  (\href{https://www.cihi.ca/en/discharge-abstract-database-metadata}{DAD}),
+  the National Ambulatory Care Reporting System
+  (\href{https://www.cihi.ca/en/national-ambulatory-care-reporting-system-metadata}{NACRS})
+  and claims made to the Ontario Health Insurance Plan
+  (\href{https://www.ontario.ca/page/what-ohip-covers}{OHIP}).  Using
+  the ICES secure data portal is awkward and time-consuming; we have
+  begun exploring it but have not yet exploited it for analyses.
+  \david{Are we able to link all these databases in ICES?}
+\end{description}
+
+\section{Summary of Ontario analysis}
+
+\begin{itemize}
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially.  Our estimate of how
   substantial the effects have been depends on what we do:
