@@ -9,7 +9,7 @@
 a data frame ...
 
 a data frame containing date rel_activity
-Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces
+Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces; Google data up to 22 May)
 }
 \source{
 mike's repo
