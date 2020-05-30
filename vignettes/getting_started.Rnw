@@ -217,7 +217,7 @@ sd.
   worms.  A slighty more principaled way to decide on that number: fit
   params, then run sims with different combinations of obs and proc
   noise that yield noise like in the data: then infer how observed
-  noise is divided btw proc and measurement error.}  
+  noise is divided btw proc and measurement error.}
 
 \david{DC commented on 19 Apr 2020 (`MP updates' thread): ``5/ I have
   had the same question for a while regarding noise amplitude… I
