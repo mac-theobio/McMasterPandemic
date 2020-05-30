@@ -485,6 +485,7 @@ print.fit_pansim <- function(x, ...) {
 ##' @param new_params parameters to update in base parameters (e.g. adding stochastic parameters)
 ##' @param ... extra args (passed to forecast_ensemble)
 ##' @param scale_Sigma inflate/deflate covariance matrix
+##' @param Sigma covariance matrix
 ##' @importFrom bbmle coef
 ##' @export
 ##' @examples
@@ -501,6 +502,7 @@ predict.fit_pansim <- function(object
                                            "incidence","report", "cumRep", "newTests/1000")
                              , ensemble = FALSE
                              , new_params=NULL
+                             , Sigma=NULL
                              , scale_Sigma=1
                              , ... ) {
 
@@ -535,9 +537,16 @@ predict.fit_pansim <- function(object
                       c(nlist(p=coef(object$mle2),
                              calc_Rt), f_args, new_args))
     } else {
+        ## ensemble
         argList <- c(nlist(fit=object, forecast_args=f_args, scale_Sigma, calc_Rt), new_args)
-        if (!is.null(de <- attr(object,"de"))) {
-            argList <- c(argList,list(Sigma=de$member$Sigma))
+        ## FIXME: how hard should we work on Sigma?
+        if (is.null(Sigma)) {
+            if (!is.null(de <- attr(object,"de"))) {
+                Sigma <- de$member$Sigma
+            } else {
+                Sigma <- bbmle::vcov(object$mle2)
+            }
+            argList <- c(argList,list(Sigma=Sigma))
         }
         fc <- do.call(forecast_ensemble, argList)
     }

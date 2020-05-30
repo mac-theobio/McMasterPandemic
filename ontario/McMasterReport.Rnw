@@ -38,6 +38,25 @@ library(ggplot2); theme_set(theme_bw())
 library(bbmle)
 load("ont_cal_noICU_2brks_prior.RData")
 fit0 <- ont_cal_noICU_2brks_prior
+@
+
+<<diagnose,echo=FALSE,eval=FALSE>>=
+## figuring out what's up with the fit (specifically with the cov matrix used to generate
+## predictions
+de0 <- attr(fit0,"de")$member
+likvec <- de0$nll_vals-min(de0$nll_vals)
+lsc <- 1-likvec/max(likvec)
+pairs(de0$pop,gap=0,cex=lsc)
+V1 <- de0$Sigma
+sqrt(diag(V1)) ## all NaN ... uh-oh ...
+sqrt(diag(de0$Sigma)) ## NaN ... uh-oh ...
+V2 <- vcov(fit0$mle2)
+par(las=1)
+matplot(cbind(sqrt(diag(sfsmisc::posdefify(V2))),
+              sqrt(diag(pracma::nearest_spd(V2))),
+              sqrt(diag(Matrix::nearPD(V2)$mat))),
+        ylab="value",
+        log="y")
 @ 
 
 \title{COVID-19 modelling report from McMaster:\\
@@ -431,14 +450,17 @@ plot(pp
 \begin{figure}
 <<pred2,fig.width=10,warning=FALSE>>=
 pp2 <- predict(fit0
-            , stoch=c(obs=FALSE,proc=TRUE)
-            , ensemble=TRUE
-            , stoch_start=max(ont_trans$date)
+             , stoch=c(obs=FALSE,proc=TRUE)
+             , Sigma=Matrix::nearPD(vcov(fit0$mle2))$mat
+             , ensemble=TRUE
+             , stoch_start=max(ont_trans$date)
             , end_date="2020-09-01"
             , qvec=NULL
             , new_params=c(proc_disp=0.5,obs_disp=100)
             , nsim=20
               )
+## bad <- apply(is.na(pp2["S",,]),2,all)
+## pp2 <- pp2[,,!bad]
 pp2L <- (reshape2::melt(pp2[c("H","death","report"),,])
     %>% as_tibble()
     %>% mutate_at("date",as.Date)
