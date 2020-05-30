@@ -148,6 +148,14 @@ data from a number of health databases.
   \david{Are we able to link all these databases in ICES?}
 \end{description}
 
+\subsubsection*{Mobility data}
+ 
+The mobility data we use are from Apple (for Toronto) and Google (for
+Ontario as a whole).  The specific mobility measures we include are
+driving, retail and recreation, and workplaces.  From these we derive
+a ``relative activity index''.
+\david{which we need to define precisely}
+
 \bigbreak\noindent
 The data we use calibrate our dynamical models are shown in Figure~\ref{fig:data}.
 \begin{figure}
@@ -191,6 +199,79 @@ pmob
 \end{figure}
 
 \FloatBarrier
+
+\section{Analysis framework}
+
+\subsubsection*{Compartmental mechanistic model}
+
+\href{https://github.com/bbolker/McMasterPandemic}{Our code} is
+based on a susceptible-exposed-infectious-removed (SEIR) model, with
+additional compartments for hospitalized individuals in acute care
+(H) or intensive care (ICU).  Infections can be asymptomatic, mildly
+symptomatic or severely symptomatic.  All symptomatic individuals
+are presumed to have had a period of pre-symptomatic infectiousness.
+
+\david{We should show a flow chart here.}
+
+Contact heterogeneity is modelled phenomenologically by taking
+incidence to be proportional to
+\begin{equation}
+  \Big(\frac{S}{N}\Big)^{h} I
+\end{equation}
+and fitting the heterogeneity parameter $h$ (in the standard SEIR
+model, $h=1$).
+
+Incidence is also proportional to the transmission rate $\beta$,
+which is taken to be a time-varying function of the form
+\begin{equation}
+  \beta_0(t)\big( 1 + \beta_1(t) \big) \,.
+\end{equation}
+We fit $\beta_0(t)$ based on the assumptions that (i) it can change
+abruptly on specified dates when control measures are known to have
+been implemented, and (ii) it is correlated with a power of observed
+mobility, \ie 
+\begin{equation}
+  \beta_0(t) \propto (\text{relative mobility})^{p_{\rm mob}}
+\end{equation}
+for some power $p_{\rm mob}>0$.  In contrast, $\beta_1(t)$ is fitted
+as a linear combination of
+\href{https://en.wikipedia.org/wiki/B-spline}{B-splines}.
+
+\david{Not sure this attempt at a simple explanation is actually
+  correct.}
+
+\subsubsection*{Calibration}
+
+Model calibration is performed using
+\protect{\href{https://en.wikipedia.org/wiki/Maximum_likelihood_estimation}{maximum
+    likelihood estimation}} (MLE) by matching deterministic
+trajectories to reported cases, hospitalizations and deaths, assuming
+\protect{\href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
+    binomial}} observation error.
+
+\subsubsection*{Forecasting}
+
+Model forecasts take account of the inherent randomness of the
+processes of transmission, recovery, \emph{etc.} (``process error'').
+Even with fixed event rates, random fluctuations in compartment sizes
+occur (demographic stochasticity); fluctuations of larger amplitude
+are induced by random changes in the event rates (which might arise
+from weather changes, aggregation of people at sporting events,
+\emph{etc.}).
+
+\david{Forecasts can include process error but the current figures
+  don't.}
+
+\david{note from Ben in thread ``factorial plots'':}\ben{relative
+  $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$; in
+  the combined mobility + spline plots, $X$ includes a column for
+  log(relative mobility) and a bunch of columns corresponding to a
+  spline basis (with time as the covariate).  See last two plots in
+  \texttt{ont\_cal\_factorial\_plots.html} (I thought mobility would
+  be more strongly correlated with spline coeffs 3 + 4, but maybe
+  that's because we haven't yet found the best fit?)}
+
+%%\section{Latest code improvements}
 
 \section{Summary of Ontario analysis}
 
@@ -339,59 +420,6 @@ pmob
   or that particular scenarios will unfold.
 \item It is not clear how we might be able to detect signals of
   epidemic growth from information other than tests.
-\end{itemize}
-
-\section{Analysis framework}
-
-\begin{itemize}
-\item Compartmental mechanistic model:
-  susceptible-exposed-infectious-removed (SEIR), with additional
-  compartments for individuals in hospitals in acute care (H) or
-  intensive care (ICU).  Infections can be asymptomatic, mildly
-  symptomatic or severely symptomatic.  All symptomatic individuals
-  are presumed to have had a period of pre-symptomatic infectiousness.
-\item Model calibration is performed using
-  \protect{\href{https://en.wikipedia.org/wiki/Maximum_likelihood_estimation}{maximum
-      likelihood estimation}} (MLE) by matching deterministic
-  trajectories to reported cases, hospitalizations and deaths, assuming
-  \protect{\href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
-      binomial}} observation error.
-\item Model forecasts take account of the inherent randomness of the
-  processes of transmission, recovery, \emph{etc.} (``process
-  error'').  Even with fixed event rates, random fluctuations in
-  compartment sizes occur (demographic stochasticity); fluctuations of
-  larger amplitude are induced by random changes in the event rates
-  (which might arise from weather changes, aggregation of people at
-  sporting events, \emph{etc.}).
-\end{itemize}
-
-\section{Latest code improvements}
-
-\begin{itemize}
-\item Model includes phenomenological heterogeneity ($(S/N)^{1+\zeta}$).
-\item Calibration includes mobility data, not just break points in
-  $\R_t$ on dates when policies were announced.  $\beta_0$ is assumed
-  to be correlated with a power of observed mobility, \ie (relative
-  mobility)$^{p_{\rm mob}}$.  \ben{$p_{\rm mob}\sim0.4$ 95\% Wald CI
-    0.3-0.5.}  The mobility data we use are from Apple (for Toronto)
-  and Google (for Ontario as a whole).  The specific mobility measures
-  we include are driving, retail and recreation, and workplaces.
-  \ben{Need to make sure we keep the mobility data up to date \ldots
-    is there an issue with Google provision of data? (last date is 13 May ...
-    don't know whether that's just lag or whether they have stopped providing
-    it. On the other hand the web page does say ``Reports created 2020-05-19''.). Apple data need to be manually downloaded ?}
-  
-  \david{note from Ben in thread ``factorial plots'':}\ben{relative
-    $\beta(t)$ is being estimated as $\exp(X \texttt{\%*\%}\,\beta)$;
-    in the combined mobility + spline plots, $X$ includes a column for
-    log(relative mobility) and a bunch of columns corresponding to a
-    spline basis (with time as the covariate).  See last two plots in
-    \texttt{ont\_cal\_factorial\_plots.html} (I thought mobility would
-    be more strongly correlated with spline coeffs 3 + 4, but maybe
-    that's because we haven't yet found the best fit?)}
-
-  \david{Forecasts can include process error but the current figures
-    don't.}
 \end{itemize}
 
 \section{Current results}
