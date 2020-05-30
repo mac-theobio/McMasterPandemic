@@ -44,17 +44,24 @@ fit0 <- ont_cal_noICU_2brks_prior
 ## figuring out what's up with the fit (specifically with the cov matrix used to generate
 ## predictions
 de0 <- attr(fit0,"de")$member
-likvec <- de0$nll_vals-min(de0$nll_vals)
-lsc <- 1-likvec/max(likvec)
+likvec0 <- de0$nll_vals-min(de0$nll_vals)
+lsc <- 1-likvec0/max(likvec0)
 pairs(de0$pop,gap=0,cex=lsc)
+M <- de0$pop
+likvec <- exp(-(de0$nll_vals-min(de0$nll_vals)))
+
+sqrt(diag(vM))
+dim(de0$pop)
 V1 <- de0$Sigma
 sqrt(diag(V1)) ## all NaN ... uh-oh ...
 sqrt(diag(de0$Sigma)) ## NaN ... uh-oh ...
 V2 <- vcov(fit0$mle2)
 par(las=1)
+M2 <- Matrix::nearPD(V2)$mat
 matplot(cbind(sqrt(diag(sfsmisc::posdefify(V2))),
               sqrt(diag(pracma::nearest_spd(V2))),
-              sqrt(diag(Matrix::nearPD(V2)$mat))),
+              sqrt(diag(as.matrix(M2))),
+              sqrt(diag(vM))),
         ylab="value",
         log="y")
 @ 

@@ -288,6 +288,7 @@ run_sim <- function(params
 ) {
     call <- match.call()
 
+    if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code

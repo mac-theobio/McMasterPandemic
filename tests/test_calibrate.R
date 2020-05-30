@@ -146,5 +146,12 @@ cc1 <- calibrate(data=ont_all_sub
     , base_params=params
     , opt_pars = opt_pars
     , break_dates = bd
-)
+      )
+
+repdata <- ont_all_sub %>% filter(var=="report")
+calibrate_comb(data=repdata
+             , params=params
+             , use_phenomhet=TRUE
+             , use_spline=FALSE
+               )
 }

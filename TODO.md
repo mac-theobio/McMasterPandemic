@@ -8,13 +8,16 @@
 * allow choice of Wald vs DEoptim cov matrices in forecast_ensemble
 * document invlink_trans better
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
-* secret plots
+* secret plots; writeup for secret
+* fix cumRep observation error
 
 ## important
 
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
+    * pop_pred_samp
+	
 * match up with EpiEstim
 * LTCF: data, model compartments
 * TMB core

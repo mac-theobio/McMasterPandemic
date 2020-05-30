@@ -583,7 +583,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         nll_vals <- apply(M,1,
                           function(x) do.call(mle_fun,c(list(x),mle_args)))
         ## weighted covariance based on *likelihoods*
-        likvec <- exp(-nll_vals)
+        likvec <- exp(-(nll_vals-min(nll_vals)))
         vM <- stats::cov.wt(M,wt=pmax(likvec,min(likvec[likvec>0])))$cov
         dimnames(vM) <- list(names(opt_inputs), names(opt_inputs))
         ## attach to de object
