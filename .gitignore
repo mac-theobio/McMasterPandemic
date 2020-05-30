@@ -36,3 +36,4 @@ cache
 *.png
 */*.RData
 .DS_Store
+*/*.rda
