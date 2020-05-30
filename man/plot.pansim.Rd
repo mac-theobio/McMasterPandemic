@@ -29,6 +29,9 @@
 
 \item{...}{additional arguments to \code{\link{condense.pansim}}}
 }
+\value{
+a \code{\link[ggplot2]{ggplot}} object
+}
 \description{
 plot method for simulations
 }

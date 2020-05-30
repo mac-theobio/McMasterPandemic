@@ -49,6 +49,7 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
 ##' @param ... additional arguments to \code{\link{condense.pansim}}
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
 ##' @importFrom dplyr one_of
+##' @return a \code{\link[ggplot2]{ggplot}} object
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
                         keep_states=NULL, condense=FALSE,
