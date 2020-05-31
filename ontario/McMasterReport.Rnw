@@ -331,12 +331,12 @@ from weather changes, aggregation of people at sporting events,
 
 \section{Current results}
 
-\subsection{Estimated parameters}
+\subsection{Parameters estimated from calibration}
 
 Estimates of the parameters that we always fit are given in Table~\ref{estparmtab}.
 In addition, Table~\ref{relRttab} lists estimated relative changes in
 $\R_t$ on the
-dates on which social distancing interventions were implemented in Ontario.
+dates on which major social distancing interventions were implemented in Ontario.
 
 \david{Previously, the ``ontario calibration report'' explained what
   is calibrated and how.  However, that document was last updated 23 Apr
@@ -401,19 +401,16 @@ Hmisc::latex(dd, file="", label="phasetab", rowlabel="", table.env=TRUE
 \subsection{Forecasts}
 
 Figure~\ref{fig:forecast} shows our current projections.  The vertical
-lines \david{missing!} show the times of implementation of different
-social distancing measures (\emph{cf.}~Tables~\ref{relRttab} and
-\ref{phasetab}).  The horizontal dashed lines represent COVID ICU
-capacity (current and maximum potential expansion).
+lines show the times of implementation of different social distancing
+measures (\emph{cf.}~Tables~\ref{relRttab} and \ref{phasetab}).  The
+horizontal dashed lines represent COVID ICU capacity (current and
+maximum potential expansion).
 
 \emph{Note:} We are not currently fitting the ICU data.  We will
 return to trying to fit ICU counts after implementing compartments
 (and data) for LTCFs.
 
 \david{What are the priors on relative transmission?}
-
-\david{Why are there no horizontal axis ticks and labels on Figures
-  \ref{fig:calibration} and \ref{fig:forecast}?}
 
 \begin{figure}
   %%\includegraphics{ont_cal2.pdf}
@@ -486,9 +483,7 @@ print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
 \caption{forecast showing trajectories rather than quantiles}
 \end{figure}
 
-\subsection{Confidence intervals on peak time and peak height}
-
-\david{It would be better to include the MLE too}
+\subsubsection*{Confidence intervals on peak time and peak height}
 
 \subsubsection*{Peak Date}
 <<peakCI>>=
@@ -500,6 +495,7 @@ maxdate <- maxt2
 maxdate[] <- dimnames(pp2)[["date"]][maxt2]
 knitr::kable(maxdate)
 @
+\david{It would be better to include the MLE too}
 
 \subsubsection*{Peak Height}
 <<peakheight>>=
@@ -573,6 +569,8 @@ plot(pp
 \item amount of noise is not calibrated
 \item death looks weird if noise is too large
 \end{itemize}
+
+\FloatBarrier
 
 \section{Summary of Ontario analysis}
 
