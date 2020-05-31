@@ -19,7 +19,7 @@ mle_fun(
   checkpoint = FALSE,
   aggregate_args = NULL,
   priors = NULL,
-  na_penalty = 1000,
+  na_penalty = 1e+06,
   ...
 )
 }

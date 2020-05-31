@@ -2,14 +2,16 @@
 
 ### short term
 
-* sort out Travis issues (LaTex: enumerate pkg, wasysym.sty)
+* FIX single-variable fit with calibrate_comb
+* per-variable observation noise
+* ?? fix "predict three times"
+* test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
+
 * document !!!!
 * document Rt calculation (add to McMasterReport.pdf) etc.
 * allow choice of Wald vs DEoptim cov matrices in forecast_ensemble
 * document invlink_trans better
-* test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
 * secret plots; writeup for secret
-* fix cumRep observation error
 
 ## important
 
