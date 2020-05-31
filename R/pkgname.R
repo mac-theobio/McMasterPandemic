@@ -25,11 +25,11 @@
 ##' \ifelse{latex}{
 ##'   \out{
 ##'     $$
-##'     \begin{array}[rlc]
-##'       \frac{dS}{dt} & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\
-##'       \frac{dE}{dt} & = &  \\
+##'     \begin{array}{rlc}
+##'       S' & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\
+##'       E' & = &  \\
 ##'       & \vdots &  \\
-##'       \frac{dR}{dt} & = &
+##'       R' & = &
 ##'     \end{array}
 ##'     $$
 ##'   }
