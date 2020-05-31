@@ -289,6 +289,9 @@ texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
   x <- gsub("beta0","beta_0",x,fixed=TRUE)
   x <- gsub("phi1","phi_1",x,fixed=TRUE)
   x <- gsub("nb_disp","n",x,fixed=TRUE)
+  x <- gsub("n.H","n_{\\rm H}",x,fixed=TRUE)
+  x <- gsub("n.report","n_{\\rm report}",x,fixed=TRUE)
+  x <- gsub("n.death","n_{\\rm death}",x,fixed=TRUE)
   ##FIX: the following would be better using a table of
   ##     Greek letters and/or a table of TeX symbols
   x <- gsub("alpha","\\alpha",x,fixed=TRUE)

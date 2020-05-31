@@ -321,7 +321,11 @@ param_meanings <- c(
     R0 = "basic reproduction number",
     Gbar = "mean generation interval",
     dbl_time = "doubling time",
-    nb_disp = "dispersion of negative binomial distribution" # size arg of rnbinom()
+    ## size arg of rnbinom():
+    nb_disp = "dispersion of negative binomial distribution",
+    nb_disp.H = "dispersion of negative binomial distribution (hospitalizations)",
+    nb_disp.report = "dispersion of negative binomial distribution (case reports)",
+    nb_disp.death = "dispersion of negative binomial distribution (deaths)"
 )
 
 ##' Describe parameters
