@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
   dev = "pdf",
   ##dev = "tikz",
   cache = FALSE,
+  error = FALSE,  ## override knitr::knit() default
   ## error=TRUE,  ## allow run to continue with error (good for debugging1)
   ##warning=FALSE,
   comment = "#>"

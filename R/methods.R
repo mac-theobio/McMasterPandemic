@@ -30,6 +30,8 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
     incidence <- x$foi*x$S
     report <- calc_conv(incidence,params)
     ret <- data.frame(incidence, report)
+    ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
+    ## it's generally happening *before* the addition of obs error
     if (add_cumrep) {
         cumRep <- cumsum(ifelse(!is.na(report), report, 0))
         ret <- data.frame(ret, cumRep)

@@ -18,4 +18,5 @@ generate reasonable default opt_pars
 params <- read_params("ICU1.csv")
 get_opt_pars(params)
 get_opt_pars(params,vars="hosp")
+get_opt_pars(params,vars="report")
 }
