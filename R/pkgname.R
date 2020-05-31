@@ -5,6 +5,9 @@
 ## dealing with LaTeX in roxygen documentation:
 ## https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Conditional-text
 
+## S' notation breaks PDF building on Travis, not sure why?
+##  triggers "! LaTeX Error: Illegal character in array arg."
+
 ##' \pkg{McMasterPandemic}
 ##'
 ##' This R package provides compartmental epidemic models for
@@ -22,10 +25,10 @@
 ##' \ifelse{latex}{
 ##'   \out{
 ##'     \begin{array}[rlc]
-##'       S' & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\
-##'       E' & = &  \\
+##'       \frac{dS}{dt} & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\
+##'       \frac{dE}{dt} & = &  \\
 ##'       & \vdots &  \\
-##'       R' & = &
+##'       \frac{dR}{dt} & = &
 ##'     \end{array}
 ##'   }
 ##' }{
