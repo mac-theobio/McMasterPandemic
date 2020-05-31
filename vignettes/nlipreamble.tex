@@ -30,11 +30,6 @@
 \usepackage{siunitx}
 \usepackage{calc}
 
-%% these all cause trouble on Travis ...
-%% try "- tlmgr install <xxx>" in before_install ?
-%% \usepackage{wasysym} % circle symbols (including half-filled circles)
-%% \usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
-%% \usepackage{cprotect} % allow verbatim in caption
 
 \usepackage[utf8]{inputenc} % protect accents in bib
 
@@ -332,13 +327,6 @@ U.S.A.}}
 %%\renewcommand{\citenumfont}{\itshape}  % italic numbers in citations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PNAS starting character %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\RequirePackage{lettrine} % For dropped capitals
-%%\newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{26pt}{28pt}\selectfont}
-\newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{36pt}{36pt}\selectfont}
-\newcommand{\dropcap}[1]{\lettrine[lines=2,lraise=0.05,findent=0.1em, nindent=0em]{{\dropcapfont{#1}}}{}}
 
 %% prevent page breaks
 %% https://tex.stackexchange.com/questions/94699/absolutely-definitely-preventing-page-break
@@ -347,3 +335,19 @@ U.S.A.}}
    \vtop\bgroup}
   {\par\xdef\tpd{\the\prevdepth}\egroup
    \prevdepth=\tpd}
+
+%% everything below here causes trouble on Travis
+
+%% try "- tlmgr install <xxx>" in before_install ?
+%% \usepackage{wasysym} % circle symbols (including half-filled circles)
+%% \usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
+%% \usepackage{cprotect} % allow verbatim in caption
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PNAS starting character %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \RequirePackage{lettrine} % For dropped capitals
+%%\newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{26pt}{28pt}\selectfont}
+%% \newcommand{\dropcapfont}{\fontfamily{lmss}\bfseries\fontsize{36pt}{36pt}\selectfont}
+%% \newcommand{\dropcap}[1]{\lettrine[lines=2,lraise=0.05,findent=0.1em, nindent=0em]{{\dropcapfont{#1}}}{}}
