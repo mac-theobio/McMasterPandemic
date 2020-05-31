@@ -284,7 +284,7 @@ We fit $\beta_0(t)$ based on the assumptions that (i) it can change
 abruptly on specified dates when control measures are known to have
 been implemented, and (ii) it is correlated with a power of observed
 mobility, \ie 
-\begin{equation}
+\begin{equation}\label{eq:pmob}
   \beta_0(t) \propto (\text{relative mobility})^{p_{\rm mob}}
 \end{equation}
 for some power $p_{\rm mob}>0$.  In contrast, $\beta_1(t)$ is fitted
@@ -333,10 +333,13 @@ from weather changes, aggregation of people at sporting events,
 
 \subsection{Parameters estimated from calibration}
 
-Estimates of the parameters that we always fit are given in Table~\ref{estparmtab}.
-In addition, Table~\ref{relRttab} lists estimated relative changes in
-$\R_t$ on the
-dates on which major social distancing interventions were implemented in Ontario.
+Estimates of the parameters that we always fit are given in
+Table~\ref{estparmtab}.  In addition, Table~\ref{relRttab} lists
+estimated relative changes in $\R_t$ on the dates on which major
+social distancing interventions were implemented in Ontario.
+\david{This description is inadequate now that we are also fitting to
+  mobility and splines.  We should present a plot of $\R_t$, as Ben
+  presented in last Wednesday's meeting with Noam Ross.}
 
 \david{Previously, the ``ontario calibration report'' explained what
   is calibrated and how.  However, that document was last updated 23 Apr
@@ -485,6 +488,11 @@ print(ggplot(pp2L,aes(date,value,colour=var,group=sim))
 
 \subsubsection*{Confidence intervals on peak time and peak height}
 
+These estimates are based on maintaining the status quo.  Peak timing
+and severity will change under various de-escalation scenarios.
+\david{which PHAC expects us to explore.}
+
+\vbox{% do not break page in the middle of these tables
 \subsubsection*{Peak Date}
 <<peakCI>>=
 max_time <- apply(pp2,c(1,3),which.max)
@@ -505,6 +513,7 @@ maxv2 <- round(t(apply(max_val[c("H","death","incidence","report"),],
                )
 knitr::kable(maxv2)
 @
+}%endvbox
 
 \section{Fitting to mobility data}
 
@@ -519,8 +528,8 @@ mob_pwr_ci <- plogis(confint(ont_cal_mob1$mle2,method="quad")["logit_mob_power",
 @ 
 
 Fitting to averaged mobility data, with relative transmission as a
-power of relative mobility: $\beta = \beta_0 m^\alpha$.  Estimating
-$\alpha$ as \Sexpr{round(mob_pwr,2)} (Wald 95\% CI:
+power of relative mobility as in Equation~\eqref{eq:pmob}, yields
+$p_{\rm mob} = $\Sexpr{round(mob_pwr,2)} (Wald 95\% CI:
 \Sexpr{round(mob_pwr_ci[1],2)} -- \Sexpr{round(mob_pwr_ci[2],2)}).
 
 \begin{figure}
