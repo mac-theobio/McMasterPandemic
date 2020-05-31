@@ -364,7 +364,7 @@ mle_fun <- function(p, data,
                     checkpoint=FALSE,
                     aggregate_args=NULL,
                     priors=NULL,
-                    na_penalty=1000,
+                    na_penalty=1e6,
                     ...) {
 
     ## browser()
@@ -772,6 +772,7 @@ forecast_ensemble <- function(fit,
 ##' @param use_spline include spline?
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct
+##' @importFrom splines bs
 ##' @inheritParams calibrate
 ##' @export
 calibrate_comb <- function(data,
