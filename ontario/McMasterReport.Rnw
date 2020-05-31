@@ -583,6 +583,9 @@ plot(pp
 
 \section{Summary of Ontario analysis}
 
+\david{This and remaining sections need to be rewritten after we've
+  decided exactly what results we're presenting.}
+
 \begin{itemize}
 \item Social distancing measures have reduced the effective
   reproduction number ($\R_t$) substantially.  Our estimate of how
