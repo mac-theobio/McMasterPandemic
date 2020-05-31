@@ -21,14 +21,15 @@
 ##' While (even the strictly deterministic version of) the model is
 ##' not implemented as ODEs, its solutions are similar to those of the
 ##' following ODEs.
-##' 
+##'
+##  NEED EXTRA BACKSLASHES HERE! 
 ##' \ifelse{latex}{
 ##'   \out{
 ##'     $$
 ##'     \begin{array}{rlc}
-##'       S' & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\
-##'       E' & = &  \\
-##'       & \vdots &  \\
+##'       S' & = & - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) \\\\
+##'       E' & = &  \\\\
+##'       & \vdots &  \\\\
 ##'       R' & = &
 ##'     \end{array}
 ##'     $$

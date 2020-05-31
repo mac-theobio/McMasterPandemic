@@ -562,6 +562,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             }
             DE_args$control <- NULL
         }
+        ## test
+        ## do.call(mle_fun, c(list(opt_inputs), mle_args))
         de_ctrl <- do.call(DEoptim::DEoptim.control,de_ctrl_args)
         de_arglist <- c(list(fn=mle_fun
                            , lower=DE_lwr
