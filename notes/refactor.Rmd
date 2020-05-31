@@ -154,3 +154,12 @@ Run a single simulation step. Updates foi (redundantly?); generates total flows/
 show_args(do_step)
 ```
 
+## report variables/condensation
+
+* how can we get all the pieces we want without re-running things?
+* where is aggregation/condensation/differencing/convolving/Rt calculation getting done?
+* where does obs error get added?
+* do we want per-variable obs_error?
+
+cumRep: what we want to do is have obs error on individual reporting, then cumsum() the "report" variable
+what we need to do is cumulate *after* applying obs error etc.

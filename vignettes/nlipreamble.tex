@@ -19,8 +19,6 @@
 \usepackage{graphics,graphicx}
 \usepackage{grffile} % allow arbitrary graphics filenames
 \usepackage{multirow} % fancy tables
-\usepackage{wasysym} % circle symbols (including half-filled circles)
-\usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
 %% for huxtable ...
 \usepackage[table]{xcolor} % table option allows \rowcolors
 %\usepackage{color}
@@ -32,8 +30,13 @@
 \usepackage{siunitx}
 \usepackage{calc}
 
+%% these all cause trouble on Travis ...
+%% try "- tlmgr install <xxx>" in before_install ?
+%% \usepackage{wasysym} % circle symbols (including half-filled circles)
+%% \usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
+%% \usepackage{cprotect} % allow verbatim in caption
+
 \usepackage[utf8]{inputenc} % protect accents in bib
-\usepackage{cprotect} % allow verbatim in caption
 
 \usepackage{framed} % framed environment
 %% shadecolour must be defined for framed environment:
@@ -204,8 +207,6 @@ U.S.A.}}
 \usepackage{amsfonts} % mathbb
 \usepackage{graphics,graphicx}
 \usepackage{multirow} % fancy tables
-\usepackage{wasysym} % circle symbols (including half-filled circles)
-\usepackage{enumerate} % fancier enumeration (e.g., a,b,c, ...)
 %\usepackage{xcolor}
 \usepackage{color}
 \usepackage{xspace}

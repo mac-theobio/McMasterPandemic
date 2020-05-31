@@ -389,15 +389,30 @@ run_sim <- function(params
     res <- res[,!names(res) %in% c("t","X")]  ## we never want the internal time vector or the 'clean-up' state
     ## condense here
     if (condense) {
-        res <- do.call(condense.pansim,c(list(res,params=params0),condense_args))
+        res <- do.call(condense.pansim,c(list(res,params=params0,
+                                              cum_reports=FALSE),condense_args))
     }
     if (stoch[["obs"]]) {
         ## do observation error here
         ## FIXME: allow per-variable obs dispersion; switch to a column-wise operation??
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
-        m <- res[,-1]
+        m <- res[,-1]   ## drop time component
         if (!is.null(stoch_start)) {
+            ## only add stochastic obs error after specified date
             m <- m[res$date>stoch_start[["obs"]],]
+        }
+        if (FALSE) for (i in seq(ncol(m))) {  ## disabled for now
+            nm <- names(m)[i]
+            if ((vn <- paste0("obs_disp_",nm)) %in% params) {
+                ## variable-specific dispersion specified
+                d <- params[[vn]]
+                if (!is.na(d)) {
+                    m[[i]] <- ... ## rnbinom, skipping NA values (as below)
+                }
+            } else {
+                ## use generic disp parameter
+                m[[i]] <- rnbinom(...)
+            }
         }
         m_rows <- nrow(m)
         mu <- na.exclude(unlist(m))
@@ -405,6 +420,8 @@ run_sim <- function(params
         mu_S <- napredict(attr(mu,"na.action"),mu_S)  ## restore NA values
         res[seq(nrow(res)-m_rows+1,nrow(res)),-1] <- mu_S
     }
+    ## add cum reports *after* adding obs error
+    if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(res$report), res$report, 0))
     ## store everything as attributes
     attr(res,"params") <- params0
     attr(res,"state0") <- state0

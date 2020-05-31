@@ -27,6 +27,8 @@ The documentation is a little bit scattered right now, working on cleaning it up
 * `TODO.md`: active to-do list
 * issues list on github
 
+More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`
+
 ### DISCLAIMER
 
 All use of this package is at your own risk. Quantitative forecasts are only as good as their parameter estimates.

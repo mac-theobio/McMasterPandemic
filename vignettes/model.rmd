@@ -16,6 +16,7 @@ The ability to simulate/forecast
 * time and height of peak health utilization (acute care, ICU beds, ventilators) regionally and locally
 * testing
 * ability to model local differences in epidemic curves based on locale-specific information (e.g. age-demographics, population density, etc.)
+* estimation of $R(t)$!
 
 ## why another simulator?
 

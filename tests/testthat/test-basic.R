@@ -98,3 +98,19 @@ test_that("calibration", {
     e2 <- get_evec(params,method="analytical")
     expect_equal(e1,e2,tolerance=1e-4)
 })
+
+test_that("cum_rep vs rep", {
+    params <- update(params,obs_disp=1)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    r <- s0$report
+    r[is.na(r)] <- 0
+    expect_equal(diff(s0$cumRep), r[-1])
+    if (FALSE) {
+        ## graphical checking
+        matplot(s0[,1],s0[c("report","cumRep")],type="b",log="y")
+        op <- par(mfrow=c(1,2))
+        plot(report~date,data=s0,type="l")
+        plot(cumRep~date,data=s0,type="l")
+        par(op)
+    }
+})
