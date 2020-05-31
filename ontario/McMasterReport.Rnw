@@ -4,6 +4,7 @@
 \documentclass[12pt]{article}
 \input{nlipreamble}
 \usepackage{longtable}
+\usepackage{ragged2e} % \RaggedRight
 
 %% code listing
 \usepackage{listings}
@@ -165,22 +166,32 @@ a ``relative activity index''.
 
 \subsubsection*{Important dates}
  
-\begin{itemize}
-\item \href{https://www.who.int/dg/speeches/detail/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---11-march-2020}{11 March 2020.  W.H.O.~declares COVID-19 pandemic}
-\item
-  \href{https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html}{17
-    March 2020.  Declaration of Emergency} (schools ordered to stay closed
-  after March Break)
-\item
-  \href{https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html}{23
-    March 2020.  At-Risk Workplaces}
-\item
-  \href{https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html}{23
-    March 2020.  All Non-Essential Workplaces}
-\item
-  \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{28
-    March 2020. Gatherings of More Than Five People with Strict Exceptions}
-\end{itemize}
+\begin{center}
+  \RaggedRight
+  \renewcommand{\arraystretch}{1.5}
+  \small
+\begin{tabular}{ c | l | p{6cm} }
+{\bfseries Date} & {\bfseries Event} & {\bfseries Comment} \\ \hline
+11 March 2020 &
+                \href{https://www.who.int/dg/speeches/detail/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---11-march-2020}{W.H.O.~declares COVID-19 pandemic} \\
+17 March 2020 &
+                \href{https://news.ontario.ca/opo/en/2020/03/ontario-enacts-declaration-of-emergency-to-protect-the-public.html}{Ontario
+                Declaration of Emergency} & Schools ordered to stay
+                                            closed after March Break. \\
+23 March 2020 & Ontario workplaces ordered closed & Initially
+                                                    \href{https://news.ontario.ca/opo/en/2020/03/ontario-closing-at-risk-workplaces-to-protect-health-and-safety.html}{At-Risk
+                                                    Workplaces} and
+                                                    then 
+\href{https://news.ontario.ca/opo/en/2020/03/ontario-orders-the-mandatory-closure-of-all-non-essential-workplaces-to-fight-spread-of-covid-19.html}{All
+                                                    Non-Essential
+                                                    Workplaces}. \\
+
+28 March 2020 &
+                \href{https://news.ontario.ca/opo/en/2020/03/ontario-prohibits-gatherings-of-five-people-or-more-with-strict-exceptions.html}{Ontario
+                restricts gatherings} & Gatherings of more than five
+                                        people prohibited, with strict exceptions.
+\end{tabular}
+\end{center}
 Our code allows us to model an abrupt effect on $\R_t$ on any subset of these
 dates and find the best fit changes.  In practice, we always ignore the
 initial declaration of emergency on 17 March 2020 because this
