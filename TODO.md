@@ -27,6 +27,7 @@
 
 ## debugging
 
+* should log_mu be logit_mu instead?
 * debug update/parallel DE_cores
 
 ### strategic/architectural
