@@ -88,6 +88,11 @@ matplot(cbind(sqrt(diag(sfsmisc::posdefify(V2))),
 \david{\texttt{Makefile} doesn't know to check for new data in Mike's repo.
 \texttt{touch ontario\_clean.R} before compiling this document.}
 
+\subsubsection*{Our group's COVID-19 research}
+
+A brief summary, including publications by our group to date, is available at
+\url{https://mac-theobio.github.io/covid-19/index.html}.
+
 \subsubsection*{Current date range for analysis and forecast calibration:}
 
 <<date_range>>=
