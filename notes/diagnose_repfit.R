@@ -11,7 +11,7 @@ r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31")
 plot(r1, log=TRUE)
 dd_r <- r1 %>% select(date,report) %>% pivot() %>% mutate(value = ifelse(is.na(value),0,value))
 dd_rh <- r1 %>% select(date,report,hosp) %>% pivot() %>% mutate(value = ifelse(is.na(value),0,value))
-opt_pars <- list(log_E0=4, log_beta0=-1, log_mu = 1.2, log_nb_disp=0)
+opt_pars <- list(params=c(log_E0=4, log_beta0=-1, log_mu=-1),log_nb_disp=c(report=1, hosp=1))
 
 c_rh <- calibrate_comb(params=p2, use_phenomhet=FALSE, debug_plot=TRUE,
                        data=dd_rh, use_DEoptim=FALSE,
