@@ -9,9 +9,9 @@ p2 <- update(p1, obs_disp=1, proc_disp=0, zeta=5)
 set.seed(101)
 r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31")
 plot(r1, log=TRUE)
-dd_r <- r1 %>% select(date,report) %>% pivot() %>% na.omit()
-dd_rh <- r1 %>% select(date,report,hosp) %>% pivot() %>% na.omit()
-
+dd_r <- r1 %>% select(date,report) %>% pivot() %>% mutate(value = ifelse(is.na(value),0,value))
+dd_rh <- r1 %>% select(date,report,hosp) %>% pivot() %>% mutate(value = ifelse(is.na(value),0,value))
+opt_pars <- list(log_E0=4, log_beta0=-1, log_mu = 1.2, log_nb_disp=0)
 
 c_rh <- calibrate_comb(params=p2, use_phenomhet=FALSE, debug_plot=TRUE,
                        data=dd_rh, use_DEoptim=FALSE,
@@ -21,7 +21,7 @@ c_r <- update(c_rh, data=dd_r)
 ## re-run calibrate_comb (only change is data)
 c_r2 <- calibrate_comb(params=p2, use_phenomhet=FALSE, debug_plot=TRUE,
                        data=dd_r, use_DEoptim=FALSE,
-                       use_spline=FALSE)
+                       use_spline=FALSE, opt_pars=opt_pars)
 
 ## inspect components
 t1 <- c_rh$forecast_args$time_args

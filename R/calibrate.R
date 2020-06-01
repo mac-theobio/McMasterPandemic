@@ -777,6 +777,7 @@ forecast_ensemble <- function(fit,
 ##' @export
 calibrate_comb <- function(data,
                      params,
+							opt_pars=NULL,
                      mob_data=NULL,
                      spline_days=14,
                      spline_df=NA,
@@ -791,7 +792,11 @@ calibrate_comb <- function(data,
                      debug_plot=interactive(),
                      ...) {
     value <- NULL ## global var check
+    if(!is.null(opt_pars)){
+    	opt_pars <- opt_pars
+    	} else{
     opt_pars <- get_opt_pars(params,vars=unique(data$var))
+    	}
     if (use_phenomhet) opt_pars$params <- c(opt_pars$params,log_zeta=1)
     loglin_terms <- "-1"
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
