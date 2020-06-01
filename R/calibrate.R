@@ -402,16 +402,17 @@ mle_fun <- function(p, data,
     ## need to reconstruct parameter set to get NB parameter(s)
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
-    if (length(pp$nb_disp)==1) {
-        dvals <- with(r2,dnbinom(value,mu=pred,size=pp$nb_disp,log=TRUE))
-    } else {
-        r2 <- merge(r2,data.frame(var=names(pp$nb_disp),nb_disp=pp$nb_disp),
-                    by="var")
-        ## FIXME: more principled solution to dnbinom warnings etc.?
-        ##  dnbinom wrapper that napredicts NAs?
-        ## FIXED nb_disp hack, don't need to exponentiate any more ...
-        dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
+    nbd <- pp$nb_disp
+    if (is.null(names(nbd))) {
+        if (length(nbd)>1) stop("nbdisp must be named or length==1")
+        v <- unique(r2$var)
+        nbd <- setNames(rep(nbd,length(v),v))
     }
+    r2 <- merge(r2,data.frame(var=names(nbd),nb_disp=nbd), by="var")
+    ## FIXME: more principled solution to dnbinom warnings etc.?
+    ##  dnbinom wrapper that napredicts NAs?
+    ## FIXED nb_disp hack, don't need to exponentiate any more ...
+    dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
     ## clamp NaN/NA values to worst obs
     dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)])+na_penalty
     ret <- sum(dvals)
@@ -606,6 +607,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                         , control=mle2_control
                        ),
                   mle2_args)
+    mle1 <- do.call(mle_fun,c(list(opt_inputs), mle_args))
     mle2_time <- system.time(opt <- do.call(bbmle::mle2,opt_args))
     if (last_debug_plot) {
         grDevices::pdf(".debug_plot.pdf")
@@ -777,7 +779,7 @@ forecast_ensemble <- function(fit,
 ##' @export
 calibrate_comb <- function(data,
                      params,
-							opt_pars=NULL,
+                     opt_pars=NULL,
                      mob_data=NULL,
                      spline_days=14,
                      spline_df=NA,
@@ -790,6 +792,7 @@ calibrate_comb <- function(data,
                      use_phenomhet=FALSE,
                      use_spline=TRUE,
                      debug_plot=interactive(),
+                     debug=FALSE,
                      ...) {
     value <- NULL ## global var check
     if(!is.null(opt_pars)){
@@ -843,7 +846,6 @@ calibrate_comb <- function(data,
     }
     ## do the calibration
     ## debug <- use_DEoptim
-    debug <- FALSE
 
     argList <- c(nlist(data
                      , use_DEoptim

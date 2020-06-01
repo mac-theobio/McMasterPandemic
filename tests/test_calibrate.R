@@ -155,3 +155,21 @@ calibrate_comb(data=repdata
              , use_spline=FALSE
                )
 }
+
+#### make sure single-variable fit works OK
+
+p1 <- fix_pars(read_params("ICU1.csv"))
+p2 <- update(p1, obs_disp=1, proc_disp=0, zeta=5)
+set.seed(101)
+r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31")
+
+dd_r <- r1 %>% select(date,report) %>% pivot() %>% na.omit()
+c_r2 <- calibrate_comb(params=p2, use_phenomhet=FALSE,
+                       debug_plot=FALSE,
+                       data=dd_r, use_DEoptim=FALSE,
+                       use_spline=FALSE)
+
+stopifnot(all.equal(coef(c_r2,"fitted"),
+                    list(params = c(E0 = 0.969447127312371, beta0 = 0.999559822048325
+                                    ), nb_disp = c(report = 1.11651207216957), time_beta = numeric(0)),
+                    tolerance=1e-6))

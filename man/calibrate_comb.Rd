@@ -7,6 +7,7 @@
 calibrate_comb(
   data,
   params,
+  opt_pars = NULL,
   mob_data = NULL,
   spline_days = 14,
   spline_df = NA,
@@ -19,6 +20,7 @@ calibrate_comb(
   use_phenomhet = FALSE,
   use_spline = TRUE,
   debug_plot = interactive(),
+  debug = FALSE,
   ...
 )
 }
@@ -26,6 +28,8 @@ calibrate_comb(
 \item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
 
 \item{params}{parameters}
+
+\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
 
 \item{mob_data}{mobility data}
 
@@ -50,6 +54,8 @@ calibrate_comb(
 \item{use_spline}{include spline?}
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+
+\item{debug}{print debugging messages?}
 
 \item{...}{extra args}
 }
