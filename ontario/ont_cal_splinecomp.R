@@ -25,14 +25,15 @@ inputs <- expand.grid(spline_df=3:7,
 
 res_list <- mclapply(seq(nrow(inputs)),
                      function(i) {
-                         cat(i,"\n")
+                         cat(i,paste(inputs[i,],collapse=", "),"\n")
                          do.call(calibrate_comb,
                                  c(nlist(params
                                        , debug_plot=FALSE
                                        , data=ont_noICU)
                                  , inputs[i,]))
                      },
-                     mc.cores=5)
+                     mc.cores=5
+                     )
 
-#rdsave(res_list)
+# rdsave(inputs, res_list)
 

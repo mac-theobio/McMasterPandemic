@@ -775,6 +775,7 @@ forecast_ensemble <- function(fit,
 ##' @param vars which vars to use? (default is all in data)
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct
+##' @importFrom tidyr drop_na
 ##' @importFrom splines bs
 ##' @inheritParams calibrate
 ##' @export
@@ -796,7 +797,7 @@ calibrate_comb <- function(data,
                      debug_plot=interactive(),
                      debug=FALSE,
                      ...) {
-    value <- NULL ## global var check
+    t_vec <- value <- NULL ## global var check
     ## choose variables
     if (!is.null(vars)) {
         indiv_vars <- trimws(unlist(strsplit(vars,"/")))
@@ -840,7 +841,14 @@ calibrate_comb <- function(data,
     }
     form <- reformulate(loglin_terms)
     if (use_mobility) {
-        X_dat <- full_join(X_dat,mob_data,by="date") %>% mutate_at("rel_activity",fill_edge_values)
+        X_dat <- (full_join(X_dat,mob_data,by="date")
+            %>% arrange(date)  ## fill_edge_values assumes ordered!
+            %>% drop_na(t_vec)  ## omit values *before* data start ...
+            ## FIXME: might want to keep these, but then we have to worry about how to set
+            ##  spline values constant before the data start (as we don't want to waste
+            ##  spline knots out there ...)
+            %>% mutate_at("rel_activity",fill_edge_values)
+        )
     }
     X <- model.matrix(form, data = X_dat)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)

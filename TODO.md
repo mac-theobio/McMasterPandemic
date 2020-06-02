@@ -2,20 +2,20 @@
 
 ### short term
 
-
-* move Ontario to private repo
+* allow passing NLLvec to `pop_pred_samp`
 * per-variable observation noise
 * ?? fix "predict three times"
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
 
 * document !!!!
 * document Rt calculation (add to McMasterReport.pdf) etc.
-* allow choice of Wald vs DEoptim cov matrices in forecast_ensemble
+* allow choice of Wald vs DEoptim cov matrices in forecast_ensemble; allow control of `pop_pred_samp`
 * document invlink_trans better
 * secret plots; writeup for secret
 
 ## important
 
+* save fluxes
 * calibrate uncertainty
     * DEoptim pop/imp wt experiments
 	* full Bayes?
