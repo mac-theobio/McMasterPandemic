@@ -164,6 +164,8 @@ set.seed(101)
 r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31")
 
 dd_r <- r1 %>% select(date,report) %>% pivot() %>% na.omit()
+
+update(p2, E0=exp(4), beta0=exp(-1))  ## set parameters to *original* starting values from get_opt_pars
 c_r2 <- calibrate_comb(params=p2, use_phenomhet=FALSE,
                        debug_plot=FALSE,
                        data=dd_r, use_DEoptim=FALSE,
