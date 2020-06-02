@@ -1,0 +1,7 @@
+
+* different structure?
+* different parameters
+* block-diagonal rate matrix
+* starting conditions?
+* coupling?
+* response to mobility/lockdown/etc.?
