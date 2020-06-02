@@ -357,8 +357,8 @@ legacy_time_args <- function(x, update=FALSE) {
 ##' @importFrom stats qlogis
 ##' @export
 get_opt_pars <- function(params,vars=c("hosp","death","report")) {
-    opt_pars <- list(params =  c(log_E0=4
-                               , log_beta0=-1))
+    opt_pars <- list(params =  c(log_E0=log(params[["E0"]])
+                               , log_beta0=log(params[["beta"]])))
     if ("death" %in% vars && any(c("hosp","H") %in% vars)) {
         ## fraction of hosp to acute (non-ICU) (\propto death)
         opt_pars$params <- c(opt_pars$params,
