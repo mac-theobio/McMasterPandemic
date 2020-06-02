@@ -19,6 +19,7 @@ calibrate_comb(
   use_mobility = FALSE,
   use_phenomhet = FALSE,
   use_spline = TRUE,
+  vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
   ...
@@ -52,6 +53,8 @@ calibrate_comb(
 \item{use_phenomhet}{include phenomenological heterogeneity?}
 
 \item{use_spline}{include spline?}
+
+\item{vars}{which vars to use? (default is all in data)}
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
 

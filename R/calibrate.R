@@ -772,6 +772,7 @@ forecast_ensemble <- function(fit,
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_spline include spline?
+##' @param vars which vars to use? (default is all in data)
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct
 ##' @importFrom splines bs
@@ -791,15 +792,23 @@ calibrate_comb <- function(data,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
                      use_spline=TRUE,
+                     vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
                      ...) {
     value <- NULL ## global var check
-    if(!is.null(opt_pars)){
-    	opt_pars <- opt_pars
-    	} else{
-    opt_pars <- get_opt_pars(params,vars=unique(data$var))
-    	}
+    ## choose variables
+    if (!is.null(vars)) {
+        indiv_vars <- trimws(unlist(strsplit(vars,"/")))
+        dvars <- unique(data$var)
+        if (any(!indiv_vars %in% dvars)) {
+            stop("vars requested that are not in data")
+        }
+        data <- filter(data, var %in% indiv_vars)
+    }
+    if (is.null(opt_pars)) {
+        opt_pars <- get_opt_pars(params,vars=unique(data$var))
+    }
     if (use_phenomhet) opt_pars$params <- c(opt_pars$params,log_zeta=1)
     loglin_terms <- "-1"
     if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
