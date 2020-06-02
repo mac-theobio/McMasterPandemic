@@ -61,7 +61,7 @@ justValues_f <- function(valuesString, mode){
 parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
-default.dropstates <- c("t","S","R","E","I","X","incidence")
+default.dropstates <- c("t","S","E","I","X")
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -95,7 +95,7 @@ run_shiny <- function(useBrowser = TRUE) {
                                  value = "2020-08-01")),
                 column(2,
                        checkboxInput(inputId = "use_logYscale",
-                                     label = "Use log-y scale",
+                                     label = "log-y scale",
                                      value = FALSE)),
                 column(2,
                        radioButtons(inputId = "use_directLabels",
@@ -355,9 +355,10 @@ run_shiny <- function(useBrowser = TRUE) {
             stateVal <- eval(parse(text = paste0("input$", state)))
             ##Catch loading errors.
             if (is.null(stateVal)){
-              return(c(default.dropstates, "cumRep"))
+              return(default.dropstates)
             }
             else {
+
             }
             ##2 indicates we don't want to show the drop state.
             if (!stateVal){
@@ -371,14 +372,28 @@ run_shiny <- function(useBrowser = TRUE) {
         ##Create checkbuttons to display plots or not.
         checkButton_curve <- function(curve){
           #Don't show cum rep by default
-          if (curve == "cumRep"){
+          if (curve == "cumRep" || curve == "foi" || curve == "R"){
             showByDefault <- FALSE
           }
           else{
             showByDefault <- TRUE
           }
+          theLabel <- paste0(curve)
+          ##Change curve labels to be more intuitive.
+          if (curve == "foi"){
+            theLabel <- "force of \n infection"
+          }
+          if (curve == "cumRep"){
+            theLabel <- "cumulative reports"
+          }
+          if (curve == "hosp"){
+            theLabel <- "hospital \n admissions"
+          }
+          if (curve == "H"){
+            theLabel <- "hospitalized"
+          }
           return(checkboxInput(curve,
-                           label = paste0(curve),
+                           label = theLabel,
                            value = showByDefault))
         }
         create_togglePanel <- function(){
@@ -386,12 +401,10 @@ run_shiny <- function(useBrowser = TRUE) {
           defsim <- run_sim(read_params("ICU1.csv"))
           curves <- as.vector(colnames(defsim)[2:length(defsim)])
           ##Ignore curves that we're never going to show.
-          curves <- setdiff(curves, c("t","S","R","E","I","X","incidence"))
-          ##Create the plot toggles according to which side we'd like
+          curves <- setdiff(curves, c("t","S","E","I","X"))
             column(2,
                  lapply(curves,
                         FUN = checkButton_curve))
-
         }
         output$plotColumn <- renderUI({
           column(input$plotSize,
