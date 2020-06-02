@@ -2,7 +2,8 @@
 
 ### short term
 
-* FIX single-variable fit with calibrate_comb
+
+* move Ontario to private repo
 * per-variable observation noise
 * ?? fix "predict three times"
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
@@ -19,7 +20,6 @@
     * DEoptim pop/imp wt experiments
 	* full Bayes?
     * pop_pred_samp
-	
 * match up with EpiEstim
 * LTCF: data, model compartments
 * TMB core

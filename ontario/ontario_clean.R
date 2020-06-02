@@ -8,11 +8,7 @@ if (require(pins)) {
 } else {
     dd <- read_csv(url)
 }
-## filter(dd,Date==as.Date("2020-04-14"),Province=="ON")
 
-## not used
-## PHOurl <- "http://wzmli.github.io/COVID19-Canada/PHO.csv"
-## ddPHO <- read_csv(PHOurl)
 ont_all <- (dd
     %>% filter(Province=="ON")
     %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
