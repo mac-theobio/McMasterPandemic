@@ -811,7 +811,7 @@ calibrate_comb <- function(data,
     )
     if (use_spline) {
         if (is.na(spline_df)) {
-            spline_df <- round(length(data$t_vec)/spline_days)
+            spline_df <- round(length(X_dat$t_vec)/spline_days)
         }
         if (is.na(knot_quantile_var)) {
             spline_term <- sprintf("bs(t_vec,df=spline_df)")
