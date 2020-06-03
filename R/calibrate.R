@@ -705,7 +705,9 @@ forecast_ensemble <- function(fit,
     wts <- rep(1, nsim)
     if (imp_wts) {
         wts <- e_pars[,"wts"]
-        if (attr(e_pars,"eff_samp")<10) warning("low effective sample size of importance weights")
+        if ((es <- attr(e_pars,"eff_samp"))<10) warning("low effective sample size of importance weights",
+                                                        sprintf(" (sample=%d, eff sample=%1.1f)",
+                                                                nrow(e_pars),es))
     }
 
     ## e_pars <- e_pars[,setdiff(colnames(e_pars),fix_pars)]
@@ -732,20 +734,21 @@ forecast_ensemble <- function(fit,
 
         ## get quantiles per observation
         ## safe version of wtd quantile
-        wq <- function(x,w,probs) {
+        wq <- function(x,weights,probs) {
             bad <- !is.finite(x)
             if (all(bad)) {
                 return(rep(NA,length.out=length(probs)))
             }
-            return(Hmisc::wtd.quantile(x[!bad], w[!bad], probs))
+            return(Hmisc::wtd.quantile(x[!bad], weights[!bad], probs))
         }
         if (imp_wts) {
-            e_res3 <- apply(e_res2,1,FUN=wq,weights=wts,probs=qvec,na.rm=TRUE)
+            e_res3 <- apply(e_res2,1,FUN=wq,weights=wts,probs=qvec) ## na.rm is handled internally (automatically)
         } else {
-            e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec,na.rm=TRUE)
+            e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec, na.rm=TRUE)
         }        
         e_res4 <- (e_res3 
             %>% t()
+            %>% as.data.frame() ## create names (without messages); avoid need for .name_repair
             %>% dplyr::as_tibble()
             %>% setNames(qnames)
         )

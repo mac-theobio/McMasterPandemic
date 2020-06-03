@@ -62,5 +62,5 @@ test_that("predict", {
     plot(pp2)
     pred_Rt <- predict(ont_cal1, keep_vars="Rt")
     ## don't want to test exact values: what should we test? 
-    ## expect_equal(range(pred_
+    suppressWarnings(pp2 <- predict(ont_cal1, ensemble=TRUE, imp_wts=TRUE, nsim=10))
 })
