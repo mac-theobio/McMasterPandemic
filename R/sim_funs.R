@@ -166,7 +166,7 @@ update_foi <- function(state, params) {
     ## update infection rate
     with(c(as.list(state),as.list(params)), {
         foi <- beta0/N*(Ca*Ia+Cp*Ip+(1-iso_m)*Cm*Im+(1-iso_s)*Cs*Is)
-        if ("zeta" %in% names(params)) {
+        if (has_zeta(params)) {
             foi <- foi*(S/N)^zeta
         }
         foi
@@ -267,6 +267,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
 ##' res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
 ##' res3_Sz <- update(res1_S, params=paramsSz)
+##' plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 ##' @importFrom stats rnbinom na.exclude napredict
 ##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
@@ -393,14 +394,12 @@ run_sim <- function(params
     if (condense) {
         res <- do.call(condense.pansim,c(list(res,params=params0,
                                               cum_reports=FALSE,
-                                              het_S="zeta" %in% names(params0),
-                                              het_S_params=params0[c("N","zeta")]),
+                                              het_S=has_zeta(params0)),
                                          condense_args))
     }
     if (stoch[["obs"]]) {
-        if ("zeta" %in% params) params[["obs_disp_hetS"]] <- NA  ## hard-code skipping obs noise
+        if (has_zeta(params)) params[["obs_disp_hetS"]] <- NA  ## hard-code skipping obs noise
         ## do observation error here
-        ## FIXME: allow per-variable obs dispersion; switch to a column-wise operation??
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
         m <- res[,-1]   ## drop time component
         if (!is.null(stoch_start)) {

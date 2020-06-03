@@ -72,4 +72,5 @@ res1_S_t <- update(res1_S, params_timevar=time_pars)
 res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
 res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
 res3_Sz <- update(res1_S, params=paramsSz)
+plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 }

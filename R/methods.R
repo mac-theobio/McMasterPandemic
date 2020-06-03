@@ -47,6 +47,7 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
 ##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
 ##' @param condense condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}
 ##' @param log plot y-axis on log scale?
+##' @param log_lwr lower bound for log scale
 ##' @param show_times indicate times when parameters changed?
 ##' @param ... additional arguments to \code{\link{condense.pansim}}
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
@@ -55,7 +56,9 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
                         keep_states=NULL, condense=FALSE,
-                        log=FALSE, show_times=TRUE, ...) {
+                        log=FALSE,
+                        log_lwr=1,
+                        show_times=TRUE, ...) {
     ## global variables
     var <- value <- NULL
     ## attributes get lost somewhere below ...
@@ -72,7 +75,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
         %>% dplyr::mutate(var=forcats::fct_inorder(factor(var)))
         ## FIXME: order factor in pivot?
     )
-    if (log) xL <- dplyr::filter(xL,value>=1)
+    if (log) xL <- dplyr::filter(xL,value>=log_lwr)
     gg0 <- (ggplot(xL,aes(date,value,colour=var))
         + geom_line()
     )

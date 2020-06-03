@@ -10,6 +10,7 @@
   keep_states = NULL,
   condense = FALSE,
   log = FALSE,
+  log_lwr = 1,
   show_times = TRUE,
   ...
 )
@@ -24,6 +25,8 @@
 \item{condense}{condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}}
 
 \item{log}{plot y-axis on log scale?}
+
+\item{log_lwr}{lower bound for log scale}
 
 \item{show_times}{indicate times when parameters changed?}
 

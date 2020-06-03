@@ -459,12 +459,14 @@ get_Rt <- function(x) {
     is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
     TRUE ~ .
 )))
-    zeta <- coef(x)[["zeta"]]
-    N <- coef(x)[["N"]]
-    x4 <- (x3
-        %>% transmute(date=date,
-                      R0=R0_base*rel_beta0*(S/N)^(1+zeta))
-    )
+    if (has_zeta(coef(x))) {
+        N <- coef(x)[["N"]]
+        ## FIXME: use hetS!
+        x4 <- (x3
+            %>% transmute(date=date,
+                          R0=R0_base*rel_beta0*(S/N)^(1+zeta))
+        )
+    }
     return(x4)
 }
     
@@ -494,4 +496,8 @@ recompress <- function(fn) {
 #' @export
 getData <- function(x) {
     x$mle2@data$data
+}
+
+has_zeta <- function(params) {
+    "zeta" %in% names(params) && params[["zeta"]]!=0
 }

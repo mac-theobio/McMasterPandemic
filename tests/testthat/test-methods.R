@@ -63,7 +63,8 @@ test_that("predict", {
     expect_is(pp2,"predict_pansim")
     plot(pp2)
     pred_Rt <- predict(ont_cal1, keep_vars="Rt")
-    ## don't want to test exact values: what should we test? 
+    ## don't want to test exact values, because ont_cal1 will change
+    ## with new data: should fit to simulated data and test that ...
     suppressWarnings(pp2 <- predict(ont_cal1, ensemble=TRUE, imp_wts=TRUE, nsim=10))
     expect_equal(dim(pp2),c(861,6))
     set.seed(101)

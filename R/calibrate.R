@@ -236,6 +236,7 @@ run_sim_decay <- function(params,
 }
 
 ##' simulate/forecast a single trajectory
+##' 
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 ##' @importFrom stats update
 ##' @inheritParams calibrate
@@ -316,14 +317,15 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
         }  else {
             x2 <- r_agg %>% select(date,S) %>% mutate(rel_beta0=1)
         }
-        if (!"zeta" %in% names(params)) params[["zeta"]] <- 0
         x3 <- (x2
             %>% mutate_at("rel_beta0", fill_edge_values)
-            %>% transmute(date=date,
-                          Rt=R0_base*rel_beta0*hetS)
+            %>% transmute(date=date, Rt=R0_base*rel_beta0)
         )
+        if (has_zeta(params)) {
+            x3 <- x3 %>% mutate_at("Rt", ~.*hetS)
+        }
         r_agg <- full_join(r_agg, x3, by="date")
-    }
+    } ## calc_Rt
     r_agg <- tidyr::pivot_longer(r_agg,-date, names_to="var")
     ret <- switch(return_val,
                 aggsim=r_agg,
