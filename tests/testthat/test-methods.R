@@ -65,4 +65,10 @@ test_that("predict", {
     pred_Rt <- predict(ont_cal1, keep_vars="Rt")
     ## don't want to test exact values: what should we test? 
     suppressWarnings(pp2 <- predict(ont_cal1, ensemble=TRUE, imp_wts=TRUE, nsim=10))
+    expect_equal(dim(pp2),c(861,6))
+    set.seed(101)
+    suppressWarnings(pp3 <- predict(ont_cal1, ensemble=TRUE, imp_wts=TRUE, nsim=10,
+                                    qvec=NULL))
+    expect_equal(dim(pp3),c(13,123,10))
+    expect_equal(length(attr(pp3,"imp_wts")),10)
 })
