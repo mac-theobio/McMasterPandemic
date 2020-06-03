@@ -8,7 +8,8 @@
   object,
   add_reports = TRUE,
   diff_deaths = TRUE,
-  cum_reports = TRUE,
+  cum_reports = FALSE,
+  het_S = FALSE,
   keep_all = FALSE,
   params = attr(object, "params"),
   ...
@@ -23,9 +24,11 @@
 
 \item{cum_reports}{compute cumulative reports?}
 
+\item{het_S}{compute hetS = (S/N)^(1+zeta) ?}
+
 \item{keep_all}{keep unaggregated variables in data frame as well?}
 
-\item{params}{parameters (for defining convolution kernel for reports)}
+\item{params}{parameters (for defining convolution kernel for reports, and zeta and N for het-S)}
 
 \item{...}{additional args}
 }

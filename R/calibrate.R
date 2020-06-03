@@ -320,7 +320,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
         x3 <- (x2
             %>% mutate_at("rel_beta0", fill_edge_values)
             %>% transmute(date=date,
-                          Rt=R0_base*rel_beta0*(S/params[["N"]])^(1+params[["zeta"]]))
+                          Rt=R0_base*rel_beta0*hetS)
         )
         r_agg <- full_join(r_agg, x3, by="date")
     }

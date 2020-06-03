@@ -121,12 +121,14 @@ is_condensed <- function(x) "I" %in% names(x)
 ##' @param diff_deaths compute first differences of death series to get daily deaths?
 ##' @param keep_all keep unaggregated variables in data frame as well?
 ##' @param cum_reports compute cumulative reports?
-##' @param params parameters (for defining convolution kernel for reports)
+##' @param params parameters (for defining convolution kernel for reports, and zeta and N for het-S)
+##' @param het_S compute hetS = (S/N)^(1+zeta) ?
 ##' @param ... additional args
 ##' @export
 condense.pansim <-  function(object, add_reports=TRUE,
                              diff_deaths=TRUE,
-                             cum_reports=TRUE,
+                             cum_reports=FALSE,
+                             het_S=FALSE,
                              keep_all=FALSE,
                              params = attr(object,"params"),
                              ...)
@@ -167,14 +169,17 @@ condense.pansim <-  function(object, add_reports=TRUE,
 
     if (add_reports &&
         !("report" %in% names(object))  ## don't add reports if already there ...
-        )
-    {
+        ) {
         if (!"c_delay_mean" %in% names(params)) {
             warning("add_reports requested but delay parameters missing")
         } else {
+            if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
             cr <- calc_reports(object,params, add_cumrep=cum_reports)
             dd <- data.frame(dd, cr)
         }
+    } ## add_reports
+    if (het_S) {
+        dd$hetS <- (dd$S/params[["N"]])^(1+params[["zeta"]])
     }
     dd <- put_attr(dd,aa)
     return(dd)

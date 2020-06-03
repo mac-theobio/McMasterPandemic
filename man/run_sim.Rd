@@ -56,6 +56,7 @@ Run pandemic simulation
 \examples{
 params <- read_params("ICU1.csv")
 paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
+paramsSz <- update(paramsS, zeta=5)
 state <- make_state(params=params)
 time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
                        Symbol=c("beta0","beta0"),
@@ -70,4 +71,5 @@ res1_t <- update(res1, params_timevar=time_pars)
 res1_S_t <- update(res1_S, params_timevar=time_pars)
 res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
 res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
+res3_Sz <- update(res1_S, params=paramsSz)
 }

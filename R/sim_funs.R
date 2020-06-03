@@ -251,6 +251,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
+##' paramsSz <- update(paramsS, zeta=5)
 ##' state <- make_state(params=params)
 ##' time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
 ##'                        Symbol=c("beta0","beta0"),
@@ -265,6 +266,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
 ##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
 ##' res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
+##' res3_Sz <- update(res1_S, params=paramsSz)
 ##' @importFrom stats rnbinom na.exclude napredict
 ##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
@@ -390,9 +392,13 @@ run_sim <- function(params
     ## condense here
     if (condense) {
         res <- do.call(condense.pansim,c(list(res,params=params0,
-                                              cum_reports=FALSE),condense_args))
+                                              cum_reports=FALSE,
+                                              het_S="zeta" %in% names(params0),
+                                              het_S_params=params0[c("N","zeta")]),
+                                         condense_args))
     }
     if (stoch[["obs"]]) {
+        if ("zeta" %in% params) params[["obs_disp_hetS"]] <- NA  ## hard-code skipping obs noise
         ## do observation error here
         ## FIXME: allow per-variable obs dispersion; switch to a column-wise operation??
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)

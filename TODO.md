@@ -2,9 +2,7 @@
 
 ### short term
 
-* allow passing NLLvec to `pop_pred_samp`
-* per-variable observation noise
-* ?? fix "predict three times"
+* ?? fix "predict three times" (see `notes/africa_pred.md`)
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
 
 * document !!!!
