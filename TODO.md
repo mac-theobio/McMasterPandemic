@@ -2,7 +2,7 @@
 
 ### short term
 
-* ?? fix "predict three times" (see `notes/africa_pred.md`)
+* ? make Rt pred back-compatible (i.e. for fits without `hetS` variable computed)
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
 
 * document !!!!

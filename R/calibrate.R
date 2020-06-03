@@ -312,14 +312,17 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                 %>% dplyr::select(-Symbol)
                 %>% rename(rel_beta0="Relative_value",date="Date")
             )
-            x2 <- (full_join(bb,select(r_agg,date,S),by="date")
+            vars <- c("date","S")
+            if (has_zeta(params)) vars <- c(vars,"hetS")
+            x2 <- (full_join(bb,select(r_agg,vars),
+                             by="date")
                 %>% arrange(date))
         }  else {
             x2 <- r_agg %>% select(date,S) %>% mutate(rel_beta0=1)
         }
         x3 <- (x2
             %>% mutate_at("rel_beta0", fill_edge_values)
-            %>% transmute(date=date, Rt=R0_base*rel_beta0)
+            %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0)
         )
         if (has_zeta(params)) {
             x3 <- x3 %>% mutate_at("Rt", ~.*hetS)
