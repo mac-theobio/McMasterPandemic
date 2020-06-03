@@ -686,7 +686,7 @@ forecast_ensemble <- function(fit,
     }
 
     f_args <- forecast_args
-    f_args <- f_args[!names(f_args) %in% c("stoch", "stoch_start", "fixed_pars", "base_params")]
+    f_args <- f_args[!names(f_args) %in% c("stoch", "stoch_start", "fixed_pars")]
     pps_args <- c(nlist(object=fit$mle2
                      , n=nsim
                      , PDify =TRUE
