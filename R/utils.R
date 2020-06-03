@@ -484,7 +484,7 @@ fill_edge_values <- function(x) {
 ## lapply(ff, recompress)
 recompress <- function(fn) {
     L <- load(fn)
-    save(list=L, file=fn, compress="xz")
+    invisible(save(list=L, file=fn, compress="xz"))
 }
 
 
