@@ -318,7 +318,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                              by="date")
                 %>% arrange(date))
         }  else {
-            x2 <- r_agg %>% select(date,S) %>% mutate(rel_beta0=1)
+            x2 <- r_agg %>% select(date,S, hetS) %>% mutate(rel_beta0=1)
         }
         x3 <- (x2
             %>% mutate_at("rel_beta0", fill_edge_values)
