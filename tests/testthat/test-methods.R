@@ -22,10 +22,10 @@ test_that("Jacobian/r/etc", {
 test_that("basic aggregation", {
     c1 <- condense(s)
     expect_error(condense(s,junk=TRUE), "unknown arguments")
-    expect_equal(dim(c1),c(62,13))
+    expect_equal(dim(c1),c(62,14))
     expect_equal(names(c1),
                  c("date", "S", "E", "I", "H", "hosp", "ICU", "R", "death", "foi",
-                   "incidence", "report", "cumRep"))
+                   "incidence", "report", "cumRep","D"))
     expect_error(aggregate(s,junk=TRUE), "unknown arguments")
     a1 <- aggregate(condense(s), start="12-Feb-2020", period="7 days",
                     FUN=list(mean=c("H","ICU","I"),
@@ -48,13 +48,15 @@ test_that("fit methods", {
 })
 
 test_that("predict", {
-    expect_equal(unique(predict(ont_cal1)$var),c("H","hosp","ICU","death","incidence","report","cumRep"))
+    ## n.b. this will change when we update! add "D"? (hacked for now)
+    expect_equal(setdiff(unique(predict(ont_cal1)$var),"D"),
+                 c("H","hosp","ICU","death","incidence","report","cumRep"))
     pp0 <- predict(ont_cal1,keep_vars="all",sim_args=list(condense=FALSE))
     pp0_v <- unique(pp0$var)
     expect_equal(length(pp0_v),14L)
     pp1 <- predict(ont_cal1,keep_vars="all")
     pp1_v <- unique(pp1$var)
-    expect_equal(length(pp1_v),12L)
+    expect_equal(length(pp1_v),13L)
     pp2 <- predict(ont_cal1,stoch=c(proc=TRUE,obs=TRUE),
                    stoch_start=c(proc="2020-04-10",obs="2020-01-30"),
                    new_params=c(proc_disp=5,obs_disp=100))

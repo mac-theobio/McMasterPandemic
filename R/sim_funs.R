@@ -401,27 +401,23 @@ run_sim <- function(params
             ## only add stochastic obs error after specified date
             m <- m[res$date>stoch_start[["obs"]],]
         }
-        if (FALSE) for (i in seq(ncol(m))) {  ## disabled for now
+        m_rows <- nrow(m)
+        for (i in seq(ncol(m))) {
             nm <- names(m)[i]
-            if ((vn <- paste0("obs_disp_",nm)) %in% params) {
+            if ((vn <- paste0("obs_disp_",nm)) %in% names(params)) {
                 ## variable-specific dispersion specified
                 d <- params[[vn]]
-                if (!is.na(d)) {
-                    m[[i]] <- ... ## rnbinom, skipping NA values (as below)
-                }
-            } else {
-                ## use generic disp parameter
-                m[[i]] <- rnbinom(...)
+            } else d <- params[["obs_disp"]]
+            if (!is.na(d)) {
+                ## rnbinom, skipping NA values (as below)
+                m[[i]] <- suppressWarnings(rnbinom(m_rows, mu=m[[i]], size=d))
             }
         }
-        m_rows <- nrow(m)
-        mu <- na.exclude(unlist(m))
-        mu_S <- rnbinom(length(mu), mu=mu, size=params[["obs_disp"]])
-        mu_S <- napredict(attr(mu,"na.action"),mu_S)  ## restore NA values
-        res[seq(nrow(res)-m_rows+1,nrow(res)),-1] <- mu_S
+        res[seq(nrow(res)-m_rows+1,nrow(res)),-1] <- m
     }
     ## add cum reports *after* adding obs error
     if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(res$report), res$report, 0))
+    if ("death" %in% names(res)) res$D <- cumsum(ifelse(!is.na(res$death), res$death, 0))
     ## store everything as attributes
     attr(res,"params") <- params0
     attr(res,"state0") <- state0

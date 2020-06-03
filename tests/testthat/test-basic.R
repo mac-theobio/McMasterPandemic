@@ -53,6 +53,18 @@ test_that("time-varying with ndt>1", {
 
 test_that("ndt>1", {
     s2 <- run_sim_range(params,state, nt=100, dt=0.2)
+    expect_equal(tail(s2,1),
+                 tolerance=1e-6,
+                 structure(list(t = 100L, S = 999175.599366463, E = 470.938645829701, 
+                                Ia = 75.7624206309387, Ip = 26.7668000907004, Im = 128.383139203259, 
+                                Is = 5.46913724380533, H = 2.03123004779139, H2 = 0.0400421128254433, 
+                                ICUs = 0.371377275540251, ICUd = 0.300078574043836, D = 0.139442448949961, 
+                                R = 114.198320079343, foi = 0.000211127356958391), state = structure(c(S = 999175.599366463, 
+                                                                                                       E = 470.938645829701, Ia = 75.7624206309387, Ip = 26.7668000907004, 
+                                                                                                       Im = 128.383139203259, Is = 5.46913724380533, H = 2.03123004779139, 
+                                                                                                       H2 = 0.0400421128254433, ICUs = 0.371377275540251, ICUd = 0.300078574043836, 
+                                                                                                       D = 0.139442448949961, R = 114.198320079343), class = "state_pansim"), row.names = "100", class = "data.frame"))
+
     s3 <- run_sim(params,state, ndt=20,
                   start_date="1-Mar-2020",
                   end_date="20-Mar-2020")
@@ -114,3 +126,13 @@ test_that("cum_rep vs rep", {
         par(op)
     }
 })
+
+test_that("var-specific obsdisp", {
+    params <- update(params,obs_disp=1,obs_disp_I=NA,obs_disp_E=1000)
+    set.seed(101)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    plot(s0,keep_states=c("I","E","report"),log=TRUE)
+    expect_equal(tail(s0$I,1),15557.975)
+    expect_equal(tail(s0$E,1),30299)
+})
+

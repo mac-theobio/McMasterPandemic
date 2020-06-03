@@ -542,7 +542,7 @@ predict.fit_pansim <- function(object
     if (!ensemble) {
         fc <- do.call(forecast_sim,
                       c(nlist(p=coef(object$mle2),
-                             calc_Rt), f_args, new_args))
+                              calc_Rt), f_args, new_args))
     } else {
         ## ensemble
         argList <- c(nlist(fit=object, forecast_args=f_args, scale_Sigma, calc_Rt), new_args)
