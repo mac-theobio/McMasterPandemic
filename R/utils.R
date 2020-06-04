@@ -423,7 +423,7 @@ add_d_log <- function(x) {
 ##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble case_when
 ##' @export
 get_Rt <- function(x) {
-    Symbol <- value <- rel_beta0 <- S <- NULL
+    Symbol <- value <- rel_beta0 <- S <- zeta <- NULL
     ## process args etc.
     f_args <- x$forecast_args
     pp <- coef(x,"fitted")
