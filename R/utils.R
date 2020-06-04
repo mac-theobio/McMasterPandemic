@@ -420,7 +420,7 @@ add_d_log <- function(x) {
 ## FIXME: now redundant with code inside forecast_sim
 ## if this gets erased, save the @importFrom stuff!
 ##' @param x a fitted object
-##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble
+##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble case_when
 ##' @export
 get_Rt <- function(x) {
     Symbol <- value <- rel_beta0 <- S <- NULL

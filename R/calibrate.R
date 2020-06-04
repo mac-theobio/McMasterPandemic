@@ -270,7 +270,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          calc_Rt = FALSE,
                          debug = FALSE)
 {
-    S <- Symbol <- rel_beta0 <- NULL ## global var checking
+    S <- Symbol <- rel_beta0 <- hetS <- zeta <- NULL ## global var checking
     return_val <- match.arg(return_val)
     sim_args <- c(sim_args,nlist(start_date, end_date))
     if (!is.null(stoch)) {
