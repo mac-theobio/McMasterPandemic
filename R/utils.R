@@ -301,6 +301,7 @@ texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
   x <- gsub("epsilon","\\varepsilon",x,fixed=TRUE)
   x <- gsub("nu","\\nu",x,fixed=TRUE)
   x <- gsub("mu","\\mu",x,fixed=TRUE)
+  x <- gsub("zeta","\\zeta",x,fixed=TRUE)
   x <- gsub("phi","\\phi",x,fixed=TRUE)
   if (dollars) x <- paste0("$",x,"$")
   return(x)
