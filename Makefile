@@ -73,7 +73,7 @@ aggfuns.Rout: notes/aggfuns.R
 lpackage:
 	R CMD INSTALL .
 
-package:
+package: pull
 	sudo R CMD INSTALL .
 
 ######################################################################
