@@ -2,7 +2,6 @@ library(McMasterPandemic)
 library(tidyverse)
 library(anytime)
 library(bbmle)
-library(parallel)
 
 use_true_start <- TRUE
 use_cut <- TRUE
@@ -33,14 +32,13 @@ true_pars <- list(
 	params=c(
 		log_E0 = log(params[["E0"]]), 
 		log_beta0=log(params[["beta0"]]))
-   	, log_nb_disp = log(params[["obs_disp"]])
+   , log_nb_disp = log(params[["obs_disp"]])
 )
-	
-opt_pars <- list(
-	params=c(
-		log_E0 = log(params[["E0"]]), 
-		log_beta0=log(params[["beta0"]]*1.2))
-  	, log_nb_disp = log(params[["obs_disp"]])
+
+opt_pars <- list(params=c(log_E0= log(params[["E0"]])
+		, log_beta0=log(params[["beta0"]])
+		)
+	, log_nb_disp = c(report=log(params[["obs_disp"]]))
 )
 	
 true_pars <- unlist(true_pars)
