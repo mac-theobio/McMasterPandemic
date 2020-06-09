@@ -5,7 +5,7 @@ library(bbmle)
 
 use_true_start <- TRUE
 use_cut <- TRUE
-nsim <- 50
+nsim <- 49
 options(mc.cores=1)
 
 ## setup 

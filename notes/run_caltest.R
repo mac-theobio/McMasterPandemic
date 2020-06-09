@@ -39,14 +39,14 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=TRUE) {
 
     print(bbmle::coef(g1$mle2))
 
-    return(list(data=simdat2,fit=g1,fulldata=simdat))
+    return(list(data=simdat2,fit=g1,fulldata=simdat,seed=seed))
 }
 
 ## sim_cali(1)
-res <- mclapply(seq(nsim), sim_cali,mc.cores = 1)
+res <- mclapply(seq(nsim), sim_cali,mc.cores = 7)
 # res <- lapply(seq(nsim), sim_cali)
 # res2 <- lapply(seq(nsim),function(x)sim_cali(seed=x,use_DEoptim=TRUE))
 
-print(res)
-print(res2)
+saveRDS(res,rdsname)
+
 # rdsave(res,res2,true_pars)
