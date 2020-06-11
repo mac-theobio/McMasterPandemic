@@ -12,17 +12,27 @@ color_list <- function(n) {
   return(colours)
 }
 
-##' Write checkbox colouring HTML
+##' Colour checkboxes checkboxes.
 ##'
-##' Generate the necessary HTML/CSS tags to change the colour of a checkbox.
+##' Generate the necessary HTML/CSS tags to change the colour of a checkbox. Colour curve toggle buttons to match corresponding curves on the graph.
 ##'
 ##' @param curves a list of input IDs of the checkboxes to modify the fill of.
 ##' @param colourList a list of hex obects specifiying the colour to change corresponding checkboxes in curves to.
 ##' @return a tagsList containing the tags
 ##' @export
 ##'
-colour_curve <- function(curve){
-  #tags$(HTML(something))
+togglePanelColourManager <- function(curves, colourList){
+  i <- 1
+  listoftags <- list()
+  while (i <= length(curves)){
+    colour <- colourList[i]
+    curve <- curves[i]
+    ##Create the text for the HTML tags. The + selects the right divider after the input of the curve.
+    theTag <- paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = "")
+    listoftags <- c(listoftags, theTag)
+    i <- i + 1
+  }
+  return(listoftags)
 }
 
 ##' Handle external browser options for the shiny.
@@ -99,6 +109,7 @@ default.dropstates <- c("t","S","E","I","X")
 ##' @importFrom ggplot2 element_text
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
+##' @importFrom shinyWidgets prettyCheckbox
 ##' @param useBrowser Open the shiny in the browser.
 ##' @return NULL
 ##' @export
@@ -117,12 +128,7 @@ run_shiny <- function(useBrowser = TRUE) {
             column(2,
                    checkboxInput(inputId = "use_logYscale",
                                  label = "log-y scale",
-                                 value = FALSE)),
-            column(2,
-                   radioButtons(inputId = "use_directLabels",
-                                label = ("Direct labels or legend"),
-                                choices = list("Direct labels" = 1, "Legend" = 2),
-                                selected = 1))
+                                 value = FALSE))
           ),
           fluidRow(
             tableOutput("summary")
@@ -291,14 +297,9 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         else{
         }
-        if (input$use_directLabels == 1){
-          ##Use a positioning metho to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
-          p
-        }
-        else{
-          p
-        }
+        ##Use a positioning method to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
+        p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
+        p
       })
       ##Take input and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
@@ -422,8 +423,7 @@ run_shiny <- function(useBrowser = TRUE) {
           if (curve == "H"){
             theLabel <- "hospitalized"
           }
-
-          return(checkboxInput(curve,
+          return(shinyWidgets::prettyCheckbox(curve,
                            label = theLabel,
                            value = showByDefault))
         }
@@ -451,8 +451,12 @@ run_shiny <- function(useBrowser = TRUE) {
           curvesList <- as.vector(colnames(defsim)[2:length(defsim)])
           ##Remove the ones we're going to drop.
           curvesList <- setdiff(curvesList, getDropStates())
-          ##Colour each checkbox appropriately.
-          lapply(curvesList, colour_curve)
+          ##Grab the corresponding tags
+          theTags <- togglePanelColourManager(curves = curvesList, colourList = color_list(length(curvesList)))
+          ##Render the tags.
+          lapply(theTags, function(tag){
+            return(tags$style(tag))
+          })
           })
   }
 
