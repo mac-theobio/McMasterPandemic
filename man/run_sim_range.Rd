@@ -11,7 +11,9 @@ run_sim_range(
   dt = 1,
   M = NULL,
   ratemat_args = NULL,
-  step_args = NULL
+  step_args = NULL,
+  use_ode = FALSE,
+  ode_args = list()
 )
 }
 \arguments{
@@ -28,11 +30,18 @@ run_sim_range(
 \item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
 
 \item{step_args}{additional arguments to pass to \code{do_step}}
+
+\item{use_ode}{solve as differential equation?}
+
+\item{ode_args}{additional arguments to ode()}
 }
 \description{
 Run simulation across a range of times
 }
 \examples{
 params <- read_params("ICU1.csv")
-run_sim_range(params)
+r1 <- run_sim_range(params)
+r2 <- run_sim_range(params,use_ode=TRUE)
+matplot(r1[,"t"],r1[,-1],type="l",lty=1,log="y")
+matlines(r2[,"t"],r2[,-1],lty=2)
 }

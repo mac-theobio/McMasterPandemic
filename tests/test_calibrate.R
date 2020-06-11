@@ -43,21 +43,21 @@ regdatS <- (simdat
 g1S <- MASS::glm.nb(value~t0,data=regdatS)
 
 ## calibrate (use orig, sim params as starting point)
-ccS <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
+system.time(ccS <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
                 pop=cparams[["N"]],
                 params=cparams,
                 date0="1-Mar-2020",
-                date1=min(regdatS$date))
+                date1=min(regdatS$date)))
 
 ## brute-force (shooting) calibration
-ccS2 <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
+system.time(ccS2 <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
                 pop=cparams[["N"]],
                 params=cparams,
                 date0="1-Mar-2020",
                 date1=min(regdatS$date),
                 init_target=head(regdatS$value,1),
-                sim_args=list(ndt=10))
-
+                sim_args=list(ndt=10)))
+ 
 summary(ccS$params)
 ## run (deterministic) simulation with calibrated data
 simScal <- run_sim(ccS$params, ccS$state,
@@ -142,14 +142,23 @@ params <- fix_pars(read_params("ICU1.csv")
 )
 params[["N"]] <- 14.57e6  ## reset pop to Ontario
 
-cc1 <- calibrate(data=ont_all_sub
+system.time(cc1 <- calibrate(data=ont_all_sub
     , base_params=params
     , opt_pars = opt_pars
-    , break_dates = bd
+    , time_args=list(break_dates = bd)
+      )
+      )
+
+system.time(cc2 <- calibrate(data=ont_all_sub
+    , base_params=params
+    , opt_pars = opt_pars
+    , time_args=list(break_dates = bd)
+    , sim_args=list(use_ode=TRUE)
+      )
       )
 
 repdata <- ont_all_sub %>% filter(var=="report")
-calibrate_comb(data=repdata
+cc3 <- calibrate_comb(data=repdata
              , params=params
              , use_phenomhet=TRUE
              , use_spline=FALSE
