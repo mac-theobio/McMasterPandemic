@@ -362,7 +362,10 @@ do_debug_plot <- function(r2) {
 mle_fun <- function(p, data,
                     debug=FALSE,
                     debug_plot=FALSE,
-                    opt_pars, base_params, start_date, end_date,
+                    opt_pars,
+                    base_params,
+                    start_date,
+                    end_date,
                     time_args=NULL,
                     sim_args=NULL,
                     sim_fun=run_sim_break,
@@ -411,7 +414,7 @@ mle_fun <- function(p, data,
     if (is.null(names(nbd))) {
         if (length(nbd)>1) stop("nbdisp must be named or length==1")
         v <- unique(r2$var)
-        nbd <- setNames(rep(nbd,length(v),v))
+        nbd <- setNames(rep(nbd,length(v)),v)
     }
     r2 <- merge(r2,data.frame(var=names(nbd),nb_disp=nbd), by="var")
     ## FIXME: more principled solution to dnbinom warnings etc.?
@@ -604,6 +607,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     mle_data <- mle_args
     ## FIXME: is this even necessary?
     mle_data$fixed_pars <- mle_data$fixed_pars
+    mle2_args <- c(mle2_args,list(namedrop_args=FALSE))
     opt_args <- c(list(minuslogl=mle_fun
                         , start=opt_inputs
                         , data=mle_data

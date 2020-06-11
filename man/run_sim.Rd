@@ -16,6 +16,8 @@ run_sim(
   stoch_start = NULL,
   ratemat_args = NULL,
   step_args = list(),
+  ode_args = list(),
+  use_ode = FALSE,
   condense = TRUE,
   condense_args = NULL,
   verbose = FALSE

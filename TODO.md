@@ -2,7 +2,15 @@
 
 ### short term
 
-* ? make Rt pred back-compatible (i.e. for fits without `hetS` variable computed)
+* instabilities etc.
+     * rewrite as gradient
+     * Runge-Kutta steps?
+	 * fancy flows/transformations
+	 * why are hospitalizations bouncy?
+	 
+* simulate from simple model
+* simulate from spline model
+
 * test spline variations: number of spline parameters? effects of var choice on knot placement? effects of (strong) penalization on spline coeffs?
 
 * document !!!!

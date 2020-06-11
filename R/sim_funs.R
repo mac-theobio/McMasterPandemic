@@ -237,6 +237,7 @@ do_step <- function(state, params, ratemat, dt=1,
 
 ##' Run pandemic simulation
 ##' @inheritParams do_step
+##' @inheritParams run_sim_args
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
@@ -280,11 +281,14 @@ run_sim <- function(params
         , start_date="2020-Mar-20"
         , end_date="2020-May-1"
         , params_timevar=NULL
-        , dt=1, ndt=1  ## FIXME: change default after testing?
+        , dt=1
+        , ndt=1  ## FIXME: change default after testing?
         , stoch=c(obs=FALSE,proc=FALSE)
         , stoch_start=NULL
         , ratemat_args=NULL
         , step_args=list()
+        , ode_args = list()
+        , use_ode = FALSE
         , condense = TRUE
         , condense_args=NULL
         , verbose = FALSE
@@ -344,12 +348,14 @@ run_sim <- function(params
     if (is.null(switch_times)) {
         res <- thin(ndt=ndt,
                     do.call(run_sim_range,
-                            nlist(params,state,
-                                  nt=nt*ndt,
-                                  dt=dt/ndt,M,
-                                  ratemat_args,step_args
-                                  )
-                            ))
+                            nlist(params
+                                , state
+                                , nt=nt*ndt
+                                , dt=dt/ndt
+                                , M
+                                , ratemat_args
+                                , step_args
+                            )))
     } else {
         t_cur <- 1
         ## want to *include* end date 
@@ -372,11 +378,16 @@ run_sim <- function(params
             resList[[i]] <- drop_last(
                 thin(ndt=ndt,
                      do.call(run_sim_range,
-                        nlist(params,
-                              state,
-                              nt=(times[i+1]-times[i]+1)*ndt,
-                              dt=dt/ndt,M,
-                              ratemat_args,step_args)))
+                        nlist(params
+                            , state
+                            , nt=(times[i+1]-times[i]+1)*ndt
+                            , dt=dt/ndt
+                            , M
+                            , use_ode
+                            , ratemat_args
+                            , step_args
+                            , ode_args
+                              )))
             )
             state <- attr(resList[[i]],"state")
             t_cur <- times[i]
@@ -514,16 +525,30 @@ make_state <- function(N=params[["N"]],
     return(state)
 }
 
+##' 
+gradfun <- function(t, y, parms, M) {
+    foi <- M["S","E"] <- update_foi(y, parms)
+    ## compute 
+    flows <- sweep(M, y, MARGIN=1, FUN="*")
+    g <- colSums(flows)-rowSums(flows)
+    return(list(g,foi=foi))
+}
+    
 ##' Run simulation across a range of times
 ##' @inheritParams do_step
 ##' @param nt number of steps to take
 ##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
 ##' @param step_args additional arguments to pass to \code{do_step}
 ##' @param M rate matrix
+##' @param use_ode solve as differential equation?
+##' @param ode_args additional arguments to ode()
 ##' @importFrom stats rnbinom
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' run_sim_range(params)
+##' r1 <- run_sim_range(params)
+##' r2 <- run_sim_range(params,use_ode=TRUE)
+##' matplot(r1[,"t"],r1[,-1],type="l",lty=1,log="y")
+##' matlines(r2[,"t"],r2[,-1],lty=2)
 ##' @export
 run_sim_range <- function(params
         , state=make_state(params[["N"]], params[["E0"]])
@@ -532,35 +557,50 @@ run_sim_range <- function(params
         , M = NULL
 	, ratemat_args=NULL
         , step_args=NULL
+        , use_ode=FALSE
+        , ode_args = list()
           ) {
     ## cat("beta0",params[["beta0"]],"\n")
     if (is.null(M)) {
         M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
     }
-    ## set up output
-    foi <- rep(NA,nt)
-    res <- matrix(NA, nrow=nt, ncol=length(state),
-                  dimnames=list(time=seq(nt),
-                                state=names(state)))
-    ## initialization
-    res[1,] <- state
-    foi[[1]] <- update_foi(state,params)
-    ## loop
-    if (nt>1) {
-        for (i in 2:nt) {
-            state <- do.call(do_step,
-                             c(nlist(state
-                                   , params
-                                   , ratemat = M
-                                   , dt
-                                     )
-                             , step_args))
-            foi[[i]] <- update_foi(state, params)
-            if (!identical(colnames(res),names(state))) browser()
-            res[i,] <- state
+    if (use_ode) {
+        res <- do.call(deSolve::ode,
+                       c(nlist(y=state
+                             , times=seq(nt)*dt
+                             , func=gradfun
+                             , parms = params
+                             , M
+                               )
+                         , ode_args))
+        res <- dfs(res)
+        names(res)[1] <- "t" ## ode() uses "time"
+    } else {
+        ## set up output
+        foi <- rep(NA,nt)
+        res <- matrix(NA, nrow=nt, ncol=length(state),
+                      dimnames=list(time=seq(nt),
+                                    state=names(state)))
+        ## initialization
+        res[1,] <- state
+        foi[[1]] <- update_foi(state,params)
+        ## loop
+        if (nt>1) {
+            for (i in 2:nt) {
+                state <- do.call(do_step,
+                                 c(nlist(state
+                                       , params
+                                       , ratemat = M
+                                       , dt
+                                         )
+                                 , step_args))
+                foi[[i]] <- update_foi(state, params)
+                if (!identical(colnames(res),names(state))) browser()
+                res[i,] <- state
+            }
         }
+        res <- dfs(t=seq(nt),res,foi)
     }
-    res <- dfs(t=seq(nt),res,foi)
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
     return(res)
