@@ -1,3 +1,40 @@
+##' Simulate ggplot picking colours for a plot.
+##'
+##' Obtain a list of the colours that ggplot will use for a plot with n variable.
+##'
+##' @param n the number of variables in the simulated plot. Should match the number of variables in the simulation for this to be useful.
+##' @return hues, a list of the colours (specified in hex) that ggplot2 will use.
+##' @export
+##'
+color_list <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  colours <- hcl(h = hues, l = 65, c = 100)[1:n]
+  return(colours)
+}
+
+##' Colour checkboxes checkboxes.
+##'
+##' Generate the necessary HTML/CSS tags to change the colour of a checkbox. Colour curve toggle buttons to match corresponding curves on the graph.
+##'
+##' @param curves a list of input IDs of the checkboxes to modify the fill of.
+##' @param colourList a list of hex obects specifiying the colour to change corresponding checkboxes in curves to.
+##' @return a tagsList containing the tags
+##' @export
+##'
+togglePanelColourManager <- function(curves, colourList){
+  i <- 1
+  listoftags <- list()
+  while (i <= length(curves)){
+    colour <- colourList[i]
+    curve <- curves[i]
+    ##Create the text for the HTML tags. The + selects the right divider after the input of the curve.
+    theTag <- paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = "")
+    listoftags <- c(listoftags, theTag)
+    i <- i + 1
+  }
+  return(listoftags)
+}
+
 ##' Handle external browser options for the shiny.
 ##'
 ##'
@@ -63,6 +100,7 @@ default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
 
+
 ##' Run the McMasterPandemic Shiny
 ##'
 ##' @import shiny
@@ -71,6 +109,7 @@ default.dropstates <- c("t","S","E","I","X")
 ##' @importFrom ggplot2 element_text
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
+##' @importFrom shinyWidgets prettyCheckbox
 ##' @param useBrowser Open the shiny in the browser.
 ##' @return NULL
 ##' @export
@@ -81,6 +120,28 @@ run_shiny <- function(useBrowser = TRUE) {
     ui <- fluidPage(
         titlePanel("McMasterPandemic Shiny"),
         mainPanel(
+          fluidRow(
+            uiOutput("plotColumn"),
+            column(2,
+                   uiOutput("plotTogglePanel")
+            ),
+            column(2,
+                   checkboxInput(inputId = "use_logYscale",
+                                 label = "log-y scale",
+                                 value = FALSE))
+          ),
+          fluidRow(
+            tableOutput("summary")
+          ),
+          fluidRow(
+            column(2,
+                   br(),
+                   sliderInput("plotSize",
+                               label = "Plot size",
+                               min = 3,
+                               max = 12,
+                               value = 8))
+          ),
             fluidRow(
                 column(2,
                        selectInput("fn",
@@ -92,37 +153,13 @@ run_shiny <- function(useBrowser = TRUE) {
                                  value = default.start.date)),
                 column(5,
                        textInput("ed", "Simulation End Date  (yyyy-mm-dd)",
-                                 value = "2020-08-01")),
-                column(2,
-                       checkboxInput(inputId = "use_logYscale",
-                                     label = "log-y scale",
-                                     value = FALSE)),
-                column(2,
-                       radioButtons(inputId = "use_directLabels",
-                                    label = ("Direct labels or legend"),
-                                    choices = list("Direct labels" = 1, "Legend" = 2),
-                                    selected = 1))),
+                                 value = "2020-08-01"))),
             ## Only show the selector to input parameters if that's selected.
             uiOutput("maintabPanel"),
-            width = 12),
-        fluidRow(
-            tableOutput("summary")
-        ),
-        fluidRow(
-          uiOutput("plotColumn"),
-            column(2,
-                   uiOutput("plotTogglePanel")
-                   )
-        ),
-        fluidRow(
-          column(2,
-            br(),
-            sliderInput("plotSize",
-                      label = "Plot size",
-                      min = 3,
-                      max = 12,
-                      value = 8))
-        )
+          ##Colour the checkboxes to match the curves in the plot.
+          ##Use the below object to call the HTML tags within the server function.
+            htmlOutput("colourManager"),
+            width = 12)
     )
 
 #Everything else.
@@ -216,7 +253,7 @@ run_shiny <- function(useBrowser = TRUE) {
     })
     dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
-      output$plot <- renderPlot({
+    output$plot <- renderPlot({
         ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
         time_pars <- get_factor_timePars()
         defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
@@ -260,14 +297,9 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         else{
         }
-        if (input$use_directLabels == 1){
-          ##Use a positioning metho to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
-          p
-        }
-        else{
-          p
-        }
+        ##Use a positioning method to scale down the size for the direct labels, only label the last points for each graph, and add spacing beween the lines and the labels.
+        p <- direct.label(p, list("last.points", cex = input$Globalsize/15, dl.trans(x = x + 0.05)))
+        p
       })
       ##Take input and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
@@ -358,7 +390,6 @@ run_shiny <- function(useBrowser = TRUE) {
               return(default.dropstates)
             }
             else {
-
             }
             ##2 indicates we don't want to show the drop state.
             if (!stateVal){
@@ -392,7 +423,7 @@ run_shiny <- function(useBrowser = TRUE) {
           if (curve == "H"){
             theLabel <- "hospitalized"
           }
-          return(checkboxInput(curve,
+          return(shinyWidgets::prettyCheckbox(curve,
                            label = theLabel,
                            value = showByDefault))
         }
@@ -414,8 +445,20 @@ run_shiny <- function(useBrowser = TRUE) {
         output$plotTogglePanel <- renderUI({
           create_togglePanel()
         })
+        output$colourManager <- renderUI({
+          ##Grab all the curves.
+          defsim <- run_sim(read_params("ICU1.csv"))
+          curvesList <- as.vector(colnames(defsim)[2:length(defsim)])
+          ##Remove the ones we're going to drop.
+          curvesList <- setdiff(curvesList, getDropStates())
+          ##Grab the corresponding tags
+          theTags <- togglePanelColourManager(curves = curvesList, colourList = color_list(length(curvesList)))
+          ##Render the tags.
+          lapply(theTags, function(tag){
+            return(tags$style(tag))
+          })
+          })
   }
-  ##Take a useBrowser logical argument and run the shiny app accordingly.
 
   ##Set the viewing options first.
   browserManager(useBrowser)
