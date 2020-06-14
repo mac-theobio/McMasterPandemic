@@ -9,6 +9,7 @@ calibrate_comb(
   params,
   opt_pars = NULL,
   mob_data = NULL,
+  mob_breaks = NULL,
   spline_days = 14,
   spline_df = NA,
   knot_quantile_var = NA,
@@ -22,6 +23,7 @@ calibrate_comb(
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
+  return_X = FALSE,
   ...
 )
 }
@@ -60,7 +62,11 @@ calibrate_comb(
 
 \item{debug}{print debugging messages?}
 
+\item{return_X}{short-circuit/return model matrix?}
+
 \item{...}{extra args}
+
+\item{mob_brks}{vector of breakpoints for piecewise mobility model}
 }
 \description{
 top-level calibration based on mobility, splines, phenom het

@@ -777,6 +777,7 @@ forecast_ensemble <- function(fit,
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
 ##' @param ... extra args
 ##' @param mob_data  mobility data
+##' @param mob_brks vector of breakpoints for piecewise mobility model
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
@@ -785,6 +786,7 @@ forecast_ensemble <- function(fit,
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_spline include spline?
 ##' @param vars which vars to use? (default is all in data)
+##' @param return_X short-circuit/return model matrix?
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct
 ##' @importFrom tidyr drop_na
@@ -795,6 +797,7 @@ calibrate_comb <- function(data,
                      params,
                      opt_pars=NULL,
                      mob_data=NULL,
+                     mob_breaks=NULL,
                      spline_days=14,
                      spline_df=NA,
                      knot_quantile_var=NA,
@@ -808,6 +811,7 @@ calibrate_comb <- function(data,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
+                     return_X=FALSE,
                      ...) {
     t_vec <- value <- NULL ## global var check
     ## choose variables
@@ -823,14 +827,36 @@ calibrate_comb <- function(data,
         opt_pars <- get_opt_pars(params,vars=unique(data$var))
     }
     if (use_phenomhet) opt_pars$params <- c(opt_pars$params,log_zeta=1)
-    loglin_terms <- "-1"
-    if (use_mobility) loglin_terms <- c(loglin_terms, "log(rel_activity)")
     ## need tmp_dat ouside use_spline for non-spline, non-mob cases
     X_dat <- (data
         %>% select(date)
         %>% distinct()
         %>% mutate(t_vec=as.numeric(date-min(date)))
     )
+    loglin_terms <- "-1"
+    if (use_mobility) {
+        if (is.null(mob_breaks)) {
+            loglin_terms <- c(loglin_terms, "log(rel_activity)")
+        } else {
+            mob_breaks <- as.Date(mob_breaks)
+            ## make a factor/dummy variables for which 'mobility period' we're in,
+            ## i.e. before first, between first and second, etc...
+            ## count the number of breaks in the vector that are *earlier* than the current date in X_dat
+            ## i.e. 0, 1, 2, 3 ... make this a factor
+            ## add it to X_dat
+            ## d1 <- seq.Date(as.Date("2020-01-05"),as.Date("2020-01-12"),by="1 day")
+            ## brks <- c(as.Date("2020-01-09"),as.Date("2020-01-11"))
+            date_count <- function(d1,brks) {
+                res <- numeric(length(d1))
+                for (i in seq_along(brks)) {
+                    res <- res + as.numeric(d1>brks[i])
+                }
+                return(res)
+            }
+            X_dat$mob_breaks <- factor(date_count(X_dat$date,mob_breaks))
+            loglin_terms <- c(loglin_terms, "log(rel_activity):mob_breaks")
+        }
+    }
     if (use_spline) {
         if (is.na(spline_df)) {
             spline_df <- round(length(X_dat$t_vec)/spline_days)
@@ -863,6 +889,7 @@ calibrate_comb <- function(data,
         )
     }
     X <- model.matrix(form, data = X_dat)
+    if (return_X) return(X)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     time_args <- nlist(X,X_date=X_dat$date)
