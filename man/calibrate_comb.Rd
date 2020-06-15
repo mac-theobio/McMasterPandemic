@@ -36,6 +36,8 @@ calibrate_comb(
 
 \item{mob_data}{mobility data}
 
+\item{mob_breaks}{vector of breakpoints for piecewise mobility model}
+
 \item{spline_days}{days between spline knots}
 
 \item{spline_df}{overall spline degrees of freedom}
@@ -65,8 +67,6 @@ calibrate_comb(
 \item{return_X}{short-circuit/return model matrix?}
 
 \item{...}{extra args}
-
-\item{mob_brks}{vector of breakpoints for piecewise mobility model}
 }
 \description{
 top-level calibration based on mobility, splines, phenom het

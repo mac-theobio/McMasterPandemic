@@ -249,6 +249,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param stoch_start dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')
 ##' @param condense condense results?
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
+##' @param use_ode integrate via ODE rather than discrete step?
+##' @param ode_args additional arguments to deSolve::ode
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))

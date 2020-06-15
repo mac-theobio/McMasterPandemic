@@ -46,6 +46,10 @@ run_sim(
 
 \item{step_args}{additional arguments to pass to \code{do_step}}
 
+\item{ode_args}{additional arguments to deSolve::ode}
+
+\item{use_ode}{integrate via ODE rather than discrete step?}
+
 \item{condense}{condense results?}
 
 \item{condense_args}{arguments to pass to \code{\link{condense}} (before adding observation error)}

@@ -777,7 +777,7 @@ forecast_ensemble <- function(fit,
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
 ##' @param ... extra args
 ##' @param mob_data  mobility data
-##' @param mob_brks vector of breakpoints for piecewise mobility model
+##' @param mob_breaks vector of breakpoints for piecewise mobility model
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom
 ##' @param knot_quantile_var variable to use cum dist for knotspacing

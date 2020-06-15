@@ -6,6 +6,9 @@ r:
   - release
   - devel
 
+## may need more recent version of bbmle ...
+r_github_packages: bbolker/bbmle
+
 cache: packages
 
 notifications:
