@@ -28,7 +28,7 @@ togglePanelColourManager <- function(curves, colourList){
     colour <- colourList[i]
     curve <- curves[i]
     ##Create the text for the HTML tags. The + selects the right divider after the input of the curve.
-    theTag <- paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = "")
+    theTag <- tags$style(paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = ""))
     listoftags <- c(listoftags, theTag)
     i <- i + 1
   }
@@ -104,6 +104,7 @@ default.dropstates <- c("t","S","E","I","X")
 ##' Run the McMasterPandemic Shiny
 ##'
 ##' @import shiny
+##' @importFrom shinythemes shinytheme
 ##' @importFrom anytime anytime
 ##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
 ##' @importFrom ggplot2 element_text
@@ -117,49 +118,44 @@ run_shiny <- function(useBrowser = TRUE) {
     ## The ui (user interface) is what the user is shown when running
     ## the shiny.  The ui also gathers input that is the passed to the
     ## server (e.g., filling in boxes or sliders).
-    ui <- fluidPage(
-        titlePanel("McMasterPandemic Shiny"),
+    ui <- fluidPage(theme = shinythemes::shinytheme("flatly"),
+      titlePanel("McMasterPandemic Shiny"),
+      sidebarLayout(
+        sidebarPanel(
+          fluidRow(
+            column(3,
+              selectInput("fn",
+                               label = "Default parameter file:",
+                               choices = parameter.files, selected = default.parameter.file))),
+          fluidRow(
+            column(5,
+                   textInput("sd", "Simulation Start Date (yyyy-mm-dd)",
+                             value = default.start.date)),
+            column(5,
+                   textInput("ed", "Simulation End Date  (yyyy-mm-dd)",
+                             value = "2020-08-01"))),
+          ## Only show the selector to input parameters if that's selected.
+          uiOutput("maintabPanel"),
+          ##Colour the checkboxes to match the curves in the plot.
+          ##Use the below object to call the HTML tags within the server function.
+          htmlOutput("colourManager")),
         mainPanel(
           fluidRow(
             uiOutput("plotColumn"),
-            column(2,
+              column(2,
                    uiOutput("plotTogglePanel")
             ),
-            column(2,
+              column(2,
                    checkboxInput(inputId = "use_logYscale",
                                  label = "log-y scale",
-                                 value = FALSE))
-          ),
-          fluidRow(
-            tableOutput("summary")
-          ),
-          fluidRow(
-            column(2,
+                                 value = FALSE),
                    br(),
-                   sliderInput("plotSize",
-                               label = "Plot size",
-                               min = 3,
-                               max = 12,
-                               value = 8))
-          ),
+            fluidRow(textOutput("summaryTitle")),
+            br(),
             fluidRow(
-                column(2,
-                       selectInput("fn",
-                                   label = "Default parameter file:",
-                                   choices = parameter.files, selected = default.parameter.file))),
-            fluidRow(
-                column(5,
-                       textInput("sd", "Simulation Start Date (yyyy-mm-dd)",
-                                 value = default.start.date)),
-                column(5,
-                       textInput("ed", "Simulation End Date  (yyyy-mm-dd)",
-                                 value = "2020-08-01"))),
-            ## Only show the selector to input parameters if that's selected.
-            uiOutput("maintabPanel"),
-          ##Colour the checkboxes to match the curves in the plot.
-          ##Use the below object to call the HTML tags within the server function.
-            htmlOutput("colourManager"),
-            width = 12)
+              tableOutput("summary"))))
+          )
+        )
     )
 
 #Everything else.
@@ -180,62 +176,56 @@ run_shiny <- function(useBrowser = TRUE) {
         textOutput("trmsg"),
         br(),
         br(),
-        column(4,
-               textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
-               textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
-               textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1")
+        textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
+        textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
+        textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1"),
+        plotOutput("paramsPlot")
         ),
-        column(6,
-               plotOutput("paramsPlot"))),
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
-        textInput("procError", label = "Enter the process error", value = 0),
-        textInput("ObsError", label = "Enter the observation error", value = 0)
+        textInput("procError", label = "Process error", value = 0),
+        textInput("ObsError", label = "Observation error", value = 0)
       ),
-      tabPanel(title = "Simulation Parameters",
+      tabPanel(
+        title = "Simulation Parameters",
                value = "parametersPanel",
+        radioButtons(inputId = "showAll",
+                     label = ("Show all params?"),
+                     choices = list("No" = 1, "Yes" = 2),
+                     selected = 1),
+        conditionalPanel(condition = "input.showAll == 2",
                ##Using names to avoid factors getting passed as inputs to textInput_param.
-               column(5,
-                      lapply(names(read_params("ICU1.csv"))[1:15],
-                             FUN = textInput_param)
-                      ),
-               ##Split the parameter entry tab into two columns.
-               column(5,
-                      lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
-                             FUN = textInput_param)
-                      )
-      ),
+                lapply(names(read_params("ICU1.csv"))[1:15],
+                      FUN = textInput_param),
+                lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
+                      FUN = textInput_param))
+               ),
       tabPanel(
         title = "Plot aesthetics",
         value = "plotaes",
-        column(2,
-               sliderInput("Globalsize", "Text size:",
+        sliderInput("Globalsize", "Text size:",
                            min = 5, max = 45,
                            step = 0.25,
                            value = 25),
-               sliderInput("lineThickness", "Line thickness:",
+        sliderInput("lineThickness", "Line thickness:",
                            min = 0, max = 10,
                            step = 0.25,
-                           value = 3)),
-        column(2,
-               radioButtons(inputId = "automaticSize",
+                           value = 3),
+          radioButtons(inputId = "automaticSize",
                             label = ("Change individual text elements size"),
                             choices = list("No" = 1, "Yes" = 2),
-                            selected = 1)),
+                            selected = 1),
         conditionalPanel(condition = "input.automaticSize == 2",
-                         column(2,
-                                sliderInput("titleSize", "Title size:",
-                                            min = 0, max = 25,
-                                            value = 20)),
-                         column(2,
-                                sliderInput("XtextSize", "X axis title size:",
-                                            min = 0, max = 25,
-                                            value = 10)),
-                         column(2,
-                                sliderInput("YtextSize", "Y axis title size:",
-                                            min = 0, max = 25,
-                                            value = 10))
+                            sliderInput("titleSize", "Title size:",
+                                        min = 0, max = 25,
+                                        value = 20),
+                            sliderInput("XtextSize", "X axis title size:",
+                                        min = 0, max = 25,
+                                        value = 10),
+                            sliderInput("YtextSize", "Y axis title size:",
+                                        min = 0, max = 25,
+                                        value = 10)
         ))
       )})
     ##Force the tab panel to be the parameters panel every time the default parameters drop down is changed.
@@ -438,7 +428,7 @@ run_shiny <- function(useBrowser = TRUE) {
                         FUN = checkButton_curve))
         }
         output$plotColumn <- renderUI({
-          column(input$plotSize,
+          column(6,
                  plotOutput("plot"))
         })
         ##Panel to toggle curves showing
@@ -458,6 +448,7 @@ run_shiny <- function(useBrowser = TRUE) {
             return(tags$style(tag))
           })
           })
+        output$summaryTitle <- renderText({"Summary characteristics"})
   }
 
   ##Set the viewing options first.
