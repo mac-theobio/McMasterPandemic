@@ -28,7 +28,7 @@ togglePanelColourManager <- function(curves, colourList){
     colour <- colourList[i]
     curve <- curves[i]
     ##Create the text for the HTML tags. The + selects the right divider after the input of the curve.
-    theTag <- tags$style(paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = ""))
+    theTag <- paste0("#", curve, "+ .state label:after {background-color: ", colour, " !important;}", sep = "")
     listoftags <- c(listoftags, theTag)
     i <- i + 1
   }
@@ -119,9 +119,13 @@ run_shiny <- function(useBrowser = TRUE) {
     ## the shiny.  The ui also gathers input that is the passed to the
     ## server (e.g., filling in boxes or sliders).
     ui <- fluidPage(theme = shinythemes::shinytheme("flatly"),
-      titlePanel("McMasterPandemic Shiny"),
+      #Set the title panel to be Heritage Maroon.
+      h1(id = "heading", "McMasterPandemic Shiny"),
+      tags$style(HTML("#heading{background-color: #7A003C; color: white;}")),
+      #Set the colour of the sidebar panel to be Heritage Gold.
+      tags$head(tags$style(HTML('#sidebar {background-color: #FDBF57;}'))),
       sidebarLayout(
-        sidebarPanel(
+        sidebarPanel(id = "sidebar",
           fluidRow(
             column(3,
               selectInput("fn",
@@ -144,16 +148,20 @@ run_shiny <- function(useBrowser = TRUE) {
             uiOutput("plotColumn"),
               column(2,
                    uiOutput("plotTogglePanel")
-            ),
+            )),
+            fluidRow(
               column(2,
                    checkboxInput(inputId = "use_logYscale",
                                  label = "log-y scale",
                                  value = FALSE),
                    br(),
-            fluidRow(textOutput("summaryTitle")),
+            fluidRow(
+                column(6,
+                        textOutput("summaryTitle"))),
             br(),
             fluidRow(
-              tableOutput("summary"))))
+                column(6,
+                        tableOutput("summary")))))
           )
         )
     )
@@ -361,14 +369,19 @@ run_shiny <- function(useBrowser = TRUE) {
           }
           p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_step(size = 2) +
             theme_gray(base_size = input$Globalsize)
-          p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Parameter changes over time", x = "Date", y = "Relative value")
+          p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Changes over time", x = "Date", y = "Relative value")
           p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
           p
         })
         textInput_param <- function(param, dp = dp_1){
-          return(textInput(param,
+          maxVal <- 10
+          return(sliderInput(param,
                            label = dp[dp$symbol == param,"meaning"],
-                           value = loadParams(param)))}
+                           value = loadParams(param),
+                           min = 0,
+                           max = maxVal,
+                          step = 0.1))
+          }
         ##Manage the states to drop.
         getDropStates <- function(){
           default.sim <- run_sim(read_params("ICU1.csv"))
@@ -428,7 +441,7 @@ run_shiny <- function(useBrowser = TRUE) {
                         FUN = checkButton_curve))
         }
         output$plotColumn <- renderUI({
-          column(6,
+          column(9,
                  plotOutput("plot"))
         })
         ##Panel to toggle curves showing
