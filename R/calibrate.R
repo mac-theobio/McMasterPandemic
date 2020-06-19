@@ -772,6 +772,33 @@ forecast_ensemble <- function(fit,
     }
 }
 
+## make a factor/dummy variables for which 'mobility period' we're in,
+## i.e. before first, between first and second, etc...
+## count the number of breaks in the vector that are *earlier* than the current date in X_dat
+## i.e. 0, 1, 2, 3 ... make this a factor
+## add it to X_dat
+## d1 <- seq.Date(as.Date("2020-01-05"),as.Date("2020-01-12"),by="1 day")
+## brks <- c(as.Date("2020-01-09"),as.Date("2020-01-11"))
+date_count <- function(d1,brks) {
+    res <- numeric(length(d1))
+    for (i in seq_along(brks)) {
+        res <- res + as.numeric(d1>brks[i])
+    }
+    return(res)
+}
+
+date_logist <- function(date_vec, date_prev, date_next=NA,
+                        scale) {
+    t1 <- as.numeric(date_vec-date_prev)
+    r <- rep(1,length(date_vec))
+    if (!is.na(date_prev)) r <- plogis(t1/scale)
+    if (!is.na(date_next)) {
+        t2 <- as.numeric(date_vec-date_next)
+        r <- r - plogis(t2/scale)
+    }
+    return(r)
+}
+
 ##' top-level calibration based on mobility, splines, phenom het
 ##' @param params parameters
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
@@ -798,6 +825,8 @@ calibrate_comb <- function(data,
                      opt_pars=NULL,
                      mob_data=NULL,
                      mob_breaks=NULL,
+                     mob_breaks_int=FALSE,
+                     mob_logist_scale=NA,
                      spline_days=14,
                      spline_df=NA,
                      knot_quantile_var=NA,
@@ -836,27 +865,46 @@ calibrate_comb <- function(data,
     loglin_terms <- "-1"
     if (use_mobility) {
         if (is.null(mob_breaks)) {
+            ## single activity term for the whole time period
             loglin_terms <- c(loglin_terms, "log(rel_activity)")
         } else {
             mob_breaks <- as.Date(mob_breaks)
-            ## make a factor/dummy variables for which 'mobility period' we're in,
-            ## i.e. before first, between first and second, etc...
-            ## count the number of breaks in the vector that are *earlier* than the current date in X_dat
-            ## i.e. 0, 1, 2, 3 ... make this a factor
-            ## add it to X_dat
-            ## d1 <- seq.Date(as.Date("2020-01-05"),as.Date("2020-01-12"),by="1 day")
-            ## brks <- c(as.Date("2020-01-09"),as.Date("2020-01-11"))
-            date_count <- function(d1,brks) {
-                res <- numeric(length(d1))
-                for (i in seq_along(brks)) {
-                    res <- res + as.numeric(d1>brks[i])
+            if (is.na(mob_logist_scale)) {
+                ## everything is piecewise
+                mob_breaks <- as.Date(mob_breaks)
+                mob_count <- date_count(X_dat$date,mob_breaks)
+                X_dat$mob_breaks <- factor(mob_count)
+                ## set up changes in mobility as piecewise constant
+                loglin_terms <- c(loglin_terms, "log(rel_activity):mob_breaks")
+                if (mob_breaks_int) {
+                    ## need to work around existing intercept term ...
+                    ## create dummy variables, skip the intercept
+                    tmpX <- model.matrix(~mob_breaks,data=X_dat)[,-1,drop=FALSE]
+                    colnames(tmpX) <- paste0("mob_breaks",seq(ncol(tmpX)))
+                    ## don't use cbind(), will coerce! 
+                    X_dat <- data.frame(X_dat,tmpX)
+                    loglin_terms <- c(loglin_terms,colnames(tmpX))
                 }
-                return(res)
-            }
-            X_dat$mob_breaks <- factor(date_count(X_dat$date,mob_breaks))
-            loglin_terms <- c(loglin_terms, "log(rel_activity):mob_breaks")
-        }
-    }
+            } else {
+                ## set up changes in mobility (and intercept) as logistic transitions
+                tmpX <- matrix(ncol=0,nrow=nrow(X_dat))
+                m <- c(NA,mob_breaks)
+                for (i in seq_along(m)) {
+                    tmpX <- cbind(tmpX,date_logist(X_dat$date,
+                                                   m[i],
+                                                   m[i+1],
+                                                   mob_logist_scale))
+                }
+                colnames(tmpX) <- paste0("mob_logist",seq_along(m)-1)
+                loglin_terms <- c(loglin_terms,paste0("log(rel_activity):",colnames(tmpX)))
+                X_dat <- data.frame(X_dat,tmpX)
+                if (mob_breaks_int) {
+                    ## leave out intercept
+                    loglin_terms <- c(loglin_terms,colnames(tmpX)[-1])
+                }
+            } ## use logistic transitions
+        } ## >1 period
+    } ## use mobility
     if (use_spline) {
         if (is.na(spline_df)) {
             spline_df <- round(length(X_dat$t_vec)/spline_days)

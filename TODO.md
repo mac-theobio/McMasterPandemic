@@ -2,6 +2,9 @@
 
 ### short term
 
+* **REAL CONFIDENCE INTERVALS!!**
+   * we need to get importance weighting going etc. (or MCMC, but imp weighting should work if anything will)
+
 * instabilities etc.
      * rewrite as gradient
      * Runge-Kutta steps?
