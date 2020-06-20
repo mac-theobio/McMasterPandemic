@@ -803,8 +803,21 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param params parameters
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
 ##' @param ... extra args
-##' @param mob_data  mobility data
-##' @param mob_breaks vector of breakpoints for piecewise mobility model
+##' @param mob_data mobility data
+##' @param mob_breaks vector of breakpoints for piecewise mobility
+##'     model
+##' @param mob_breaks_int (logical) specifies whether the intercept of
+##'     the mobility/transmission relationship changes at each
+##'     mobility breakpoint. The default (\code{FALSE}) specifies that
+##'     mobility in 'mobility period' \code{i} is
+##'     \code{beta0*(rel_mobility)^p_i}; \code{TRUE} would specify
+##'     \code{beta0*(a_i)*(rel_mobility)^p_i}, with \code{a_1==1}.
+##' @param mob_logist_scale specifies the scale of the smooth
+##'     (logistic) transition between mobility periods, in days: if it
+##'     is \code{NA} (default), the model uses sharp breaks for a
+##'     piecewise-constant model.  Otherwise, the parameter used makes
+##'     a logistic transition between the two periods with the
+##'     specified scale.
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom
 ##' @param knot_quantile_var variable to use cum dist for knotspacing

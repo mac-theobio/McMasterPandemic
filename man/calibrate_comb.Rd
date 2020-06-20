@@ -10,6 +10,8 @@ calibrate_comb(
   opt_pars = NULL,
   mob_data = NULL,
   mob_breaks = NULL,
+  mob_breaks_int = FALSE,
+  mob_logist_scale = NA,
   spline_days = 14,
   spline_df = NA,
   knot_quantile_var = NA,
@@ -36,7 +38,22 @@ calibrate_comb(
 
 \item{mob_data}{mobility data}
 
-\item{mob_breaks}{vector of breakpoints for piecewise mobility model}
+\item{mob_breaks}{vector of breakpoints for piecewise mobility
+model}
+
+\item{mob_breaks_int}{(logical) specifies whether the intercept of
+the mobility/transmission relationship changes at each
+mobility breakpoint. The default (\code{FALSE}) specifies that
+mobility in 'mobility period' \code{i} is
+\code{beta0*(rel_mobility)^p_i}; \code{TRUE} would specify
+\code{beta0*(a_i)*(rel_mobility)^p_i}, with \code{a_1==1}.}
+
+\item{mob_logist_scale}{specifies the scale of the smooth
+(logistic) transition between mobility periods, in days: if it
+is \code{NA} (default), the model uses sharp breaks for a
+piecewise-constant model.  Otherwise, the parameter used makes
+a logistic transition between the two periods with the
+specified scale.}
 
 \item{spline_days}{days between spline knots}
 
