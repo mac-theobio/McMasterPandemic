@@ -106,8 +106,7 @@ default.dropstates <- c("t","S","E","I","X")
 ##' @import shiny
 ##' @importFrom shinythemes shinytheme
 ##' @importFrom anytime anytime
-##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step
-##' @importFrom ggplot2 element_text
+##' @importFrom ggplot2 scale_y_continuous theme_gray geom_step element_text
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
 ##' @importFrom shinyWidgets prettyCheckbox
@@ -122,6 +121,13 @@ run_shiny <- function(useBrowser = TRUE) {
       #Set the title panel to be Heritage Maroon.
       h1(id = "heading", "McMasterPandemic Shiny"),
       tags$style(HTML("#heading{background-color: #7A003C; color: white;}")),
+      #Change the colours of text on the tab selectors to be blue.
+      tags$style(HTML("
+    .tabbable > .nav > li > a[data-value='plotaes'] {color: blue}
+    .tabbable > .nav > li > a[data-value='tcr'] {color: blue}
+    .tabbable > .nav > li > a[data-value='parametersPanel'] {color: blue}
+    .tabbable > .nav > li > a[data-value='procObsErr'] {color: blue}
+  ")),
       #Set the colour of the sidebar panel to be Heritage Gold.
       tags$head(tags$style(HTML('#sidebar {background-color: #FDBF57;}'))),
       sidebarLayout(
@@ -198,11 +204,10 @@ run_shiny <- function(useBrowser = TRUE) {
       tabPanel(
         title = "Simulation Parameters",
                value = "parametersPanel",
-        radioButtons(inputId = "showAll",
-                     label = ("Show all params?"),
-                     choices = list("No" = 1, "Yes" = 2),
-                     selected = 1),
-        conditionalPanel(condition = "input.showAll == 2",
+        checkboxInput(inputId = "showAll",
+                     label = ("Show all parameter sliders?"),
+                     value = FALSE),
+        conditionalPanel(condition = "input.showAll",
                ##Using names to avoid factors getting passed as inputs to textInput_param.
                 lapply(names(read_params("ICU1.csv"))[1:15],
                       FUN = textInput_param),
@@ -284,7 +289,6 @@ run_shiny <- function(useBrowser = TRUE) {
         else{
           p <- p + theme_gray(base_size = input$Globalsize)
         }
-        ##Line thickness is applied regardless.
         p <- p + geom_line(size = input$lineThickness)
         ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
         .x <- NULL ## undefined variable check
