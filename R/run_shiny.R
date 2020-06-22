@@ -128,6 +128,8 @@ run_shiny <- function(useBrowser = TRUE) {
     .tabbable > .nav > li > a[data-value='parametersPanel'] {color: blue}
     .tabbable > .nav > li > a[data-value='procObsErr'] {color: blue}
   ")),
+      #Bold the explanation title for the error entry tab.
+      tags$style(HTML("#explanationTitle {font-weight: bold;}")),
       #Set the colour of the sidebar panel to be Heritage Gold.
       tags$head(tags$style(HTML('#sidebar {background-color: #FDBF57;}'))),
       sidebarLayout(
@@ -199,8 +201,9 @@ run_shiny <- function(useBrowser = TRUE) {
         title = "Process and Observation error",
         value = "procObsErr",
         textInput("procError", label = "Process error", value = 0),
-        textInput("ObsError", label = "Observation error", value = 0)
-      ),
+        textInput("ObsError", label = "Observation error", value = 0),
+        textOutput("explanationTitle"),
+        textOutput("errorExplanations")),
       tabPanel(
         title = "Simulation Parameters",
                value = "parametersPanel",
@@ -466,6 +469,9 @@ run_shiny <- function(useBrowser = TRUE) {
           })
           })
         output$summaryTitle <- renderText({"Summary characteristics"})
+        output$explanationTitle <- renderText({"Explanation"})
+        output$errorExplanations <- renderText({"The observation error parameter is the dispersion parameter for a negative binomial.
+          Process dispersion adds gamma white noise to the event rates using reulermultinom."})
   }
 
   ##Set the viewing options first.
