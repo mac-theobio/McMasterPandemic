@@ -211,8 +211,8 @@ run_shiny <- function(useBrowser = TRUE) {
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
-        textInput("procError", label = "Process error", value = 0),
         textInput("ObsError", label = "Observation error", value = 0),
+        textInput("procError", label = "Process error", value = 0),
         textOutput("explanationTitle"),
         textOutput("errorExplanations")),
       tabPanel(
