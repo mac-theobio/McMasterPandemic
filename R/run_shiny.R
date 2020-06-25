@@ -293,7 +293,7 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         ##Allow for process and observation error, set to zero by default.
         p <- plot.pansim(sim, drop_states = getDropStates())
-        if (input$automaticSize == 2){
+        if (input$automaticSize == 1){
         p <- p + ggplot2::theme(
           plot.title = element_text(color = "black", size = input$titleSize),
           axis.title.x = element_text(color = "black", size = input$XtextSize),
