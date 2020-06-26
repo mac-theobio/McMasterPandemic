@@ -479,7 +479,9 @@ run_shiny <- function(useBrowser = TRUE) {
           }
           return(shinyWidgets::prettyCheckbox(curve,
                            label = theLabel,
-                           value = showByDefault))
+                           value = showByDefault,
+                           shape = "round",
+                           bigger = TRUE))
         }
         create_togglePanel <- function(){
           ##Exclude the date as that's not a curve.
