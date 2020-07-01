@@ -121,9 +121,10 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
                 dimnames=list(from=names(state),to=names(state)))
     ## fill entries
     ## NB meaning of iso_* has switched from Stanford model
-    Ivec <- c(Ia, Ip, Im,Is)
-    Iwt <- beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs)
-    M["S","E"]   <- sum(Iwt*Ivec)
+    Icats <- c("Ia","Ip","Im","Is")
+    Ivec <- state[Icats]
+    beta_vec <- setNames(beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs),Icats)
+    M["S","E"]   <- sum(beta_vec*Ivec)
     M["E","Ia"]  <- alpha*sigma
     M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
@@ -153,7 +154,11 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
             M["hosp","X"] <- 1
             ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
-    }            
+    }
+    ## set up vector 
+    full_beta_vec <- setNames(numeric(nrow(M)),colnames(M))
+    full_beta_vec[Icats] <- beta_vec
+    attr(M,"beta_vec") <- full_beta_vec
     return(M)
 }
 
@@ -162,15 +167,13 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ##'  maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
 ## FIXME DRY from make_ratemat
-update_foi <- function(state, params) {
+update_foi <- function(state, params, beta_vec) {
     ## update infection rate
-    with(c(as.list(state),as.list(params)), {
-        foi <- beta0/N*(Ca*Ia+Cp*Ip+(1-iso_m)*Cm*Im+(1-iso_s)*Cs*Is)
-        if (has_zeta(params)) {
-            foi <- foi*(S/N)^zeta
-        }
-        foi
-    })
+    foi <- sum(state*beta_vec)
+    if (has_zeta(params)) {
+        foi <- foi*with(c(as.list(state),as.list(params)), (S/N)^zeta)
+    }
+    return(foi)
 }
 
 ##' Take a single simulation time step
@@ -191,7 +194,7 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_exponential=FALSE) {
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
-    ratemat["S","E"] <- update_foi(state,params)
+    ratemat["S","E"] <- update_foi(state,params,attr(ratemat,"beta_vec"))
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -376,7 +379,7 @@ run_sim <- function(params
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            M["S","E"] <- update_foi(state,params) ## unnecessary?
+            M["S","E"] <- update_foi(state,params,attr(M,"beta_vec")) ## unnecessary?
             resList[[i]] <- drop_last(
                 thin(ndt=ndt,
                      do.call(run_sim_range,
@@ -529,7 +532,7 @@ make_state <- function(N=params[["N"]],
 
 ##' 
 gradfun <- function(t, y, parms, M) {
-    foi <- M["S","E"] <- update_foi(y, parms)
+    foi <- M["S","E"] <- update_foi(y, parms, attr(M,"beta_vec"))
     ## compute 
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
@@ -585,7 +588,7 @@ run_sim_range <- function(params
                                     state=names(state)))
         ## initialization
         res[1,] <- state
-        foi[[1]] <- update_foi(state,params)
+        foi[[1]] <- update_foi(state,params,attr(M,"beta_vec"))
         ## loop
         if (nt>1) {
             for (i in 2:nt) {
@@ -596,7 +599,7 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                foi[[i]] <- update_foi(state, params)
+                foi[[i]] <- update_foi(state, params, attr(M,"beta_vec"))
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }
