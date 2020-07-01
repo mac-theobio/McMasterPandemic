@@ -15,13 +15,19 @@
 testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
                     omegaN=0.5,
                     omegaP=0.5, debug=FALSE){
-    ## BMB: describe lambda, omegaN, omegaP, omegaT?
+    ## BMB: describe eta lambda, omegaN, omegaP, omegaT?
+	 ## eta = proportion of tested 
+	 ## lambda = proportion of positive given tested 
+	 ## omegaT = rate of untested to testing?? X_u -> X_t
+	 ## omegaN = rate of testing to untested, also rate of moving to N; X_t -> X_u and X_t -> N
+	 ## omegaP = rate of testing to positive, also rate of moving to P; X_t -> X_p and X_t -> P
     ## categorizing states 
     negative <- c("S","E")
     ## BMB: I wouldn't bother including the non-testifiable vars in 'positive'???
-    positive <- c("Ia","Ip","Im","Is","H","hosp","X","ICUs","ICUd","H2","D")
-    testifiable_var <- c("S","E","Ia","Ip","Im","Is")
+    positive <- c("Ia","Ip","Im","Is")
+    testifiable_var <- c(negative,positive)
 	
+    M <- ratemat
     states <- rownames(ratemat)
 	
     ## testifiable vars will get expanded
@@ -38,8 +44,9 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
     }
 
     ## BMB: can we skip non-testifiable states entirely?
+    ## MLi: We need non-testifiable states for j
     testified_states <- unlist(lapply(states,expand_states))
-    testified_states <- c(testified_states, "P", "N") ## accumulate P and N
+    testified_states <- c(testified_states, ,"H","hosp","X","ICUs","ICUd","H2","D","P", "N") ## accumulate P and N and adding back all the non-testify states
 	
     ns <- length(testified_states)
     new_M <- matrix(0,nrow=ns, ncol=ns
@@ -47,7 +54,7 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
 	
     for(i in rownames(ratemat)){
         for(j in colnames(ratemat)){
-            if (debug) cat(i,j,"\n")
+            if (debug) print(cat(i,j,"\n"))
             if( (i!=j) && (M[i,j] > 0)){  ## avoid R -> X and D -> X
                 ## Both vars are not testifiable var
                 if(!(i %in% testifiable_var) & !(j %in% testifiable_var)){
@@ -65,8 +72,9 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
                 ## Both testifiable (both negative and positive will have the same 3 transitions)
                 if((i %in% testifiable_var) & (j %in% testifiable_var)){
                     new_M[paste0(i,"_u"),paste0(j,"_u")] <- (1-eta)*M[i,j]
-                    new_M[paste0(i,"_t"),paste0(j,"_t")] <- (1-eta)*(1-lambda)*M[i,j]
-                    ## BMB: this is different for neg and pos states
+                    new_M[paste0(i,"_t"),paste0(j,"_t")] <- (eta)*(1-lambda)*M[i,j]
+                    ## BMB: this is different for neg and pos states 
+                    ## MLi: search "N" and "P"
                     ## neg states: add a flow to N
                     ## pos states: add a flow to P
                     ## new_M[paste0(i,"_t"),paste0(j,"_u")] <- XX # tested but moved before result? Cross flow
@@ -77,6 +85,7 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
                 }
             }
         }
+    }
         ## within state
         for(i in rownames(ratemat)){
             if(i %in% testifiable_var){
@@ -89,6 +98,5 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
                 }
             }
         }
-    }
     return(new_M)
 }
