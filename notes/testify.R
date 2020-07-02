@@ -12,15 +12,11 @@
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
 ##'    plot(g, layout=igraph::layout_nicely)
 ##' }
-testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
-                    omegaN=0.5,
-                    omegaP=0.5, debug=FALSE){
-    ## BMB: describe eta lambda, omegaN, omegaP, omegaT?
-	 ## eta = proportion of tested 
-	 ## lambda = proportion of positive given tested 
+testify <- function(ratemat,test_S=0.5, test_E=0.5, test_Ia=0.5, test_Ip=0.5, test_Im = 0.5, test_Is=0.5,
+                    omega=0.5, debug=FALSE){
 	 ## omegaT = rate of untested to testing?? X_u -> X_t
-	 ## omegaN = rate of testing to untested, also rate of moving to N; X_t -> X_u and X_t -> N
-	 ## omegaP = rate of testing to positive, also rate of moving to P; X_t -> X_p and X_t -> P
+	 ## omega = rate of testing to untested, also rate of moving to N; X_t -> X_u and X_t -> N
+	 ## omega = rate of testing to positive, also rate of moving to P; X_t -> X_p and X_t -> P
     ## categorizing states 
     negative <- c("S","E")
     ## BMB: I wouldn't bother including the non-testifiable vars in 'positive'???
@@ -46,7 +42,7 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
     ## BMB: can we skip non-testifiable states entirely?
     ## MLi: We need non-testifiable states for j
     testified_states <- unlist(lapply(states,expand_states))
-    testified_states <- c(testified_states, ,"H","hosp","X","ICUs","ICUd","H2","D","P", "N") ## accumulate P and N and adding back all the non-testify states
+    testified_states <- c(testified_states,"H","hosp","X","ICUs","ICUd","H2","D","P", "N") ## accumulate P and N and adding back all the non-testify states
 	
     ns <- length(testified_states)
     new_M <- matrix(0,nrow=ns, ncol=ns
@@ -63,40 +59,53 @@ testify <- function(ratemat,eta=0.5,lambda=0.5, omegaT=0.5,
                 ## testifiable to not testifiable
                 if((i %in% testifiable_var) & !(j %in% testifiable_var)){
                     if(j != "R") { 
-                        new_M[paste0(i,"_u"),j] <- new_M[paste0(i,"_u"),"P"] <- (1-eta)*M[i,j]   ## eta and lambda are temporary the same across states, we can be more flexible later
-                        new_M[paste0(i,"_t"),j] <- new_M[paste0(i,"_t"),"P"] <-eta*(1-lambda)*M[i,j]
-                        new_M[paste0(i,"_p"),j] <- eta*(lambda)*M[i,j]
+                        new_M[paste0(i,"_u"),j] <- new_M[paste0(i,"_u"),"P"] <- M[i,j]   
+                        new_M[paste0(i,"_t"),j] <- new_M[paste0(i,"_t"),"P"] <- M[i,j]
+                        new_M[paste0(i,"_p"),j] <- M[i,j]
                     }
-                    if(j == "R"){ new_M[paste0(i,"_u"),"P"] <- new_M[paste0(i,"_t"),"P"] <- 0}
+                    if(j == "R"){ new_M[paste0(i,"_u"),"P"] <- new_M[paste0(i,"_t"),"P"] <- 0} ## dont need?
                 }
-                ## Both testifiable (both negative and positive will have the same 3 transitions)
-                if((i %in% testifiable_var) & (j %in% testifiable_var)){
-                    new_M[paste0(i,"_u"),paste0(j,"_u")] <- (1-eta)*M[i,j]
-                    new_M[paste0(i,"_t"),paste0(j,"_t")] <- (eta)*(1-lambda)*M[i,j]
+                ## Both testifiable (both negative or positive will have the same 2 transitions)
+                if(((i %in% negative) & (j %in% negative))
+                		| ((i %in% positive) & (j %in% positive))){
+                    new_M[paste0(i,"_u"),paste0(j,"_u")] <- M[i,j]
+                    new_M[paste0(i,"_t"),paste0(j,"_t")] <- M[i,j]
+                }
                     ## BMB: this is different for neg and pos states 
                     ## MLi: search "N" and "P"
                     ## neg states: add a flow to N
                     ## pos states: add a flow to P
-                    ## new_M[paste0(i,"_t"),paste0(j,"_u")] <- XX # tested but moved before result? Cross flow
                     ## positive to positive gets an additional transition
                     if((i %in% positive) & (j %in% positive)){
-                        new_M[paste0(i,"_p"),paste0(j,"_p")] <- (1-eta)*(lambda)*M[i,j]
+                        new_M[paste0(i,"_p"),paste0(j,"_p")] <- M[i,j]
+                    }
+                    ## Po
+                    if((i %in% negative) & (j %in% positive)){ ## cross flow from E_t -> Ia_u or Ip_u
+                    	   new_M[paste0(i,"_u"),paste0(j,"_u")] <- M[i,j]
+                    	   new_M[paste0(i,"_t"),paste0(j,"_u")] <- M[i,j]
+
+
                     }
                 }
             }
         }
-    }
         ## within state
         for(i in rownames(ratemat)){
             if(i %in% testifiable_var){
-                new_M[paste0(i,"_u"),paste0(i,"_t")] <- omegaT
                 if(i %in% negative){
-                    new_M[paste0(i,"_t"),paste0(i,"_u")] <- new_M[paste0(i,"_t"),"N"] <- omegaN
+                    new_M[paste0(i,"_t"),paste0(i,"_u")] <- new_M[paste0(i,"_t"),"N"] <- omega
                 }
                 if(i %in% positive){
-                    new_M[paste0(i,"_t"),paste0(i,"_p")] <- new_M[paste0(i,"_t"),"P"] <- omegaP
+                    new_M[paste0(i,"_t"),paste0(i,"_p")] <- new_M[paste0(i,"_t"),"P"] <- omega
                 }
             }
         }
+    ## manually inputing different test prop for each testifiable state
+    new_M["S_u","S_t"] <- test_S
+    new_M["E_u","E_t"] <- test_E
+    new_M["Ia_u","Ia_t"] <- test_Ia
+    new_M["Ip_u","Ip_t"] <- test_Ip
+    new_M["Im_u","Im_t"] <- test_Im
+    new_M["Is_u","Is_t"] <- test_Is
     return(new_M)
 }
