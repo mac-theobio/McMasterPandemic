@@ -13,7 +13,7 @@ odin_gradfun <- odin::odin({
     Cm <- user()
     iso_s <- user()
     Cs <- user()
-    N <- user()
+    oN <- user()
     M[2,1] <- beta0/N*(Ca*s[3]+Cp*s[4]+(1-iso_m)*Cm*s[5]+(1-iso_s)*Cs*s[6])
     flows <- M[i,j]*s[j]
     deriv(s) <- sum(M[i,])-sum(M[,j])

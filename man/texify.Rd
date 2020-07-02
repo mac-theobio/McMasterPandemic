@@ -16,7 +16,7 @@ texify(x, dollars = TRUE, force = dev_is_tikz())
 \description{
 This has very limited capabilities and is intended
 mainly to convert parameter names in mathematical expression strings
-to associated TeX symbols so they look good when \code{\link[tikzDevice]{tikz}}
+to associated TeX symbols so they look good when \code{\link[tikzDevice:tikzDevice-package]{tikz}}
 is in use.
 }
 \examples{
@@ -25,5 +25,5 @@ texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
 
 }
 \seealso{
-\code{\link[Hmisc]{latexTranslate}}
+\code{\link[Hmisc:latex]{latexTranslate}}
 }

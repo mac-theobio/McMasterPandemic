@@ -10,7 +10,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 Depends: R (>= 3.5.0)
 Imports: Matrix, forcats, MASS, dplyr, ggplot2, tidyr, methods, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny, zoo, deSolve, shinyWidgets, shinythemes
 Suggests: knitr, testthat, cowplot, tikzDevice, igraph, memoise
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL
 LazyData: yes

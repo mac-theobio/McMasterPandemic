@@ -166,6 +166,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ##'  at present, this is the only state-dependent \emph{per capita} rate
 ##'  maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
+##' @param beta_vec vector of transmission rates (matching state vector)
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params, beta_vec) {
     ## update infection rate

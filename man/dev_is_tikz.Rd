@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{dev_is_tikz}
 \alias{dev_is_tikz}
-\title{Is \code{\link[tikzDevice]{tikzDevice}} currently in use?}
+\title{Is \code{\link[tikzDevice:tikzDevice-package]{tikzDevice}} currently in use?}
 \usage{
 dev_is_tikz()
 }
@@ -11,5 +11,5 @@ logical
 }
 \description{
 Convenient for dealing with text in graphics,
-which can be rendered much more professionally with \code{\link[tikzDevice]{tikz}}.
+which can be rendered much more professionally with \code{\link[tikzDevice:tikzDevice-package]{tikz}}.
 }

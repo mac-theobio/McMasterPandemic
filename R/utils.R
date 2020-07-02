@@ -263,7 +263,7 @@ check_dots <- function(..., action="stop") {
 #'
 #' This has very limited capabilities and is intended
 #' mainly to convert parameter names in mathematical expression strings
-#' to associated TeX symbols so they look good when \code{\link[tikzDevice]{tikz}}
+#' to associated TeX symbols so they look good when \code{\link[tikzDevice:tikzDevice-package]{tikz}}
 #' is in use.
 #'
 #' @param x character string to be interpreted
@@ -273,7 +273,7 @@ check_dots <- function(..., action="stop") {
 #' texify("R0 = beta/gamma")
 #' texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
 #' 
-#' @seealso \code{\link[Hmisc]{latexTranslate}}
+#' @seealso \code{\link[Hmisc:latex]{latexTranslate}}
 #' @export
 texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
   if (!is.character(x)) return(x)
@@ -317,10 +317,10 @@ texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
   return(x)
 }
 
-#' Is \code{\link[tikzDevice]{tikzDevice}} currently in use?
+#' Is \code{\link[tikzDevice:tikzDevice-package]{tikzDevice}} currently in use?
 #'
 #' Convenient for dealing with text in graphics,
-#' which can be rendered much more professionally with \code{\link[tikzDevice]{tikz}}.
+#' which can be rendered much more professionally with \code{\link[tikzDevice:tikzDevice-package]{tikz}}.
 #' @return logical
 #' @export
 dev_is_tikz <- function() {
