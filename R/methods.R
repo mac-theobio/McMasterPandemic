@@ -336,7 +336,8 @@ param_meanings <- c(
     nb_disp.H = "dispersion of negative binomial distribution (hospitalizations)",
     nb_disp.report = "dispersion of negative binomial distribution (case reports)",
     nb_disp.death = "dispersion of negative binomial distribution (deaths)",
-    zeta = "exponent of phenomenological heterogeneity/susceptible exhaustion"
+    zeta = "exponent of phenomenological heterogeneity/susceptible exhaustion",
+    c_prop = "fraction of cases reported"
 )
 
 ##' Describe parameters
