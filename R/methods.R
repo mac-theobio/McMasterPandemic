@@ -345,11 +345,18 @@ param_meanings <- c(
 ##' Create a data frame with symbols, values and meanings of parameters
 ##' @param x a \code{params_pansim} object
 ##' @export
-describe_params <- function(x) {
+describe_params <- function(x, stop_extra=FALSE) {
     if (!is.null(attr(x,"description"))) {
         x_meanings <- attr(x,"description")[names(x)]
     } else {  ## backup/built-in
-        x_meanings <- param_meanings[names(x)]
+        m <- match(names(x),names(param_meanings))
+        if (any(is.na(m))) {
+            wstr <- paste("parameters without description: ",
+                          paste(names(x)[is.na(m)],collapse=","))
+        }
+        if (stop_extra) stop(wstr) else warning(wstr)
+        x <- x[!is.na(m)]
+        x_meanings <- param_meanings[na.omit(m)]
     }
     xout <- data.frame(symbol=names(x),
                        ##value=round(as.numeric(x),3),
