@@ -344,8 +344,9 @@ param_meanings <- c(
 ##'
 ##' Create a data frame with symbols, values and meanings of parameters
 ##' @param x a \code{params_pansim} object
+##' @param stop_missing_names stop if names are missing descriptions? (warn by default)
 ##' @export
-describe_params <- function(x, stop_extra=FALSE) {
+describe_params <- function(x, stop_missing_names=FALSE) {
     if (!is.null(attr(x,"description"))) {
         x_meanings <- attr(x,"description")[names(x)]
     } else {  ## backup/built-in
@@ -353,7 +354,7 @@ describe_params <- function(x, stop_extra=FALSE) {
         if (any(is.na(m))) {
             wstr <- paste("parameters without description: ",
                           paste(names(x)[is.na(m)],collapse=","))
-            if (stop_extra) stop(wstr) else warning(wstr)
+            if (stop_missing_names) stop(wstr) else warning(wstr)
         }
         x <- x[!is.na(m)]
         x_meanings <- param_meanings[na.omit(m)]

@@ -4,10 +4,12 @@
 \alias{describe_params}
 \title{Describe parameters}
 \usage{
-describe_params(x)
+describe_params(x, stop_missing_names = FALSE)
 }
 \arguments{
 \item{x}{a \code{params_pansim} object}
+
+\item{stop_missing_names}{stop if names are missing descriptions? (warn by default)}
 }
 \description{
 Create a data frame with symbols, values and meanings of parameters
