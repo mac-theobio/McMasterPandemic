@@ -353,8 +353,8 @@ describe_params <- function(x, stop_extra=FALSE) {
         if (any(is.na(m))) {
             wstr <- paste("parameters without description: ",
                           paste(names(x)[is.na(m)],collapse=","))
+            if (stop_extra) stop(wstr) else warning(wstr)
         }
-        if (stop_extra) stop(wstr) else warning(wstr)
         x <- x[!is.na(m)]
         x_meanings <- param_meanings[na.omit(m)]
     }
