@@ -1,11 +1,14 @@
 library(diagram)
 m <- matrix(byrow=TRUE, ncol=2,
-            c(0.5,1/6,  ## - test
+            c(
+                ## 0.5,1/6,  ## - test
+                0.25,5/6,
               0.5,2/6,  ## untested
               0.25,3/6, ## neg sample
               0.75,3/6, ## pos sample
-              0.5,4/6  ## pos test
+              0.5,4/6,  ## pos test
               0.5,5/6))  ## + test
+m[,2] <- 1-m[,2] ## flip y axis
 
 ## dummy locations
 mx <- cbind(rep(0:1,each=3), rep(2:4,2)/6)
@@ -36,11 +39,18 @@ storage.mode(arr.col) <- "character"
 arr.col[] <- ifelse(A==0.9,"blue","black")
 
 pdf("testing_flow_v2.pdf",width=7,height=7)
-plotmat(A,pos=m,name=labs,
-        arr.col=arr.col,
-        box.size=box.size, box.type=box.type, box.prop=0.75,
-        cex.txt=0  ## no arrow text
-        )
+
+p <- function(add=FALSE) {
+    plotmat(A,pos=m,name=labs,
+            curve=-0.1,  ## flip sign to get neg -> untested above untested -> neg
+            arr.col=arr.col,
+            arr.lwd=3,
+            box.size=box.size, box.type=box.type, box.prop=0.75,
+            cex.txt=0,  ## no arrow text
+            add=add
+            )
+}
+p()
 for (i in c(2,3,5)) {
     straightarrow(from=c(0,m[i,2]),to=m[i,], lcol="blue",arr.pos=0.4)
 }
@@ -50,13 +60,8 @@ for (i in c(2,4,5)) {
 }
 straightarrow(from=m[3,],to=c(0.45,m[3,2]),lcol="darkblue",arr.pos=0.75)
 
-curvedarrow(c(0.36,0.38),m[1,],lty=2,curve=0.2)
-curvedarrow(c(0.64,0.61),m[6,],lty=2,curve=0.3)
-plotmat(A,pos=m,name=labs,
-        arr.col=arr.col,
-        box.size=box.size, box.type=box.type, box.prop=0.75,
-        cex.txt=0,  ## no arrow text
-        add=TRUE)
-
-
+curvedarrow(c(0.37,0.62),m[1,],lty=2,curve=0.5)
+curvedarrow(c(0.62,0.38),m[6,],lty=2,curve=-0.3)
+p(add=TRUE) ## repeat plot to mask arrow stuff
+dev.off()
             
