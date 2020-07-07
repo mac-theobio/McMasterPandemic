@@ -7,7 +7,8 @@ library(parallel)
 sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=TRUE) {
 	cat(seed,"\n")
    set.seed(seed)
-   simdat <- forecast_sim(p=true_pars
+   ## simulate some data
+	simdat <- forecast_sim(p=true_pars
    	, opt_pars = opt_pars
 		, base_params = params
 		, start_date=start_date
@@ -20,9 +21,9 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=TRUE) {
 	)
     ## plot(simdat, log=TRUE)
    simdat <- (simdat
-   %>% filter(var %in% c("report","hosp"))
-	# %>% filter(!is.na(value)) 
-   %>% mutate(value = ifelse(is.na(value),0,value))
+   	%>% filter(var %in% c("report","hosp"))
+	 # %>% filter(!is.na(value)) 
+   	%>% mutate(value = ifelse(is.na(value),0,value))
    )
    
    simdat2 <- simdat %>% filter(between(date, cut_start, cut_end))
@@ -43,9 +44,10 @@ sim_cali <- function(seed, do_plots=FALSE,use_DEoptim=TRUE) {
 }
 
 ## sim_cali(1)
-res <- mclapply(seq(nsim), sim_cali,mc.cores = 7)
-# res <- lapply(seq(nsim), sim_cali)
-# res2 <- lapply(seq(nsim),function(x)sim_cali(seed=x,use_DEoptim=TRUE))
+
+res <- lapply(seq(nsim),function(x)sim_cali(seed=x,use_DEoptim=TRUE))
+
+res
 
 saveRDS(res,rdsname)
 
