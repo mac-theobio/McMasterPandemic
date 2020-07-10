@@ -122,7 +122,7 @@ run_shiny <- function(useBrowser = TRUE) {
     ## server (e.g., filling in boxes or sliders).
     ui <- fluidPage(theme = shinythemes::shinytheme("flatly"),
       ##Set the title panel to be Heritage Maroon.
-      h1(id = "heading", "McMasterPandemic Shiny"),
+      h1(id = "heading", "McMasterPandemic"),
       tags$style(HTML("#heading{background-color: #7A003C; color: white;}")),
       #Change the colours of text on the tab selectors to be blue.
       tags$style(HTML("
@@ -147,7 +147,12 @@ run_shiny <- function(useBrowser = TRUE) {
             column(3,
               selectInput("fn",
                                label = "Default parameter file:",
-                               choices = parameter.files, selected = default.parameter.file))),
+                               choices = parameter.files, selected = default.parameter.file)),
+              column(7,
+                     textOutput("summaryTitle")),
+            fluidRow(
+              column(6,
+                     tableOutput("summary")))),
           fluidRow(
             column(5,
                    textInput("sd", "Simulation Start Date (yyyy-mm-dd)",
@@ -174,13 +179,7 @@ run_shiny <- function(useBrowser = TRUE) {
                                  label = "log-y scale",
                                  value = FALSE),
                    br(),
-            fluidRow(
-                column(7,
-                        textOutput("summaryTitle"))),
-            br(),
-            fluidRow(
-                column(6,
-                        tableOutput("summary")))))
+            br()))
           )
         )
     )
@@ -211,8 +210,8 @@ run_shiny <- function(useBrowser = TRUE) {
       tabPanel(
         title = "Process and Observation error",
         value = "procObsErr",
-        textInput("ObsError", label = "Observation error", value = 0),
-        textInput("procError", label = "Process error", value = 0),
+        sliderInput("ObsError", label = "Observation error", min = 0, max = 500, step = 1, value = 0),
+        sliderInput("procError", label = "Process error", min = 0, max = 1, step = 0.01, value = 0),
         textOutput("explanationTitle"),
         textOutput("errorExplanations")),
       tabPanel(
@@ -270,6 +269,7 @@ run_shiny <- function(useBrowser = TRUE) {
     dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
     output$plot <- renderPlot({
+        set.seed(5)
         ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
         time_pars <- get_factor_timePars()
         defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
@@ -308,7 +308,8 @@ run_shiny <- function(useBrowser = TRUE) {
         if (input$use_logYscale == 1){
           p <- p + scale_y_continuous(trans = log10_trans(),
                                  breaks = trans_breaks("log10", function(x) 10^x),
-                                 labels = trans_format("log10", math_format(10^.x)))
+                                 labels = trans_format("log10", math_format(10^.x)),
+                                 limits = c(0.1, NA))
         }
         else{
         }
