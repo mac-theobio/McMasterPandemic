@@ -99,7 +99,7 @@ parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
-
+timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -111,6 +111,7 @@ default.dropstates <- c("t","S","E","I","X")
 ##' @import ggplot2
 ##' @importFrom shinythemes shinytheme
 ##' @importFrom anytime anytime
+##' @importFrom stringr str_length
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
 ##' @importFrom shinyWidgets prettyCheckbox setBackgroundColor
@@ -179,10 +180,10 @@ run_shiny <- function(useBrowser = TRUE) {
                                  label = "log-y scale",
                                  value = FALSE),
                    br(),
-            br()))
+            br())
           )
         )
-    )
+    ))
 
 #Everything else.
   server <- function(input, output, session){
@@ -215,19 +216,6 @@ run_shiny <- function(useBrowser = TRUE) {
         textOutput("explanationTitle"),
         textOutput("errorExplanations")),
       tabPanel(
-        title = "Simulation Parameters",
-               value = "parametersPanel",
-        checkboxInput(inputId = "showAll",
-                     label = ("Show parameter sliders"),
-                     value = FALSE),
-        conditionalPanel(condition = "input.showAll",
-               ##Using names to avoid factors getting passed as inputs to textInput_param.
-                lapply(names(read_params("ICU1.csv"))[1:15],
-                      FUN = textInput_param),
-                lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
-                      FUN = textInput_param))
-               ),
-      tabPanel(
         title = "Plot aesthetics",
         value = "plotaes",
         sliderInput("Globalsize", "Text size:",
@@ -251,7 +239,20 @@ run_shiny <- function(useBrowser = TRUE) {
                             sliderInput("YtextSize", "Y axis title size:",
                                         min = 0, max = 25,
                                         value = 10)
-        ))
+        )),
+      tabPanel(
+        title = "Simulation Parameters",
+        value = "parametersPanel",
+        checkboxInput(inputId = "showAll",
+                      label = ("Show parameter sliders"),
+                      value = FALSE),
+        conditionalPanel(condition = "input.showAll",
+                         ##Using names to avoid factors getting passed as inputs to textInput_param.
+                         lapply(names(read_params("ICU1.csv"))[1:15],
+                                FUN = textInput_param),
+                         lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
+                                FUN = textInput_param))
+      )
       )})
     ##Force the tab panel to be the parameters panel every time the default parameters drop down is changed.
     observeEvent(input$fn, {
@@ -268,7 +269,9 @@ run_shiny <- function(useBrowser = TRUE) {
     })
     dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
-    output$plot <- renderPlot({
+
+    #Run a pandemic simulation based on the inputs in the shiny.
+    get_sim <- function(){
         set.seed(5)
         ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
         time_pars <- get_factor_timePars()
@@ -290,7 +293,11 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         else{
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
-        }
+          }
+        return(sim)
+    }
+    output$plot <- renderPlot({
+        sim <- get_sim()
         ##Allow for process and observation error, set to zero by default.
         p <- plot.pansim(sim, drop_states = getDropStates())
         if (input$automaticSize == 1){
@@ -326,13 +333,24 @@ run_shiny <- function(useBrowser = TRUE) {
         for (param in describe_params(read_params("ICU1.csv"))$symbol){
           ##Grab the value of the input slot.
           paramValue <- eval(parse(text = paste0("input$", param)))
-          ##If it's null beacause the panel hasn't been initialized yet, grab a default value to use a a placeholder.
-          if (is.null(paramValue)){
-            params <- c(params, read_params("ICU1.csv")[param])
+          #Reparametrize time params to be more intuitive.
+          if (param %in% timeunitParams){
+            if (is.null(paramValue)){
+              params <- c(params, read_params("ICU1.csv")[param])
+            }
+            else{
+              paramValue <- 1/paramValue
+              params <- c(params, paramValue)
+            }
           }
           else{
-            ##Otherwise, package and make the params the way we'd like them. Changed for conciceness.
-            params <- c(params, paramValue)
+            if (is.null(paramValue)){
+              params <- c(params, read_params("ICU1.csv")[param])
+            }
+            else{
+              ##Otherwise, package and make the params the way we'd like them. Changed for conciceness.
+              params <- c(params, paramValue)
+            }
           }
         }
         paramNames <- describe_params(read_params("ICU1.csv"))$symbol
@@ -343,6 +361,7 @@ run_shiny <- function(useBrowser = TRUE) {
         ##Do this after because changing the numbers from strings removes their names.
         return(params)
       }
+      #Take a parameter we'd like and load its value from the file selected.
       loadParams <- function(param){
         Inputparams <- read_params(input$fn)
         numMissing <- sum(is.na(Inputparams))
@@ -363,7 +382,7 @@ run_shiny <- function(useBrowser = TRUE) {
         output$summary <-renderTable({
             params <- makeParams()
             params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("---", "---", "Days", "Days"))
+          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/days", "---", "days", "days"))
         })
         output$paramsPlot <- renderPlot({
           parameterChanges <- get_factor_timePars()
@@ -408,15 +427,17 @@ run_shiny <- function(useBrowser = TRUE) {
           if (param %in% c("N", "E0")){
             maxVal <- 100000000
           }
+          else if (param == "zeta"){
+            maxVal <- 10
+          }
           else if (param %in% fractionalParams){
             maxVal <- 1
           }
           else{
             maxVal <- 8
           }
-          timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
           if (param %in% timeunitParams){
-            sliderLabel <- paste(param, ": ", dp[dp$symbol == param,"meaning"], " (time)", sep = "")
+            sliderLabel <- paste("mean ", substr(dp[dp$symbol == param,"meaning"], start = 3, stop = stringr::str_length(dp[dp$symbol == param,"meaning"])), " (1/",param, ")", sep = "")
           }
           else{
             sliderLabel <- paste(param, ": ", dp[dp$symbol == param,"meaning"], sep = "")
@@ -426,13 +447,20 @@ run_shiny <- function(useBrowser = TRUE) {
             return()
           }
           else{
-            return(sliderInput(param,
-                           label = sliderLabel,
-                           value = loadParams(param),
-                           min = 0,
-                           max = maxVal,
-                          step = 0.1))
           }
+          if (param %in% timeunitParams){
+            theVal <- 1/loadParams(param)
+            maxVal <- 30
+          }
+          else{
+            theVal <- loadParams(param)
+          }
+          return(sliderInput(param,
+                        label = sliderLabel,
+                        value = theVal,
+                        min = 0,
+                        max = maxVal,
+                        step = 0.1))
           }
         ##Manage the states to drop.
         getDropStates <- function(){
@@ -477,6 +505,9 @@ run_shiny <- function(useBrowser = TRUE) {
           }
           if (curve == "H"){
             theLabel <- "hospitalized"
+          }
+          if (curve == "R"){
+            theLabel <- "recovered"
           }
           return(shinyWidgets::prettyCheckbox(curve,
                            label = theLabel,
