@@ -66,6 +66,16 @@ make_jac <- function(params, state=NULL) {
     return(M)
 }
 
+make_betavec <- function(state, params, full=TRUE) {
+    Icats <- c("Ia","Ip","Im","Is")
+    ## NB meaning of iso_* has switched from Stanford model
+    beta_vec0 <- with(as.list(params),setNames(beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs),Icats))
+    if (!full) return(beta_vec0)
+    beta_vec <- setNames(numeric(length(state)),names(state))
+    beta_vec[names(beta_vec0)] <- beta_vec0
+    return(beta_vec)
+}
+
 ##' Create transition matrix
 ##'
 ##' Defines rates (per day) of flow \emph{from} compartment \code{i}
@@ -120,11 +130,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
                 nrow=ns, ncol=ns,
                 dimnames=list(from=names(state),to=names(state)))
     ## fill entries
-    ## NB meaning of iso_* has switched from Stanford model
-    Icats <- c("Ia","Ip","Im","Is")
-    Ivec <- state[Icats]
-    beta_vec <- setNames(beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs),Icats)
-    M["S","E"]   <- sum(beta_vec*Ivec)
+    beta_vec <- make_betavec(state,params)
+    M["S","E"]   <- sum(beta_vec*state[names(beta_vec)])
     M["E","Ia"]  <- alpha*sigma
     M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
@@ -155,10 +162,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
             ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
-    ## set up vector 
-    full_beta_vec <- setNames(numeric(nrow(M)),colnames(M))
-    full_beta_vec[Icats] <- beta_vec
-    attr(M,"beta_vec") <- full_beta_vec
+    attr(M,"beta_vec") <- make_betavec(state,params)
     return(M)
 }
 
@@ -195,7 +199,7 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_exponential=FALSE) {
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
-    ratemat["S","E"] <- update_foi(state,params,attr(ratemat,"beta_vec"))
+    ratemat["S","E"] <- update_foi(state,params,make_betavec(state,params))
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -380,7 +384,7 @@ run_sim <- function(params
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            M["S","E"] <- update_foi(state,params,attr(M,"beta_vec")) ## unnecessary?
+            ## M["S","E"] <- update_foi(state,params,attr(M,"beta_vec")) ## unnecessary?
             resList[[i]] <- drop_last(
                 thin(ndt=ndt,
                      do.call(run_sim_range,
@@ -589,7 +593,7 @@ run_sim_range <- function(params
                                     state=names(state)))
         ## initialization
         res[1,] <- state
-        foi[[1]] <- update_foi(state,params,attr(M,"beta_vec"))
+        foi[[1]] <- update_foi(state,params, make_betavec(state, params))
         ## loop
         if (nt>1) {
             for (i in 2:nt) {
