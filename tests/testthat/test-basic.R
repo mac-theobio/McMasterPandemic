@@ -2,15 +2,32 @@ library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
 
+## could run models, create reference models,
+##  save("test1","test2","test3","inst/test_data/basic.rda")
+##  make target: update_test_data
+##  in code: load(system.file("test_data","basic.rda"))
 context("very basic simulation")
 
 params <- read_params("ICU1.csv")
 state <- make_state(params=params,type="ICU1")
 
 test_that("basic examples", {
-   expect_is(params,"params_pansim")
+    expect_is(params,"params_pansim")
     s0 <- run_sim_range(params,state, nt=100)
     expect_is(s0,"data.frame")
+    expect_equal(tail(s0,1),
+                 tolerance=1e-8,
+                 structure(list(t = 100L, S = 710.7304620948, E = 132.983797059479, 
+    Ia = 1280.06036138841, Ip = 9.45207161097982, Im = 2626.01147876609, 
+    Is = 47.3684384214429, H = 873.671213383553, H2 = 202.916185137484, 
+    ICUs = 626.537390949812, ICUd = 72.4089826500752, D = 3438.87998360902, 
+    R = 989978.979634929, foi = 0.00353620556305745),
+    state = structure(c(S = 710.7304620948, 
+E = 132.983797059479, Ia = 1280.06036138841, Ip = 9.45207161097982, 
+Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553, 
+H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752, 
+D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame"))
+
     expect_is(state,"state_pansim")
     s1 <- run_sim(params,state,start_date="1-March-2020",end_date="1-Jun-2020")
     expect_is(s1,"pansim")
@@ -38,6 +55,7 @@ test_that("time-varying example", {
     plot(resICU_t)
     ## not showing foi because of log / <= 1 filter
     plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))
+    ## FIXME: test values!
 })
 
 test_that("time-varying with ndt>1", {
