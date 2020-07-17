@@ -18,7 +18,7 @@ google <- read_csv(google_url)
 
 ## Section 2: Clean data
 ### Clean ts data
-Ontario_dat <- (dat
+Ontario_dat <- (tsdat
 	%>% filter(Province=="ON")
    %>% select(Province,Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
 	%>% mutate(newDeaths=c(NA,diff(deceased))
