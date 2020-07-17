@@ -51,55 +51,13 @@ browserManager <- function(openinBrowser){
   }
 }
 
-##' Parse inputs from strings.
-##'
-##'
-##' Handle inputs from the time-varying transmission option, which are recieved as strings.
-##'
-##' @importFrom stringr str_length
-##' @importFrom anytime anydate
-##' @param valuesString the string we'd like to extract values from.
-##' @param mode the type of data encoded in the string: either dates, symbols, or values
-##' @export
-justValues_f <- function(valuesString, mode){
-  #Put a comma at the end to make life easier.
-  valuesString <- paste(valuesString, ",", sep = "")
-  justValueCounter <- 1
-  justValueString <- ""
-  justValues <- c()
-  while (justValueCounter <= stringr::str_length(valuesString)){
-    ##Grab the current letter
-    currentLetter <- substr(valuesString, start = justValueCounter, stop = justValueCounter)
-    ##If the current letter is not a comma or a space, add it to the justValueString string
-    if (currentLetter != ',' && currentLetter != ' '){
-      justValueString <- paste(justValueString,  currentLetter, sep = "")
-    }
-    else if (currentLetter == ',' || currentLetter != ' '){
-      if (mode == "values"){
-        justValue <- as.numeric(justValueString)
-        justValues <- c(justValues, justValue)
-      }
-      if (mode == "dates"){
-        justValue <- anytime::anydate(justValueString)
-        justValues <- c(justValues, justValue)
-      }
-      if (mode == "symbols"){
-        justValue <- justValueString
-        justValues <- c(justValues, justValue)
-      }
-      ##Clear the working string after we add the value we want to the list.
-      justValueString = ""
-    }
-    justValueCounter <- justValueCounter + 1
-  }
-  return(justValues)
-}
-
 parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
 timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
+defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-05-20", "2020-07-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
+
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -181,9 +139,6 @@ run_shiny <- function(useBrowser = TRUE) {
                                  value = FALSE),
                    br(),
             br())
-          ),
-          fluidRow(
-            plotOutput("Rtplot")
           )
         )
     ))
@@ -263,13 +218,18 @@ run_shiny <- function(useBrowser = TRUE) {
                         selected = "parametersPanel"
       )
     })
-    get_factor_timePars <- reactive({
-      relValues <- justValues_f(input$timeParsRelativeValues, mode = "values")
-      dates <- justValues_f(input$timeParsDates, mode = "dates")
-      symbols <- justValues_f(input$timeParsSymbols, mode = "symbols")
-      currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
+    get_factor_timePars <- function(){
+      if(is.null(input$timeParsRelativeValues)){
+        currentPars <- defaultTCParams
+      }
+      else{
+        relValues <- as.numeric(unlist(strsplit(input$timeParsRelativeValues, "\\,")))
+        dates <- anytime::anydate(unlist(strsplit(input$timeParsDates, "\\,")))
+        symbols <- trimws(unlist(strsplit(input$timeParsSymbols, "\\,")))
+        currentPars <- data.frame("Date" = dates, "Symbol" = symbols, "Relative_value" = relValues, stringsAsFactors = FALSE)
+      }
       return(currentPars)
-    })
+    }
     dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
     ##Collect time changing parameters and detect changed from default value.
@@ -277,7 +237,6 @@ run_shiny <- function(useBrowser = TRUE) {
       set.seed(5)
       ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
       time_pars <- get_factor_timePars()
-      defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
       ##If the length was changed from the default length, the parameters were definetly changed.
       if(nrow(time_pars) != nrow(defaultTCParams)){
         useTimeChanges <- TRUE
@@ -295,9 +254,9 @@ run_shiny <- function(useBrowser = TRUE) {
         useTimeChanges <- grabbedPars[["useTimeChanges"]]
         ##Make the params.
         params <- makeParams()
-        params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
+        params <- update(params, c(proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError)))
         if (useTimeChanges){
-          sim = run_sim(params, start_date = justValues_f(input$sd, mode = "dates"), end_date = justValues_f(input$ed, mode = "dates"), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
+          sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
         }
         else{
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
@@ -387,22 +346,22 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         return(params[param])
       }
-        output$summary <- renderTable({
-            params <- makeParams()
-            params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
+      output$summary <- renderTable({
+          params <- makeParams()
+          params <- update(params, proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError))
           data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/day", "---", "days", "days"))
         })
         ##Plot beta(t)/gamma.
         output$Rtplot <- renderPlot({
           params <- makeParams()
-          params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
+          params <- update(params, c(proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError)))
           grabbedPars <- get_timePars()
           time_pars <- grabbedPars[["time_pars"]]
           useTimeChanges <- grabbedPars[["useTimeChanges"]]
           if (!useTimeChanges){
             ##If R(t) is constant.
             R0Vec <- get_R0(params)
-            plotDf <- data.frame("Rt" = rep(R0Vec, 2), "Date" = c(justValues_f(input$sd, mode = "dates"), justValues_f(input$ed, mode = "dates")), stringsAsFactors = FALSE)
+            plotDf <- data.frame("Rt" = rep(R0Vec, 2), "Date" = c(anytime::anydate(input$sd), anytime::anydate(input$ed)), stringsAsFactors = FALSE)
           }
           else{
             #For each beta(t) value, create a corresponding params element and estimate R0.
@@ -410,7 +369,7 @@ run_shiny <- function(useBrowser = TRUE) {
               newParams <- update(params, c(beta0 = betaValue))
               return(get_R0(newParams))
             })
-            plotDf <- data.frame("Rt" = c(get_R0(params), R0Vec, R0Vec[length(R0Vec)]), "Date" = c(justValues_f(input$sd, mode = "dates"),time_pars[time_pars$Symbol == "beta0", "Date"], justValues_f(input$ed, mode = "dates")), stringsAsFactors = FALSE)
+            plotDf <- data.frame("Rt" = c(get_R0(params), R0Vec, R0Vec[length(R0Vec)]), "Date" = c(anytime::anydate(input$sd),time_pars[time_pars$Symbol == "beta0", "Date"], anytime::anydate(input$ed)), stringsAsFactors = FALSE)
           }
           plotDf <- plotDf[order(plotDf$Date),]
           p <- ggplot(plotDf, aes(anytime::anydate(Date), y = Rt)) + geom_step(size = 2) +
@@ -431,7 +390,7 @@ run_shiny <- function(useBrowser = TRUE) {
             missingEnd <- sum(parameterChanges[parameterChanges$Symbol == symbol, "Date"] ==  input$ed) == 0
             ##If we're missing the begining, populate it with the starting date and a default value of one.
             if (missingBegining){
-              parameterChanges <- rbind(data.frame("Date" = justValues_f(input$sd, mode = "dates"), "Symbol" = symbol, "Relative_value" = 1, stringsAsFactors = FALSE), parameterChanges)
+              parameterChanges <- rbind(data.frame("Date" = anytime::anydate(input$sd), "Symbol" = symbol, "Relative_value" = 1, stringsAsFactors = FALSE), parameterChanges)
             }
             else {
             }
@@ -439,7 +398,7 @@ run_shiny <- function(useBrowser = TRUE) {
             parameterChanges <- parameterChanges[order(parameterChanges$Date),]
             ##If we're missing the end, populate the last date with the last relative value we put in.
             if (missingEnd){
-              parameterChanges <- rbind(data.frame("Date" = justValues_f(input$ed, mode = "dates"), "Symbol" = symbol, "Relative_value" = parameterChanges[parameterChanges$Symbol == symbol,][nrow(parameterChanges[parameterChanges$Symbol == symbol,]), "Relative_value"], stringsAsFactors = FALSE), parameterChanges)
+              parameterChanges <- rbind(data.frame("Date" = anytime::anydate(input$ed), "Symbol" = symbol, "Relative_value" = parameterChanges[parameterChanges$Symbol == symbol,][nrow(parameterChanges[parameterChanges$Symbol == symbol,]), "Relative_value"], stringsAsFactors = FALSE), parameterChanges)
             }
             else {
             }
@@ -449,7 +408,7 @@ run_shiny <- function(useBrowser = TRUE) {
           p <- ggplot(parameterChanges,aes(anytime::anydate(Date), Relative_value, colour=Symbol)) + geom_step(size = 2) +
             theme_gray(base_size = input$Globalsize)
           p <- p + geom_vline(xintercept=parameterChanges$Date,lty=2) + labs(title = "Changes over time", x = "Date", y = "Relative value")
-          p <- direct.label(p, list("last.points", cex = input$Globalsize/15))
+          p <- direct.label(p, list("last.points"))
           ##Match background colour and eliminate other elements.
           p <- p + theme(plot.background = element_rect(fill = "#FDBF57", color = "#FDBF57", size = 0),
             panel.border = element_blank(),
@@ -548,6 +507,9 @@ run_shiny <- function(useBrowser = TRUE) {
           if (curve == "R"){
             theLabel <- "recovered"
           }
+          if (curve == "D"){
+            theLabel <-  "cumulative deaths"
+          }
           return(shinyWidgets::prettyCheckbox(curve,
                            label = theLabel,
                            value = showByDefault,
@@ -566,7 +528,9 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         output$plotColumn <- renderUI({
           column(9,
-                 plotOutput("plot"))
+                 plotOutput("plot"),
+                   plotOutput("Rtplot")
+                 )
         })
         ##Panel to toggle curves showing
         output$plotTogglePanel <- renderUI({
