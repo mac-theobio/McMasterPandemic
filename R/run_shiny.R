@@ -181,6 +181,9 @@ run_shiny <- function(useBrowser = TRUE) {
                                  value = FALSE),
                    br(),
             br())
+          ),
+          fluidRow(
+            plotOutput("Rtplot")
           )
         )
     ))
@@ -269,24 +272,29 @@ run_shiny <- function(useBrowser = TRUE) {
     })
     dp_1 <- describe_params(read_params("ICU1.csv"))
       output$trmsg <- renderText({"Transmission rate is constant by default but can be changed. You can have any number of parameters."})
-
-    #Run a pandemic simulation based on the inputs in the shiny.
-    get_sim <- function(){
-        set.seed(5)
-        ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
-        time_pars <- get_factor_timePars()
-        defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
-        ##If the length was changed from the default length, the parameters were definetly changed.
-        if(nrow(time_pars) != nrow(defaultTCParams)){
-          useTimeChanges <- TRUE
-        }
-        else{
-          ##Are there any elements different from their default values?
-          useTimeChanges <- sum(time_pars != defaultTCParams) != 0
-        }
+    ##Collect time changing parameters and detect changed from default value.
+    get_timePars <- reactive({
+      set.seed(5)
+      ##Detect changes from default values for time-changing transmission rates, and apply these changes in the simulation.
+      time_pars <- get_factor_timePars()
+      defaultTCParams <- data.frame("Date" = justValues_f(c("2020-02-20, 2020-05-20, 2020-07-02"), mode = "dates"), "Symbol"  = justValues_f(c("beta0, beta0, alpha"), mode = "symbols"), "Relative_value"= justValues_f(c(1, 1, 1), mode = "values"), stringsAsFactors = FALSE)
+      ##If the length was changed from the default length, the parameters were definetly changed.
+      if(nrow(time_pars) != nrow(defaultTCParams)){
+        useTimeChanges <- TRUE
+      }
+      else{
+        ##Are there any elements different from their default values?
+        useTimeChanges <- sum(time_pars != defaultTCParams) != 0
+      }
+      return(list("time_pars" = time_pars, "useTimeChanges" = useTimeChanges))
+    })
+    ##Run a pandemic simulation based on the inputs in the shiny.
+    get_sim <- reactive({
+        grabbedPars <- get_timePars()
+        time_pars <- grabbedPars[["time_pars"]]
+        useTimeChanges <- grabbedPars[["useTimeChanges"]]
         ##Make the params.
         params <- makeParams()
-        ##Throw in proc and obs error as zero by default.
         params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
         if (useTimeChanges){
           sim = run_sim(params, start_date = justValues_f(input$sd, mode = "dates"), end_date = justValues_f(input$ed, mode = "dates"), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"), params_timevar = time_pars)
@@ -295,11 +303,11 @@ run_shiny <- function(useBrowser = TRUE) {
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
           }
         return(sim)
-    }
+    })
     output$plot <- renderPlot({
         sim <- get_sim()
         ##Allow for process and observation error, set to zero by default.
-        p <- plot.pansim(sim, drop_states = getDropStates())
+        p <- plot(sim, drop_states = getDropStates())
         if (input$automaticSize == 1){
         p <- p + ggplot2::theme(
           plot.title = element_text(color = "black", size = input$titleSize),
@@ -379,10 +387,41 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         return(params[param])
       }
-        output$summary <-renderTable({
+        output$summary <- renderTable({
             params <- makeParams()
             params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
-          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/days", "---", "days", "days"))
+          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/day", "---", "days", "days"))
+        })
+        ##Plot beta(t)/gamma.
+        output$Rtplot <- renderPlot({
+          params <- makeParams()
+          params <- update(params, c(proc_disp = justValues_f(input$procError, mode = "values"), obs_disp = justValues_f(input$ObsError, mode = "values")))
+          grabbedPars <- get_timePars()
+          time_pars <- grabbedPars[["time_pars"]]
+          useTimeChanges <- grabbedPars[["useTimeChanges"]]
+          if (!useTimeChanges){
+            ##If R(t) is constant.
+            R0Vec <- get_R0(params)
+            plotDf <- data.frame("Rt" = rep(R0Vec, 2), "Date" = c(justValues_f(input$sd, mode = "dates"), justValues_f(input$ed, mode = "dates")), stringsAsFactors = FALSE)
+          }
+          else{
+            #For each beta(t) value, create a corresponding params element and estimate R0.
+            R0Vec <- sapply(time_pars[time_pars$Symbol == "beta0", "Relative_value"], function(betaValue){
+              newParams <- update(params, c(beta0 = betaValue))
+              return(get_R0(newParams))
+            })
+            plotDf <- data.frame("Rt" = c(get_R0(params), R0Vec, R0Vec[length(R0Vec)]), "Date" = c(justValues_f(input$sd, mode = "dates"),time_pars[time_pars$Symbol == "beta0", "Date"], justValues_f(input$ed, mode = "dates")), stringsAsFactors = FALSE)
+          }
+          plotDf <- plotDf[order(plotDf$Date),]
+          p <- ggplot(plotDf, aes(anytime::anydate(Date), y = Rt)) + geom_step(size = 2) +
+            theme_gray(base_size = input$Globalsize)
+          p <- p + geom_vline(xintercept=plotDf$Date[2:nrow(plotDf) - 1], lty=2) + labs(title = "R(t)", x = "Date")
+          # Colour properly and eliminate other elements.
+          p <- p + theme(plot.background = element_rect(fill = "#e6ebed", color = "#e6ebed", size = 0),
+                         panel.border = element_blank()
+          )
+          p <- p + ggplot2::scale_x_date(date_breaks = "1 month", date_labels = "%B")
+          p
         })
         output$paramsPlot <- renderPlot({
           parameterChanges <- get_factor_timePars()
