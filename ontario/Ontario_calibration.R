@@ -1,5 +1,6 @@
 library(McMasterPandemic)
 library(tidyverse)
+library(zoo)
 
 ## July 16th
 
