@@ -300,10 +300,10 @@ run_shiny <- function(useBrowser = TRUE) {
         for (param in describe_params(read_params("ICU1.csv"))$symbol){
           ##Grab the value of the input slot.
           paramValue <- eval(parse(text = paste0("input$", param)))
-          #Reparametrize time params to be more intuitive.
+          #Reparametrize time params so the user can enter them in as times rather than rates, tp be more intuitive.
           if (param %in% timeunitParams){
             if (is.null(paramValue)){
-              params <- c(params, read_params("ICU1.csv")[param])
+              params <- loadParams(param)
             }
             else{
               paramValue <- 1/paramValue
@@ -321,13 +321,14 @@ run_shiny <- function(useBrowser = TRUE) {
           }
         }
         paramNames <- describe_params(read_params("ICU1.csv"))$symbol
-        ##I don't want numbers to be strings
+        ##Don't want numbers as strings.
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
         names(params) <- paramNames
         class(params) <- "params_pansim"
         ##Do this after because changing the numbers from strings removes their names.
         return(params)
       }
+      ##Take a parameter we'd like and load its value from the file selected. If that value is missing, grab it from the default file, which has values for everything.
       #Take a parameter we'd like and load its value from the file selected.
       loadParams <- function(param){
         Inputparams <- read_params(input$fn)
@@ -453,13 +454,31 @@ run_shiny <- function(useBrowser = TRUE) {
           else{
             theVal <- loadParams(param)
           }
-          return(sliderInput(param,
+          ##Both are instantiated to the value given in the file
+          return(list(
+            sliderInput(param,
                         label = sliderLabel,
                         value = theVal,
                         min = 0,
                         max = maxVal,
-                        step = 0.1))
+                        step = 0.1),
+              textInput(inputId = paste(param, "_manual", sep = ""),
+                      label = paste0(param, ": Manual entry"),
+                      value = theVal)))
+        }
+        ##Use a pair of twin event observers to keep the values of the manual entry and sliders in sync.
+        ##Using vectorized operations, for each param, check if either the slider or the text input has been changed, and if it has, adjust the other one to match.
+        lapply(
+          X = names(read_params("ICU1.csv")),
+          FUN = function(paramName){
+            observeEvent(input[[paste0(paramName, "_manual")]], {
+              updateSliderInput(session, paramName, value = eval(parse(text = paste0("input$", paramName, "_manual"))))
+            })
+            observeEvent(input[[paste0(paramName)]], {
+              updateTextInput(session, paste0(paramName, "_manual"), value = input[[paste0(paramName)]])
+            })
           }
+        )
         ##Manage the states to drop.
         getDropStates <- function(){
           default.sim <- run_sim(read_params("ICU1.csv"))
