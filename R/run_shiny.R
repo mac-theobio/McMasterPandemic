@@ -98,7 +98,7 @@ run_shiny <- function(useBrowser = TRUE) {
       tags$style(HTML("#checkButtonTitle {font-weight: bold;}")),
       ##Bold the summary table title.
       tags$style(HTML("#summaryTitle {font-weight: bold;}")),
-      #Set the background colour to be a lighter and faded Heritage Grey (original one is too dark).
+      ##Set the background colour to be a lighter and faded Heritage Grey (original one is too dark).
       shinyWidgets::setBackgroundColor(color = "#e6ebed"),
       sidebarLayout(
         sidebarPanel(id = "sidebar", width = 4,
@@ -131,15 +131,7 @@ run_shiny <- function(useBrowser = TRUE) {
             br(),
               column(1,
                    uiOutput("plotTogglePanel")
-            )),
-            fluidRow(
-              column(2,
-                   checkboxInput(inputId = "use_logYscale",
-                                 label = "log-y scale",
-                                 value = FALSE),
-                   br(),
-            br())
-          )
+            ))
         )
     ))
 
@@ -184,6 +176,13 @@ run_shiny <- function(useBrowser = TRUE) {
                            min = 0, max = 10,
                            step = 0.25,
                            value = 3),
+
+          radioButtons(inputId = "scale",
+                       label = "Scaling options",
+                       choices = c("none",
+                                  "log y scale",
+                                  "sqrt y scale"),
+                       selected = "none"),
           checkboxInput(inputId = "automaticSize",
                             label = ("Show sliders for individual text element sizes"),
                             value = 0),
@@ -277,13 +276,12 @@ run_shiny <- function(useBrowser = TRUE) {
           p <- p + theme_gray(base_size = input$Globalsize)
         }
         p <- p + geom_line(size = input$lineThickness) + theme(legend.position = "none")
-        ##Allow for log-y scaling, and adjust the tick-marks and labels accordingly.
-        .x <- NULL ## undefined variable check
-        if (input$use_logYscale == 1){
-          p <- p + scale_y_continuous(trans = log10_trans(),
-                                 breaks = trans_breaks("log10", function(x) 10^x),
-                                 labels = trans_format("log10", math_format(10^.x)),
-                                 limits = c(0.1, NA))
+
+        if (input$scale == "log y scale"){
+          p <- p + scale_y_log10()
+        }
+        else if (input$scale == "sqrt y scale"){
+          p <- p + scale_y_sqrt()
         }
         else{
         }
