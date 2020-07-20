@@ -295,13 +295,14 @@ run_shiny <- function(useBrowser = TRUE) {
       ##Take input and package it in a params_pansim object that run_sim and the like can read.
       makeParams <- function(){
         params <- c()
-        for (param in describe_params(read_params("ICU1.csv"))$symbol){
+        for (param in names(read_params("ICU1.csv"))){
           ##Grab the value of the input slot.
           paramValue <- eval(parse(text = paste0("input$", param)))
           #Reparametrize time params so the user can enter them in as times rather than rates, tp be more intuitive.
           if (param %in% timeunitParams){
             if (is.null(paramValue)){
-              params <- loadParams(param)
+              paramValue <- loadParams(param)
+              params <- c(params, paramValue)
             }
             else{
               paramValue <- 1/paramValue
@@ -318,11 +319,12 @@ run_shiny <- function(useBrowser = TRUE) {
             }
           }
         }
-        paramNames <- describe_params(read_params("ICU1.csv"))$symbol
+        paramNames <- names(read_params("ICU1.csv"))
         ##Don't want numbers as strings.
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
         names(params) <- paramNames
         class(params) <- "params_pansim"
+
         ##Do this after because changing the numbers from strings removes their names.
         return(params)
       }
@@ -347,7 +349,11 @@ run_shiny <- function(useBrowser = TRUE) {
       }
       output$summary <- renderTable({
           params <- makeParams()
-          params <- update(params, proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError))
+          if (!(is.null(input$procError) || is.null(input$ObsError))){
+            params <- update(params, proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError))
+            }
+          else {
+            }
           data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/day", "---", "days", "days"))
         })
         ##Plot beta(t)/gamma.
