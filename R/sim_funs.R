@@ -69,7 +69,17 @@ make_jac <- function(params, state=NULL) {
 make_betavec <- function(state, params, full=TRUE) {
     Icats <- c("Ia","Ip","Im","Is")
     ## NB meaning of iso_* has switched from Stanford model
-    beta_vec0 <- with(as.list(params),setNames(beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs),Icats))
+    ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
+    beta_vec0 <- with(as.list(params),
+                      beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
+    names(beta_vec0) <- Icats
+    ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
+    ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
+    ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
+    ##  into exactly 4 subcompartments, in order (but this should work for now??)
+    if (any(grepl("_p$",names(state)))) {  ## testified!
+        beta_vec0 <- rep(beta_vec0,each=4)
+    }
     if (!full) return(beta_vec0)
     beta_vec <- setNames(numeric(length(state)),names(state))
     beta_vec[names(beta_vec0)] <- beta_vec0
@@ -176,7 +186,8 @@ update_foi <- function(state, params, beta_vec) {
     ## update infection rate
     foi <- sum(state*beta_vec)
     if (has_zeta(params)) {
-        foi <- foi*with(c(as.list(state),as.list(params)), (S/N)^zeta)
+        Susc <- sum(state[grep("^S_?",names(state))])
+        foi <- foi*with(as.list(params), (Susc/N)^zeta)
     }
     return(foi)
 }

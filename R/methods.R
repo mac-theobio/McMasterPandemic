@@ -27,6 +27,7 @@ calc_conv <- function(i,params) {
 
 ## compute incidence and reports (as convolution of incidence)
 calc_reports <- function(x,params, add_cumrep=FALSE) {
+    ## FIXME: dt==1 !
     incidence <- x$foi*x$S
     report <- calc_conv(incidence,params)
     ret <- data.frame(incidence, report)
