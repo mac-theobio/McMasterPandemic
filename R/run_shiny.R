@@ -51,7 +51,7 @@ browserManager <- function(openinBrowser){
   }
 }
 
-parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv")
+parameter.files <- c("CI_base.csv","CI_updApr1.csv","ICU1.csv", "ICU_diffs.csv", "PHAC.csv")
 default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
@@ -106,7 +106,10 @@ run_shiny <- function(useBrowser = TRUE) {
             column(3,
               selectInput("fn",
                                label = "Default parameter file:",
-                               choices = parameter.files, selected = default.parameter.file)),
+                               choices = parameter.files, selected = default.parameter.file),
+              fileInput("uploadData", "Use custom file"),
+              downloadButton("downloadData", "Sample", class = "dbutton")
+            ),
               column(7,
                      textOutput("summaryTitle")),
             fluidRow(
@@ -300,17 +303,18 @@ run_shiny <- function(useBrowser = TRUE) {
           paramValue <- eval(parse(text = paste0("input$", param)))
           #Reparametrize time params so the user can enter them in as times rather than rates, tp be more intuitive.
           if (param %in% timeunitParams){
-            if (is.null(paramValue)){
+            if (is.null(paramValue) || is.na(paramValue)){
               paramValue <- loadParams(param)
               params <- c(params, paramValue)
             }
             else{
+              ##If the input isn't null, the simualtion gets 1/ that input.
               paramValue <- 1/paramValue
               params <- c(params, paramValue)
             }
           }
           else{
-            if (is.null(paramValue)){
+            if (is.null(paramValue) || is.na(paramValue)){
               params <- c(params, read_params("ICU1.csv")[param])
             }
             else{
@@ -324,26 +328,34 @@ run_shiny <- function(useBrowser = TRUE) {
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
         names(params) <- paramNames
         class(params) <- "params_pansim"
-
         ##Do this after because changing the numbers from strings removes their names.
         return(params)
       }
       ##Take a parameter we'd like and load its value from the file selected. If that value is missing, grab it from the default file, which has values for everything.
       #Take a parameter we'd like and load its value from the file selected.
       loadParams <- function(param){
-        Inputparams <- read_params(input$fn)
-        numMissing <- sum(is.na(Inputparams))
+        #Override the file selection with the custom file if there's one uploaded.
+        if (is.null(input$uploadData)){
+          ##We're using a default file.
+          Inputparams <- read_params(input$fn)
+          params <- Inputparams
+        }
+        else{
+          ##Grab the filename.
+          fileName <-  input$uploadData[["datapath"]]
+          params <- read_params(fileName)
+        }
+        numMissing <- sum(is.na(params))
         ##Also account for the fact that data might just be missing from the file entirely and not recorded as NA values.
-        if (numMissing != 0 || length(Inputparams) < 26){
+        if (numMissing != 0 || length(params) < 26){
           #If the parameters file is missing info, fill in defaults for the missing values.
           DefaultParams <- read_params("ICU1.csv")
-          NonMissingparams <- Inputparams[!is.na(Inputparams)]
+          NonMissingparams <- params[!is.na(params)]
           NonMissingparamNames <- names(NonMissingparams)
           DefaultParams[NonMissingparamNames] <- NonMissingparams
           params <- DefaultParams
         }
         else{
-          params <- Inputparams
         }
         return(params[param])
       }
@@ -572,6 +584,32 @@ run_shiny <- function(useBrowser = TRUE) {
             return(tags$style(tag))
           })
           })
+        ##Handle downloads for the sample template csv file.
+        ##The file is an empty version of ICU1.csv so it scales as more parameters are added.
+        output$downloadData <- downloadHandler(
+          filename = function(){return("sampleparams.csv")},
+          content = function(file) {
+            ##Read in ICU1.csv, copying the logic in read_params using ICU1.csv.
+            basicTemplate <- read.csv(system.file("params",
+                                                  "ICU1.csv",
+                                                  package = "McMasterPandemic"),
+                                      colClasses="character",
+                                      stringsAsFactors=FALSE,
+                                      comment.char="#",
+                                      na.strings="variable")
+            ## evaluate to allow expressions like "1/7" -> numeric
+            basicTemplate[["Value"]] <- vapply(basicTemplate[["Value"]], function(z) eval(parse(text=z)), numeric(1))
+            res <- setNames(basicTemplate[["Value"]],basicTemplate[["Symbol"]])
+            class(res) <- "params_pansim"
+            if ("Symbol" %in% names(basicTemplate)) {
+              attr(res,"description") <- setNames(basicTemplate[["Parameter"]],x[["Symbol"]])
+            }
+            ##Clear the values column.
+            basicTemplate$Value <- rep(NA, nrow(basicTemplate))
+            ##Write it back out.
+            write.csv(basicTemplate, file, row.names = FALSE)
+          }
+        )
         output$summaryTitle <- renderText({"Summary characteristics"})
         output$explanationTitle <- renderText({"Explanation"})
         output$errorExplanations <- renderText({"Use these options to simulate noise in the data. The observation error parameter is the dispersion parameter for a negative binomial distribution. A suitable value could be 200.
