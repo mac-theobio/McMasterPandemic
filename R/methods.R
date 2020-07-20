@@ -263,6 +263,10 @@ aggregate.pansim <- function(x,
 }
 
 ##' summary method for \code{pansim} parameter objects
+##'
+##' FIXME: add descriptions of what the components are
+##' FIXME: add CFR, IFR, etc.
+##' 
 ##' @param object a params vector
 ##' @param ... unused
 ##' @export
@@ -270,7 +274,14 @@ summary.params_pansim <- function(object, ...) {
     check_dots(...)
     ## FIXME: include kappa once we know what works
     ## (analytical vs kernel vs ...)
-    res <- c(r0=get_r(object),R0=get_R0(object),Gbar=get_Gbar(object))
+    if (!"c_prop" %in% names(object)) {
+        CFR_gen <- NA
+    } else {
+        CFR_gen <- with(as.list(object), ((1-alpha)*(1-mu)*(1-phi1)*phi2)/c_prop)
+    }
+    res <- c(r0=get_r(object),R0=get_R0(object),Gbar=get_Gbar(object),
+             CFR_gen=CFR_gen)
+    ## FIXME: add IFR, CFR_hosp, CFR_ICU ?
     res["dbl_time"] <- log(2)/res["r0"]
     return(res)
 }

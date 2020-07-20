@@ -3,9 +3,9 @@ library(McMasterPandemic)
 library(ggplot2)
 
 ## could run models, create reference models,
-##  save("test1","test2","test3","inst/test_data/basic.rda")
-##  make target: update_test_data
-##  in code: load(system.file("test_data","basic.rda"))
+##  save("test1","test2","test3","inst/testdata/basic.rda")
+##  make target: update_testdata
+##  in code: load(system.file("testdata","basic.rda",package="McMasterPandemic"))
 context("very basic simulation")
 
 params <- read_params("ICU1.csv")
@@ -155,7 +155,7 @@ test_that("var-specific obsdisp", {
 })
 
 test_that("mle prediction", {
-	 load(system.file("inst/testdata","Ontario_basic.rda"))
+    load(system.file("testdata","Ontario_basic.rda",package="McMasterPandemic"))
     test_mle_pred <- predict(Ontario_fit)
     expect_equal(test_mle_pred,mle_prediction)
 })
