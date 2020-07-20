@@ -363,17 +363,17 @@ run_shiny <- function(useBrowser = TRUE) {
           grabbedPars <- get_timePars()
           time_pars <- grabbedPars[["time_pars"]]
           useTimeChanges <- grabbedPars[["useTimeChanges"]]
-          if (!useTimeChanges){
+          if (!useTimeChanges || ! "beta0" %in% time_pars$Symbol){
             ##If R(t) is constant.
             R0Vec <- get_R0(params)
             plotDf <- data.frame("Rt" = rep(R0Vec, 2), "Date" = c(anytime::anydate(input$sd), anytime::anydate(input$ed)), stringsAsFactors = FALSE)
           }
           else{
-            #For each beta(t) value, create a corresponding params element and estimate R0.
-            R0Vec <- sapply(time_pars[time_pars$Symbol == "beta0", "Relative_value"], function(betaValue){
-              newParams <- update(params, c(beta0 = betaValue))
-              return(get_R0(newParams))
-            })
+              #For each beta(t) value, create a corresponding params element and estimate R0.
+              R0Vec <- sapply(time_pars[time_pars$Symbol == "beta0", "Relative_value"], function(betaValue){
+                newParams <- update(params, c(beta0 = betaValue))
+                return(get_R0(newParams))
+              })
             plotDf <- data.frame("Rt" = c(get_R0(params), R0Vec, R0Vec[length(R0Vec)]), "Date" = c(anytime::anydate(input$sd),time_pars[time_pars$Symbol == "beta0", "Date"], anytime::anydate(input$ed)), stringsAsFactors = FALSE)
           }
           plotDf <- plotDf[order(plotDf$Date),]
