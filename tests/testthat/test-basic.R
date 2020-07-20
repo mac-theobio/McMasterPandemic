@@ -154,3 +154,9 @@ test_that("var-specific obsdisp", {
     expect_equal(tail(s0$E,1),30299)
 })
 
+test_that("mle prediction", {
+	 load(system.file("inst/testdata","Ontario_basic.rda"))
+    test_mle_pred <- predict(Ontario_fit)
+    expect_equal(test_mle_pred,mle_prediction)
+})
+
