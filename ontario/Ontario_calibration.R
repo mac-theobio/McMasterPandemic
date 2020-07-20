@@ -108,23 +108,25 @@ opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_c_prop=-1, logit_mu = -1
 
 ## Section 4: Calibrate 
 
-Ontario_fit <- do.call(calibrate_comb
-	, c(nlist(params=params
-		, debug_plot=FALSE
-      , data=calibrate_data_fill
-      , mob_data = clean_mobility
-      , opt_pars = opt_pars
-      , use_DEoptim = TRUE
-		, DE_cores = 2
-		, use_phenomhet = TRUE
-		, use_mobility = TRUE
-		, mob_breaks = "2020-04-15"
-		, mob_breaks_int = TRUE
-		, mob_logist_scale = 3
-#		, use_spline , spline_df , spline_days ## Not using splines right now
-	)
-	)
-)
+## Do not run on local (or change DEcores)
 
-save.image(Ontario_fit, calibrate_data_fill, clean_mobility, file = "basic.rda")
+#Ontario_fit <- do.call(calibrate_comb
+#	, c(nlist(params=params
+#		, debug_plot=FALSE
+#      , data=calibrate_data_fill
+#      , mob_data = clean_mobility
+#      , opt_pars = opt_pars
+#      , use_DEoptim = TRUE
+#		, DE_cores = 7
+#		, use_phenomhet = TRUE
+#		, use_mobility = TRUE
+#		, mob_breaks = "2020-04-15"
+#		, mob_breaks_int = TRUE
+#		, mob_logist_scale = 3
+#		, use_spline , spline_df , spline_days ## Not using splines right now
+#	)
+#	)
+#)
+
+#save.image(list=c("Ontario_fit", "calibrate_data_fill", "clean_mobility") file = "Ontario_basic.rda")
 
