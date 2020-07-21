@@ -119,8 +119,12 @@ makestuff/Makefile:
 
 -include makestuff/os.mk
 
+-include makestuff/cacheflow.mk
+-include makestuff/cacherepo.mk
 -include makestuff/makeR.mk
 -include makestuff/rmd.mk
+
+
 
 -include makestuff/git.mk
 -include makestuff/visual.mk
