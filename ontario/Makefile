@@ -19,8 +19,23 @@ Sources += $(wildcard *.R)
 
 Ignore += $(wildcard *.rda)
 
+cachestuff:
+	git clone https://github.com/wzmli/MacPan_cache.git $@
+
 ######################################################################
 
+Ontario_calibration.Rout: Ontario_calibration.R
+	$(makeR)
+
+Ontario_calibration_spline.Rout: Ontario_calibration_spline.R Ontario_calibration.rda
+	$(makeR)
+
+
+
+
+
+
+#####################################################################
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
 
 ontario_clean.Rout: ontario_clean.R
@@ -80,6 +95,8 @@ ontario_clean.Rout: 0601.datatime
 
 McMasterReport.pdf: McMasterReport.Rnw ont_cal.RData ont_cal_2brks.RData ont_cal_H.RData ont_cal_noICU_2brks_prior.RData ont_cal_mob1.RData ontario_clean.RData
 
+
+
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
 
@@ -102,7 +119,7 @@ makestuff/Makefile:
 
 -include makestuff/os.mk
 
--include makestuff/wrapR.mk
+-include makestuff/makeR.mk
 -include makestuff/rmd.mk
 
 -include makestuff/git.mk

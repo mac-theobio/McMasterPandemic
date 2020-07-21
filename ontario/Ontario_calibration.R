@@ -2,6 +2,9 @@ library(McMasterPandemic)
 library(tidyverse)
 library(zoo)
 
+source("makestuff/makeRfuns.R")
+commandFiles()
+
 ## July 16th
 
 
@@ -129,4 +132,6 @@ opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_c_prop=-1, logit_mu = -1
 #)
 
 #save.image(list=c("Ontario_fit", "calibrate_data_fill", "clean_mobility") file = "Ontario_basic.rda")
+
+saveEnvironment()
 
