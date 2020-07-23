@@ -12,7 +12,7 @@ PH <- do.call(calibrate_comb
      , data=calibrate_data_fill
      , mob_data = clean_mobility
      , opt_pars = opt_pars
-     , use_DEoptim = FALSE
+     , use_DEoptim = TRUE
 	, DE_cores = 7
 	, use_phenomhet = TRUE
 	, use_mobility = FALSE
@@ -29,11 +29,11 @@ PH <- do.call(calibrate_comb
 PH_ode <- do.call(calibrate_comb
 	, c(nlist(params=params
 		, debug_plot=FALSE
-		, use_ode = TRUE
+		, sim_args = list(use_ode = TRUE)
      	, data=calibrate_data_fill
      	, mob_data = clean_mobility
      	, opt_pars = opt_pars
-     	, use_DEoptim = FALSE
+     	, use_DEoptim = TRUE
 		, DE_cores = 7
 		, use_phenomhet = TRUE
 		, use_mobility = FALSE
