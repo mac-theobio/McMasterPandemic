@@ -52,6 +52,8 @@ plot(PH_mob, data=newdat)
 
 plot(PH_mob_spline, data=newdat)
 
+gg <- ggplot(clean_mobility,aes(date,rel_activity))+geom_line()
+plot_grid(plot(PH_mob, data=newdat),gg,ncol=1)
 
 ## Forecasting
 

@@ -24,7 +24,11 @@ cachestuff:
 
 ######################################################################
 
-Ontario_calibration.Rout: Ontario_calibration.R
+Ontario_calibration_setup.Rout: Ontario_calibration_setup.R
+	$(makeR)
+
+## Ontario_PH.rda.cache:
+Ontario_PH.Rout: Ontario_PH.R Ontario_calibration_setup.rda
 	$(makeR)
 
 Ontario_calibration_spline.Rout: Ontario_calibration_spline.R Ontario_calibration.rda

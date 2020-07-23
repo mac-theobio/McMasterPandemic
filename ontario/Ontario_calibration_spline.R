@@ -1,7 +1,7 @@
 library(McMasterPandemic)
 
 source("makestuff/makeRfuns.R")
-commandEnvironments()
+commandFiles()
 
 Ontario_fit_spline <- do.call(calibrate_comb
 , c(nlist(params=params
@@ -22,9 +22,6 @@ Ontario_fit_spline <- do.call(calibrate_comb
 )
 )
 )
-
-#save.image(list=c("Ontario_fit", "calibrate_data_fill", "clean_mobility") file = "Ontario_basic.rda")
-
 
 saveEnvironment()
 

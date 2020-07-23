@@ -6,8 +6,6 @@ source("makestuff/makeRfuns.R")
 ## Don't worry about this when coding interactively/sourcing
 commandFiles()
 
-## July 16th
-
 
 ## Section 1: Read Data Sources
 
@@ -75,7 +73,7 @@ clean_mobility <- (bind_rows(google=clean_google,apple=clean_apple,.id="source")
     %>% summarise_at("value",mean,na.rm=TRUE)
     %>% na.omit()
     %>% rename(rel_activity = value)
-   %>% mutate_at("rel_activity", ~pmin(., 1))  ## cap at 100% (? should we ?)
+#   %>% mutate_at("rel_activity", ~pmin(., 1))  ## cap at 100% (? should we ?)
 	 %>% ungroup()
 )
 
@@ -108,31 +106,6 @@ params[["N"]] <- 14.57e6 ## Population of Ontario (2019)
 
 ### parameters we are trying to estimate
 opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_c_prop=-1, logit_mu = -1, logit_phi1 = -1),log_nb_disp=c(report=1, death=1,H=1))
-
-
-## Section 4: Calibrate 
-
-## Do not run on local (or change DEcores)
-
-#Ontario_fit <- do.call(calibrate_comb
-#	, c(nlist(params=params
-#		, debug_plot=FALSE
-#      , data=calibrate_data_fill
-#      , mob_data = clean_mobility
-#      , opt_pars = opt_pars
-#      , use_DEoptim = TRUE
-#		, DE_cores = 7
-#		, use_phenomhet = TRUE
-#		, use_mobility = TRUE
-#		, mob_breaks = "2020-04-15"
-#		, mob_breaks_int = TRUE
-#		, mob_logist_scale = 3
-#		, use_spline , spline_df , spline_days ## Not using splines right now
-#	)
-#	)
-#)
-
-#save.image(list=c("Ontario_fit", "calibrate_data_fill", "clean_mobility") file = "Ontario_basic.rda")
 
 saveEnvironment()
 
