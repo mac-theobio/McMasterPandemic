@@ -822,6 +822,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param spline_df overall spline degrees of freedom
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
 ##' @param spline_pen penalization for spline
+##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_spline include spline?
@@ -844,6 +845,7 @@ calibrate_comb <- function(data,
                      spline_df=NA,
                      knot_quantile_var=NA,
                      spline_pen=0,
+                     spline_type="bs",
                      maxit=10000,
                      use_DEoptim=TRUE,
                      DE_cores=1,
@@ -923,7 +925,7 @@ calibrate_comb <- function(data,
             spline_df <- round(length(X_dat$t_vec)/spline_days)
         }
         if (is.na(knot_quantile_var)) {
-            spline_term <- sprintf("bs(t_vec,df=spline_df)")
+            spline_term <- sprintf("%s(t_vec,df=spline_df)",spline_type)
         } else {
             ## df specified: pick (df-degree) knots
             knot_dat <- (filter(data,var==knot_quantile_var)
