@@ -30,10 +30,8 @@ Ontario_calibration.Rout: Ontario_calibration.R
 Ontario_calibration_spline.Rout: Ontario_calibration_spline.R Ontario_calibration.rda
 	$(makeR)
 
-
-
-
-
+reference_mod_forecast.Rout: reference_mod_forecast.R
+	$(makeR)
 
 #####################################################################
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R

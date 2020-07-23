@@ -3,6 +3,7 @@ library(tidyverse)
 library(zoo)
 
 source("makestuff/makeRfuns.R")
+## Don't worry about this when coding interactively/sourcing
 commandFiles()
 
 ## July 16th
