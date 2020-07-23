@@ -1,5 +1,6 @@
 library(McMasterPandemic)
 library(tidyverse)
+library(splines)
 source("makestuff/makeRfuns.R")
 commandFiles()
 
@@ -13,7 +14,7 @@ NS_splines <- do.call(calibrate_comb
      	, data = trim_dat
      	, mob_data = clean_mobility
      	, opt_pars = opt_pars
-     	, use_DEoptim = TRUE
+     	, use_DEoptim = FALSE
 		, DE_cores = 7
 		, use_phenomhet = FALSE
 		, use_mobility = FALSE
