@@ -79,4 +79,3 @@ testify <- function(ratemat,wtsvec,posvec,omega, debug=FALSE){
 	}
    return(new_M)
 }
-  
