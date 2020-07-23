@@ -18,7 +18,7 @@ print(clean_mobility_cap)
 Mobility <- do.call(calibrate_comb
 	, c(nlist(params=params
 		, debug_plot=FALSE
-		, sim_args = list(use_ode = TRUE)
+#		, sim_args = list(use_ode = TRUE)
      	, data = trim_dat
      	, mob_data = clean_mobility
      	, opt_pars = opt_pars
@@ -39,7 +39,7 @@ Mobility <- do.call(calibrate_comb
 Mobility_cap <- do.call(calibrate_comb
 	, c(nlist(params=params
 		, debug_plot=FALSE
-		, sim_args = list(use_ode = TRUE)
+#		, sim_args = list(use_ode = TRUE)
      	, data = trim_dat
      	, mob_data = clean_mobility_cap
      	, opt_pars = opt_pars
