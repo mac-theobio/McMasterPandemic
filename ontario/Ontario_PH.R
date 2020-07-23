@@ -9,7 +9,7 @@ trim_dat <- calibrate_data_fill %>% filter(date < as.Date("2020-07-01"))
 PH <- do.call(calibrate_comb
 , c(nlist(params=params
 	, debug_plot=FALSE
-     , data=calibrate_data_fill
+     , data=trim_dat
      , mob_data = clean_mobility
      , opt_pars = opt_pars
      , use_DEoptim = TRUE
@@ -30,7 +30,7 @@ PH_ode <- do.call(calibrate_comb
 	, c(nlist(params=params
 		, debug_plot=FALSE
 		, sim_args = list(use_ode = TRUE)
-     	, data=calibrate_data_fill
+     	, data=trim_dat
      	, mob_data = clean_mobility
      	, opt_pars = opt_pars
      	, use_DEoptim = TRUE
@@ -47,9 +47,9 @@ PH_ode <- do.call(calibrate_comb
 )
 )
 
-print(plot(PH, data=calibrate_data_fill))
+print(plot(PH, data=calibrate_data_fill) + ggtitle("PH"))
 
-print(plot(PH_ode, data=calibrate_data_fill))
+print(plot(PH_ode, data=calibrate_data_fill) + ggtitle("PH ode"))
 
 saveEnvironment()
 
