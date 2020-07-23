@@ -47,6 +47,10 @@ PH_ode <- do.call(calibrate_comb
 )
 )
 
+print(plot(PH, data=calibrate_data_fill))
+
+print(plot(PH_ode, data=calibrate_data_fill))
+
 saveEnvironment()
 
 
