@@ -97,7 +97,7 @@ calibrate_data_fill <- (left_join(date_df,calibrate_data)
 )
 
 ### MacPan setup
-params <- fix_pars(read_params("ICU1.csv")
+params <- fix_pars(read_params("PHAC.csv")
    , target=c(Gbar=6)
    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
 )
