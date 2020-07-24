@@ -14,9 +14,14 @@ vim_session:
 
 ######################################################################
 
-Sources += $(wildcard */*.R)
+Sources += $(wildcard *.R) Makefile
 
-pkgdesc = $(../DESCRIPTION)
+######################################################################
+
+## Playing with spline shapes
+
+rshape.Rout: rshape.R
+	$(run-R)
 
 ######################################################################
 
@@ -89,7 +94,7 @@ makestuff/Makefile:
 
 -include makestuff/os.mk
 
--include makestuff/wrapR.mk
+-include makestuff/makeR.mk
 -include makestuff/rmd.mk
 
 -include makestuff/git.mk
