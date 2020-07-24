@@ -8,7 +8,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"))
 Depends: R (>= 3.5.0)
-Imports: Matrix, forcats, MASS, dplyr, ggplot2, tidyr, methods, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny, zoo, deSolve, shinyWidgets, shinythemes
+Imports: Matrix, forcats, MASS, dplyr, ggplot2, tidyr, methods, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny, zoo, deSolve, shinyWidgets, shinythemes, splines
 Suggests: knitr, testthat, cowplot, tikzDevice, igraph, memoise
 RoxygenNote: 7.1.1
 Encoding: UTF-8

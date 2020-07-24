@@ -833,6 +833,15 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @importFrom tidyr drop_na
 ##' @importFrom splines bs
 ##' @inheritParams calibrate
+##' @examples
+##' \dontrun{
+##' ## UNFINISHED
+##' if (require(dplyr)) {
+##'   dd <- ont_all %>% trans_state_vars() %>%
+##'        filter(var %in% c("H","report"))
+##' }
+##' } % dontrun
+##' @importFrom splines ns bs
 ##' @export
 calibrate_comb <- function(data,
                      params,
