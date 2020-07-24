@@ -35,10 +35,10 @@ Ontario_PH.Rout: Ontario_PH.R Ontario_calibration_setup.rda
 Ontario_Mobility.Rout: Ontario_Mobility.R Ontario_calibration_setup.rda
 	$(makeR)
 
-Ontario_splines.Rout: Ontario_splines.R Ontario_calibration.rda
+Ontario_splines.Rout: Ontario_splines.R Ontario_calibration_setup.rda
 	$(makeR)
 
-Ontario_current.Rout: Ontario_current.R Ontario_calibration.rda
+Ontario_current.Rout: Ontario_current.R Ontario_calibration_setup.rda
 	$(makeR)
 
 reference_mod_forecast.Rout: reference_mod_forecast.R
