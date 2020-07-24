@@ -42,10 +42,12 @@ Mobility_ode <- do.call(calibrate_comb
 		, debug_plot=FALSE
 		, sim_args = list(use_ode = TRUE)
      	, data = trim_dat
+		# , mle2_control = list(maxit = 10)
+		, mle2_args = list(skip.hessian=TRUE)
      	, mob_data = clean_mobility
      	, opt_pars = opt_pars
      	, use_DEoptim = TRUE
-		, DE_cores = 1
+		, DE_cores = 7
 		, use_phenomhet = FALSE
 		, use_mobility = TRUE
 		, mob_breaks = "2020-04-15"

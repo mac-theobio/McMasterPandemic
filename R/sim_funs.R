@@ -548,7 +548,7 @@ make_state <- function(N=params[["N"]],
 
 ##' 
 gradfun <- function(t, y, parms, M) {
-    foi <- M["S","E"] <- update_foi(y, parms, make_betavec(state, parms))
+    foi <- M["S","E"] <- update_foi(y, parms, make_betavec(state=y, parms))
     ## compute 
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
