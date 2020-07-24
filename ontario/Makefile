@@ -19,6 +19,7 @@ Sources += $(wildcard *.R)
 
 Ignore += $(wildcard *.rda)
 
+Ignore += cachestuff
 cachestuff:
 	git clone https://github.com/wzmli/MacPan_cache.git $@
 
