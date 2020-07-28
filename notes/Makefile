@@ -25,6 +25,12 @@ rshape.Rout: rshape.R
 
 ######################################################################
 
+## 
+explore_testify.Rout: explore_testify.R
+	$(makeR)
+
+######################################################################
+
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
 run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
