@@ -178,7 +178,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
     	wtsvec <- make_test_wtsvec(params)
 		posvec <- make_test_posvec(params)
 		testify_M <- testify(M,wtsvec,posvec,omega=omega)
-    	attr(M,"testify") <- testify_M
+    	attr(testify_M,"testify_base") <- M
+    	return(testify_M)
     }
     
     return(M)
