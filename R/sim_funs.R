@@ -19,7 +19,7 @@ make_jac <- function(params, state=NULL) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_pre  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
@@ -45,10 +45,10 @@ make_jac <- function(params, state=NULL) {
     M["Ia","E"] <- alpha*sigma
     M["Ia","Ia"] <- -gamma_a
     M["Ip","E"] <- (1-alpha)*sigma
-    M["Ip","Ip"] <- -gamma_p
-    M["Im","Ip"] <- mu*gamma_p
+    M["Ip","Ip"] <- -gamma_pre
+    M["Im","Ip"] <- mu*gamma_pre
     M["Im","Im"] <- -gamma_m
-    M["Is","Ip"] <- (1-mu)*gamma_p
+    M["Is","Ip"] <- (1-mu)*gamma_pre
     M["Is","Is"] <- -gamma_s
     M["H","Is"]  <- phi1*gamma_s
     M["H","H"]   <- -rho
@@ -66,7 +66,7 @@ make_jac <- function(params, state=NULL) {
     return(M)
 }
 
-make_betavec <- function(state, params, full=TRUE) {
+make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     Icats <- c("Ia","Ip","Im","Is")
     ## NB meaning of iso_* has switched from Stanford model
     ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
@@ -77,8 +77,9 @@ make_betavec <- function(state, params, full=TRUE) {
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
-    if (any(grepl("_p$",names(state)))) {  ## testified!
+    if (any(grepl("_t$",names(state)))) {  ## testified!
         beta_vec0 <- rep(beta_vec0,each=4)
+        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,c("_u","_p","_n","_t"))))
     }
     if (!full) return(beta_vec0)
     beta_vec <- setNames(numeric(length(state)),names(state))
@@ -120,11 +121,11 @@ make_betavec <- function(state, params, full=TRUE) {
 ##'   image(Matrix(make_ratemat(state,params)))
 ##' }
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE) {
+make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- hosp <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_pre  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ## default values, will be masked (on purpose) by unpacking params/state
@@ -145,8 +146,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
     M["E","Ia"]  <- alpha*sigma
     M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
-    M["Ip","Im"] <- mu*gamma_p
-    M["Ip","Is"] <- (1-mu)*gamma_p
+    M["Ip","Im"] <- mu*gamma_pre
+    M["Ip","Is"] <- (1-mu)*gamma_pre
     M["Im","R"]  <- gamma_m
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
@@ -172,7 +173,14 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
             ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
-    attr(M,"beta_vec") <- make_betavec(state,params)
+    if(testify){
+    	## create wts and pos vector
+    	wtsvec <- make_test_wtsvec(params)
+		posvec <- make_test_posvec(params)
+		testify_M <- testify(M,wtsvec,posvec,omega=omega)
+    	attr(M,"testify") <- testify_M
+    }
+    
     return(M)
 }
 
@@ -542,7 +550,9 @@ make_state <- function(N=params[["N"]],
         }
         state[names(x)] <- x
     }
+    untestify_state <- state
     class(state) <- "state_pansim"
+    attr(state,"testify") <- expand_stateval(state)
     return(state)
 }
 
