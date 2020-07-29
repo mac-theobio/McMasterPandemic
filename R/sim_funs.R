@@ -19,7 +19,7 @@ make_jac <- function(params, state=NULL) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_pre  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
@@ -45,10 +45,10 @@ make_jac <- function(params, state=NULL) {
     M["Ia","E"] <- alpha*sigma
     M["Ia","Ia"] <- -gamma_a
     M["Ip","E"] <- (1-alpha)*sigma
-    M["Ip","Ip"] <- -gamma_pre
-    M["Im","Ip"] <- mu*gamma_pre
+    M["Ip","Ip"] <- -gamma_p
+    M["Im","Ip"] <- mu*gamma_p
     M["Im","Im"] <- -gamma_m
-    M["Is","Ip"] <- (1-mu)*gamma_pre
+    M["Is","Ip"] <- (1-mu)*gamma_p
     M["Is","Is"] <- -gamma_s
     M["H","Is"]  <- phi1*gamma_s
     M["H","H"]   <- -rho
@@ -125,7 +125,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- hosp <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_pre  <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ## default values, will be masked (on purpose) by unpacking params/state
@@ -146,8 +146,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
     M["E","Ia"]  <- alpha*sigma
     M["E","Ip"]  <- (1-alpha)*sigma
     M["Ia","R"]  <- gamma_a
-    M["Ip","Im"] <- mu*gamma_pre
-    M["Ip","Is"] <- (1-mu)*gamma_pre
+    M["Ip","Im"] <- mu*gamma_p
+    M["Ip","Is"] <- (1-mu)*gamma_p
     M["Im","R"]  <- gamma_m
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
