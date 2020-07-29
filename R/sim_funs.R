@@ -181,6 +181,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
     	attr(testify_M,"testify_base") <- M
     	return(testify_M)
     }
+    attr(M,"beta_vec") <- make_betavec(state,params)
     
     return(M)
 }
