@@ -195,7 +195,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
 update_foi <- function(state, params, beta_vec) {
     ## update infection rate
 	 if(length(state) != length(beta_vec)){
-	 	return("length of state and beta_vec are not the same")
+             stop("length of state and beta_vec are not the same")
 	 }
     foi <- sum(state*beta_vec)
     if (has_zeta(params)) {

@@ -42,9 +42,9 @@ test_that("trans_labels", {
 })
 
 test_that("fit methods", {
-    suppressWarnings(plot(ont_cal1))
-    suppressWarnings(plot(ont_cal1,data=trans_state_vars(ont_all)))
-    suppressWarnings(plot(ont_cal_2brks,data=trans_state_vars(ont_all)))
+    expect_is(suppressWarnings(plot(ont_cal1)), "ggplot")
+    expect_is(suppressWarnings(plot(ont_cal1,data=trans_state_vars(ont_all))), "ggplot")
+    expect_is(suppressWarnings(plot(ont_cal_2brks,data=trans_state_vars(ont_all))), "ggplot")
 })
 
 test_that("predict", {
