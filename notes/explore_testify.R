@@ -2,8 +2,7 @@ library(devtools)
 load_all("../")
 
 p <- read_params("PHAC_testify.csv")
-state<- make_state(params=p)
-
+state <- make_state(params=p)
 
 ratemat <- make_ratemat(state,p)
 

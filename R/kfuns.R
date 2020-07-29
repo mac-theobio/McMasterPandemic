@@ -60,8 +60,13 @@ rmult <- function(k, r){
 	)$root
 }
 
-## run a pure-exponential sim
-## return either r or eigenvector
+##
+## run a pure-exponential sim;
+##  uses run_sim_range with a population of 1 (proportions) and a very small starting value,
+##  run for 100 steps (by default)
+## used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)
+## FIXME: pass down more information about model type?
+## FIXME: add some tests!
 rExp <- function(par, steps=100, ndt=1,
                  do_hazard=FALSE,
                  return_val=c("r0","eigenvector"))
@@ -69,7 +74,7 @@ rExp <- function(par, steps=100, ndt=1,
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E0=1e-5, type="ICU1")
+	state <- make_state(N=1, E0=1e-5, type="ICU1")  ## FIXME: don't assume ICU1?
 	r <- run_sim_range(par, state
                          , nt=steps*ndt
                          , step_args = list(do_hazard=do_hazard,
@@ -77,11 +82,16 @@ rExp <- function(par, steps=100, ndt=1,
         nn <- ndt*steps
         ## DRY: get_evec()
         drop_vars <- c("date","t","S","R","D","foi","X")
+        ## FIXME: safer version of this:
+        ##   keep_vars_regexp <- "^[EIHh]"
+        ##   unlist(x[pos, grepl(keep_vars_regexp, names(r))])
         uf <- function(x,pos) unlist(x[pos,!names(r) %in% drop_vars])
         r_last <- uf(r,nn)
         r_nextlast <- uf(r,nn-1)
         ret <- switch(return_val,
+                      ## log mean(x(t+1)/x(t))
                       r0=mean(log(r_last/r_nextlast)),
+                      ## normalized state vector at last time step
                       eigenvector=unlist(r_last/sum(r_last)))
         return(ret)
 }
