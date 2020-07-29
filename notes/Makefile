@@ -25,9 +25,10 @@ rshape.Rout: rshape.R
 
 ######################################################################
 
-## 
-explore_testify.Rout: explore_testify.R
+explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 	$(makeR)
+
+## refactor.html: refactor.Rmd
 
 ######################################################################
 
@@ -72,17 +73,19 @@ plot_caltest_breaks.Rout: run_caltest_breaks.Rout plot_caltest.R
 plot_DEoptim_breaks.Rout: run_DEoptim_breaks.Rout plot_caltest.R
 	$(run-R)
 
-
 alt_cal.Rout:  ../ontario/ontario_calibration.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData alt_cal.R
 
 explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData explore_ontcal.R
 
+######################################################################
 
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
 
 %.pdf: %.Rnw
 	Rscript -e 'knitr::knit2pdf("$<")'
+
+######################################################################
 
 ### Makestuff
 
