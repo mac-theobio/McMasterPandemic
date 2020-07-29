@@ -16,7 +16,7 @@ run_sim_mobility(
 \arguments{
 \item{params}{parameters}
 
-\item{extra_pars}{??}
+\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}}
 
 \item{time_args}{list containing \code{break_dates}}
 

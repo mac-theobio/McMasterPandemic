@@ -16,7 +16,9 @@ calibrate_comb(
   spline_df = NA,
   knot_quantile_var = NA,
   spline_pen = 0,
+  spline_type = "bs",
   maxit = 10000,
+  skip.hessian = FALSE,
   use_DEoptim = TRUE,
   DE_cores = 1,
   use_mobility = FALSE,
@@ -63,7 +65,11 @@ specified scale.}
 
 \item{spline_pen}{penalization for spline}
 
+\item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
+
 \item{maxit}{maximum iterations for Nelder-Mead/optimization step}
+
+\item{skip.hessian}{skip Hessian calculation?}
 
 \item{use_DEoptim}{use differential evolution as first stage?}
 
@@ -87,4 +93,14 @@ specified scale.}
 }
 \description{
 top-level calibration based on mobility, splines, phenom het
+}
+\examples{
+if (require(dplyr)) {
+  dd <- ont_all \%>\% trans_state_vars() \%>\%
+       filter(var \%in\% c("H","report"))
+ params <- read_params("ICU1.csv")
+ calibrate_comb(data=dd, params=params,
+               use_spline=TRUE,
+              maxit=10, skip.hessian=TRUE)
+}
 }

@@ -11,7 +11,8 @@ make_state(
   state_names = NULL,
   use_eigvec = !is.null(params),
   params = NULL,
-  x = NULL
+  x = NULL,
+  testify = FALSE
 )
 }
 \arguments{

@@ -94,6 +94,9 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 
 
 ##' run with log-linear model applied to beta
+##' @examples
+##' params <- read_params("ICU1.csv")
+##' run_sim_loglin(params, extra_pars
 ##' @inheritParams run_sim_break
 ##' @export
 run_sim_loglin <- function(params,
@@ -167,7 +170,7 @@ run_sim_mobility <- function(params,
 ##' @param params parameters
 ##' @param time_args list containing \code{break_dates}
 ##' @param sim_args parameters to pass to \code{\link{run_sim}}
-##' @param extra_pars ??
+##' @param extra_pars parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}
 ##' @param break_dates obsolete
 ##' @param return_timevar return data frame of beta by time?
 ##' @examples
@@ -600,7 +603,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         ## attach to de object
         de_cal1$member$Sigma <- vM
         de_cal1$member$nll_vals <- nll_vals
-    }
+    } ## end of DEoptim loop
+    ## now 'polish' with mle2
     ## n.b.: this has to be hacked dynamically ...
     ## FIXME: same as mle_args?
     parnames(mle_fun) <- names(opt_inputs)
@@ -802,6 +806,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' top-level calibration based on mobility, splines, phenom het
 ##' @param params parameters
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
+##' @param skip.hessian skip Hessian calculation?
 ##' @param ... extra args
 ##' @param mob_data mobility data
 ##' @param mob_breaks vector of breakpoints for piecewise mobility
@@ -832,15 +837,17 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @importFrom dplyr distinct
 ##' @importFrom tidyr drop_na
 ##' @importFrom splines bs
-##' @inheritParams calibrate
 ##' @examples
-##' \dontrun{
-##' ## UNFINISHED
 ##' if (require(dplyr)) {
 ##'   dd <- ont_all %>% trans_state_vars() %>%
 ##'        filter(var %in% c("H","report"))
+##'  params <- read_params("ICU1.csv")
+##'  ## quick and dirty example (maximize speed)
+##'  calibrate_comb(data=dd, params=params,
+##'                use_spline=TRUE,
+##'               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
 ##' }
-##' } % dontrun
+##' @inheritParams calibrate
 ##' @importFrom splines ns bs
 ##' @export
 calibrate_comb <- function(data,
@@ -856,6 +863,7 @@ calibrate_comb <- function(data,
                      spline_pen=0,
                      spline_type="bs",
                      maxit=10000,
+                     skip.hessian=FALSE,
                      use_DEoptim=TRUE,
                      DE_cores=1,
                      use_mobility=FALSE,
@@ -964,6 +972,7 @@ calibrate_comb <- function(data,
     if (return_X) return(X)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+    names(opt_pars$time_beta) <- colnames(X)
     time_args <- nlist(X,X_date=X_dat$date)
     priors <- NULL
     if (spline_pen>0) {
@@ -974,7 +983,6 @@ calibrate_comb <- function(data,
     }
     ## do the calibration
     ## debug <- use_DEoptim
-
     argList <- c(nlist(data
                      , use_DEoptim
                      , DE_cores
@@ -982,6 +990,7 @@ calibrate_comb <- function(data,
                      , debug
                      , base_params=params
                      , mle2_control = list(maxit=maxit)
+                     , mle2_args=list(skip.hessian=skip.hessian)
                      , opt_pars
                      , time_args
                      , sim_fun = run_sim_loglin)

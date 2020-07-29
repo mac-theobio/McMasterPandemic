@@ -16,7 +16,7 @@ run_sim_loglin(
 \arguments{
 \item{params}{parameters}
 
-\item{extra_pars}{??}
+\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}}
 
 \item{time_args}{list containing \code{break_dates}}
 
@@ -28,4 +28,8 @@ run_sim_loglin(
 }
 \description{
 run with log-linear model applied to beta
+}
+\examples{
+params <- read_params("ICU1.csv")
+run_sim_loglin(params, extra_pars
 }

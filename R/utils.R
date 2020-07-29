@@ -165,7 +165,8 @@ write_params <- function(params, fn, label) {
 ##' invlink_trans(tst)
 ##' tst2 <- list(params=c(log_E0=1,log_beta0=1),log_nb_disp=c(H=0,report=0,death=0))
 ##' invlink_trans(tst2)
-##' invlink_trans(c(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
+##' invlink_trans(list(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
+##' invlink_trans(list(time_beta=c(2,3),log_time_beta=c(a=0,b=0)))  ## 
 ##' @export
 invlink_trans <- function(p, unknown_link="ignore", links=c("log","log10","logit")) {
     r <- vector("list",length(p))
@@ -180,7 +181,7 @@ invlink_trans <- function(p, unknown_link="ignore", links=c("log","log10","logit
             ## attach link name to sub-parameters
             if (has_link) pp <- setNames(pp,paste(invlink,names(p[[i]]),sep="_"))
             r[[i]] <- invlink_trans(pp)
-            names(r)[[i]] <- gsub("^[^_]+_","",nm)  ## ?? not sure
+            if (has_link) names(r)[[i]] <- gsub("^[^_]+_","",nm) else names(r)[[i]] <- nm ## ?? not sure
         } else {
             if (!has_link) {
                 ## identity; should be able to do this with a better regex?

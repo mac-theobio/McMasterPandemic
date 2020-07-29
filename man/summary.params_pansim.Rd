@@ -12,5 +12,6 @@
 \item{...}{unused}
 }
 \description{
-summary method for \code{pansim} parameter objects
+FIXME: add descriptions of what the components are
+FIXME: add CFR, IFR, etc.
 }
