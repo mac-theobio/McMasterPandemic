@@ -116,13 +116,14 @@ test_that("state methods", {
 test_that("calibration", {
     ## test at a tolerance of 0.5%
     s1 <- summary(params)
-    s2 <- summary(fix_pars(params,target=c(r=0.23,Gbar=6)))
+    s2 <- summary(p2 <- fix_pars(params,target=c(r=0.23,Gbar=6)))
     expect_equal(s2[["r0"]],0.23,tolerance=0.005)
     expect_equal(s2[["Gbar"]],6,tolerance=0.005)
     ## FIXME: expsim method fails (need to lower uniroot tolerance)
-    s3 <- summary(fix_pars(params,target=c(r=0.23),
-                           r_method="rmult"))
-    expect_equal(s3[["r0"]],0.23,tolerance=0.005)
+    s3 <- summary(fix_pars(p2,target=c(r=0.4), r_method="rmult"))
+    expect_equal(s3[["r0"]],0.4,tolerance=0.005)
+    ## adjusting r0 shouldn't change Gbar from previous value
+    expect_equal(s3[["Gbar"]], s2[["Gbar"]])
     s4 <- summary(fix_pars(params,target=c(Gbar=6),
                            pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))))
     expect_equal(s4[["Gbar"]],6,tolerance=0.005)
