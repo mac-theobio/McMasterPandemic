@@ -44,9 +44,22 @@ test0.Rout: test0.R
 
 ######################################################################
 
+## Jonathan is causing trouble
+
+nonsense.Rout: nonsense.R
+	$(makeR)
+
+bad_nonsense.Rout: bad_nonsense.R
+	$(makeR)
+
+######################################################################
+
 ## Mike's nobreak stuff
 
 Sources += $(wildcard *.R)
+
+run_params_nobreak.Rout: run_params_nobreak.R
+	$(run-R)
 
 run_caltest_nobreak.Rout: run_params_nobreak.Rout run_caltest.R
 	$(run-R)
