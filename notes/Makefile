@@ -25,9 +25,11 @@ rshape.Rout: rshape.R
 
 ######################################################################
 
+## Mike's development stuff
 explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 	$(makeR)
 
+## Structural pictures from Ben
 ## refactor.html: refactor.Rmd
 
 ######################################################################
