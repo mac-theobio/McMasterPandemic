@@ -15,9 +15,8 @@ test_that("basic examples", {
     expect_is(params,"params_pansim")
     s0 <- run_sim_range(params,state, nt=100)
     expect_is(s0,"data.frame")
-    expect_equal(tail(s0,1),
-                 tolerance=1e-8,
-                 structure(list(t = 100L, S = 710.7304620948, E = 132.983797059479, 
+    ## original value
+    ss <- structure(list(t = 100L, S = 710.7304620948, E = 132.983797059479, 
     Ia = 1280.06036138841, Ip = 9.45207161097982, Im = 2626.01147876609, 
     Is = 47.3684384214429, H = 873.671213383553, H2 = 202.916185137484, 
     ICUs = 626.537390949812, ICUd = 72.4089826500752, D = 3438.87998360902, 
@@ -26,7 +25,10 @@ test_that("basic examples", {
 E = 132.983797059479, Ia = 1280.06036138841, Ip = 9.45207161097982, 
 Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553, 
 H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752, 
-D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame"))
+D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame")
+    expect_equal(tail(s0,1), ss,
+                 tolerance=1e-8)
+
 
     expect_is(state,"state_pansim")
     s1 <- run_sim(params,state,start_date="1-March-2020",end_date="1-Jun-2020")
@@ -35,8 +37,8 @@ D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names 
 
 test_that("params methods", {
     expect_equal(summary(params),
-                 c(r0 = 0.22783, R0 = 6.51918, Gbar = 12.19064,
-                   dbl_time = 3.04243),
+                 c(r0 = 0.227816539595061, R0 = 6.51800888888889, Gbar = 12.1897401796868, 
+                   CFR_gen = 0.0352, dbl_time = 3.0425674175896),
                  tolerance=2e-3)
 })
 
