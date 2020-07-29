@@ -341,9 +341,9 @@ run_sim <- function(params
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params)))
     if(!is.null(ratemat_args)){
-    	if(ratemat_args$testify == TRUE){
-	 M <- testify(M,params)
-    state <- expand_stateval(state)
+    	if (ratemat_args$testify) {
+            M <- testify(M,params)
+            state <- expand_stateval(state)
     	}
     }
     state0 <- state
