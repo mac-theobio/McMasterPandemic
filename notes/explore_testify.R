@@ -32,14 +32,12 @@ testthat::expect_error(update_foi(state,pp,beta_vec_testified))
 # debug(do_step)
 
 sim0 <- run_sim(params = pp)
-## BAD NEWS
 options(warn=2,error=recover)
 ## debug(run_sim)
 sim0_testified_uncondensed <- run_sim(params = pp, ratemat_args = list(testify=TRUE), condense = FALSE)
 ## ratemat: 58 x 58
 ## state: 56
 setdiff(colnames(ratemat),names(state))
-## It is going to fail here where the default is condense = TRUE
 sim0_testified_condensed <- run_sim(params = pp,
                                     ratemat_args = list(testify=TRUE))
 

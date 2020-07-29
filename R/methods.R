@@ -154,39 +154,45 @@ condense.pansim <-  function(object, add_reports=TRUE,
         if (keep_all) {
             dd <- object
         } else {
-            dd <- object[c("date","S","E")]
-        }
-        dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
-        dd <- add_col(dd,"H","^H")     ## collapse all H* variables
-        dd <- add_col(dd,"hosp","^hosp")  ## all hosp* variables
-        dd <- add_col(dd,"ICU","^ICU")    ## ICU* variables
-        dd <- data.frame(dd,R=object[["R"]])
-        ## FIXME: rearrange order; condensation distinct from diff_deaths?
-        if (diff_deaths) {
-            dd <- data.frame(dd,death=c(NA,diff(object[["D"]])))
-        } else {
-            dd <- data.frame(dd,D=object[["D"]])
-        }
-        ## keep foi ... might need it for future add_reports ...
-        dd <- data.frame(dd,foi=object[["foi"]])
-    }
-
+            ## keep susc and exposed classes
+            dd <- object["date"]
+            for (n in c("S","E")) {
+                dd <- add_col(dd,n,paste0("^",n))
+            }
+            dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
+            for (n in c("H", "hosp","ICU","R")) {
+                dd <- add_col(dd,n,paste0("^",n))
+            }
+            ## FIXME: rearrange order; condensation distinct from diff_deaths?
+            if (diff_deaths) {
+                tot_deaths <- rowSums(object[grepl("^D",names(object))])
+                dd <- data.frame(dd,death=c(NA,diff(tot_deaths)))
+            } else {
+                dd <- add_col(dd,"D","^D")
+            }
+            ## keep foi ... might need it for future add_reports ...
+            dd <- data.frame(dd,foi=object[["foi"]])
+        }  ## not keep_all
+    } ## already condensed
     if (add_reports &&
         !("report" %in% names(object))  ## don't add reports if already there ...
         ) {
-        if (!"c_delay_mean" %in% names(params)) {
-            warning("add_reports requested but delay parameters missing")
-        } else {
-            if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-            cr <- calc_reports(object,params, add_cumrep=cum_reports)
-            dd <- data.frame(dd, cr)
+            if (!"c_delay_mean" %in% names(params)) {
+                warning("add_reports requested but delay parameters missing")
+            } else {
+                if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
+                if (!"S" %in% names(dd)) {
+                    stop("can't currently compute reports without condensing S first")
+                }
+                cr <- calc_reports(dd,params, add_cumrep=cum_reports)
+                dd <- data.frame(dd, cr)
+            }
+        } ## add_reports
+        if (het_S) {
+            dd$hetS <- (dd$S/params[["N"]])^(1+params[["zeta"]])
         }
-    } ## add_reports
-    if (het_S) {
-        dd$hetS <- (dd$S/params[["N"]])^(1+params[["zeta"]])
-    }
-    dd <- put_attr(dd,aa)
-    return(dd)
+        dd <- put_attr(dd,aa)
+        return(dd)
 }
 
 ##' Temporal aggregation of pansim objects
