@@ -223,7 +223,12 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_exponential=FALSE) {
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
+	 if (any(grepl("_t$",names(state)))){
+	 ratemat["S_u","E_u"] <- ratemat["S_p","E_p"] <- ratemat["S_t","E_t"] <- ratemat["S_n","E_n"] <- update_foi(state,params,make_betavec(state,params))
+	 }
+	 else{
     ratemat["S","E"] <- update_foi(state,params,make_betavec(state,params))
+	 }
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -341,11 +346,14 @@ run_sim <- function(params
     }
     if (length(stoch_start)==1) stoch_start <- c(obs=stoch_start, proc=stoch_start)
     date_vec <- seq(start_date,end_date,by=dt)
-    state0 <- state
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
+    if(ratemat_args$testify == TRUE){
+    state <- 	
+    }
+    state0 <- state
     params0 <- params ## save baseline (time-0) values
     ## no explicit switches, and (no process error) or (process error for full time)
     if (is.null(params_timevar) && (!stoch[["proc"]] || is.null(stoch_start))) {
@@ -630,7 +638,7 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                foi[[i]] <- update_foi(state, params, attr(M,"beta_vec"))
+                foi[[i]] <- update_foi(state, params, make_betavec(state, params))
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }
