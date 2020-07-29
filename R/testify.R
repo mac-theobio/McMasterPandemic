@@ -39,17 +39,22 @@ expand_states <- function(x) {
 
 ## used inside make_state to expand states and values
 expand_stateval <- function(x) {
+		## FIXME: we need integers in do_step, should we do a round?
 		new_states <- rep(x,each=4)/4
    	names(new_states) <- unlist(lapply(names(x),function(x) paste0(x,c("_u","_p","_n","_t"))))
    	return(new_states)
    }
 
 
-testify <- function(ratemat,wtsvec,posvec,omega, debug=FALSE){
+testify <- function(ratemat,params,debug=FALSE){
 	# wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
 	# truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)
 	# Assuming false positive/negative is (1-trueprob)
 	# omega is waiting time for tests to be returned
+	wtsvec <- make_test_wtsvec(params)
+	posvec <- make_test_posvec(params)
+	omega <- params[["omega"]]
+	
 	M <- ratemat
    states <- rownames(ratemat)
    ## testifiable vars will get expanded

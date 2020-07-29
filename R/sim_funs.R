@@ -121,7 +121,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##'   image(Matrix(make_ratemat(state,params)))
 ##' }
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
+make_ratemat <- function(state, params, do_ICU=TRUE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- hosp <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
@@ -173,16 +173,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE,testify=FALSE) {
             ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
-    if(testify){
-    	## create wts and pos vector
-    	wtsvec <- make_test_wtsvec(params)
-		posvec <- make_test_posvec(params)
-		testify_M <- testify(M,wtsvec,posvec,omega=omega)
-    	attr(testify_M,"testify_base") <- M
-    	return(testify_M)
-    }
-    attr(M,"beta_vec") <- make_betavec(state,params)
-    
     return(M)
 }
 
@@ -349,9 +339,12 @@ run_sim <- function(params
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
-    M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
-    if(ratemat_args$testify == TRUE){
-    state <- 	
+    M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    if(!is.null(ratemat_args)){
+    	if(ratemat_args$testify == TRUE){
+	 M <- testify(M,params)
+    state <- expand_stateval(state)
+    	}
     }
     state0 <- state
     params0 <- params ## save baseline (time-0) values
@@ -530,7 +523,8 @@ make_state <- function(N=params[["N"]],
                        state_names=NULL,
                        use_eigvec=!is.null(params),
                        params=NULL,
-                       x=NULL) {
+                       x=NULL,
+							  testify=FALSE) {
     ## select vector of state names
     state_names <- switch(type,
                           ## hosp is a hospital-admissions compartment; "X" is a junk compartment
@@ -565,7 +559,6 @@ make_state <- function(N=params[["N"]],
     }
     untestify_state <- state
     class(state) <- "state_pansim"
-    attr(state,"testify") <- expand_stateval(state)
     return(state)
 }
 
@@ -622,11 +615,11 @@ run_sim_range <- function(params
     } else {
         ## set up output
         foi <- rep(NA,nt)
-        res <- matrix(NA, nrow=nt, ncol=length(state),
+        res <- matrix(NA, nrow=nt, ncol=length(colnames(M)),
                       dimnames=list(time=seq(nt),
-                                    state=names(state)))
+                                    state=colnames(M)))
         ## initialization
-        res[1,] <- state
+        res[1,names(state)] <- state
         foi[[1]] <- update_foi(state,params, make_betavec(state, params))
         ## loop
         if (nt>1) {
