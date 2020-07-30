@@ -95,12 +95,11 @@ explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/on
 ######################################################################
 ## Ali: run_sim, simple no stochasticity
 
+ali_simple_run1.makeR.script:
 ali_simple_run1.Rout: ali_simple_run1.R
 	$(makeR)
 
 ######################################################################
-
-
 
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'

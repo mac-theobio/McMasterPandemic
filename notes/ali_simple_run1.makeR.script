@@ -1,0 +1,1 @@
+R --vanilla --args ali_simple_run1.Rout ali_simple_run1.R < ali_simple_run1.R > ali_simple_run1.Rout
