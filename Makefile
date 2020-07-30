@@ -36,6 +36,12 @@ break_test.Rout: notes/break_test.R
 
 ######################################################################
 
+## Ali calibration
+
+tests/test_calibrate.Rout: tests/test_calibrate.R
+
+######################################################################
+
 subdirs += ontario notes
 
 Ignore += $(subdirs)
