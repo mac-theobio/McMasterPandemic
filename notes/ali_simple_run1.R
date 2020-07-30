@@ -1,13 +1,13 @@
 # Goal: to setup 10 simulations and fit each with natural spline, 
 # using log_beta0 transformation, no stochasticity, (whatelse?)
 
-
-
 library(McMasterPandemic)
 library(tidyverse)
 library(anytime)
 library(bbmle)
 library(parallel)
+
+source("makestuff/makeRfuns.R")
 
 # #######################################################
 # run_params
@@ -35,19 +35,8 @@ state1 <- make_state(params=params)
 start_date <- anydate("2020-01-01")
 end_date <- anydate("2020-03-31") 
 
-
 res1 <- run_sim(params=params, state=state1, start_date=start_date, end_date=end_date)
 summary(res1)
 
-
-
-
-
-
-
-
-
-
-
-
+saveVars(res1)
 
