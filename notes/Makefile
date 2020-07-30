@@ -93,6 +93,14 @@ alt_cal.Rout:  ../ontario/ontario_calibration.RData ../ontario/ontario_calibrati
 explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/ontario_calibration_noICU_2brks_prior.RData explore_ontcal.R
 
 ######################################################################
+## Ali: run_sim, simple no stochasticity
+
+ali_simple_run1.Rout: test_calibration_spline1.R
+	$(run-R)
+
+######################################################################
+
+
 
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
@@ -124,3 +132,18 @@ makestuff/Makefile:
 -include makestuff/git.mk
 -include makestuff/visual.mk
 -include makestuff/projdir.mk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
