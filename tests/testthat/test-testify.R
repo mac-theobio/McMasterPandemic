@@ -46,7 +46,9 @@ test_that("condensation is OK", {
     sim0_testified_condensed <- run_sim(params = pp,
                                         ratemat_args = list(testify=TRUE))
     expect_equal(names(sim0_testified_condensed),
-                 c("date", "S", "E", "I", "H", "hosp",
-                   "ICU", "R", "death", "foi", 
-                   "incidence", "report", "cumRep", "D"))
+                 c("date", "S", "E", "I", "H", "hosp", "ICU", "R",
+                   "death", "D", 
+                   "negtest", "N", "postest", "P",
+                   "foi", "incidence", "report", 
+                   "cumRep"))
 })

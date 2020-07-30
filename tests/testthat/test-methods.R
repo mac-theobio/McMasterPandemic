@@ -24,8 +24,8 @@ test_that("basic aggregation", {
     expect_error(condense(s,junk=TRUE), "unknown arguments")
     expect_equal(dim(c1),c(62,14))
     expect_equal(names(c1),
-                 c("date", "S", "E", "I", "H", "hosp", "ICU", "R", "death", "foi",
-                   "incidence", "report", "cumRep","D"))
+                 c("date", "S", "E", "I", "H", "hosp", "ICU", "R", "death", "D",
+                   "foi", "incidence", "report", "cumRep"))
     expect_error(aggregate(s,junk=TRUE), "unknown arguments")
     a1 <- aggregate(condense(s), start="12-Feb-2020", period="7 days",
                     FUN=list(mean=c("H","ICU","I"),

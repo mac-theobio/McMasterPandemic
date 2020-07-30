@@ -163,12 +163,16 @@ condense.pansim <-  function(object, add_reports=TRUE,
             for (n in c("H", "hosp","ICU","R")) {
                 dd <- add_col(dd,n,paste0("^",n))
             }
-            ## FIXME: rearrange order; condensation distinct from diff_deaths?
-            if (diff_deaths) {
-                tot_deaths <- rowSums(object[grepl("^D",names(object))])
-                dd <- data.frame(dd,death=c(NA,diff(tot_deaths)))
-            } else {
-                dd <- add_col(dd,"D","^D")
+            
+            diff_vars <- c(D="death",N="negtest",P="postest")
+            for (i in seq_along(diff_vars)) {
+                nm <- names(diff_vars)[i]
+                re <- paste0("^",nm)
+                if (any(grepl(re,names(object)))) {
+                    tot <- rowSums(object[grepl(re,names(object))])
+                    dd[[diff_vars[i]]] <- c(NA,diff(tot))
+                    dd <- add_col(dd,nm,re)
+                }
             }
             ## keep foi ... might need it for future add_reports ...
             dd <- data.frame(dd,foi=object[["foi"]])
