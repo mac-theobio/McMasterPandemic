@@ -209,9 +209,7 @@ run_shiny <- function(useBrowser = TRUE) {
                       value = FALSE),
         conditionalPanel(condition = "input.showAll",
                          ##Using names to avoid factors getting passed as inputs to textInput_param.
-                         lapply(names(read_params("ICU1.csv"))[1:15],
-                                FUN = textInput_param),
-                         lapply(names(read_params("ICU1.csv"))[16:length(names(read_params("ICU1.csv")))],
+                         lapply(names(read_params("ICU1.csv")),
                                 FUN = textInput_param))
       )
       )})
@@ -266,7 +264,20 @@ run_shiny <- function(useBrowser = TRUE) {
           }
         return(sim)
     })
-    output$plot <- renderPlot({
+    ##Set the plot width based on the length of the simulation.
+    getplotWidth <- function(){
+      if (is.null(input$sd) || is.null(input$ed)){
+        return(500)
+      }
+      else{
+        begining <- anytime::anydate(input$sd)
+        end <- anytime::anydate(input$ed)
+        range <- begining - end
+        return(range*50)
+      }
+    }
+    ##Dynamically adjust plot size based on the length of the simulation.
+    output$plot <- renderPlot(width = getplotWidth,{
         sim <- get_sim()
         ##Allow for process and observation error, set to zero by default.
         p <- plot(sim, drop_states = getDropStates())
@@ -366,9 +377,15 @@ run_shiny <- function(useBrowser = TRUE) {
             params <- update(params, proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError))
             }
           else {
-            }
-          data.frame("Symbol" = describe_params(summary(read_params("ICU1.csv")))$symbol, "Meaning" = describe_params(summary(read_params("ICU1.csv")))$meaning,"Value" = summary(params), "Unit" = c("1/day", "---", "days", "days"))
-        })
+          }
+          #Keep track of which params not to summarize.
+          dontSummaryParams <- summary(read_params("ICU1.csv"))[!names(summary(read_params("ICU1.csv"))) %in% c("r0", "R0", "Gbar", "dbl_time")]
+          params <- params[!names(params) %in% dontSummaryParams]
+          class(params) <- "params_pansim"
+          paramsReadnoCFR <- read_params("ICU1.csv")[!names(read_params("ICU1.csv")) %in% dontSummaryParams]
+          class(paramsReadnoCFR) <- "params_pansim"
+          data.frame("Symbol" = describe_params(summary(paramsReadnoCFR))$symbol, "Meaning" = describe_params(summary(paramsReadnoCFR))$meaning,"Value" = summary(params)[names(summary(params)) != "CFR_gen"], "Unit" = c("1/day", "---", "days", "days"))
+      })
         ##Plot beta(t)/gamma.
         output$Rtplot <- renderPlot({
           params <- makeParams()
@@ -471,17 +488,12 @@ run_shiny <- function(useBrowser = TRUE) {
           else{
             theVal <- loadParams(param)
           }
-          ##Both are instantiated to the value given in the file
-          return(list(
-            sliderInput(param,
-                        label = sliderLabel,
-                        value = theVal,
-                        min = 0,
-                        max = maxVal,
-                        step = 0.1),
-              textInput(inputId = paste(param, "_manual", sep = ""),
-                      label = paste0(param, ": Manual entry"),
-                      value = theVal)))
+          ##Both are instantiated to the value given in the file.
+          return(list(fluidRow(column(width = 10, renderText(sliderLabel)),
+                               column(width = 3, textInput(inputId = paste(param, "_manual", sep = ""),
+                                                label = "",
+                                                value = theVal))),
+                      sliderInput(param, label = "", value = theVal, min = 0, max = maxVal, step = 0.1)))
         }
         ##Use a pair of twin event observers to keep the values of the manual entry and sliders in sync.
         ##Using vectorized operations, for each param, check if either the slider or the text input has been changed, and if it has, adjust the other one to match.
@@ -564,6 +576,8 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         output$plotColumn <- renderUI({
           column(9,
+                 ##Set a default plot size and make the panel scrollable if a plot overflows.
+                 style = "max-width:500px, overflow-x: scroll;",
                  plotOutput("plot"),
                    plotOutput("Rtplot")
                  )
