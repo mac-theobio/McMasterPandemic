@@ -24,5 +24,6 @@ tst <- list(params = c(log_beta0 = 0.693147180559945), log_nb_disp = 4.605170185
 invlink_trans(tst)
 tst2 <- list(params=c(log_E0=1,log_beta0=1),log_nb_disp=c(H=0,report=0,death=0))
 invlink_trans(tst2)
-invlink_trans(c(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
+invlink_trans(list(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
+invlink_trans(list(time_beta=c(2,3),log_time_beta=c(a=0,b=0)))  ## 
 }

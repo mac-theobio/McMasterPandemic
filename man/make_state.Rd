@@ -31,6 +31,8 @@ to zero}
 \item{params}{parameter vector (looked in for N and E0)}
 
 \item{x}{proposed (named) state vector; missing values will be set}
+
+\item{testify}{expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?}
 }
 \description{
 retrieve parameters from a CSV file

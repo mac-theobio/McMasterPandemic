@@ -1,22 +1,28 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
+
+
+##' make weights vector for tests
+##'
+##' @param params parameter vector
+##' 
 ##' @examples
-##' library(McMasterPandemic)
-##' p <- read_params("PHAC_testify.csv")
-##' state <- make_state(params=p, testify=TRUE)
-##' wtsvec <- make_test_wtsvec(p)
-##' posvec <- make_test_posvec(p)
-##' ratemat <- make_ratemat(attr(state,"untestify"),p)
-##' betavec <- make_betavec(attr(state,"untestify"),p)
-##' tt <- testify(ratemat,wtsvec,posvec,omega=p[["omega"]],debug=TRUE)
-##' tt2 <- tt
+##' pp <- read_params("PHAC_testify.csv")
+##' state0 <- make_state(params=pp)   ## unexpanded
+##' state <- expand_stateval(state0)
+##' wtsvec <- make_test_wtsvec(pp)
+##' posvec <- make_test_posvec(pp)
+##' ## need to make_ratemate() with *unexpanded* state, then
+##' ##  expand it
+##' ratemat <- testify(make_ratemat(state0,pp), pp)
+##' betavec <- make_betavec(state,pp)
+##' tt2 <- ratemat
 ##' tt2[tt2>0] <- 1 ## make all edges == 1 
 ##' if (require(igraph)) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
 ##'    plot(g, layout=igraph::layout_nicely)
 ##' }
-##' 
-
+##' @export
 make_test_wtsvec <- function(params) {
     ## FIXME: why is this hard coded rather than pasted?
     wtscats <- c("WS","WE","WIa","WIp","WIm","WIs","WH","WH2","Whosp","WICUs","WICUd","WD","WR","WX")
@@ -24,6 +30,12 @@ make_test_wtsvec <- function(params) {
     return(wts_vec)
 }
 
+##' make vector of test positivity
+##'
+##' @rdname make_test_wtvec
+##'
+##' @param params parameter vector
+##' @export
 make_test_posvec <- function(params) {
     ## FIXME: why is this hard coded rather than pasted?
     poscats <- c("PS","PE","PIa","PIp","PIm","PIs","PH","PH2","Phosp","PICUs","PICUd","PD","PR","PX")
@@ -37,7 +49,13 @@ expand_states <- function(x) {
     new_states <- c(paste0(x,c("_u","_p","_n","_t")), "N", "P")
 }
 
-## used inside make_state to expand states and values
+##' expand states and values to include
+##'
+##' @param x state vector
+##' @param method method for distributing values across new (expanded) states
+##' @param add_accum add N and P (neg/pos test) accumulator categories?
+##' 
+##' @export
 expand_stateval <- function(x, method=c("untested","spread"),
                             add_accum=TRUE) {
     method <- match.arg(method)
@@ -59,6 +77,11 @@ expand_stateval <- function(x, method=c("untested","spread"),
 }
 
 
+##' expand rate matrix for testing status
+##' @param ratemat original rate matrix
+##' @param params parameters
+##' @param debug what it sounds like
+##' @export
 testify <- function(ratemat,params,debug=FALSE){
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)

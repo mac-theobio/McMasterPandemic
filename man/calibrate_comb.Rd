@@ -99,8 +99,9 @@ if (require(dplyr)) {
   dd <- ont_all \%>\% trans_state_vars() \%>\%
        filter(var \%in\% c("H","report"))
  params <- read_params("ICU1.csv")
+ ## quick and dirty example (maximize speed)
  calibrate_comb(data=dd, params=params,
                use_spline=TRUE,
-              maxit=10, skip.hessian=TRUE)
+              maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
 }
 }

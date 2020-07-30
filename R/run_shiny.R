@@ -73,6 +73,7 @@ defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-05
 ##' @importFrom directlabels direct.label
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
 ##' @importFrom shinyWidgets prettyCheckbox setBackgroundColor
+##' @importFrom utils write.csv
 ##' @return NULL
 ##' @export
 run_shiny <- function(useBrowser = TRUE) {
@@ -141,7 +142,7 @@ run_shiny <- function(useBrowser = TRUE) {
 #Everything else.
   server <- function(input, output, session){
     ## non-standard eval; circumvent 'no visible binding' check
-    x <- Date <- Symbol <- Relative_value <- NULL
+    x <- Date <- Symbol <- Relative_value <- Rt <- NULL
     ##Render the tab panel server-side to force tab changes the way we'd like, and give us the load-edit functionality we're after.
     output$maintabPanel <- renderUI({
       tabsetPanel(

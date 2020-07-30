@@ -31,5 +31,5 @@ run with log-linear model applied to beta
 }
 \examples{
 params <- read_params("ICU1.csv")
-run_sim_loglin(params, extra_pars
+## UNFINISHED
 }

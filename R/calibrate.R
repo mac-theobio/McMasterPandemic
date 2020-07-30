@@ -96,7 +96,7 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
 ##' run with log-linear model applied to beta
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' run_sim_loglin(params, extra_pars
+##' ## UNFINISHED
 ##' @inheritParams run_sim_break
 ##' @export
 run_sim_loglin <- function(params,

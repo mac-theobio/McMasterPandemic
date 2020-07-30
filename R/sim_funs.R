@@ -66,6 +66,12 @@ make_jac <- function(params, state=NULL) {
     return(M)
 }
 
+##' construct vector of transmission multipliers
+##' @param state state vector
+##' @param params parameter vector
+##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
+##' @param testify expand to allow for testing status?
+##' @export
 make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     Icats <- c("Ia","Ip","Im","Is")
     ## NB meaning of iso_* has switched from Stanford model
@@ -509,6 +515,7 @@ run_sim <- function(params
 ##' @param x proposed (named) state vector; missing values will be set
 ##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
 ##'     to zero
+##' @param testify expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
 ##' @export
@@ -524,7 +531,7 @@ make_state <- function(N=params[["N"]],
                        use_eigvec=!is.null(params),
                        params=NULL,
                        x=NULL,
-							  testify=FALSE) {
+                       testify=FALSE) {
     ## select vector of state names
     state_names <- switch(type,
                           ## hosp is a hospital-admissions compartment; "X" is a junk compartment

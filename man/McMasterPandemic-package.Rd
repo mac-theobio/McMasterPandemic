@@ -63,4 +63,9 @@ Authors:
   \item Jonathan Dushoff
 }
 
+Other contributors:
+\itemize{
+  \item Zach Levine [contributor]
+}
+
 }
