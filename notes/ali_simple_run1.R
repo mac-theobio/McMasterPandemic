@@ -1,7 +1,7 @@
 # Goal: to setup 10 simulations and fit each with natural spline, 
 # using log_beta0 transformation, no stochasticity, (whatelse?)
 
-rm(list = ls(all.names = TRUE))
+
 
 library(McMasterPandemic)
 library(tidyverse)
