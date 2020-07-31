@@ -40,3 +40,7 @@ summary(res1)
 
 saveVars(res1)
 
+plot(res1,log=TRUE)
+
+echo "end"
+
