@@ -14,6 +14,7 @@ calibrate_comb(
   mob_logist_scale = NA,
   spline_days = 14,
   spline_setback = 0,
+  spline_extrap = c("linear", "constant"),
   spline_df = NA,
   knot_quantile_var = NA,
   spline_pen = 0,
@@ -64,6 +65,8 @@ specified scale.}
 (this implies \emph{linear} extrapolation after knots if \code{spline_type="ns"} is specified,
 which is probably wise)}
 
+\item{spline_extrap}{spline extrapolation model ("linear" or "constant")}
+
 \item{spline_df}{overall spline degrees of freedom}
 
 \item{knot_quantile_var}{variable to use cum dist for knotspacing}
@@ -112,6 +115,7 @@ if (require(dplyr)) {
               use_spline=TRUE,
               spline_type="ns",
               spline_setback=14,
+              spline_extrap="constant",
               return_X=TRUE),
     ylab="")
 }

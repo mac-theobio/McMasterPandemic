@@ -834,6 +834,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
 ##' @param spline_pen penalization for spline
 ##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
+##' @param spline_extrap spline extrapolation model ("linear" or "constant")
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_spline include spline?
@@ -856,6 +857,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'               use_spline=TRUE,
 ##'               spline_type="ns",
 ##'               spline_setback=14,
+##'               spline_extrap="constant",
 ##'               return_X=TRUE),
 ##'     ylab="")
 ##' }
@@ -871,6 +873,7 @@ calibrate_comb <- function(data,
                      mob_logist_scale=NA,
                      spline_days=14,
                      spline_setback=0,
+                     spline_extrap=c("linear","constant"),
                      spline_df=NA,
                      knot_quantile_var=NA,
                      spline_pen=0,
@@ -887,6 +890,7 @@ calibrate_comb <- function(data,
                      debug=FALSE,
                      return_X=FALSE,
                      ...) {
+    spline_extrap <- match.arg(spline_extrap)
     t_vec <- value <- NULL ## global var check
     ## choose variables
     if (!is.null(vars)) {
@@ -1001,6 +1005,13 @@ calibrate_comb <- function(data,
         )
     }
     X <- model.matrix(form, data = X_dat)
+    if (use_spline && spline_setback>0 && spline_extrap=="constant") {
+        spline_cols <- grep(paste0(spline_type,"("), fixed=TRUE, colnames(X))
+        last_t <- max(X_dat$t_vec)-spline_setback
+        X[X_dat$t_vec>last_t,spline_cols] <- matrix(rep(X[X_dat$t_vec==last_t,], spline_setback),
+                                                     ncol=length(spline_cols),
+                                                     byrow=TRUE)
+    }
     if (return_X) return(X)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
