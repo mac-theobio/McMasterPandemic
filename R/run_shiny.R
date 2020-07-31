@@ -56,7 +56,7 @@ default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
 timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
-defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-01-20", "2020-02-20", "2020-03-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
+defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-03-20", "2020-04-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -157,7 +157,7 @@ run_shiny <- function(useBrowser = TRUE) {
         textOutput("trmsg"),
         br(),
         br(),
-        textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-05-20, 2020-07-02", value = "2020-02-20, 2020-05-20, 2020-07-02"),
+        textInput("timeParsDates", label = "Dates of changes, separated by commas", placeholder = "2020-02-20, 2020-03-20, 2020-04-02", value = "2020-02-20, 2020-03-20, 2020-04-02"),
         textInput("timeParsSymbols", label = "Parameter to change on each date", placeholder = "beta0, beta0, alpha", value = "beta0, beta0, alpha"),
         textInput("timeParsRelativeValues", label = "Relative change on each date", placeholder = "1, 1, 1", value = "1, 1, 1"),
         plotOutput("paramsPlot")
