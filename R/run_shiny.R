@@ -56,8 +56,7 @@ default.parameter.file <- "ICU1.csv"
 default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
 timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
-defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-05-20", "2020-07-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
-
+defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-01-20", "2020-02-20", "2020-03-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -74,6 +73,7 @@ defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-05
 ##' @importFrom scales log10_trans trans_breaks trans_format math_format
 ##' @importFrom shinyWidgets prettyCheckbox setBackgroundColor
 ##' @importFrom utils write.csv
+##' @importFrom graphics plot
 ##' @return NULL
 ##' @export
 run_shiny <- function(useBrowser = TRUE) {
@@ -104,28 +104,29 @@ run_shiny <- function(useBrowser = TRUE) {
       sidebarLayout(
         sidebarPanel(id = "sidebar", width = 4,
           fluidRow(
-            column(3,
               selectInput("fn",
-                               label = "Default parameter file:",
+                               label = "Step one: parameter file:",
                                choices = parameter.files, selected = default.parameter.file),
-              fileInput("uploadData", "Use custom file"),
-              downloadButton("downloadData", "Sample", class = "dbutton")
+            downloadButton("downloadData", "Download sample", class = "dbutton"),
+          fileInput("uploadData", "Upload custom")
+          ),
+          fluidRow(
+              textOutput("checkButtonTitle"),
+              uiOutput("plotTogglePanel")
+          ),
+          fluidRow(
+              dateInput(inputId = "sd",
+                        label = "Start Date",
+                        value = default.start.date,
+                        min = "2020-01-01",
+                        max = "2030-11-31"),
+              uiOutput("endDate")),
+          fluidRow(
+            column(4,
+                  textOutput("summaryTitle"),
+                  tableOutput("summary")
+                  )
             ),
-              column(7, textOutput("summaryTitle")),
-            fluidRow(
-              column(6,
-                     tableOutput("summary")))),
-          fluidRow(
-            column(5,
-                   textInput("sd", "Simulation Start Date (yyyy-mm-dd)",
-                             value = default.start.date)),
-            column(5,
-                   textInput("ed", "Simulation End Date  (yyyy-mm-dd)",
-                             value = "2020-08-01"))),
-          fluidRow(
-            textOutput("checkButtonTitle")),
-          fluidRow(
-            column(3, uiOutput("plotTogglePanel"))),
           ## Only show the selector to input parameters if that's selected.
           uiOutput("maintabPanel"),
           ##Colour the checkboxes to match the curves in the plot.
@@ -572,9 +573,14 @@ run_shiny <- function(useBrowser = TRUE) {
           curves <- as.vector(colnames(defsim)[2:length(defsim)])
           ##Ignore curves that we're never going to show.
           curves <- setdiff(curves, c("t","S","E","I","X"))
-            column(2,
-                 lapply(curves,
-                        FUN = checkButton_curve))
+            list(
+              column(5,
+                   lapply(curves[1:5],
+                          FUN = checkButton_curve)),
+              column(5,
+                     lapply(curves[5:length(curves)],
+                            FUN = checkButton_curve))
+              )
         }
         output$plotColumn <- renderUI({
           column(9,
@@ -632,6 +638,18 @@ run_shiny <- function(useBrowser = TRUE) {
         output$errorExplanations <- renderText({"Use these options to simulate noise in the data. The observation error parameter is the dispersion parameter for a negative binomial distribution. A suitable value could be 200.
           The process dispersion parameter adds gamma white noise to the event rates by pulling from a multinomial distribution. A reasonable value for process dispersion is 0.5"})
         output$checkButtonTitle <- renderText({"Curves"})
+        ##EndDate is the name of the ui object, "ed" is the name of the input slot to store the end date in.
+        ##We make this reactive so we can use the input start date as the minimum value for the end date.
+        observe({
+          output$endDate <- renderUI({
+            dateInput(inputId = "ed",
+                      label = "End date",
+                      value = toString(anytime::anydate(input$sd) + 30*5),
+                      min = toString(anytime::anydate(input$sd) + 1),
+                      max = toString(anytime::anydate(input$sd) + 5*365)
+                      )}
+            )
+        })
   }
 
   ##Set the viewing options first.
