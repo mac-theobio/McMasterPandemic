@@ -1,4 +1,5 @@
 
+## utility for fix_pars: adjust specified set of parameters by a specified amount
 adjust_params <- function(log_delta,
                           pars_adj=list("beta0",
                                         c("sigma","gamma_s","gamma_m","gamma_a")),
@@ -9,7 +10,7 @@ adjust_params <- function(log_delta,
     return(params)
 }
 
-## 
+## utility for fix_pars: define an objective function for uniroot()
 uniroot_target <- function(log_delta, params, target, pars_adj) {
     p_new <- adjust_params(log_delta, pars_adj=pars_adj, params)
     val <- switch(names(target),
@@ -20,6 +21,8 @@ uniroot_target <- function(log_delta, params, target, pars_adj) {
 }
 
 
+## objective function for fix_pars if we are trying to adjust multiple parameters simultaneously
+## (i.e. we minimize sum of squares of the *vector* of deviations from target for all the parameters)
 badness <- function(delta, params, target, pars_adj) {
     p_new <- adjust_params(delta, params, pars_adj=pars_adj)
     s_new <- rep(NA,length(target))
@@ -825,6 +828,9 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'     specified scale.
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom
+##' @param spline_setback days before end of time series to set boundary knots for spline
+##' (this implies \emph{linear} extrapolation after knots if \code{spline_type="ns"} is specified,
+##' which is probably wise)
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
 ##' @param spline_pen penalization for spline
 ##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
@@ -846,6 +852,12 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'  calibrate_comb(data=dd, params=params,
 ##'                use_spline=TRUE,
 ##'               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
+##'  matplot(calibrate_comb(data=dd, params=params,
+##'               use_spline=TRUE,
+##'               spline_type="ns",
+##'               spline_setback=14,
+##'               return_X=TRUE),
+##'     ylab="")
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
@@ -858,6 +870,7 @@ calibrate_comb <- function(data,
                      mob_breaks_int=FALSE,
                      mob_logist_scale=NA,
                      spline_days=14,
+                     spline_setback=0,
                      spline_df=NA,
                      knot_quantile_var=NA,
                      spline_pen=0,
@@ -941,8 +954,9 @@ calibrate_comb <- function(data,
         if (is.na(spline_df)) {
             spline_df <- round(length(X_dat$t_vec)/spline_days)
         }
+        knot_args <- "t_vec"
         if (is.na(knot_quantile_var)) {
-            spline_term <- sprintf("%s(t_vec,df=spline_df)",spline_type)
+            knot_args <- c(knot_args, "df=spline_df")
         } else {
             ## df specified: pick (df-degree) knots
             knot_dat <- (filter(data,var==knot_quantile_var)
@@ -953,8 +967,26 @@ calibrate_comb <- function(data,
             ## find closest dates to times with these cum sums
             knot_t_vec <- with(knot_dat,approx(cum,t_vec,xout=q_vec,ties=mean))$y
             cat("knots:",knot_t_vec,sep="\n","\n")
-            spline_term <- sprintf("bs(t_vec,knots=knot_t_vec)")
+            knot_args <- c(knot_args, "knots=knot_t_vec")
         }
+        if (spline_setback>0) {
+
+            ## this makes the spline extrapolate linearly for the last (spline_setback) days of the time series,
+            ## in a reasonably elegant way, if we use spline_type="ns"
+            ##
+            ## if we want to work harder and make the spline component *constant* up to (spline_setback) days
+            ## before the end of the data we will have to hack more.
+            ##
+            ## strategy: take the generated model matrix and, for the columns corresponding to the spline basis,
+            ## replace the last (spline_setback-1) rows with row (nt-spline_setback)
+            ## 
+            ## This has a slightly bad interaction with the specification of the number/placement of knots
+            ## (i.e. we should probably allocate and place knots on the basis of the shortened time series as well),
+            ##  but too horrible to think about for right now ... so we will end up with slightly fewer knots
+            knot_args <- c(knot_args, sprintf("Boundary.knots=c(min(t_vec),max(t_vec)-spline_setback)"))
+        }
+        spline_term <- sprintf("%s(%s)",spline_type,paste(knot_args,collapse=","))
+
         loglin_terms <- c(loglin_terms, spline_term)
     }
     form <- reformulate(loglin_terms)
