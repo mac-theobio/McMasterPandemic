@@ -111,6 +111,7 @@ if (require(dplyr)) {
  matplot(calibrate_comb(data=dd, params=params,
               use_spline=TRUE,
               spline_type="ns",
+              ylab="",
               spline_setback=14,
               return_X=TRUE))
 }

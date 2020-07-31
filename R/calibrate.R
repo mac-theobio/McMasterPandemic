@@ -855,6 +855,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'  matplot(calibrate_comb(data=dd, params=params,
 ##'               use_spline=TRUE,
 ##'               spline_type="ns",
+##'               ylab="",
 ##'               spline_setback=14,
 ##'               return_X=TRUE))
 ##' }
@@ -969,6 +970,19 @@ calibrate_comb <- function(data,
             knot_args <- c(knot_args, "knots=knot_t_vec")
         }
         if (spline_setback>0) {
+
+            ## this makes the spline extrapolate linearly for the last (spline_setback) days of the time series,
+            ## in a reasonably elegant way, if we use spline_type="ns"
+            ##
+            ## if we want to work harder and make the spline component *constant* up to (spline_setback) days
+            ## before the end of the data we will have to hack more.
+            ##
+            ## strategy: take the generated model matrix and, for the columns corresponding to the spline basis,
+            ## replace the last (spline_setback-1) rows with row (nt-spline_setback)
+            ## 
+            ## This has a slightly bad interaction with the specification of the number/placement of knots
+            ## (i.e. we should probably allocate and place knots on the basis of the shortened time series as well),
+            ##  but too horrible to think about for right now ... so we will end up with slightly fewer knots
             knot_args <- c(knot_args, sprintf("Boundary.knots=c(min(t_vec),max(t_vec)-spline_setback)"))
         }
         spline_term <- sprintf("%s(%s)",spline_type,paste(knot_args,collapse=","))
