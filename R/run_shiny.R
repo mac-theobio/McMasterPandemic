@@ -578,7 +578,7 @@ run_shiny <- function(useBrowser = TRUE) {
                    lapply(curves[1:5],
                           FUN = checkButton_curve)),
               column(5,
-                     lapply(curves[5:length(curves)],
+                     lapply(curves[6:length(curves)],
                             FUN = checkButton_curve))
               )
         }
