@@ -855,9 +855,9 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'  matplot(calibrate_comb(data=dd, params=params,
 ##'               use_spline=TRUE,
 ##'               spline_type="ns",
-##'               ylab="",
 ##'               spline_setback=14,
-##'               return_X=TRUE))
+##'               return_X=TRUE),
+##'     ylab="")
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
