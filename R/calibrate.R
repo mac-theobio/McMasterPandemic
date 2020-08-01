@@ -120,6 +120,7 @@ run_sim_loglin <- function(params,
     timevar <- NULL
     if (length(time_beta)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
+        ## FIXME:: get rid of anydate() ?
         timevar <- dfs(Date=anydate(X_date),
                        Symbol="beta0",
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
@@ -878,6 +879,7 @@ calibrate_comb <- function(data,
                      knot_quantile_var=NA,
                      spline_pen=0,
                      spline_type="bs",
+                     testing_data=NULL,
                      maxit=10000,
                      skip.hessian=FALSE,
                      use_DEoptim=TRUE,
@@ -885,6 +887,7 @@ calibrate_comb <- function(data,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
                      use_spline=TRUE,
+                     use_testing=FALSE,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
@@ -1003,6 +1006,10 @@ calibrate_comb <- function(data,
             ##  spline knots out there ...)
             %>% mutate_at("rel_activity",fill_edge_values)
         )
+    }
+    if (use_testing) {
+        X_dat <- full_join(X_dat,testing_data,by="date")
+        ## FIXME: fill_edge_values? need to refill rel_activity edges again if date ranges differ?
     }
     X <- model.matrix(form, data = X_dat)
     if (use_spline && spline_setback>0 && spline_extrap=="constant") {

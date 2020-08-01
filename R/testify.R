@@ -8,16 +8,19 @@
 ##' 
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
-##' state0 <- make_state(params=pp)   ## unexpanded
+##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
+##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval(state0)
 ##' wtsvec <- make_test_wtsvec(pp)
 ##' posvec <- make_test_posvec(pp)
 ##' ## need to make_ratemate() with *unexpanded* state, then
 ##' ##  expand it
-##' ratemat <- testify(make_ratemat(state0,pp), pp)
+##' ratemat <- testify(make_ratemat(state1,pp), pp)
 ##' betavec <- make_betavec(state,pp)
 ##' tt2 <- ratemat
-##' tt2[tt2>0] <- 1 ## make all edges == 1 
+##' tt2[tt2>0] <- 1 ## make all edges == 1
+##' Matrix::image(Matrix(tt2))
+##' heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 ##' if (require(igraph)) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
 ##'    plot(g, layout=igraph::layout_nicely)
@@ -28,6 +31,9 @@ make_test_wtsvec <- function(params) {
     wtscats <- c("WS","WE","WIa","WIp","WIm","WIs","WH","WH2","Whosp","WICUs","WICUd","WD","WR","WX")
     wts_vec <- with(as.list(params),setNames(c(WS,WE,WIa,WIp,WIm,WIs,WH,WH2,Whosp,WICUs,WICUd,WD,WR,WX),wtscats))
     return(wts_vec)
+}
+
+update_testflows <- function(state, params, wts_vec) {
 }
 
 ##' make vector of test positivity
@@ -106,7 +112,7 @@ testify <- function(ratemat,params,debug=FALSE){
                  , dimnames=list(from=new_states,to=new_states)
                    )
 
-    expand_set <- setdiff(new_states, c("N","P"))
+    expand_set <- setdiff(states, c("D","R","X"))
 	
    ## Between states
     for(i in rownames(ratemat)){
@@ -120,8 +126,8 @@ testify <- function(ratemat,params,debug=FALSE){
                 new_M[paste0(i,"_t"),paste0(j,"_t")] <- M[i,j]
                 new_M[paste0(i,"_p"),paste0(j,"_p")] <- M[i,j] 
                 new_M[paste0(i,"_n"),paste0(j,"_n")] <- M[i,j]
-         }
-		}
+            }
+        }
 	new_M[paste0(i,"_u"),paste0(i,"_p")] <- wtsvec[paste0("W",i)]*(posvec[paste0("P",i)])
 	new_M[paste0(i,"_u"),paste0(i,"_n")] <- wtsvec[paste0("W",i)]*(1-posvec[paste0("P",i)])
 	new_M[paste0(i,"_n"),paste0(i,"_u")] <- new_M[paste0(i,"_n"),"N"] <- omega

@@ -1,0 +1,74 @@
+---
+title: "visualizing rate matrices"
+---
+
+Let's examine different ways to compute and visualize rate matrices.
+
+```{r pkgs, message=FALSE}
+library(McMasterPandemic)
+library(igraph)
+library(Matrix)
+library(diagram)
+```
+
+Regular rate matrix.
+
+```{r}
+pp <- read_params("PHAC_testify.csv")
+state1 <- make_state(params=pp)   ## construct state vector
+state1[] <- 1  ## occupy all states so all possible arrows are >0
+M1 <- make_ratemat(state1,pp)
+M1[M1>0] <- 1 ## set all edges==1 (edge scaling etc.)
+g <- igraph::graph_from_adjacency_matrix(M1)
+plot(g, layout=igraph::layout_as_tree)
+```
+
+This looks OK, except for the fact that the layout is *slightly* funky; with `layout_as_tree` the positioning depends only on the number of steps from the source (`S`). More complex layouts could get messier, and there's not really any automatic layout algorithm that works satisfactorily (I've also tried `layout_nicely` and `layout_with_graphopt`.)
+
+As matrix.  `heatmap` (with `Rowv=NA`, `Colv=NA`, `scale="none"`) is probably the quickest way to get a labelled matrix, but the `image` method from `Matrix` is probably slightly better.
+
+```{r}
+## ?Matrix::image-methods
+mfun <- function(M, aspect="iso") {
+    Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
+                                 y=list(at=seq(ncol(M)),labels=colnames(M))),
+                  xlab="to",
+                  ylab="from",
+                  sub="",
+                  aspect=aspect)
+}
+mfun(M1)
+```
+
+As diagram. This isn't right, and definitely needs more tweaking, but is in principle the prettiest version.  (We can also change the adjacency matrix to include symbolic definitions of *per capita* flows.)
+(Why aren't H, ICUs, ICUd lined up vertically ??? Does plotmat force positions to let arrows work??)
+
+```{r}
+xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,hosp=6,D=7,R=7,X=7)
+ypos <- c(S=1,E=1,Ia=1,Ip=2,Im=2,Is=3,H=3,ICUs=4,ICUd=5,H2=4,hosp=6,D=5,R=1,X=4)
+pos <- cbind(xpos,ypos)/8
+M1d <- M1[names(xpos),names(xpos)] ## reorder ... does that matter?
+plotmat(t(M1d),pos=pos,name=colnames(M1),box.size=0.02, add=FALSE)
+```
+
+## test-based version
+
+```{r}
+Mt <- testify(make_ratemat(state1,pp), pp)
+Mt[Mt>0] <- 1
+```
+
+We can plot with igraph, but we can't see anything ...
+
+```{r}
+gt <- igraph::graph_from_adjacency_matrix(Mt)
+plot(gt, layout=igraph::layout_with_graphopt)
+```
+
+Much better if we use a matrix. (Stretch aspect ratio a little to make more room for labels.)
+
+```{r fig.width=20,fig.height=10}
+mfun(Mt,aspect=0.5)
+```
+
+
