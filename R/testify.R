@@ -19,7 +19,9 @@
 ##' betavec <- make_betavec(state,pp)
 ##' tt2 <- ratemat
 ##' tt2[tt2>0] <- 1 ## make all edges == 1
-##' Matrix::image(Matrix(tt2))
+##' if (require(Matrix)) {
+##'     Matrix::image(Matrix(tt2))
+##' }
 ##' heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 ##' if (require(igraph)) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
