@@ -9,6 +9,8 @@ library(McMasterPandemic)
 library(igraph)
 library(Matrix)
 library(diagram)
+library(latticeExtra) ## layer()
+library(lattice)
 ```
 
 Regular rate matrix.
@@ -70,5 +72,28 @@ Much better if we use a matrix. (Stretch aspect ratio a little to make more room
 ```{r fig.width=20,fig.height=10}
 mfun(Mt,aspect=0.5)
 ```
+
+Checking a little more carefully by zooming in:
+
+```{r fig.width=10,fig.height=10}
+w <- which(rownames(Mt)=="Is_t")
+(mfun(Mt[1:w,1:w])
+    ## lines delineating blocks
+    + layer(panel.abline(h=4.5+seq(0,20,by=4),col=2))
+    + layer(panel.abline(v=4.5+seq(0,20,by=4),col=2))
+)
+```
+
+We could do this with Kronecker products!
+
+```{r fig.width=10,fig.height=10}
+(mfun(Mt[(w+1):nrow(Mt),(w+1):nrow(Mt)])
+    ## lines delineating blocks
+    + layer(panel.abline(h=4.5+seq(0,28,by=4),col=2))
+    + layer(panel.abline(v=4.5+seq(0,28,by=4),col=2))
+)
+```
+
+We can see that this is not quite working yet because `D`, `R`, and `X` compartments are not receiving input!
 
 
