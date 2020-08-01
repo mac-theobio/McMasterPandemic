@@ -836,8 +836,10 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param spline_pen penalization for spline
 ##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
 ##' @param spline_extrap spline extrapolation model ("linear" or "constant")
+##' @param testing_data data frame with dates and testing intensity (STUB)
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
+##' @param use_testing include variation in testing intensity? (STUB)
 ##' @param use_spline include spline?
 ##' @param vars which vars to use? (default is all in data)
 ##' @param return_X short-circuit/return model matrix?

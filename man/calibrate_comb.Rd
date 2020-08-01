@@ -19,6 +19,7 @@ calibrate_comb(
   knot_quantile_var = NA,
   spline_pen = 0,
   spline_type = "bs",
+  testing_data = NULL,
   maxit = 10000,
   skip.hessian = FALSE,
   use_DEoptim = TRUE,
@@ -26,6 +27,7 @@ calibrate_comb(
   use_mobility = FALSE,
   use_phenomhet = FALSE,
   use_spline = TRUE,
+  use_testing = FALSE,
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
@@ -75,6 +77,8 @@ which is probably wise)}
 
 \item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
 
+\item{testing_data}{data frame with dates and testing intensity (STUB)}
+
 \item{maxit}{maximum iterations for Nelder-Mead/optimization step}
 
 \item{skip.hessian}{skip Hessian calculation?}
@@ -88,6 +92,8 @@ which is probably wise)}
 \item{use_phenomhet}{include phenomenological heterogeneity?}
 
 \item{use_spline}{include spline?}
+
+\item{use_testing}{include variation in testing intensity? (STUB)}
 
 \item{vars}{which vars to use? (default is all in data)}
 

@@ -14,16 +14,19 @@ make weights vector for tests
 }
 \examples{
 pp <- read_params("PHAC_testify.csv")
-state0 <- make_state(params=pp)   ## unexpanded
+state1 <- state0 <- make_state(params=pp)   ## unexpanded
+state1[] <- 1  ## occupy all states
 state <- expand_stateval(state0)
 wtsvec <- make_test_wtsvec(pp)
 posvec <- make_test_posvec(pp)
 ## need to make_ratemate() with *unexpanded* state, then
 ##  expand it
-ratemat <- testify(make_ratemat(state0,pp), pp)
+ratemat <- testify(make_ratemat(state1,pp), pp)
 betavec <- make_betavec(state,pp)
 tt2 <- ratemat
-tt2[tt2>0] <- 1 ## make all edges == 1 
+tt2[tt2>0] <- 1 ## make all edges == 1
+Matrix::image(Matrix(tt2))
+heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 if (require(igraph)) {
    g <- igraph::graph_from_adjacency_matrix(tt2)
    plot(g, layout=igraph::layout_nicely)
