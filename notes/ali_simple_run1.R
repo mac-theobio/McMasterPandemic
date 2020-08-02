@@ -11,21 +11,11 @@ source("makestuff/makeRfuns.R")
 
 # #######################################################
 # run_params
-# setwd('\\\\wsl$\\Ubuntu\\home\\ali\\projects\\McMasterPandemic\\inst\\params')
-
-# use_true_start <- TRUE
-# use_cut <- TRUE
-# nsim <- 1 # for now to check
-# options(mc.cores=1)
+# options(mc.cores=8)
 
 ## setup 
-# params <- fix_pars(read_params("PHAC.csv"), target=c(R0=3, Gbar=6))
 params <- fix_pars(read_params("../inst/params/PHAC.csv"), target=c(R0=3, Gbar=6))
-# params[["beta0"]] <- 0.9   ## slightly rounded for convenience
-# params[["obs_disp"]] <- 100 ## BMB: less noise
-# params[["N"]] <- 1e8
 summary(params) 
-
 print(params)
 
 # set_initial_state
@@ -39,8 +29,6 @@ res1 <- run_sim(params=params, state=state1, start_date=start_date, end_date=end
 summary(res1)
 
 saveVars(res1)
-
 plot(res1,log=TRUE)
 
-echo "end"
 
