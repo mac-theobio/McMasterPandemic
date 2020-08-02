@@ -20,5 +20,21 @@ ff <- calibrate_comb(data=dd, params=params,
                      return="formula")
 ## environment is already loaded
 summary(environment(ff)$X_dat$t_vec)
+##
+ddr <- (filter(dd, var=="report")
+    %>% tidyr::drop_na(value)
+    %>% mutate(t_vec=as.numeric(date-min(date)))
+)
 
+m <- lm(ff2, data=ddr)  ## coefficients are
+pred <- X %*% coef(m)
+plot(pred)
 
+bb <- coef(m)/250
+pred2 <- X %*% bb
+plot(pred2)
+
+run_sim_loglin(params=params,
+               extra_pars=list(time_beta=bb),
+               time_args=list(X_date=unique(dd$date), X=X)
+               )
