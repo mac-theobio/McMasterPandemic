@@ -54,3 +54,4 @@ Phosp,1, probability of positive in hosp,,,
 PICUs,1, probability of positive in ICUs,
 PICUd,1,probability of positive in ICUd,
 omega,1,waiting time for tests to be returned,,,
+testing_intensity,0.001,tests per capita paper day

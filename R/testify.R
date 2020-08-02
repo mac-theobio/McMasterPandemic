@@ -96,6 +96,7 @@ testify <- function(ratemat,params,debug=FALSE){
     ## Assuming false positive/negative is (1-trueprob)
     ## omega is waiting time for tests to be returned
     wtsvec <- make_test_wtsvec(params)
+    wtsvec <- wtsvec/sum(wtsvec) ## FIXME: where should we assume this normalization gets done?
     posvec <- make_test_posvec(params)
     omega <- params[["omega"]]
 	
@@ -106,9 +107,9 @@ testify <- function(ratemat,params,debug=FALSE){
 
    ## Following page 8 L137 in McMasterReport2020-07-06.pdf 
     ## expand_set <- c("S","E","Ia","Ip","Im","Is","H","H2","hosp","ICUs","ICUd","D","R","X")
-    expand_set <- setdiff(states, c("D","R","X")) 
-    ## If these are not expandable, we need to get rid of WD, WR, WX, PD, PR, PX
     non_expand_set <- c("D","R","X")
+    expand_set <- setdiff(states, non_expand_set)
+    ## If these are not expandable, we need to get rid of WD, WR, WX, PD, PR, PX
     ## non_expand_set <- c("P","N") ## adding P and N for accumulation
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
     new_states <- names(expand_stateval(dummy_states))
@@ -130,18 +131,18 @@ testify <- function(ratemat,params,debug=FALSE){
                 new_M[paste0(i,"_p"),paste0(j,"_p")] <- M[i,j] 
                 new_M[paste0(i,"_n"),paste0(j,"_n")] <- M[i,j]
             }
-        		if((i %in% expand_set) && (j %in% non_expand_set)){
-        			 new_M[paste0(i,"_u"),j] <- M[i,j]
-        			 new_M[paste0(i,"_t"),j] <- M[i,j]
-        			 new_M[paste0(i,"_p"),j] <- M[i,j]
-        			 new_M[paste0(i,"_n"),j] <- M[i,j]
-        		}
+            if((i %in% expand_set) && (j %in% non_expand_set)){
+                new_M[paste0(i,"_u"),j] <- M[i,j]
+                new_M[paste0(i,"_t"),j] <- M[i,j]
+                new_M[paste0(i,"_p"),j] <- M[i,j]
+                new_M[paste0(i,"_n"),j] <- M[i,j]
+            }
         }
-   	if(i %in% expand_set){
-			new_M[paste0(i,"_u"),paste0(i,"_p")] <- wtsvec[paste0("W",i)]*(posvec[paste0("P",i)])
-			new_M[paste0(i,"_u"),paste0(i,"_n")] <- wtsvec[paste0("W",i)]*(1-posvec[paste0("P",i)])
-			new_M[paste0(i,"_n"),paste0(i,"_u")] <- new_M[paste0(i,"_n"),"N"] <- omega
-			new_M[paste0(i,"_p"),paste0(i,"_t")] <- new_M[paste0(i,"_p"),"P"] <- omega
+   	if (i %in% expand_set){
+            new_M[paste0(i,"_u"),paste0(i,"_p")] <- testing_intensity*wtsvec[paste0("W",i)]*(posvec[paste0("P",i)])
+            new_M[paste0(i,"_u"),paste0(i,"_n")] <- testing_intensity*wtsvec[paste0("W",i)]*(1-posvec[paste0("P",i)])
+            new_M[paste0(i,"_n"),paste0(i,"_u")] <- testing_intensity*new_M[paste0(i,"_n"),"N"] <- omega
+            new_M[paste0(i,"_p"),paste0(i,"_t")] <- testing_intensity*new_M[paste0(i,"_p"),"P"] <- omega
    	}
     }
     return(new_M)
