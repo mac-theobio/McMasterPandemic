@@ -9,8 +9,15 @@ pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp)
 state_testified <- expand_stateval(state)
 
+lfun <- function(x,newstates,fixedstates) {
+	newstates*(length(x)-fixedstates)+fixedstates
+}
+
+## fixedstates are D,R,X
+lfun(state,newstates=4,fixedstates=3)
+
 test_that("testified states make sense", {
-    expect_equal(length(state_testified), 4*length(state)+2)
+    expect_equal(length(state_testified), lfun(state,newstates=4,fixedstates=3)+2)
     expect_equal(sort(unique(gsub("_.*$","",names(state_testified)))),
                  c(sort(c("N","P",names(state)))))
 })
@@ -52,3 +59,4 @@ test_that("condensation is OK", {
                    "foi", "incidence", "report", 
                    "cumRep"))
 })
+

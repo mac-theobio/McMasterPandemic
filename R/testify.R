@@ -71,7 +71,7 @@ expand_stateval <- function(x, method=c("untested","spread"),
     new_states <- rep(0,length(newnames))
     names(new_states) <- newnames
     if (method=="untested") {
-        new_states[paste0(names(x),"_u")] <- x
+        new_states[paste0(setdiff(names(x),non_expanded),"_u")] <- x[setdiff(names(x),non_expanded)]
     } else {
         ## slightly fragile: depends on ordering
         n_expand <- length(extensions)
