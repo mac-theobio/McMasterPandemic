@@ -28,7 +28,18 @@ end_date <- anydate("2020-03-31")
 res1 <- run_sim(params=params, state=state1, start_date=start_date, end_date=end_date)
 summary(res1)
 
-saveVars(res1)
+# saveVars(res1) #doesn't work for now?
 plot(res1,log=TRUE)
+
+# look at ./rshape.R and find out the description of Rt that fits here. 
+R0 <- summary(res1)$R0
+(res1$R)
+res1$date
+
+
+
+
+
+
 
 

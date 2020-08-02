@@ -2,7 +2,7 @@
 title: "time-series analysis of growth rates"
 author: "Ben Bolker"
 date: "`r format(Sys.time(),'%d %b %Y')`"
-
+output: pdf_document
 ---
 
 ```{r opts, include=FALSE}
