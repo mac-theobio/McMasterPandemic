@@ -4,7 +4,12 @@
 \alias{expand_stateval}
 \title{expand states and values to include}
 \usage{
-expand_stateval(x, method = c("untested", "spread"), add_accum = TRUE)
+expand_stateval(
+  x,
+  method = c("untested", "spread"),
+  add_accum = TRUE,
+  non_expanded = c("R", "D", "X")
+)
 }
 \arguments{
 \item{x}{state vector}
@@ -12,6 +17,8 @@ expand_stateval(x, method = c("untested", "spread"), add_accum = TRUE)
 \item{method}{method for distributing values across new (expanded) states}
 
 \item{add_accum}{add N and P (neg/pos test) accumulator categories?}
+
+\item{non_expanded}{states that should \emph{not} be expanded into testing categorieso}
 }
 \description{
 expand states and values to include

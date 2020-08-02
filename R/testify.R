@@ -10,7 +10,7 @@
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
-##' state <- val(state0)
+##' state <- expand_stateval(state0)
 ##' wtsvec <- make_test_wtsvec(pp)
 ##' posvec <- make_test_posvec(pp)
 ##' ## need to make_ratemate() with *unexpanded* state, then
@@ -60,11 +60,11 @@ make_test_posvec <- function(params) {
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
-##' 
+##' @param non_expanded states that should \emph{not} be expanded into testing categorieso
 ##' @export
 expand_stateval <- function(x, method=c("untested","spread"),
                             add_accum=TRUE,
-									 non_expanded = c("R","D","X")){
+                            non_expanded = c("R","D","X")){
     method <- match.arg(method)
     extensions <- c("u","p","n","t")
     newnames <- unlist(lapply(setdiff(names(x),non_expanded), paste, extensions, sep="_"))
@@ -99,7 +99,8 @@ testify <- function(ratemat,params,debug=FALSE){
     wtsvec <- wtsvec/sum(wtsvec) ## FIXME: where should we assume this normalization gets done?
     posvec <- make_test_posvec(params)
     omega <- params[["omega"]]
-	
+    testing_intensity <- params[["testing_intensity"]]
+    
     M <- ratemat  ## FIXME: why two names?
     states <- rownames(ratemat)
     ## testifiable vars will get expanded

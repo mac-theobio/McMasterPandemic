@@ -31,7 +31,7 @@ calibrate_comb(
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
-  return_X = FALSE,
+  return_val = c("fit", "X", "formula"),
   ...
 )
 }
@@ -77,7 +77,7 @@ which is probably wise)}
 
 \item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
 
-\item{testing_data}{data frame with dates and testing intensity (STUB)}
+\item{testing_data}{data frame with dates (Date) and testing intensity (intensity) (= tests per capita per day)}
 
 \item{maxit}{maximum iterations for Nelder-Mead/optimization step}
 
@@ -93,7 +93,7 @@ which is probably wise)}
 
 \item{use_spline}{include spline?}
 
-\item{use_testing}{include variation in testing intensity? (STUB)}
+\item{use_testing}{include variation in testing intensity?}
 
 \item{vars}{which vars to use? (default is all in data)}
 
@@ -101,7 +101,7 @@ which is probably wise)}
 
 \item{debug}{print debugging messages?}
 
-\item{return_X}{short-circuit/return model matrix?}
+\item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
 
 \item{...}{extra args}
 }
@@ -117,12 +117,19 @@ if (require(dplyr)) {
  calibrate_comb(data=dd, params=params,
                use_spline=TRUE,
               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
- matplot(calibrate_comb(data=dd, params=params,
+X <-  calibrate_comb(data=dd, params=params,
               use_spline=TRUE,
               spline_type="ns",
-              spline_setback=14,
+              spline_setback=1,
               spline_extrap="constant",
-              return_X=TRUE),
-    ylab="")
+              return_val="X")
+matplot(X, ylab="")
+form <-  calibrate_comb(data=dd, params=params,
+              use_spline=TRUE,
+              spline_type="ns",
+              spline_setback=1,
+              spline_extrap="constant",
+              return_val="formula")
+print(form)
 }
 }

@@ -15,7 +15,7 @@ X1 <- calibrate_comb(ont_recent_nt,
                mob_data=comb_sub,
                use_spline=FALSE,
                mob_breaks="2020-04-15",
-               return_X=TRUE)
+               return="X")
 matplot(X1,type="l",lty=1)
 
 ## 1 break, 2 intercepts (= 1 in model matrix), piecewise
@@ -29,7 +29,7 @@ X2 <- calibrate_comb(ont_recent_nt,
                use_spline=FALSE,
                mob_breaks="2020-04-15",
                mob_breaks_int=TRUE,
-               return_X=TRUE)
+               return="X")
 matplot(X2,type="l",lty=1)
 
 ## 1 break, single intercept, logistic
@@ -44,7 +44,7 @@ X3 <- calibrate_comb(ont_recent_nt,
                use_spline=FALSE,
                mob_breaks="2020-04-15",
                mob_logist_scale=3,
-               return_X=TRUE)
+               return="X")
 matplot(X3,type="l",lty=1)
 
 
@@ -58,7 +58,7 @@ X4 <- calibrate_comb(ont_recent_nt,
                mob_breaks="2020-04-15",
                mob_logist_scale=3,
                mob_breaks_int=TRUE,
-               return_X=TRUE)
+               return="X")
 
 matplot(X4,type="l",lty=1)
 

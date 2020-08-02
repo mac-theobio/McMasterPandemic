@@ -845,7 +845,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param use_testing include variation in testing intensity?
 ##' @param use_spline include spline?
 ##' @param vars which vars to use? (default is all in data)
-##' @param return_X short-circuit/return model matrix?
+##' @param return_val  "fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct
 ##' @importFrom tidyr drop_na
@@ -859,13 +859,20 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'  calibrate_comb(data=dd, params=params,
 ##'                use_spline=TRUE,
 ##'               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
-##'  matplot(calibrate_comb(data=dd, params=params,
+##' X <-  calibrate_comb(data=dd, params=params,
 ##'               use_spline=TRUE,
 ##'               spline_type="ns",
-##'               spline_setback=14,
+##'               spline_setback=1,
 ##'               spline_extrap="constant",
-##'               return_X=TRUE),
-##'     ylab="")
+##'               return_val="X")
+##' matplot(X, ylab="")
+##' form <-  calibrate_comb(data=dd, params=params,
+##'               use_spline=TRUE,
+##'               spline_type="ns",
+##'               spline_setback=1,
+##'               spline_extrap="constant",
+##'               return_val="formula")
+##' print(form)
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
@@ -896,9 +903,10 @@ calibrate_comb <- function(data,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
-                     return_X=FALSE,
+                     return_val=c("fit","X","formula"),
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
+    return_val <- match.arg(return_val)
     t_vec <- value <- NULL ## global var check
     ## choose variables
     if (!is.null(vars)) {
@@ -998,7 +1006,6 @@ calibrate_comb <- function(data,
             knot_args <- c(knot_args, sprintf("Boundary.knots=c(min(t_vec),max(t_vec)-spline_setback)"))
         }
         spline_term <- sprintf("%s(%s)",spline_type,paste(knot_args,collapse=","))
-
         loglin_terms <- c(loglin_terms, spline_term)
     }
     form <- reformulate(loglin_terms)
@@ -1011,6 +1018,9 @@ calibrate_comb <- function(data,
             ##  spline knots out there ...)
             %>% mutate_at("rel_activity",fill_edge_values)
         )
+    }
+    if (return_val=="formula") {
+        return(form)
     }
     if (use_testing) {
         params <- update(params,test_intensity=testing_data$intensity[1])
@@ -1027,7 +1037,7 @@ calibrate_comb <- function(data,
                                                      ncol=length(spline_cols),
                                                      byrow=TRUE)
     }
-    if (return_X) return(X)
+    if (return_val=="X") return(X)
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     names(opt_pars$time_beta) <- colnames(X)
