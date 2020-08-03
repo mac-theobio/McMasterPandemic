@@ -9,6 +9,7 @@ print(simdat)
 
 gg <- (ggplot(simdat, aes(x=date,y=med, color=type))
 	+ geom_line()
+	+ geom_point(aes(shape=type))
    + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=type), alpha=0.3)
 	+ scale_color_manual(values=c("black","red"))
 	+ scale_fill_manual(values=c("black","red"))

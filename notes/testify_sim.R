@@ -12,21 +12,24 @@ set.seed(0802)
 nsims <- 20
 
 simdf <- function(sim){
-	sim0 <- (run_sim(params = pp) 
+	sim0 <- (run_sim(params = pp, end_date = "2020-06-15")
 		%>% mutate(sim = sim
 			, type="non_testify"
 			, negtest = NA  ## Adding extra columns to match testify frame
 			, N = NA
 			, prostest = NA
 			, P = NA 
-			)
+		)
 	)
-	sim_testify <- (run_sim(params = pp, ratemat_args = list(testify=TRUE)) 
+	sim_testify <- (
+		run_sim(
+			params = pp, ratemat_args = list(testify=TRUE)
+			, end_date = "2020-06-15"
+		) 
 		%>% mutate(sim = sim, type="testify")
 	)
 	return(bind_rows(sim0,sim_testify))
 }
-
 
 sim_summary <- function(nsims){
 	simframe <- bind_rows(lapply(seq(1,nsims),simdf))
@@ -45,4 +48,3 @@ sim_summary <- function(nsims){
 simdat <- sim_summary(nsims)
 
 saveVars(simdat)
-	
