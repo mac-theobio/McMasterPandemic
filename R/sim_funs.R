@@ -84,12 +84,12 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
-    if (has_testing(params)) {  ## testified!
+    if (has_testing(state=state)) {  ## testified!
         beta_vec0 <- rep(beta_vec0,each=4)
         names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,c("_u","_p","_n","_t"))))
         ## FIXME: also adjust _n, _p components?
         pos_vals <- grep("_t$",names(beta_vec0))
-        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*params$iso_p
+        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*params[["iso_p"]]
     }
     if (!full) return(beta_vec0)
     beta_vec <- setNames(numeric(length(state)),names(state))
@@ -194,9 +194,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params, beta_vec) {
     ## update infection rate
-	 if(length(state) != length(beta_vec)){
-             stop("length of state and beta_vec are not the same")
-	 }
+    if(length(state) != length(beta_vec)){
+        stop("length of state and beta_vec are not the same")
+    }
     foi <- sum(state*beta_vec)
     if (has_zeta(params)) {
         Susc <- sum(state[grep("^S_?",names(state))])
@@ -223,12 +223,8 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_exponential=FALSE) {
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
-	 if (any(grepl("_t$",names(state)))){
-	 ratemat["S_u","E_u"] <- ratemat["S_p","E_p"] <- ratemat["S_t","E_t"] <- ratemat["S_n","E_n"] <- update_foi(state,params,make_betavec(state,params))
-	 }
-	 else{
-    ratemat["S","E"] <- update_foi(state,params,make_betavec(state,params))
-	 }
+    ratemat[cbind(grep("^S",rownames(ratemat)),
+                  grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes

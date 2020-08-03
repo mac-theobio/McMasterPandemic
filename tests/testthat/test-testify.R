@@ -9,27 +9,31 @@ pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp)
 state_testified <- expand_stateval(state)
 
-lfun <- function(x,newstates,fixedstates) {
+lfun <- function(x,newstates=4,fixedstates=3) {
 	newstates*(length(x)-fixedstates)+fixedstates
 }
 
 ## fixedstates are D,R,X
-lfun(state,newstates=4,fixedstates=3)
+lfun(state)
 
 test_that("testified states make sense", {
-    expect_equal(length(state_testified), lfun(state,newstates=4,fixedstates=3)+2)
+    expect_equal(length(state_testified), lfun(state)+2)
     expect_equal(sort(unique(gsub("_.*$","",names(state_testified)))),
                  c(sort(c("N","P",names(state)))))
 })
 
-## Making beta_vec wtr states
+## Making beta_vec wtr states (infectious compartments only)
+beta_vec0 <- make_betavec(state,pp,full=FALSE)
+beta_vec0_testified <- make_betavec(state_testified,pp,full=FALSE)
+## full
 beta_vec <- make_betavec(state,pp)
 beta_vec_testified <- make_betavec(state_testified,pp)
 
 test_that("testified betas make sense", {
-    expect_equal(names(beta_vec_testified), names(state_testified))
-    expect_equal(sort(unique(beta_vec_testified)),
-                 sort(unique(beta_vec)))
+    ## test names of testified beta against I_
+    expect_equal(names(beta_vec0_testified), grep("^I[[:lower:]]",names(state_testified),value=TRUE))
+    expect_equal(unname(beta_vec0_testified[grepl("_u$",names(beta_vec0_testified))]),
+                 unname(beta_vec0))
 })
 
 test_that("catch state/beta mismatch", {
@@ -45,8 +49,9 @@ test_that("ratemat makes sense", {
 
 ## Updating FOI
 test_that("FOI doesn't change", {
-    expect_equal(update_foi(state,pp,beta_vec),
-                 update_foi(state_testified,pp,beta_vec_testified))
+    pp2 <- update(pp,iso_p=0)
+    expect_equal(update_foi(state,pp2,beta_vec),
+                 update_foi(state_testified,pp2,beta_vec_testified))
 })
 
 test_that("condensation is OK", {
