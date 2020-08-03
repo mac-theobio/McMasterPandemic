@@ -113,8 +113,8 @@ testify <- function(ratemat,params,debug=FALSE){
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
     new_states <- names(expand_stateval(dummy_states))
     
-   ns <- length(new_states)
-   new_M <- matrix(0,nrow=ns, ncol=ns
+	ns <- length(new_states)
+	new_M <- matrix(0,nrow=ns, ncol=ns
                  , dimnames=list(from=new_states,to=new_states)
                    )
    ## Between states
@@ -137,11 +137,16 @@ testify <- function(ratemat,params,debug=FALSE){
                 new_M[paste0(i,"_n"),j] <- M[i,j]
             }
         }
+
+		pn <- function(par, compartment=i) paste0(par, compartment)
+		sn <- function(state, compartment=i) paste0(compartment, "_", state)
    	if (i %in% expand_set){
-            new_M[paste0(i,"_u"),paste0(i,"_p")] <- testing_intensity*wtsvec[paste0("W",i)]*(posvec[paste0("P",i)])
-            new_M[paste0(i,"_u"),paste0(i,"_n")] <- testing_intensity*wtsvec[paste0("W",i)]*(1-posvec[paste0("P",i)])
-            new_M[paste0(i,"_n"),paste0(i,"_u")] <- new_M[paste0(i,"_n"),"N"] <- omega
-            new_M[paste0(i,"_p"),paste0(i,"_t")] <- new_M[paste0(i,"_p"),"P"] <- omega
+			new_M[sn("u"),sn("p")]
+				<- testing_intensity*wtsvec[pn("W")]*(posvec[pn("P")])
+			new_M[sn("u"),sn("n")]
+				<- testing_intensity*wtsvec[pn("W")]*(1-posvec[pn("P")])
+			new_M[sn("n"),sn("u")] <- omega
+			new_M[sn("p"),sn("t")] <- omega
    	}
     }
     return(new_M)

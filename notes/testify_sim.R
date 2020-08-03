@@ -1,5 +1,8 @@
-library(McMasterPandemic)
+## library(McMasterPandemic)
 library(tidyverse)
+library(devtools)
+
+load_all("../")
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
