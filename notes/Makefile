@@ -41,6 +41,10 @@ testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv
 testify_simplot.Rout: testify_simplot.R testify_sim.rda
 	$(makeR)
 
+## Testing a small devtools::test() glitch that BB did not reproduce
+chesterfield.Rout: chesterfield.R
+	$(makeR)
+
 ######################################################################
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
