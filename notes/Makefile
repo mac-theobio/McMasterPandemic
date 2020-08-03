@@ -34,6 +34,7 @@ explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 
 ## Testify sim
 
+Sources += ../inst/params/PHAC_testify.csv
 testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv
 	$(makeR)
 
