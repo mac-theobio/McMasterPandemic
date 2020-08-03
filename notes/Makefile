@@ -21,7 +21,7 @@ Sources += $(wildcard *.R) Makefile
 ## Playing with spline shapes
 
 rshape.Rout: rshape.R
-	$(run-R)
+	$(makeR)
 
 ######################################################################
 
