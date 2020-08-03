@@ -28,14 +28,15 @@
 ##' @export
 make_test_wtsvec <- function(params,var_names=NULL) {
     ## FIXME: do normalization here??
-    ## only need all_vars if we're going to set by asymp/symp
+    ## only need var_names if we're going to set by asymp/symp
     if (identical("W_asymp",grep("^W",names(params),value=TRUE))) {
+        W_asymp <- params[["W_asymp"]]
         ## one-parameter model: weights specified as (W_asymp, 1-W_asymp)
         asymp_cat <- c("S","E","Ia")
-        symp_cat <- setdiff(all_vars,asymp_cat)
+        symp_cat <- setdiff(var_names,asymp_cat)
         wts_vec <- setNames(rep(c(W_asymp,1-W_asymp),
                                 c(length(asymp_cat),length(symp_cat))),
-                            paste0("W",c(asymp_cat,sympcat)))
+                            paste0("W",c(asymp_cat,symp_cat)))
     } else {
         wts_vec <- params[grepl("^W",names(params))]
     }

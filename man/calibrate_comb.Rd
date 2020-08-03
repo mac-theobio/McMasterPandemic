@@ -77,7 +77,7 @@ which is probably wise)}
 
 \item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
 
-\item{testing_data}{data frame with dates (Date) and testing intensity (intensity) (= tests per capita per day)}
+\item{testing_data}{data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)}
 
 \item{maxit}{maximum iterations for Nelder-Mead/optimization step}
 

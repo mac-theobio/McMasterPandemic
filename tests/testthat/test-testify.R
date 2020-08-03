@@ -79,7 +79,7 @@ test_that("time-varying test intensity", {
     ## direct.label(p1,method="last.bumpup")
     pvars <- c("N","P","negtest","postest")
     expect_equal(unlist(tail(sim0_testified_timevar[,pvars],1)),
-        c(N = 1182.87578123141, P = 0.366875986940132,
-          negtest = 1.0070910316972, 
-          postest = 0.0579339243034916))
+                 c(N = 118.37323110557, P = 0.0368593389261526, negtest = 0.100766542663678, 
+                   postest = 0.00582728172702547))
+
 })

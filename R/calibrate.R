@@ -126,7 +126,7 @@ run_sim_loglin <- function(params,
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     }
     if ("testing_data" %in% names(time_args)) {
-        timevar <- rbind(timevar,testing_data)
+        timevar <- rbind(timevar,time_args$testing_data)
     }
     if (return_timevar) return(timevar)
     sim_args <- c(sim_args
@@ -839,7 +839,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param spline_pen penalization for spline
 ##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
 ##' @param spline_extrap spline extrapolation model ("linear" or "constant")
-##' @param testing_data data frame with dates (Date) and testing intensity (intensity) (= tests per capita per day)
+##' @param testing_data data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_testing include variation in testing intensity?
@@ -1025,9 +1025,10 @@ calibrate_comb <- function(data,
     if (use_testing) {
         params <- update(params,test_intensity=testing_data$intensity[1])
         ## set up in 'timevars' format (passed through run_sim_loglin to run_sim)
-        testing_data <- data.frame(Date=testing_data$Date,
-                                   Symbol="testing_intensity",
-                                   testing_intensity=c(1, intensity[-1]/intensity[1]))
+        testing_data <- with(testing_data,
+                             data.frame(Date=Date,
+                                        Symbol="testing_intensity",
+                                        testing_intensity=c(1, intensity[-1]/intensity[1])))
     }
     X <- model.matrix(form, data = X_dat)
     if (use_spline && spline_setback>0 && spline_extrap=="constant") {
