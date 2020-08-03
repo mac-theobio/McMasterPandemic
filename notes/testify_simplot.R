@@ -14,6 +14,7 @@ gg <- (ggplot(simdat, aes(x=date,y=med, color=type))
 	+ scale_fill_manual(values=c("black","red"))
 	+ facet_wrap(~var,scale="free",ncol=1)
 	+ scale_y_log10()
+	+ ylab("Daily count")
 )
 
 print(gg)
