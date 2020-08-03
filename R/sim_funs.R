@@ -72,6 +72,7 @@ make_jac <- function(params, state=NULL) {
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @param testify expand to allow for testing status?
 ##' @export
+## QUESTION: is the main testify argument to this function used?
 make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     Icats <- c("Ia","Ip","Im","Is")
     ## NB meaning of iso_* has switched from Stanford model

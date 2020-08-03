@@ -1,7 +1,5 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
-
-
 ##' make weights vector for tests
 ##'
 ##' @param params parameter vector
