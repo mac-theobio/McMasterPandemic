@@ -76,6 +76,15 @@ comb_calib.Rout: notes/comb_calib.R
 aggfuns.Rout: notes/aggfuns.R
 	$(run-R)
 
+######################################################################
+
+## Test before pushing 2020 Aug 03 (Mon) UNTESTED
+Ignore += dtest.log
+dtest:
+	env SKIP_SLOW_TESTS=true Rscript -e 'devtools::test()' > $@.log
+
+## Simple install
+
 lpackage:
 	R CMD INSTALL .
 
