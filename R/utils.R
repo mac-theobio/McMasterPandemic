@@ -514,3 +514,7 @@ getData <- function(x) {
 has_zeta <- function(params) {
     "zeta" %in% names(params) && params[["zeta"]]!=0
 }
+
+has_testing <- function(params) {
+    "testing_intensity" %in% names(params) && params[["testing_intensity"]]!=0
+}

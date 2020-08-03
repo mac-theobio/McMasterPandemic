@@ -84,9 +84,12 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
-    if (any(grepl("_t$",names(state)))) {  ## testified!
+    if (has_testing(params)) {  ## testified!
         beta_vec0 <- rep(beta_vec0,each=4)
         names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,c("_u","_p","_n","_t"))))
+        ## FIXME: also adjust _n, _p components?
+        pos_vals <- grep("_t$",names(beta_vec0))
+        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*params$iso_p
     }
     if (!full) return(beta_vec0)
     beta_vec <- setNames(numeric(length(state)),names(state))
