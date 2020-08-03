@@ -4,6 +4,8 @@ library(dplyr); theme_set(theme_bw())
 
 source("makestuff/makeRfuns.R")
 
+makeGraphics()
+
 fitmax <- 98
 t <- 1:122 #it was 140
 r <- 0.04
@@ -36,17 +38,8 @@ pts <- (ggplot(Rf)
 
 print(pts)
 
-print(pts 
-	+ geom_smooth(method=lm, formula = y~ns(x, 7))
-	+ ggtitle("natural spline")
-)
-
-print(pts 
-	+ geom_smooth(method=lm, formula = y~bs(x, 7))
-	+ ggtitle("B spline")
-)
-
 mod <- lm(Rt~bs(t,7),data=Rf)
+print(coef(mod))
 mod_nointercept <- update(mod, .~.-1)  
 print(coef(mod_nointercept) )
 
