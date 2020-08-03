@@ -205,6 +205,7 @@ update_foi <- function(state, params, beta_vec) {
     return(foi)
 }
 
+
 ##' Take a single simulation time step
 ##' @inheritParams make_ratemat
 ##' @param ratemat transition matrix
@@ -225,6 +226,7 @@ do_step <- function(state, params, ratemat, dt=1,
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat[cbind(grep("^S",rownames(ratemat)),
                   grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
+    
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -408,6 +410,7 @@ run_sim <- function(params
         resList <- list()
         for (i in seq(length(times)-1)) {
             for (j in which(switch_times==times[i])) {
+                ## reset all changing params
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
                 params[[s]] <- params0[[s]]*v
@@ -418,7 +421,20 @@ run_sim <- function(params
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
             }
-            ## M["S","E"] <- update_foi(state,params,attr(M,"beta_vec")) ## unnecessary?
+
+            ## update testing flows.
+            ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
+            if (has_testing(state)) {
+                u_pos <- grep("_u$",rownames(ratemat))
+                p_pos <- grep("_p$",rownames(ratemat))
+                n_pos <- grep("_n$",rownames(ratemat))
+                posvec <- attr(ratemat,"posvec")
+                wtsvec <- attr(ratemat,"wtsvec")
+                M[cbind(u_pos,n_pos)] <-
+                    M[cbind(u_pos,n_pos)]*wtsvec*(1-posvec)
+                M[cbind(u_pos,p_pos)] <-
+                    M[cbind(u_pos,n_pos)]*wtsvec*posvec
+            }
             resList[[i]] <- drop_last(
                 thin(ndt=ndt,
                      do.call(run_sim_range,

@@ -27,12 +27,8 @@
 ##' }
 ##' @export
 make_test_wtsvec <- function(params) {
-    ## FIXME: why is this hard coded rather than pasted?
-	 wts_vec <- params[grepl("W",names(params))]
+    wts_vec <- params[grepl("W",names(params))]
     return(wts_vec)
-}
-
-update_testflows <- function(state, params, wts_vec) {
 }
 
 ##' make vector of test positivity
@@ -42,9 +38,8 @@ update_testflows <- function(state, params, wts_vec) {
 ##' @param params parameter vector
 ##' @export
 make_test_posvec <- function(params) {
-    ## FIXME: why is this hard coded rather than pasted?
-   pos_vec <- params[grepl("P",names(params))]
-	return(pos_vec)
+    pos_vec <- params[grepl("P",names(params))]
+    return(pos_vec)
 }
 
 # ## use inside testify to expand states
@@ -138,14 +133,17 @@ testify <- function(ratemat,params,debug=FALSE){
             }
         }
 
-		pn <- function(par, compartment=i) paste0(par, compartment)
-		sn <- function(state, compartment=i) paste0(compartment, "_", state)
+        pn <- function(par, compartment=i) paste0(par, compartment)
+        sn <- function(state, compartment=i) paste0(compartment, "_", state)
+        
    	if (i %in% expand_set){
-			new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[pn("W")]*(posvec[pn("P")])
-			new_M[sn("u"),sn("n")] 	<- testing_intensity*wtsvec[pn("W")]*(1-posvec[pn("P")])
-			new_M[sn("n"),sn("u")] <- new_M[sn("n"),"N"] <- omega
-			new_M[sn("p"),sn("t")] <- new_M[sn("p"),"P"] <- omega
+            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[pn("W")]*(posvec[pn("P")])
+            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[pn("W")]*(1-posvec[pn("P")])
+            new_M[sn("n"),sn("u")] <- new_M[sn("n"),"N"] <- omega
+            new_M[sn("p"),sn("t")] <- new_M[sn("p"),"P"] <- omega
    	}
     }
+    attr(new_M,"wtsvec") <- wtsvec
+    attr(new_M,"posvec") <- posvec
     return(new_M)
 }
