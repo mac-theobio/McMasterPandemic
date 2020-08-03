@@ -9,7 +9,7 @@ pp <- read_params(matchFile(".csv$"))
 set.seed(0802)
 
 ## I don't think we get ensembles unless we have obs error??
-nsims <- 5
+nsims <- 1
 
 simdf <- function(sim,pars){
 	sim0 <- (run_sim(params = pars, end_date = "2020-06-15")

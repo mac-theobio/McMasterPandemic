@@ -3,8 +3,7 @@ library(dplyr)
 library(cowplot)
 
 source("makestuff/makeRfuns.R")
-commandEnvironments()
-makeGraphics()
+commandFiles()
 
 print(simdat)
 
@@ -24,7 +23,7 @@ ggdefault <- gg + theme(legend.position="none")
 
 ggwts <- (gg 
 	%+% simdatwts 
-	+ theme(legend.position="bottom") 
+	+ theme(legend.position="none") 
 	+ ggtitle("Different testing weights")
 )
 
