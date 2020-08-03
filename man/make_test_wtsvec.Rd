@@ -2,22 +2,29 @@
 % Please edit documentation in R/testify.R
 \name{make_test_wtsvec}
 \alias{make_test_wtsvec}
+\alias{make_test_posvec}
 \title{make weights vector for tests}
 \usage{
-make_test_wtsvec(params)
+make_test_wtsvec(params, var_names = NULL)
+
+make_test_posvec(params)
 }
 \arguments{
 \item{params}{parameter vector}
+
+\item{var_names}{variables names, \emph{in matching order to state vector/rate matrix}}
 }
 \description{
 make weights vector for tests
+
+make vector of test positivity
 }
 \examples{
 pp <- read_params("PHAC_testify.csv")
 state1 <- state0 <- make_state(params=pp)   ## unexpanded
 state1[] <- 1  ## occupy all states
 state <- expand_stateval(state0)
-wtsvec <- make_test_wtsvec(pp)
+wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),c("D","R","X")))
 posvec <- make_test_posvec(pp)
 ## need to make_ratemate() with *unexpanded* state, then
 ##  expand it

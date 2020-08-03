@@ -3,13 +3,13 @@
 ##' make weights vector for tests
 ##'
 ##' @param params parameter vector
-##' 
+##' @param var_names variables names, \emph{in matching order to state vector/rate matrix}
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval(state0)
-##' wtsvec <- make_test_wtsvec(pp)
+##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),c("D","R","X")))
 ##' posvec <- make_test_posvec(pp)
 ##' ## need to make_ratemate() with *unexpanded* state, then
 ##' ##  expand it
@@ -26,14 +26,31 @@
 ##'    plot(g, layout=igraph::layout_nicely)
 ##' }
 ##' @export
-make_test_wtsvec <- function(params) {
-    wts_vec <- params[grepl("W",names(params))]
+make_test_wtsvec <- function(params,var_names=NULL) {
+    ## FIXME: do normalization here??
+    ## only need all_vars if we're going to set by asymp/symp
+    if (identical("W_asymp",grep("^W",names(params),value=TRUE))) {
+        ## one-parameter model: weights specified as (W_asymp, 1-W_asymp)
+        asymp_cat <- c("S","E","Ia")
+        symp_cat <- setdiff(all_vars,asymp_cat)
+        wts_vec <- setNames(rep(c(W_asymp,1-W_asymp),
+                                c(length(asymp_cat),length(symp_cat))),
+                            paste0("W",c(asymp_cat,sympcat)))
+    } else {
+        wts_vec <- params[grepl("^W",names(params))]
+    }
+    wts_vec <- wts_vec/sum(wts_vec) ## FIXME: where should we assume this normalization gets done?
+    Wnames <- paste0("W",var_names)
+    if (!all(sort(names(wts_vec))==sort(Wnames))) {
+        stop("weights vector names should match var names")
+    }
+    wts_vec <- wts_vec[Wnames] ## reorder
     return(wts_vec)
 }
 
 ##' make vector of test positivity
 ##'
-##' @rdname make_test_wtvec
+##' @rdname make_test_wtsvec
 ##'
 ##' @param params parameter vector
 ##' @export
@@ -81,15 +98,17 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' expand rate matrix for testing status
 ##' @param ratemat original rate matrix
 ##' @param params parameters
+##' @param non_expand_set states \emph{not} to expand
 ##' @param debug what it sounds like
 ##' @export
-testify <- function(ratemat,params,debug=FALSE){
+testify <- function(ratemat,params,debug=FALSE,
+                    non_expand_set=c("D","R","X")) {
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)
     ## Assuming false positive/negative is (1-trueprob)
     ## omega is waiting time for tests to be returned
-    wtsvec <- make_test_wtsvec(params)
-    wtsvec <- wtsvec/sum(wtsvec) ## FIXME: where should we assume this normalization gets done?
+    wtsvec <- make_test_wtsvec(params, var_names=setdiff(rownames(ratemat),
+                                                         non_expand_set))
     posvec <- make_test_posvec(params)
     omega <- params[["omega"]]
     testing_intensity <- params[["testing_intensity"]]
@@ -101,7 +120,6 @@ testify <- function(ratemat,params,debug=FALSE){
 
    ## Following page 8 L137 in McMasterReport2020-07-06.pdf 
     ## expand_set <- c("S","E","Ia","Ip","Im","Is","H","H2","hosp","ICUs","ICUd","D","R","X")
-    non_expand_set <- c("D","R","X")
     expand_set <- setdiff(states, non_expand_set)
     ## If these are not expandable, we need to get rid of WD, WR, WX, PD, PR, PX
     ## non_expand_set <- c("P","N") ## adding P and N for accumulation

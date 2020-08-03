@@ -65,3 +65,21 @@ test_that("condensation is OK", {
                    "cumRep"))
 })
 
+
+test_that("time-varying test intensity", {
+    pt <- data.frame(Date=as.Date(c("2020-04-01","2020-04-15")),
+                     Symbol=rep("testing_intensity",2),
+                     Relative_value=c(0,4))
+    pp[["testing_intensity"]] <- 0.002
+    sim0_testified_timevar <- run_sim(params = pp,
+                                      ratemat_args = list(testify=TRUE),
+                                      params_timevar=pt)
+    ## library(directlabels)
+    p1 <- plot(sim0_testified_timevar,log=TRUE,log_lwr=1e-7)
+    ## direct.label(p1,method="last.bumpup")
+    pvars <- c("N","P","negtest","postest")
+    expect_equal(unlist(tail(sim0_testified_timevar[,pvars],1)),
+        c(N = 1182.87578123141, P = 0.366875986940132,
+          negtest = 1.0070910316972, 
+          postest = 0.0579339243034916))
+})

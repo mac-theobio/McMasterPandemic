@@ -425,15 +425,15 @@ run_sim <- function(params
             ## update testing flows.
             ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
             if (has_testing(state)) {
-                u_pos <- grep("_u$",rownames(ratemat))
-                p_pos <- grep("_p$",rownames(ratemat))
-                n_pos <- grep("_n$",rownames(ratemat))
-                posvec <- attr(ratemat,"posvec")
-                wtsvec <- attr(ratemat,"wtsvec")
+                u_pos <- grep("_u$",rownames(M))
+                p_pos <- grep("_p$",rownames(M))
+                n_pos <- grep("_n$",rownames(M))
+                posvec <- attr(M,"posvec")
+                wtsvec <- attr(M,"wtsvec")
                 M[cbind(u_pos,n_pos)] <-
                     M[cbind(u_pos,n_pos)]*wtsvec*(1-posvec)
                 M[cbind(u_pos,p_pos)] <-
-                    M[cbind(u_pos,n_pos)]*wtsvec*posvec
+                    M[cbind(u_pos,p_pos)]*wtsvec*posvec
             }
             resList[[i]] <- drop_last(
                 thin(ndt=ndt,

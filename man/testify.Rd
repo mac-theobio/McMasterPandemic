@@ -4,7 +4,7 @@
 \alias{testify}
 \title{expand rate matrix for testing status}
 \usage{
-testify(ratemat, params, debug = FALSE)
+testify(ratemat, params, debug = FALSE, non_expand_set = c("D", "R", "X"))
 }
 \arguments{
 \item{ratemat}{original rate matrix}
@@ -12,6 +12,8 @@ testify(ratemat, params, debug = FALSE)
 \item{params}{parameters}
 
 \item{debug}{what it sounds like}
+
+\item{non_expand_set}{states \emph{not} to expand}
 }
 \description{
 expand rate matrix for testing status
