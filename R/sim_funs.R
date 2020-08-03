@@ -379,7 +379,10 @@ run_sim <- function(params
         switch_dates <- params_timevar[["Date"]]
         ## match specified times with time sequence
         switch_times <- match(switch_dates, date_vec)
-        if (any(is.na(switch_times))) stop("non-matching dates in params_timevar")
+        if (any(is.na(switch_times))) {
+            bad <- which(is.na(switch_times))
+            stop("non-matching dates in params_timevar: ",paste(switch_dates[bad], collapse=","))
+        }
         if (any(switch_times==length(date_vec))) {
             ## drop switch times on final day (should we warn???)
             switch_times <- switch_times[switch_times<length(date_vec)]
