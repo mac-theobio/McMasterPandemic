@@ -14,6 +14,7 @@ dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "
 
 if (Sys.getenv("TRAVIS") != "true" &&
     Sys.getenv("SKIP_SLOW_TESTS") != "true") { ## too slow for Travis?
+    ## so, export SKIP_SLOW_TESTS=true   in the shell environment if you want to skip this test
     suppressWarnings(cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars,
                                           use_DEoptim=TRUE,
                                           DE_cores=1,
