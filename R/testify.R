@@ -143,8 +143,8 @@ testify <- function(ratemat,params,debug=FALSE){
    	if (i %in% expand_set){
 			new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[pn("W")]*(posvec[pn("P")])
 			new_M[sn("u"),sn("n")] 	<- testing_intensity*wtsvec[pn("W")]*(1-posvec[pn("P")])
-			new_M[sn("n"),sn("u")] <- omega
-			new_M[sn("p"),sn("t")] <- omega
+			new_M[sn("n"),sn("u")] <- new_M[sn("n"),"N"] <- omega
+			new_M[sn("p"),sn("t")] <- new_M[sn("p"),"P"] <- omega
    	}
     }
     return(new_M)
