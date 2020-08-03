@@ -41,6 +41,7 @@ testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv
 testify_simplot.Rout: testify_simplot.R testify_sim.rda
 	$(makeR)
 
+## 2020 Aug 03 (Mon)
 ## Testing a small devtools::test() glitch that BB did not reproduce
 chesterfield.Rout: chesterfield.R
 	$(makeR)
