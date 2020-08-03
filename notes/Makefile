@@ -32,6 +32,14 @@ explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 ## Structural pictures from Ben
 ## refactor.html: refactor.Rmd
 
+## Testify sim
+
+testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv
+	$(makeR)
+
+testify_simplot.Rout: testify_simplot.R testify_sim.rda
+	$(makeR)
+
 ######################################################################
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
