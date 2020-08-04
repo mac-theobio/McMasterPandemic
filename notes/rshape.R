@@ -7,9 +7,9 @@ source("makestuff/makeRfuns.R")
 makeGraphics()
 
 tmax <- 140
-fitmax <- 140 #not sure if we want fitmax (note fitmax<=tmax)
+fitmax <- 126 # (note fitmax<=tmax)
 
-t <- 1:tmax #it was 140
+t <- 1:tmax 
 r <- 0.04
 h <- 2
 R0 <- 3
@@ -41,11 +41,11 @@ Rf <- (Rf
 
 #to construct the logRt from lm:
 b <- bs(t,df=7)
-b <- as.matrix(cbind(rep(1, nrow(b)), b[,]))
+b <- as.matrix(cbind(rep(1, nrow(b)), b))
 aliP_bs <- b %*% matrix(co_bs,ncol=1)
 
 bns <- ns(t,df=7)
-bns <- as.matrix(cbind(rep(1, nrow(bns)), bns[,])) #insert col of 1 for intercept
+bns <- as.matrix(cbind(rep(1, nrow(bns)), bns)) #insert col of 1 for intercept
 aliP_ns <- bns %*% matrix(co_ns,ncol=1)
 
 print(ggplot(Rf)
@@ -55,3 +55,4 @@ print(ggplot(Rf)
 	+ geom_point(aes(t, aliP_bs), col="blue", shape=3)
 	+ geom_point(aes(t, aliP_ns), col="green", shape=5)
 )
+

@@ -37,6 +37,8 @@ R0 <- summary(res1)$R0
 res1$date
 
 
+# 
+
 
 
 
