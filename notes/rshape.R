@@ -18,20 +18,20 @@ c <- 2
 Q <- exp(r*t)
 S <- 1/(1+Q)
 I <- Q/(1+Q^2)
-Rt <- R0*S^h*I^(-c)
+logRt <- log(R0*S^h*I^(-c))
 
 Rf <- data.frame(
 	t=t
-	, Rt=ifelse(t>fitmax, NA, Rt)
+	, logRt=ifelse(t>fitmax, NA, logRt)
 )
 
 print(Rf)
 
-mod_bs <- lm(Rt~bs(t,df=7),data=Rf)
+mod_bs <- lm(logRt~bs(t,df=7),data=Rf)
 co_bs <- coef(mod_bs) 
 print(co_bs)
 
-mod_ns <- lm(Rt~ns(t,df=7),data=Rf)
+mod_ns <- lm(logRt~ns(t,df=7),data=Rf)
 co_ns <- coef(mod_ns) 
 print(co_ns)
 
@@ -39,7 +39,7 @@ Rf <- (Rf
 	%>% mutate(Rt_predict_bs = predict(mod_bs, newdata=Rf))
 )
 
-#to construct the Rt from lm:
+#to construct the logRt from lm:
 b <- bs(t,df=7)
 b <- as.matrix(cbind(rep(1, nrow(b)), b[,]))
 aliP_bs <- b %*% matrix(co_bs,ncol=1)
@@ -48,10 +48,8 @@ bns <- ns(t,df=7)
 bns <- as.matrix(cbind(rep(1, nrow(bns)), bns[,])) #insert col of 1 for intercept
 aliP_ns <- bns %*% matrix(co_ns,ncol=1)
 
-
-
 print(ggplot(Rf)
-	+ aes(t, Rt)
+	+ aes(t, logRt)
 	+ geom_line()
 	+ geom_point(aes(t,Rt_predict_bs), col="red", shape=1)
 	+ geom_point(aes(t, aliP_bs), col="blue", shape=3)
