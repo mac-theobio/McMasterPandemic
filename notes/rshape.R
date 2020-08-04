@@ -6,8 +6,8 @@ source("makestuff/makeRfuns.R")
 
 makeGraphics()
 
-tmax <- 112
-fitmax <- 98
+tmax <- 140
+fitmax <- 140 #not sure if we want fitmax (note fitmax<=tmax)
 
 t <- 1:tmax #it was 140
 r <- 0.04
@@ -27,22 +27,33 @@ Rf <- data.frame(
 
 print(Rf)
 
-mod <- lm(Rt~bs(t,df=7),data=Rf)
-co <- coef(mod) 
-print(co)
+mod_bs <- lm(Rt~bs(t,df=7),data=Rf)
+co_bs <- coef(mod_bs) 
+print(co_bs)
+
+mod_ns <- lm(Rt~ns(t,df=7),data=Rf)
+co_ns <- coef(mod_ns) 
+print(co_ns)
 
 Rf <- (Rf
-	%>% mutate(Rt_predict = predict(mod, newdata=Rf))
+	%>% mutate(Rt_predict_bs = predict(mod_bs, newdata=Rf))
 )
 
 #to construct the Rt from lm:
 b <- bs(t,df=7)
 b <- as.matrix(cbind(rep(1, nrow(b)), b[,]))
-aliP <- b %*% matrix(co,ncol=1)
+aliP_bs <- b %*% matrix(co_bs,ncol=1)
+
+bns <- ns(t,df=7)
+bns <- as.matrix(cbind(rep(1, nrow(bns)), bns[,])) #insert col of 1 for intercept
+aliP_ns <- bns %*% matrix(co_ns,ncol=1)
+
+
 
 print(ggplot(Rf)
 	+ aes(t, Rt)
 	+ geom_line()
-	+ geom_point(aes(t,Rt_predict), col="red", shape=1)
-	+ geom_point(aes(t, aliP), col="blue", shape=3)
+	+ geom_point(aes(t,Rt_predict_bs), col="red", shape=1)
+	+ geom_point(aes(t, aliP_bs), col="blue", shape=3)
+	+ geom_point(aes(t, aliP_ns), col="green", shape=5)
 )
