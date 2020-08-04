@@ -6,7 +6,7 @@ source("makestuff/makeRfuns.R")
 
 makeGraphics()
 
-fitmax <- 98
+fitmax <- 98 #98
 t <- 1:122 #it was 140
 r <- 0.04
 h <- 2
@@ -29,17 +29,37 @@ Rf <- (Rf
 
 print(Rf)
 
-pts <- (ggplot(Rf)
-	+ aes(t, Rt)
-	+ geom_point()
-	+ xlim(range(t))
-	+ ylim(c(0, NA))
+
+
+
+
+mod <- lm(Rt~bs(t,df=7),data=Rf)
+cmod <- coef(mod) 
+print(cmod)
+
+t_sub <- t[t %in% c(1:fitmax)]
+
+Rf <- (Rf
+       %>% mutate (Rt_predict=ifelse(t>fitmax, NA, predict(mod, data=t_sub ) ))
 )
 
-print(pts)
+pts <- (ggplot(Rf)
+        + aes(t, Rt)
+        + geom_point()
+        +geom_line(aes(t,Rt_predict), col="red")
+        + xlim(range(t))
+        + ylim(c(0, NA))
+)
+print(pts) 
+ 
 
-mod <- lm(Rt~bs(t,7),data=Rf)
-print(coef(mod))
-mod_nointercept <- update(mod, .~.-1)  
+#to construct the Rt from lm:
+b <- bs(t,df=7)
+length(b[,1])
+plot(t, as.matrix(cbind(rep(1,length(t)) ,b[,])) %*% matrix(cmod,ncol=1))
+
+# no intercept
+strmod_nointercept <- update(mod, .~.-1)  
 print(coef(mod_nointercept) )
+
 
