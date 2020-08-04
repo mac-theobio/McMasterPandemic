@@ -79,7 +79,19 @@ test_that("time-varying test intensity", {
     ## direct.label(p1,method="last.bumpup")
     pvars <- c("N","P","negtest","postest")
     expect_equal(unlist(tail(sim0_testified_timevar[,pvars],1)),
-                 c(N = 118.37323110557, P = 0.0368593389261526, negtest = 0.100766542663678, 
-                   postest = 0.00582728172702547))
+                 c(N = 35338.9675996009, P = 10.2554061586176,
+                   negtest = 775.310922278855, 
+                   postest = 3.97882806061493))
+    ##
+    pp_noinf <- update(pp,beta0=0)
+    ## inf etc. is non-zero because we start with E0>0 (but trivial)
+    sim0_noinf <- run_sim(params = pp_noinf,
+                          ratemat_args = list(testify=TRUE))
+    ## negtest *should* converge on
+    pp[["testing_intensity"]]*pp[["N"]]
+    tail(sim0_noinf,1)[c("N","negtest")]
+    plot(sim0_noinf,log=TRUE)
+    nm <- c("S","E","I","H","ICU")
+    sum(tail(sim0_testified_timevar[,nm],1))*pp[["testing_intensity"]]
 
 })

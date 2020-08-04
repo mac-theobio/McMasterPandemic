@@ -36,16 +36,15 @@ make_test_wtsvec <- function(params,var_names=NULL) {
         symp_cat <- setdiff(var_names,asymp_cat)
         wts_vec <- setNames(rep(c(W_asymp,1-W_asymp),
                                 c(length(asymp_cat),length(symp_cat))),
-                            paste0("W",c(asymp_cat,symp_cat)))
+                            c(asymp_cat,symp_cat))
     } else {
         wts_vec <- params[grepl("^W",names(params))]
+        names(wts_vec) <- gsub("^W","",names(wts_vec))
     }
-    wts_vec <- wts_vec/sum(wts_vec) ## FIXME: where should we assume this normalization gets done?
-    Wnames <- paste0("W",var_names)
-    if (!all(sort(names(wts_vec))==sort(Wnames))) {
+    if (!all(sort(names(wts_vec))==sort(var_names))) {
         stop("weights vector names should match var names")
     }
-    wts_vec <- wts_vec[Wnames] ## reorder
+    wts_vec <- wts_vec[var_names] ## reorder
     return(wts_vec)
 }
 
@@ -156,8 +155,8 @@ testify <- function(ratemat,params,debug=FALSE,
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
         
    	if (i %in% expand_set){
-            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[pn("W")]*(posvec[pn("P")])
-            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[pn("W")]*(1-posvec[pn("P")])
+            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[i]*(posvec[pn("P")])
+            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[i]*(1-posvec[pn("P")])
             new_M[sn("n"),sn("u")] <- new_M[sn("n"),"N"] <- omega
             new_M[sn("p"),sn("t")] <- new_M[sn("p"),"P"] <- omega
    	}
