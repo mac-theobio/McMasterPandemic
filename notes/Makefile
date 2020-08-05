@@ -23,7 +23,6 @@ Sources += $(wildcard *.R) Makefile
 rshape.Rout: rshape.R
 	$(makeR)
 
-
 ### Separating two parts
 
 spline_fit.Rout: spline_fit.R
