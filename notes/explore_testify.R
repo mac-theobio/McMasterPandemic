@@ -41,3 +41,5 @@ setdiff(colnames(ratemat),names(state))
 sim0_testified_condensed <- run_sim(params = pp,
                                     ratemat_args = list(testify=TRUE))
 
+print(head(sim0_testified_condensed))
+

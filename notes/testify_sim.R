@@ -20,7 +20,7 @@ simdf <- function(sim,pars){
 			, type="non_testify"
 			, negtest = NA  ## Adding extra columns to match testify frame
 			, N = NA
-			, prostest = NA
+			, postest = NA
 			, P = NA 
 		)
 	)
@@ -38,8 +38,7 @@ sim_summary <- function(nsims,pars){
 	simframe <- bind_rows(lapply(seq(1,nsims),function(x)simdf(x,pars)))
 	redframe <- (simframe
 		%>% group_by(type,sim)
-		%>% transmute(sim,type,date,incidence,report
-			, newP = diff(c(0,P))
+		%>% transmute(sim,type,date,incidence,report,postest
 			)
 		%>% ungroup()
 		%>% gather(key="var",value="value",-sim,-date, -type)
