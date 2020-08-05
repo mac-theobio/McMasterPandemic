@@ -25,8 +25,8 @@ I <- Q/(1+Q^2)
 logRt <- log(R0*S^h*I^(-c))
 
 Rf <- data.frame(
-	t=t
-	, logRt=ifelse(t>fitmax, NA, logRt)
+  t=t
+  , logRt=ifelse(t>fitmax, NA, logRt)
 )
 print(Rf)
 
@@ -87,7 +87,7 @@ aliP_ns <- bns %*% co_ns
 ## can do the same for the bs fit (left as an exercise): this version
 ## is probably wrong
 b <- bs(t,df=7)
-b <- as.matrix(cbind(rep(1, nrow(b)), b))
+b <- cbind(1,b)
 aliP_bs <- b %*% matrix(co_bs,ncol=1)
 
 print(ggplot(Rf)
