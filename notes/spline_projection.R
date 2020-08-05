@@ -51,12 +51,15 @@ print(gg2 <- gg + geom_point(data=Rfnew, aes(x=t, y=logRt), color="black", alpha
 fitmax <- 126
 tmax <- 200
 t <- 1:fitmax
-
-co_bs <- coef(mod_bs) #coefficients of bs on shorter time fitmax
+#coefficients of bs on shorter time fitmax
+co_bs <- coef(mod_bs) 
 
 b <- bs(t,df=7)
-b <- as.matrix(cbind(rep(1, nrow(b)), b))
+b <- as.matrix(cbind(1, b))
 bfreeze <- rbind(b,b[rep(126,tmax-fitmax),])
+
+matplot(as.matrix(bfreeze),ylim=c(0,1),type="l",lty=1,
+        main="full data", col=palette())
 
 bsfreeze <- bfreeze %*% matrix(co_bs,ncol=1)
 
@@ -65,7 +68,7 @@ t <- 1:tmax
 co_bs <- coef(mod_bs)
 
 b <- bs(t,df=7)
-b <- as.matrix(cbind(rep(1, nrow(b)), b))
+b <- as.matrix(cbind(1, b)) 
 bscont <- b %*% matrix(co_bs,ncol=1)
 
 aliframe <- data.frame(bsfreeze,bscont,t=1:tmax)
