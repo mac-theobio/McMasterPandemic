@@ -103,6 +103,7 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,
                     non_expand_set=c("D","R","X")) {
+    ## FIXME: expand R
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)
     ## Assuming false positive/negative is (1-trueprob)
@@ -153,7 +154,10 @@ testify <- function(ratemat,params,debug=FALSE,
 
         pn <- function(par, compartment=i) paste0(par, compartment)
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
-        
+
+        ## FIXME: change posvec names to skip 'P' prefix,
+        ##  (params still have prefix, but posvec doesn't have to)
+        ## then we can get rid of pn()
    	if (i %in% expand_set){
             new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[i]*(posvec[pn("P")])
             new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[i]*(1-posvec[pn("P")])

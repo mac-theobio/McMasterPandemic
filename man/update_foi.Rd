@@ -3,8 +3,8 @@
 \name{update_foi}
 \alias{update_foi}
 \title{calculate only updated force of infection
- at present, this is the only state-dependent \emph{per capita} rate
- maybe more efficient than modifying & returning the whole matrix}
+at present, this is the only state-dependent \emph{per capita} rate
+maybe more efficient than modifying & returning the whole matrix}
 \usage{
 update_foi(state, params, beta_vec)
 }
@@ -17,6 +17,6 @@ update_foi(state, params, beta_vec)
 }
 \description{
 calculate only updated force of infection
- at present, this is the only state-dependent \emph{per capita} rate
- maybe more efficient than modifying & returning the whole matrix
+at present, this is the only state-dependent \emph{per capita} rate
+maybe more efficient than modifying & returning the whole matrix
 }

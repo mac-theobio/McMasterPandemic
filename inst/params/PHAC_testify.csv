@@ -54,6 +54,6 @@ Phosp,1, probability of positive in hosp,,,
 PICUs,1, probability of positive in ICUs,
 PICUd,1,probability of positive in ICUd,
 omega,0.1,1/waiting time for tests to be returned,,,
-testing_intensity,0.02,tests per capita per day
+testing_intensity,0.002,tests per capita per day
 iso_p,0.6,Relative self-isolation/distancing of tested-positives,NA?
 

@@ -46,7 +46,7 @@ ratemat_testified <- testify(ratemat,pp)
 test_that("ratemat makes sense", {
     expect_equal(ncol(ratemat_testified), length(state_testified))
 })
-
+g
 ## Updating FOI
 test_that("FOI doesn't change", {
     pp2 <- update(pp,iso_p=0)
@@ -83,15 +83,34 @@ test_that("time-varying test intensity", {
                    negtest = 775.310922278855, 
                    postest = 3.97882806061493))
     ##
-    pp_noinf <- update(pp,beta0=0)
+    pp_noinf <- update(pp,beta0=0,E0=0)
     ## inf etc. is non-zero because we start with E0>0 (but trivial)
     sim0_noinf <- run_sim(params = pp_noinf,
                           ratemat_args = list(testify=TRUE))
+    sim0_noinf_all <- run_sim(params = pp_noinf,
+                              ratemat_args = list(testify=TRUE),
+                              condense_args = list(keep_all=TRUE,
+                                               add_reports=FALSE))
     ## negtest *should* converge on
     pp[["testing_intensity"]]*pp[["N"]]
     tail(sim0_noinf,1)[c("N","negtest")]
+    head(sim0_noinf)
+    head(sim0_noinf_all)
     plot(sim0_noinf,log=TRUE)
     nm <- c("S","E","I","H","ICU")
     sum(tail(sim0_testified_timevar[,nm],1))*pp[["testing_intensity"]]
-
+    ## testing intensity = 0.002
+    ## omega = 0.1 (wating time=10 days)
+    ## du/dt = -i*u+omega*n
+    ## dn/dt =  i*u-omega*n
+    ## steady state of {u,n}? n = (i/omega)*u ~ (i/omega)*S
+    ## 
+    ## 
+    ## dN/dt = omega*n -> ~ i*S
+    ##
+    
+    sim0_noinf_all %>% dplyr::select(S_u,S_n,N) %>%
+        dplyr::mutate(negtest=c(NA,diff(N))) %>% tail()
+    
+    plot(sim0_noinf_all, log=TRUE)
 })

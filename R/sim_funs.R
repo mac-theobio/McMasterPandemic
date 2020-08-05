@@ -187,10 +187,11 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
 }
 
 ##' calculate only updated force of infection
-##'  at present, this is the only state-dependent \emph{per capita} rate
-##'  maybe more efficient than modifying & returning the whole matrix
+##' at present, this is the only state-dependent \emph{per capita} rate
+##' maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
 ##' @param beta_vec vector of transmission rates (matching state vector)
+##' @export
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params, beta_vec) {
     ## update infection rate
@@ -240,6 +241,8 @@ do_step <- function(state, params, ratemat, dt=1,
             ratemat[cbind(u_pos,n_pos)]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <-
             ratemat[cbind(u_pos,p_pos)]*wtsvec*posvec
+        ## FIXME: *if* we count {N,P} from testing date rather than
+        ### reporting date, then we need to adjust rates here as well
     }
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
@@ -280,7 +283,15 @@ do_step <- function(state, params, ratemat, dt=1,
     outflow <- rowSums(flows)
     if (do_exponential) outflow[["S"]] <- 0
     inflow <-  colSums(flows)
+    ## check conservation
     state <- state - outflow + inflow
+    x_states <- c("X","N","P")
+    p_states <- setdiff(names(state))
+    calc_N <- sum(state[p_states])
+    if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=1e-12))) {
+        stop(sprintf("sum(states) != original N (delta=%1.2g)",
+                     params[["N"]]-calc_N))
+    }
     return(state)
 }
 
