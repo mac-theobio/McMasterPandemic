@@ -44,6 +44,7 @@ test_that("trans_labels", {
 test_that("fit methods", {
     expect_is(suppressWarnings(plot(ont_cal1)), "ggplot")
     expect_is(suppressWarnings(plot(ont_cal1,data=trans_state_vars(ont_all))), "ggplot")
+    predict(ont_cal_2brks)
     expect_is(suppressWarnings(plot(ont_cal_2brks,data=trans_state_vars(ont_all))), "ggplot")
 })
 

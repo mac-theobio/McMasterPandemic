@@ -223,6 +223,8 @@ update_foi <- function(state, params, beta_vec) {
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch_proc=FALSE,
                     do_exponential=FALSE) {
+    x_states <- c("X","N","P")                  ## weird parallel accumulators
+    p_states <- setdiff(names(state), x_states) ## conserved states
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat[cbind(grep("^S",rownames(ratemat)),
@@ -230,6 +232,7 @@ do_step <- function(state, params, ratemat, dt=1,
     ## update testing flows.
     ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
     if (has_testing(state)) {
+        ## FIXME: backport to testify?
         u_pos <- grep("_u$",rownames(ratemat))
         p_pos <- grep("_p$",rownames(ratemat))
         n_pos <- grep("_n$",rownames(ratemat))
@@ -237,12 +240,10 @@ do_step <- function(state, params, ratemat, dt=1,
         wtsvec <- attr(ratemat,"wtsvec")
         ## scaling ... ?
         wtsvec <- wtsvec*state[u_pos]/sum(wtsvec*state[u_pos])
-        ratemat[cbind(u_pos,n_pos)] <-
-            ratemat[cbind(u_pos,n_pos)]*wtsvec*(1-posvec)
-        ratemat[cbind(u_pos,p_pos)] <-
-            ratemat[cbind(u_pos,p_pos)]*wtsvec*posvec
+        ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
+        ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
         ## FIXME: *if* we count {N,P} from testing date rather than
-        ### reporting date, then we need to adjust rates here as well
+        ### reporting date, then we need to adjust _n -> N, _p -> P rates here as well
     }
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
@@ -270,9 +271,10 @@ do_step <- function(state, params, ratemat, dt=1,
         for (i in seq(length(state))) {
             ## FIXME: allow Dirichlet-multinomial ?
             dW <- dt
-            if (!is.na(proc_disp <- params["proc_disp"])) {
+            if (!is.na(proc_disp <- params[["proc_disp"]])) {
                 dW <- pomp::rgammawn(sigma=proc_disp,dt=dt)
             }
+            ## FIXME: need to adjust for non-conserving accumulators!
             flows[i,-i] <- pomp::reulermultinom(n=1,
                                  size=state[[i]],
                                  rate=ratemat[i,-i],
@@ -280,15 +282,16 @@ do_step <- function(state, params, ratemat, dt=1,
             
         }
     }
-    outflow <- rowSums(flows)
+    outflow <- rowSums(flows[,p_states])
     if (do_exponential) outflow[["S"]] <- 0
     inflow <-  colSums(flows)
-    ## check conservation
     state <- state - outflow + inflow
-    x_states <- c("X","N","P")
-    p_states <- setdiff(names(state))
+    ## check conservation (*don't* check if we are doing an exponential sim, where we
+    ##  allow infecteds to increase without depleting S ...)
     calc_N <- sum(state[p_states])
-    if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=1e-12))) {
+    if (!do_exponential
+        && !stoch_proc    ## temporary: adjust reulermultinom to allow for x_states ...
+        && !isTRUE(all.equal(calc_N,params[["N"]], tolerance=1e-12))) {
         stop(sprintf("sum(states) != original N (delta=%1.2g)",
                      params[["N"]]-calc_N))
     }
@@ -573,9 +576,10 @@ make_state <- function(N=params[["N"]],
                           )
     state <- setNames(numeric(length(state_names)),state_names)
     if (is.null(x)) {
-        state[["S"]] <- round(N-E0)
+        ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
             state[["E"]] <- E0
+            istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ee <- round(get_evec(params)*E0)
@@ -584,8 +588,13 @@ make_state <- function(N=params[["N"]],
                 ee[["E"]] <- 1
                 warning('initial values too small for rounding')
             }
+            istart <- sum(ee)
             state[names(ee)] <- ee
         }
+        ## make sure to conserve N by subtracting starting number infected
+        ## *after* rounding etc.
+        state[["S"]] <- N-istart
+        
     } else {
         if (length(names(x))==0) {
             stop("provided state vector must be named")
