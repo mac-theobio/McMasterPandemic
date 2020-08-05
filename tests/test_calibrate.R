@@ -186,9 +186,14 @@ c_r2 <- calibrate_comb(params=p3,
 ##      nb_disp = c(report = 1.11651207216957),
 ##      time_beta = numeric(0)),
 
+## CHANGED again with conservation fix
+## ref_val <- list(params = c(E0 = 4.35599429735943, beta0 = 0.804378506840628),
+##                 nb_disp = c(report = 1.13530065646639), time_beta = numeric(0))
+
 ## CHANGED but these look better ... ?
-ref_val <- list(params = c(E0 = 4.35599429735943, beta0 = 0.804378506840628),
-                nb_disp = c(report = 1.13530065646639), time_beta = numeric(0))
+ref_val <- list(params = c(E0 = 2.22166438860786, beta0 = 0.873467646391076),
+                nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
+
 stopifnot(all.equal(coef(c_r2,"fitted"),
                     ref_val, 
                     tolerance=1e-6))
