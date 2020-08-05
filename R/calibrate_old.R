@@ -105,6 +105,7 @@ get_init <- function(date0=anydate("1-Mar-2020"),
                      sim_args)
         ufun <- function(E0) {
             sim_args$state[["E"]] <- E0
+            sim_args$state[["S"]] <- params[["N"]] - sum(sim_args$state[names(sim_args$state)!="S"])
             ## run simulation, aggregate
             r <- condense(do.call(run_sim,sim_args))
             return(tail(r[[var]],1)-init_target)
