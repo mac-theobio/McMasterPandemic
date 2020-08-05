@@ -14,7 +14,8 @@ vim_session:
 
 ######################################################################
 
-Sources += $(wildcard */*.R)
+Sources += $(wildcard sandbox/*.R)
+Sources += $(wildcard tests/*.R)
 
 Sources += $(wildcard man/*.Rd) NAMESPACE
 
