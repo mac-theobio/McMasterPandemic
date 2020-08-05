@@ -1,3 +1,5 @@
+# Goal: given time series of Rt, we want to reconstruct Rt by using spline fit and predict
+# Spline methods: bs() and ns() with specified degree of freedom df
 library(splines)
 library(ggplot2); theme_set(theme_bw())
 library(dplyr)
@@ -7,10 +9,8 @@ source("makestuff/makeRfuns.R")
 
 makeGraphics()
 
-## We want to generate Rt first 
-
-fitmax <- 126 # (note fitmax<=tmax)
-
+# parameters 
+fitmax <- 126
 t <- 1:fitmax
 r <- 0.04
 h <- 2
@@ -24,13 +24,13 @@ logRt <- log(R0*S^h*I^(-c))
 
 Rf <- data.frame(t, logRt)
 
+# model fits
 mod_bs <- lm(logRt~bs(t,df=7),data=Rf)
 mod_ns <- lm(logRt~ns(t,df=7),data=Rf)
 
 Rfpredict <- (Rf
 	%>% mutate(bs_fit = predict(mod_bs)
-		, ns_fit = predict(mod_ns)
-	)
+		, ns_fit = predict(mod_ns))
 	%>% gather(key = "spline_type", value="pred", -t, -logRt)
 )
 
@@ -43,5 +43,5 @@ gg <- (ggplot(Rfpredict, aes(t))
 )
 
 print(gg)
-
+# bs is doing better than ns
 saveVars(Rf, Rfpredict, mod_bs, mod_ns)

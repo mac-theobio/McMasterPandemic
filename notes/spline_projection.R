@@ -1,3 +1,4 @@
+# Run spline_fit first
 library(splines)
 library(ggplot2); theme_set(theme_bw())
 library(dplyr)
@@ -13,10 +14,10 @@ t <- 1:tmax
 
 newdat <- data.frame(t=t)
 
+# Step 1: taking the basis functions for shorter t=fitmax in spline_fit.R and extend the priction
 pframe <- (newdat
 	%>% mutate(bs_projection = predict(mod_bs,newdata=newdat)
-		, ns_projection = predict(mod_ns,newdata=newdat)
-	)
+		, ns_projection = predict(mod_ns,newdata=newdat)	)
 	%>% gather(key="spline_type",value="pred",-t)
 )
 
@@ -28,7 +29,7 @@ gg <- (ggplot(pframe, aes(x=t,y=pred,color=spline_type))
 
 print(gg)
 
-## What does it really look like?
+# Step 2: What does it really look like?
 
 t <- 1:tmax
 r <- 0.04
@@ -45,13 +46,13 @@ Rfnew <- data.frame(t, logRt)
 
 print(gg2 <- gg + geom_point(data=Rfnew, aes(x=t, y=logRt), color="black", alpha=0.3))
 
-## Freezing
+## Step 3: Freezing
 
 fitmax <- 126
 tmax <- 200
 t <- 1:fitmax
 
-co_bs <- coef(mod_bs)
+co_bs <- coef(mod_bs) #coefficients of bs on shorter time fitmax
 
 b <- bs(t,df=7)
 b <- as.matrix(cbind(rep(1, nrow(b)), b))
