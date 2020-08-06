@@ -8,6 +8,8 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 
 pp <- read_params(matchFile(".csv$"))
+print(pp)
+pp[["iso_p"]] <- 0
 
 set.seed(0802)
 
@@ -20,7 +22,7 @@ simdf <- function(sim,pars){
 			, type="non_testify"
 			, negtest = NA  ## Adding extra columns to match testify frame
 			, N = NA
-			, postest = NA
+			, postest = report ## they should mean the same thing in non-testify world
 			, P = NA 
 		)
 	)
@@ -38,7 +40,7 @@ sim_summary <- function(nsims,pars){
 	simframe <- bind_rows(lapply(seq(1,nsims),function(x)simdf(x,pars)))
 	redframe <- (simframe
 		%>% group_by(type,sim)
-		%>% transmute(sim,type,date,incidence,report,postest
+		%>% transmute(sim,type,date,incidence,postest
 			)
 		%>% ungroup()
 		%>% gather(key="var",value="value",-sim,-date, -type)
@@ -64,8 +66,11 @@ simdatwts <- sim_summary(nsims,pars=ppwts) %>% mutate(params="wts")
 ## Different positivity
 
 ppPos <- pp
-ppPos[grepl("P",names(pp))] <- rep(c(0.8,0.95),c(2,9))
+ppPos[grepl("P",names(pp))] <- rep(c(0,0.5),c(1,10))
+
 
 simdatPos <- sim_summary(nsims,pars=ppPos) %>% mutate(params="pos")
 
-saveVars(simdat, simdatwts, simdatPos)
+simcombo <- bind_rows(simdat, simdatwts, simdatPos)
+
+saveVars(simcombo)

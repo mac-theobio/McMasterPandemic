@@ -5,35 +5,18 @@ library(cowplot)
 source("makestuff/makeRfuns.R")
 commandFiles()
 
-print(simdat)
-
-gg <- (ggplot(simdat, aes(x=date,y=med, color=type))
-	+ geom_line()
-	+ geom_point(aes(shape=type))
-   + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=type), alpha=0.3)
+gg <- (ggplot(simcombo, aes(x=date,y=med, color=type, shape=var, group=type))
+	+ geom_point()
 	+ scale_color_manual(values=c("black","red","blue"))
 	+ scale_fill_manual(values=c("black","red","blue"))
-	+ facet_wrap(~var,scale="free",nrow=1)
 	+ scale_y_log10()
 	+ ylab("Daily count")
-	+ ggtitle("Default MacPan testify")
+	+ facet_wrap(~params, ncol=3)
+	+ theme(legend.position = "bottom")
 )
 
-ggdefault <- gg + theme(legend.position="none")
 
-ggwts <- (gg 
-	%+% simdatwts 
-	+ theme(legend.position="none") 
-	+ ggtitle("Different testing weights")
-)
+print(gg)
 
-ggPos <- (gg
-	%+% simdatPos
-	+ theme(legend.position="none")
-	+ ggtitle("Different positivity")
-)
-
-ggcombo <- plot_grid(ggdefault,ggPos,ggwts,ncol=1)
-
-print(ggcombo)
+print(gg %+% (simcombo %>% filter(var != "incidence")))
 
