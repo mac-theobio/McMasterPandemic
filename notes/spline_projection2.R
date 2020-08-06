@@ -16,19 +16,12 @@ tplus <- 7 # time steps for extrapolation (in days)
 dof <- 7 #degree of freedom of ns()
 
 
-
-
-
-
 spline_extrap <- function(logRt, tplus, dof){
   fitmax <- length(logRt)
   tmax <- fitmax + tplus
   t <- 1:tmax
   
-  Rf <- data.frame(
-    t=t
-    , logRt=ifelse(t>fitmax, NA, logRt)
-  )
+  Rf <- data.frame(t=t, logRt=ifelse(t>fitmax, NA, logRt))
   
   mod_ns <- lm(logRt~ns(t,df=dof),data=na.omit(Rf))
   co_ns <- coef(mod_ns) 
@@ -46,12 +39,12 @@ spline_extrap <- function(logRt, tplus, dof){
 }
 
 
-
-
+# testing the function
 out <- spline_extrap(logRt,tplus,dof)
 
 print(gg <- ggplot(out, aes(x=t,y=ns_projection)) 
             +geom_point()
+            +geom_point(aes(x=t,y=t^2),color="red")
 )
 
 
