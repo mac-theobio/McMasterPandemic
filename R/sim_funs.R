@@ -242,8 +242,12 @@ do_step <- function(state, params, ratemat, dt=1,
         wtsvec <- wtsvec*state[u_pos]/sum(wtsvec*state[u_pos])
         ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
-        ## FIXME: *if* we count {N,P} from testing date rather than
-        ### reporting date, then we need to adjust _n -> N, _p -> P rates here as well
+        if (attr(ratemat,"testing_time")=="sample") {
+            N_pos <- which(rownames(ratemat)=="N")
+            P_pos <- which(rownames(ratemat)=="P")
+            ratemat[cbind(u_pos,N_pos)] <- ratemat[cbind(u_pos,n_pos)]
+            ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
+        }
     }
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
@@ -378,7 +382,7 @@ run_sim <- function(params
     M <- do.call(make_ratemat,c(list(state=state, params=params)))
     if(!is.null(ratemat_args)){
     	if (ratemat_args$testify) {
-            M <- testify(M,params)
+            M <- testify(M,params,testing_time=ratemat_args$testing_time)
             state <- expand_stateval(state)
     	}
     }

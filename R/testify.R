@@ -99,15 +99,25 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' @param ratemat original rate matrix
 ##' @param params parameters
 ##' @param non_expand_set states \emph{not} to expand
+##' @param testing_time: "report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)
 ##' @param debug what it sounds like
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,
-                    non_expand_set=c("D","R","X")) {
+                    non_expand_set=c("D","R","X"),
+                    testing_time=NULL) {
     ## FIXME: expand R
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)
     ## Assuming false positive/negative is (1-trueprob)
     ## omega is waiting time for tests to be returned
+    ## don't use match.args() because we may get handed NULL ...
+    if (is.null(testing_time)) {
+        testing_time <- "report"
+    } else {
+        if (!testing_time %in% c("report","sample")) {
+            stop("unknown testing_time", testing_time)
+        }
+    }
     wtsvec <- make_test_wtsvec(params, var_names=setdiff(rownames(ratemat),
                                                          non_expand_set))
     posvec <- make_test_posvec(params)
@@ -159,13 +169,23 @@ testify <- function(ratemat,params,debug=FALSE,
         ##  (params still have prefix, but posvec doesn't have to)
         ## then we can get rid of pn()
    	if (i %in% expand_set){
-            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[i]*(posvec[pn("P")])
             new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[i]*(1-posvec[pn("P")])
-            new_M[sn("n"),sn("u")] <- new_M[sn("n"),"N"] <- omega
-            new_M[sn("p"),sn("t")] <- new_M[sn("p"),"P"] <- omega
+            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[i]*(posvec[pn("P")])
+            new_M[sn("n"),sn("u")]  <- omega
+            new_M[sn("p"),sn("t")]  <- omega
+            if (testing_time=="report") {
+                ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
+                new_M[sn("n"),"N"] <- new_M[sn("n"),sn("u")] 
+                new_M[sn("p"),"P"] <- new_M[sn("p"),sn("t")] 
+            } else {
+                ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
+                new_M[sn("u"),"N"] <- new_M[sn("u"),sn("n")]
+                new_M[sn("u"),"P"] <- new_M[sn("u"),sn("p")] 
+            }
    	}
     }
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
+    attr(new_M,"testing_time") <- testing_time
     return(new_M)
 }

@@ -82,6 +82,10 @@ test_that("time-varying test intensity", {
                  c(N = 75642.0699087884, P = 55.0789129220698,
                    negtest = 4971.36249153456, 
                    postest = 21.6243455422309))
+})
+
+test_that("testing with susceptibles only", {
+    pp[["testing_intensity"]] <- 0.002
     pp_noinf <- update(pp,beta0=0,E0=0)  ## no transmission, no infected people
     sim0_noinf <- run_sim(params = pp_noinf,
                           ratemat_args = list(testify=TRUE),
@@ -89,4 +93,23 @@ test_that("time-varying test intensity", {
     ## negtest *should* converge on:
     expected_negtest <- with(as.list(pp),omega/(omega+testing_intensity)*testing_intensity*N)
     expect_equal(tail(sim0_noinf[["negtest"]],1),expected_negtest)
+})
+
+test_that("testify + sampling time", {
+    rvars <- c("N","P")
+    sim0_testified_report <- run_sim(params = pp,
+                                     ratemat_args = list(testify=TRUE,
+                                                         testing_time="report"))
+    res_report <- tail(sim0_testified_report[rvars],1)
+    sim0_testified_sample <- run_sim(params = pp,
+                                     ratemat_args = list(testify=TRUE,
+                                                         testing_time="sample"))
+    res_sample <- tail(sim0_testified_sample[rvars],1)
+    expect(!(all(res_report==res_sample)), "results don't differ according to testing time")
+    expect_equal(unlist(res_sample),c(N = 78578.6760706341, P = 107.200806051815))
+    if (require(dplyr) && require(ggplot2) && require(purrr) && require(tidyr)) {
+        dd <- map_dfr(list(report=sim0_testified_report,sample=sim0_testified_sample),
+                      ~select(.,c(date,N,P)),.id="testing_time") %>% pivot_longer(cols=c(N,P))
+        ggplot(dd, aes(date,value,colour=name,linetype=testing_time)) + geom_line() + scale_y_log10()
+    }
 })
