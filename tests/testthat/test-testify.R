@@ -95,6 +95,17 @@ test_that("testing with susceptibles only", {
     expect_equal(tail(sim0_noinf[["negtest"]],1),expected_negtest)
 })
 
+plotfun <- function(L) {
+    if (require(dplyr) && require(ggplot2) && require(purrr) && require(tidyr)) {
+        dd <- map_dfr(L,
+                      ~select(.,c(date,N,P)),.id="type") %>% pivot_longer(cols=c(N,P))
+        return(suppressWarnings(ggplot(dd,
+                                       aes(date,value,colour=name,linetype=type))
+                                + geom_line() + scale_y_log10())
+               )
+    }
+}
+
 test_that("testify + sampling time", {
     rvars <- c("N","P")
     sim0_testified_report <- run_sim(params = pp,
@@ -107,9 +118,31 @@ test_that("testify + sampling time", {
     res_sample <- tail(sim0_testified_sample[rvars],1)
     expect(!(all(res_report==res_sample)), "results don't differ according to testing time")
     expect_equal(unlist(res_sample),c(N = 78578.6760706341, P = 107.200806051815))
-    if (require(dplyr) && require(ggplot2) && require(purrr) && require(tidyr)) {
-        dd <- map_dfr(list(report=sim0_testified_report,sample=sim0_testified_sample),
-                      ~select(.,c(date,N,P)),.id="testing_time") %>% pivot_longer(cols=c(N,P))
-        suppressWarnings(ggplot(dd, aes(date,value,colour=name,linetype=testing_time)) + geom_line() + scale_y_log10())
-    }
+    gg1 <- plotfun(list(report=sim0_testified_report,sample=sim0_testified_sample))
+})
+
+test_that("testify + alternative weights models", {
+    rvars <- c("N","P")
+    ppw0 <- pp[!grepl("^W",names(pp))]
+    class(ppw0) <- "params_pansim"  ## restore class (lost after indexing)
+    ppw1 <- update(ppw0,W_asymp=0.2)
+    ppw2 <- update(ppw0,c(W_asymp=0.2, W_severe=1.5))
+    sim0_w0 <- run_sim(params = pp,
+                       ratemat_args = list(testify=TRUE,
+                                           testing_time="report"))
+    sim0_w1 <- run_sim(params = ppw1,
+                       ratemat_args = list(testify=TRUE,
+                                           testing_time="report"))
+    sim0_w2 <- run_sim(params = ppw2,
+                       ratemat_args = list(testify=TRUE,
+                                           testing_time="report"))
+    gg1 <- plotfun(list(w0=sim0_w0,w1=sim0_w1,w2=sim0_w2))
+    ref_val <- structure(list(N = c(62097.0986898706, 61789.5190257482, 61781.6457354169),
+                              P = c(13.9744057111373, 16.3878085964286, 16.3569118395614)),
+                         row.names = c("43", "431", "432"), class = c("pansim", "data.frame"))
+    ## these are *almost* identical (is that what I expected?)
+    expect_equal(ref_val,
+        rbind(tail(sim0_w0[rvars],1),
+          tail(sim0_w1[rvars],1),
+          tail(sim0_w2[rvars],1)))
 })

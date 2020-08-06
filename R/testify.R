@@ -27,17 +27,27 @@
 ##' }
 ##' @export
 make_test_wtsvec <- function(params,var_names=NULL) {
-    ## FIXME: do normalization here??
+    ## names of categories: these match *unexpanded* state names
+    asymp_cat <- c("S","E","Ia","Ip")
+    severe_cat <- c("Is","H","H2","ICUs","ICUd")
     ## only need var_names if we're going to set by asymp/symp
-    if (identical("W_asymp",grep("^W",names(params),value=TRUE))) {
-        W_asymp <- params[["W_asymp"]]
-        ## one-parameter model: weights specified as (W_asymp, 1-W_asymp)
-        asymp_cat <- c("S","E","Ia")
+    match_pars <- function(pars) {
+        Wpars <- grep("^W",names(params),value=TRUE)
+        return(identical(pars,sort(Wpars)))
+    }
+    if (match_pars("W_asymp")) {
+        ## one-parameter model: weights specified as (W_asymp, 1)
         symp_cat <- setdiff(var_names,asymp_cat)
-        wts_vec <- setNames(rep(c(W_asymp,1-W_asymp),
-                                c(length(asymp_cat),length(symp_cat))),
-                            c(asymp_cat,symp_cat))
+        wts_vec <- rep(c(params[["W_asymp"]],1),
+                       c(length(asymp_cat),length(symp_cat)))
+        names(wts_vec) <- c(asymp_cat,symp_cat)
+    } else if (match_pars(c("W_asymp","W_severe"))) {
+        mild_cat <- setdiff(var_names, c(asymp_cat, severe_cat))
+        wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
+                       c(length(asymp_cat),length(mild_cat),length(severe_cat)))
+        names(wts_vec) <- c(asymp_cat,mild_cat,severe_cat)
     } else {
+        ## general
         wts_vec <- params[grepl("^W",names(params))]
         names(wts_vec) <- gsub("^W","",names(wts_vec))
     }

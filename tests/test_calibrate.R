@@ -35,28 +35,28 @@ plot(sim1S,log=TRUE) + geom_point(data=simdat)
 
 ## extract H data and set t==0 at beginning
 regdatS <- (simdat
-  %>% mutate(t0=as.numeric(date-min(date)))
-  %>% filter(var=="H")
+    %>% mutate(t0=as.numeric(date-min(date)))
+    %>% filter(var=="H")
 )
 ##  fit to H data
 g1S <- MASS::glm.nb(value~t0,data=regdatS)
 
 ## calibrate (use orig, sim params as starting point)
 system.time(ccS <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
-                pop=cparams[["N"]],
-                params=cparams,
-                date0="1-Mar-2020",
-                date1=min(regdatS$date)))
+                                      pop=cparams[["N"]],
+                                      params=cparams,
+                                      date0="1-Mar-2020",
+                                      date1=min(regdatS$date)))
 
 ## brute-force (shooting) calibration
 system.time(ccS2 <- calibrate_slopeint(coef(g1S)[1],coef(g1S)[2],
-                pop=cparams[["N"]],
-                params=cparams,
-                date0="1-Mar-2020",
-                date1=min(regdatS$date),
-                init_target=head(regdatS$value,1),
-                sim_args=list(ndt=10)))
- 
+                                       pop=cparams[["N"]],
+                                       params=cparams,
+                                       date0="1-Mar-2020",
+                                       date1=min(regdatS$date),
+                                       init_target=head(regdatS$value,1),
+                                       sim_args=list(ndt=10)))
+
 summary(ccS$params)
 ## run (deterministic) simulation with calibrated data
 simScal <- run_sim(ccS$params, ccS$state,
@@ -66,9 +66,9 @@ simScal <- run_sim(ccS$params, ccS$state,
 
 ## try brute-force-calibrated initial conditions
 simScal_brute <- run_sim(ccS2$params, ccS2$state,
-                   start_date="1-Mar-2020",
-                   end_date="1-Apr-2020",
-                   ndt=10)
+                         start_date="1-Mar-2020",
+                         end_date="1-Apr-2020",
+                         ndt=10)
 
 ## predicted values from regression
 pframeS <- data.frame(date=seq(as.Date("2020-03-01"),
@@ -97,8 +97,8 @@ print(gg1
 simAgg <- condense(simScal)[,c("H","ICU","death")]
 n <- nrow(simAgg)
 print(log(unlist(simAgg[n,]/simAgg[n-10,]))/10)
-##         H       ICU         D 
-## 0.1942182 0.1946885 0.2026567 
+##         H       ICU     death 
+## 0.2023712 0.2029303 0.2035297 
 summary(ccS$params)
 
 ## LESSON: *small* details in simulation procedure (do_hazard or not, ndt) change the initial
@@ -113,56 +113,56 @@ if (FALSE) {
 
     opt_pars <- list(
         ## these params are part of the main parameter vector: go to run_sim()
-    params=c(log_E0=4      ## initial exposed
-           , log_beta0=-1  ## initial baseline transmission
-             ## fraction of mild (non-hosp) cases
-           , log_mu=log(cparams[["mu"]])
-             ## fraction of incidence reported
-             ## logit_c_prop=qlogis(params[["c_prop"]]),
-             ## fraction of hosp to acute (non-ICU)
-             , logit_phi1=qlogis(cparams[["phi1"]])
-             ## fraction of ICU cases dying
-             ## logit_phi2=qlogis(params[["phi2"]])
-             ),
-    ## changes in beta at breakpoints
-    log_rel_beta0 = rep(-1, length(bd)),
-    ## NB dispersion
-    log_nb_disp=0)
+        params=c(log_E0=4      ## initial exposed
+               , log_beta0=-1  ## initial baseline transmission
+                 ## fraction of mild (non-hosp) cases
+               , log_mu=log(cparams[["mu"]])
+                 ## fraction of incidence reported
+                 ## logit_c_prop=qlogis(params[["c_prop"]]),
+                 ## fraction of hosp to acute (non-ICU)
+               , logit_phi1=qlogis(cparams[["phi1"]])
+                 ## fraction of ICU cases dying
+                 ## logit_phi2=qlogis(params[["phi2"]])
+                 ),
+        ## changes in beta at breakpoints
+        log_rel_beta0 = rep(-1, length(bd)),
+        ## NB dispersion
+        log_nb_disp=0)
 
 
-ont_all_sub <- (ont_all
-    %>% mutate_at("var",trans_state_vars)
-    %>% filter(var %in% c("H","ICU","death","report"))
-)
+    ont_all_sub <- (ont_all
+        %>% mutate_at("var",trans_state_vars)
+        %>% filter(var %in% c("H","ICU","death","report"))
+    )
 
-params <- fix_pars(read_params("ICU1.csv")
-    , target=c(Gbar=6)
-    , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
-)
-params[["N"]] <- 14.57e6  ## reset pop to Ontario
+    params <- fix_pars(read_params("ICU1.csv")
+                     , target=c(Gbar=6)
+                     , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
+                       )
+    params[["N"]] <- 14.57e6  ## reset pop to Ontario
 
-system.time(cc1 <- calibrate(data=ont_all_sub
-    , base_params=params
-    , opt_pars = opt_pars
-    , time_args=list(break_dates = bd)
-      )
-      )
+    system.time(cc1 <- calibrate(data=ont_all_sub
+                               , base_params=params
+                               , opt_pars = opt_pars
+                               , time_args=list(break_dates = bd)
+                                 )
+                )
 
-system.time(cc2 <- calibrate(data=ont_all_sub
-    , base_params=params
-    , opt_pars = opt_pars
-    , time_args=list(break_dates = bd)
-    , sim_args=list(use_ode=TRUE)
-      )
-      )
+    system.time(cc2 <- calibrate(data=ont_all_sub
+                               , base_params=params
+                               , opt_pars = opt_pars
+                               , time_args=list(break_dates = bd)
+                               , sim_args=list(use_ode=TRUE)
+                                 )
+                )
 
-repdata <- ont_all_sub %>% filter(var=="report")
-cc3 <- calibrate_comb(data=repdata
-             , params=params
-             , use_phenomhet=TRUE
-             , use_spline=FALSE
-               )
-}
+    repdata <- ont_all_sub %>% filter(var=="report")
+    cc3 <- calibrate_comb(data=repdata
+                        , params=params
+                        , use_phenomhet=TRUE
+                        , use_spline=FALSE
+                          )
+} ## end slow stuff
 
 #### make sure single-variable fit works OK
 
