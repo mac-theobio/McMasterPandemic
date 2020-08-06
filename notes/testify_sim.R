@@ -8,8 +8,10 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 
 pp <- read_params(matchFile(".csv$"))
-print(pp)
 pp[["iso_p"]] <- 0
+pp[["testing_intensity"]] <- 0.02
+
+print(pp)
 
 set.seed(0802)
 
@@ -41,6 +43,7 @@ sim_summary <- function(nsims,pars){
 	redframe <- (simframe
 		%>% group_by(type,sim)
 		%>% transmute(sim,type,date,incidence,postest
+			, total_test = postest + negtest
 			)
 		%>% ungroup()
 		%>% gather(key="var",value="value",-sim,-date, -type)
