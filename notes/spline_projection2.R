@@ -6,15 +6,12 @@ library(dplyr)
 library(tidyr)
 
 source("makestuff/makeRfuns.R")
-commandEnvironments()
 makeGraphics()
-
 
 t <- 1:10
 logRt <- t^2 
 tplus <- 7 # time steps for extrapolation (in days)
 dof <- 7 #degree of freedom of ns()
-
 
 spline_extrap <- function(logRt, tplus, dof){
   fitmax <- length(logRt)
@@ -38,7 +35,6 @@ spline_extrap <- function(logRt, tplus, dof){
   return(Rf)  
 }
 
-
 # testing the function
 out <- spline_extrap(logRt,tplus,dof)
 
@@ -46,8 +42,4 @@ print(gg <- ggplot(out, aes(x=t,y=ns_projection))
             +geom_point()
             +geom_point(aes(x=t,y=t^2),color="red")
 )
-
-
-
-
 

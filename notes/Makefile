@@ -25,10 +25,18 @@ rshape.Rout: rshape.R
 
 ### Separating two parts
 
+## These scripts seem to be deprecated; should we rename things and be clearer?
 spline_fit.Rout: spline_fit.R
 	$(makeR)
 
 spline_projection.Rout: spline_projection.R spline_fit.rda
+	$(makeR)
+
+## Ali's second attempt to refactor
+spline_projection1.Rout: spline_projection1.R
+	$(makeR)
+
+spline_projection2.Rout: spline_projection2.R
 	$(makeR)
 
 ######################################################################
