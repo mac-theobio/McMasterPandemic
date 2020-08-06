@@ -99,7 +99,7 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' @param ratemat original rate matrix
 ##' @param params parameters
 ##' @param non_expand_set states \emph{not} to expand
-##' @param testing_time: "report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)
+##' @param testing_time "report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)
 ##' @param debug what it sounds like
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,

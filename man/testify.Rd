@@ -21,7 +21,7 @@ testify(
 
 \item{non_expand_set}{states \emph{not} to expand}
 
-\item{testing_time:}{"report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)}
+\item{testing_time}{"report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)}
 }
 \description{
 expand rate matrix for testing status

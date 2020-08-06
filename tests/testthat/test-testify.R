@@ -110,6 +110,6 @@ test_that("testify + sampling time", {
     if (require(dplyr) && require(ggplot2) && require(purrr) && require(tidyr)) {
         dd <- map_dfr(list(report=sim0_testified_report,sample=sim0_testified_sample),
                       ~select(.,c(date,N,P)),.id="testing_time") %>% pivot_longer(cols=c(N,P))
-        ggplot(dd, aes(date,value,colour=name,linetype=testing_time)) + geom_line() + scale_y_log10()
+        suppressWarnings(ggplot(dd, aes(date,value,colour=name,linetype=testing_time)) + geom_line() + scale_y_log10())
     }
 })
