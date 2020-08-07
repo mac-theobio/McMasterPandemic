@@ -6,7 +6,7 @@ source("makestuff/makeRfuns.R")
 commandFiles()
 
 gg <- (ggplot(simdat, aes(x=date,y=value, color=var))
-	+ geom_point()
+	+ geom_line()
 	+ scale_color_manual(values=c("black","red","blue","orange"))
 	+ scale_y_log10()
 	+ ylab("Daily count")
