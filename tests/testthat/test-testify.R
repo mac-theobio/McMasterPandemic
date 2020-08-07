@@ -97,8 +97,10 @@ test_that("testing with susceptibles only", {
 
 plotfun <- function(L) {
     if (require(dplyr) && require(ggplot2) && require(purrr) && require(tidyr)) {
-        dd <- map_dfr(L,
-                      ~select(.,c(date,N,P)),.id="type") %>% pivot_longer(cols=c(N,P))
+        dd <- (map_dfr(L,
+                       ~(select(.,c(date,negtest,postest,report))),.id="type")
+            %>% pivot_longer(cols=c(negtest,postest,report))
+        )
         return(suppressWarnings(ggplot(dd,
                                        aes(date,value,colour=name,linetype=type))
                                 + geom_line() + scale_y_log10())
@@ -123,8 +125,8 @@ test_that("testify + sampling time", {
 
 test_that("testify + alternative weights models", {
     rvars <- c("N","P")
-    ppw0 <- pp[!grepl("^W",names(pp))]
-    class(ppw0) <- "params_pansim"  ## restore class (lost after indexing)
+    ppw0 <- pp[!grepl("^W",names(pp))]  ## remove all of the regular W-parameters
+    class(ppw0) <- "params_pansim"  ## restore class (lost after indexing) so we can use update()
     ppw1 <- update(ppw0,W_asymp=0.2)
     ppw2 <- update(ppw0,c(W_asymp=0.2, W_severe=1.5))
     sim0_w0 <- run_sim(params = pp,

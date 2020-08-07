@@ -30,18 +30,20 @@ make_test_wtsvec <- function(params,var_names=NULL) {
     ## names of categories: these match *unexpanded* state names
     asymp_cat <- c("S","E","Ia","Ip")
     severe_cat <- c("Is","H","H2","ICUs","ICUd")
-    ## only need var_names if we're going to set by asymp/symp
+    ## test whether a specific set of W-parameters are the *only*
+    ##  W-parameters in the parameter vector
     match_pars <- function(pars) {
         Wpars <- grep("^W",names(params),value=TRUE)
         return(identical(pars,sort(Wpars)))
     }
-    if (match_pars("W_asymp")) {
-        ## one-parameter model: weights specified as (W_asymp, 1)
+    if (match_pars("W_asymp")) {  ## W_asymp is the only weighting parameter
+        ## one-parameter model: weights specified as (asymp=W_asymp, symp=1)
         symp_cat <- setdiff(var_names,asymp_cat)
         wts_vec <- rep(c(params[["W_asymp"]],1),
                        c(length(asymp_cat),length(symp_cat)))
         names(wts_vec) <- c(asymp_cat,symp_cat)
     } else if (match_pars(c("W_asymp","W_severe"))) {
+        ## asymp= W_asymp (<1),  I_m=1, severe = W_severe (>1)
         mild_cat <- setdiff(var_names, c(asymp_cat, severe_cat))
         wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
                        c(length(asymp_cat),length(mild_cat),length(severe_cat)))
