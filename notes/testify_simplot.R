@@ -5,16 +5,15 @@ library(cowplot)
 source("makestuff/makeRfuns.R")
 commandFiles()
 
-gg <- (ggplot(simcombo, aes(x=date,y=med, color=var, group=type))
+gg <- (ggplot(simdat, aes(x=date,y=value, color=var))
 	+ geom_point()
-	+ scale_color_manual(values=c("black","red","blue"))
+	+ scale_color_manual(values=c("black","red","blue","orange"))
 	+ scale_y_log10()
 	+ ylab("Daily count")
-	+ facet_wrap(~params, nrow=3)
+	+ facet_grid(W_asymp~iso_p)
 	+ theme(legend.position = "bottom")
 )
 
 
 print(gg)
 
-print(gg %+% (simcombo %>% filter(params == "default")))

@@ -9,81 +9,49 @@ commandEnvironments()
 
 pp <- read_params(matchFile(".csv$"))
 pp[["iso_p"]] <- 0
-pp[["testing_intensity"]] <- 0.002
-pp[["N"]] <- 1.5e7
+pp[["N"]] <- 1.5e7 ## population of Ontario
+
+ppw0 <- pp[!grepl("^W",names(pp))] ## Copying BMB, removing all of the regular W-parameters
 
 start <- as.Date("2020-01-01")
 end <- as.Date("2020-06-01")
 
 print(pp)
 
-set.seed(0802)
+set.seed(0807)
 
-## I don't think we get ensembles unless we have obs error??
-nsims <- 1
+Wasymp <- c(0.01, 0.1,1)
+isop <- c(0,0.5,0.9,1)
 
-simdf <- function(sim,pars,untestify){
-	sim0 <- (run_sim(params = pars
-		, start_date = start
-		, end_date = end)
-		%>% mutate(sim = sim
-			, type="non_testify"
-			, negtest = NA  ## Adding extra columns to match testify frame
-			, N = NA
-			, postest = report ## they should mean the same thing in non-testify world
-			, P = NA 
-		)
-	)
-	if(!untestify){
-	sim0 <- data.frame()
-	}
-	sim_testify <- (
-		run_sim(
-			params = pars, ratemat_args = list(testify=TRUE)
+simframe <- data.frame()
+for(i in Wasymp){
+	for(j in isop){
+		ppw0[["W_asymp"]] <- i
+		ppw0[["iso_p"]] <- j
+			sims <- (run_sim(params = ppw0, ratemat_args = list(testify=TRUE)
 			, start_date = start
 			, end_date = end
+##			, condense_args=list(keep_all=TRUE) checkout the expanded version
 		) 
-		%>% mutate(sim = sim, type="testify")
-	)
-	return(bind_rows(sim0,sim_testify))
-}
-
-sim_summary <- function(nsims,pars,untestify=FALSE){
-	simframe <- bind_rows(lapply(seq(1,nsims),function(x)simdf(x,pars,untestify)))
-	redframe <- (simframe
-		%>% group_by(type,sim)
-		%>% transmute(sim,type,date,incidence,postest
-			, total_test = postest + negtest
+	%>% mutate(W_asymp = paste0("W_asymp = ",i)
+			, iso_p = paste0("iso_p = ",j)
 			)
-		%>% ungroup()
-		%>% gather(key="var",value="value",-sim,-date, -type)
-		%>% group_by(date,type,var)
-		%>% summarise(lwr = quantile(value,probs = 0.025,na.rm = TRUE)
-				, med = quantile(value, probs = 0.5,na.rm = TRUE)
-				, upr = quantile(value, probs = 0.975,na.rm = TRUE)
-		)
 	)
-	return(redframe)
+	simframe <- bind_rows(simframe,sims)
+	}
 }
 
-simdat <- sim_summary(nsims,pars=pp) %>% mutate(params="default")
+print(simframe)
+
+simdat <- (simframe
+	%>% transmute(date,incidence,postest
+			, total_test = postest + negtest
+			, report
+			, W_asymp
+			, iso_p
+		)
+	%>% gather(key="var",value="value",-date, -W_asymp, -iso_p)
+)
 
 
-## Different testing weights
-ppwts <- pp
-ppwts[grepl("W",names(pp))] <- 1:length(ppwts[grepl("W",names(pp))])
-
-simdatwts <- sim_summary(nsims,pars=ppwts) %>% mutate(params="wts")
-
-
-## Different positivity
-
-ppPos <- pp
-ppPos[grepl("P",names(pp))] <- rep(c(0,0.5),c(1,10))
-
-
-simdatPos <- sim_summary(nsims,pars=ppPos) %>% mutate(params="pos")
-
-simcombo <- bind_rows(simdat, simdatwts, simdatPos)
-
-saveVars(simcombo)
+saveVars(simdat)
