@@ -903,7 +903,7 @@ calibrate_comb <- function(data,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
-                     return_val=c("fit","X","formula"),
+                     return_val=c("fit","X","formula","args"),
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
     return_val <- match.arg(return_val)
@@ -1066,6 +1066,8 @@ calibrate_comb <- function(data,
                      , sim_fun = run_sim_loglin)
                , list(...))
 
+    if (return_val=="args") return(argList)
+    
     res <- do.call(calibrate, argList)
 
     ## FIXME: figure out descriptive string?

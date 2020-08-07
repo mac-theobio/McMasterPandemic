@@ -31,7 +31,7 @@ calibrate_comb(
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
-  return_val = c("fit", "X", "formula"),
+  return_val = c("fit", "X", "formula", "args"),
   ...
 )
 }
