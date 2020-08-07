@@ -102,9 +102,8 @@ Ignore += *.datatime
 %.datatime: ; touch $@
 ontario_clean.Rout: 0601.datatime
 
-McMasterReport.pdf: McMasterReport.Rnw ont_cal.RData ont_cal_2brks.RData ont_cal_H.RData ont_cal_noICU_2brks_prior.RData ont_cal_mob1.RData ontario_clean.RData
-
-
+Sources += McMasterReport.Rnw
+McMasterReport.pdf: McMasterReport.Rnw cachestuff/ont_cal_noICU_2brks_prior.rda cachestuff/ontario_clean.rda cachestuff/ont_cal_mob1.rda
 
 %.html: %.Rmd
 	Rscript -e 'rmarkdown::render("$<", output_format="html_document")'
