@@ -433,6 +433,7 @@ update.params_pansim <- function(object, ..., .list=FALSE) {
     }
     nm <- names(L)
     for (i in seq_along(L)) {
+        ## named sublist
         if (!is.null(nm2 <- names(L[[i]]))) {
             for (j in seq_along(L[[i]])) {
                 object[[nm2[j]]] <- L[[i]][j]
