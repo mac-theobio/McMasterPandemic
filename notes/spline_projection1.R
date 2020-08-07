@@ -1,4 +1,5 @@
-# Run spline_fit first
+# This is to run the spline_fit, and get basis and coefficients by "predvar", reconstruct the fit
+# comparing bs() and ns()
 library(splines)
 library(ggplot2); theme_set(theme_bw())
 library(dplyr)
@@ -26,7 +27,7 @@ logRt <- log(R0*S^h*I^(-c))
 Rf <- data.frame(
   t=t
   , logRt=ifelse(t>fitmax, NA, logRt)
-  , logRt_all = logRt
+  , logRt_all = logRt 
 )
 
 # Step 1:
@@ -41,6 +42,7 @@ co_ns <- coef(mod_ns)
 mod_bs <- model.frame(mod_bs)
 mod_ns <- model.frame(mod_ns)
 
+# get the basis of the fit and add a column of 1s for intercept 
 print(pv_ns <- attr(terms(mod_ns),"predvar"))
 bns <- eval(pv_ns[[3]])
 bns <- cbind(1, bns)

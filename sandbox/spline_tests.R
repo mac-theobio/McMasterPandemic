@@ -45,16 +45,24 @@ m <- lm(ff2, data=ddr)  ## coefficients are
 pred <- X %*% coef(m)
 plot(pred)
 
-bb <- coef(m)/250
+bb <- coef(m)/250  # not sure why /250?
 pred2 <- X %*% bb
 plot(pred2)
 
 date <- environment(ff)$X_dat$date
 stopifnot(nrow(X)==length(date))
 
-run_sim_loglin(params=params,
+sims <- run_sim_loglin(params=params,
                extra_pars=list(time_beta=bb),
                time_args=list(X_date=date, X=X),
                sim_args=list(start_date=date[1],end_date=tail(date,1))
                )
+head(sims)
+# this gives time series of beta0
+beta0_info <- attributes(sims)$params_timevar
+R0 <- get_R0(params)
+# relative transmission rate (which scales Rt)
+beta_rel <- R0 * beta0_info$Relative_value
 
+
+plot(sims$R)
