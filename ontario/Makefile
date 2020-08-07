@@ -1,4 +1,6 @@
 ## This is McMaster pandemic: ontario subdir
+## Seems outdated 2020 Aug 06 (Thu)
+## Most PHAC fitting is done in PHAC_covid
 
 current: target
 -include target.mk
@@ -102,6 +104,7 @@ Ignore += *.datatime
 %.datatime: ; touch $@
 ontario_clean.Rout: 0601.datatime
 
+## NOT the current report
 Sources += McMasterReport.Rnw
 McMasterReport.pdf: McMasterReport.Rnw cachestuff/ont_cal_noICU_2brks_prior.rda cachestuff/ontario_clean.rda cachestuff/ont_cal_mob1.rda
 
