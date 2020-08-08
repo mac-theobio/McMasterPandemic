@@ -4,7 +4,8 @@ library(tidyverse)
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 
-load("cachestuff/Ontario_calibration_setup.rda")
+# load("cachestuff/Ontario_calibration_setup.rda")
+source("Ontario_calibration_setup_nomake.R")
 
 calibrate_data_testify <- (calibrate_data_fill
 		%>% mutate(var = ifelse(var == "report", "postest", var))
@@ -55,7 +56,5 @@ current <- do.call(calibrate_comb
 
 print(plot(current, data=calibrate_data_fill) + ggtitle("Current model: PH + mobility cap"))
 
-
-saveEnvironment()
 
 
