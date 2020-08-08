@@ -400,6 +400,7 @@ run_sim <- function(params
                 stop("bad names in params_timevar: ",paste(npt,collapse=","))
             }
             params_timevar$Date <- anydate(params_timevar$Date)
+            params_timevar <- params_timevar[order(params_timevar$Date),]
         } else {
             params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
         }
@@ -412,7 +413,7 @@ run_sim <- function(params
         ## convert char to date
         switch_dates <- params_timevar[["Date"]]
         ## match specified times with time sequence
-        switch_times <- match(switch_dates, date_vec)
+        switch_times <- unique(match(switch_dates, date_vec))
         if (any(is.na(switch_times))) {
             bad <- which(is.na(switch_times))
             stop("non-matching dates in params_timevar: ",paste(switch_dates[bad], collapse=","))
