@@ -30,6 +30,7 @@ thin <- function(x,ndt=1) {
 ##' @param x a named vector or a list
 ##' @export
 unpack <- function(x) {
+    if (any(names(x)=="")) stop("unnamed elements in x")
     invisible(list2env(as.list(x),envir=parent.frame()))
 }
 

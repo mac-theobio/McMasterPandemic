@@ -1028,7 +1028,7 @@ calibrate_comb <- function(data,
         testing_data <- with(testing_data,
                              data.frame(Date=Date,
                                         Symbol="testing_intensity",
-                                        testing_intensity=c(1, intensity[-1]/intensity[1])))
+                                        Relative_value=c(1, intensity[-1]/intensity[1])))
     }
     X <- model.matrix(form, data = X_dat)
     if (use_spline && spline_setback>0 && spline_extrap=="constant") {
@@ -1043,7 +1043,9 @@ calibrate_comb <- function(data,
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     names(opt_pars$time_beta) <- colnames(X)
     time_args <- nlist(X,X_date=X_dat$date)
-    if (use_testing) time_args <- c(nlist, list(testing_data = testing_data))
+    if (use_testing) {
+        time_args <- c(time_args, list(testing_data = testing_data))
+    }
     priors <- NULL
     if (spline_pen>0) {
         ## FIXME: this is fragile
