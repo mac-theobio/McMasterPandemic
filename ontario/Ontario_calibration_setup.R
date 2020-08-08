@@ -4,7 +4,7 @@ library(zoo)
 
 source("makestuff/makeRfuns.R")
 ## Don't worry about this when coding interactively/sourcing
-commandFiles()
+commandEnvironments()
 
 
 ## Section 1: Read Data Sources
@@ -92,20 +92,23 @@ date_df <- data.frame(date = rep(date_vec,3)
    , var = rep(c("H","report","death"),each=length(date_vec))
 )
 
+## Why does it take Date and not date? Does it matter?
+test_df <- data.frame(date = date_vec
+	, var = rep("newTests",length(date_vec))
+)
+
+test_data_fill <- (left_join(test_df, clean_tsdata)
+	%>% transmute(Date = date
+		, intensity = ifelse(is.na(value),0,value)
+	)
+)
+
+print(test_data_fill)
+
+
 calibrate_data_fill <- (left_join(date_df,calibrate_data)
    %>% mutate(value = ifelse(is.na(value),0,value))
 )
 
-### MacPan setup
-params <- fix_pars(read_params("PHAC.csv")
-   , target=c(Gbar=6)
-   , pars_adj=list(c("sigma","gamma_s","gamma_m","gamma_a"))
-)
-
-params[["N"]] <- 14.57e6 ## Population of Ontario (2019)
-
-### parameters we are trying to estimate
-opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_c_prop=-1, logit_mu = -1, logit_phi1 = -1),log_nb_disp=c(report=1, death=1,H=1))
-
-saveEnvironment()
+saveVars(calibrate_data_fill, test_data_fill, clean_mobility, ext="rda")
 
