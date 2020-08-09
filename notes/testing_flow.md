@@ -26,7 +26,12 @@ Until now we have only used positive tests in our calibration. If we add negativ
 
 ## more on math and weighting
 
-We said above that the *per capita* rate of flowing from testing to positive or negative classes (depending on sensitivity/specificity) should be equal to (a) $f_i = t w_i/\sum(w_i)$. But we also at various times entertained the possibility that it should be scaled by (b) $t w_i/\sum(Z_j w_j)$, or by (c) $t Z_i w_i/\sum(Z_j w_j)$ (where $Z_i$ is a particular untested compartment; this doesn't match our notation elsewhere [where we use e.g. `S_u`, `E_u`, ... `Ia_u`, `Im_u` ...]).
+We said above that the *per capita* rate of flowing from testing to positive or negative classes (depending on sensitivity/specificity) should be equal to 
+    - (a) $f_i = t w_i/\sum(w_i)$ ? (original)
+	- (b) $t w_i/\sum(Z_j w_j)$ ?
+	- (c) $t Z_i w_i/\sum(Z_j w_j)$ ?
+	- (d) $t w_i \sum(Z_j)/\sum(Z_j w_j)$
+(where $Z_i$ is a particular untested compartment; this doesn't match our notation elsewhere [where we use e.g. `S_u`, `E_u`, ... `Ia_u`, `Im_u` ...]).
 
 What properties do we want the weighting scheme to have?
 
