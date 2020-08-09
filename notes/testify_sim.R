@@ -1,24 +1,25 @@
-## library(McMasterPandemic)
 library(tidyverse)
-library(devtools)
-
-load_all("../")
-
 source("makestuff/makeRfuns.R")
-commandEnvironments()
+## commandEnvironments()
+
+## WHICH of these do you want today?
+## library(devtools); load_all("../")
+library("McMasterPandemic")
+
+## Magic at the beginning
+set.seed(0807)
+start <- as.Date("2020-01-01")
+end <- as.Date("2020-06-01")
 
 pp <- read_params(matchFile(".csv$"))
 pp[["iso_p"]] <- 0
 pp[["N"]] <- 1.5e7 ## population of Ontario
+pp[["beta0"]] <- 0.4 ## Make a semi-realistic R0
 
 ppw0 <- pp[!grepl("^W",names(pp))] ## Copying BMB, removing all of the regular W-parameters
 
-start <- as.Date("2020-01-01")
-end <- as.Date("2020-06-01")
-
 print(pp)
-
-set.seed(0807)
+summary(pp)
 
 Wasymp <- c(0.01, 0.1,1)
 isop <- c(0,0.5,0.9,1)
