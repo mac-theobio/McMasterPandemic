@@ -300,7 +300,7 @@ do_step <- function(state, params, ratemat, dt=1,
     {
         calc_N <- sum(state[p_states])
         if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=MP_badsum_tol))) {
-            msg <- sprintf("sum(states) != original N (delta=%1.2g), state=(%s)",params[["N"]]-calc_N)
+            msg <- sprintf("sum(states) != original N (delta=%1.2g)",params[["N"]]-calc_N)
             get(MP_badsum_action)(msg)
         }
     } ## not exponential run or stoch proc or ignore-sum
