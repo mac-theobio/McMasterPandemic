@@ -32,7 +32,7 @@ iso_t <- c(0,0.5,0.9,1)
 
 simlist <- list()
 for(i in W_asymp) {
-    for(j in iso_t) {
+    for (j in iso_t) {
         ppw0 <- update(ppw0, W_asymp=i, iso_t = j)
         sims <- (run_sim(params = ppw0, ratemat_args = list(testify=TRUE)
                        , start_date = start

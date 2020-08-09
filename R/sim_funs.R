@@ -233,14 +233,18 @@ do_step <- function(state, params, ratemat, dt=1,
     ## update testing flows.
     ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
     if (has_testing(state)) {
+        ## positions of untested, positive-waiting, negative-wating compartments
+        ## (flows from _n, _p to _t, or back to _u, are always at per capita rate omega, don't need
+        ##  to be updated for changes in state)
         ## FIXME: backport to testify?
         u_pos <- grep("_u$",rownames(ratemat))
         p_pos <- grep("_p$",rownames(ratemat))
         n_pos <- grep("_n$",rownames(ratemat))
+        ## original/unscaled prob of positive test by compartment, testing weights by compartment
         posvec <- attr(ratemat,"posvec")
         wtsvec <- attr(ratemat,"wtsvec")
         ## scaling ... ?
-        wtsvec <- wtsvec*state[u_pos]/sum(wtsvec*state[u_pos])
+        wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
         ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
         if (attr(ratemat,"testing_time")=="sample") {
