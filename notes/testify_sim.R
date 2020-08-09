@@ -24,8 +24,8 @@ pp <- (read_params(fn)
 ppw0 <- pp[!grepl("^W",names(pp))] ## Copying BMB, removing all of the regular W-parameters
 class(ppw0) <- "params_pansim"
 
-print(pp)
-summary(pp)
+print(ppw0)
+summary(ppw0)
 
 W_asymp <- c(0.01, 0.1,1)
 iso_t <- c(0,0.5,0.9,1)
