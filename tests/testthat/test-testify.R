@@ -49,7 +49,7 @@ test_that("ratemat makes sense", {
 
 ## Updating FOI
 test_that("FOI doesn't change", {
-    pp2 <- update(pp,iso_p=0)
+    pp2 <- update(pp,iso_t=0)
     expect_equal(update_foi(state,pp2,beta_vec),
                  update_foi(state_testified,pp2,beta_vec_testified))
 })

@@ -565,6 +565,11 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , priors
                     , sim_fun)
     opt_inputs <- unlist(opt_pars)
+        ## initialize debug history
+    debug_hist_chunksize <- 1e4
+    if (exists("debug_hist_ctr")) {
+        debug_hist_ctr <<- 1
+    }
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         DE_lims <- get_DE_lims(opt_pars)
