@@ -15,6 +15,7 @@ pp <- read_params(matchFile(".csv$"))
 pp[["iso_p"]] <- 0
 pp[["N"]] <- 1.5e7 ## population of Ontario
 pp[["beta0"]] <- 0.4 ## Make a semi-realistic R0
+pp[["testing_intensity"]] <- 0.2
 
 ppw0 <- pp[!grepl("^W",names(pp))] ## Copying BMB, removing all of the regular W-parameters
 
