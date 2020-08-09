@@ -594,7 +594,9 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             cl <- parallel::makeCluster(DE_cores)
             de_arglist$control$cluster <- cl
         }
+        old_opts <- options(MP_badsum_action="ignore")
         de_time <- system.time(de_cal1 <- do.call(DEoptim::DEoptim,de_arglist))
+        options(old_opts)
         if (DE_cores>1) parallel::stopCluster(cl)
         opt_inputs <- de_cal1$optim$bestmem   ## set input for MLE to best
         M <- de_cal1$member$pop   ## find the population of parameter sets at the last step

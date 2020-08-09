@@ -292,13 +292,18 @@ do_step <- function(state, params, ratemat, dt=1,
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
     ##  allow infecteds to increase without depleting S ...)
-    calc_N <- sum(state[p_states])
+    MP_badsum_action <- getOption("MP_badsum_action","warning")
+    MP_badsum_tol <- getOption("MP_badsum_tol",1e-12)
     if (!do_exponential
-        && !stoch_proc    ## temporary: adjust reulermultinom to allow for x_states ...
-        && !isTRUE(all.equal(calc_N,params[["N"]], tolerance=1e-12))) {
-        stop(sprintf("sum(states) != original N (delta=%1.2g)",
-                     params[["N"]]-calc_N))
-    }
+        && !(MP_badsum_action=="ignore")
+        && !stoch_proc)    ## temporary: adjust reulermultinom to allow for x_states ...
+    {
+        calc_N <- sum(state[p_states])
+        if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=MP_badsum_tol))) {
+            msg <- sprintf("sum(states) != original N (delta=%1.2g), state=(%s)",params[["N"]]-calc_N)
+            get(MP_badsum_action)(msg)
+        }
+    } ## not exponential run or stoch proc or ignore-sum
     return(state)
 }
 
