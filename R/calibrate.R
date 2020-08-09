@@ -1023,7 +1023,7 @@ calibrate_comb <- function(data,
         return(form)
     }
     if (use_testing) {
-        params <- update(params,test_intensity=testing_data$intensity[1])
+        params <- update(params,testing_intensity=testing_data$intensity[1])
         ## set up in 'timevars' format (passed through run_sim_loglin to run_sim)
         testing_data <- with(testing_data,
                              data.frame(Date=Date,
