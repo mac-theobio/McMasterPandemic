@@ -75,6 +75,7 @@ make_jac <- function(params, state=NULL) {
 ## QUESTION: is the main testify argument to this function used?
 make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     Icats <- c("Ia","Ip","Im","Is")
+    testcats <- c("_u","_p","_n","_t")
     ## NB meaning of iso_* has switched from Stanford model
     ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
     beta_vec0 <- with(as.list(params),
@@ -85,11 +86,11 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
     if (has_testing(state=state)) {  ## testified!
-        beta_vec0 <- rep(beta_vec0,each=4)
-        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,c("_u","_p","_n","_t"))))
+        beta_vec0 <- rep(beta_vec0,each=length(testcats))
+        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
         ## FIXME: also adjust _n, _p components?
         pos_vals <- grep("_t$",names(beta_vec0))
-        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*params[["iso_t"]]
+        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
     }
     if (!full) return(beta_vec0)
     beta_vec <- setNames(numeric(length(state)),names(state))
