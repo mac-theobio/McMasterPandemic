@@ -233,7 +233,7 @@ do_step <- function(state, params, ratemat, dt=1,
     ## update testing flows.
     ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
     if (has_testing(state)) {
-        ## positions of untested, positive-waiting, negative-wating compartments
+        ## positions of untested, positive-waiting, negative-waiting compartments
         ## (flows from _n, _p to _t, or back to _u, are always at per capita rate omega, don't need
         ##  to be updated for changes in state)
         ## FIXME: backport to testify?
