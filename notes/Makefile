@@ -48,14 +48,27 @@ explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 ## Structural pictures from Ben
 ## refactor.html: refactor.Rmd
 
-## Testify sim
+######################################################################
 
+## Modularizing simplots
+
+## This is no longer supposed to run on its own! Except interactively.
 Sources += ../inst/params/PHAC_testify.csv
-testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv
+## testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv; $(makeR)
+## testify_simplot.Rout: testify_simplot.R testify_sim.rda; $(makeR)
+
+wrap_makeR=yes
+
+impmakeR += sims
+# basic.sims.Rout: basic.R
+%.sims.Rout: testify_sim.R %.rda ../inst/params/PHAC_testify.csv
 	$(makeR)
 
-testify_simplot.Rout: testify_simplot.R testify_sim.rda
+# basic.simplots.Rout: basic.R
+%.simplots.Rout: testify_simplot.R %.sims.rda
 	$(makeR)
+
+######################################################################
 
 ## 2020 Aug 03 (Mon)
 ## Testing a small devtools::test() glitch that BB did not reproduce
