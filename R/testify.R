@@ -101,7 +101,7 @@ make_test_posvec <- function(params) {
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
-##' ##' @export
+##' @export
 expand_stateval <- function(x, method=c("untested","spread"),
                             add_accum=TRUE)
 {

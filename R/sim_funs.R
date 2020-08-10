@@ -667,6 +667,7 @@ gradfun <- function(t, y, parms, M) {
 ##' r2 <- run_sim_range(params,use_ode=TRUE)
 ##' matplot(r1[,"t"],r1[,-1],type="l",lty=1,log="y")
 ##' matlines(r2[,"t"],r2[,-1],lty=2)
+##' @importFrom dplyr left_join
 ##' @export
 run_sim_range <- function(params
         , state=make_state(params[["N"]], params[["E0"]])
@@ -693,8 +694,8 @@ run_sim_range <- function(params
                          , ode_args))
         res <- dfs(res)
         if(nrow(res) < nt){
-        	time_df <- data.frame(time = 1:nt)
-        	res <- left_join(time_df,res)
+            time_df <- data.frame(time = 1:nt)
+            res <- dplyr::left_join(time_df,res)
         }
         names(res)[1] <- "t" ## ode() uses "time"
     } else {

@@ -11,8 +11,7 @@ expand_stateval(x, method = c("untested", "spread"), add_accum = TRUE)
 
 \item{method}{method for distributing values across new (expanded) states}
 
-\item{add_accum}{add N and P (neg/pos test) accumulator categories?
-##' @export}
+\item{add_accum}{add N and P (neg/pos test) accumulator categories?}
 }
 \description{
 expand states and values to include
