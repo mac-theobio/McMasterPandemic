@@ -11,3 +11,4 @@ R0 <- 2.5
 Gbar <- 6
 set.seed(0807)
 keep_all <- TRUE
+

@@ -28,8 +28,6 @@ H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752,
 D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame")
     expect_equal(tail(s0,1), ss,
                  tolerance=1e-8)
-
-
     expect_is(state,"state_pansim")
     s1 <- run_sim(params,state,start_date="1-March-2020",end_date="1-Jun-2020")
     expect_is(s1,"pansim")
@@ -54,9 +52,9 @@ test_that("time-varying example", {
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE))
     expect_is(resICU_t,"pansim")
-    plot(resICU_t)
+    suppressWarnings(print(plot(resICU_t)))
     ## not showing foi because of log / <= 1 filter
-    plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))
+    suppressWarnings(print(plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))))
     ## FIXME: test values!
 })
 
@@ -106,7 +104,7 @@ test_that("state methods", {
     expect_equal(make_state(N=1,E0=1),
                  structure(c(S = 0, E = 1, Ia = 0, Ip = 0,
                              Im = 0, Is = 0, H = 0,
-                             H2 = 0, hosp=0,
+                             H2 = 0, 
                              ICUs = 0, ICUd = 0,
                              D = 0, R = 0, X=0), class = "state_pansim"))
     expect_error(make_state(x=1:5),regexp="must be named")
@@ -153,8 +151,8 @@ test_that("var-specific obsdisp", {
     set.seed(101)
     s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
-    expect_equal(tail(s0$I,1),15557.975)
-    expect_equal(tail(s0$E,1),30299)
+    expect_equal(tail(s0$I,1),16385.5)
+    expect_equal(tail(s0$E,1),31791)
 })
 
 test_that("mle prediction", {

@@ -160,11 +160,11 @@ condense.pansim <-  function(object, add_reports=TRUE,
                 dd <- add_col(dd,n,paste0("^",n))
             }
             dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
-            for (n in c("H", "hosp","ICU","R")) {
+            for (n in c("H", "ICU","R")) {
                 dd <- add_col(dd,n,paste0("^",n))
             }
             
-            diff_vars <- c(D="death",N="negtest",P="postest")
+            diff_vars <- c(X="hosp",D="death",N="negtest",P="postest")
             for (i in seq_along(diff_vars)) {
                 nm <- names(diff_vars)[i]
                 re <- paste0("^",nm)

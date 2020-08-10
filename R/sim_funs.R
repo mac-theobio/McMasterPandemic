@@ -17,7 +17,7 @@
 ##' make_jac(params)
 make_jac <- function(params, state=NULL) {
     ## circumvent test code analyzers ... problematic ...
-    S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
+    S <- E <- Ia <- Ip <- Im <- Is <- H <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
     Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
@@ -137,7 +137,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE) {
     ## circumvent test code analyzers ... problematic ...
-    S <- E <- Ia <- Ip <- Im <- Is <- H  <- hosp <- NULL
+    S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
     Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
@@ -170,7 +170,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         M["H","R"]   <- (1-delta)*rho
     } else {
         ## FIXME: A better term than "acute" to mean the opposite of intensive?
-        ## four-way split (direct to D, acute care, ICU/survive, ICUD/die)
+        ## four-way split (direct to D, acute care, ICU/survive, ICUD/die)?
         M["Is","H"] <- (1-nonhosp_mort)*phi1*gamma_s
         M["Is","ICUs"] <- (1-nonhosp_mort)*(1-phi1)*(1-phi2)*gamma_s
         M["Is","ICUd"] <- (1-nonhosp_mort)*(1-phi1)*phi2*gamma_s
@@ -181,10 +181,8 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
         ## H now means 'acute care' only; all H survive & are discharged
         M["H","D"]   <- 0
         M["H","R"] <- rho ## all acute-care survive
-        if ("hosp" %in% names(state)) {
-            M["Is","hosp"] <- M["Is","H"]+M["Is","ICUs"]+M["Is","ICUd"]
-            M["hosp","X"] <- 1
-            ## assuming that hosp admissions mean *all* (acute-care + ICU)
+        if ("X" %in% colnames(M)) {
+            M["Is","X"] <- M["Is","H"] ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
     return(M)
@@ -331,7 +329,6 @@ do_step <- function(state, params, ratemat, dt=1,
 ## run_sim()
 ##' Run pandemic simulation
 ##' @inheritParams do_step
-##' @inheritParams run_sim ## JD: Is this wrong?
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
@@ -357,7 +354,6 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
 ##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",
 ##'                  condense_args=list(keep_all=TRUE))
-##' plot(res1X$hosp)
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
@@ -508,7 +504,7 @@ run_sim <- function(params
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- dfs(date=seq(start_date,end_date,by=dt),res)
-    res <- res[,!names(res) %in% c("t","X")]  ## we never want the internal time vector or the 'clean-up' state
+    res <- res[,!names(res) %in% "t"]  ## we never want the internal time vector
     ## condense here
     if (condense) {
         res <- do.call(condense.pansim,c(list(res,params=params0,
@@ -601,8 +597,8 @@ make_state <- function(N=params[["N"]],
                        testify=FALSE) {
     ## select vector of state names
     state_names <- switch(type,
-                          ## hosp is a hospital-admissions compartment; "X" is a junk compartment
-                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","hosp","ICUs","ICUd", "D","R","X"),
+                          ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
+                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X"),
                           ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
                           CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
                           stop("unknown type")

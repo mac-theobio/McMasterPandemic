@@ -1,5 +1,17 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
+##' global variables for testify expansion
+#' @export
+non_expanded_states <- c("D","X")
+
+##' @rdname non_expanded_states
+##' @export
+test_extensions <- c("u","p","n","t")
+
+##' @rdname non_expanded_states
+##' @export
+test_accumulators <- c("N","P")
+
 ##' make weights vector for tests
 ##'
 ##' @param params parameter vector
@@ -9,7 +21,7 @@
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval(state0)
-##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),c("D","R","X")))
+##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
 ##' posvec <- make_test_posvec(pp)
 ##' ## need to make_ratemate() with *unexpanded* state, then
 ##' ##  expand it
@@ -28,10 +40,17 @@
 ##' @export
 make_test_wtsvec <- function(params,var_names=NULL) {
     ## names of categories: these match *unexpanded* state names
-    asymp_cat <- c("S","E","Ia","Ip")
+    asymp_cat <- c("S","E","Ia","Ip","R")
     severe_cat <- c("Is","H","H2","ICUs","ICUd")
+    if (!is.null(var_names)) {
+        extra_states <- setdiff(var_names,c("Im",asymp_cat,severe_cat))
+        if (length(extra_states)>0) {
+            stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
+        }
+    }
     ## test whether a specific set of W-parameters are the *only*
     ##  W-parameters in the parameter vector
+    
     match_pars <- function(pars) {
         Wpars <- grep("^W",names(params),value=TRUE)
         return(identical(pars,sort(Wpars)))
@@ -82,26 +101,25 @@ make_test_posvec <- function(params) {
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
-##' @param non_expanded states that should \emph{not} be expanded into testing categorieso
-##' @export
+##' ##' @export
 expand_stateval <- function(x, method=c("untested","spread"),
-                            add_accum=TRUE,
-                            non_expanded = c("R","D","X")){
+                            add_accum=TRUE)
+{
     method <- match.arg(method)
-    extensions <- c("u","p","n","t")
-    newnames <- unlist(lapply(setdiff(names(x),non_expanded), paste, extensions, sep="_"))
+    
+    newnames <- unlist(lapply(setdiff(names(x),non_expanded_states), paste, test_extensions, sep="_"))
     new_states <- rep(0,length(newnames))
     names(new_states) <- newnames
     if (method=="untested") {
-        new_states[paste0(setdiff(names(x),non_expanded),"_u")] <- x[setdiff(names(x),non_expanded)]
+        new_states[paste0(setdiff(names(x),non_expanded_states),"_u")] <- x[setdiff(names(x),non_expanded_states)]
     } else {
         ## slightly fragile: depends on ordering
-        n_expand <- length(extensions)
+        n_expand <- length(test_extensions)
         new_states <- rep(x, each=n_expand)/n_expand
     }
     if (add_accum) {
     ## FIXME, compare setNames = 0 code 
-        new_states <- c(new_states, setNames(numeric(length(non_expanded)), non_expanded), c(N=0,P=0))
+        new_states <- c(new_states, setNames(numeric(length(non_expanded_states)), non_expanded_states), c(N=0,P=0))
     }
     return(new_states)
 }
@@ -110,12 +128,10 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' expand rate matrix for testing status
 ##' @param ratemat original rate matrix
 ##' @param params parameters
-##' @param non_expand_set states \emph{not} to expand
 ##' @param testing_time "report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)
 ##' @param debug what it sounds like
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,
-                    non_expand_set=c("D","R","X"),
                     testing_time=NULL) {
     ## FIXME: expand R
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
@@ -131,7 +147,7 @@ testify <- function(ratemat,params,debug=FALSE,
         }
     }
     wtsvec <- make_test_wtsvec(params, var_names=setdiff(rownames(ratemat),
-                                                         non_expand_set))
+                                                         non_expanded_states))
     posvec <- make_test_posvec(params)
     omega <- params[["omega"]]
     testing_intensity <- params[["testing_intensity"]]
@@ -141,11 +157,7 @@ testify <- function(ratemat,params,debug=FALSE,
     ## testifiable vars will get expanded
     ## We need to change expand_set here!! 
 
-   ## Following page 8 L137 in McMasterReport2020-07-06.pdf 
-    ## expand_set <- c("S","E","Ia","Ip","Im","Is","H","H2","hosp","ICUs","ICUd","D","R","X")
-    expand_set <- setdiff(states, non_expand_set)
-    ## If these are not expandable, we need to get rid of WD, WR, WX, PD, PR, PX
-    ## non_expand_set <- c("P","N") ## adding P and N for accumulation
+    expand_set <- setdiff(states, non_expanded_states)
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
     new_states <- names(expand_stateval(dummy_states))
     
@@ -166,7 +178,7 @@ testify <- function(ratemat,params,debug=FALSE,
                 new_M[paste0(i,"_p"),paste0(j,"_p")] <- M[i,j] 
                 new_M[paste0(i,"_n"),paste0(j,"_n")] <- M[i,j]
             }
-            if((i %in% expand_set) && (j %in% non_expand_set)){
+            if((i %in% expand_set) && (j %in% non_expanded_states)){
                 new_M[paste0(i,"_u"),j] <- M[i,j]
                 new_M[paste0(i,"_t"),j] <- M[i,j]
                 new_M[paste0(i,"_p"),j] <- M[i,j]

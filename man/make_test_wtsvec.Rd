@@ -24,7 +24,7 @@ pp <- read_params("PHAC_testify.csv")
 state1 <- state0 <- make_state(params=pp)   ## unexpanded
 state1[] <- 1  ## occupy all states
 state <- expand_stateval(state0)
-wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),c("D","R","X")))
+wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
 posvec <- make_test_posvec(pp)
 ## need to make_ratemate() with *unexpanded* state, then
 ##  expand it
