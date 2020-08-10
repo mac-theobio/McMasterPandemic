@@ -66,7 +66,7 @@ simdat <- (simframe
 		 , incidence
 		 , postest
 		 , total_test = postest + negtest
-		 , positivity = postest/total_test
+		 , pos_per_million = 1e6*postest/total_test
 		 , report
 		 , W_asymp
 		 , iso_t

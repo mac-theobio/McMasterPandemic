@@ -14,10 +14,8 @@ if (!interactive()) {
 ymin <- 1    
 ymax <- 1e6  ## screen out pathological values
 
-## ugh: modify test positivity to percentage so visible
 simdat <- (simdat
     %>% pivot_wider(names_from=var,values_from=value)
-    %>% mutate_at("positivity", ~ . * 100)
     %>% pivot_longer(-c(date, W_asymp, iso_t, testing_intensity), names_to="var")
 )
 

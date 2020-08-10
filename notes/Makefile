@@ -57,11 +57,13 @@ Sources += ../inst/params/PHAC_testify.csv
 ## testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv; $(makeR)
 ## testify_simplot.Rout: testify_simplot.R testify_sim.rda; $(makeR)
 
+Sources += sims.csv
+
 wrap_makeR=yes
 
 impmakeR += sims
 # basic.sims.Rout: basic.R
-%.sims.Rout: testify_sim.R %.rda ../inst/params/PHAC_testify.csv
+%.sims.Rout: testify_sim.R %.rda sims.csv
 	$(makeR)
 
 # basic.simplots.Rout: basic.R
