@@ -75,4 +75,6 @@ simdat <- (simframe
     %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
 )
 
+warnings()
+
 saveVars(simdat, params)
