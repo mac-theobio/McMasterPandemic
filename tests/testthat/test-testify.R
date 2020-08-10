@@ -9,11 +9,15 @@ pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp)
 state_testified <- expand_stateval(state)
 
-lfun <- function(x,newstates=4,fixedstates=3) {
-	newstates*(length(x)-fixedstates)+fixedstates
+## global variables
+## print(non_expanded_states)
+## print(test_extensions)
+## print(test_accumulators)
+
+lfun <- function(x,n_exts=length(test_extensions),n_fixed=length(non_expanded_states)) {
+    n_exts*(length(x)-n_fixed)+n_fixed
 }
 
-## fixedstates are D,R,X
 lfun(state)
 
 test_that("testified states make sense", {
@@ -58,8 +62,8 @@ test_that("condensation is OK", {
      sim0_testified_condensed <- run_sim(params = pp,
                                          ratemat_args = list(testify=TRUE))
      expect_equal(names(sim0_testified_condensed),
-                  c("date", "S", "E", "I", "H", "hosp", "ICU", "R",
-                    "death", "D", 
+                  c("date", "S", "E", "I", "H", "ICU", "R",
+                    "hosp", "X", "death", "D", 
                     "negtest", "N", "postest", "P",
                     "foi", "incidence", "report", 
                     "cumRep"))
