@@ -207,27 +207,7 @@ update_foi <- function(state, params, beta_vec) {
     return(foi)
 }
 
-
-##' Take a single simulation time step
-##' @inheritParams make_ratemat
-##' @param ratemat transition matrix
-##' @param dt time step (days)
-##' @param do_hazard use hazard calculation?
-##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
-##' @param stoch_proc stochastic process error?
-##' @export
-##' @examples
-##' params1 <- read_params("ICU1.csv")
-##' state1 <- make_state(params=params1)
-##' M <- make_ratemat(params=params1, state=state1)
-##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
-do_step <- function(state, params, ratemat, dt=1,
-                    do_hazard=FALSE, stoch_proc=FALSE,
-                    do_exponential=FALSE) {
-    x_states <- c("X","N","P")                  ## weird parallel accumulators
-    p_states <- setdiff(names(state), x_states) ## conserved states
-    ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
-    ## cat("do_step beta0",params[["beta0"]],"\n")
+update_ratemat <- function(ratemat, state, params, testwt_scale="N") {    
     ratemat[cbind(grep("^S",rownames(ratemat)),
                   grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
     ## update testing flows.
@@ -245,11 +225,12 @@ do_step <- function(state, params, ratemat, dt=1,
         wtsvec <- attr(ratemat,"wtsvec")
         ## scaling ... ?
         ## wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
-        wtsvec <- wtsvec*
-            params[["N"]]/
-            ## sum(state[u_pos])/
-            sum(wtsvec*state[u_pos])
-        ## sum(state[u_pos]*wtsvec) = sum(state[u_pos])
+        if (testwt_scale!="none") {
+            sc <- switch(testwt_scale,
+                         N=params[["N"]],
+                         sum_u=sum(state[u_pos]))
+            wtsvec <- wtsvec/sum(wtsvec*state[u_pos])*sc
+        }
         ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
         if (attr(ratemat,"testing_time")=="sample") {
@@ -259,6 +240,32 @@ do_step <- function(state, params, ratemat, dt=1,
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
+    return(ratemat)
+}
+
+
+##' Take a single simulation time step
+##' @inheritParams make_ratemat
+##' @param ratemat transition matrix
+##' @param dt time step (days)
+##' @param do_hazard use hazard calculation?
+##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
+##' @param stoch_proc stochastic process error?
+##' @export
+##' @examples
+##' params1 <- read_params("ICU1.csv")
+##' state1 <- make_state(params=params1)
+##' M <- make_ratemat(params=params1, state=state1)
+##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
+do_step <- function(state, params, ratemat, dt=1,
+                    do_hazard=FALSE, stoch_proc=FALSE,
+                    do_exponential=FALSE) {
+    testwt_scale <- "none"
+    x_states <- c("X","N","P")                  ## weird parallel accumulators
+    p_states <- setdiff(names(state), x_states) ## conserved states
+    ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
+    ## cat("do_step beta0",params[["beta0"]],"\n")
+    ratemat <- update_ratemat(ratemat, state, params)
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -447,7 +454,6 @@ run_sim <- function(params
                                 , nt=nt*ndt
                                 , dt=dt/ndt
                                 , M
-                                , use_ode
                                 , ratemat_args
                                 , step_args
                             )))
@@ -632,7 +638,8 @@ make_state <- function(N=params[["N"]],
 
 ##' 
 gradfun <- function(t, y, parms, M) {
-    foi <- M["S","E"] <- update_foi(y, parms, make_betavec(state=y, parms))
+    M <- update_ratemat(M, y, parms)
+    foi <- update_foi(y, parms, make_betavec(state=y, parms))
     ## compute 
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
