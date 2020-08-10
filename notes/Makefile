@@ -71,6 +71,7 @@ impmakeR += sims
 ## Absolute testing rates (oops, that's what basic is already doing?)
 ## Play here anyway
 # absolute.simplots.Rout: absolute.R testify_sim.R
+# absolute.sims.Rout: absolute.R testify_sim.R
 
 ######################################################################
 

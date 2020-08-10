@@ -3,8 +3,8 @@ source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 
 ## WHICH of these do you want today?
-## library(devtools); load_all("../")
-library("McMasterPandemic")
+library(devtools); load_all("../")
+## library("McMasterPandemic")
 
 if (interactive()) {
 	use_ode <- FALSE
@@ -12,16 +12,19 @@ if (interactive()) {
 	testing_intensity <- c(0.002, 0.02, 0.2)
 	W_asymp <- c(0.01, 0.1,1)
 	iso_t <- c(0,0.5,0.9,1)
-	set.seed(0807)
 	start <- as.Date("2020-01-01")
 	end <- as.Date("2020-06-01")
+	pop <- 1.5e7       ## population of Ontario
+   R0 <- 2.5
+	Gbar <- 6
+	set.seed(0807)
 }
 
 fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 params <- (read_params(fn)
-    %>% fix_pars(target=c(R0=2.5, Gbar=6))
+    %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(
-            N=1.5e7       ## population of Ontario
+            N=pop
         )
 )
 
