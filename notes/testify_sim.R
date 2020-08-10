@@ -7,7 +7,7 @@ source("makestuff/makeRfuns.R")
 library("McMasterPandemic")
 
 ## if (interactive()) {
-use_ode <- FALSE
+use_ode <- TRUE
 testwt_scale <- "none" ## or "N" or "sum_u"
 ## }
 ## Magic at the beginning

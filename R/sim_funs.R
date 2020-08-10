@@ -686,6 +686,10 @@ run_sim_range <- function(params
                                )
                          , ode_args))
         res <- dfs(res)
+        if(nrow(res) < nt){
+        	time_df <- data.frame(time = 1:nt)
+        	res <- left_join(time_df,res)
+        }
         names(res)[1] <- "t" ## ode() uses "time"
     } else {
         ## set up output
