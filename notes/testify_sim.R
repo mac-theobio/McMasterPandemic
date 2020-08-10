@@ -6,6 +6,16 @@ print(commandEnvironments())
 ## library(devtools); load_all("../")
 library("McMasterPandemic")
 
+<<<<<<< HEAD
+## if (interactive()) {
+use_ode <- TRUE
+testwt_scale <- "none" ## or "N" or "sum_u"
+## }
+## Magic at the beginning
+set.seed(0807)
+start <- as.Date("2020-01-01")
+end <- as.Date("2020-06-01")
+=======
 if (interactive()) {
 	use_ode <- FALSE
 	testwt_scale <- "none" ## or "N" or "sum_u"
@@ -16,6 +26,7 @@ if (interactive()) {
 	start <- as.Date("2020-01-01")
 	end <- as.Date("2020-06-01")
 }
+>>>>>>> e3e36ddf1f6eff4d6f1d2bd6a70b6c77181a2b1d
 
 fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 params <- (read_params(fn)
