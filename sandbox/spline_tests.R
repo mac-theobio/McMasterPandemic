@@ -3,8 +3,10 @@ library(dplyr)
 devtools::load_all() ## update code if necessary
 
 ## process built-in data and parameters to get something we can use
-dd <- ont_all %>% trans_state_vars() %>%
-       filter(var %in% c("H","report"))
+dd <- (data.frame(date=seq(as.Date("2020-02-14"),
+                          as.Date("2020-05-31"),
+                         by="1 day"))
+)
 params <- read_params("ICU1.csv")
 
 ## run calibrate_comb() with interesting spline settings to
@@ -23,7 +25,6 @@ matplot(X, type="l",lty=1, lwd=2,
         col=palette(),
         xlab="day",ylab="basis function value")
 
-
 X2 <- calibrate_comb(data=dd, params=params,
                      use_spline=TRUE,
                      spline_type="ns",
@@ -40,22 +41,24 @@ ff <- calibrate_comb(data=dd, params=params,
 ## environment of the formula also has the model matrix in it
 summary(environment(ff)$X_dat$t_vec)
 
-ddr <- (filter(dd, var=="report")
+ddr <- (ont_all
+    %>% trans_state_vars()
+    %>% filter(var=="report")
     %>% tidyr::drop_na(value)
     %>% mutate(t_vec=as.numeric(date-min(date)))
 )
 
 ## transform one-sided formula to two-sided ...
-ff2 <- ff
-ff2[[3]] <- ff2[[2]]
-ff2[[2]] <- quote(value)
-lm(ff2, data=ddr)
+## Q: is it OK to use a no-intercept model here???
+## get ns() part of the formula; drop -1
+newform <- substitute(value ~ x, list(x=ff[[2]][[3]]))
+spline_df <- environment(ff)$spline_df
+m <- lm(newform, data=ddr)
 
-m <- lm(ff2, data=ddr)  ## coefficients are
-pred <- X %*% coef(m)
+pred <- cbind(1,X) %*% coef(m)
 plot(pred)
 
-bb <- coef(m)/250  # not sure why /250?
+bb <- coef(m)/250  # not sure why /250? convert from report scale to Rt scale
 pred2 <- X %*% bb
 plot(pred2)
 
