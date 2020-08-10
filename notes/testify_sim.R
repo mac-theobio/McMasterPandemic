@@ -7,8 +7,8 @@ source("makestuff/makeRfuns.R")
 library("McMasterPandemic")
 
 ## if (interactive()) {
-    use_ode <- FALSE
-    testwt_scale <- "none"
+use_ode <- FALSE
+testwt_scale <- "none" ## or "N" or "sum_u"
 ## }
 ## Magic at the beginning
 set.seed(0807)
