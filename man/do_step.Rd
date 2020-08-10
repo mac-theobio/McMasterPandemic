@@ -11,7 +11,8 @@ do_step(
   dt = 1,
   do_hazard = FALSE,
   stoch_proc = FALSE,
-  do_exponential = FALSE
+  do_exponential = FALSE,
+  testwt_scale = "N"
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ do_step(
 \item{stoch_proc}{stochastic process error?}
 
 \item{do_exponential}{prevent outflow of susceptibles, to create a pure-exponential process?}
+
+\item{testwt_scale}{how to scale testing weights? "none"=use original weights as specified;
+"N" = multiply by (pop size)/(sum(wts*state[u_pop])); "sum_u" = multiply by (sum(state[u_pop])/(sum(wts*state[u_pop])))}
 }
 \description{
 Take a single simulation time step

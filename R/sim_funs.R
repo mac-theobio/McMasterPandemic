@@ -250,6 +250,8 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
 ##' @param do_hazard use hazard calculation?
 ##' @param do_exponential prevent outflow of susceptibles, to create a pure-exponential process?
 ##' @param stoch_proc stochastic process error?
+##' @param testwt_scale how to scale testing weights? "none"=use original weights as specified;
+##' "N" = multiply by (pop size)/(sum(wts*state[u_pop])); "sum_u" = multiply by (sum(state[u_pop])/(sum(wts*state[u_pop])))
 ##' @export
 ##' @examples
 ##' params1 <- read_params("ICU1.csv")
