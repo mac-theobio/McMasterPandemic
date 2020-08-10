@@ -93,6 +93,8 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
         beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
     }
     if (!full) return(beta_vec0)
+	 ## By default, make a vector of zeroes for all the states,
+	 ## then fill in infectious ones
     beta_vec <- setNames(numeric(length(state)),names(state))
     beta_vec[names(beta_vec0)] <- beta_vec0
     return(beta_vec)
@@ -647,7 +649,7 @@ gradfun <- function(t, y, parms, M) {
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
 }
-    
+
 ##' Run simulation across a range of times
 ##' @inheritParams do_step
 ##' @param nt number of steps to take

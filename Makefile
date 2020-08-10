@@ -43,6 +43,10 @@ tests/test_calibrate.Rout: tests/test_calibrate.R
 
 ######################################################################
 
+Sources += $(wildcard R/*.R)
+
+######################################################################
+
 subdirs += ontario notes
 
 Ignore += $(subdirs)
