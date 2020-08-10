@@ -75,7 +75,6 @@ comb_calib.Rout: notes/comb_calib.R
 %.html: %.Rmd
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
 
-## refactor.html:
 %.html: %.md
 	Rscript -e 'library("rmarkdown"); render("$<", output_format="html_document")'
 

@@ -100,6 +100,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     return(beta_vec)
 }
 
+## make_ratemat()
 ##' Create transition matrix
 ##'
 ##' Defines rates (per day) of flow \emph{from} compartment \code{i}
@@ -244,7 +245,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
     return(ratemat)
 }
 
-
+## do_step()
 ##' Take a single simulation time step
 ##' @inheritParams make_ratemat
 ##' @param ratemat transition matrix
@@ -327,9 +328,10 @@ do_step <- function(state, params, ratemat, dt=1,
     return(state)
 }
 
+## run_sim()
 ##' Run pandemic simulation
 ##' @inheritParams do_step
-##' @inheritParams run_sim
+##' @inheritParams run_sim ## JD: Is this wrong?
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
