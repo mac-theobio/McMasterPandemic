@@ -245,7 +245,10 @@ do_step <- function(state, params, ratemat, dt=1,
         wtsvec <- attr(ratemat,"wtsvec")
         ## scaling ... ?
         ## wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
-        wtsvec <- wtsvec*sum(state[u_pos])/sum(wtsvec*state[u_pos])
+        wtsvec <- wtsvec*
+            params[["N"]]/
+            ## sum(state[u_pos])/
+            sum(wtsvec*state[u_pos])
         ## sum(state[u_pos]*wtsvec) = sum(state[u_pos])
         ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
@@ -444,6 +447,7 @@ run_sim <- function(params
                                 , nt=nt*ndt
                                 , dt=dt/ndt
                                 , M
+                                , use_ode
                                 , ratemat_args
                                 , step_args
                             )))
