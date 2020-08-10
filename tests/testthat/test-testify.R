@@ -85,8 +85,7 @@ test_that("time-varying test intensity", {
 })
 
 test_that("testing with susceptibles only", {
-    pp[["testing_intensity"]] <- 0.002
-    pp_noinf <- update(pp,beta0=0,E0=0)  ## no transmission, no infected people
+    pp_noinf <- update(pp,beta0=0,E0=0, testing_intensity=0.002)  ## no transmission, no infected people
     sim0_noinf <- run_sim(params = pp_noinf,
                           ratemat_args = list(testify=TRUE),
                           end_date="2021-01-01")

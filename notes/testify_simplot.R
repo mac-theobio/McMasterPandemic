@@ -5,9 +5,11 @@ library(cowplot)
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
-makeGraphics()
-
-if (interactive()) load("testify_sim.rda")
+if (!interactive()) {
+    makeGraphics()
+} else {
+    load("testify_sim.rda")
+}
 
 ymin <- 1    
 ymax <- 1e6  ## screen out pathological values

@@ -6,6 +6,10 @@ source("makestuff/makeRfuns.R")
 ## library(devtools); load_all("../")
 library("McMasterPandemic")
 
+## if (interactive()) {
+    use_ode <- FALSE
+    testwt_scale <- "none"
+## }
 ## Magic at the beginning
 set.seed(0807)
 start <- as.Date("2020-01-01")
@@ -15,13 +19,11 @@ fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 params <- (read_params(fn)
     %>% fix_pars(target=c(R0=2.5, Gbar=6))
     %>% update(
-            iso_t=0         ## no isolation of tested
-            , N=1.5e7       ## population of Ontario
-            , testing_intensity=0.2  ## high testing intensity so we can see what's going on
+            N=1.5e7       ## population of Ontario
         )
 )
 
-paramsw0 <- params[!grepl("^W",names(params))] ## Copying BMB, removing all of the regular W-parameters
+paramsw0 <- params[!grepl("^W",names(params))] ## removing all of the regular W-parameters
 class(paramsw0) <- "params_pansim"
 
 print(paramsw0)
@@ -35,11 +37,13 @@ simlist <- list()
 for(i in W_asymp) {
     for (j in iso_t) {
         for (k in testing_intensity) {
+            cat(i,j,k,"\n")
             paramsw0 <- update(paramsw0, W_asymp=i, iso_t = j, testing_intensity=k)
             sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
                            , start_date = start
                            , end_date = end
-									, use_ode = TRUE
+                           , use_ode = use_ode
+                           , step_args = list(testwt_scale=testwt_scale)
                              ##			, condense_args=list(keep_all=TRUE) checkout the expanded version
                              )
                 %>% mutate(W_asymp = i

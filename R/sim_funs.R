@@ -211,7 +211,6 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
     ratemat[cbind(grep("^S",rownames(ratemat)),
                   grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
     ## update testing flows.
-    ## doing this inline rather than via function because of (possibly prematurely optimized) efficiency of not copying ratemat ...
     if (has_testing(state)) {
         ## positions of untested, positive-waiting, negative-waiting compartments
         ## (flows from _n, _p to _t, or back to _u, are always at per capita rate omega, don't need
@@ -259,13 +258,13 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
 ##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
 do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch_proc=FALSE,
-                    do_exponential=FALSE) {
-    testwt_scale <- "none"
+                    do_exponential=FALSE,
+                    testwt_scale="N") {
     x_states <- c("X","N","P")                  ## weird parallel accumulators
     p_states <- setdiff(names(state), x_states) ## conserved states
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
-    ratemat <- update_ratemat(ratemat, state, params)
+    ratemat <- update_ratemat(ratemat, state, params, testwt_scale=testwt_scale)
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
@@ -454,6 +453,7 @@ run_sim <- function(params
                                 , nt=nt*ndt
                                 , dt=dt/ndt
                                 , M
+                                , use_ode
                                 , ratemat_args
                                 , step_args
                             )))
