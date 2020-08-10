@@ -640,7 +640,11 @@ make_state <- function(N=params[["N"]],
     return(state)
 }
 
-##' 
+##' gradient function for ODE runs
+##' @param t time vector
+##' @param y state vector
+##' @param parms parameter vector
+##' @param M rate matrix
 gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
