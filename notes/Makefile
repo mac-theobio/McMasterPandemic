@@ -18,6 +18,14 @@ Sources += $(wildcard *.R) Makefile
 
 ######################################################################
 
+## Structure notes
+
+## refactor.html: refactor.Rmd
+%.html: %.Rmd
+	$(rmdh_r)
+
+######################################################################
+
 ## Playing with spline shapes
 
 rshape.Rout: rshape.R
@@ -76,13 +84,6 @@ impmakeR += sims
 ## Play here anyway
 # absolute.simplots.Rout: absolute.R testify_sim.R
 # absolute.sims.Rout: absolute.R testify_sim.R
-
-######################################################################
-
-## 2020 Aug 03 (Mon)
-## Testing a small devtools::test() glitch that BB did not reproduce
-chesterfield.Rout: chesterfield.R
-	$(makeR)
 
 ######################################################################
 
