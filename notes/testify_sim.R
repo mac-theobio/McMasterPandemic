@@ -39,6 +39,7 @@ for(i in W_asymp) {
             sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
                            , start_date = start
                            , end_date = end
+									, use_ode = TRUE
                              ##			, condense_args=list(keep_all=TRUE) checkout the expanded version
                              )
                 %>% mutate(W_asymp = i

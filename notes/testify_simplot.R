@@ -4,7 +4,9 @@ library(tidyr)
 library(cowplot)
 
 source("makestuff/makeRfuns.R")
-commandFiles()
+commandEnvironments()
+makeGraphics()
+
 if (interactive()) load("testify_sim.rda")
 
 ymin <- 1    
