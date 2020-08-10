@@ -60,15 +60,15 @@ print(simframe)
 
 simdat <- (simframe
     %>% transmute(date
-                , incidence
-                , postest
-                , total_test = postest + negtest
-                , positivity = postest/total_test
-                , report
-                , W_asymp
-                , iso_t
-                , testing_intensity
-                  )
+		 , incidence
+		 , postest
+		 , total_test = postest + negtest
+		 , positivity = postest/total_test
+		 , report
+		 , W_asymp
+		 , iso_t
+		 , testing_intensity
+	)
     %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
 )
 
