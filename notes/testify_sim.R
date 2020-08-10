@@ -9,11 +9,13 @@ library("McMasterPandemic")
 ## if (interactive()) {
 use_ode <- FALSE
 testwt_scale <- "none" ## or "N" or "sum_u"
-## }
-## Magic at the beginning
+testing_intensity <- c(0.002, 0.02, 0.2)
+W_asymp <- c(0.01, 0.1,1)
+iso_t <- c(0,0.5,0.9,1)
 set.seed(0807)
 start <- as.Date("2020-01-01")
 end <- as.Date("2020-06-01")
+## }
 
 fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 params <- (read_params(fn)
@@ -29,9 +31,6 @@ class(paramsw0) <- "params_pansim"
 print(paramsw0)
 summary(paramsw0)
 
-testing_intensity <- c(0.002, 0.02, 0.2)
-W_asymp <- c(0.01, 0.1,1)
-iso_t <- c(0,0.5,0.9,1)
 
 simlist <- list()
 for(i in W_asymp) {
