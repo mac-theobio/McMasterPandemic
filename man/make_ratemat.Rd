@@ -4,7 +4,7 @@
 \alias{make_ratemat}
 \title{Create transition matrix}
 \usage{
-make_ratemat(state, params, do_ICU = TRUE)
+make_ratemat(state, params, do_ICU = TRUE, sparse = FALSE)
 }
 \arguments{
 \item{state}{named vector of states}
@@ -12,6 +12,8 @@ make_ratemat(state, params, do_ICU = TRUE)
 \item{params}{named vector of parameters}
 
 \item{do_ICU}{include additional health utilization compartments}
+
+\item{sparse}{return sparse matrix?}
 }
 \value{
 matrix of (daily) transition rates
@@ -41,7 +43,7 @@ Base version matches structure of Stanford/Georgia models
 \examples{
 params <- read_params("ICU1.csv")
 state <- make_state(params[["N"]],E0=params[["E0"]])
-if (require(Matrix)) {
-  image(Matrix(make_ratemat(state,params)))
-}
+M <- make_ratemat(state,params)
+image(M)
+
 }

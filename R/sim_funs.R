@@ -127,15 +127,18 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' @param state named vector of states
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
+##' @param sparse return sparse matrix?
 ##' @return matrix of (daily) transition rates
+##  *need* Matrix version of rowSums imported to handle sparse stuff below!! 
+##' @importFrom Matrix Matrix rowSums colSums
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params[["N"]],E0=params[["E0"]])
-##' if (require(Matrix)) {
-##'   image(Matrix(make_ratemat(state,params)))
-##' }
+##' M <- make_ratemat(state,params)
+##' image(M)
+##' 
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE) {
+make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
@@ -185,6 +188,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE) {
             M["Is","X"] <- M["Is","H"] ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
+    if (sparse) {
+        M <- Matrix::Matrix(M)
+    }
     return(M)
 }
 
@@ -208,11 +214,14 @@ update_foi <- function(state, params, beta_vec) {
     return(foi)
 }
 
-update_ratemat <- function(ratemat, state, params, testwt_scale="N") {    
-    ratemat[cbind(grep("^S",rownames(ratemat)),
-                  grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
-    ## update testing flows.
+update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
+    if (inherits(ratemat,"Matrix")) {
+        aa <- c("wtsvec","posvec","testing_time")
+        saved_attrs <- setNames(lapply(aa,attr,x=ratemat),aa)
+    }
+    ## update testing flows. DO THIS FIRST, before updating foi: **** assignment via cbind() to Matrix objects loses attributes???
     if (has_testing(state)) {
+        testing_time <- attr(ratemat,"testing_time")  ## ugh  (see **** above)
         ## positions of untested, positive-waiting, negative-waiting compartments
         ## (flows from _n, _p to _t, or back to _u, are always at per capita rate omega, don't need
         ##  to be updated for changes in state)
@@ -222,7 +231,9 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         n_pos <- grep("_n$",rownames(ratemat))
         ## original/unscaled prob of positive test by compartment, testing weights by compartment
         posvec <- attr(ratemat,"posvec")
+        if (is.null(posvec)) stop("expected ratemat to have a posvec attribute")
         wtsvec <- attr(ratemat,"wtsvec")
+        if (is.null(wtsvec)) stop("expected ratemat to have a wtsvec attribute")
         ## scaling ... ?
         ## wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
         if (testwt_scale!="none") {
@@ -233,11 +244,19 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         }
         ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
-        if (attr(ratemat,"testing_time")=="sample") {
+        if (testing_time=="sample") {
             N_pos <- which(rownames(ratemat)=="N")
             P_pos <- which(rownames(ratemat)=="P")
             ratemat[cbind(u_pos,N_pos)] <- ratemat[cbind(u_pos,n_pos)]
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
+        }
+    }
+    ratemat[cbind(grep("^S",rownames(ratemat)),
+                  grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
+    ## ugh, restore attributes if necessary
+    if (inherits(ratemat,"Matrix")) {
+        for (a in aa) {
+            attr(ratemat,a) <- saved_attrs[[a]]
         }
     }
     return(ratemat)

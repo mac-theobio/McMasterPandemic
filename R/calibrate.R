@@ -55,6 +55,11 @@ badness <- function(delta, params, target, pars_adj) {
 ##' @param u_interval interval for uniroot adjustment
 ##' @param r_method method for fixing r (brute-force exponential simulation or JD's kernel-based approach?)
 ##' @param debug debug?
+##' @examples
+##' pp <- read_params("ICU1.csv")
+##' summary(pp)
+##' pp2 <- fix_pars(pp,debug=TRUE)
+##' summary(pp2)
 ##' @export
 ## FIXME: automatically choose default pars_adj on the basis of target?
 ##  better checking of pars_adj (should be a list of named vectors with
@@ -87,7 +92,10 @@ fix_pars <- function(params, target=c(r=0.23,Gbar=6),
         } else {
             argList <- list(par=c(0,0), fn= badness, target=target, params=params, pars_adj=pars_adj)
             argList$method <- "Nelder-Mead"
-            
+            if (debug) {
+                argList$control  <- list(trace=1)
+            }
+            ## with(argList,fn(par,params=params,pars_adj=pars_adj,target=target))
             opt1 <- do.call(optim, argList)
             p_new <- adjust_params(opt1$par, params, pars_adj=pars_adj)
         }

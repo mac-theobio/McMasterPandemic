@@ -18,3 +18,9 @@ testify(ratemat, params, debug = FALSE, testing_time = NULL)
 \description{
 expand rate matrix for testing status
 }
+\examples{
+params <- read_params("PHAC_testify.csv")
+state <- make_state(params[["N"]],E0=params[["E0"]])
+M <- make_ratemat(state,params)
+image(M)
+}

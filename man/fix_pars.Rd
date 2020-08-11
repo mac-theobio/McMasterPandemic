@@ -29,3 +29,9 @@ fix_pars(
 \description{
 adjust pars to match targets
 }
+\examples{
+pp <- read_params("ICU1.csv")
+summary(pp)
+pp2 <- fix_pars(pp,debug=TRUE)
+summary(pp2)
+}

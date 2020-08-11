@@ -130,6 +130,11 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' @param params parameters
 ##' @param testing_time "report" (N and P are counted at the time when individuals move from _n, _p to _u, _t compartments) or "sample" (N and P are counted when individuals move from _u to _n or _p)
 ##' @param debug what it sounds like
+##' @examples
+##' params <- read_params("PHAC_testify.csv")
+##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' M <- make_ratemat(state,params)
+##' image(M)
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,
                     testing_time=NULL) {
@@ -208,6 +213,7 @@ testify <- function(ratemat,params,debug=FALSE,
             }
    	}
     }
+    if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
     attr(new_M,"testing_time") <- testing_time
