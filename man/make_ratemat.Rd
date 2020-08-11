@@ -44,6 +44,7 @@ Base version matches structure of Stanford/Georgia models
 params <- read_params("ICU1.csv")
 state <- make_state(params[["N"]],E0=params[["E0"]])
 M <- make_ratemat(state,params)
-image(M)
-
+if (require(Matrix)) {
+   image(Matrix(M))
+}
 }
