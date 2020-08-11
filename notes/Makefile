@@ -78,6 +78,11 @@ impmakeR += sims
 %.simplots.Rout: testify_simplot.R %.sims.rda
 	$(makeR)
 
+# basic.testify_calibration.Rout: basic.R testify_calibration.R
+%.testify_calibration.Rout: testify_calibration.R %.rda %.sims.rda
+	$(makeR)
+
+
 %.testcatplots.Rout: testify_testcatplot.R %.sims.rda
 	$(makeR)
 

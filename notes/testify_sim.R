@@ -73,7 +73,6 @@ simframe <- bind_rows(simlist)
 
 print(simframe)
 
-quit()
 if (!keep_all) {
     simdat <- (simframe
         %>% transmute(date
@@ -108,4 +107,4 @@ if (!keep_all) {
 
 warnings()
 
-saveVars(simdat, params)
+saveVars(simdat, params, simtestify, pf)
