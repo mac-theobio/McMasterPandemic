@@ -154,6 +154,11 @@ explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/on
 ali_simple_run1.Rout: ali_simple_run1.R
 	$(makeR)
 
+
+## Ali: simple SIR model
+test_sir.Rout: test_sir.R
+	$(makeR)
+
 ######################################################################
 
 %.html: %.Rmd
