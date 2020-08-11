@@ -1,4 +1,5 @@
 library(tidyverse)
+library(parallel)
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 
@@ -37,33 +38,42 @@ class(paramsw0) <- "params_pansim"
 print(paramsw0)
 summary(paramsw0)
 
+print(W_asymp)
+print(iso_t)
+print(testing_intensity)
 
-simlist <- list()
-for(i in W_asymp) {
-    for (j in iso_t) {
-        for (k in testing_intensity) {
-            cat(i,j,k,"\n")
-            paramsw0 <- update(paramsw0, W_asymp=i, iso_t = j, testing_intensity=k)
-            sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
-                           , start_date = start
-                           , end_date = end
-                           , use_ode = use_ode
-                           , step_args = list(testwt_scale=testwt_scale)
-                           , condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
-                             )
-                %>% mutate(W_asymp = i
-                         , iso_t = j
-                         , testing_intensity=k
-                           )
-            )
-            simlist <- c(simlist,list(sims))
-        } ## loop over testing intensity
-    } ## loop over iso_t
-} ## loop over W_asymp
+pf <- expand.grid(W_asymp,iso_t,testing_intensity)
+colnames(pf) <- c("W_asypm","iso_t","testing_intensity")
+print(pf)
+
+simtestify <- function(x){
+	cat(pf[x,1],pf[x,2],pf[x,3],"\n")
+	paramsw0 <- update(paramsw0
+		, W_asymp=pf[x,1]
+		, iso_t = pf[x,2]
+		, testing_intensity=pf[x,3]
+	)
+   sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
+		, start_date = start
+      , end_date = end
+     	, use_ode = use_ode
+     	, step_args = list(testwt_scale=testwt_scale)
+     	, condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
+      )
+     	%>% mutate(W_asymp = pf[x,1]
+     		, iso_t = pf[x,2]
+         , testing_intensity=pf[x,3]
+         )
+	)
+	return(sims)
+}
+
+simlist <- mclapply(1:nrow(pf),function(x)simtestify(x),mc.cores = 3)
 simframe <- bind_rows(simlist)
 
 print(simframe)
 
+quit()
 if (!keep_all) {
     simdat <- (simframe
         %>% transmute(date
