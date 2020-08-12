@@ -76,7 +76,7 @@ params["sigma"] <- my_inf #Inf
 
 ## BMB:
 params[1:length(params)] <- 0  
-params["beta"] <- 1  ## BMB: this isn't used by MacPan. beta0?
+params["beta0"] <- 1  ## BMB: this isn't used by MacPan. beta0?
 
 params["gamma_a"] <- 1/3
 params["gamma_m"] <- my_inf
@@ -139,17 +139,6 @@ matplot(X, type="l",lty=1, lwd=2,
 
 # debugonce(run_sim_loglin)
 sims <- run_sim_loglin(params=params,
-
-                       # extra_pars= NULL,
-                       # time_args=list(X_date=dd$date, X=X),
-                       sim_args=list(start_date=dd$date[1],end_date=tail(dd$date,1))
-)
-
-out_temp <- na.omit(as.data.frame(sims[c("date","S","I","R")]))
-out3 <- out_temp %>%
-  pivot_longer(c(S, I, R), names_to = "compartment", values_to = "value")
-
-ggplot(data=na.omit(out3[1:25,]), aes(x=date,y=value,col=compartment))+geom_line()
                        ## BMB: you do need to supply a coef vector
                        ## if not (if (length(extra_pars$time_beta)) ==0)
                        ## then the spline component will be skipped
@@ -160,6 +149,14 @@ ggplot(data=na.omit(out3[1:25,]), aes(x=date,y=value,col=compartment))+geom_line
                                      end_date=tail(dd$date,1),
                                      condense_args=list(add_reports=FALSE))
 )
+
+
+out_temp <- na.omit(as.data.frame(sims[c("date","S","I","R")]))
+out3 <- out_temp %>%
+  pivot_longer(c(S, I, R), names_to = "compartment", values_to = "value")
+
+ggplot(data=out3, aes(x=date,y=value,col=compartment))+geom_line()
+
 ## BMB: get object of type 'closure' is not subsettable
 ## replace date with dd$date
 ## add condense_args() to skip computing reports (on a currently empty
