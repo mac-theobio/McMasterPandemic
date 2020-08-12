@@ -105,15 +105,7 @@ plot_caltest.Rout: run_caltest.RData plot_caltest.R
 
 test0.Rout: test0.R
 
-######################################################################
-
-## Jonathan is causing trouble
-
-nonsense.Rout: nonsense.R
-	$(makeR)
-
-bad_nonsense.Rout: bad_nonsense.R
-	$(makeR)
+test_hosp.Rout: test_hosp.R
 
 ######################################################################
 
