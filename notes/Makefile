@@ -95,6 +95,13 @@ impmakeR += sims
 
 ######################################################################
 
+## Side pipe
+
+testsim.Rout: testsim.R simple.rda sims.csv
+	$(makeR)
+
+######################################################################
+
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
 run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
