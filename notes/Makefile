@@ -70,7 +70,7 @@ Sources += sims.csv
 wrap_makeR=yes
 
 impmakeR += sims
-# basic.sims.Rout: basic.R
+# basic.sims.Rout: testify_sim.R basic.R
 %.sims.Rout: testify_sim.R %.rda sims.csv
 	$(makeR)
 
