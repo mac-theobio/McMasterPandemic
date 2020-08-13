@@ -46,8 +46,8 @@ testdat <- data.frame(Date=dat$date, intensity=testing_intensity[1])
 
 testify_calib <- do.call(calibrate_comb,
                          c(nlist(params=paramsw0
-                               , debug_plot=TRUE
-                               , debug=TRUE
+                               , debug_plot=FALSE
+                               , debug=FALSE
                                ## , use_testing = TRUE
                                , use_DEoptim = FALSE
                                ## , testing_data = testdat
