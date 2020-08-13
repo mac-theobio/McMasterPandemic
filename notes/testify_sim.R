@@ -4,7 +4,7 @@ source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 
 ## WHICH of these do you want today?
-library(devtools); load_all("../")
+## library(devtools); load_all("../")
 library("McMasterPandemic")
 
 if (interactive()) {
@@ -42,10 +42,11 @@ print(W_asymp)
 print(iso_t)
 print(testing_intensity)
 
-pf <- expand.grid(W_asymp,iso_t,testing_intensity)
-colnames(pf) <- c("W_asypm","iso_t","testing_intensity")
+## create factorial combination of parameter vectors
+pf <- expand.grid(W_asymp=W_asymp,iso_t=iso_t,testing_intensity=testing_intensity)
 print(pf)
 
+## run a simulation based on parameters in the factorial frame
 simtestify <- function(x){
 	cat(pf[x,1],pf[x,2],pf[x,3],"\n")
 	paramsw0 <- update(paramsw0
@@ -53,17 +54,17 @@ simtestify <- function(x){
 		, iso_t = pf[x,2]
 		, testing_intensity=pf[x,3]
 	)
-   sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
-		, start_date = start
-      , end_date = end
-     	, use_ode = use_ode
-     	, step_args = list(testwt_scale=testwt_scale)
-     	, condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
-      )
-     	%>% mutate(W_asymp = pf[x,1]
-     		, iso_t = pf[x,2]
-         , testing_intensity=pf[x,3]
-         )
+        sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
+                       , start_date = start
+                       , end_date = end
+                       , use_ode = use_ode
+                       , step_args = list(testwt_scale=testwt_scale)
+                       , condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
+                         )
+            %>% mutate(W_asymp = pf[x,1]
+                     , iso_t = pf[x,2]
+                     , testing_intensity=pf[x,3]
+                       )
 	)
 	return(sims)
 }

@@ -10,11 +10,16 @@ print(params)
 
 paramsw0 <- params
 summary(paramsw0)
-keep_all <- FALSE
+
+## run the *first* set of parameters from pf
+print(pf[1,])
 simdat <- simtestify(1)
 
+dat <- (simdat
+    %>% transmute(date, var="postest",
+                  value=round(postest))
+)
 
-dat <- simdat %>% transmute(date, var="postest", value=postest)
 pp <- attr(simdat,"params")
 
 opt_pars <- with(as.list(pp),
@@ -42,6 +47,7 @@ testdat <- data.frame(Date=dat$date, intensity=testing_intensity[1])
 testify_calib <- do.call(calibrate_comb,
                          c(nlist(params=paramsw0
                                , debug_plot=TRUE
+                               , debug=TRUE
                                ## , use_testing = TRUE
                                , use_DEoptim = FALSE
                                ## , testing_data = testdat
