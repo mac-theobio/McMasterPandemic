@@ -65,6 +65,8 @@ testify_calib <- do.call(calibrate_comb,
 
 print(testify_calib)
 
+print(plot(testify_calib,data=dat))
+
 dd <- predict(testify_calib
    , ensemble=FALSE
    , keep_vars=c("postest")
