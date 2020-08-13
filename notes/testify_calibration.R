@@ -14,11 +14,26 @@ keep_all <- FALSE
 print(pf[1,])
 simdat <- simtestify(1)
 
-gg <- (ggplot(simdat,aes(date,postest))
-	+ geom_point()
+pdat <- (simdat
+	%>% gather(key="var",value="value",-c(date,W_asymp,iso_t,testing_intensity))
+)
+
+last_order <- (pdat
+	%>% filter(date == max(date))
+	%>% arrange(desc(value))
+)
+
+pdat <- (pdat %>% mutate(var = factor(var,levels=last_order$var)))
+
+gg <- (ggplot(pdat,aes(date,value))
+	+ geom_line()
+	+ facet_wrap(~var,scale="free")
+	+ scale_y_log10()
 )
 
 print(gg)
+
+quit()
 
 dat <- simdat2 %>% transmute(date, var="postest", value=postest)
 pp <- attr(simdat2,"params")
