@@ -1,26 +1,19 @@
+## callArgs only works interactively and is target-dependent
+callArgs <- "basic.sims.Rout testify_sim.R basic.rda sims.csv"
+callArgs <- "absolute.sims.Rout testify_sim.R absolute.rda sims.csv"
+
 library(tidyverse)
 library(parallel)
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 
+## Double-sourcing will be necessary sometimes until we 
+## make makeR a real package
+source("makestuff/makeRfuns.R")
+
 ## WHICH of these do you want today?
 ## library(devtools); load_all("../")
 library("McMasterPandemic")
-
-if (interactive()) {
-	use_ode <- FALSE
-	testwt_scale <- "none" ## or "N" or "sum_u"
-	testing_intensity <- 0.002 ## c(0.002, 0.02, 0.2)
-	W_asymp <-  1 ## c(0.01, 0.1,1)
-	iso_t <- 0.5 ## c(0,0.5,0.9,1)
-	start <- as.Date("2020-01-01")
-	end <- as.Date("2020-06-01")
-	pop <- 1.5e7       ## population of Ontario
-        R0 <- 2.5
-	Gbar <- 6
-	set.seed(0807)
-        keep_all <- FALSE
-}
 
 if (!exists("keep_all")) keep_all <- FALSE
 
