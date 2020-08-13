@@ -535,6 +535,10 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
         time_args <- list(break_dates=break_dates)
     }
+    v <- na.omit(data$value)
+    if (any(abs(v-round(v))>1e-9)) {
+        stop("need integer values in reported data (to match dnbinom)")
+    }
     cc <- match.call()
     if (debug) {
         cat("start date: ", format(start_date),
