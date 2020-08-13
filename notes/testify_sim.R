@@ -1,10 +1,14 @@
-callArgs ## callArgs only works interactively and is target-dependent
+## callArgs only works interactively and is target-dependent
 callArgs <- "basic.sims.Rout testify_sim.R basic.rda sims.csv"
+callArgs <- "absolute.sims.Rout testify_sim.R absolute.rda sims.csv"
 
 library(tidyverse)
 library(parallel)
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
+
+## Double-sourcing will be necessary sometimes until we 
+## make makeR a real package
 source("makestuff/makeRfuns.R")
 
 ## WHICH of these do you want today?
