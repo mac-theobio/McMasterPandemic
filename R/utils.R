@@ -533,9 +533,14 @@ has_testing <- function(state,params=NULL) {
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
+##' @param add_blocks add lines showing blocks for testified matrices?
 ##' @importFrom lattice panel.abline
 ##' @export
-show_ratemat <- function(M, aspect="iso", add_blocks=any(grepl("_t",rownames(M)))) {
+show_ratemat <- function(M, aspect="iso", add_blocks=NULL) {
+    if (is.null(add_blocks)) {
+        add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
+                                                 rownames(M)))
+    }
     p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
                                  y=list(at=seq(ncol(M)),labels=colnames(M))),
                   xlab="to",

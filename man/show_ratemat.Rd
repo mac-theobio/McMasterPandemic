@@ -4,12 +4,14 @@
 \alias{show_ratemat}
 \title{visualize rate (per-capita flow) matrix}
 \usage{
-show_ratemat(M, aspect = "iso", add_blocks = any(grepl("_t", rownames(M))))
+show_ratemat(M, aspect = "iso", add_blocks = NULL)
 }
 \arguments{
 \item{M}{rate matrix}
 
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
+
+\item{add_blocks}{add lines showing blocks for testified matrices?}
 }
 \description{
 visualize rate (per-capita flow) matrix

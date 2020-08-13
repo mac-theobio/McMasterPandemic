@@ -9,6 +9,7 @@ pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp)
 state_testified <- expand_stateval(state)
 
+
 ## global variables
 ## print(non_expanded_states)
 ## print(test_extensions)
@@ -38,6 +39,12 @@ test_that("testified betas make sense", {
     expect_equal(names(beta_vec0_testified), grep("^I[[:lower:]]",names(state_testified),value=TRUE))
     expect_equal(unname(beta_vec0_testified[grepl("_u$",names(beta_vec0_testified))]),
                  unname(beta_vec0))
+})
+
+test_that("pos test vec check", {
+    vn <- setdiff(names(state),non_expanded_states)
+    badp <- c(Pxx=1)
+    expect_error(make_test_posvec(badp,vn), "vector names should match")
 })
 
 test_that("catch state/beta mismatch", {

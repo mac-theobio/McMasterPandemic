@@ -12,6 +12,20 @@ test_extensions <- c("u","p","n","t")
 ##' @export
 test_accumulators <- c("N","P")
 
+##' @rdname non_expanded_states
+##' @export
+asymp_cat <- c("S","E","Ia","Ip","R")
+
+##' @rdname non_expanded_states
+severe_cat <- c("Is","H","H2","ICUs","ICUd")
+
+check_var_names <- function(var_names) {
+    extra_states <- setdiff(var_names,c("Im",asymp_cat,severe_cat))
+    if (length(extra_states)>0) {
+        stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
+    }
+}
+
 ##' make weights vector for tests
 ##'
 ##' @param params parameter vector
@@ -21,8 +35,9 @@ test_accumulators <- c("N","P")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval(state0)
-##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
-##' posvec <- make_test_posvec(pp)
+##' vn <- setdiff(names(state0),non_expanded_states)
+##' wtsvec <- make_test_wtsvec(pp, vn)
+##' posvec <- make_test_posvec(pp, vn)
 ##' ## need to make_ratemat() with *unexpanded* state, then
 ##' ##  expand it
 ##' ratemat <- testify(make_ratemat(state1,pp), pp)
@@ -31,25 +46,17 @@ test_accumulators <- c("N","P")
 ##' tt2[tt2>0] <- 1 ## make all edges == 1
 ##' show_ratemat(tt2)
 ##' show_ratemat(ratemat,aspect="fill")
-##' heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 ##' if (require(igraph)) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
 ##'    plot(g, layout=igraph::layout_nicely)
 ##' }
 ##' @export
 make_test_wtsvec <- function(params,var_names=NULL) {
-    ## names of categories: these match *unexpanded* state names
-    asymp_cat <- c("S","E","Ia","Ip","R")
-    severe_cat <- c("Is","H","H2","ICUs","ICUd")
     if (!is.null(var_names)) {
-        extra_states <- setdiff(var_names,c("Im",asymp_cat,severe_cat))
-        if (length(extra_states)>0) {
-            stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
-        }
+        check_var_names(var_names)
     }
     ## test whether a specific set of W-parameters are the *only*
     ##  W-parameters in the parameter vector
-    
     match_pars <- function(pars) {
         Wpars <- grep("^W",names(params),value=TRUE)
         return(identical(pars,sort(Wpars)))
@@ -84,16 +91,17 @@ make_test_wtsvec <- function(params,var_names=NULL) {
 ##'
 ##' @param params parameter vector
 ##' @export
-make_test_posvec <- function(params) {
-    pos_vec <- params[grepl("^P",names(params))]
-    return(pos_vec)
+make_test_posvec <- function(params,var_names=NULL) {
+    vec <- params[grepl("^P",names(params))]
+    names(vec) <- gsub("^P_?","",names(vec))
+    if (!is.null(var_names)) {
+        if (!all(sort(names(vec))==sort(var_names))) {
+            stop("vector names should match var names")
+        }
+        vec <- vec[var_names] ## reorder
+    }
+    return(vec)
 }
-
-# ## use inside testify to expand states
-# ## DRY: use this inside expand_stateval??
-# expand_states <- function(expandable,nonexpandable) {
-#     new_states <- c(paste0(expandable,c("_u","_p","_n","_t")),nonexpandable, "N", "P")
-# }
 
 ##' expand states and values to include
 ##'
@@ -132,7 +140,6 @@ expand_stateval <- function(x, method=c("untested","spread"),
 ##' @export
 testify <- function(ratemat,params,debug=FALSE,
                     testing_time=NULL) {
-    ## FIXME: expand R
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)
     ## Assuming false positive/negative is (1-trueprob)
@@ -145,18 +152,17 @@ testify <- function(ratemat,params,debug=FALSE,
             stop("unknown testing_time", testing_time)
         }
     }
-    wtsvec <- make_test_wtsvec(params, var_names=setdiff(rownames(ratemat),
-                                                         non_expanded_states))
-    posvec <- make_test_posvec(params)
+    vn <- setdiff(rownames(ratemat), non_expanded_states)
+    wtsvec <- make_test_wtsvec(params, var_names=vn)
+    posvec <- make_test_posvec(params, var_names=vn)
     omega <- params[["omega"]]
     testing_intensity <- params[["testing_intensity"]]
     
-    M <- ratemat  ## FIXME: why two names?
+    M <- ratemat  ## FIXME: why two names (M and ratemat)
     states <- rownames(ratemat)
     ## testifiable vars will get expanded
-    ## We need to change expand_set here!! 
-
     expand_set <- setdiff(states, non_expanded_states)
+    
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
     new_states <- names(expand_stateval(dummy_states))
     
@@ -166,34 +172,29 @@ testify <- function(ratemat,params,debug=FALSE,
                    )
    ## Between states
     for(i in rownames(ratemat)){
+        sn <- function(state, compartment=i) paste0(compartment, "_", state)
+        
         ## Between states: horizontal arrows moves the same rate
         for(j in colnames(ratemat)){
             if (debug) { 
       		print(cat(i,j,"\n"))
             }
-            if((i %in% expand_set) && (j %in% expand_set)){ 
-           	new_M[paste0(i,"_u"),paste0(j,"_u")] <- M[i,j]
-                new_M[paste0(i,"_t"),paste0(j,"_t")] <- M[i,j]
-                new_M[paste0(i,"_p"),paste0(j,"_p")] <- M[i,j] 
-                new_M[paste0(i,"_n"),paste0(j,"_n")] <- M[i,j]
+            if((i %in% expand_set) && (j %in% expand_set)){
+                for (k in test_extensions) {
+                    new_M[sn(k),sn(k,j)] <- M[i,j]
+                }
             }
             if((i %in% expand_set) && (j %in% non_expanded_states)){
-                new_M[paste0(i,"_u"),j] <- M[i,j]
-                new_M[paste0(i,"_t"),j] <- M[i,j]
-                new_M[paste0(i,"_p"),j] <- M[i,j]
-                new_M[paste0(i,"_n"),j] <- M[i,j]
+                for (k in test_extensions) {
+                    new_M[sn(k),j] <- M[i,j]
+                }
             }
         }
 
-        pn <- function(par, compartment=i) paste0(par, compartment)
-        sn <- function(state, compartment=i) paste0(compartment, "_", state)
 
-        ## FIXME: change posvec names to skip 'P' prefix,
-        ##  (params still have prefix, but posvec doesn't have to)
-        ## then we can get rid of pn()
-   	if (i %in% expand_set){
-            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[[i]]*(1-posvec[[pn("P")]])
-            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[[i]]*(posvec[[pn("P")]])
+   	if (i %in% expand_set) {
+            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[[i]]*(1-posvec[[i]])
+            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[[i]]*(posvec[[i]])
             new_M[sn("n"),sn("u")]  <- omega
             new_M[sn("p"),sn("t")]  <- omega
             if (testing_time=="report") {
