@@ -209,8 +209,10 @@ run_shiny <- function(useBrowser = TRUE) {
                       value = FALSE),
         conditionalPanel(condition = "input.showAll",
                          ##Using names to avoid factors getting passed as inputs to textInput_param.
-                         lapply(names(read_params("ICU1.csv")),
-                                FUN = textInput_param))
+                         list(checkboxInput("fixr", "basic reproduction number (R0)", value = FALSE),
+                              uiOutput("setR0Panel"),
+                              lapply(names(read_params("ICU1.csv")),
+                                FUN = textInput_param)))
       )
       )})
     ##Force the tab panel to be the parameters panel every time the default parameters drop down is changed.
@@ -250,6 +252,7 @@ run_shiny <- function(useBrowser = TRUE) {
     })
     ##Run a pandemic simulation based on the inputs in the shiny.
     get_sim <- reactive({
+
         grabbedPars <- get_timePars()
         time_pars <- grabbedPars[["time_pars"]]
         useTimeChanges <- grabbedPars[["useTimeChanges"]]
@@ -310,7 +313,7 @@ run_shiny <- function(useBrowser = TRUE) {
         })
       })
       ##Take input and package it in a params_pansim object that run_sim and the like can read.
-      makeParams <- function(){
+      makeParams <- reactive({
         params <- c()
         for (param in names(read_params("ICU1.csv"))){
           ##Grab the value of the input slot.
@@ -340,13 +343,18 @@ run_shiny <- function(useBrowser = TRUE) {
         paramNames <- names(read_params("ICU1.csv"))
         ##Don't want numbers as strings.
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
+        ##Do this after because changing the numbers from strings removes their names.
         names(params) <- paramNames
         class(params) <- "params_pansim"
-        ##Do this after because changing the numbers from strings removes their names.
+        ##Update with fixed values of R0, if that's set
+        if (!is.null(input$fixr)){
+          if (input$fixr){
+            params <- fix_pars(params, target = c(R0 = input$fixedr, Gbar = input$fixedgbar))
+          }
+        }
         return(params)
-      }
+      })
       ##Take a parameter we'd like and load its value from the file selected. If that value is missing, grab it from the default file, which has values for everything.
-      #Take a parameter we'd like and load its value from the file selected.
       loadParams <- function(param){
         #Override the file selection with the custom file if there's one uploaded.
         if (is.null(input$uploadData)){
@@ -646,11 +654,17 @@ run_shiny <- function(useBrowser = TRUE) {
                       label = "End date",
                       value = toString(anytime::anydate(input$sd) + 30*5),
                       min = toString(anytime::anydate(input$sd) + 1),
-                      max = toString(anytime::anydate(input$sd) + 5*365)
-                      )}
-            )
+                      max = toString(anytime::anydate(input$sd) + 5*365))
+                      })
+          })
+          observe({
+            output$setR0Panel <- renderUI({
+              conditionalPanel(condition = "input.fixr",
+                              sliderInput("fixedr", "basic reproductive number", min = 0, max = 20, step = 0.05, value = get_R0(read_params(default.parameter.file))),
+                              sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.05, value = get_Gbar(read_params(default.parameter.file))))
+          })
         })
-  }
+}
 
   ##Set the viewing options first.
   browserManager(useBrowser)
