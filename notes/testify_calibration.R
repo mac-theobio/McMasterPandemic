@@ -14,12 +14,7 @@ keep_all <- FALSE
 print(pf[1,])
 simdat <- simtestify(1)
 
-simdat2 <- (simdat 
-	%>% mutate(postest = diff(c(0,P)))
-)
-
-
-gg <- (ggplot(simdat2,aes(date,postest))
+gg <- (ggplot(simdat,aes(date,postest))
 	+ geom_point()
 )
 
@@ -28,13 +23,18 @@ print(gg)
 dat <- simdat2 %>% transmute(date, var="postest", value=postest)
 pp <- attr(simdat2,"params")
 
-opt_pars <- with(as.list(pp),
-                 list(params=c(log_E0=log(E0)
-                             , log_beta0=log(beta0)
-                             ## , logit_mu = plogis(mu)
-                             ## , logit_phi1 = plogis(phi1)
-                             , logit_W_asymp = plogis(W_asymp)
-                             , log_testing_intensity=log(0.002)
+## opt_pars <- with(as.list(pp),
+##                  list(params=c(log_E0=log(E0)
+##                              , log_beta0=log(beta0)
+##                              ## , logit_mu = plogis(mu)
+##                              ## , logit_phi1 = plogis(phi1)
+##                              , logit_W_asymp = plogis(W_asymp)
+##                              , log_testing_intensity=log(0.002)
+                               
+opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_mu = -1
+	, logit_phi1 = -1
+	, logit_W_asymp = -1
+>>>>>>> 7bcfd66ba0ec1e9e4083af5b5240fd7db71ae02e
 	)
       , log_nb_disp = c(postest=1)
 )
