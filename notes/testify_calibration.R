@@ -9,23 +9,18 @@ print(params)
 
 
 paramsw0 <- params
-keep_all <- TRUE
+keep_all <- FALSE
 print(pf[1,])
 simdat <- simtestify(1)
 
-simdat2 <- (simdat 
-	%>% mutate(postest = diff(c(0,P)))
-)
-
-
-gg <- (ggplot(simdat2,aes(date,postest))
+gg <- (ggplot(simdat,aes(date,postest))
 	+ geom_point()
 )
 
 print(gg)
 
 dat <- simdat2 %>% transmute(date, var="postest", value=postest)
-opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_m = -1
+opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_mu = -1
 	, logit_phi1 = -1
 	, logit_W_asymp = -1
 	)
