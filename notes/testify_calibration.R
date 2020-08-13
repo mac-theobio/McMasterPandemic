@@ -12,12 +12,17 @@ paramsw0 <- params
 summary(paramsw0)
 
 ## run the *first* set of parameters from pf
-print(pf[1,])
-simdat <- simtestify(1)
+print(pf[9,])
+simdat <- simtestify(9)
 
 dat <- (simdat
-    %>% transmute(date, var="postest",
-                  value=round(postest))
+	%>% transmute(date
+	 	, postest
+		, death
+		, H
+	)
+	%>% gather(key="var", value="value", -date)
+	%>% mutate(value = round(value))
 )
 
 pp <- attr(simdat,"params")
