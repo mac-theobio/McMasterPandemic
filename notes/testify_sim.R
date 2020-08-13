@@ -5,7 +5,7 @@ print(commandEnvironments())
 
 ## WHICH of these do you want today?
 library(devtools); load_all("../")
-## library("McMasterPandemic")
+library("McMasterPandemic")
 
 if (interactive()) {
 	use_ode <- FALSE
@@ -90,16 +90,15 @@ if (!keep_all) {
 } else {
     
     simdat <- (simframe
-        %>% select(-c(R,D,foi,N,P))
+        %>% select(-c(D,X,foi,N,P))
         %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
         %>% separate(var,c("pref","testcat"),sep="_")
         %>% mutate_at("pref", ~ case_when(grepl("^([Hh]|IC)",.) ~ "hosp",
                                           grepl("^I[ap]",.) ~ "asymp_I",
-                                          TRUE ~ .)
-                      )
+                                          TRUE ~ .))
         %>% group_by(date,W_asymp, iso_t, testing_intensity, pref, testcat)
         %>% summarise(value=mean(value),.groups="drop")
-        %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp"))
+        %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp","R"))
         %>% mutate_at("testcat", factor, levels=c("u","n","p","t"))
     )
     
