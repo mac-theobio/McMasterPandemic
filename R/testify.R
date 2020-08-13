@@ -23,15 +23,14 @@ test_accumulators <- c("N","P")
 ##' state <- expand_stateval(state0)
 ##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
 ##' posvec <- make_test_posvec(pp)
-##' ## need to make_ratemate() with *unexpanded* state, then
+##' ## need to make_ratemat() with *unexpanded* state, then
 ##' ##  expand it
 ##' ratemat <- testify(make_ratemat(state1,pp), pp)
 ##' betavec <- make_betavec(state,pp)
 ##' tt2 <- ratemat
 ##' tt2[tt2>0] <- 1 ## make all edges == 1
-##' if (require(Matrix)) {
-##'     Matrix::image(Matrix(tt2))
-##' }
+##' show_ratemat(tt2)
+##' show_ratemat(ratemat,aspect="fill")
 ##' heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 ##' if (require(igraph)) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
@@ -86,7 +85,7 @@ make_test_wtsvec <- function(params,var_names=NULL) {
 ##' @param params parameter vector
 ##' @export
 make_test_posvec <- function(params) {
-    pos_vec <- params[grepl("P",names(params))]
+    pos_vec <- params[grepl("^P",names(params))]
     return(pos_vec)
 }
 
@@ -193,8 +192,8 @@ testify <- function(ratemat,params,debug=FALSE,
         ##  (params still have prefix, but posvec doesn't have to)
         ## then we can get rid of pn()
    	if (i %in% expand_set){
-            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[i]*(1-posvec[pn("P")])
-            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[i]*(posvec[pn("P")])
+            new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[[i]]*(1-posvec[[pn("P")]])
+            new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[[i]]*(posvec[[pn("P")]])
             new_M[sn("n"),sn("u")]  <- omega
             new_M[sn("p"),sn("t")]  <- omega
             if (testing_time=="report") {

@@ -414,6 +414,7 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
 ##' update parameters within a list of parameters
 ##' @param object a \code{params_pansim} object
 ##' @param ... a list of named elements, or a single named list if \code{.list} is specified
+##' @param delete_regex vector of regular expressions to remove
 ##' @param .list treat the first argument as a named list?
 ##' @export
 ##' @examples
@@ -425,7 +426,9 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
 ##' update(object,pp, .list=TRUE)
 ##' update(object, a=2)
 ##' update(object, a=2, b=1)
-update.params_pansim <- function(object, ..., .list=FALSE) {
+##' update(object, cc1=2, cc2=3)
+##' update(object, delete_regex="cc")
+update.params_pansim <- function(object, ..., delete_regex=NULL, .list=FALSE) {
     L <- list(...)
     if (.list) {
         if (length(L)>1) stop(".list specified with >1 args")
@@ -441,6 +444,12 @@ update.params_pansim <- function(object, ..., .list=FALSE) {
         } else {
             ## atomic
             object[[nm[i]]] <- L[[i]]
+        }
+    }
+    if (!is.null(delete_regex)) {
+        nm <- names(object)
+        for (d in delete_regex) {
+            object <- object[!grepl(d,nm)]
         }
     }
     return(object)

@@ -41,9 +41,9 @@ PIs,1,probability of positive in Is,,,
 PH,1, probability of positive in H,,,
 PH2,1, probability of positive in H2,,,
 Phosp,1, probability of positive in hosp,,,
-PICUs,1, probability of positive in ICUs,
-PICUd,1,probability of positive in ICUd,
+PICUs,1, probability of positive in ICUs,,,
+PICUd,1,probability of positive in ICUd,,,
+PR,0,probability of negative in R,,,
 omega,0.1,1/waiting time for tests to be returned,,,
 testing_intensity,0.002,tests per capita per day
 iso_t,0.6,Relative self-isolation/distancing of tested-positives,NA?
-

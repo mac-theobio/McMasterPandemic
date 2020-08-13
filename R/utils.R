@@ -528,3 +528,27 @@ has_testing <- function(state,params=NULL) {
         return(any(grepl("_t$",names(state))))
     }
 }
+
+## ?Matrix::image-methods
+##' visualize rate (per-capita flow) matrix
+##' @param M rate matrix
+##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
+##' @importFrom lattice panel.abline
+##' @export
+show_ratemat <- function(M, aspect="iso", add_blocks=any(grepl("_t",rownames(M)))) {
+    p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
+                                 y=list(at=seq(ncol(M)),labels=colnames(M))),
+                  xlab="to",
+                  ylab="from",
+                  sub="",
+                  colorkey = TRUE,
+                  aspect=aspect)
+    if (add_blocks) {
+        if (requireNamespace("latticeExtra")) {
+            ## FIXME: don't hardcode length (but evaluation within layer() is weird !
+            p <- (p + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
+                + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
+        }
+    }
+    return(p)
+}

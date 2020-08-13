@@ -9,7 +9,8 @@ print(params)
 
 
 paramsw0 <- params
-keep_all <- TRUE
+summary(paramsw0)
+keep_all <- FALSE
 print(pf[1,])
 simdat <- simtestify(1)
 
@@ -25,27 +26,35 @@ gg <- (ggplot(simdat2,aes(date,postest))
 print(gg)
 
 dat <- simdat2 %>% transmute(date, var="postest", value=postest)
-opt_pars <- list(params=c(log_E0=2, log_beta0=-1, logit_m = -1
-	, logit_phi1 = -1
-	, logit_W_asymp = -1
+pp <- attr(simdat2,"params")
+
+opt_pars <- with(as.list(pp),
+                 list(params=c(log_E0=log(E0)
+                             , log_beta0=log(beta0)
+                             ## , logit_mu = plogis(mu)
+                             ## , logit_phi1 = plogis(phi1)
+                             , logit_W_asymp = plogis(W_asymp)
+                             , log_testing_intensity=log(0.002)
 	)
-	, log_nb_disp = c(postest=1)
+      , log_nb_disp = c(postest=1)
+)
 )
 
 sim_args <- list(ratemat_args = list(testify=TRUE, testing_time="report")) 
 
 testdat <- data.frame(Date=dat$date, intensity=testing_intensity[1])
 
-testify_calib <- do.call(calibrate_comb, c(nlist(params=paramsw0
-	, debug_plot=FALSE
-	, use_testing = TRUE
-	, use_DEoptim = FALSE
-	, testing_data = testdat
-	, data = dat
-	, opt_pars = opt_pars
-	, sim_args = sim_args
-	))
-)
+testify_calib <- do.call(calibrate_comb,
+                         c(nlist(params=paramsw0
+                               , debug_plot=TRUE
+                               ## , use_testing = TRUE
+                               , use_DEoptim = FALSE
+                               ## , testing_data = testdat
+                               , data = dat
+                               , opt_pars = opt_pars
+                               , sim_args = sim_args
+                                 ))
+                         )
 
 print(testify_calib)
 
