@@ -105,10 +105,10 @@ run_shiny <- function(useBrowser = TRUE) {
         sidebarPanel(id = "sidebar", width = 4,
           fluidRow(
               selectInput("fn",
-                               label = "Step one: parameter file:",
+                               label = "Parameter file:",
                                choices = parameter.files, selected = default.parameter.file),
-            downloadButton("downloadData", "Download sample", class = "dbutton"),
-          fileInput("uploadData", "Upload custom")
+            downloadButton("downloadData", "Download sample parameter file", class = "dbutton"),
+          fileInput("uploadData", "Upload custom parameter file")
           ),
           fluidRow(
               textOutput("checkButtonTitle"),
@@ -209,9 +209,9 @@ run_shiny <- function(useBrowser = TRUE) {
                       value = FALSE),
         conditionalPanel(condition = "input.showAll",
                          ##Using names to avoid factors getting passed as inputs to textInput_param.
-                         list(checkboxInput("fixr", "basic reproduction number (R0)", value = FALSE),
-                              uiOutput("setR0Panel"),
-                              lapply(names(read_params("ICU1.csv")),
+                         list(uiOutput("setR0Panel"),
+                              ##Since we can set R0, we don't want to have the option to change beta0.
+                              lapply(names(read_params("ICU1.csv"))[names(read_params("ICU1.csv")) != "beta0"],
                                 FUN = textInput_param)))
       )
       )})
@@ -252,7 +252,6 @@ run_shiny <- function(useBrowser = TRUE) {
     })
     ##Run a pandemic simulation based on the inputs in the shiny.
     get_sim <- reactive({
-
         grabbedPars <- get_timePars()
         time_pars <- grabbedPars[["time_pars"]]
         useTimeChanges <- grabbedPars[["useTimeChanges"]]
@@ -332,7 +331,8 @@ run_shiny <- function(useBrowser = TRUE) {
           }
           else{
             if (is.null(paramValue) || is.na(paramValue)){
-              params <- c(params, read_params("ICU1.csv")[param])
+              paramValue <- loadParams(param)
+              params <- c(params, paramValue)
             }
             else{
               ##Otherwise, package and make the params the way we'd like them. Changed for conciceness.
@@ -347,10 +347,8 @@ run_shiny <- function(useBrowser = TRUE) {
         names(params) <- paramNames
         class(params) <- "params_pansim"
         ##Update with fixed values of R0, if that's set
-        if (!is.null(input$fixr)){
-          if (input$fixr){
+        if (!is.null(input$fixedr)){
             params <- fix_pars(params, target = c(R0 = input$fixedr, Gbar = input$fixedgbar))
-          }
         }
         return(params)
       })
@@ -403,11 +401,12 @@ run_shiny <- function(useBrowser = TRUE) {
           params <- update(params, c(proc_disp = as.numeric(input$procError), obs_disp = as.numeric(input$ObsError)))
           grabbedPars <- get_timePars()
           time_pars <- grabbedPars[["time_pars"]]
+          ##If R(t) is constant.
           useTimeChanges <- grabbedPars[["useTimeChanges"]]
           if (!useTimeChanges || ! "beta0" %in% time_pars$Symbol){
-            ##If R(t) is constant.
-            R0Vec <- get_R0(params)
-            plotDf <- data.frame("Rt" = rep(R0Vec, 2), "Date" = c(anytime::anydate(input$sd), anytime::anydate(input$ed)), stringsAsFactors = FALSE)
+            ##Weight by the fraction of susceptibles.
+            R0Vec <- get_R0(params)*get_sim()$S/makeParams()[["N"]]
+            plotDf <- data.frame("Rt" = R0Vec, "Date" = get_sim()$date, stringsAsFactors = FALSE)
           }
           else{
               #For each beta(t) value, create a corresponding params element and estimate R0.
@@ -415,12 +414,14 @@ run_shiny <- function(useBrowser = TRUE) {
                 newParams <- update(params, c(beta0 = betaValue))
                 return(get_R0(newParams))
               })
-            plotDf <- data.frame("Rt" = c(get_R0(params), R0Vec, R0Vec[length(R0Vec)]), "Date" = c(anytime::anydate(input$sd),time_pars[time_pars$Symbol == "beta0", "Date"], anytime::anydate(input$ed)), stringsAsFactors = FALSE)
+              ##Weight by the fraction of susceptibles.
+              R0Vec <- R0Vec * get_sim()$S/makeParams()[["N"]]
+              plotDf <- data.frame("Rt" = R0Vec, "Date" = get_sim()$date, stringsAsFactors = FALSE)
           }
           plotDf <- plotDf[order(plotDf$Date),]
           p <- ggplot(plotDf, aes(anytime::anydate(Date), y = Rt)) + geom_step(size = 2) +
             theme_gray(base_size = input$Globalsize)
-          p <- p + geom_vline(xintercept=plotDf$Date[2:nrow(plotDf) - 1], lty=2) + labs(title = "R(t)", x = "Date")
+          p <- p + labs(title = "R(t)", x = "Date")
           # Colour properly and eliminate other elements.
           p <- p + theme(plot.background = element_rect(fill = "#e6ebed", color = "#e6ebed", size = 0),
                          panel.border = element_blank()
@@ -516,6 +517,14 @@ run_shiny <- function(useBrowser = TRUE) {
             })
             observeEvent(input[[paste0(paramName)]], {
               updateTextInput(session, paste0(paramName, "_manual"), value = input[[paste0(paramName)]])
+            })
+            ##If the R0 or gbar slider is changed, force the parameter slider values to change as well.
+            ##This will force the text inputs to update as well using the twin event observers.
+            observeEvent(input[["fixedr"]], {
+              updateSliderInput(session, paramName, value = makeParams()[[paramName]])
+            })
+            observeEvent(input[["fixedgbar"]], {
+              updateSliderInput(session, paramName, value = makeParams()[[paramName]])
             })
           }
         )
@@ -636,7 +645,8 @@ run_shiny <- function(useBrowser = TRUE) {
               attr(res,"description") <- setNames(basicTemplate[["Parameter"]],x[["Symbol"]])
             }
             ##Clear the values column.
-            basicTemplate$Value <- rep(NA, nrow(basicTemplate))
+            values <- read_params("PHAC.csv")
+            basicTemplate$Value <- values
             ##Write it back out.
             write.csv(basicTemplate, file, row.names = FALSE)
           }
@@ -645,7 +655,7 @@ run_shiny <- function(useBrowser = TRUE) {
         output$explanationTitle <- renderText({"Explanation"})
         output$errorExplanations <- renderText({"Use these options to simulate noise in the data. The observation error parameter is the dispersion parameter for a negative binomial distribution. A suitable value could be 200.
           The process dispersion parameter adds gamma white noise to the event rates by pulling from a multinomial distribution. A reasonable value for process dispersion is 0.5"})
-        output$checkButtonTitle <- renderText({"Curves"})
+        output$checkButtonTitle <- renderText({"Curves to display"})
         ##EndDate is the name of the ui object, "ed" is the name of the input slot to store the end date in.
         ##We make this reactive so we can use the input start date as the minimum value for the end date.
         observe({
@@ -659,9 +669,9 @@ run_shiny <- function(useBrowser = TRUE) {
           })
           observe({
             output$setR0Panel <- renderUI({
-              conditionalPanel(condition = "input.fixr",
-                              sliderInput("fixedr", "basic reproductive number", min = 0, max = 20, step = 0.05, value = get_R0(read_params(default.parameter.file))),
-                              sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.05, value = get_Gbar(read_params(default.parameter.file))))
+              list(
+                sliderInput("fixedr", "R0: basic reproductive number", min = 0, max = 20, step = 0.05, value = get_R0(read_params(default.parameter.file))),
+                sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.05, value = get_Gbar(read_params(default.parameter.file))))
           })
         })
 }
