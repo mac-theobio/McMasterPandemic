@@ -1,0 +1,38 @@
+---
+title: "ali_test_sir"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Notes on other references: (1) McMasterPandemic/notes/testing_flow.md (I am using the notation in this doc)
+
+# On Math ans Weighting
+
+## Model and Definitions
+- Assume there are 3 groups of individuals: $S$, $I$ and $R$.
+- Each group splits into 4 subgroups to incorporate the testing mechanism, so overall the model framework has 12 compartments:
+$S_u, S_n, S_p, S_t, I_u, I_n, I_p, I_t, R_u, R_n, R_p, R_t$.
+
+## Per Capita Rate of Flow from Untested to Positive or Negative Compartments
+Let look at the flow form a particular untested compartment, $Z_i$ to a particular tested awaiting for a negative test. The equation is $$\frac{d Z_i}{dt} = - f_i Z_i,$$
+ where $f_i$, is the per capita rate of flow, with the dimension of $\frac{1/time}{\#}$, where by # I mean population number.
+ 
+1. How to define $f_i$ as a function of *testing intensity*, $t$ and *weights*, $\omega_i$.
+Checkings:
+- $t$ is fixed and is a parameter of the model, it is given through the reported information, dimension of $t$ is $\#/time$.
+- dimension of $\omega_i$ is $1/\#$. Possible definition of $\omega_i$:
+(i) $\frac{\omega_i}{\sum_j \omega_j} \times \frac{Z_i/I_u}{\sum_j Z_j}$, where $I_u$ is untested people in compartment $I$.
+
+
+
+
+
+
+
+
+
+
+
