@@ -57,6 +57,7 @@ default.start.date <- "2020-01-01"
 default.dropstates <- c("t","S","E","I","X")
 timeunitParams <- c("sigma", "gamma_a", "gamma_m", "gamma_s", "gamma_p", "rho")
 defaultTCParams <- data.frame("Date" = anytime::anydate(c("2020-02-20", "2020-03-20", "2020-04-02")), "Symbol"  = c("beta0", "beta0", "alpha"), "Relative_value"= c(1,1,1), stringsAsFactors = FALSE)
+beta0 <- 1
 
 ##' Run the McMasterPandemic Shiny
 ##'
@@ -317,7 +318,7 @@ run_shiny <- function(useBrowser = TRUE) {
         for (param in names(read_params("ICU1.csv"))){
           ##Grab the value of the input slot.
           paramValue <- eval(parse(text = paste0("input$", param)))
-          #Reparametrize time params so the user can enter them in as times rather than rates, tp be more intuitive.
+          #Reparametrize time params so the user can enter them in as times rather than rates, to be more intuitive.
           if (param %in% timeunitParams){
             if (is.null(paramValue) || is.na(paramValue)){
               paramValue <- loadParams(param)
@@ -329,6 +330,7 @@ run_shiny <- function(useBrowser = TRUE) {
               params <- c(params, paramValue)
             }
           }
+          ##Not a time unit param.
           else{
             if (is.null(paramValue) || is.na(paramValue)){
               paramValue <- loadParams(param)
@@ -348,12 +350,23 @@ run_shiny <- function(useBrowser = TRUE) {
         class(params) <- "params_pansim"
         ##Update with fixed values of R0, if that's set
         if (!is.null(input$fixedr)){
+          if (input$fixedr != get_R0(params)){
+            ##Only update if R0 is actually changed from what would be estimated from the data.
             params <- fix_pars(params, target = c(R0 = input$fixedr, Gbar = input$fixedgbar))
+            ##Upate the value of internal beta0.
+            beta0 <- params[["beta0"]]
+          }
         }
         return(params)
       })
       ##Take a parameter we'd like and load its value from the file selected. If that value is missing, grab it from the default file, which has values for everything.
       loadParams <- function(param){
+        ##Include a switch for beta0, load the value set by R0.
+        if (param == "beta0"){
+          return(beta0)
+        }
+        else{
+        }
         #Override the file selection with the custom file if there's one uploaded.
         if (is.null(input$uploadData)){
           ##We're using a default file.
@@ -386,13 +399,8 @@ run_shiny <- function(useBrowser = TRUE) {
             }
           else {
           }
-          #Keep track of which params not to summarize.
-          dontSummaryParams <- summary(read_params("ICU1.csv"))[!names(summary(read_params("ICU1.csv"))) %in% c("r0", "R0", "Gbar", "dbl_time")]
-          params <- params[!names(params) %in% dontSummaryParams]
-          class(params) <- "params_pansim"
-          paramsReadnoCFR <- read_params("ICU1.csv")[!names(read_params("ICU1.csv")) %in% dontSummaryParams]
-          class(paramsReadnoCFR) <- "params_pansim"
-          data.frame("Symbol" = describe_params(summary(paramsReadnoCFR))$symbol, "Meaning" = describe_params(summary(paramsReadnoCFR))$meaning,"Value" = summary(params)[names(summary(params)) != "CFR_gen"], "Unit" = c("1/day", "---", "days", "days"))
+        values <- c(r0 = get_r(params, method = "kernel"), R0 = get_R0(params), Gbar = get_Gbar(params), dbl_time = log(2)/get_r(params, method = "kernel"))
+        data.frame("Symbol" = c("r0", "R0", "Gbar", "dbl_time"), "Meaning" = c("initial epidemic growth rate", "basic reproduction number", "mean generation interval", "doubling time"),"Value" = values, "Unit" = c("1/day", "---", "days", "days"))
       })
         ##Plot beta(t)/gamma.
         observe({
@@ -670,8 +678,8 @@ run_shiny <- function(useBrowser = TRUE) {
           observe({
             output$setR0Panel <- renderUI({
               list(
-                sliderInput("fixedr", "R0: basic reproductive number", min = 0, max = 20, step = 0.05, value = get_R0(read_params(default.parameter.file))),
-                sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.05, value = get_Gbar(read_params(default.parameter.file))))
+                sliderInput("fixedr", "R0: basic reproductive number", min = 0, max = 20, step = 0.01, value = get_R0(read_params(default.parameter.file))),
+                sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.01, value = get_Gbar(read_params(default.parameter.file))))
           })
         })
 }
