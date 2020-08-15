@@ -6,6 +6,7 @@ library(future.batchtools)
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 
+
 fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 pars <- (read_params(fn)
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
@@ -26,14 +27,14 @@ sim_and_calibrate <- function(y){
 	x <- comboframe[y,]
 	pp <- update_pars(x)
 	simdat <- simulate_testify_sim(pp)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
-#	calib_mod <- NULL
+#	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
+	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
 
-batch_setup(ncpus=6)
+batch_setup()
 
 res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
 
