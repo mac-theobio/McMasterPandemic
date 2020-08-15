@@ -41,6 +41,4 @@ res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
 
 print(res_list)
 
-saveVars(res_list)
-
 
