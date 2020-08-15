@@ -95,6 +95,18 @@ impmakeR += sims
 
 ######################################################################
 
+## Nested testify sims
+
+testify_funs.Rout: testify_funs.R
+	$(makeR)
+
+## basic.nested_testify.Rout: testify_funs.R nested_testify.R 
+%.nested_testify.Rout: nested_testify.R testify_funs.rda %.rda sims.csv 
+	$(makeR)
+
+
+
+
 ## Side pipe
 
 testsim.Rout: testsim.R simple.rda sims.csv
