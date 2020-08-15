@@ -28,8 +28,8 @@ sim_and_calibrate <- function(y){
 	x <- comboframe[y,]
 	pp <- update_pars(x)
 	simdat <- simulate_testify_sim(pp)
-#	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
-	calib_mod <- NULL
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
+#	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
