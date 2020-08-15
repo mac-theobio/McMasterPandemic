@@ -22,29 +22,21 @@ ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
 print(ln)
 
-for(x in ln){
-	print(x)
-
-# clean_res <- function(x){
+clean_res <- function(x){
 
 	res <- readRDS(paste0("cachestuff/",x))
-	print(res$fit)
-}
-
-quit()
+	if(class(res$fit) == "NULL"){return(data.frame())}
 	input <- unlist(strsplit(x,split="[.]"))[2]
 
 
 	dd <- predict(res$fit
 		, ensemble=FALSE
-		, keep_vars=c("postst","death","H")
+		, keep_vars=c("postest","death","H")
 	)
-
-	return(dd)
 
 	ddcombo <- (res$data
 		%>% transmute(date, postest, death, H)
-		%>% gather(key = "var", value="data")
+		%>% gather(key = "var", value="data",-date)
 		%>% left_join(dd,.)
 		%>% mutate(testing_intensity = comboframe[input,1]
 			, keep_vars = comboframe[input,2]
@@ -56,8 +48,6 @@ quit()
 }
 
 res_list <- lapply(ln,clean_res)
-
-quit()
 
 dat <- bind_rows(res_list)
 
