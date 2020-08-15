@@ -22,19 +22,22 @@ comboframe <- expand.grid(testing_intensity=testing_intensity
 	, opt_testify = opt_testify
 )
 
-sim_and_calibrate <- function(x){
+sim_and_calibrate <- function(y){
+	x <- comboframe[y,]
 	pp <- update_pars(x)
 	simdat <- simulate_testify_sim(pp)
-	#calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
 	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
-	saveRDS(res_list,file=paste0("cachestuff/simcalib.",x,".rds"))
+	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
 
 batch_setup(ncpus=6)
 
-res_list <- future_map(seq(nrow(comboframe)),function(x){sim_and_calibrate(comboframe[x,])})
+res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
+
+print(res_list)
 
 saveVars(res_list)
 
