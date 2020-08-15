@@ -109,7 +109,7 @@ testify_funs.Rout: testify_funs.R
 batchtools.Rout: batchtools.R
 	$(makeR)
 
-## basic.nested_testify.Rout: testify_funs.R nested_testify.R 
+## basic.nested_testify.Rout: nested_testify.R testify_funs.R
 %.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
 	$(makeR)
 
@@ -212,6 +212,8 @@ makestuff/Makefile:
 
 -include makestuff/makeR.mk
 -include makestuff/rmd.mk
+-include makestuff/yushan.mk
+-include makestuff/nodes.mk
 
 -include makestuff/git.mk
 -include makestuff/visual.mk
