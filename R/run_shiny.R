@@ -264,7 +264,7 @@ run_shiny <- function(useBrowser = TRUE) {
         }
         else{
           sim = run_sim(params, start_date = anytime::anydate(input$sd), end_date = anytime::anydate(input$ed), stoch = c(obs = input$ObsError != "0", proc = input$procError != "0"))
-          }
+        }
         return(sim)
     })
     ##Set the plot width based on the length of the simulation.
@@ -313,11 +313,16 @@ run_shiny <- function(useBrowser = TRUE) {
         })
       })
       ##Take input and package it in a params_pansim object that run_sim and the like can read.
-      makeParams <- reactive({
+      makeParams <- function(){
         params <- c()
         for (param in names(read_params("ICU1.csv"))){
           ##Grab the value of the input slot.
-          paramValue <- eval(parse(text = paste0("input$", param)))
+          if (param == "beta0"){
+            paramValue <- beta0
+          }
+          else{
+            paramValue <- eval(parse(text = paste0("input$", param)))
+          }
           #Reparametrize time params so the user can enter them in as times rather than rates, to be more intuitive.
           if (param %in% timeunitParams){
             if (is.null(paramValue) || is.na(paramValue)){
@@ -345,12 +350,11 @@ run_shiny <- function(useBrowser = TRUE) {
         paramNames <- names(read_params("ICU1.csv"))
         ##Don't want numbers as strings.
         params <- vapply(params, function(z) eval(parse(text=z)), numeric(1))
-        ##Do this after because changing the numbers from strings removes their names.
+        ##Do this after because changing the numbers from strings removes their names
         names(params) <- paramNames
         class(params) <- "params_pansim"
-        ##Update with fixed values of R0, if that's set
         if (!is.null(input$fixedr)){
-          if (input$fixedr != get_R0(params)){
+          if (input$fixedr != get_R0(params) || input$fixedgbar != get_Gbar(params)){
             ##Only update if R0 is actually changed from what would be estimated from the data.
             params <- fix_pars(params, target = c(R0 = input$fixedr, Gbar = input$fixedgbar))
             ##Upate the value of internal beta0.
@@ -358,7 +362,7 @@ run_shiny <- function(useBrowser = TRUE) {
           }
         }
         return(params)
-      })
+      }
       ##Take a parameter we'd like and load its value from the file selected. If that value is missing, grab it from the default file, which has values for everything.
       loadParams <- function(param){
         ##Include a switch for beta0, load the value set by R0.
@@ -399,7 +403,7 @@ run_shiny <- function(useBrowser = TRUE) {
             }
           else {
           }
-        values <- c(r0 = get_r(params, method = "kernel"), R0 = get_R0(params), Gbar = get_Gbar(params), dbl_time = log(2)/get_r(params, method = "kernel"))
+        values <- c(r = get_r(params, method = "kernel"), R0 = get_R0(params), Gbar = get_Gbar(params), dbl_time = log(2)/get_r(params, method = "kernel"))
         data.frame("Symbol" = c("r0", "R0", "Gbar", "dbl_time"), "Meaning" = c("initial epidemic growth rate", "basic reproduction number", "mean generation interval", "doubling time"),"Value" = values, "Unit" = c("1/day", "---", "days", "days"))
       })
         ##Plot beta(t)/gamma.
@@ -525,14 +529,6 @@ run_shiny <- function(useBrowser = TRUE) {
             })
             observeEvent(input[[paste0(paramName)]], {
               updateTextInput(session, paste0(paramName, "_manual"), value = input[[paste0(paramName)]])
-            })
-            ##If the R0 or gbar slider is changed, force the parameter slider values to change as well.
-            ##This will force the text inputs to update as well using the twin event observers.
-            observeEvent(input[["fixedr"]], {
-              updateSliderInput(session, paramName, value = makeParams()[[paramName]])
-            })
-            observeEvent(input[["fixedgbar"]], {
-              updateSliderInput(session, paramName, value = makeParams()[[paramName]])
             })
           }
         )
@@ -675,13 +671,11 @@ run_shiny <- function(useBrowser = TRUE) {
                       max = toString(anytime::anydate(input$sd) + 5*365))
                       })
           })
-          observe({
             output$setR0Panel <- renderUI({
               list(
                 sliderInput("fixedr", "R0: basic reproductive number", min = 0, max = 20, step = 0.01, value = get_R0(read_params(default.parameter.file))),
                 sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.01, value = get_Gbar(read_params(default.parameter.file))))
-          })
-        })
+            })
 }
 
   ##Set the viewing options first.
