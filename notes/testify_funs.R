@@ -57,6 +57,7 @@ calibrate_sim <- function(dd, pars, p){
 	mod <- do.call(calibrate_comb
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
+			, use_spline = FALSE
 			, data = dat2
 			, opt_pars = opt_pars
 			, sim_args = sim_args

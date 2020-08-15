@@ -114,7 +114,11 @@ batchtools.Rout: batchtools.R
 	$(makeR)
 
 
+simcalib_tidy.Rout: simcalib_tidy.R
+	$(makeR)
 
+simcalib_plot.Rout: simcalib_plot.R simcalib_tidy.rda
+	$(makeR)
 
 ## Side pipe
 
