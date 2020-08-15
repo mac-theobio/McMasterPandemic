@@ -35,7 +35,6 @@ tt2 <- ratemat
 tt2[tt2>0] <- 1 ## make all edges == 1
 show_ratemat(tt2)
 show_ratemat(ratemat,aspect="fill")
-heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
 if (require(igraph)) {
    g <- igraph::graph_from_adjacency_matrix(tt2)
    plot(g, layout=igraph::layout_nicely)

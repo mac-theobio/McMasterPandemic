@@ -108,8 +108,14 @@ make_test_posvec <- function(params,var_names=NULL) {
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
+##' @examples
+##' pp <- read_params("PHAC_testify.csv")
+##' s <- make_state(params=pp)
+##' expand_stateval(s, params=pp)
+##' expand_stateval(s, method="untested")
 ##' @export
-expand_stateval <- function(x, method=c("untested","spread"),
+expand_stateval <- function(x, method=c("eigvec","untested","spread"),
+                            params=NULL,
                             add_accum=TRUE)
 {
     method <- match.arg(method)
@@ -119,10 +125,20 @@ expand_stateval <- function(x, method=c("untested","spread"),
     names(new_states) <- newnames
     if (method=="untested") {
         new_states[paste0(setdiff(names(x),non_expanded_states),"_u")] <- x[setdiff(names(x),non_expanded_states)]
-    } else {
+    } else if (method=="spread") {
         ## slightly fragile: depends on ordering
         n_expand <- length(test_extensions)
         new_states <- rep(x, each=n_expand)/n_expand
+    } else if (method=="eigvec") {
+        S_tot <- x[["S"]]
+        nonS_tot <- sum(x[names(x)!="S"])  ## or sum(x) - S_tot
+        if (is.null(params)) stop("need params to expand via eigvec")
+        ee <- rExp(params, testify=TRUE, return_val="eigenvector")
+        ## watch out, ee doesn't include R ... match by name, not position
+        is_S <- grep("^S", names(ee), value=TRUE)
+        is_nonS <- grep("^S", names(ee), invert=TRUE, value=TRUE)
+        new_states[is_S]  <- ee[is_S] *S_tot/sum(ee[is_S])
+        new_states[is_nonS] <- ee[is_nonS]*nonS_tot/sum(ee[is_nonS])
     }
     if (add_accum) {
     ## FIXME, compare setNames = 0 code 
@@ -164,7 +180,7 @@ testify <- function(ratemat,params,debug=FALSE,
     expand_set <- setdiff(states, non_expanded_states)
     
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
-    new_states <- names(expand_stateval(dummy_states))
+    new_states <- names(expand_stateval(dummy_states,method="untested"))
     
 	ns <- length(new_states)
 	new_M <- matrix(0,nrow=ns, ncol=ns

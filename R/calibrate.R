@@ -518,6 +518,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       condense_args=NULL,
                       priors=NULL,
                       debug=FALSE,
+                      debug_hist=FALSE,
                       debug_plot=FALSE,
                       last_debug_plot=FALSE,
                       use_DEoptim=FALSE,
@@ -569,11 +570,19 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , priors
                     , sim_fun)
     opt_inputs <- unlist(opt_pars)
-        ## initialize debug history
-    debug_hist_chunksize <- 1e4
-    if (exists("debug_hist_ctr")) {
-        debug_hist_ctr <<- 1
+
+    ## initialize debug history
+    if (debug_hist) {
+        debug_env <- new.env()
+        debug_hist_chunksize <- 1e4
+        debug_hist_mat <- matrix(NA,
+                                 nrow=debug_hist_chunksize,
+                                 ncol=length(opt_inputs)+1,
+                                 dimnames=list(NULL,c(names(opt_pars),"NLL")))
+        assign("debug_hist_mat", debug_hist_mat, where=debug_env)
+        assign("debug_hist_ctr", 1, where=debug_env)
     }
+
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         DE_lims <- get_DE_lims(opt_pars)

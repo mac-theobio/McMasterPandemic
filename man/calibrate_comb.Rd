@@ -26,7 +26,7 @@ calibrate_comb(
   DE_cores = 1,
   use_mobility = FALSE,
   use_phenomhet = FALSE,
-  use_spline = TRUE,
+  use_spline = FALSE,
   use_testing = FALSE,
   vars = NULL,
   debug_plot = interactive(),
