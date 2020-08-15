@@ -1,5 +1,6 @@
 library(McMasterPandemic)
 library(tidyverse)
+library(parallel)
 library(furrr)
 library(future.batchtools)
 
