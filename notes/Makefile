@@ -16,6 +16,12 @@ vim_session:
 
 Sources += $(wildcard *.R) Makefile
 
+ignore += cachestuff/
+
+cachestuff:
+	git clone https://github.com/wzmli/MacPan_cache.git $@
+
+
 ######################################################################
 
 ## Structure notes
@@ -100,8 +106,11 @@ impmakeR += sims
 testify_funs.Rout: testify_funs.R
 	$(makeR)
 
+batchtools.Rout: batchtools.R
+	$(makeR)
+
 ## basic.nested_testify.Rout: testify_funs.R nested_testify.R 
-%.nested_testify.Rout: nested_testify.R testify_funs.rda %.rda sims.csv 
+%.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
 	$(makeR)
 
 

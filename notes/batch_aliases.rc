@@ -1,0 +1,90 @@
+#!/bin/bash
+
+## FIXME: could make *_USER, *_WD have sensible defaults ?
+## FIXME: DRY. Can use bash functions to combine a lot of these
+##        including VAR=${1:-1} trick for default values
+## https://coderwall.com/p/s8n9qa/default-parameter-value-in-bash
+
+. batch_setup
+
+YUSHAN=yushan.mcmaster.ca
+## list active/queued jobs
+alias yq="ssh $YUSHAN_USER@$YUSHAN 'bash -l -c qstat'"
+## list overall queue status
+alias yqc="ssh $YUSHAN_USER@$YUSHAN 'bash -l -c \"qstat -g c\"'"
+alias ypull="ssh $YUSHAN_USER@$YUSHAN 'cd $YUSHAN_WD; git pull'"
+alias yup="ssh $YUSHAN_USER@$YUSHAN uptime"
+
+## list recent files
+alias yscan="ssh $YUSHAN_USER@$YUSHAN 'cd $YUSHAN_WD; ls -lt | head'"
+
+SHARCNET=graham.sharcnet.ca
+alias snq="ssh $SN_USER@$SHARCNET \"squeue -u $SN_USER\""
+## FIXME: doesn't work without cached credentials?
+## fatal: could not read Username for 'https://github.com': No such device or address
+alias snpull="ssh $SN_USER@$SHARCNET \"cd $SN_WD; git pull https://github.com/mac-theobio/PHAC_covid.git\""
+alias snscan="ssh $SN_USER@$SHARCNET 'cd $SN_WD; ls -lt | head'"
+alias snget="rsync -auvx $SN_USER@$SHARCNET:~/$SN_WD/cache ."
+
+## earnserv stuff implemented as functions with optional argument (1 or 2) to designate which server
+## list load average
+eup() {
+    NODE=${1:-1}    
+    ssh $EARNSERV_USER@earnserv$NODE.mcmaster.ca "uptime"
+}
+
+## pull repo
+epull() {
+    NODE=${1:-1}    
+    ssh $EARNSERV_USER@earnserv$NODE.mcmaster.ca "cd $EARNSERV_WD; git pull"
+}
+
+## list recent files
+escan() {
+    NODE=${1:-1}
+    ssh $EARNSERV_USER@earnserv$NODE.mcmaster.ca "cd $EARNSERV_WD; ls -lt | head"
+}
+
+## print R processes running
+eps() {
+    NODE=${1:-1}
+    ssh $EARNSERV_USER@earnserv$NODE.mcmaster.ca "ps -u $EARNSERV_USER | grep R$"
+}
+
+ymake() {
+    ssh $YUSHAN_USER@$YUSHAN "cd $YUSHAN_WD; nohup make $@ >$1.mk.out 2>$1.mk.err < /dev/null &"
+}
+
+snmake() {
+    ssh $SN_USER@$SHARCNET "cd $SN_WD; module load nixpkgs/16.09  gcc/8.3.0; module load r/4.0.0; nohup make $1 >$1.mk.out 2>$1.mk.err < /dev/null &"
+}
+
+emake() {
+    NODE=${2:-1}    
+    ssh $EARNSERV_USER@earnserv$NODE.mcmaster.ca "cd $EARNSERV_WD; export EARNSERV_MAXCORES=$EARNSERV_MAXCORES; nohup make $1 >$1.mk.out 2>$1.mk.err < /dev/null &"
+}
+
+## copy to/frame cache directory
+
+eput() {
+    NODE=${2:-1}
+    rsync -auvx ./cache $EARNSERV_USER@earnserv$NODE:$WD
+}
+
+eget() {
+    NODE=${2:-1}
+    rsync -auvx $EARNSERV_USER@earnserv$NODE:$WD/cache .
+}
+
+## check uptime/load average on all nodes
+yupall() {
+    for i in 01 02 03 04 05 06; do
+	echo "n$i"
+	ssh $YUSHAN_USER@yushan "ssh n$i uptime"
+    done
+}
+
+## search: ssh-copy-*
+## https://bioinformaticsworkbook.org/Appendix/HPC/SLURM/slurm-cheatsheat.html
+## https://www.tecmint.com/keep-remote-ssh-sessions-running-after-disconnection/
+## https://en.wikipedia.org/wiki/Nohup

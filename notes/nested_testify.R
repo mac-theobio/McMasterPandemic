@@ -36,9 +36,6 @@ batch_setup(ncpus=6)
 
 res_list <- future_map(seq(nrow(comboframe)),function(x){sim_and_calibrate(comboframe[x,])})
 
-
-## res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
-
 saveVars(res_list)
 
 
