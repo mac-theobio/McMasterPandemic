@@ -27,7 +27,61 @@ simulate_testify_sim <- function(p){
 	return(sims)
 }
 
-calibrate_sim <- function(dd, pars, p){
+simtestify <- function(p,testing_data){
+   ## create fake data for dates
+   dd <- (simulate_testify_sim(p)
+      %>% transmute(date
+			, postest
+			, death
+			, H
+			)
+		%>% gather(key="var",value="value",-date)
+		%>% mutate(value=round(value))
+	)
+   opt_pars <- with(as.list(p)
+		, list(params=c(log_beta0 = log(beta0)
+			, log_E0 = log(E0)
+			)
+		)
+	)
+	sim_args <- list(ratemat_args = list(testify=TRUE)
+	   , start_date = start
+		, end_date = end
+		, use_ode = use_ode
+		, step_args = list(testwt_scale = testwt_scale)
+		, condense_args = list(keep_all = keep_all
+			, add_reports = !keep_all
+		)
+	)
+   time_args <- do.call(calibrate_comb
+		, c(nlist(params = p
+			, use_DEoptim = FALSE
+			, use_spline = FALSE
+			, data = dd
+			, sim_args = sim_args
+			, maxit = 1000
+			, return_val = "time_args"
+			, start_date = start
+                        , end_date = end
+			, testing_data = testing_data
+			, use_testing = TRUE
+			)
+		)
+	)
+   sim_args <- c(sim_args, list(params_timevar = time_args$testing_data))
+    sims <- do.call(run_sim,
+                    c(list(params=p),
+	   # , opt_pars = opt_pars
+	   # , base_params = p
+                    sim_args)
+	   # , start_date = start, end_date = end
+                    )   # %>% mutate(testing_intensity=p[["testing_intensity"]])
+	# )
+	return(sims)
+}
+
+calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
+                          debug=FALSE, debug_hist=FALSE){
 	dat <- (dd
 		%>% transmute(date
 			, postest
@@ -58,9 +112,14 @@ calibrate_sim <- function(dd, pars, p){
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
 			, use_spline = FALSE
+			, debug_plot = debug_plot
+                        , debug_hist = debug_hist
+                        , debug = debug
 			, data = dat2
 			, opt_pars = opt_pars
 			, sim_args = sim_args
+			, use_testing = TRUE
+			, testing_data = testing_data
 			, maxit = 1000
 			)
 		)
@@ -68,4 +127,4 @@ calibrate_sim <- function(dd, pars, p){
 	return(mod)
 }
 
-saveVars(update_pars, simulate_testify_sim, calibrate_sim)
+saveVars(update_pars, simulate_testify_sim, simtestify, calibrate_sim)
