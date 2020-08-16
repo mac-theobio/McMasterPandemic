@@ -96,8 +96,10 @@ dtest:
 lpackage:
 	R CMD INSTALL .
 
-package: pull
+package: 
 	sudo R CMD INSTALL .
+
+newpackage: pull package
 
 ######################################################################
 
