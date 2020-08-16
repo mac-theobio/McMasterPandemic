@@ -365,7 +365,7 @@ do_debug_plot <- function(r2) {
              plot(date,value,col=as.numeric(factor(var)),log="y"))
         r2s <- split(r2,r2$var)
         Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s))
-        labs <- unique(r2$var)
+        labs <- sort(unique(r2$var)) ## sort to match factor order
         legend("topright",col=seq(length(labs)),lty=1,legend=labs)
     }
 }
