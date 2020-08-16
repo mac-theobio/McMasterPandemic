@@ -62,20 +62,20 @@ simtestify <- function(p,testing_data){
 			, maxit = 1000
 			, return_val = "time_args"
 			, start_date = start
-		   , end_date = end
+                        , end_date = end
 			, testing_data = testing_data
 			, use_testing = TRUE
 			)
 		)
 	)
    sim_args <- c(sim_args, list(params_timevar = time_args$testing_data))
-	sims <- run_sim_break(params=p
+    sims <- do.call(run_sim,
+                    c(list(params=p),
 	   # , opt_pars = opt_pars
 	   # , base_params = p
-      , sim_args=sim_args
+                    sim_args)
 	   # , start_date = start, end_date = end
-	   )
-   # %>% mutate(testing_intensity=p[["testing_intensity"]])
+                    )   # %>% mutate(testing_intensity=p[["testing_intensity"]])
 	# )
 	return(sims)
 }
