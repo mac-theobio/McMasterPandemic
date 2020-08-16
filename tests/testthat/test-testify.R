@@ -4,10 +4,9 @@ library(testthat)
 context("testify")
 
 pp <- read_params("PHAC_testify.csv")
-
 ## Making states and expanding states
 state <- make_state(params=pp)
-state_testified <- expand_stateval(state)
+state_testified <- expand_stateval(state, params=pp, method="untested")
 
 
 ## global variables
@@ -59,7 +58,7 @@ test_that("ratemat makes sense", {
 })
 
 ## Updating FOI
-test_that("FOI doesn't change", {
+test_that("FOI doesn't change (for 'untested' expansion)", {
     pp2 <- update(pp,iso_t=0)
     expect_equal(update_foi(state,pp2,beta_vec),
                  update_foi(state_testified,pp2,beta_vec_testified))
