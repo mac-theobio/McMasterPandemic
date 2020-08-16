@@ -60,17 +60,18 @@ print(ggplot(dd3,aes(x=date,y=value,color=type))
    + scale_y_log10(limits=c(1,NA))
 )
 
-
 sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
-   if(x$constant_testing){
-      testdat$intensity <- 1
-   }
+        if(x$constant_testing){
+            testdat$intensity <- 1
+        }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=TRUE, debug=TRUE, debug_hist=TRUE)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat,
+                                   debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
+        ## BMB: is this OK or is copying/moving stuff into cachestuff supposed to be done make-ily?
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
@@ -89,8 +90,7 @@ ggplot(hh,aes(n,value,colour=name))+facet_wrap(~name,scale="free_y") + geom_line
 quit()
 batch_setup()
 
-
-res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x,testdat))
+res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat))
 
 ## interactive playing around stuff
 

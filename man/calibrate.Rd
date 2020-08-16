@@ -22,8 +22,8 @@ calibrate(
   condense_args = NULL,
   priors = NULL,
   debug = FALSE,
-  debug_hist = FALSE,
   debug_plot = FALSE,
+  debug_hist = FALSE,
   last_debug_plot = FALSE,
   use_DEoptim = FALSE,
   mle2_method = "Nelder-Mead",
@@ -67,9 +67,9 @@ calibrate(
 
 \item{debug}{print debugging messages?}
 
-\item{debug_hist}{keep information on parameter history?}
-
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+
+\item{debug_hist}{keep information on parameter history?}
 
 \item{last_debug_plot}{plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)}
 
