@@ -64,7 +64,7 @@ testdat2 <- testdat
 testdat2$intensity <- testing_intensity[1]
    
 dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
-   %>% transmute(date,H,death,postest)
+   %>% select(date,H,death,postest)
    %>% gather(key="var",value="value",-date)
    %>% mutate(type = "constant")
 )
@@ -84,7 +84,8 @@ sim_and_calibrate <- function(y,testdat){
         }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat,
+                                   debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
         ## BMB: is this OK or is copying/moving stuff into cachestuff supposed to be done make-ily?
@@ -92,7 +93,7 @@ sim_and_calibrate <- function(y,testdat){
 	return(res_list)
 }
 
-# res <- sim_and_calibrate(1,testdat)
+res <- sim_and_calibrate(1,testdat)
 # 
 # ## plot parameter histories
 # hh <- (attr(res$fit,"debug_hist")

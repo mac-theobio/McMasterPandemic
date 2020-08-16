@@ -94,7 +94,7 @@ calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
 		%>% gather(key="var",value="value",-date)
 		%>% mutate(value=round(value))
     )
-    dat2 <- dat %>% filter(grepl(var,p$keep_vars))
+    dat2 <- dat %>% rowwise() %>% filter(grepl(var,p$keep_vars))
     opt_pars <- with(as.list(pars)
                    , list(params=c(log_beta0 = log(beta0)
                                  , log_E0 = log(E0)
