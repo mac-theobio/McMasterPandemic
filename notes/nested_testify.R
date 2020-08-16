@@ -1,13 +1,20 @@
 library(McMasterPandemic)
 library(tidyverse)
+library(zoo)
 library(parallel)
 library(furrr)
 library(future.batchtools)
+
+testing_scale <- 0.2
+max_intensity <- 0.002
+max_intensity <- 0.5
+
 
 callArgs <- "basic.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda basic.rda sims.csv"
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
+makeGraphics()
 
 fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
 pars <- (read_params(fn)
@@ -16,20 +23,40 @@ pars <- (read_params(fn)
 )
 
 ## different combinations
-testing_intensity <- c(0.001, 0.01, 0.1)
-keep_vars <- c("postest", "H/death", "postest/H/death")
-opt_testify <- c(TRUE,FALSE)
+testing_intensity <- c(0.001)
+keep_vars <- c("postest/H/death")
+opt_testify <- c(FALSE)
+constant_testing <- c(TRUE,FALSE)
 
 comboframe <- expand.grid(testing_intensity=testing_intensity
 	, keep_vars = keep_vars
 	, opt_testify = opt_testify
+	, constant_testing = constant_testing
 )
 
-sim_and_calibrate <- function(y){
+datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
+testdat <- data.frame(Date = as.Date(datevec)
+	# , intensity = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
+	, intensity = seq(0.0001,0.001,length.out = length(datevec))
+)
+plot(testdat)
+
+dd <- (simtestify(p=update_pars(comboframe[1,]),testdat)
+   %>% transmute(date,H,death,postest)
+   %>% gather(key="var",value="value",-date)
+)
+
+ggplot(dd,aes(x=date,y=value,color=var))+geom_point()+scale_y_log10(limits=c(1,NA))
+
+
+sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
+   if(x[4]){
+      testdat$intensity <- 1
+   }
 	pp <- update_pars(x)
-	simdat <- simulate_testify_sim(pp)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
+	simdat <- simtestify(pp,testdat)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
@@ -38,9 +65,7 @@ sim_and_calibrate <- function(y){
 
 batch_setup()
 
-res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
-
-print(res_list)
+res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x,testdat))
 
 ## interactive playing around stuff
 

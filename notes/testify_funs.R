@@ -27,7 +27,7 @@ simulate_testify_sim <- function(p){
 	return(sims)
 }
 
-simulate_testify_forecastsim <- function(p,testing_data){
+simtestify <- function(p,testing_data){
    ## create fake data for dates
    dd <- (simulate_testify_sim(p)
       %>% transmute(date
@@ -38,8 +38,14 @@ simulate_testify_forecastsim <- function(p,testing_data){
 		%>% gather(key="var",value="value",-date)
 		%>% mutate(value=round(value))
 	)
+   opt_pars <- with(as.list(p)
+		, list(params=c(log_beta0 = log(beta0)
+			, log_E0 = log(E0)
+			)
+		)
+	)
 	sim_args <- list(ratemat_args = list(testify=TRUE)
-		, start_date = start
+	   , start_date = start
 		, end_date = end
 		, use_ode = use_ode
 		, step_args = list(testwt_scale = testwt_scale)
@@ -54,19 +60,27 @@ simulate_testify_forecastsim <- function(p,testing_data){
 			, data = dd
 			, sim_args = sim_args
 			, maxit = 1000
-			, return_val = "X"
+			, return_val = "time_args"
+			, start_date = start
+		   , end_date = end
+			, testing_data = testing_data
+			, use_testing = TRUE
 			)
 		)
 	)
-      
-   time_args <- c(time_args, list(testing_data = testing_data))
-	sims <- forecast_sim(p,sim_args=sim_args, time_args = time_args)
+   sim_args <- c(sim_args, list(params_timevar = time_args$testing_data))
+	sims <- run_sim_break(params=p
+	   # , opt_pars = opt_pars
+	   # , base_params = p
+      , sim_args=sim_args
+	   # , start_date = start, end_date = end
+	   )
    # %>% mutate(testing_intensity=p[["testing_intensity"]])
 	# )
 	return(sims)
 }
 
-calibrate_sim <- function(dd, pars, p){
+calibrate_sim <- function(dd, pars, p,testing_data){
 	dat <- (dd
 		%>% transmute(date
 			, postest
@@ -97,9 +111,12 @@ calibrate_sim <- function(dd, pars, p){
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
 			, use_spline = FALSE
+			, debug_plot = 
 			, data = dat2
 			, opt_pars = opt_pars
 			, sim_args = sim_args
+			, use_testing = TRUE
+			, testing_data = testing_data
 			, maxit = 1000
 			)
 		)
@@ -107,4 +124,4 @@ calibrate_sim <- function(dd, pars, p){
 	return(mod)
 }
 
-saveVars(update_pars, simulate_testify_sim, calibrate_sim)
+saveVars(update_pars, simulate_testify_sim, simtestify, calibrate_sim)
