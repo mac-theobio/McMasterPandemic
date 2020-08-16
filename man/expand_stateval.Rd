@@ -4,12 +4,19 @@
 \alias{expand_stateval}
 \title{expand states and values to include}
 \usage{
-expand_stateval(x, method = c("untested", "spread"), add_accum = TRUE)
+expand_stateval(
+  x,
+  method = c("eigvec", "untested", "spread"),
+  params = NULL,
+  add_accum = TRUE
+)
 }
 \arguments{
 \item{x}{state vector}
 
 \item{method}{method for distributing values across new (expanded) states}
+
+\item{params}{parameters}
 
 \item{add_accum}{add N and P (neg/pos test) accumulator categories?}
 }
