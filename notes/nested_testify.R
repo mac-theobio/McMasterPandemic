@@ -31,7 +31,7 @@ comboframe <- expand.grid(testing_intensity=testing_intensity
 datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
 testdat <- data.frame(Date = as.Date(datevec)
 	# , intensity = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
-	, intensity = seq(0.0001,0.001,length.out = length(datevec))
+	, intensity = seq(0.001,0.01,length.out = length(datevec))
 )
 plot(testdat)
 
@@ -44,7 +44,7 @@ dd_time <- (simtestify(p=update_pars(comboframe[1,]),testdat)
 plot(testdat)
 
 testdat2 <- testdat
-testdat2$intensity <- 1
+testdat2$intensity <- testing_intensity
    
 dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
    %>% transmute(date,H,death,postest)
