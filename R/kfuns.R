@@ -62,9 +62,15 @@ rmult <- function(k, r){
 
 ##
 ##' run a pure-exponential sim;
-##'  uses run_sim_range with a population of 1 (proportions) and a very small starting value,
+##' uses run_sim_range with a population of 1 (proportions) and a very small starting value,
 ##'  run for 100 steps (by default)
 ##' used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)
+##' @param params parameters
+##' @param steps number of steps to run
+##' @param ndt sub-time steps
+##' @param do_hazard run with hazard
+##' @param testify testing compartments
+##' @param return_val return growth rate or eigenvector?
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' rExp(pp)

@@ -34,7 +34,7 @@ check_var_names <- function(var_names) {
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
-##' state <- expand_stateval(state0)
+##' state <- expand_stateval(state0,params=pp)
 ##' vn <- setdiff(names(state0),non_expanded_states)
 ##' wtsvec <- make_test_wtsvec(pp, vn)
 ##' posvec <- make_test_posvec(pp, vn)
@@ -108,6 +108,7 @@ make_test_posvec <- function(params,var_names=NULL) {
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
+##' @param params parameters
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' s <- make_state(params=pp)

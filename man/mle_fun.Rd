@@ -9,6 +9,7 @@ mle_fun(
   data,
   debug = FALSE,
   debug_plot = FALSE,
+  debug_hist = FALSE,
   opt_pars,
   base_params,
   start_date,
@@ -31,6 +32,8 @@ mle_fun(
 \item{debug}{print debugging messages?}
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+
+\item{debug_hist}{keep information on parameter history?}
 
 \item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
 

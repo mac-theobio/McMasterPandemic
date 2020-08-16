@@ -11,8 +11,7 @@ source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 makeGraphics()
 
-fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
-pars <- (read_params(fn)
+pars <- (read_params(matchFile(".csv$"))
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(N=pop)
 )
@@ -64,7 +63,7 @@ print(ggplot(dd3,aes(x=date,y=value,color=type))
 
 sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
-   if(x[[4]]){
+   if(x$constant_testing){
       testdat$intensity <- 1
    }
 	pp <- update_pars(x)
