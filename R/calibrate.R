@@ -256,6 +256,7 @@ run_sim_decay <- function(params,
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
 ##' @param calc_Rt calculate and include R(t) in prediction/forecast?
+##' @param ... extra args (ignored)
 
 ##' @examples
 ##' ff <- ont_cal1$forecast_args
@@ -278,8 +279,12 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          return_val=c("aggsim","vals_only"),
                          sim_fun=run_sim_break,
                          calc_Rt = FALSE,
-                         debug = FALSE)
+                         debug = FALSE,
+                         ...)
+
 {
+    ## FIXME: shouldn't need ..., but catches e.g. debug_hist passed
+    ## through?
     S <- Symbol <- rel_beta0 <- hetS <- zeta <- NULL ## global var checking
     return_val <- match.arg(return_val)
     sim_args <- c(sim_args,nlist(start_date, end_date))
