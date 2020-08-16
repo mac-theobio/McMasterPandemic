@@ -68,18 +68,25 @@ sim_and_calibrate <- function(y,testdat){
    }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=TRUE)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=TRUE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
 
-
 res <- sim_and_calibrate(1,testdat)
+
+## plot parameter histories
+hh <- (attr(res$fit,"debug_hist")
+    %>% as_tibble()
+    %>% mutate(n=seq(nrow(.)))
+    %>% pivot_longer(-n)
+    %>% mutate_at("name", ~forcats::fct_inorder(factor(.)))
+)
+ggplot(hh,aes(n,value,colour=name))+facet_wrap(~name,scale="free_y") + geom_line()
 ## stop here
 quit()
-
 batch_setup()
 
 

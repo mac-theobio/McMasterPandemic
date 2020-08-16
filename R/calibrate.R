@@ -352,13 +352,15 @@ do_debug_plot <- function(r2) {
     value <- NULL ## global var check
     vv <- unique(r2$var)
     if (length(vv)==1) {
-        suppressWarnings(plot(value~date, data=r2, log="y"))
+        suppressWarnings(plot(value~date, data=r2, log="y", main=vv))
         with(r2,lines(date,pred))
     } else {
         with(subset(r2,value>0),
              plot(date,value,col=as.numeric(factor(var)),log="y"))
         r2s <- split(r2,r2$var)
-        invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
+        Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s))
+        labs <- unique(r2$var)
+        legend("topright",col=seq(length(labs)),lty=1,legend=labs)
     }
 }
 
@@ -541,6 +543,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
+                      debug_hist=FALSE,
                       last_debug_plot=FALSE,
                       use_DEoptim=FALSE,
                       mle2_method="Nelder-Mead",
@@ -588,6 +591,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , debug
                     , debug_hist
                     , debug_plot
+                      ## FIXME: refactor debugging args!
                     , data
                     , priors
                     , sim_fun)
@@ -953,6 +957,7 @@ calibrate_comb <- function(data,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
+                     debug_hist=FALSE,
                      return_val=c("fit","X","formula","args","time_args"),
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
@@ -1111,6 +1116,7 @@ calibrate_comb <- function(data,
                      , DE_cores
                      , debug_plot
                      , debug
+                     , debug_hist
                      , base_params=params
                      , mle2_control = list(maxit=maxit)
                      , mle2_args=list(skip.hessian=skip.hessian)
