@@ -60,7 +60,8 @@ dd_time <- (simtestify(p=update(pars,testing_intensity=comboframe[1,"testing_int
 plot(testdat)
 
 testdat2 <- testdat
-testdat2$intensity <- testing_intensity
+## hard-code testing intensity to first value!
+testdat2$intensity <- testing_intensity[1]
    
 dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
    %>% transmute(date,H,death,postest)
