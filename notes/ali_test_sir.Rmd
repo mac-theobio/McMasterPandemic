@@ -38,7 +38,7 @@ Checkings:
 
 The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u, from $Z_u$ to $Z_p$ is $P_Z F(W_Z) Z_u$.  At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively.
 
-We have been using
+**BMB**: We have gone back to using a scaling where $F(W_Z) = (W_Z \cdot N)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
 
 
 ## Model
@@ -60,11 +60,22 @@ We have been using
 12)\ dP/dt &= S_p + I_p + R_p.
 \end{align}
 
+**BMB**: 
+
+* we don't need the $u$ subscripts on $f_Z$, I think
+* similarly, $\omega=\omega_{Z_n} = \omega_{Z_p}$ is a pretty safe assumption, i.e. that tests get returned at the same rate (on average) regardless of who they were sampled from, and especially whether they were positive or negative
+* similarly we don't need $u$ subscripts on $P_I$
+* there should be flows of $\gamma I_n$, $\gamma I_p$ from $I_n \to R_n$ and $I_p \to R_p$
+* in general you should make sure that the population is conserved!
+
 Let $t$ be testing intensity (1/time), $W = (W_1,W_2,W_3)$ be weighting vector which distributes the testing intensity for $S_u$, $I_u$ and $R_u$. Then
 Is this right way of thinking?
+
 $f_{S_u} = t \frac{W_1}{\sum_i W_i}$,
 $f_{I_u} = t \frac{W_2}{\sum_i W_i}$,
 $f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
+
+**BMB:** no. Multiplying by $t$ is correct, but see my comment right about the "model" section. Your $f_{Z_u}$ is my $F(W_Z)/t$.
 
 ```{r, packages}
 require(deSolve)
