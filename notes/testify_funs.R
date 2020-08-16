@@ -27,6 +27,45 @@ simulate_testify_sim <- function(p){
 	return(sims)
 }
 
+simulate_testify_forecastsim <- function(p,testing_data){
+   ## create fake data for dates
+   dd <- (simulate_testify_sim(p)
+      %>% transmute(date
+			, postest
+			, death
+			, H
+			)
+		%>% gather(key="var",value="value",-date)
+		%>% mutate(value=round(value))
+	)
+	sim_args <- list(ratemat_args = list(testify=TRUE)
+		, start_date = start
+		, end_date = end
+		, use_ode = use_ode
+		, step_args = list(testwt_scale = testwt_scale)
+		, condense_args = list(keep_all = keep_all
+			, add_reports = !keep_all
+		)
+	)
+   time_args <- do.call(calibrate_comb
+		, c(nlist(params = p
+			, use_DEoptim = FALSE
+			, use_spline = FALSE
+			, data = dd
+			, sim_args = sim_args
+			, maxit = 1000
+			, return_val = "X"
+			)
+		)
+	)
+      
+   time_args <- c(time_args, list(testing_data = testing_data))
+	sims <- forecast_sim(p,sim_args=sim_args, time_args = time_args)
+   # %>% mutate(testing_intensity=p[["testing_intensity"]])
+	# )
+	return(sims)
+}
+
 calibrate_sim <- function(dd, pars, p){
 	dat <- (dd
 		%>% transmute(date
