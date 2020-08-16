@@ -75,18 +75,18 @@ sim_and_calibrate <- function(y,testdat){
 	return(res_list)
 }
 
-res <- sim_and_calibrate(1,testdat)
-
-## plot parameter histories
-hh <- (attr(res$fit,"debug_hist")
-    %>% as_tibble()
-    %>% mutate(n=seq(nrow(.)))
-    %>% pivot_longer(-n)
-    %>% mutate_at("name", ~forcats::fct_inorder(factor(.)))
-)
-ggplot(hh,aes(n,value,colour=name))+facet_wrap(~name,scale="free_y") + geom_line()
+# res <- sim_and_calibrate(1,testdat)
+# 
+# ## plot parameter histories
+# hh <- (attr(res$fit,"debug_hist")
+#     %>% as_tibble()
+#     %>% mutate(n=seq(nrow(.)))
+#     %>% pivot_longer(-n)
+#     %>% mutate_at("name", ~forcats::fct_inorder(factor(.)))
+# )
+# ggplot(hh,aes(n,value,colour=name))+facet_wrap(~name,scale="free_y") + geom_line()
 ## stop here
-quit()
+# quit()
 batch_setup()
 
 
