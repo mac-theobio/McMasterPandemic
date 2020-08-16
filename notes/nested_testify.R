@@ -92,8 +92,8 @@ sim_and_calibrate <- function(y,testdat){
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
-
-res <- sim_and_calibrate(1,testdat)
+ 
+## res <- sim_and_calibrate(1,testdat)
 # 
 # ## plot parameter histories
 # hh <- (attr(res$fit,"debug_hist")
