@@ -80,7 +80,7 @@ print(ggplot(dd3,aes(x=date,y=value,color=type))
 sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
         if(x$constant_testing){
-            testdat$intensity <- testing_intensity
+            testdat$intensity <- testing_intensity[1]
         }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
