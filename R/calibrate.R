@@ -482,6 +482,7 @@ update_debug_hist <- function(params, NLL) {
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
+##' @param debug_hist keep information on parameter history
 ##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
 ##' @param last_debug_plot plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)
 ##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
@@ -597,8 +598,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                               ncol=length(opt_inputs)+1,
                                               dimnames=list(NULL,c(names(opt_pars),"NLL")))
             debug_ctr <- 1
-            
-        }) ## within()
+        }) ## with()
     }        
     
     de_cal1 <- de_time <- NULL
