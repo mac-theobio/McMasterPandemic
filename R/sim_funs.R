@@ -306,7 +306,8 @@ do_step <- function(state, params, ratemat, dt=1,
         }
     }
     outflow <- rowSums(flows[,p_states])
-    if (do_exponential) outflow[["S"]] <- 0
+    ## set flows out of *all* susceptible compartments (tested/etc.) to zero
+    if (do_exponential) outflow[grepl("^S",names(outflow))] <- 0
     inflow <-  colSums(flows)
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
@@ -406,7 +407,7 @@ run_sim <- function(params
     if(!is.null(ratemat_args)){
     	if (ratemat_args$testify) {
             M <- testify(M,params,testing_time=ratemat_args$testing_time)
-            state <- expand_stateval(state)
+            state <- expand_stateval(state, params=params)
     	}
     }
     state0 <- state

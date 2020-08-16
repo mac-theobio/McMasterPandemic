@@ -61,31 +61,45 @@ rmult <- function(k, r){
 }
 
 ##
-## run a pure-exponential sim;
-##  uses run_sim_range with a population of 1 (proportions) and a very small starting value,
-##  run for 100 steps (by default)
-## used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)
-## FIXME: pass down more information about model type?
-## FIXME: add some tests!
-rExp <- function(par, steps=100, ndt=1,
+##' run a pure-exponential sim;
+##'  uses run_sim_range with a population of 1 (proportions) and a very small starting value,
+##'  run for 100 steps (by default)
+##' used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)
+##' @examples
+##' pp <- read_params("PHAC_testify.csv")
+##' rExp(pp)
+##' rExp(pp,return_val="eigenvector")
+##' rExp(pp,return_val="eigenvector",testify=TRUE)
+##' @export
+rExp <- function(params, steps=100, ndt=1,
                  do_hazard=FALSE,
+                 testify=FALSE,
                  return_val=c("r0","eigenvector"))
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
-        par[["N"]] <- 1   ## ? redundant ?
+        params[["N"]] <- 1   ## ? redundant ?
 	state <- make_state(N=1, E0=1e-5, type="ICU1")  ## FIXME: don't assume ICU1?
-	r <- run_sim_range(par, state
+        M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    	if (testify) {
+            M <- testify(M,params)
+            state <- expand_stateval(state,method="untested")
+    	}
+	r <- run_sim_range(params
+                         , state
                          , nt=steps*ndt
+                         , M = M
                          , step_args = list(do_hazard=do_hazard,
                                             do_exponential=TRUE))
         nn <- ndt*steps
         ## DRY: get_evec()
-        drop_vars <- c("date","t","S","R","D","foi","X")
+        drop_vars <- c("date","t","D","foi","R","X","N","P")
+        if (!testify) drop_vars <- c("S", drop_vars)
+        drop_re <- paste0("^(",paste(drop_vars,collapse="|"),")")
         ## FIXME: safer version of this:
         ##   keep_vars_regexp <- "^[EIHh]"
         ##   unlist(x[pos, grepl(keep_vars_regexp, names(r))])
-        uf <- function(x,pos) unlist(x[pos,!names(r) %in% drop_vars])
+        uf <- function(x,pos) unlist(x[pos,!grepl(drop_re,names(r))])
         r_last <- uf(r,nn)
         r_nextlast <- uf(r,nn-1)
         ret <- switch(return_val,

@@ -1,9 +1,10 @@
 library(McMasterPandemic)
 library(tidyverse); theme_set(theme_bw())
+callArgs <- "basic.rda basic.sims.rda"
 
 source("makestuff/makeRfuns.R")
-commandEnvironments()
-makeGraphics()
+print(commandEnvironments())
+if (!interactive()) makeGraphics()
 
 print(params)
 

@@ -16,3 +16,9 @@ expand_stateval(x, method = c("untested", "spread"), add_accum = TRUE)
 \description{
 expand states and values to include
 }
+\examples{
+pp <- read_params("PHAC_testify.csv")
+s <- make_state(params=pp)
+expand_stateval(s, params=pp)
+expand_stateval(s, method="untested")
+}
