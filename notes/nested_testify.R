@@ -68,7 +68,7 @@ sim_and_calibrate <- function(y,testdat){
    }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=TRUE, debug=TRUE, debug_hist=TRUE)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
