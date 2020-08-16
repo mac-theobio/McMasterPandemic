@@ -31,7 +31,8 @@ calibrate_comb(
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
-  return_val = c("fit", "X", "formula", "args"),
+  debug_hist = FALSE,
+  return_val = c("fit", "X", "formula", "args", "time_args"),
   ...
 )
 }
@@ -100,6 +101,8 @@ which is probably wise)}
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
 
 \item{debug}{print debugging messages?}
+
+\item{debug_hist}{keep information on parameter history?}
 
 \item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
 

@@ -1,46 +1,96 @@
 library(McMasterPandemic)
 library(tidyverse)
+library(zoo)
 library(parallel)
 library(furrr)
 library(future.batchtools)
 
-callArgs <- "basic.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda basic.rda sims.csv"
+callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda sims.csv"
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
+makeGraphics()
 
-fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
-pars <- (read_params(fn)
+pars <- (read_params(matchFile(".csv$"))
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(N=pop)
 )
 
 ## different combinations
-testing_intensity <- c(0.001, 0.01, 0.1)
-keep_vars <- c("postest", "H/death", "postest/H/death")
-opt_testify <- c(TRUE,FALSE)
+testing_intensity <- c(0.001)
+keep_vars <- c("postest/H/death")
+opt_testify <- c(FALSE)
+constant_testing <- c(FALSE,TRUE)
 
 comboframe <- expand.grid(testing_intensity=testing_intensity
 	, keep_vars = keep_vars
 	, opt_testify = opt_testify
+	, constant_testing = constant_testing
 )
 
-sim_and_calibrate <- function(y){
+datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
+testdat <- data.frame(Date = as.Date(datevec)
+	# , intensity = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
+	, intensity = seq(0.0001,0.001,length.out = length(datevec))
+)
+plot(testdat)
+
+dd_time <- (simtestify(p=update_pars(comboframe[1,]),testdat)
+   %>% transmute(date,H,death,postest)
+   %>% gather(key="var",value="value",-date)
+   %>% mutate(type="time varying")
+)
+
+plot(testdat)
+
+testdat2 <- testdat
+testdat2$intensity <- 1
+   
+dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
+   %>% transmute(date,H,death,postest)
+   %>% gather(key="var",value="value",-date)
+   %>% mutate(type = "constant")
+)
+
+dd3 <- bind_rows(dd_time,dd_constant)
+
+print(ggplot(dd3,aes(x=date,y=value,color=type))
+   + geom_line()
+   + facet_wrap(~var,ncol=2)
+   + scale_y_log10(limits=c(1,NA))
+)
+
+sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
+        if(x$constant_testing){
+            testdat$intensity <- 1
+        }
 	pp <- update_pars(x)
-	simdat <- simulate_testify_sim(pp)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x)
+	simdat <- simtestify(pp,testdat)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat,
+                                   debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
+        ## BMB: is this OK or is copying/moving stuff into cachestuff supposed to be done make-ily?
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
 
+res <- sim_and_calibrate(1,testdat)
+
+## plot parameter histories
+hh <- (attr(res$fit,"debug_hist")
+    %>% as_tibble()
+    %>% mutate(n=seq(nrow(.)))
+    %>% pivot_longer(-n)
+    %>% mutate_at("name", ~forcats::fct_inorder(factor(.)))
+)
+ggplot(hh,aes(n,value,colour=name))+facet_wrap(~name,scale="free_y") + geom_line()
+## stop here
+quit()
 batch_setup()
 
-res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x))
-
-print(res_list)
+res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat))
 
 ## interactive playing around stuff
 

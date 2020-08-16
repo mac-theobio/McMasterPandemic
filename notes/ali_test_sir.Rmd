@@ -19,7 +19,7 @@ Notes on other references: (1) McMasterPandemic/notes/testing_flow.md (I am usin
 - Each group splits into 4 subgroups to incorporate the testing mechanism, so overall the model framework has 12 compartments:
 $S_u,$ $S_n$, $S_p$, $S_t$, $I_u$, $I_n$, $I_p$, $I_t$, $R_u$, $R_n$, $R_p$, $R_t$.
 
-**BMB**: yes, except that (1) two of the compartments are unnecessary (if we assume a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) we will want two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported neg/pos tests
+**BMB**: yes, except that (1) two of the compartments are unnecessary (if we assume a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) we will want two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported neg/pos tests. **AGh**: Is this correct for $N$ and $P$? $dN/dt = S_n + I_n + R_n$ and $dP/dt = S_p + I_p + R_p$.
 
 ## Per Capita Rate of Flow from Untested to Positive or Negative Compartments
 
@@ -37,20 +37,72 @@ The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, n
 
 ## Model
 
+![](../inst/pix/sir_test1.jpg)
+
 \begin{align}
-d S_u/dt &= -\beta \frac{(I_u+I_n+I_p+I_t)}{N} S_u + \omega_{S_n} S_n \\
-d S_n/dt &= f_{S_n} S_n - \omega_{S_n} S_n \\
-
-d I_u/dt &= \beta \frac{(I_u+I_n+I_p+I_t)}{N} S_u + \omega_{I_n} I_n - f_{I_u} (1-P_{I_u}) I_u -f_{I_u} P_{I_u} I_u- \gamma I_u  \\
-d I_n/dt &= f_{I_u} (1-P_{I_u}) I_u - \omega_{I_n} I_n \\
-d I_p/dt &= f_{I_u} P_{I_u} I_u - \omega_{I_p} I_p \\
-d I_t/dt &= \omega_{I_p} I_p - \gamma I_t  \\
-
-d R_u/dt &= \gamma I_u + \omega_{R_n} R_n - f_{R_u} (1-P_{R_u}) R_u -f_{R_u} P_{R_u}) R_u  \\
-d R_n/dt &= f_{R_u} (1-P_{R_u}) R_u - \omega_{R_n} R_n  \\
-d R_p/dt &= f_{R_u} P_{R_u}) R_u - \omega_{R_p} R_p  \\
-d R_t/dt &= \gamma I_t + \omega_{R_p} R_p  \\
+1)\  d S_u/dt &= \omega_{S_n} S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N0} S_u - f_{S_u} S_u \\
+2)\ d S_n/dt &= f_{S_u} S_u - \omega_{S_n} S_n \\
+3)\ d I_u/dt &= \beta \frac{(I_u+I_n+I_p+I_t)}{N0} S_u + \omega_{I_n} I_n - f_{I_u} (1-P_{I_u}) I_u -f_{I_u} P_{I_u} I_u- \gamma I_u  \\
+4)\ d I_n/dt &= f_{I_u} (1-P_{I_u}) I_u - \omega_{I_n} I_n \\
+5)\ d I_p/dt &= f_{I_u} P_{I_u} I_u - \omega_{I_p} I_p \\
+6)\ d I_t/dt &= \omega_{I_p} I_p - \gamma I_t  \\
+7)\ d R_u/dt &= \gamma I_u + \omega_{R_n} R_n - f_{R_u} (1-P_{R_u}) R_u -f_{R_u} P_{R_u}) R_u  \\
+8)\ d R_n/dt &= f_{R_u} (1-P_{R_u}) R_u - \omega_{R_n} R_n  \\
+9)\ d R_p/dt &= f_{R_u} P_{R_u}) R_u - \omega_{R_p} R_p  \\
+10)\ d R_t/dt &= \gamma I_t + \omega_{R_p} R_p  \\
+11)\ dN/dt &= S_n + I_n + R_n   \\
+12)\ dP/dt &= S_p + I_p + R_p.
 \end{align}
+
+Let $t$ be testing intensity (1/time), $W = (W_1,W_2,W_3)$ be weighting vector which distributes the testing intensity for $S_u$, $I_u$ and $R_u$. Then
+Is this right way of thinking?
+$f_{S_u} = t \frac{W_1}{\sum_i W_i}$,
+$f_{I_u} = t \frac{W_2}{\sum_i W_i}$,
+$f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
+
+```{r, packages}
+require(deSolve)
+require(ggplot2)
+require(tidyr)
+```
+
+```{r, model formulation}
+sir.model <- function(t,x,params){
+  ## extract the state variables
+  Su <- x[1]
+  Sn <- x[2]
+  Iu <- x[3]
+  In <- x[4]
+  Ip <- x[5]
+  It <- x[6]
+  Ru <- x[7]
+  Rn <- x[8]
+  Rp <- x[9]
+  Rt <- x[10]
+  N <- x[11]
+  P <- x[12]
+  
+  ## extract the parameters
+  N0 <- params["N0"] #initial population size
+  beta <- params["beta"] #transition rate
+  gamma <- params["gamma"] #recovery rate
+  t <- params["t"] #testing intensity
+  
+  
+  
+  
+  ## the model equations
+  dS.dt <- -beta*S*I/N
+  dI.dt <- beta*S*I/N-gamma*I
+  dR.dt <- gamma*I
+  ## combine results into a single vector
+  dxdt <- c(dS.dt,dI.dt,dR.dt)
+  ## return result as a list!
+  list(dxdt)
+}
+
+
+```
 
 
 

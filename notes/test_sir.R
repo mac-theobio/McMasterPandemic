@@ -4,7 +4,7 @@ require(deSolve)
 require(ggplot2)
 require(tidyr)
 
-N0 <- 1e+06 #total population
+# N0 <- 1e+06 #total population
 
 sir.model <- function(t,x,params){
   ## extract the state variables
@@ -14,10 +14,9 @@ sir.model <- function(t,x,params){
   ## extract the parameters
   beta <- params["beta"] #transition rate
   gamma <- params["gamma"] #recovery rate
+  N <- params["N"] #total population
   ## BMB: with(as.list(c(x,params)), { ... }) OR McMasterPandemic::unpack(c(x,params)) can simplify this slightly
-  ## BMB: specify as parameter (don't hard-code it!); also, already specified outside the function?
-  N <- 1e+06 #total population  
-  ## the model equations
+      ## the model equations
   dS.dt <- -beta*S*I/N
   dI.dt <- beta*S*I/N-gamma*I
   dR.dt <- gamma*I
@@ -32,9 +31,9 @@ dd <- (data.frame(date=seq(as.Date("2020-02-14"),
                            by="1 day"))
 )
 
-params0 <- c(beta=1,gamma=1/3)
+params0 <- c(N=100, beta=1,gamma=1/3)
 
-xstart <- c(S=N0,I=1,R=0) ## initial conditions
+xstart <- c(S=as.numeric(params0["N"]),I=1,R=0) ## initial conditions
 
 
 out <- as.data.frame(

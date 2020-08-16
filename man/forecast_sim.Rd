@@ -20,7 +20,8 @@ forecast_sim(
   return_val = c("aggsim", "vals_only"),
   sim_fun = run_sim_break,
   calc_Rt = FALSE,
-  debug = FALSE
+  debug = FALSE,
+  ...
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ forecast_sim(
 \item{calc_Rt}{calculate and include R(t) in prediction/forecast?}
 
 \item{debug}{print debugging messages?}
+
+\item{...}{extra args (ignored)}
 }
 \description{
 simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
