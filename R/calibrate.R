@@ -372,6 +372,7 @@ do_debug_plot <- function(r2) {
 mle_fun <- function(p, data,
                     debug=FALSE,
                     debug_plot=FALSE,
+                    debug_hist=FALSE,
                     opt_pars,
                     base_params,
                     start_date,
@@ -444,7 +445,9 @@ mle_fun <- function(p, data,
     ## FIXME: add evaluation number?
     if (debug) {
         cat(unlist(pp),ret,"\n")
-        ## update debug history here ...
+    }
+    if (debug_hist) {
+        update_debug_hist(unlist(pp),ret)
     }
     if (!is.finite(ret)) ret <- Inf  ## DEoptim hack
     return(ret)
@@ -452,11 +455,12 @@ mle_fun <- function(p, data,
 
 debug_env <- new.env()
 update_debug_hist <- function(params, NLL) {
-    ## FIXME: unfinished. within() won't actually work!
     ## see https://stackoverflow.com/questions/63432138/equivalent-of-within-attach-etc-for-working-within-an-environment/63432196#63432196 for discussion
+    debug_env$params <- params
+    debug_env$NLL <- NLL
     with(debug_env,
     {
-        if (debug_ctr>nrow(debug_hist_mat)) {
+        if (debug_ctr>nrow(history_mat)) {
             history_mat <- rbind(history_mat, base_mat)  ## extend matrix
         }
         history_mat[debug_ctr,  ] <- c(params, NLL)
@@ -482,7 +486,7 @@ update_debug_hist <- function(params, NLL) {
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
-##' @param debug_hist keep information on parameter history
+##' @param debug_hist keep information on parameter history?
 ##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
 ##' @param last_debug_plot plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)
 ##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
@@ -507,7 +511,7 @@ update_debug_hist <- function(params, NLL) {
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
 ##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
+##'   cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 ##' 
 ##'    if (require(bbmle)) {
@@ -583,12 +587,14 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , sim_args
                     , aggregate_args
                     , debug
+                    , debug_hist
                     , debug_plot
                     , data
                     , priors
                     , sim_fun)
     opt_inputs <- unlist(opt_pars)
 
+    debug_env$opt_inputs <- opt_inputs
     ## initialize debug history
     if (debug_hist) {
         with(debug_env,  {
@@ -596,7 +602,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
             base_mat <- history_mat <- matrix(NA,
                                               nrow=debug_hist_chunksize,
                                               ncol=length(opt_inputs)+1,
-                                              dimnames=list(NULL,c(names(opt_pars),"NLL")))
+                                              dimnames=list(NULL,c(names(opt_inputs),"NLL")))
             debug_ctr <- 1
         }) ## with()
     }        
@@ -679,6 +685,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                             c("debug","debug_plot","fixed_pars","data","priors"))]
               , call = cc)
     end_time <- proc.time()
+    if (debug_hist) {
+        with(debug_env,
+             history_mat <- history_mat[rowSums(is.na(history_mat))<ncol(history_mat),]
+        )
+        attr(res,"debug_hist") <- debug_env$history_mat
+    }
     attr(res,"de") <- de_cal1
     attr(res,"de_time") <- de_time
     attr(res,"mle2_time") <- mle2_time
