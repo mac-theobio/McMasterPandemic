@@ -51,7 +51,7 @@ ggplot(dd,aes(x=date,y=value,color=var))+geom_point()+scale_y_log10(limits=c(1,N
 
 sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
-   if(x[4]){
+   if(x[[4]]){
       testdat$intensity <- 1
    }
 	pp <- update_pars(x)
