@@ -454,13 +454,14 @@ debug_env <- new.env()
 update_debug_hist <- function(params, NLL) {
     ## FIXME: unfinished. within() won't actually work!
     ## see https://stackoverflow.com/questions/63432138/equivalent-of-within-attach-etc-for-working-within-an-environment/63432196#63432196 for discussion
-    within(debug_env,
+    with(debug_env,
     {
         if (debug_ctr>nrow(debug_hist_mat)) {
             history_mat <- rbind(history_mat, base_mat)  ## extend matrix
         }
         history_mat[debug_ctr,  ] <- c(params, NLL)
         debug_ctr <- debug_ctr + 1
+    })
 }
 
 ##' estimate parameters from data
@@ -589,15 +590,15 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 
     ## initialize debug history
     if (debug_hist) {
-        within(debug_env,  {
+        with(debug_env,  {
             debug_hist_chunksize <- 1e4
             base_mat <- history_mat <- matrix(NA,
                                               nrow=debug_hist_chunksize,
                                               ncol=length(opt_inputs)+1,
                                               dimnames=list(NULL,c(names(opt_pars),"NLL")))
             debug_ctr <- 1
-            )
-        } ## within()
+            
+        }) ## within()
     }        
     
     de_cal1 <- de_time <- NULL
