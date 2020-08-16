@@ -17,7 +17,8 @@ library("McMasterPandemic")
 
 if (!exists("keep_all")) keep_all <- FALSE
 
-fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
+fn <- matchFile(".csv$")
+
 params <- (read_params(fn)
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(

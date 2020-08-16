@@ -442,9 +442,25 @@ mle_fun <- function(p, data,
         }
     }
     ## FIXME: add evaluation number?
-    if (debug) cat(unlist(pp),ret,"\n")
+    if (debug) {
+        cat(unlist(pp),ret,"\n")
+        ## update debug history here ...
+    }
     if (!is.finite(ret)) ret <- Inf  ## DEoptim hack
     return(ret)
+}
+
+debug_env <- new.env()
+update_debug_hist <- function(params, NLL) {
+    ## FIXME: unfinished. within() won't actually work!
+    ## see https://stackoverflow.com/questions/63432138/equivalent-of-within-attach-etc-for-working-within-an-environment/63432196#63432196 for discussion
+    within(debug_env,
+    {
+        if (debug_ctr>nrow(debug_hist_mat)) {
+            history_mat <- rbind(history_mat, base_mat)  ## extend matrix
+        }
+        history_mat[debug_ctr,  ] <- c(params, NLL)
+        debug_ctr <- debug_ctr + 1
 }
 
 ##' estimate parameters from data
@@ -518,6 +534,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       condense_args=NULL,
                       priors=NULL,
                       debug=FALSE,
+                      debug_hist=FALSE,
                       debug_plot=FALSE,
                       last_debug_plot=FALSE,
                       use_DEoptim=FALSE,
@@ -569,11 +586,20 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , priors
                     , sim_fun)
     opt_inputs <- unlist(opt_pars)
-        ## initialize debug history
-    debug_hist_chunksize <- 1e4
-    if (exists("debug_hist_ctr")) {
-        debug_hist_ctr <<- 1
-    }
+
+    ## initialize debug history
+    if (debug_hist) {
+        within(debug_env,  {
+            debug_hist_chunksize <- 1e4
+            base_mat <- history_mat <- matrix(NA,
+                                              nrow=debug_hist_chunksize,
+                                              ncol=length(opt_inputs)+1,
+                                              dimnames=list(NULL,c(names(opt_pars),"NLL")))
+            debug_ctr <- 1
+            )
+        } ## within()
+    }        
+    
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         DE_lims <- get_DE_lims(opt_pars)
@@ -909,7 +935,7 @@ calibrate_comb <- function(data,
                      DE_cores=1,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
-                     use_spline=TRUE,
+                     use_spline=FALSE,
                      use_testing=FALSE,
                      vars=NULL,
                      debug_plot=interactive(),

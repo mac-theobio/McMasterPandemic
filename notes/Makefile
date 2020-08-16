@@ -109,7 +109,7 @@ testify_funs.Rout: testify_funs.R
 batchtools.Rout: batchtools.R
 	$(makeR)
 
-## basic.nested_testify.Rout: nested_testify.R testify_funs.R
+## testwt_N.nested_testify.Rout: nested_testify.R testify_funs.R
 %.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
 	$(makeR)
 

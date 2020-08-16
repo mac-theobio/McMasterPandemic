@@ -18,7 +18,7 @@ get_workers <- function(workers) {
 ##' @param workers max number of workers (cores etc.) to use
 ##' @param walltime max time per job (in seconds)
 ##' @param ncpus cpus per task (== processes per node, ppn on an SGE scheduler)
-batch_setup <- function(workers=NULL,walltime=6*60*60,ncpus=1) {
+batch_setup <- function(workers=NULL,walltime=6*60*60,ncpus=1,use_sge_stuff=FALSE) {
     require("batchtools")
     require("furrr")
     require("future")
@@ -37,20 +37,16 @@ batch_setup <- function(workers=NULL,walltime=6*60*60,ncpus=1) {
                    ## minimal modifications to work on jdserv/yushan:
                    ##   (1) execute in current working directory, (2) use queue 'all.q'
                    r <- readLines(tmpl)
-                   ## add line for processes per node
-                   queue_line <- grep("-q ",r)
-                   r <- c(r[1:queue_line],
+                   if (use_sge_stuff) {
+                      ## add line for processes per node
+                      queue_line <- grep("-q ",r)
+                      r <- c(r[1:queue_line],
                           "## allow more than one process per node",
                           "#$ -l nodes=1,ppn=<%= resources$ncpus %>,tpp=<%= resources$ncpus %>",
                           "",
                           r[(queue_line+1):length(r)]
                           )
-                   ## below is OBSOLETE/wrong; single comments in template don't mean "ignore"!
-                   ##  queue identity is specified in resources()
-                   ## cwdline <- grep("-cwd",r)
-                   ## r[cwdline] <- "$ -cwd"
-                   ## qline <- grep("-q ",r)
-                   ## r[qline] <- "$ -q all.q"
+                   }
                    writeLines(r, con=fn)
                }
                plan(batchtools_sge,resources=list(queue="all.q"))

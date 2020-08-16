@@ -17,9 +17,8 @@ rt <- run_sim(params=ppt, end_date=as.Date("2020-06-15"),
              ratemat_args=list(testify=TRUE))
 
 ## X is the hospital accumulator (cumulative total of hospitalizations)
-plot(r,keep_states=c("X","H","hosp"), log=TRUE)
+plot(rt,keep_states=c("X","H","hosp"), log=TRUE)
 
-r2 <- r %>% select(date,X,H,hosp)
-head(r2)
-identical(r$hosp,c(NA,diff(r$X)))
+r2t <- rt %>% select(date,X,H,hosp)
+identical(rt$hosp,c(NA,diff(rt$X)))
 

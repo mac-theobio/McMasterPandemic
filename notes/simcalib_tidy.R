@@ -22,6 +22,7 @@ ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
 print(ln)
 
+
 clean_res <- function(x){
 
 	res <- readRDS(paste0("cachestuff/",x))
