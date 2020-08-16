@@ -7,13 +7,15 @@ makeGraphics()
 
 ## bad. repeating code 
 
-testing_intensity <- c(0.001, 0.01, 0.1)
-keep_vars <- c("postest", "H/death", "postest/H/death")
-opt_testify <- c(TRUE,FALSE)
+testing_intensity <- c(0.001)
+keep_vars <- c("postest/H/death")
+opt_testify <- c(FALSE)
+constant_testing <- c(FALSE,TRUE)
 
 comboframe <- expand.grid(testing_intensity=testing_intensity
         , keep_vars = keep_vars
         , opt_testify = opt_testify
+		  , constant_testing = constant_testing
 )
 
 
@@ -22,19 +24,16 @@ ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
 print(ln)
 
-
 clean_res <- function(x){
 
 	res <- readRDS(paste0("cachestuff/",x))
 	if(class(res$fit) == "NULL"){return(data.frame())}
 	input <- unlist(strsplit(x,split="[.]"))[2]
 
-
 	dd <- predict(res$fit
 		, ensemble=FALSE
 		, keep_vars=c("postest","death","H")
 	)
-
 	ddcombo <- (res$data
 		%>% transmute(date, postest, death, H)
 		%>% gather(key = "var", value="data",-date)
@@ -42,6 +41,7 @@ clean_res <- function(x){
 		%>% mutate(testing_intensity = comboframe[input,1]
 			, keep_vars = comboframe[input,2]
 			, opt_testify = comboframe[input,3]
+			, constant_testing = comboframe[input,4]
 		)
 	)
 
