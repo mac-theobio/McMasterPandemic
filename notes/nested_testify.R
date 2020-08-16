@@ -7,6 +7,19 @@ library(future.batchtools)
 
 callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda sims.csv"
 
+## prevent breakage of old input files when we add new parameters
+default_vals <- list(stoch_obs=FALSE,
+                     obs_disp=1,
+                     testing_intensity=c(0.001),
+                     keep_vars=c("postest/H/death"),
+                     opt_testify=FALSE,
+                     constant_testing=c(FALSE,TRUE)
+                     )
+## if it wasn't already specified, set it from the default value
+for (nm in names(default_vals)) {
+    if (!exists(nm)) assign(nm,default_vals[[nm]])
+}
+    
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
 makeGraphics()
@@ -16,11 +29,12 @@ pars <- (read_params(matchFile(".csv$"))
     %>% update(N=pop)
 )
 
+## single dispersion parameter for *all* observed vars ...
+if (stoch_obs) {
+    pars <- update(pars, obs_disp=obs_disp)
+}
+
 ## different combinations
-testing_intensity <- c(0.001)
-keep_vars <- c("postest/H/death")
-opt_testify <- c(FALSE)
-constant_testing <- c(FALSE,TRUE)
 
 comboframe <- expand.grid(testing_intensity=testing_intensity
 	, keep_vars = keep_vars
@@ -30,13 +44,15 @@ comboframe <- expand.grid(testing_intensity=testing_intensity
 
 datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
 testdat <- data.frame(Date = as.Date(datevec)
-	# , intensity = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
+	# , intensity  = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
 	, intensity = seq(0.001,0.01,length.out = length(datevec))
 )
 plot(testdat)
 
-dd_time <- (simtestify(p=update_pars(comboframe[1,]),testdat)
-   %>% transmute(date,H,death,postest)
+dd_time <- (simtestify(p=update(pars,testing_intensity=comboframe[1,"testing_intensity"])
+                       ## update_pars(comboframe[1,])
+                      , testdat)
+   %>% select(date,H,death,postest)
    %>% gather(key="var",value="value",-date)
    %>% mutate(type="time varying")
 )

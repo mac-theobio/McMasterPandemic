@@ -27,10 +27,12 @@ simulate_testify_sim <- function(p){
 	return(sims)
 }
 
-simtestify <- function(p,testing_data){
-   ## create fake data for dates
-   dd <- (simulate_testify_sim(p)
-      %>% transmute(date
+##' @param p a set of parameters
+##' @param testing_data a data frame with dates, per capita testing intensity per day
+simtestify <- function(p, testing_data){
+    ## create fake data for dates
+    dd <- (simulate_testify_sim(p)
+      %>% select(date
 			, postest
 			, death
 			, H
@@ -38,20 +40,21 @@ simtestify <- function(p,testing_data){
 		%>% gather(key="var",value="value",-date)
 		%>% mutate(value=round(value))
 	)
-   opt_pars <- with(as.list(p)
-		, list(params=c(log_beta0 = log(beta0)
+    opt_pars <- with(as.list(p)
+                   , list(params=c(log_beta0 = log(beta0)
 			, log_E0 = log(E0)
-			)
-		)
-	)
+                          )
+                          )
+                     )
 	sim_args <- list(ratemat_args = list(testify=TRUE)
 	   , start_date = start
-		, end_date = end
-		, use_ode = use_ode
-		, step_args = list(testwt_scale = testwt_scale)
-		, condense_args = list(keep_all = keep_all
-			, add_reports = !keep_all
-		)
+           , end_date = end
+           , use_ode = use_ode
+           , stoch=c(obs=stoch_obs, proc=FALSE)  
+           , step_args = list(testwt_scale = testwt_scale)
+           , condense_args = list(keep_all = keep_all
+                                , add_reports = !keep_all
+                                  )
 	)
    time_args <- do.call(calibrate_comb
 		, c(nlist(params = p
@@ -82,33 +85,28 @@ simtestify <- function(p,testing_data){
 
 calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
                           debug=FALSE, debug_hist=FALSE){
-	dat <- (dd
-		%>% transmute(date
+    ## change sim output to input format
+    dat <- (dd %>% select(date
 			, postest
 			, death
 			, H
-			)
+                          )
 		%>% gather(key="var",value="value",-date)
 		%>% mutate(value=round(value))
-	)
-	dat2 <- dat %>% rowwise() %>% filter(grepl(var,p[[2]]))
-	opt_pars <- with(as.list(pars)
-		, list(params=c(log_beta0 = log(beta0)
-			, log_E0 = log(E0)
-			)
-		)
-	)
-	if(p[[3]]){
-		opt_pars <- with(as.list(pars)
-			, list(params=c(log_beta0 = log(beta0)
-				, log_E0 = log(E0)
-				, log_testing_intensity = log(testing_intensity)
-				)
-			)
-		)
-	}
-	sim_args <- list(ratemat_args = list(testify=TRUE, testing_time="report"))
-	mod <- do.call(calibrate_comb
+    )
+    dat2 <- dat %>% filter(grepl(var,p$keep_vars))
+    opt_pars <- with(as.list(pars)
+                   , list(params=c(log_beta0 = log(beta0)
+                                 , log_E0 = log(E0)
+                                   )
+                          )
+                     )
+    if(p$opt_testify){
+        opt_pars <- c(opt_pars,
+                      list(log_testing_intensity = log(pars[["testing_intensity"]])))
+    }
+    sim_args <- list(ratemat_args = list(testify=TRUE, testing_time="report"))
+    mod <- do.call(calibrate_comb
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
 			, use_spline = FALSE

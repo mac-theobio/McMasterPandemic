@@ -9,4 +9,6 @@ pop <- 1.5e7
 R0 <- 2.5
 Gbar <- 6
 set.seed(0807)
+keep_vars <- c("hosp/death/report")
+constant_testing <- TRUE
 keep_all <- FALSE
