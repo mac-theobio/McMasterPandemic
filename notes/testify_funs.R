@@ -80,7 +80,7 @@ simtestify <- function(p,testing_data){
 	return(sims)
 }
 
-calibrate_sim <- function(dd, pars, p,testing_data){
+calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE){
 	dat <- (dd
 		%>% transmute(date
 			, postest
@@ -111,7 +111,7 @@ calibrate_sim <- function(dd, pars, p,testing_data){
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
 			, use_spline = FALSE
-			, debug_plot = 
+			, debug_plot = debug_plot
 			, data = dat2
 			, opt_pars = opt_pars
 			, sim_args = sim_args

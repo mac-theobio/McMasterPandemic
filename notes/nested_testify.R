@@ -5,12 +5,7 @@ library(parallel)
 library(furrr)
 library(future.batchtools)
 
-testing_scale <- 0.2
-max_intensity <- 0.002
-max_intensity <- 0.5
-
-
-callArgs <- "basic.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda basic.rda sims.csv"
+callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda sims.csv"
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
@@ -26,7 +21,7 @@ pars <- (read_params(fn)
 testing_intensity <- c(0.001)
 keep_vars <- c("postest/H/death")
 opt_testify <- c(FALSE)
-constant_testing <- c(TRUE,FALSE)
+constant_testing <- c(FALSE,TRUE)
 
 comboframe <- expand.grid(testing_intensity=testing_intensity
 	, keep_vars = keep_vars
@@ -41,12 +36,30 @@ testdat <- data.frame(Date = as.Date(datevec)
 )
 plot(testdat)
 
-dd <- (simtestify(p=update_pars(comboframe[1,]),testdat)
+dd_time <- (simtestify(p=update_pars(comboframe[1,]),testdat)
    %>% transmute(date,H,death,postest)
    %>% gather(key="var",value="value",-date)
+   %>% mutate(type="time varying")
 )
 
-ggplot(dd,aes(x=date,y=value,color=var))+geom_point()+scale_y_log10(limits=c(1,NA))
+plot(testdat)
+
+testdat2 <- testdat
+testdat2$intensity <- 1
+   
+dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
+   %>% transmute(date,H,death,postest)
+   %>% gather(key="var",value="value",-date)
+   %>% mutate(type = "constant")
+)
+
+dd3 <- bind_rows(dd_time,dd_constant)
+
+print(ggplot(dd3,aes(x=date,y=value,color=type))
+   + geom_line()
+   + facet_wrap(~var,ncol=2)
+   + scale_y_log10(limits=c(1,NA))
+)
 
 
 sim_and_calibrate <- function(y,testdat){
@@ -56,14 +69,20 @@ sim_and_calibrate <- function(y,testdat){
    }
 	pp <- update_pars(x)
 	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat, debug_plot=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pp, data=simdat)
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
 }
 
+
+res <- sim_and_calibrate(1,testdat)
+## stop here
+quit()
+
 batch_setup()
+
 
 res_list <- future_map(seq(nrow(comboframe)),function(x)sim_and_calibrate(x,testdat))
 
