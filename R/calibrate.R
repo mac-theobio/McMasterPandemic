@@ -348,6 +348,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
 }
 
 ## utility: debugging plot
+##' @importFrom graphics legend
 do_debug_plot <- function(r2) {
     value <- NULL ## global var check
     vv <- unique(r2$var)
