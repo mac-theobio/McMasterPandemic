@@ -513,8 +513,8 @@ update_debug_hist <- function(params, NLL) {
 ##'    }
 ##'    attr(cal2,"de")$optim$bestval
 ##' }
-##' @export
 ##' @importFrom stats var vcov
+##' @export
 calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
