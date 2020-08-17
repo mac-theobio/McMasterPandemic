@@ -15,10 +15,11 @@ makeGraphics()
 default_vals <- list(stoch_obs=FALSE,
                      obs_disp=1,
                      testing_intensity=c(0.001),
+							testing_type = c("constant","linear","logistic"),
                      keep_vars=c("postest/H/death"),
-                     opt_testify=FALSE,
-                     constant_testing=c(FALSE,TRUE)
+                     opt_testify=FALSE
                      )
+
 ## if it wasn't already specified, set it from the default value
 
 for (nm in names(default_vals)) {
@@ -38,45 +39,27 @@ if (stoch_obs) {
 
 ## different combinations
 
-comboframe <- expand.grid(testing_intensity=testing_intensity
-	, keep_vars = keep_vars
+comboframe <- expand.grid(keep_vars = keep_vars
 	, opt_testify = opt_testify
-	, constant_testing = constant_testing
+	, testing_type = testing_type
 )
 
 
 print(comboframe)
 
-datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
+datevec <- as.Date(start):as.Date(end)
 testdat <- data.frame(Date = as.Date(datevec)
-	# , intensity  = plogis(seq(-1,1,length.out = length(datevec)),scale=testing_scale)*max_intensity
-	, intensity = seq(0.001,0.01,length.out = length(datevec))
+	, intensity = testing_intensity
 )
+
 plot(testdat)
 
-dd_time <- (simtestify(p=update(pars,testing_intensity=comboframe[1,"testing_intensity"])
-                       ## update_pars(comboframe[1,])
-                      , testdat)
+dd<- (simtestify(p=pars, testdat)
    %>% select(date,H,death,postest)
    %>% gather(key="var",value="value",-date)
    %>% mutate(type="time varying")
 )
-
-plot(testdat)
-
-testdat2 <- testdat
-## hard-code testing intensity to first value!
-testdat2$intensity <- testing_intensity[1]
-   
-dd_constant <- (simtestify(p=update_pars(comboframe[1,]),testdat2)
-   %>% select(date,H,death,postest)
-   %>% gather(key="var",value="value",-date)
-   %>% mutate(type = "constant")
-)
-
-dd3 <- bind_rows(dd_time,dd_constant)
-
-print(ggplot(dd3,aes(x=date,y=value,color=type))
+print(ggplot(dd,aes(x=date,y=value,color=type))
    + geom_line()
    + facet_wrap(~var,ncol=2)
    + scale_y_log10(limits=c(1,NA))
@@ -84,15 +67,17 @@ print(ggplot(dd3,aes(x=date,y=value,color=type))
 
 sim_and_calibrate <- function(y,testdat){
 	x <- comboframe[y,]
-        if(x$constant_testing){
-            testdat$intensity <- testing_intensity[1]
-        }
-	pp <- update_pars(x)
-	simdat <- simtestify(pp,testdat)
-	calib_mod <- calibrate_sim(dd=simdat, pars=pp, p=x, testdat,
+	if(x$testing_type == "linear"){
+		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
+	}
+	if(x$testing_type == "logistic"){
+      testdat$intensity <- plogis(seq(qlogis(min_testing),qlogis(max_testing),length.out = nrow(testdat)))
+	}
+	simdat <- simtestify(pars,testdat)
+	calib_mod <- calibrate_sim(dd=simdat, pars=pars, p=x, testdat,
                                    debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
-	res_list <- list(fit=calib_mod,params=pp, data=simdat)
+	res_list <- list(fit=calib_mod,params=pars, data=simdat)
         ## BMB: is this OK or is copying/moving stuff into cachestuff supposed to be done make-ily?
 	saveRDS(object=res_list, file=paste0("./cachestuff/simcalib.",y,".RDS"))
 	return(res_list)
@@ -139,3 +124,6 @@ if (FALSE) {
 
 
 }
+
+
+saveVars(comboframe)

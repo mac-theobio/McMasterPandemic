@@ -117,10 +117,12 @@ batchtools.Rout: batchtools.R
 	$(makeR)
 
 
-simcalib_tidy.Rout: simcalib_tidy.R
+testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+%.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda
 	$(makeR)
 
-simcalib_plot.Rout: simcalib_plot.R simcalib_tidy.rda
+testwt_N.simcalib_plot.Rout: simcalib_plot.R
+%.simcalib_plot.Rout: simcalib_plot.R %.simcalib_tidy.rda
 	$(makeR)
 
 ## Side pipe

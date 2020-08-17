@@ -6,8 +6,10 @@ commandEnvironments()
 
 ## functions: update parameters, simulate, calibrate
 
+
+
 update_pars <- function(pp){
-	pars[["testing_intensity"]] <- pp[[1]]
+	pars[["testing_intensity"]] <- pp[["testing_intensity"]]
 	return(pars)
 }
 

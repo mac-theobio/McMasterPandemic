@@ -7,18 +7,7 @@ makeGraphics()
 
 ## bad. repeating code 
 
-testing_intensity <- c(0.001)
-keep_vars <- c("postest/H/death")
-opt_testify <- c(FALSE)
-constant_testing <- c(FALSE,TRUE)
-
-comboframe <- expand.grid(testing_intensity=testing_intensity
-        , keep_vars = keep_vars
-        , opt_testify = opt_testify
-		  , constant_testing = constant_testing
-)
-
-
+print(comboframe)
 
 ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
@@ -39,9 +28,9 @@ clean_res <- function(x){
 		%>% gather(key = "var", value="data",-date)
 		%>% left_join(dd,.)
 		%>% mutate(testing_intensity = comboframe[input,1]
-			, keep_vars = comboframe[input,2]
-			, opt_testify = comboframe[input,3]
-			, constant_testing = comboframe[input,4]
+			, keep_vars = comboframe[input,"keep_vars"]
+			, opt_testify = comboframe[input,"opt_testify"]
+			, testing_type = comboframe[input,"testing_type"]
 		)
 	)
 
