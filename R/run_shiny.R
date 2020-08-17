@@ -84,7 +84,9 @@ run_shiny <- function(useBrowser = TRUE) {
   ui <- fluidPage(theme = shinythemes::shinytheme("flatly"),
                   ##Set the title panel to be Heritage Maroon.
                   h1(id = "heading", "McMasterPandemic"),
-                  tags$style(HTML("#heading{background-color: #7A003C; color: white;}")),
+                  ##Colour the top and bottom of the page appropriately.
+                  tags$style(HTML("#heading {background-color: #7A003C; color: white;}")),
+                  tags$style(HTML("#sourcelink {background-color: #7A003C; color: white;}")),
                   #Change the colours of text on the tab selectors to be blue.
                   tags$style(HTML("
                                   .tabbable > .nav > li > a[data-value='plotaes'] {color: blue}
@@ -138,7 +140,9 @@ run_shiny <- function(useBrowser = TRUE) {
                         uiOutput("plotColumn"),
                         br())
                     )
-                  ))
+                  ),
+                  textOutput("sourcelink")
+                  )
 
   #Everything else.
   server <- function(input, output, session){
@@ -676,8 +680,8 @@ run_shiny <- function(useBrowser = TRUE) {
         sliderInput("fixedr", "R0: basic reproductive number", min = 0, max = 20, step = 0.01, value = get_R0(read_params(default.parameter.file))),
         sliderInput("fixedgbar", "mean generation interval", min = 0, max = 20, step = 0.01, value = get_Gbar(read_params(default.parameter.file))))
     })
+    output$sourcelink <- renderText("McMaster University: Source code available at https://github.com/bbolker/McMasterPandemic")
     }
-
   ##Set the viewing options first.
   browserManager(useBrowser)
   ##Run the shiny app. the default value of launch.browser looks for the option set by browserManager.
