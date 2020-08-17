@@ -16,13 +16,13 @@ ymax <- 1e6  ## screen out pathological values
 
 simdat <- (simdat
     %>% pivot_wider(names_from=var,values_from=value)
-    %>% pivot_longer(-c(date, omega, iso_t, testing_intensity), names_to="var")
+    %>% pivot_longer(-c(date, testing_type, iso_t, omega), names_to="var")
 )
 
 totaltest_data <- (tibble(
     var="total_test",
-    testing_intensity=unique(simdat$testing_intensity))
-    %>%     mutate(value=testing_intensity*params[["N"]])
+    omega=unique(simdat$omega))
+    %>%     mutate(value=omega*params[["N"]])
 )
     
 gg <- (ggplot(simdat)
@@ -35,15 +35,15 @@ gg <- (ggplot(simdat)
 )
 
 
-ff <- function(i,data=simdat) filter(data, testing_intensity==i)
-mm <- function(i) ggtitle(sprintf("testing intensity=%1.2g",i))
-for (i in unique(simdat$testing_intensity)) {
+ff <- function(i,data=simdat) filter(data, omega==i)
+mm <- function(i) ggtitle(sprintf("omega=%1.2g",i))
+for (i in unique(simdat$omega)) {
     ggx <- (gg
         %+% ff(i)
         + mm(i)
         + geom_hline(data=ff(i,totaltest_data),aes(yintercept=value),lty=2)
     )
-    print(ggx + facet_grid(omega~iso_t, labeller=label_both) + aes(color=var))
-    print(ggx + facet_grid(omega~var, labeller=label_both) + aes(color=factor(iso_t)))
-    print(ggx + facet_grid(iso_t~var, labeller=label_both) + aes(color=factor(omega)))
+    print(ggx + facet_grid(testing_type~iso_t, labeller=label_both) + aes(color=var))
+    print(ggx + facet_grid(testing_type~var, labeller=label_both) + aes(color=factor(iso_t)))
+    print(ggx + facet_grid(iso_t~var, labeller=label_both) + aes(color=factor(testing_type)))
 }

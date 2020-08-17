@@ -12,7 +12,7 @@ Gbar <- 6
 set.seed(0807)
 keep_vars <- c("death/H/postest")
 keep_all <- FALSE
-
+stoch_obs <- FALSE
 min_testing <- 3e-5
 max_testing <- 2e-3
 
