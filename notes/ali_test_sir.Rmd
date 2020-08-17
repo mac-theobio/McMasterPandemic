@@ -39,7 +39,9 @@ Checkings:
 The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u, from $Z_u$ to $Z_p$ is $P_Z F(W_Z) Z_u$.  At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively.
 
 **BMB**: We have gone back to using a scaling where $F(W_Z) = (W_Z \cdot N)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
-
+**AGh**: Please clarify 
+(i) what is $N$ in the numerator of $F(W_Z)$? total population or accumulator for negative tests? 
+(ii) In one paragraph above, it is said "The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u$". So F(W_z) should have dimension of 1/time? But from the definition of $F(W_Z)$ given in this paragraph, $F(W_Z)$ seems dimensionless. I think I am missing the point here?
 
 ## Model
 
@@ -76,6 +78,7 @@ $f_{I_u} = t \frac{W_2}{\sum_i W_i}$,
 $f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
 
 **BMB:** no. Multiplying by $t$ is correct, but see my comment right about the "model" section. Your $f_{Z_u}$ is my $F(W_Z)/t$.
+**AGh:** So your $F(W_Z)$ has $t$ buried in it already? I can't see it explicitly. 
 
 ```{r, packages}
 require(deSolve)
