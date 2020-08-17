@@ -9,7 +9,7 @@ callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testif
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
-makeGraphics()
+# makeGraphics()
 
 ## prevent breakage of old input files when we add new parameters
 default_vals <- list(stoch_obs=FALSE,
@@ -65,7 +65,7 @@ print(ggplot(dd,aes(x=date,y=value,color=type))
    + scale_y_log10(limits=c(1,NA))
 )
 
-sim_and_calibrate <- function(y,testdat){
+sim_and_calibrate <- function(y,testdat,debug_plot){
 	x <- comboframe[y,]
 	if(x$testing_type == "linear"){
 		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
@@ -75,7 +75,7 @@ sim_and_calibrate <- function(y,testdat){
 	}
 	simdat <- simtestify(pars,testdat)
 	calib_mod <- calibrate_sim(dd=simdat, pars=pars, p=x, testdat,
-                                   debug_plot=FALSE, debug=TRUE, debug_hist=TRUE)
+                                   debug_plot=debug_plot, debug=TRUE, debug_hist=TRUE)
 #	calib_mod <- NULL
 	res_list <- list(fit=calib_mod,params=pars, data=simdat)
         ## BMB: is this OK or is copying/moving stuff into cachestuff supposed to be done make-ily?
@@ -83,7 +83,7 @@ sim_and_calibrate <- function(y,testdat){
 	return(res_list)
 }
  
-## res <- sim_and_calibrate(1,testdat)
+# res <- sim_and_calibrate(1,testdat, debug_plot=TRUE)
 # 
 # ## plot parameter histories
 # hh <- (attr(res$fit,"debug_hist")
@@ -100,7 +100,8 @@ batch_setup()
 print(comboframe)
 print(seq(nrow(comboframe)))
 
-res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat))
+res <- sim_and_calibrate(1,testdat,debug_plot=TRUE)
+res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=TRUE))
 
 ## interactive playing around stuff
 
