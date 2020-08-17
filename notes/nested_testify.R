@@ -7,6 +7,10 @@ library(future.batchtools)
 
 callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda sims.csv"
 
+source("makestuff/makeRfuns.R")
+print(commandEnvironments())
+makeGraphics()
+
 ## prevent breakage of old input files when we add new parameters
 default_vals <- list(stoch_obs=FALSE,
                      obs_disp=1,
@@ -16,13 +20,11 @@ default_vals <- list(stoch_obs=FALSE,
                      constant_testing=c(FALSE,TRUE)
                      )
 ## if it wasn't already specified, set it from the default value
+
 for (nm in names(default_vals)) {
     if (!exists(nm)) assign(nm,default_vals[[nm]])
 }
     
-source("makestuff/makeRfuns.R")
-print(commandEnvironments())
-makeGraphics()
 
 pars <- (read_params(matchFile(".csv$"))
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
@@ -41,6 +43,9 @@ comboframe <- expand.grid(testing_intensity=testing_intensity
 	, opt_testify = opt_testify
 	, constant_testing = constant_testing
 )
+
+
+print(comboframe)
 
 datevec <- as.Date("2020-01-01"):as.Date("2020-10-01")
 testdat <- data.frame(Date = as.Date(datevec)
