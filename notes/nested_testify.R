@@ -32,6 +32,9 @@ pars <- (read_params(matchFile(".csv$"))
     %>% update(N=pop)
 )
 
+## If we are not optimizing for it, we need to set min/starting to true
+pars[["testing_intensity"]] <- testing_intensity 
+
 ## single dispersion parameter for *all* observed vars ...
 if (stoch_obs) {
     pars <- update(pars, obs_disp=obs_disp)
@@ -100,8 +103,7 @@ batch_setup()
 print(comboframe)
 print(seq(nrow(comboframe)))
 
-res <- sim_and_calibrate(1,testdat,debug_plot=TRUE)
-res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=TRUE))
+res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=FALSE))
 
 ## interactive playing around stuff
 
