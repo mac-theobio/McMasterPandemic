@@ -27,7 +27,7 @@ for (nm in names(default_vals)) {
 }
     
 
-pars <- (read_params(matchFile(".csv$"))
+pars <- (read_params("PHAC_testify.csv")
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(N=pop)
 )
