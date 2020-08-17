@@ -136,6 +136,9 @@ testsim.Rout: testsim.R simple.rda slow.csv
 testsim.plots.Rout: simplots.R testsim.rda
 	$(makeR)
 
+slowpars.olddiff: ../inst/params/PHAC_testify.csv slow.csv
+	$(diff)
+
 ######################################################################
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R

@@ -42,7 +42,7 @@ P_H,1, probability of positive in H,,,
 P_H2,1, probability of positive in H2,,,
 P_ICUs,1, probability of positive in ICUs,,,
 P_ICUd,1,probability of positive in ICUd,,,
-P_R,0,probability of negative in R,,,
+P_R,0,probability of positive in R,,,
 omega,0.25,1/waiting time for tests to be returned,,,
 testing_intensity,0.002,tests per capita per day
 iso_t,0.6,Relative self-isolation/distancing of tested-positives,NA?
