@@ -7,6 +7,11 @@ makeGraphics()
 
 ## bad. repeating code 
 
+comboframe <- expand.grid(keep_vars = keep_vars
+   , opt_testify = opt_testify
+   , testing_type = testing_type
+)
+
 print(comboframe)
 
 ln <- list.files(pattern = "RDS", path = "./cachestuff")

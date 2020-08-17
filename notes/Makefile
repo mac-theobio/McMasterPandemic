@@ -116,8 +116,12 @@ batchtools.Rout: batchtools.R
 %.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
 	$(makeR)
 
+## Temporarily suppressing slow dependency (bad form?)
 ## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
-%.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda 
+## %.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda 
+
+testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+%.simcalib_tidy.Rout: simcalib_tidy.R %.rda 
 	$(makeR)
 
 testwt_N.simcalib_plot.Rout: simcalib_plot.R

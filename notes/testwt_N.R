@@ -15,5 +15,7 @@ keep_all <- FALSE
 stoch_obs <- FALSE
 min_testing <- 3e-5
 max_testing <- 2e-3
+opt_testify <- FALSE
+
 
 testing_intensity <- min_testing

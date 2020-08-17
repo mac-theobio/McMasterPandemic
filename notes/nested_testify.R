@@ -103,7 +103,8 @@ batch_setup()
 print(comboframe)
 print(seq(nrow(comboframe)))
 
-res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=FALSE))
+## getting rid of res_list (so it is not a giant object)
+future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=FALSE))
 
 ## interactive playing around stuff
 
