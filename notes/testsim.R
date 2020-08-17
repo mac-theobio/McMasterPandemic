@@ -6,22 +6,7 @@ print(commandEnvironments())
 library(devtools); load_all("../")
 ## library("McMasterPandemic")
 
-if (interactive()) {
-	use_ode <- FALSE
-	testwt_scale <- "none" ## or "N" or "sum_u"
-	testing_intensity <- c(0.002, 0.02, 0.2)
-	W_asymp <- c(0.01, 0.1,1)
-	iso_t <- c(0,0.5,0.9,1)
-	start <- as.Date("2020-01-01")
-	end <- as.Date("2020-06-01")
-	pop <- 1.5e7       ## population of Ontario
-   R0 <- 2.5
-	Gbar <- 6
-	set.seed(0807)
-}
-
-fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
-params <- (read_params(fn)
+params <- (read_params(matchFile(".csv$"))
     %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
     %>% update(
             N=pop
@@ -40,12 +25,13 @@ for(i in W_asymp) {
         for (k in testing_intensity) {
             cat(i,j,k,"\n")
             paramsw0 <- update(paramsw0, W_asymp=i, iso_t = j, testing_intensity=k)
-            sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
-                           , start_date = start
-                           , end_date = end
-                           , use_ode = use_ode
-                           , step_args = list(testwt_scale=testwt_scale)
-                             ##			, condense_args=list(keep_all=TRUE) checkout the expanded version
+            sims <- (run_sim(params = paramsw0
+					, ratemat_args = list(testify=TRUE, testing_time=testing_time)
+					, start_date = start
+					, end_date = end
+					, use_ode = use_ode
+					, step_args = list(testwt_scale=testwt_scale)
+					##	, condense_args=list(keep_all=TRUE) 
                              )
                 %>% mutate(W_asymp = i
                          , iso_t = j

@@ -71,7 +71,7 @@ Sources += ../inst/params/PHAC_testify.csv
 ## testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv; $(makeR)
 ## testify_simplot.Rout: testify_simplot.R testify_sim.rda; $(makeR)
 
-Sources += sims.csv
+Sources += slow.csv
 
 wrap_makeR=yes
 
@@ -128,9 +128,12 @@ testwt_N.simcalib_plot.Rout: simcalib_plot.R
 %.simcalib_plot.Rout: simcalib_plot.R %.simcalib_tidy.rda
 	$(makeR)
 
-## Side pipe
+## Side pipe (faster, lighter sims)
 
-testsim.Rout: testsim.R simple.rda sims.csv
+testsim.Rout: testsim.R simple.rda slow.csv
+	$(makeR)
+
+testsim.plots.Rout: simplots.R testsim.rda
 	$(makeR)
 
 ######################################################################
