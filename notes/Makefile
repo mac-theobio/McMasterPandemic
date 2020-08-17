@@ -116,8 +116,7 @@ batchtools.Rout: batchtools.R
 %.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
 	$(makeR)
 
-
-testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
 %.simcalib_tidy.Rout: simcalib_tidy.R 
 	$(makeR)
 
