@@ -117,7 +117,7 @@ batchtools.Rout: batchtools.R
 	$(makeR)
 
 ## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
-%.simcalib_tidy.Rout: simcalib_tidy.R 
+%.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda 
 	$(makeR)
 
 testwt_N.simcalib_plot.Rout: simcalib_plot.R
