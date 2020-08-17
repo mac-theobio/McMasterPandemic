@@ -36,21 +36,23 @@ Checkings:
 - $\omega_i$ is a weight:
 (i) $\frac{\omega_i}{\sum_j \omega_j} \times \frac{Z_i/I_u}{\sum_j Z_j}$, where $I_u$ is untested people in compartment $I$. **BMB**: no, $\omega$ is the rate of *onward flow* from the $p$ compartment to $t$, or from $n$ back to $u$.  It has units of $1/time$.
 
-The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u, from $Z_u$ to $Z_p$ is $P_Z F(W_Z) Z_u$.  At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively.
+The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $t (1-P_Z) F(W_Z) Z_u, from $Z_u$ to $Z_p$ is $t P_Z F(W_Z) Z_u$.  At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively.
 
-**BMB**: We have gone back to using a scaling where $F(W_Z) = (W_Z \cdot N)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
+**BMB**: We have gone back to using a scaling where $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
 **AGh**: Please clarify 
 (i) what is $N$ in the numerator of $F(W_Z)$? total population or accumulator for negative tests? 
 (ii) In one paragraph above, it is said "The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u$". So F(W_z) should have dimension of 1/time? But from the definition of $F(W_Z)$ given in this paragraph, $F(W_Z)$ seems dimensionless. I think I am missing the point here?
+
+**BMB**: (i) I meant $N_0$ (total population size); $t$ is specified as 1/(# time); (ii) I left out a factor of $t$ (testing intensity). $F()$ is indeed dimensionless.
 
 ## Model
 
 ![](../inst/pix/sir_test1.jpg)
 
 \begin{align}
-1)\  d S_u/dt &= \omega_{S_n} S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N0} S_u - f_{S_u} S_u \\
+1)\  d S_u/dt &= \omega_{S_n} S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - f_{S_u} S_u \\
 2)\ d S_n/dt &= f_{S_u} S_u - \omega_{S_n} S_n \\
-3)\ d I_u/dt &= \beta \frac{(I_u+I_n+I_p+I_t)}{N0} S_u + \omega_{I_n} I_n - f_{I_u} (1-P_{I_u}) I_u -f_{I_u} P_{I_u} I_u- \gamma I_u  \\
+3)\ d I_u/dt &= \beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u + \omega_{I_n} I_n - f_{I_u} (1-P_{I_u}) I_u -f_{I_u} P_{I_u} I_u- \gamma I_u  \\
 4)\ d I_n/dt &= f_{I_u} (1-P_{I_u}) I_u - \omega_{I_n} I_n \\
 5)\ d I_p/dt &= f_{I_u} P_{I_u} I_u - \omega_{I_p} I_p \\
 6)\ d I_t/dt &= \omega_{I_p} I_p - \gamma I_t  \\
