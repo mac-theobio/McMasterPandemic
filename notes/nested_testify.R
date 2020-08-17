@@ -71,7 +71,7 @@ sim_and_calibrate <- function(y,testdat){
 		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
 	}
 	if(x$testing_type == "logistic"){
-      testdat$intensity <- plogis(seq(qlogis(min_testing),qlogis(max_testing),length.out = nrow(testdat)))
+      testdat$intensity <- plogis(seq(qlogis(min_testing/max_testing),qlogis(0.99),length.out = nrow(testdat)))*max_testing
 	}
 	simdat <- simtestify(pars,testdat)
 	calib_mod <- calibrate_sim(dd=simdat, pars=pars, p=x, testdat,
