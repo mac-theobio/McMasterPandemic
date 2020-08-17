@@ -14,11 +14,11 @@ comboframe <- expand.grid(keep_vars = keep_vars
 
 print(comboframe)
 
-ln <- list.files(pattern = "RDS", path = "./cachestuff")
+# ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
-print(ln)
+# print(ln)
 
-ln <- "simcalib.3.RDS"
+ln <- "simcalib.1.RDS"
 
 clean_res <- function(x){
 
@@ -41,7 +41,31 @@ clean_res <- function(x){
 		)
 	)
 
-	return(ddcombo)
+	## stupid way to back calculate total_test
+	postest <- (ddcombo 
+		%>% filter(var == "postest")
+	)
+	negtest <- (ddcombo
+		%>% filter(var == "negtest")
+	)
+
+	total_test <- data.frame(date = postest$date
+		, var = "total_test"
+		, value = postest$value + negtest$value
+		, data = postest$data + negtest$data
+	)
+	positivity <- data.frame(date = postest$date
+		, var = "positivity"
+		, value = postest$value/total_test$value
+		, data = postest$data/total_test$data
+	)
+	ddcombo2 <- (ddcombo
+		%>% filter(var != "negtest")
+		%>% bind_rows(.,total_test)
+		%>% bind_rows(.,positivity)
+	)
+
+	return(ddcombo2)
 }
 
 res_list <- lapply(ln,clean_res)

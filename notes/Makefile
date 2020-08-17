@@ -113,7 +113,7 @@ batchtools.Rout: batchtools.R
 	$(makeR)
 
 ## testwt_N.nested_testify.Rout: nested_testify.R testify_funs.R
-%.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda sims.csv 
+%.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda 
 	$(makeR)
 
 ## Temporarily suppressing slow dependency (bad form?)
