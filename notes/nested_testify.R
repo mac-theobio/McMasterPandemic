@@ -112,6 +112,9 @@ sim_and_calibrate <- function(y,testdat){
 # quit()
 batch_setup()
 
+print(comboframe)
+print(seq(nrow(comboframe)))
+
 res_list <- future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat))
 
 ## interactive playing around stuff
