@@ -9,7 +9,7 @@ callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testif
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
-# makeGraphics()
+makeGraphics()
 
 ## prevent breakage of old input files when we add new parameters
 default_vals <- list(stoch_obs=FALSE,
