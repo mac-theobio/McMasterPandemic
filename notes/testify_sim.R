@@ -1,6 +1,5 @@
 ## callArgs only works interactively and is target-dependent
-callArgs <- "basic.sims.Rout testify_sim.R basic.rda sims.csv"
-callArgs <- "absolute.sims.Rout testify_sim.R absolute.rda sims.csv"
+callArgs <- "testwt_N.sims.Rout testify_sim.R testwt_N.rda testify_funs.rda sims.csv"
 
 library(tidyverse)
 library(parallel)
@@ -10,7 +9,7 @@ print(commandEnvironments())
 ## Double-sourcing will be necessary sometimes until we 
 ## make makeR a real package
 source("makestuff/makeRfuns.R")
-
+commandEnvironments()
 ## WHICH of these do you want today?
 ## library(devtools); load_all("../")
 library("McMasterPandemic")
@@ -32,41 +31,36 @@ class(paramsw0) <- "params_pansim"
 print(paramsw0)
 summary(paramsw0)
 
-print(W_asymp)
 print(iso_t)
+print(omega)
 print(testing_intensity)
 
+
 ## create factorial combination of parameter vectors
-pf <- expand.grid(W_asymp=W_asymp,iso_t=iso_t,testing_intensity=testing_intensity)
+pf <- expand.grid(iso_t=iso_t,omega=omega,testing_intensity=testing_intensity)
 print(pf)
 
 ## run a simulation based on parameters in the factorial frame
-simtestify <- function(x){
-	cat(pf[x,1],pf[x,2],pf[x,3],"\n")
-	paramsw0 <- update(paramsw0
-		, W_asymp=pf[x,1]
-		, iso_t = pf[x,2]
-		, testing_intensity=pf[x,3]
+update_and_simulate <- function(x){
+	cat(pf[x,"iso_t"],pf[x,"omega"],pf[x,"testing_intensity"],"\n")
+	paramsw0 <- update(params
+		, iso_t=pf[x,"iso_t"]
+		, omega = pf[x,"omega"]
+		, testing_intensity=pf[x,"testing_intensity"]
 	)
-        sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
-                       , start_date = start
-                       , end_date = end
-                       , use_ode = use_ode
-                       , step_args = list(testwt_scale=testwt_scale)
-                       , condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
-                         )
-            %>% mutate(W_asymp = pf[x,1]
-                     , iso_t = pf[x,2]
-                     , testing_intensity=pf[x,3]
-                       )
+
+	sims <- (simulate_testify_sim(p=paramsw0)
+		%>% mutate(iso_t = pf[x,"iso_t"]
+      	 , omega = pf[x,"omega"]
+          , testing_intensity = pf[x,"testing_intensity"]
+          )
 	)
 	return(sims)
 }
 
-simlist <- mclapply(1:nrow(pf),function(x)simtestify(x),mc.cores = 3)
-simframe <- bind_rows(simlist)
 
-print(simframe)
+simlist <- mclapply(1:nrow(pf),function(x)update_and_simulate(x),mc.cores = 3)
+simframe <- bind_rows(simlist)
 
 if (!keep_all) {
     simdat <- (simframe
@@ -76,22 +70,22 @@ if (!keep_all) {
                     , total_test = postest + negtest
                     , pos_per_million = 1e6*postest/total_test
                     , report
-                    , W_asymp
                     , iso_t
+						  , omega
                     , testing_intensity
                       )
-        %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_intensity))
     )
 } else {
     
     simdat <- (simframe
         %>% select(-c(D,X,foi,N,P))
-        %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega, testing_intensity))
         %>% separate(var,c("pref","testcat"),sep="_")
         %>% mutate_at("pref", ~ case_when(grepl("^([Hh]|IC)",.) ~ "hosp",
                                           grepl("^I[ap]",.) ~ "asymp_I",
                                           TRUE ~ .))
-        %>% group_by(date,W_asymp, iso_t, testing_intensity, pref, testcat)
+        %>% group_by(date, iso_t, omega, testing_intensity, pref, testcat)
         %>% summarise(value=mean(value),.groups="drop")
         %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp","R"))
         %>% mutate_at("testcat", factor, levels=c("u","n","p","t"))

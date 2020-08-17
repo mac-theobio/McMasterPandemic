@@ -75,12 +75,14 @@ Sources += sims.csv
 
 wrap_makeR=yes
 
+## testify_funs.R
+
 impmakeR += sims
-# basic.sims.Rout: testify_sim.R basic.R
-%.sims.Rout: testify_sim.R %.rda sims.csv
+# testwt_N.sims.Rout: testify_sim.R testwt_N.R
+%.sims.Rout: testify_sim.R %.rda testify_funs.rda sims.csv
 	$(makeR)
 
-# basic.simplots.Rout: basic.R testify_simplot.R
+# testwt_N.simplots.Rout: testify_simplot.R testwt_N.R
 %.simplots.Rout: testify_simplot.R %.sims.rda
 	$(makeR)
 
