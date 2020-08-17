@@ -50,19 +50,21 @@ The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, n
 ![](../inst/pix/sir_test1.jpg)
 
 \begin{align}
-1)\  d S_u/dt &= \omega_{S_n} S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - f_{S_u} S_u \\
-2)\ d S_n/dt &= f_{S_u} S_u - \omega_{S_n} S_n \\
-3)\ d I_u/dt &= \beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u + \omega_{I_n} I_n - f_{I_u} (1-P_{I_u}) I_u -f_{I_u} P_{I_u} I_u- \gamma I_u  \\
-4)\ d I_n/dt &= f_{I_u} (1-P_{I_u}) I_u - \omega_{I_n} I_n \\
-5)\ d I_p/dt &= f_{I_u} P_{I_u} I_u - \omega_{I_p} I_p \\
-6)\ d I_t/dt &= \omega_{I_p} I_p - \gamma I_t  \\
-7)\ d R_u/dt &= \gamma I_u + \omega_{R_n} R_n - f_{R_u} (1-P_{R_u}) R_u -f_{R_u} P_{R_u}) R_u  \\
-8)\ d R_n/dt &= f_{R_u} (1-P_{R_u}) R_u - \omega_{R_n} R_n  \\
-9)\ d R_p/dt &= f_{R_u} P_{R_u}) R_u - \omega_{R_p} R_p  \\
-10)\ d R_t/dt &= \gamma I_t + \omega_{R_p} R_p  \\
-11)\ dN/dt &= S_n + I_n + R_n   \\
-12)\ dP/dt &= S_p + I_p + R_p.
+1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - t p_s F{W_s} S_u \\
+2)\ d S_n/dt &= t p_s F(W_S) S_u - \omega S_n - \beta (I_n/N_0) S_n   \\
+3)\ d I_u/dt &= \beta \frac{I_u}{N_0} S_u + \omega I_n - t F(W_I) I_u - \gamma I_u  \\
+4)\ d I_n/dt &= t (1-P_I) F(W_I) I_u + \beta (I_n/N_0) (S_u+S_n) - \omega I_n -\gamma I_n \\
+5)\ d I_p/dt &= \beta (I_p/N_0) S_u + t p_I F(W_I) I_u - \omega I_p -\gamma I_p \\
+6)\ d I_t/dt &= \beta (I_t/N_0) S_u + \omega I_p - \gamma I_t  \\
+7)\ d R_u/dt &= \gamma I_u + \omega R_n - t F(W_R) R_u  \\
+8)\ d R_n/dt &= \gamma I_n + t (1-p_R) F(W_R) R_u - \omega R_n  \\
+9)\ d R_p/dt &= t p_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
+10)\ d R_t/dt &= \gamma I_t + \omega R_p  \\
+11)\ dN/dt &= \omega (S_n + I_n + R_n)   \\
+12)\ dP/dt &= \omega(I_p + R_p).
 \end{align}
+
+Where, $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$.
 
 **BMB**: 
 
