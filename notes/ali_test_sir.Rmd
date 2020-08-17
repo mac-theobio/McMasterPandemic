@@ -84,10 +84,10 @@ $f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
 **BMB:** no. Multiplying by $t$ is correct, but see my comment right about the "model" section. Your $f_{Z_u}$ is my $F(W_Z)/t$.
 **AGh:** So your $F(W_Z)$ has $t$ buried in it already? I can't see it explicitly. 
 
-```{r, packages}
-require(deSolve)
-require(ggplot2)
-require(tidyr)
+```{r packages, message=FALSE}
+library(deSolve)
+library(ggplot2)
+library(tidyr)
 ```
 
 ```{r, model formulation}
@@ -96,7 +96,7 @@ sir.model <- function(t,x,params){
     ## *or* unpack(c(as.list(x),as.list(params))); unpacking every element
     ## is both clunky and fragile (depends  on order of vectors)
   ## extract the state variables
-  Su <- x[1]
+  Su <- x[["Su"]] ## x[1]
   Sn <- x[2]
   Iu <- x[3]
   In <- x[4]
@@ -108,13 +108,25 @@ sir.model <- function(t,x,params){
   Rt <- x[10]
   N <- x[11]
   P <- x[12]
-  
+
+    
+    ## with(as.list(c(x,params)), {
+    ##
+    ## Su*phi*...
+    ##
+    ## })
+
+    ## McMasterPandemic::unpack(as.list(c(x,params)))
+    ## then can evaluate gradient without using { ... }
+    
   ## extract the parameters
   N0 <- params["N0"] #initial population size
   beta <- params["beta"] #transition rate
   gamma <- params["gamma"] #recovery rate
   t <- params["t"] #testing intensity
-  
+
+    unpack <- McMasterPandemic::unpack
+    unpack(params)  ## equivalent to setting all variables
   ## BMB: new code will go here?
     
   ## the model equations
