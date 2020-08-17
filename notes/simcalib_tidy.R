@@ -18,6 +18,8 @@ ln <- list.files(pattern = "RDS", path = "./cachestuff")
 
 print(ln)
 
+ln <- "simcalib.3.RDS"
+
 clean_res <- function(x){
 
 	res <- readRDS(paste0("cachestuff/",x))
@@ -26,10 +28,10 @@ clean_res <- function(x){
 
 	dd <- predict(res$fit
 		, ensemble=FALSE
-		, keep_vars=c("postest","death","H")
+		, keep_vars=c("postest","negtest","hosp","death")
 	)
 	ddcombo <- (res$data
-		%>% transmute(date, postest, death, H)
+		%>% transmute(date, postest, death, hosp, negtest)
 		%>% gather(key = "var", value="data",-date)
 		%>% left_join(dd,.)
 		%>% mutate(testing_intensity = comboframe[input,1]
