@@ -306,9 +306,22 @@ do_step <- function(state, params, ratemat, dt=1,
         }
     }
     outflow <- rowSums(flows[,p_states])
-    ## set flows out of *all* susceptible compartments (tested/etc.) to zero
-    if (do_exponential) outflow[grepl("^S",names(outflow))] <- 0
     inflow <-  colSums(flows)
+
+    if (do_exponential) {
+        ## set flows *out* of all susceptible compartments (tested/etc.)
+        ##   into non-susceptible compartments to zero
+        ## browser()
+        S_pos <- grep("^S",rownames(ratemat), value=TRUE)
+        notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
+        notS_pos <- setdiff(notS_pos, x_states)
+        ## want to zero out outflows from S to non-S compartments
+        ##  (but leave the inflows - thus we can't just zero these flows
+        ##   out in the rate matrix!)
+        mm <- flows[S_pos,notS_pos,drop=FALSE]
+        outflow[S_pos] <- outflow[S_pos] - rowSums(mm)
+    }
+
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
     ##  allow infecteds to increase without depleting S ...)
