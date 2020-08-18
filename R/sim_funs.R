@@ -305,23 +305,23 @@ do_step <- function(state, params, ratemat, dt=1,
             
         }
     }
-    outflow <- rowSums(flows[,p_states])
-    inflow <-  colSums(flows)
 
-    if (do_exponential) {
-        ## set flows *out* of all susceptible compartments (tested/etc.)
-        ##   into non-susceptible compartments to zero
-        ## browser()
-        S_pos <- grep("^S",rownames(ratemat), value=TRUE)
-        notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
-        notS_pos <- setdiff(notS_pos, x_states)
+    if (!do_exponential) {
+        outflow <- rowSums(flows[,p_states])
+    } else {
         ## want to zero out outflows from S to non-S compartments
         ##  (but leave the inflows - thus we can't just zero these flows
         ##   out in the rate matrix!)
-        mm <- flows[S_pos,notS_pos,drop=FALSE]
-        outflow[S_pos] <- outflow[S_pos] - rowSums(mm)
+        S_pos <- grep("^S",rownames(ratemat), value=TRUE)
+        notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
+        notS_pos <- setdiff(notS_pos, x_states)
+        outflow <- setNames(numeric(ncol(flows)),colnames(flows))
+        ## only count flows to S_pos
+        outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
+        ## count flows to p_states (i.e. states that are *not* parallel accumulators)
+        outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
     }
-
+    inflow <-  colSums(flows)
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
     ##  allow infecteds to increase without depleting S ...)

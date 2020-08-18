@@ -96,7 +96,8 @@ rExp <- function(params, steps=100, ndt=1,
                          , nt=steps*ndt
                          , M = M
                          , step_args = list(do_hazard=do_hazard,
-                                            do_exponential=TRUE))
+                                            do_exponential=TRUE,
+                                            testwt_scale="none"))
         if (return_val=="sim") return(r)
         nn <- ndt*steps
         ## DRY: get_evec()
