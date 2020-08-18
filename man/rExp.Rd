@@ -13,7 +13,7 @@ rExp(
   ndt = 1,
   do_hazard = FALSE,
   testify = FALSE,
-  return_val = c("r0", "eigenvector")
+  return_val = c("r0", "eigenvector", "sim")
 )
 }
 \arguments{

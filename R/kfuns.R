@@ -80,7 +80,7 @@ rmult <- function(k, r){
 rExp <- function(params, steps=100, ndt=1,
                  do_hazard=FALSE,
                  testify=FALSE,
-                 return_val=c("r0","eigenvector"))
+                 return_val=c("r0","eigenvector","sim"))
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
@@ -97,6 +97,7 @@ rExp <- function(params, steps=100, ndt=1,
                          , M = M
                          , step_args = list(do_hazard=do_hazard,
                                             do_exponential=TRUE))
+        if (return_val=="sim") return(r)
         nn <- ndt*steps
         ## DRY: get_evec()
         drop_vars <- c("date","t","D","foi","R","X","N","P")
