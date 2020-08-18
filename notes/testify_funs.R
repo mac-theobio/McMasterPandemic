@@ -48,7 +48,7 @@ simtestify <- function(p, testing_data){
                           )
                           )
                      )
-	sim_args <- list(ratemat_args = list(testify=TRUE)
+	sim_args <- list(ratemat_args = list(testify=TRUE, testing_time=testing_time)
 	   , start_date = start
            , end_date = end
            , use_ode = use_ode

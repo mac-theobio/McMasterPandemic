@@ -17,28 +17,28 @@ library("McMasterPandemic")
 
 if (!exists("keep_all")) keep_all <- FALSE
 
-fn <- matchFile(".csv$")
-
-params <- (read_params(fn)
-    %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
-    %>% update(
-            N=pop
-        )
+params <- (read_params("PHAC_testify.csv")
+#	%>% fix_pars(target=c(R0=R0, Gbar=Gbar))
+	%>% update(testing_intensity = testing_intensity
+		, omega = omega
+		, W_asymp = W_asymp
+	)
 )
 
 print(params)
 
-params <- update(params, testing_intensity = testing_intensity)
-
 summary(params)
-
-print(iso_t)
-print(omega)
-print(testing_type)
 
 
 ## create factorial combination of parameter vectors
-pf <- expand.grid(iso_t=iso_t,omega=omega,testing_type=testing_type)
+pf <- expand.grid(iso_t=iso_t
+	, omega=omega
+	, testing_type=testing_type
+	, Gbar=Gbar
+	, W_asymp = W_asymp
+	, testing_intensity = testing_intensity
+)
+
 print(pf)
 
 datevec <- as.Date(start):as.Date(end)
@@ -50,11 +50,11 @@ testdat <- data.frame(Date = as.Date(datevec)
 
 ## run a simulation based on parameters in the factorial frame
 update_and_simulate <- function(x, testdat){
-	cat(pf[x,"iso_t"],pf[x,"omega"],pf[x,"testing_type"],"\n")
+	print(x)
 	paramsw0 <- update(params
 		, iso_t=pf[x,"iso_t"]
-		, omega = pf[x,"omega"]
 	)
+	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
 	if(pf[x,"testing_type"] == "linear"){
 		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
 	}
@@ -65,14 +65,18 @@ update_and_simulate <- function(x, testdat){
 
 	sims <- (simtestify(p=paramsw0,testing_data=testdat)
 	%>% mutate(iso_t = pf[x,"iso_t"]
-     	 , omega = pf[x,"omega"]
+     	 , Gbar = pf[x,"Gbar"]
          , testing_type = pf[x,"testing_type"]
+			, testing_intensity = pf[x,"testing_intensity"]
          )
 	)
 	return(sims)
 }
 
 simlist <- mclapply(1:nrow(pf),function(x)update_and_simulate(x,testdat=testdat),mc.cores = 3)
+
+print(simlist)
+
 simframe <- bind_rows(simlist)
 
 
@@ -89,19 +93,21 @@ if (!keep_all) {
                     , iso_t
 						  , omega
                     , testing_type
+						  , Gbar
+						  , testing_intensity
                       )
-        %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_type))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_type, Gbar, testing_intensity))
     )
 } else {
     
     simdat <- (simframe
         %>% select(-c(D,X,foi,N,P))
-        %>% gather(key="var",value="value",-c(date, iso_t, omega, testing_type))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega, testing_type, Gbar, testing_intensity))
         %>% separate(var,c("pref","testcat"),sep="_")
         %>% mutate_at("pref", ~ case_when(grepl("^([Hh]|IC)",.) ~ "hosp",
                                           grepl("^I[ap]",.) ~ "asymp_I",
                                           TRUE ~ .))
-        %>% group_by(date, iso_t, omega, testing_type, pref, testcat)
+        %>% group_by(date, iso_t, omega, testing_type, pref, testcat, Gbar)
         %>% summarise(value=mean(value),.groups="drop")
         %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp","R"))
         %>% mutate_at("testcat", factor, levels=c("u","n","p","t"))
