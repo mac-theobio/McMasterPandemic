@@ -19,8 +19,8 @@ if (!exists("keep_all")) keep_all <- FALSE
 
 params <- (read_params("PHAC_testify.csv")
 #	%>% fix_pars(target=c(R0=R0, Gbar=Gbar))
-	%>% update(testing_intensity = testing_intensity
-		, omega = omega
+	%>% update(omega = omega
+#		, testing_intensity = testing_intensity
 		, W_asymp = W_asymp
 	)
 )
@@ -41,9 +41,11 @@ pf <- expand.grid(iso_t=iso_t
 
 print(pf)
 
+print(pf <- pf[c(1,2,7,8),])
+
 datevec <- as.Date(start):as.Date(end)
 testdat <- data.frame(Date = as.Date(datevec)
-        , intensity = testing_intensity
+        , intensity =  NA
 )
 
 
@@ -53,8 +55,12 @@ update_and_simulate <- function(x, testdat){
 	print(x)
 	paramsw0 <- update(params
 		, iso_t=pf[x,"iso_t"]
+		, testing_intensity = pf[x,"testing_intensity"]
 	)
 	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
+	if(pf[x,"testing_type"] == "constant"){
+ 		testdat$intensity <- pf[x,"testing_intensity"]
+	}
 	if(pf[x,"testing_type"] == "linear"){
 		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
 	}

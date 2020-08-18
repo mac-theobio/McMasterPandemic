@@ -41,9 +41,10 @@ gg <- (ggplot(simdat)
 
 ff <- function(i,data=simdat) filter(data, testing_intensity==i)
 mm <- function(i) ggtitle(sprintf("testing intensity=%1.2g",i))
-for (i in unique(simdat$testing_intensity)) {
+for (i in unique(simdat$testing_intensity)[1]) {
     ggx <- (gg
-        %+% ff(i)
+#       %+% ff(i)
+#		  %+% mm(i)
         + geom_hline(data=ff(i,totaltest_data),aes(yintercept=value),lty=2)
     )
     print(ggx + facet_grid(Gbar~iso_t, labeller=label_both) + aes(color=var))
