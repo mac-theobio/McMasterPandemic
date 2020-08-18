@@ -1,6 +1,7 @@
 use_ode <- FALSE
 testwt_scale <- "N"  ## experiment with rescaling testing weights
 testing_type <- c("logistic") ## we know constant is good, linear is kind of like logistic
+testing_type <- c("constant")
 testing_time <- "sample"
 iso_t <- c(0,1)
 omega <- c(0.25)
@@ -22,3 +23,4 @@ opt_testify <- FALSE
 
 
 testing_intensity <- min_testing
+testing_intensity <- c(0.002,0.01)

@@ -1,7 +1,7 @@
 library(McMasterPandemic)
 library(testthat)
 
-## devtools::load_all("../..")
+devtools::load_all("../..")
 pp <- read_params("PHAC_testify.csv")
 ##  state <- make_state(N=1, E0=1e-5, type="ICU1")  ## FIXME: don't assume ICU1?
 r1 <- rExp(params=pp, return_val="sim")
@@ -24,6 +24,4 @@ r2L <- (r2
 gg1 <- ggplot(r2L,aes(date,value))+geom_line(aes(linetype=test))+facet_wrap(~pref) +
     scale_y_log10()
 print(gg1)
-
-print(gg1 %+% filter(r2L,date<30))
 

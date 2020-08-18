@@ -50,12 +50,12 @@ The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, n
 ![](../inst/pix/sir_test1.jpg)
 
 \begin{align}
-1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - t p_s F{W_s} S_u \\
-2)\ d S_n/dt &= t p_s F(W_S) S_u - \omega S_n - \beta (I_n/N_0) S_n   \\
-3)\ d I_u/dt &= \beta \frac{I_u}{N_0} S_u + \omega I_n - t F(W_I) I_u - \gamma I_u  \\
-4)\ d I_n/dt &= t (1-P_I) F(W_I) I_u + \beta (I_n/N_0) (S_u+S_n) - \omega I_n -\gamma I_n \\
-5)\ d I_p/dt &= \beta (I_p/N_0) S_u + t p_I F(W_I) I_u - \omega I_p -\gamma I_p \\
-6)\ d I_t/dt &= \beta (I_t/N_0) S_u + \omega I_p - \gamma I_t  \\
+1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - t (1-p_s) F(W_s) S_u \\
+2)\ d S_n/dt &= t (1-p_s) F(W_S) S_u - \omega S_n - \beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_n   \\
+3)\ d I_u/dt &= \beta (I_u/N_0) (S_u+S_n) + \omega I_n - t F(W_I) I_u - \gamma I_u  \\
+4)\ d I_n/dt &= t (1-p_I) F(W_I) I_u + \beta (I_n/N_0) (S_u+S_n) - \omega I_n -\gamma I_n \\
+5)\ d I_p/dt &= \beta (I_p/N_0) (S_u+S_n) + t p_I F(W_I) I_u - \omega I_p -\gamma I_p \\
+6)\ d I_t/dt &= \beta (I_t/N_0) (S_u+S_n) + \omega I_p - \gamma I_t  \\
 7)\ d R_u/dt &= \gamma I_u + \omega R_n - t F(W_R) R_u  \\
 8)\ d R_n/dt &= \gamma I_n + t (1-p_R) F(W_R) R_u - \omega R_n  \\
 9)\ d R_p/dt &= t p_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
@@ -88,62 +88,86 @@ $f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
 library(deSolve)
 library(ggplot2)
 library(tidyr)
+library(McMasterPandemic)
+## make sure we don't get tidyverse 'unpack'
+unpack <- McMasterPandemic::unpack
+
 ```
 
 ```{r, model formulation}
-sir.model <- function(t,x,params){
-    ## BMB: better to do this with with(c(as.list(x),as.list(params)) { ... }
-    ## *or* unpack(c(as.list(x),as.list(params))); unpacking every element
-    ## is both clunky and fragile (depends  on order of vectors)
-  ## extract the state variables
-  Su <- x[["Su"]] ## x[1]
-  Sn <- x[2]
-  Iu <- x[3]
-  In <- x[4]
-  Ip <- x[5]
-  It <- x[6]
-  Ru <- x[7]
-  Rn <- x[8]
-  Rp <- x[9]
-  Rt <- x[10]
-  N <- x[11]
-  P <- x[12]
+sir.model <- function(time,state,params){
+    unpack(as.list(c(state,params)))
+  
+    ## scaling the weights
+    sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
+    F1 <- sc*W_s
+    F2 <- sc*W_i
+    F3 <- sc*W_r
 
+    ## BMB: don't need with() if you're going to unpack
+    ## with(as.list(c(state,params)), {
+    dS_u.dt <- omega * S_n - beta * (I_u+I_n+I_p+I_t)/N0 * S_u - (1-P_s) * F1 * S_u
+    dS_n.dt <- (1-P_s) * F1 * S_u - omega * S_n - beta * (I_u+I_n+I_p+I_t)/N0 * S_n
+    dI_u.dt <- beta * (I_u/N0) * (S_u+S_n) + omega * I_n - F2 * I_u - gamma * I_u
+    dI_n.dt <- (1-P_i) * F2 * I_u + beta * (I_n/N0) * (S_u+S_n) - omega * I_n - gamma * I_n
+    dI_p.dt <- beta * (I_p/N0) * (S_u+S_n) + P_i * F2 * I_u - omega * I_p - gamma * I_p 
+    dI_t.dt <- beta * (I_t/N0) * (S_u+S_n) + omega * I_p - gamma * I_t 
+    dR_u.dt <- gamma * I_u + omega * R_n - F3 * R_u  
+    dR_n.dt <- gamma * I_n + (1-P_r) * F3 * R_u - omega * R_n
+    dR_p.dt <- P_r * F3 * R_u + gamma * I_p - omega * R_p
+    dR_t.dt <- gamma * I_t + omega * R_p
+    dN.dt <- omega * (S_n + I_n + R_n)
+    dP.dt <- omega *(I_p + R_p)
     
-    ## with(as.list(c(x,params)), {
-    ##
-    ## Su*phi*...
-    ##
-    ## })
-
-    ## McMasterPandemic::unpack(as.list(c(x,params)))
-    ## then can evaluate gradient without using { ... }
-    
-  ## extract the parameters
-  N0 <- params["N0"] #initial population size
-  beta <- params["beta"] #transition rate
-  gamma <- params["gamma"] #recovery rate
-  t <- params["t"] #testing intensity
-
-    unpack <- McMasterPandemic::unpack
-    unpack(params)  ## equivalent to setting all variables
-  ## BMB: new code will go here?
-    
-  ## the model equations
-  dS.dt <- -beta*S*I/N
-  dI.dt <- beta*S*I/N-gamma*I
-  dR.dt <- gamma*I
-  ## combine results into a single vector
-  dxdt <- c(dS.dt,dI.dt,dR.dt)
-  ## return result as a list!
-  list(dxdt)
+    # return the rate of change
+  dxdt <- c(dS_u.dt,dS_n.dt,dI_u.dt,dI_n.dt,dI_p.dt,dI_t.dt,dR_u.dt,dR_n.dt,dR_p.dt,dR_t.dt,dN.dt,dP.dt)
+    ## }
+    return(list(dxdt))
 }
-
 
 ```
 
+```{r model inputs, message=FALSE}
+params <- c(N0=100, beta=1,gamma=1/3, omega=0.25, t=0.01, 
+             W_s=0.01, W_i=1, W_r=0.01, #weights
+             P_s=0, P_i=0.5, P_r=0.5 #prob of waiting for being tested positive
+             )
+
+state_init <- c(S_u=params[["N0"]], S_n=0,
+                I_u=1,I_n=0,I_p=0,I_t=0,
+                R_u=0,R_n=0,R_p=0,R_t=0,
+                N=0,P=0)
+
+d <- seq(0,50,by=0.1)
+```
+
+Test gradient
+```{r}
+g1 <- sir.model(time=0,state=state_init, params=params)
+all.equal(sum(g1[[1]]),0)
+## debug(sir.model)
+## g1 <- sir.model(time=0,state=state_init, params=params)
+```
+
+**BMB: spaces in chunk names are a bad idea**
+
+```{r model_run, message=FALSE}
+out <- as.data.frame(
+  ode(
+    func=sir.model,
+    y=state_init,
+    times= d, 
+    parms=params
+  )
+)
 
 
+out2 <- out %>%
+  pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
+
+ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
+    scale_y_log10()
+```
 
 
 
