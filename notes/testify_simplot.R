@@ -14,9 +14,13 @@ if (!interactive()) {
 ymin <- 1    
 ymax <- 1e6  ## screen out pathological values
 
+print(simdat)
+
+
 simdat <- (simdat
-    %>% pivot_wider(names_from=var,values_from=value)
-    %>% pivot_longer(-c(date, W_asymp, iso_t, testing_intensity), names_to="var")
+    %>% select(-c(testing_type,omega))
+	 %>% pivot_wider(names_from=var,values_from=value)
+    %>% pivot_longer(-c(date, Gbar, iso_t, testing_intensity), names_to="var")
 )
 
 totaltest_data <- (tibble(
@@ -40,10 +44,9 @@ mm <- function(i) ggtitle(sprintf("testing intensity=%1.2g",i))
 for (i in unique(simdat$testing_intensity)) {
     ggx <- (gg
         %+% ff(i)
-        + mm(i)
         + geom_hline(data=ff(i,totaltest_data),aes(yintercept=value),lty=2)
     )
-    print(ggx + facet_grid(W_asymp~iso_t, labeller=label_both) + aes(color=var))
-    print(ggx + facet_grid(W_asymp~var, labeller=label_both) + aes(color=factor(iso_t)))
-    print(ggx + facet_grid(iso_t~var, labeller=label_both) + aes(color=factor(W_asymp)))
+    print(ggx + facet_grid(Gbar~iso_t, labeller=label_both) + aes(color=var))
+    print(ggx + facet_grid(Gbar~var, labeller=label_both) + aes(color=factor(iso_t)))
+    print(ggx + facet_grid(iso_t~var, labeller=label_both) + aes(color=factor(Gbar)))
 }

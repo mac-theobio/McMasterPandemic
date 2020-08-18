@@ -79,7 +79,7 @@ wrap_makeR=yes
 
 impmakeR += sims
 # testwt_N.sims.Rout: testify_sim.R testwt_N.R
-%.sims.Rout: testify_sim.R %.rda testify_funs.rda sims.csv
+%.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
 # testwt_N.simplots.Rout: testify_simplot.R testwt_N.R
