@@ -359,7 +359,8 @@ param_meanings <- c(
     nb_disp.report = "dispersion of negative binomial distribution (case reports)",
     nb_disp.death = "dispersion of negative binomial distribution (deaths)",
     zeta = "exponent of phenomenological response to susceptible depletion",
-    c_prop = "fraction of cases reported"
+    c_prop = "fraction of infections reported",
+    CFR_gen = "case fatality proportion: (1-alpha)*(1-mu)*(1-phi1)*phi2/c_prop"
 )
 
 ##' Describe parameters
