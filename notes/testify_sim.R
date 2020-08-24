@@ -4,23 +4,18 @@ callArgs <- "testwt_N.sims.Rout testify_sim.R testwt_N.rda testify_funs.rda sims
 library(tidyverse)
 library(parallel)
 library(zoo)
+library(McMasterPandemic)
 source("makestuff/makeRfuns.R")
-print(commandEnvironments())
 
 ## Double-sourcing will be necessary sometimes until we 
 ## make makeR a real package
 source("makestuff/makeRfuns.R")
 commandEnvironments()
-## WHICH of these do you want today?
-## library(devtools); load_all("../")
-library("McMasterPandemic")
 
 if (!exists("keep_all")) keep_all <- FALSE
 
 params <- (read_params("PHAC_testify.csv")
-#	%>% fix_pars(target=c(R0=R0, Gbar=Gbar))
 	%>% update(omega = omega
-#		, testing_intensity = testing_intensity
 		, W_asymp = W_asymp
 	)
 )
@@ -53,11 +48,14 @@ testdat <- data.frame(Date = as.Date(datevec)
 ## run a simulation based on parameters in the factorial frame
 update_and_simulate <- function(x, testdat){
 	print(x)
+	## Update and fix_pars need to be together right before simulating
 	paramsw0 <- update(params
 		, iso_t=pf[x,"iso_t"]
 		, testing_intensity = pf[x,"testing_intensity"]
 	)
 	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
+
+	## This can be a bit cleaner
 	if(pf[x,"testing_type"] == "constant"){
  		testdat$intensity <- pf[x,"testing_intensity"]
 	}
@@ -68,7 +66,7 @@ update_and_simulate <- function(x, testdat){
 		testdat$intensity <- plogis(seq(qlogis(min_testing/max_testing),qlogis(0.99),length.out = nrow(testdat)))*max_testing
 	}
 
-
+	
 	sims <- (simtestify(p=paramsw0,testing_data=testdat)
 	%>% mutate(iso_t = pf[x,"iso_t"]
      	 , Gbar = pf[x,"Gbar"]
@@ -87,6 +85,8 @@ simframe <- bind_rows(simlist)
 
 
 print(simframe)
+
+## What is this keep_all stuff?
 
 if (!keep_all) {
     simdat <- (simframe

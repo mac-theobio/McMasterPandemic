@@ -70,7 +70,7 @@ Sources += ../inst/params/PHAC_testify.csv
 Sources += slow.csv
 
 ## How many parameter files do we have?
-## testwt_N.R basic.R simple.R
+## testwt_N.R basic.R simple.R ode.R
 
 ## testify_funs.R
 
@@ -90,17 +90,6 @@ impmakeR += sims
 %.testify_simreportplot.Rout: testify_simreportplot.R %.sims.rda
 	$(makeR)
 
-
-# testwt_N.testify_calibration.Rout: testify_calibration.R
-# basic.testify_calibration.Rout: basic.R testify_calibration.R
-%.testify_calibration.Rout: testify_calibration.R %.rda %.sims.rda
-	$(makeR)
-
-# basic.testcatplots.Rout: testify_testcatplot.R
-%.testcatplots.Rout: testify_testcatplot.R %.sims.rda
-	$(makeR)
-
-# ode.simplots.Rout: ode.R
 
 ## Absolute testing rates (oops, that's what basic is already doing?)
 ## Play here anyway
@@ -146,6 +135,8 @@ slowpars.olddiff: ../inst/params/PHAC_testify.csv slow.csv
 
 ######################################################################
 
+## Old stuff, do we still want? keep for now, mostly exploration and debugging!!! 
+
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
 run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
@@ -154,13 +145,11 @@ run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
 plot_caltest.Rout: run_caltest.RData plot_caltest.R
 	$(run-R)
 
-test0.Rout: test0.R
-
 test_hosp.Rout: test_hosp.R
 
 ######################################################################
 
-## Mike's nobreak stuff
+## Old simulation exploration pipeline!
 
 Sources += $(wildcard *.R)
 
