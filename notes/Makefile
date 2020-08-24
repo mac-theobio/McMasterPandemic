@@ -12,6 +12,9 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
+
+wrap_makeR=yes
+
 ######################################################################
 
 Sources += $(wildcard *.R) Makefile
@@ -55,10 +58,6 @@ spline_projection2.Rout: spline_projection2.R
 
 ######################################################################
 
-## Mike's development stuff
-explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
-	$(makeR)
-
 ## Structural pictures from Ben
 ## refactor.html: refactor.Rmd
 
@@ -68,12 +67,10 @@ explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 
 ## This is no longer supposed to run on its own! Except interactively.
 Sources += ../inst/params/PHAC_testify.csv
-## testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv; $(makeR)
-## testify_simplot.Rout: testify_simplot.R testify_sim.rda; $(makeR)
-
 Sources += slow.csv
 
-wrap_makeR=yes
+## How many parameter files do we have?
+## testwt_N.R basic.R simple.R
 
 ## testify_funs.R
 
