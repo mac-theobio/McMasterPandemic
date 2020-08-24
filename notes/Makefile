@@ -128,8 +128,9 @@ testwt_N.simcalib_plot.Rout: simcalib_plot.R
 %.simcalib_plot.Rout: simcalib_plot.R %.simcalib_tidy.rda
 	$(makeR)
 
-## Side pipe (faster, lighter sims)
+ali_test_sir.html: ali_test_sir.Rmd
 
+## Side pipe (faster, lighter sims)
 testsim.Rout: testsim.R simple.rda slow.csv
 	$(makeR)
 
