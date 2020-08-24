@@ -16,73 +16,39 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 ## Model and Definitions
 
 - Assume there are 3 groups of individuals: $S$, $I$ and $R$.
-- Each group splits into 4 subgroups to incorporate the testing mechanism, so overall the model framework has 12 compartments:
-$S_u,$ $S_n$, $S_p$, $S_t$, $I_u$, $I_n$, $I_p$, $I_t$, $R_u$, $R_n$, $R_p$, $R_t$.
-
-**BMB**: yes, except that (1) two of the compartments are unnecessary (if we assume a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) we will want two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported neg/pos tests. 
-
-**AGh**: Is this correct for $N$ and $P$? $dN/dt = S_n + I_n + R_n$ and $dP/dt = S_p + I_p + R_p$.
-
-**BMB**: no, they're missing an $\omega$: $dN/dt = \omega(S_n + I_n + R_n)$, $dP/dt = \omega(S_p + I_p + R_p)$. (And $S_p$ is always zero so you could omit it.)
+- Each group splits into 4 subgroups to incorporate the testing mechanism, so overall the model framework has 12 compartments as follows. $S_u,$ $S_n$, $S_p$, $S_t$, $I_u$, $I_n$, $I_p$, $I_t$, $R_u$, $R_n$, $R_p$, $R_t$.
+- Further, assume that (1) a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) there are two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported neg/pos tests. 
 
 ## Per Capita Rate of Flow from Untested to Positive or Negative Compartments
 
-Let's look at the flow from a particular untested compartment, $Z_i$, to a particular tested awaiting for a negative test. The equation is $$\frac{d Z_i}{dt} = - f_i Z_i,$$
- where $f_i$, is the per capita rate of flow, with the dimension of $\frac{1/time}{\#}$, where by # I mean population number.
- 
-1. How to define $f_i$ as a function of *testing intensity*, $t$ and *weights*, $\omega_i$.
-Checkings:
-- $t$ is fixed and is a parameter of the model, it is given through the reported information, dimension of $t$ is $\#/time$. (**BMB**: no, $t$ has dimensions of $1/time$)
-- $\omega_i$ is a weight:
-(i) $\frac{\omega_i}{\sum_j \omega_j} \times \frac{Z_i/I_u}{\sum_j Z_j}$, where $I_u$ is untested people in compartment $I$. **BMB**: no, $\omega$ is the rate of *onward flow* from the $p$ compartment to $t$, or from $n$ back to $u$.  It has units of $1/time$.
+- $t$: testing intensity with dimensions of $1/time$.
+- $\omega$: the rate of *onward flow* from the awaiting positive compartment, $p$, to reported/tested compartment, $t$, or from awaiting negative compartment, $n$, back to $u$.  It has units of $1/time$.
 
-The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $t (1-P_Z) F(W_Z) Z_u, from $Z_u$ to $Z_p$ is $t P_Z F(W_Z) Z_u$.  At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively.
+- Note: The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $t (1-P_Z) F(W_Z) Z_u$, from $Z_u$ to $Z_p$ is $t P_Z F(W_Z) Z_u$. Where, $P_Z$ is the probability of positive test.  
 
-**BMB**: We have gone back to using a scaling where $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
-**AGh**: Please clarify 
-(i) what is $N$ in the numerator of $F(W_Z)$? total population or accumulator for negative tests? 
-(ii) In one paragraph above, it is said "The (total, not per capita) flow from $Z_u$ to $Z_n$ is $(1-P_Z) F(W_Z) Z_u$". So F(W_z) should have dimension of 1/time? But from the definition of $F(W_Z)$ given in this paragraph, $F(W_Z)$ seems dimensionless. I think I am missing the point here?
-
-**BMB**: (i) I meant $N_0$ (total population size); $t$ is specified as 1/(# time); (ii) I left out a factor of $t$ (testing intensity). $F()$ is indeed dimensionless.
+- At the simplest $F(W_Z)=W_Z$.  The flows from $Z_n$ to $Z_u$ and $Z_p$ to $Z_t$ are $\omega Z_n$ and $\omega Z_p$ respectively. We are using a dimensionless scaling where $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$, i.e. the denominator is the sum of the product of the weights and the current occupancy of the untested compartments.
 
 ## Model
 
 ![](../inst/pix/sir_test1.jpg)
 
+
 \begin{align}
-1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - t (1-p_s) F(W_s) S_u \\
-2)\ d S_n/dt &= t (1-p_s) F(W_S) S_u - \omega S_n - \beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_n   \\
+1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_u - t (1-P_S) F(W_s) S_u \\
+2)\ d S_n/dt &= t (1-P_S) F(W_S) S_u - \omega S_n - \beta \frac{(I_u+I_n+I_p+I_t)}{N_0} S_n   \\
 3)\ d I_u/dt &= \beta (I_u/N_0) (S_u+S_n) + \omega I_n - t F(W_I) I_u - \gamma I_u  \\
-4)\ d I_n/dt &= t (1-p_I) F(W_I) I_u + \beta (I_n/N_0) (S_u+S_n) - \omega I_n -\gamma I_n \\
-5)\ d I_p/dt &= \beta (I_p/N_0) (S_u+S_n) + t p_I F(W_I) I_u - \omega I_p -\gamma I_p \\
+4)\ d I_n/dt &= t (1-P_I) F(W_I) I_u + \beta (I_n/N_0) (S_u+S_n) - \omega I_n -\gamma I_n \\
+5)\ d I_p/dt &= \beta (I_p/N_0) (S_u+S_n) + t P_I F(W_I) I_u - \omega I_p -\gamma I_p \\
 6)\ d I_t/dt &= \beta (I_t/N_0) (S_u+S_n) + \omega I_p - \gamma I_t  \\
 7)\ d R_u/dt &= \gamma I_u + \omega R_n - t F(W_R) R_u  \\
-8)\ d R_n/dt &= \gamma I_n + t (1-p_R) F(W_R) R_u - \omega R_n  \\
-9)\ d R_p/dt &= t p_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
+8)\ d R_n/dt &= \gamma I_n + t (1-P_R) F(W_R) R_u - \omega R_n  \\
+9)\ d R_p/dt &= t P_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
 10)\ d R_t/dt &= \gamma I_t + \omega R_p  \\
 11)\ dN/dt &= \omega (S_n + I_n + R_n)   \\
 12)\ dP/dt &= \omega(I_p + R_p).
 \end{align}
 
 Where, $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$.
-
-**BMB**: 
-
-* we don't need the $u$ subscripts on $f_Z$, I think
-* similarly, $\omega=\omega_{Z_n} = \omega_{Z_p}$ is a pretty safe assumption, i.e. that tests get returned at the same rate (on average) regardless of who they were sampled from, and especially whether they were positive or negative
-* similarly we don't need $u$ subscripts on $P_I$
-* there should be flows of $\gamma I_n$, $\gamma I_p$ from $I_n \to R_n$ and $I_p \to R_p$
-* in general you should make sure that the population is conserved!
-
-Let $t$ be testing intensity (1/time), $W = (W_1,W_2,W_3)$ be weighting vector which distributes the testing intensity for $S_u$, $I_u$ and $R_u$. Then
-Is this right way of thinking?
-
-$f_{S_u} = t \frac{W_1}{\sum_i W_i}$,
-$f_{I_u} = t \frac{W_2}{\sum_i W_i}$,
-$f_{R_u} = t \frac{W_3}{\sum_i W_i}$.
-
-**BMB:** no. Multiplying by $t$ is correct, but see my comment right about the "model" section. Your $f_{Z_u}$ is my $F(W_Z)/t$.
-**AGh:** So your $F(W_Z)$ has $t$ buried in it already? I can't see it explicitly. 
 
 ```{r packages, message=FALSE}
 library(deSolve)
@@ -104,8 +70,6 @@ sir.model <- function(time,state,params){
     F2 <- sc*W_i
     F3 <- sc*W_r
 
-    ## BMB: don't need with() if you're going to unpack
-    ## with(as.list(c(state,params)), {
     dS_u.dt <- omega * S_n - beta * (I_u+I_n+I_p+I_t)/N0 * S_u - (1-P_s) * F1 * S_u
     dS_n.dt <- (1-P_s) * F1 * S_u - omega * S_n - beta * (I_u+I_n+I_p+I_t)/N0 * S_n
     dI_u.dt <- beta * (I_u/N0) * (S_u+S_n) + omega * I_n - F2 * I_u - gamma * I_u
@@ -138,7 +102,7 @@ state_init <- c(S_u=params[["N0"]], S_n=0,
                 R_u=0,R_n=0,R_p=0,R_t=0,
                 N=0,P=0)
 
-d <- seq(0,50,by=0.1)
+d <- seq(0,200,by=0.1)
 ```
 
 Test gradient
@@ -168,6 +132,15 @@ out2 <- out %>%
 ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
     scale_y_log10()
 ```
+
+## Steady States
+
+There are two steady states for the above SIR model.
+
+- $E1$: $S_u= S_u, S_n= \frac{(1-P_s) F1 }{\omega} S_u$, and $I_j=R_j=0 \ \forall j$.
+- $E2$: $$S_u=  $$,
+
+
 
 
 
