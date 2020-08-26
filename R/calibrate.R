@@ -412,7 +412,7 @@ mle_fun <- function(p, data,
                   , sim_fun)
     if (checkpoint) saveRDS(f_args,file=".mle_checkpoint.rds")
     r <- (do.call(forecast_sim, f_args)
-        %>% dplyr::rename(pred="value")
+        %>% dplyr::rename(pred="value") ## rename trajectory value to 'pred' (predicted)
     )
     ## ggplot(r,aes(date,pred,colour=var)) + geom_line() + scale_y_log10() + geom_point(data=data,aes(y=value))
     ## match up sim results with specified data
@@ -420,8 +420,8 @@ mle_fun <- function(p, data,
     names(data) <- tolower(names(data)) ## ugh
     ## discard unused state variables
     data2 <- dplyr::filter(data,var %in% unique(r$var))
-    ## keep only dates present in data
-    r2 <- (dplyr::left_join(data2,r,by=c("date","var")) %>% tidyr::drop_na(value))
+    ## join data and trajectory; keep only date/var combs present in data [NOT trajectory]
+    r2 <- dplyr::left_join(data2,r,by=c("date","var")) %>% tidyr::drop_na(value)
     ## compute negative log-likelihood
     if (debug_plot) {
         do_debug_plot(r2)
@@ -440,7 +440,7 @@ mle_fun <- function(p, data,
     ##  dnbinom wrapper that napredicts NAs?
     ## FIXED nb_disp hack, don't need to exponentiate any more ...
     dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
-    ## clamp NaN/NA values to worst obs
+    ## clamp non-finite (Inf/NaN/NA) values to neg log likelihood of worst obs
     dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)])+na_penalty
     ret <- sum(dvals)
     if (!is.null(priors)) {
