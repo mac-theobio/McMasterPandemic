@@ -1,5 +1,5 @@
 ---
-title: "design decisions"
+title: "The 'McMaster Pandemic' model"
 author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -8,6 +8,12 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
+
+## model structure
+
+```{r}
+
+```
 
 ## goals
 

@@ -532,28 +532,104 @@ has_testing <- function(state,params=NULL) {
 ## ?Matrix::image-methods
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
+##' @param method visualization method
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
 ##' @param add_blocks add lines showing blocks for testified matrices?
+##' @param const_width set flows to constant value of 1?
+##' @param do_symbols plot symbolic values for flows?
 ##' @importFrom lattice panel.abline
+##' @importFrom Matrix Matrix
+##' @importFrom graphics image
+##' @importFrom diagram plotmat
 ##' @export
-show_ratemat <- function(M, aspect="iso", add_blocks=NULL) {
-    if (is.null(add_blocks)) {
-        add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
-                                                 rownames(M)))
+show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso", add_blocks=NULL,
+                         const_width=(method=="igraph"),
+                         do_symbols=NULL) {
+    method <- match.arg(method)
+    p <- NULL
+    if (is.null(do_symbols)) {
+        do_symbols <-method=="diagram" && !has_testing(setNames(numeric(nrow(M)),rownames(M)))
     }
-    p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
-                                 y=list(at=seq(ncol(M)),labels=colnames(M))),
-                  xlab="to",
-                  ylab="from",
-                  sub="",
-                  colorkey = TRUE,
-                  aspect=aspect)
-    if (add_blocks) {
-        if (requireNamespace("latticeExtra")) {
-            ## FIXME: don't hardcode length (but evaluation within layer() is weird !
-            p <- (p + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
-                + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
+    if (const_width) { M[M>0] <- 1 }
+    if (method=="Matrix") {
+        if (is.null(add_blocks)) {
+            add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
+                                                     rownames(M)))
         }
+        p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
+                                                  y=list(at=seq(ncol(M)),labels=colnames(M))),
+                           xlab="to",
+                           ylab="from",
+                           sub="",
+                           colorkey = TRUE,
+                           aspect=aspect)
+        if (add_blocks) {
+            if (requireNamespace("latticeExtra")) {
+                ## FIXME: don't hardcode length (but evaluation within layer() is weird !
+                p <- (p + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
+                    + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
+            }
+        }
+    } else if (method=="igraph") {
+       if (!requireNamespace("igraph")) {
+           stop("igraph not available")
+       } else {
+           g <- igraph::graph_from_adjacency_matrix(M)
+           plot(g, layout=igraph::layout_as_tree)
+       }
+    } else if (method=="diagram") {
+        xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,D=7,R=7,X=7)
+        ypos <- c(S=1,E=1,Ia=1,Ip=2,Im=2,Is=3,H=3,ICUs=4,ICUd=5,H2=4,D=5,R=1,X=4)
+        pos <- cbind(xpos,ypos)/8
+        M3 <- M[names(xpos),names(xpos)] ## reorder ... does that matter?
+        if (do_symbols) {
+            rr <- get_ratemat_symbols()
+            M3[cbind(rr$from,rr$to)] <- rr$rate
+        }
+        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
     }
     return(p)
 }
+
+##' display flow chart on current graphics device
+##' @param params parameters (flowchart is determined by non-zero flows)
+##' @param testify add testing flows?
+##' @param ... parameters to pass to \code{\link{show_ratemat}}
+##' @examples
+##' vis_model()
+##' vis_model(testify=TRUE)
+##' vis_model(method="diagram")
+##' @export
+vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE, ...) {
+    ## FIXME: accept method= argument, make const_width = (method=="igraph") ?
+    state <- make_state(N=1e6,E0=1)
+    state[] <- 1  ## all population states occupied
+    M <- make_ratemat(state,params,do_ICU=TRUE)
+    if (testify) {
+        M <- testify(M, params)
+    }
+    p <- show_ratemat(M, ...)
+    return(p)
+}
+
+## hack to convert make_ratemat() function definition directly into symbols for flows
+get_ratemat_symbols <- function() {
+    ss <- deparse(body(make_ratemat), width.cutoff=200)
+    ss <- ss[(grep("make_betavec",ss)+1):(grep("return",ss)-3)]
+    noICUpos <- grep("!do_ICU",ss)
+    ss <- ss[- (noICUpos:(noICUpos+5)) ]
+    ss <- ss[-grep("colnames",ss)]  ## drop X in colnames
+    n_from <- sapply(strsplit(ss,'"'),"[[",2)
+    n_to <- sapply(strsplit(ss,'"'),"[[",4)
+    rates <- gsub("^.*<-","",ss)
+    rates <- gsub("_([a-z])$","[\\1]",rates)
+    rates <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3",rates)
+    rates <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",rates)
+    rates <- gsub("nonhosp_mort +\\*?","",rates)
+    ## M -> X == M -> H
+    rates[grep("^M",rates)] <- rates[n_from=="Is" & n_to=="H"]
+    rates[grep("beta_vec",rates)] <- "sum(beta[j]*I[j])"
+    return(list(from=n_from,to=n_to,rate=rates))
+}
+    
+make_flowchart <- vis_model ## back-compatibility

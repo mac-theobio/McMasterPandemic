@@ -46,11 +46,11 @@ As diagram. This isn't right, and definitely needs more tweaking, but is in prin
 (Why aren't H, ICUs, ICUd lined up vertically ??? Does plotmat force positions to let arrows work??)
 
 ```{r}
-xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,hosp=6,D=7,R=7,X=7)
-ypos <- c(S=1,E=1,Ia=1,Ip=2,Im=2,Is=3,H=3,ICUs=4,ICUd=5,H2=4,hosp=6,D=5,R=1,X=4)
+xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,D=7,R=7,X=7)
+ypos <- c(S=1,E=1,Ia=1,Ip=2,Im=2,Is=3,H=3,ICUs=4,ICUd=5,H2=4,D=5,R=1,X=4)
 pos <- cbind(xpos,ypos)/8
 M1d <- M1[names(xpos),names(xpos)] ## reorder ... does that matter?
-plotmat(t(M1d),pos=pos,name=colnames(M1),box.size=0.02, add=FALSE)
+diagram::plotmat(t(M1d),pos=pos,name=colnames(M1),box.size=0.02, add=FALSE)
 ```
 
 ## test-based version

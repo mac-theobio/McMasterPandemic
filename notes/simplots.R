@@ -3,13 +3,11 @@ library(dplyr)
 library(tidyr)
 library(cowplot)
 
+callArgs <- "testwt_N.simplots.Rout testify_simplot.R testwt_N.sims.rda"
+
 source("makestuff/makeRfuns.R")
 commandEnvironments()
-if (!interactive()) {
-    makeGraphics()
-} else {
-    load("testify_sim.rda")
-}
+if (!interactive()) makeGraphics()
 
 ymin <- 1    
 ymax <- 1e6  ## screen out pathological values
@@ -33,7 +31,6 @@ gg <- (ggplot(simdat)
     + ylab("Daily count")
     + theme(legend.position = "bottom")
 )
-
 
 ff <- function(i,data=simdat) filter(data, testing_intensity==i)
 mm <- function(i) ggtitle(sprintf("testing intensity=%1.2g",i))

@@ -4,14 +4,27 @@
 \alias{show_ratemat}
 \title{visualize rate (per-capita flow) matrix}
 \usage{
-show_ratemat(M, aspect = "iso", add_blocks = NULL)
+show_ratemat(
+  M,
+  method = c("Matrix", "diagram", "igraph"),
+  aspect = "iso",
+  add_blocks = NULL,
+  const_width = (method == "igraph"),
+  do_symbols = NULL
+)
 }
 \arguments{
 \item{M}{rate matrix}
 
+\item{method}{visualization method}
+
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
 \item{add_blocks}{add lines showing blocks for testified matrices?}
+
+\item{const_width}{set flows to constant value of 1?}
+
+\item{do_symbols}{plot symbolic values for flows?}
 }
 \description{
 visualize rate (per-capita flow) matrix
