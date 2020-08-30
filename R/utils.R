@@ -548,7 +548,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
-        do_symbols <-method=="diagram" && !has_testing(setNames(numeric(nrow(M)),rownames(M)))
+        do_symbols <- method=="diagram" && !has_testing(setNames(numeric(nrow(M)),rownames(M)))
     }
     if (const_width) { M[M>0] <- 1 }
     if (method=="Matrix") {
@@ -556,12 +556,12 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
                                                      rownames(M)))
         }
-        p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M)),
+        p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M), rot=90),
                                                   y=list(at=seq(ncol(M)),labels=colnames(M))),
                            xlab="to",
                            ylab="from",
                            sub="",
-                           colorkey = TRUE,
+                           colorkey = !const_width,
                            aspect=aspect)
         if (add_blocks) {
             if (requireNamespace("latticeExtra")) {
@@ -585,6 +585,8 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
         if (do_symbols) {
             rr <- get_ratemat_symbols()
             M3[cbind(rr$from,rr$to)] <- rr$rate
+        } else {
+            M3[M3>0] <- ""  ## blank out all labels
         }
         diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
     }
