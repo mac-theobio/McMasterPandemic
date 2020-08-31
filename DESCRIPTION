@@ -9,7 +9,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"))
 Depends: R (>= 3.5.0)
-Imports: lattice, Matrix, forcats, MASS, dplyr, ggplot2, tidyr, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, stringr, shiny, zoo, deSolve, shinyWidgets, shinythemes, splines, diagram
+Imports: lattice, Matrix, forcats, MASS, dplyr, ggplot2, tidyr, plyr, purrr, anytime, pomp, directlabels, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, zoo, deSolve, splines, diagram
 Suggests: knitr, testthat, cowplot, tikzDevice, igraph, memoise, latticeExtra
 RoxygenNote: 7.1.1
 Encoding: UTF-8
