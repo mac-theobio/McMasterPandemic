@@ -358,6 +358,7 @@ param_meanings <- c(
     nb_disp.H = "dispersion of negative binomial distribution (hospitalizations)",
     nb_disp.report = "dispersion of negative binomial distribution (case reports)",
     nb_disp.death = "dispersion of negative binomial distribution (deaths)",
+    nb_disp.postest = "dispersion of negative binomial distribution (positive tests)",
     zeta = "exponent of phenomenological response to susceptible depletion",
     c_prop = "fraction of infections reported",
     CFR_gen = "case fatality proportion: (1-alpha)*(1-mu)*(1-phi1)*phi2/c_prop",
