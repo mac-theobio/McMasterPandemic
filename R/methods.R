@@ -73,7 +73,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
     ## FIXME: don't pivot if already pivoted
     xL <- (pivot(x)
         %>% dplyr::filter(!var %in% drop_states)
-        %>% dplyr::mutate(var=forcats::fct_inorder(factor(var)))
+        %>% dplyr::mutate(var=factor(var,levels=unique(var)))
         ## FIXME: order factor in pivot?
     )
     if (log) xL <- dplyr::filter(xL,value>=log_lwr)
@@ -650,7 +650,6 @@ capac_info <- data.frame(value=c(630,1300),
 ##' @param log_lwr lower limit when using log scale
 ##' @param ... extra arguments (unused)
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
-##' @importFrom directlabels geom_dl dl.trans
 ##' @examples
 ##' plot(ont_cal1)
 ##' ont_trans <- trans_state_vars(ont_all)
@@ -730,8 +729,11 @@ plot.predict_pansim <- function(x,
     ## dlspace not found
     ## geom_dl() must do weird evaluation env stuff
     if (directlabels) {
+        if (!requireNamespace("directlabels")) {
+            stop("please install directlabels package")
+        }
         p <- (p
-            + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
+            + directlabels::geom_dl(method=list(directlabels::dl.trans(x=x+1),cex=1,'last.bumpup'),
                       aes(label=var))
             + expand_limits(x=max(x$date)+limspace)
         )
