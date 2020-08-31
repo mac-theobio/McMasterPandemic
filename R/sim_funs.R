@@ -119,7 +119,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' @note
 ##' Base version matches structure of Stanford/Georgia models
 ##' \itemize{
-##'   \item flow diagram: see \url{https://covid-measures.github.io/} 'model details' tab
+##'   \item flow diagram: see \url{http://covid-measures.stanford.edu/} 'model details' tab
 ##'         or \code{../pix/model_schematic.png}
 ##'   \item parameter definitions: see \code{params_CI_base.csv}, \code{params_ICU_diffs.csv}
 ##' }

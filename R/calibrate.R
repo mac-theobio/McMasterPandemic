@@ -340,7 +340,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
             %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0)
         )
         if (has_zeta(params)) {
-            x3 <- x3 %>% mutate_at("Rt", ~.*hetS)
+            x3 <- (x3
+                %>% mutate_at("Rt", ~.*hetS)
+                %>% select(-hetS)
+            )
         }
         r_agg <- full_join(r_agg, x3, by="date")
     } ## calc_Rt
