@@ -117,6 +117,7 @@ if (require(dplyr)) {
        filter(var \%in\% c("H","report"))
  params <- read_params("ICU1.csv")
  ## quick and dirty example (maximize speed)
+\dontrun{
  calibrate_comb(data=dd, params=params,
                use_spline=TRUE,
               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
@@ -134,5 +135,6 @@ form <-  calibrate_comb(data=dd, params=params,
               spline_extrap="constant",
               return_val="formula")
 print(form)
+}
 }
 }

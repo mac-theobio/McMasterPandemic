@@ -11,9 +11,29 @@ vignette: >
 
 ## model structure
 
-```{r}
+The "McMasterPandemic" model is a compartmental model built for the purposes of modeling the COVID-19 pandemic. Its main features are:
 
+- moderate epidemiological complexity, incorporating asymptomatic and presymptomatic infectious classes as well as subdividing symptomatic infections into moderate and severe
+- health-care utilization structure, including acute-care and ICU compartments
+- structure for calibrating to data
+- flexibility in incorporating time-varying parameters
+
+```{r}
+library(McMasterPandemic)
+vis_model(method="diagram")
 ```
+
+## basic operation
+
+## time-varying parameters
+
+###
+
+### log-linear models
+
+#### splines
+
+
 
 ## goals
 

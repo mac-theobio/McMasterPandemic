@@ -907,8 +907,9 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param vars which vars to use? (default is all in data)
 ##' @param return_val  "fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)
 ##' @importFrom stats quantile reformulate model.matrix
-##' @importFrom dplyr distinct
+##' @importFrom dplyr distinct select 
 ##' @importFrom tidyr drop_na
+##' @importFrom stats plogis
 ##' @importFrom splines bs
 ##' @examples
 ##' if (require(dplyr)) {
@@ -916,6 +917,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'        filter(var %in% c("H","report"))
 ##'  params <- read_params("ICU1.csv")
 ##'  ## quick and dirty example (maximize speed)
+##' \dontrun{
 ##'  calibrate_comb(data=dd, params=params,
 ##'                use_spline=TRUE,
 ##'               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
@@ -933,6 +935,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'               spline_extrap="constant",
 ##'               return_val="formula")
 ##' print(form)
+##' }
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
