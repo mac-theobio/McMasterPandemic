@@ -191,40 +191,55 @@ testify <- function(ratemat,params,debug=FALSE,
     for(i in rownames(ratemat)){
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
         
-        ## Between states: horizontal arrows moves the same rate
+        ## Between states: epidemiological transitions are the same as X -> Y
         for(j in colnames(ratemat)){
             if (debug) { 
       		print(cat(i,j,"\n"))
             }
+
+            ## source expanded, destination expanded: (k_i -> k_j) at same rate as i -> j
             if((i %in% expand_set) && (j %in% expand_set)){
                 for (k in test_extensions) {
-                    new_M[sn(k),sn(k,j)] <- M[i,j]
+                    new_M[sn(k,i),sn(k,j)] <- M[i,j]
                 }
             }
+            ## source expanded, destination not expanded: all k_i - > j at same rate as i -> j
             if((i %in% expand_set) && (j %in% non_expanded_states)){
                 for (k in test_extensions) {
-                    new_M[sn(k),j] <- M[i,j]
+                    new_M[sn(k,i),j] <- M[i,j]
                 }
             }
         }
 
-
+        ## testing flows
    	if (i %in% expand_set) {
             new_M[sn("u"),sn("n")] <- testing_intensity*wtsvec[[i]]*(1-posvec[[i]])
             new_M[sn("u"),sn("p")] <- testing_intensity*wtsvec[[i]]*(posvec[[i]])
             new_M[sn("n"),sn("u")]  <- omega
             new_M[sn("p"),sn("t")]  <- omega
-            if (testing_time=="report") {
-                ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
-                new_M[sn("n"),"N"] <- new_M[sn("n"),sn("u")] 
-                new_M[sn("p"),"P"] <- new_M[sn("p"),sn("t")] 
-            } else {
-                ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
-                new_M[sn("u"),"N"] <- new_M[sn("u"),sn("n")]
-                new_M[sn("u"),"P"] <- new_M[sn("u"),sn("p")] 
-            }
-   	}
+        } ## if i %in% expand_set
+    }  ## loop over all states
+    ## hospitalization special cases: everyone gets tested when they leave the Is compartment
+    ##  for H, ICUs, or ICUd
+    for (j in c("H","ICUs","ICUd")) {
+        sn <- function(state, compartment) paste0(compartment, "_", state)
+        new_M["Is_u",sn("p",j)] <- new_M["Is_u",sn("u",j)]*posvec[["Is"]]
+        new_M["Is_u",sn("n",j)] <- new_M["Is_u",sn("u",j)]*(1-posvec[["Is"]])
+        new_M["Is_u",sn("u",j)] <- 0
     }
+    for (i in expand_set) {
+        sn <- function(state, compartment=i) paste0(compartment, "_", state)
+        if (testing_time=="report") {
+            ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
+            new_M[sn("n"),"N"] <- new_M[sn("n"),sn("u")] 
+            new_M[sn("p"),"P"] <- new_M[sn("p"),sn("t")] 
+        } else {
+            ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
+            new_M[sn("u"),"N"] <- new_M[sn("u"),sn("n")]
+            new_M[sn("u"),"P"] <- new_M[sn("u"),sn("p")] 
+        }
+    }
+
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
     attr(new_M,"testing_time") <- testing_time
