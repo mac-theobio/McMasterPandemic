@@ -397,14 +397,17 @@ get_opt_pars <- function(params,vars=c("hosp","death","report")) {
 }
 
 get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
-                        special=list(lwr=c("params.log_E0"=1,zeta=-2,
-                                           "time_beta"=-2,
-                                           "params.log_testing_intensity"=-5),
-                                     upr=c("rel_beta0"=4,
+                        special=list(lwr=c(params.log_E0=1,
+                                           zeta=-2,
+                                           time_beta=-2,
+                                           params.log_testing_intensity=-5,
+                                           params.logit_mu=-1),
+                                     upr=c(rel_beta0=4,
                                            "nb_disp|E0"=5,
-                                           "zeta"=5,
-                                           "time_beta"=2,
-                                           "params.log_testing_intensity"=-2)))
+                                           zeta=5,
+                                           time_beta=2,
+                                           params.log_testing_intensity=-2,
+                                           params.logit_mu=3)))
 {
     opt_inputs <- unlist(opt_pars)
     lwr <- opt_inputs  ## get all names
