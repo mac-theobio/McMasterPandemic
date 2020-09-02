@@ -401,13 +401,13 @@ get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
                                            zeta=-2,
                                            time_beta=-2,
                                            params.log_testing_intensity=-5,
-                                           mu=-1),
+                                           params.logit_mu=-1),
                                      upr=c(rel_beta0=4,
-                                           nb_disp|E0=5,
+                                           "nb_disp|E0"=5,
                                            zeta=5,
                                            time_beta=2,
                                            params.log_testing_intensity=-2,
-                                           mu=3)))
+                                           params.logit_mu=3)))
 {
     opt_inputs <- unlist(opt_pars)
     lwr <- opt_inputs  ## get all names
