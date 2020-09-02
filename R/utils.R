@@ -396,18 +396,27 @@ get_opt_pars <- function(params,vars=c("hosp","death","report")) {
     return(opt_pars)
 }
 
+## set limits for DEoptim hypercube
+##  names of 'special' args are REGULAR EXPRESSIONS
+##  need to match parameters as they appear in unlist(opt_pars):
+##  values in parameter vector: params.[LINKFUN]_NAME
+##  dispersion parameters: log_nb_disp.VAR
+##  time parameters: time_beta.???
+##  rel_beta0 is from breakpoints models
+##  FIXME: can this go in an input file instead?
 get_DE_lims <- function(opt_pars,default=c(lwr=-1,upr=1),
-                        special=list(lwr=c(params.log_E0=1,
+                        special=list(lwr=c(log_E0=1,
                                            zeta=-2,
                                            time_beta=-2,
-                                           params.log_testing_intensity=-5,
-                                           params.logit_mu=-1),
+                                           log_testing_intensity=-5,
+                                           mu=-1),
                                      upr=c(rel_beta0=4,
-                                           "nb_disp|E0"=5,
+                                           nb_disp=5,
+                                           E0=5,
                                            zeta=5,
                                            time_beta=2,
-                                           params.log_testing_intensity=-2,
-                                           params.logit_mu=3)))
+                                           log_testing_intensity=-2,
+                                           mu=3)))
 {
     opt_inputs <- unlist(opt_pars)
     lwr <- opt_inputs  ## get all names
