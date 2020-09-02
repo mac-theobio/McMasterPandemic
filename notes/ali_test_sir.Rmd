@@ -50,7 +50,7 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 \end{align}
 
 Where, $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$.
-For convenience, let $F1=t*F(W_S), F2=t*F(W_I)$ and $F3=t*F(W_R)$ hereafter. 
+For convenience, let $F_S=t*F(W_S), F_I=t*F(W_I)$ and $F_R=t*F(W_R)$ hereafter. 
 $\eta$ is the isolation parameter with the assumption of $\eta_2<\eta_1$.
 
 ```{r packages, message=FALSE}
@@ -144,7 +144,7 @@ ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
 
 There are two steady states for the above SIR model.
 
-- $E1$: $S_u= S_u, S_n= \frac{(1-P_s) F1 }{\omega} S_u$, and $I_j=R_j=0 \ \forall j$.
+- $E1$: $S_u= \frac{\omega}{\omega+t (1-P_S) F(W_S)} N_0, S_n= N_0-S_u$, and $I_j=R_j=0 \ \forall j$.
 
 
 ### Basic Reproduction Number
@@ -152,7 +152,7 @@ There are two steady states for the above SIR model.
 The next generation matrix, $G = F V^{-1}$, is in the lower triangular form with $F$ and $G$ as follows.
 
 \begin{equation}\label{FV}
-F= \left[ \begin {array}{cccc} \beta&\gamma&0&0\\ 
+F= \left[ \begin {array}{cccc} \beta&0&0&0\\ 
  0&\beta\,\eta_{{1}}&0&0\\ 0&0&\beta\,\eta_{{1}}&0\\ 
  0&0&0&\beta\,\eta_{{2}}
  \end {array} \right], 
@@ -171,8 +171,8 @@ G_{21}&G_{22}
 \end {array} \right], \text{ where } \\
 G_{11} =\frac{1}{\gamma(\omega+\gamma)+F2 (\gamma+\omega P_I)} 
 \left[ \begin {array}{cc}
-\beta (\omega+\gamma) + \gamma F2 (1-P_I) & \beta \omega + \gamma (1+F2)\\
-\beta \eta_1 F2 (1-P_I) & \beta \eta_1 (F2 + \gamma)
+\beta (\omega+\gamma) + \gamma F2 (1-P_I) & \beta \omega + \gamma (\gamma+F2)\\
+\beta \eta_1 F2 (1-P_I) & \beta \eta_1 (\gamma +F2)
 \end {array} \right],
 \\ 
 G_{22} =
@@ -182,12 +182,26 @@ G_{22} =
 \end {array} \right]
 \end{equation}
 
+The Eigenvalues of $G_{11}$, namely $\lambda_1$ and $\lambda_2$, are the roots of the following characteristic polynomial
+$a\lambda^2+b\lambda+c=0$, where
+$a=(\omega+\gamma)\gamma+(\gamma+\omega P_I)F_I$,
+$b=\beta (\omega+\gamma) + \beta \eta_1 (\gamma + F_I)$ and
+$c= \beta \eta_1$. Thus,
+$$
+\lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\
+\lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}.
+$$
 
+The Eigenvalues of $G_{22}$ are:
+$$\lambda_3 =\frac{\beta \eta_1}{\omega+\gamma} \\
+\lambda_4 =\frac{\beta \eta_2}{\gamma}$$
 
-```{r r0, message=F}
-R0=params[["beta"]]*params[["eta2"]]/params[["gamma"]]
-R0
-```
+Notes:
+
+- $\lambda_2 \leq \lambda_1$, since $b*c>0$.
+- $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_1/\eta_2$.
+- It seems, numerically, that $\cal{R_0}=\lambda_1$. (failed to proved it so far).
+
 
 
 
