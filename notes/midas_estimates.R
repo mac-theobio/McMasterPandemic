@@ -5,8 +5,6 @@ library(ggplot2)
 ## MIDAS estimates retrieved from
 midas_url <- "https://raw.githubusercontent.com/midas-network/COVID-19/master/parameter_estimates/2019_novel_coronavirus/estimates.csv"
 
-
-
 focal <- read.csv(header=TRUE, text="
 shortname, name
 R0,basic reproduction number
@@ -31,7 +29,8 @@ collapse_authors <- function(a) {
                               collapse=""))
 }
 
-x <- (read_csv("../params/midas_estimates.csv")
+## assumes we are in notes/ subdirectory ...
+x <- (read_csv("../inst/params/midas_estimates.csv")
     %>% select(authors,name,location_name,value_type,
                value,uncertainty_type,lower_bound, upper_bound,
                population)
