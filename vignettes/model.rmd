@@ -20,20 +20,26 @@ The "McMasterPandemic" model is a compartmental model built for the purposes of 
 
 ```{r}
 library(McMasterPandemic)
-vis_model(method="diagram")
+vis_model(method="diagram",do_symbols=FALSE)
 ```
 
 ## basic operation
 
+
+
 ## time-varying parameters
 
-###
+
+
+### breakpoints
 
 ### log-linear models
 
+The 
+
 #### splines
 
-
+### calibration
 
 ## goals
 
