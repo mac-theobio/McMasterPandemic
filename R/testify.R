@@ -20,7 +20,7 @@ test_accumulators <- c("N","P")
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
 ##' state1[] <- 1  ## occupy all states
-##' state <- expand_stateval(state0)
+##' state <- expand_stateval_testing(state0)
 ##' wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
 ##' posvec <- make_test_posvec(pp)
 ##' ## need to make_ratemate() with *unexpanded* state, then
@@ -91,7 +91,7 @@ make_test_posvec <- function(params) {
 }
 
 # ## use inside testify to expand states
-# ## DRY: use this inside expand_stateval??
+# ## DRY: use this inside expand_stateval_testing??
 # expand_states <- function(expandable,nonexpandable) {
 #     new_states <- c(paste0(expandable,c("_u","_p","_n","_t")),nonexpandable, "N", "P")
 # }
@@ -102,7 +102,7 @@ make_test_posvec <- function(params) {
 ##' @param method method for distributing values across new (expanded) states
 ##' @param add_accum add N and P (neg/pos test) accumulator categories?
 ##' @export
-expand_stateval <- function(x, method=c("untested","spread"),
+expand_stateval_testing <- function(x, method=c("untested","spread"),
                             add_accum=TRUE)
 {
     method <- match.arg(method)
@@ -110,6 +110,7 @@ expand_stateval <- function(x, method=c("untested","spread"),
     newnames <- unlist(lapply(setdiff(names(x),non_expanded_states), paste, test_extensions, sep="_"))
     new_states <- rep(0,length(newnames))
     names(new_states) <- newnames
+    ## FIXME: check on names, attributes, etc.
     if (method=="untested") {
         new_states[paste0(setdiff(names(x),non_expanded_states),"_u")] <- x[setdiff(names(x),non_expanded_states)]
     } else {
@@ -164,7 +165,7 @@ testify <- function(ratemat,params,debug=FALSE,
 
     expand_set <- setdiff(states, non_expanded_states)
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
-    new_states <- names(expand_stateval(dummy_states))
+    new_states <- names(expand_stateval_testing(dummy_states))
     
 	ns <- length(new_states)
 	new_M <- matrix(0,nrow=ns, ncol=ns

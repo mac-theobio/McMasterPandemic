@@ -426,7 +426,7 @@ run_sim <- function(params
     if(!is.null(ratemat_args)){
     	if (ratemat_args$testify) {
             M <- testify(M,params,testing_time=ratemat_args$testing_time)
-            state <- expand_stateval(state)
+            state <- expand_stateval_testing(state)
     	}
     }
     state0 <- state
