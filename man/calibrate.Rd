@@ -23,6 +23,7 @@ calibrate(
   priors = NULL,
   debug = FALSE,
   debug_plot = FALSE,
+  debug_hist = FALSE,
   last_debug_plot = FALSE,
   use_DEoptim = FALSE,
   mle2_method = "Nelder-Mead",
@@ -68,6 +69,8 @@ calibrate(
 
 \item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
 
+\item{debug_hist}{keep information on parameter history?}
+
 \item{last_debug_plot}{plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)}
 
 \item{use_DEoptim}{use differential evolution as first stage?}
@@ -102,7 +105,7 @@ params <- fix_pars(read_params("ICU1.csv"))
 dd <- (ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("report", "death", "H")))
 \dontrun{
    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
+  cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 
    if (require(bbmle)) {

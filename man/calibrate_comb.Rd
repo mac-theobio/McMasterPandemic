@@ -26,12 +26,13 @@ calibrate_comb(
   DE_cores = 1,
   use_mobility = FALSE,
   use_phenomhet = FALSE,
-  use_spline = TRUE,
+  use_spline = FALSE,
   use_testing = FALSE,
   vars = NULL,
   debug_plot = interactive(),
   debug = FALSE,
-  return_val = c("fit", "X", "formula", "args"),
+  debug_hist = FALSE,
+  return_val = c("fit", "X", "formula", "args", "time_args"),
   ...
 )
 }
@@ -101,6 +102,8 @@ which is probably wise)}
 
 \item{debug}{print debugging messages?}
 
+\item{debug_hist}{keep information on parameter history?}
+
 \item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
 
 \item{...}{extra args}
@@ -114,6 +117,7 @@ if (require(dplyr)) {
        filter(var \%in\% c("H","report"))
  params <- read_params("ICU1.csv")
  ## quick and dirty example (maximize speed)
+\dontrun{
  calibrate_comb(data=dd, params=params,
                use_spline=TRUE,
               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
@@ -131,5 +135,6 @@ form <-  calibrate_comb(data=dd, params=params,
               spline_extrap="constant",
               return_val="formula")
 print(form)
+}
 }
 }

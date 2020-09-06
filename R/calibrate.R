@@ -264,6 +264,7 @@ run_sim_decay <- function(params,
 ##' @param stoch stochastic settings (see \code{\link{run_sim}})
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
 ##' @param calc_Rt calculate and include R(t) in prediction/forecast?
+##' @param ... extra args (ignored)
 
 ##' @examples
 ##' ff <- ont_cal1$forecast_args
@@ -286,8 +287,12 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          return_val=c("aggsim","vals_only"),
                          sim_fun=run_sim_break,
                          calc_Rt = FALSE,
-                         debug = FALSE)
+                         debug = FALSE,
+                         ...)
+
 {
+    ## FIXME: shouldn't need ..., but catches e.g. debug_hist passed
+    ## through?
     S <- Symbol <- rel_beta0 <- hetS <- zeta <- NULL ## global var checking
     return_val <- match.arg(return_val)
     sim_args <- c(sim_args,nlist(start_date, end_date))
@@ -343,7 +348,10 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
             %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0)
         )
         if (has_zeta(params)) {
-            x3 <- x3 %>% mutate_at("Rt", ~.*hetS)
+            x3 <- (x3
+                %>% mutate_at("Rt", ~.*hetS)
+                %>% select(-hetS)
+            )
         }
         r_agg <- full_join(r_agg, x3, by="date")
     } ## calc_Rt
@@ -356,17 +364,20 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
 }
 
 ## utility: debugging plot
+##' @importFrom graphics legend
 do_debug_plot <- function(r2) {
     value <- NULL ## global var check
     vv <- unique(r2$var)
     if (length(vv)==1) {
-        suppressWarnings(plot(value~date, data=r2, log="y"))
+        suppressWarnings(plot(value~date, data=r2, log="y", main=vv))
         with(r2,lines(date,pred))
     } else {
         with(subset(r2,value>0),
              plot(date,value,col=as.numeric(factor(var)),log="y"))
         r2s <- split(r2,r2$var)
-        invisible(Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s)))
+        Map(function(x,c) lines(x$date,x$pred, col=c), r2s, seq_along(r2s))
+        labs <- sort(unique(r2$var)) ## sort to match factor order
+        legend("topright",col=seq(length(labs)),lty=1,legend=labs)
     }
 }
 
@@ -380,6 +391,7 @@ do_debug_plot <- function(r2) {
 mle_fun <- function(p, data,
                     debug=FALSE,
                     debug_plot=FALSE,
+                    debug_hist=FALSE,
                     opt_pars,
                     base_params,
                     start_date,
@@ -411,7 +423,7 @@ mle_fun <- function(p, data,
                   , sim_fun)
     if (checkpoint) saveRDS(f_args,file=".mle_checkpoint.rds")
     r <- (do.call(forecast_sim, f_args)
-        %>% dplyr::rename(pred="value")
+        %>% dplyr::rename(pred="value") ## rename trajectory value to 'pred' (predicted)
     )
     ## ggplot(r,aes(date,pred,colour=var)) + geom_line() + scale_y_log10() + geom_point(data=data,aes(y=value))
     ## match up sim results with specified data
@@ -419,8 +431,8 @@ mle_fun <- function(p, data,
     names(data) <- tolower(names(data)) ## ugh
     ## discard unused state variables
     data2 <- dplyr::filter(data,var %in% unique(r$var))
-    ## keep only dates present in data
-    r2 <- (dplyr::left_join(data2,r,by=c("date","var")) %>% tidyr::drop_na(value))
+    ## join data and trajectory; keep only date/var combs present in data [NOT trajectory]
+    r2 <- dplyr::left_join(data2,r,by=c("date","var")) %>% tidyr::drop_na(value)
     ## compute negative log-likelihood
     if (debug_plot) {
         do_debug_plot(r2)
@@ -439,7 +451,7 @@ mle_fun <- function(p, data,
     ##  dnbinom wrapper that napredicts NAs?
     ## FIXED nb_disp hack, don't need to exponentiate any more ...
     dvals <- with(r2,-1*dnbinom(value,mu=pred,size=nb_disp,log=TRUE))
-    ## clamp NaN/NA values to worst obs
+    ## clamp non-finite (Inf/NaN/NA) values to neg log likelihood of worst obs
     dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)])+na_penalty
     ret <- sum(dvals)
     if (!is.null(priors)) {
@@ -450,9 +462,29 @@ mle_fun <- function(p, data,
         }
     }
     ## FIXME: add evaluation number?
-    if (debug) cat(unlist(pp),ret,"\n")
+    if (debug) {
+        cat(unlist(pp),ret,"\n")
+    }
+    if (debug_hist) {
+        update_debug_hist(unlist(pp),ret)
+    }
     if (!is.finite(ret)) ret <- Inf  ## DEoptim hack
     return(ret)
+}
+
+debug_env <- new.env()
+update_debug_hist <- function(params, NLL) {
+    ## see https://stackoverflow.com/questions/63432138/equivalent-of-within-attach-etc-for-working-within-an-environment/63432196#63432196 for discussion
+    debug_env$params <- params
+    debug_env$NLL <- NLL
+    with(debug_env,
+    {
+        if (debug_ctr>nrow(history_mat)) {
+            history_mat <- rbind(history_mat, base_mat)  ## extend matrix
+        }
+        history_mat[debug_ctr,  ] <- c(params, NLL)
+        debug_ctr <- debug_ctr + 1
+    })
 }
 
 ##' estimate parameters from data
@@ -473,6 +505,7 @@ mle_fun <- function(p, data,
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
+##' @param debug_hist keep information on parameter history?
 ##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
 ##' @param last_debug_plot plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)
 ##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
@@ -497,7 +530,7 @@ mle_fun <- function(p, data,
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
 ##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
-##' cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
+##'   cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
 ##' 
 ##'    if (require(bbmle)) {
@@ -527,6 +560,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       priors=NULL,
                       debug=FALSE,
                       debug_plot=FALSE,
+                      debug_hist=FALSE,
                       last_debug_plot=FALSE,
                       use_DEoptim=FALSE,
                       mle2_method="Nelder-Mead",
@@ -542,6 +576,10 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     if (!is.null(break_dates)) {
         warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
         time_args <- list(break_dates=break_dates)
+    }
+    v <- na.omit(data$value)
+    if (any(abs(v-round(v))>1e-9)) {
+        stop("need integer values in reported data (to match dnbinom)")
     }
     cc <- match.call()
     if (debug) {
@@ -568,16 +606,28 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                     , sim_args
                     , aggregate_args
                     , debug
+                    , debug_hist
                     , debug_plot
+                      ## FIXME: refactor debugging args!
                     , data
                     , priors
                     , sim_fun)
     opt_inputs <- unlist(opt_pars)
-        ## initialize debug history
-    debug_hist_chunksize <- 1e4
-    if (exists("debug_hist_ctr")) {
-        debug_hist_ctr <<- 1
-    }
+
+
+    debug_env$opt_inputs <- opt_inputs
+    ## initialize debug history
+    if (debug_hist) {
+        with(debug_env,  {
+            debug_hist_chunksize <- 1e4
+            base_mat <- history_mat <- matrix(NA,
+                                              nrow=debug_hist_chunksize,
+                                              ncol=length(opt_inputs)+1,
+                                              dimnames=list(NULL,c(names(opt_inputs),"NLL")))
+            debug_ctr <- 1
+        }) ## with()
+    }        
+    
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         DE_lims <- get_DE_lims(opt_pars)
@@ -656,6 +706,12 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                             c("debug","debug_plot","fixed_pars","data","priors"))]
               , call = cc)
     end_time <- proc.time()
+    if (debug_hist) {
+        with(debug_env,
+             history_mat <- history_mat[rowSums(is.na(history_mat))<ncol(history_mat),]
+        )
+        attr(res,"debug_hist") <- debug_env$history_mat
+    }
     attr(res,"de") <- de_cal1
     attr(res,"de_time") <- de_time
     attr(res,"mle2_time") <- mle2_time
@@ -862,8 +918,9 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param vars which vars to use? (default is all in data)
 ##' @param return_val  "fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)
 ##' @importFrom stats quantile reformulate model.matrix
-##' @importFrom dplyr distinct
+##' @importFrom dplyr distinct select 
 ##' @importFrom tidyr drop_na
+##' @importFrom stats plogis
 ##' @importFrom splines bs
 ##' @examples
 ##' if (require(dplyr)) {
@@ -871,6 +928,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'        filter(var %in% c("H","report"))
 ##'  params <- read_params("ICU1.csv")
 ##'  ## quick and dirty example (maximize speed)
+##' \dontrun{
 ##'  calibrate_comb(data=dd, params=params,
 ##'                use_spline=TRUE,
 ##'               maxit=10, skip.hessian=TRUE, use_DEoptim =FALSE)
@@ -888,6 +946,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'               spline_extrap="constant",
 ##'               return_val="formula")
 ##' print(form)
+##' }
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
@@ -913,12 +972,13 @@ calibrate_comb <- function(data,
                      DE_cores=1,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
-                     use_spline=TRUE,
+                     use_spline=FALSE,
                      use_testing=FALSE,
                      vars=NULL,
                      debug_plot=interactive(),
                      debug=FALSE,
-                     return_val=c("fit","X","formula","args"),
+                     debug_hist=FALSE,
+                     return_val=c("fit","X","formula","args","time_args"),
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
     return_val <- match.arg(return_val)
@@ -1060,6 +1120,7 @@ calibrate_comb <- function(data,
     time_args <- nlist(X,X_date=X_dat$date)
     if (use_testing) {
         time_args <- c(time_args, list(testing_data = testing_data))
+	      if(return_val == "time_args")return(time_args)
     }
     priors <- NULL
     if (spline_pen>0) {
@@ -1075,6 +1136,7 @@ calibrate_comb <- function(data,
                      , DE_cores
                      , debug_plot
                      , debug
+                     , debug_hist
                      , base_params=params
                      , mle2_control = list(maxit=maxit)
                      , mle2_args=list(skip.hessian=skip.hessian)

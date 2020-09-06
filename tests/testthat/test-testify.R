@@ -4,10 +4,10 @@ library(testthat)
 context("testify")
 
 pp <- read_params("PHAC_testify.csv")
-
 ## Making states and expanding states
 state <- make_state(params=pp)
-state_testified <- expand_stateval(state)
+state_testified <- expand_stateval(state, params=pp, method="untested")
+
 
 ## global variables
 ## print(non_expanded_states)
@@ -40,6 +40,12 @@ test_that("testified betas make sense", {
                  unname(beta_vec0))
 })
 
+test_that("pos test vec check", {
+    vn <- setdiff(names(state),non_expanded_states)
+    badp <- c(Pxx=1)
+    expect_error(make_test_posvec(badp,vn), "vector names should match")
+})
+
 test_that("catch state/beta mismatch", {
     expect_error(update_foi(state,pp,beta_vec_testified), "not the same")
 })
@@ -52,7 +58,7 @@ test_that("ratemat makes sense", {
 })
 
 ## Updating FOI
-test_that("FOI doesn't change", {
+test_that("FOI doesn't change (for 'untested' expansion)", {
     pp2 <- update(pp,iso_t=0)
     expect_equal(update_foi(state,pp2,beta_vec),
                  update_foi(state_testified,pp2,beta_vec_testified))

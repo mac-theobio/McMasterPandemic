@@ -11,3 +11,4 @@ pop <- 1.5e7
 R0 <- 2.5
 Gbar <- 12
 set.seed(0807)
+keep_all <- FALSE

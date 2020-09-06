@@ -1,5 +1,5 @@
 ---
-title: "design decisions"
+title: "The 'McMaster Pandemic' model"
 author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -8,6 +8,38 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
+
+## model structure
+
+The "McMasterPandemic" model is a compartmental model built for the purposes of modeling the COVID-19 pandemic. Its main features are:
+
+- moderate epidemiological complexity, incorporating asymptomatic and presymptomatic infectious classes as well as subdividing symptomatic infections into moderate and severe
+- health-care utilization structure, including acute-care and ICU compartments
+- structure for calibrating to data
+- flexibility in incorporating time-varying parameters
+
+```{r}
+library(McMasterPandemic)
+vis_model(method="diagram",do_symbols=FALSE)
+```
+
+## basic operation
+
+
+
+## time-varying parameters
+
+
+
+### breakpoints
+
+### log-linear models
+
+The 
+
+#### splines
+
+### calibration
 
 ## goals
 
@@ -30,7 +62,7 @@ Given the [large number of available simulators](http://tinyurl.com/covid19-mode
 Familiarity/convenience/speed and ease of implementation, debugging, maintenance are most important. For us, this rules out Julia and Python and strongly suggests R. Speed may eventually be important, for (1) running stochastic replicates and varying-parameter ensembles and (2) incorporating the model in simulation-based estimation methods (ABC, iterated filtering/`pomp`). If we are focused on estimation, we have a choice among Gibbs-based platforms (NIMBLE, JAGS) and platforms that only allow continuous latent variables (TMB, Stan).
 
 * **Estimation**: TMB, Stan, NIMBLE, pomp + ?, ABC + ?
-* **Forward simulation**: we could write in base R or try to couple with something faster (e.g. `odin`, `Rcpp`). Lots of possibilities for vectorization and matrix operations to speed up base R implementations, although some operations like convolution might be hard to vectorize. `pomp` provides a [Csnippets](http://kingaa.github.io/pomp/manual/csnippet.html) interface (used by the "COVID interventions" project). I am tempted by `odin`, a platform that allows translation/compilation in C++ via an R-like syntax, e.g. see the [discrete-simulation vignette](https://cran.r-project.org/web/packages/odin/vignettes/discrete.html)
+* **Forward simulation**: we could write in base R or try to couple with something faster (e.g. `odin`, `Rcpp`). Lots of possibilities for vectorization and matrix operations to speed up base R implementations, although some operations like convolution might be hard to vectorize. `pomp` provides a [Csnippets](http://kingaa.github.io/pomp/manual/csnippet.html) interface (used by the "COVID interventions" project). I am tempted by `odin`, a platform that allows translation/compilation in C++ via an R-like syntax, e.g. see the [discrete-simulation vignette](https://cran.R-project.org/package=odin/vignettes/discrete.html)
 
 ## Model
 
@@ -49,7 +81,7 @@ Some of these are simple. Want to set up general structure for importing a dated
 
 * get parameters from existing model implementations
 * list from MIDAS web page
-* age-specific death rates (Hubei) -- from Riou et al. https://t.co/F4CIJU22kU?amp=1
+* age-specific death rates (Hubei) -- from Riou et al. https://www.medrxiv.org/content/10.1101/2020.03.04.20031104v1.full.pdf
 * Hospitalization parameters: https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(20)30566-3/fulltext
 
 ### Asymptomatic/undetected cases
@@ -72,7 +104,7 @@ Some of these are simple. Want to set up general structure for importing a dated
 ### Age structure
 
 * important for predictions of health care utilization/severity
-* also for effects of interventions (school, work closures, etc.): use info from Prem et al. 2013 WAIFW matrices divided by activity {school, home, work, other} (DOI:10.1371/journal.pcbi.1005697; machine-readable info at https://doi.org/10.1371/journal.pcbi.1005697.s002)
+* also for effects of interventions (school, work closures, etc.): use info from Prem et al. 2013 WAIFW matrices divided by activity {school, home, work, other} (DOI: `10.1371/journal.pcbi.1005697`; machine-readable info at https://doi.org/10.1371/journal.pcbi.1005697.s002)
 * interactions with space? can use "other" category WAIFW matrix only (Kronecker product)
 
 ### Delay distributions

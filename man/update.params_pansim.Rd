@@ -4,12 +4,14 @@
 \alias{update.params_pansim}
 \title{update parameters within a list of parameters}
 \usage{
-\method{update}{params_pansim}(object, ..., .list = FALSE)
+\method{update}{params_pansim}(object, ..., delete_regex = NULL, .list = FALSE)
 }
 \arguments{
 \item{object}{a \code{params_pansim} object}
 
 \item{...}{a list of named elements, or a single named list if \code{.list} is specified}
+
+\item{delete_regex}{vector of regular expressions to remove}
 
 \item{.list}{treat the first argument as a named list?}
 }
@@ -25,4 +27,6 @@ pp2 <- list(params = c(a=2))
 update(object,pp, .list=TRUE)
 update(object, a=2)
 update(object, a=2, b=1)
+update(object, cc1=2, cc2=3)
+update(object, delete_regex="cc")
 }

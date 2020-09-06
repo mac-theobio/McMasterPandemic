@@ -7,7 +7,7 @@
 \usage{
 make_test_wtsvec(params, var_names = NULL)
 
-make_test_posvec(params)
+make_test_posvec(params, var_names = NULL)
 }
 \arguments{
 \item{params}{parameter vector}
@@ -23,19 +23,18 @@ make vector of test positivity
 pp <- read_params("PHAC_testify.csv")
 state1 <- state0 <- make_state(params=pp)   ## unexpanded
 state1[] <- 1  ## occupy all states
-state <- expand_stateval_testing(state0)
-wtsvec <- make_test_wtsvec(pp, var_names=setdiff(names(state0),non_expanded_states))
-posvec <- make_test_posvec(pp)
+state <- expand_stateval_testing(state0,params=pp)
+vn <- setdiff(names(state0),non_expanded_states)
+wtsvec <- make_test_wtsvec(pp, var_names=vn)
+posvec <- make_test_posvec(pp, vn)
 ## need to make_ratemate() with *unexpanded* state, then
 ##  expand it
 ratemat <- testify(make_ratemat(state1,pp), pp)
 betavec <- make_betavec(state,pp)
 tt2 <- ratemat
 tt2[tt2>0] <- 1 ## make all edges == 1
-if (require(Matrix)) {
-    Matrix::image(Matrix(tt2))
-}
-heatmap(ratemat, Rowv=NA, Colv=NA, scale="none")
+show_ratemat(tt2)
+show_ratemat(ratemat,aspect="fill")
 if (require(igraph)) {
    g <- igraph::graph_from_adjacency_matrix(tt2)
    plot(g, layout=igraph::layout_nicely)

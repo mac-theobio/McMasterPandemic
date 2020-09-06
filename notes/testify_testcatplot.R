@@ -9,12 +9,14 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 if (!interactive()) {
     makeGraphics()
-} else {
+} else {  ## this is out dated?
     load("testify_sim.rda")
 }
 
 ymin <- 1    
 ymax <- 1e6  ## screen out pathological values
+
+print(simdat)
 
 
 gg <- (ggplot(simdat)

@@ -12,9 +12,18 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
+
+wrap_makeR=yes
+
 ######################################################################
 
 Sources += $(wildcard *.R) Makefile
+
+ignore += cachestuff/
+
+cachestuff:
+	git clone https://github.com/wzmli/MacPan_cache.git $@
+
 
 ######################################################################
 
@@ -49,10 +58,6 @@ spline_projection2.Rout: spline_projection2.R
 
 ######################################################################
 
-## Mike's development stuff
-explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
-	$(makeR)
-
 ## Structural pictures from Ben
 ## refactor.html: refactor.Rmd
 
@@ -62,26 +67,29 @@ explore_testify.Rout: explore_testify.R ../inst/params/PHAC_testify.csv
 
 ## This is no longer supposed to run on its own! Except interactively.
 Sources += ../inst/params/PHAC_testify.csv
-## testify_sim.Rout: testify_sim.R ../inst/params/PHAC_testify.csv; $(makeR)
-## testify_simplot.Rout: testify_simplot.R testify_sim.rda; $(makeR)
+Sources += slow.csv
 
-Sources += sims.csv
+## How many parameter files do we have?
+## testwt_N.R basic.R simple.R ode.R
 
-wrap_makeR=yes
+## testify_funs.R
 
 impmakeR += sims
-# basic.sims.Rout: basic.R
-%.sims.Rout: testify_sim.R %.rda sims.csv
+# testwt_N.sims.Rout: testify_sim.R testwt_N.R
+%.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
-# basic.simplots.Rout: basic.R
+# testwt_N.simplots.Rout: testify_simplot.R testwt_N.R
 %.simplots.Rout: testify_simplot.R %.sims.rda
 	$(makeR)
 
-%.testcatplots.Rout: testify_testcatplot.R %.sims.rda
+
+## BMB's new code
+
+# testwt_N.testify_simreportplot.Rout: 
+%.testify_simreportplot.Rout: testify_simreportplot.R %.sims.rda
 	$(makeR)
 
-# ode.simplots.Rout: ode.R
 
 ## Absolute testing rates (oops, that's what basic is already doing?)
 ## Play here anyway
@@ -89,6 +97,46 @@ impmakeR += sims
 # absolute.sims.Rout: absolute.R testify_sim.R
 
 ######################################################################
+
+## Nested testify sims
+
+testify_funs.Rout: testify_funs.R
+	$(makeR)
+
+batchtools.Rout: batchtools.R
+	$(makeR)
+
+## testwt_N.nested_testify.Rout: nested_testify.R testify_funs.R
+%.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda 
+	$(makeR)
+
+## Temporarily suppressing slow dependency (bad form?)
+## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+## %.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda 
+
+testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+%.simcalib_tidy.Rout: simcalib_tidy.R %.rda 
+	$(makeR)
+
+testwt_N.simcalib_plot.Rout: simcalib_plot.R
+%.simcalib_plot.Rout: simcalib_plot.R %.simcalib_tidy.rda
+	$(makeR)
+
+ali_test_sir.html: ali_test_sir.Rmd
+
+## Side pipe (faster, lighter sims)
+testsim.Rout: testsim.R simple.rda slow.csv
+	$(makeR)
+
+testsim.plots.Rout: simplots.R testsim.rda
+	$(makeR)
+
+slowpars.olddiff: ../inst/params/PHAC_testify.csv slow.csv
+	$(diff)
+
+######################################################################
+
+## Old stuff, do we still want? keep for now, mostly exploration and debugging!!! 
 
 stoch_forecasts.Rout: ../ontario/ontario_calibration_2brks_ndt.RData stoch_forecasts.R
 
@@ -98,21 +146,11 @@ run_caltest.Rout: run_params_mobility_DE.Rout run_caltest.R
 plot_caltest.Rout: run_caltest.RData plot_caltest.R
 	$(run-R)
 
-test0.Rout: test0.R
+test_hosp.Rout: test_hosp.R
 
 ######################################################################
 
-## Jonathan is causing trouble
-
-nonsense.Rout: nonsense.R
-	$(makeR)
-
-bad_nonsense.Rout: bad_nonsense.R
-	$(makeR)
-
-######################################################################
-
-## Mike's nobreak stuff
+## Old simulation exploration pipeline!
 
 Sources += $(wildcard *.R)
 
@@ -154,6 +192,11 @@ explore_ontcal.Rout: alt_cal.RData ../ontario/ontario_de_cal.RData ../ontario/on
 ali_simple_run1.Rout: ali_simple_run1.R
 	$(makeR)
 
+
+## Ali: simple SIR model
+test_sir.Rout: test_sir.R
+	$(makeR)
+
 ######################################################################
 
 %.html: %.Rmd
@@ -182,6 +225,8 @@ makestuff/Makefile:
 
 -include makestuff/makeR.mk
 -include makestuff/rmd.mk
+-include makestuff/yushan.mk
+-include makestuff/nodes.mk
 
 -include makestuff/git.mk
 -include makestuff/visual.mk

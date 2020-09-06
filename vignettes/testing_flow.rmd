@@ -27,4 +27,4 @@ This should take care of test lags in a sensible way, although there are a bunch
 - how do we extend the transition matrix while keeping the code readable/maintainable?
 
 
-Integrate with material [here](https://github.com/wzmli/corona/blob/master/infection.rmd) (warning, link to private GH repo)
+Integrate with material at private GitHub repo: `github.com/wzmli/corona/blob/master/infection.rmd`

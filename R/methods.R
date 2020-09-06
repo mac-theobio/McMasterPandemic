@@ -73,7 +73,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
     ## FIXME: don't pivot if already pivoted
     xL <- (pivot(x)
         %>% dplyr::filter(!var %in% drop_states)
-        %>% dplyr::mutate(var=forcats::fct_inorder(factor(var)))
+        %>% dplyr::mutate(var=factor(var,levels=unique(var)))
         ## FIXME: order factor in pivot?
     )
     if (log) xL <- dplyr::filter(xL,value>=log_lwr)
@@ -358,8 +358,11 @@ param_meanings <- c(
     nb_disp.H = "dispersion of negative binomial distribution (hospitalizations)",
     nb_disp.report = "dispersion of negative binomial distribution (case reports)",
     nb_disp.death = "dispersion of negative binomial distribution (deaths)",
+    nb_disp.postest = "dispersion of negative binomial distribution (positive tests)",
     zeta = "exponent of phenomenological response to susceptible depletion",
-    c_prop = "fraction of cases reported"
+    c_prop = "fraction of infections reported",
+    CFR_gen = "case fatality proportion: (1-alpha)*(1-mu)*(1-phi1)*phi2/c_prop",
+    W_asymp = "relative testing intensity in asymptomatic compartments"
 )
 
 ##' Describe parameters
@@ -414,6 +417,7 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
 ##' update parameters within a list of parameters
 ##' @param object a \code{params_pansim} object
 ##' @param ... a list of named elements, or a single named list if \code{.list} is specified
+##' @param delete_regex vector of regular expressions to remove
 ##' @param .list treat the first argument as a named list?
 ##' @export
 ##' @examples
@@ -425,7 +429,9 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
 ##' update(object,pp, .list=TRUE)
 ##' update(object, a=2)
 ##' update(object, a=2, b=1)
-update.params_pansim <- function(object, ..., .list=FALSE) {
+##' update(object, cc1=2, cc2=3)
+##' update(object, delete_regex="cc")
+update.params_pansim <- function(object, ..., delete_regex=NULL, .list=FALSE) {
     L <- list(...)
     if (.list) {
         if (length(L)>1) stop(".list specified with >1 args")
@@ -441,6 +447,12 @@ update.params_pansim <- function(object, ..., .list=FALSE) {
         } else {
             ## atomic
             object[[nm[i]]] <- L[[i]]
+        }
+    }
+    if (!is.null(delete_regex)) {
+        nm <- names(object)
+        for (d in delete_regex) {
+            object <- object[!grepl(d,nm)]
         }
     }
     return(object)
@@ -638,7 +650,6 @@ capac_info <- data.frame(value=c(630,1300),
 ##' @param log_lwr lower limit when using log scale
 ##' @param ... extra arguments (unused)
 ##' @importFrom ggplot2 scale_y_log10 geom_vline facet_wrap theme element_blank geom_line expand_limits geom_point geom_text aes_string labs geom_hline
-##' @importFrom directlabels geom_dl dl.trans
 ##' @examples
 ##' plot(ont_cal1)
 ##' ont_trans <- trans_state_vars(ont_all)
@@ -718,8 +729,11 @@ plot.predict_pansim <- function(x,
     ## dlspace not found
     ## geom_dl() must do weird evaluation env stuff
     if (directlabels) {
+        if (!requireNamespace("directlabels")) {
+            stop("please install directlabels package")
+        }
         p <- (p
-            + geom_dl(method=list(dl.trans(x=x+1),cex=1,'last.bumpup'),
+            + directlabels::geom_dl(method=list(directlabels::dl.trans(x=x+1),cex=1,'last.bumpup'),
                       aes(label=var))
             + expand_limits(x=max(x$date)+limspace)
         )

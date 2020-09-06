@@ -119,7 +119,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' @note
 ##' Base version matches structure of Stanford/Georgia models
 ##' \itemize{
-##'   \item flow diagram: see \url{https://covid-measures.github.io/} 'model details' tab
+##'   \item flow diagram: see \url{http://covid-measures.stanford.edu/} 'model details' tab
 ##'         or \code{../pix/model_schematic.png}
 ##'   \item parameter definitions: see \code{params_CI_base.csv}, \code{params_ICU_diffs.csv}
 ##' }
@@ -325,8 +325,22 @@ do_step <- function(state, params, ratemat, dt=1,
             
         }
     }
-    outflow <- rowSums(flows[,p_states])
-    if (do_exponential) outflow[["S"]] <- 0
+
+    if (!do_exponential) {
+        outflow <- rowSums(flows[,p_states])
+    } else {
+        ## want to zero out outflows from S to non-S compartments
+        ##  (but leave the inflows - thus we can't just zero these flows
+        ##   out in the rate matrix!)
+        S_pos <- grep("^S",rownames(ratemat), value=TRUE)
+        notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
+        notS_pos <- setdiff(notS_pos, x_states)
+        outflow <- setNames(numeric(ncol(flows)),colnames(flows))
+        ## only count flows to S_pos
+        outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
+        ## count flows to p_states (i.e. states that are *not* parallel accumulators)
+        outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
+    }
     inflow <-  colSums(flows)
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
@@ -426,7 +440,7 @@ run_sim <- function(params
     if(!is.null(ratemat_args)){
     	if (ratemat_args$testify) {
             M <- testify(M,params,testing_time=ratemat_args$testing_time)
-            state <- expand_stateval_testing(state)
+            state <- expand_stateval_testing(state, params=params)
     	}
     }
     state0 <- state

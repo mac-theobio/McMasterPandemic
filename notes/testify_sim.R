@@ -1,68 +1,92 @@
+## callArgs only works interactively and is target-dependent
+callArgs <- "testwt_N.sims.Rout testify_sim.R testwt_N.rda testify_funs.rda sims.csv"
+
 library(tidyverse)
+library(parallel)
+library(zoo)
+library(McMasterPandemic)
 source("makestuff/makeRfuns.R")
-print(commandEnvironments())
 
-## WHICH of these do you want today?
-library(devtools); load_all("../")
-## library("McMasterPandemic")
-
-if (interactive()) {
-	use_ode <- FALSE
-	testwt_scale <- "none" ## or "N" or "sum_u"
-	testing_intensity <- 0.002 ## c(0.002, 0.02, 0.2)
-	W_asymp <-  1 ## c(0.01, 0.1,1)
-	iso_t <- 0.5 ## c(0,0.5,0.9,1)
-	start <- as.Date("2020-01-01")
-	end <- as.Date("2020-06-01")
-	pop <- 1.5e7       ## population of Ontario
-        R0 <- 2.5
-	Gbar <- 6
-	set.seed(0807)
-        keep_all <- FALSE
-}
+## Double-sourcing will be necessary sometimes until we 
+## make makeR a real package
+source("makestuff/makeRfuns.R")
+commandEnvironments()
 
 if (!exists("keep_all")) keep_all <- FALSE
 
-fn <- if (interactive()) "PHAC_testify.csv" else matchFile(".csv$")
-params <- (read_params(fn)
-    %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
-    %>% update(
-            N=pop
-        )
+params <- (read_params("PHAC_testify.csv")
+	%>% update(omega = omega
+		, W_asymp = W_asymp
+	)
 )
 
-paramsw0 <- params[!grepl("^W",names(params))] ## removing all of the regular W-parameters
-class(paramsw0) <- "params_pansim"
+print(params)
 
-print(paramsw0)
-summary(paramsw0)
+summary(params)
 
 
-simlist <- list()
-for(i in W_asymp) {
-    for (j in iso_t) {
-        for (k in testing_intensity) {
-            cat(i,j,k,"\n")
-            paramsw0 <- update(paramsw0, W_asymp=i, iso_t = j, testing_intensity=k)
-            sims <- (run_sim(params = paramsw0, ratemat_args = list(testify=TRUE)
-                           , start_date = start
-                           , end_date = end
-                           , use_ode = use_ode
-                           , step_args = list(testwt_scale=testwt_scale)
-                           , condense_args=list(keep_all=keep_all, add_reports=!keep_all) ## checkout the expanded version
-                             )
-                %>% mutate(W_asymp = i
-                         , iso_t = j
-                         , testing_intensity=k
-                           )
-            )
-            simlist <- c(simlist,list(sims))
-        } ## loop over testing intensity
-    } ## loop over iso_t
-} ## loop over W_asymp
+## create factorial combination of parameter vectors
+pf <- expand.grid(iso_t=iso_t
+	, omega=omega
+	, testing_type=testing_type
+	, Gbar=Gbar
+	, W_asymp = W_asymp
+	, testing_intensity = testing_intensity
+)
+
+print(pf)
+
+print(pf <- pf[c(1,2,7,8),])
+
+datevec <- as.Date(start):as.Date(end)
+testdat <- data.frame(Date = as.Date(datevec)
+        , intensity =  NA
+)
+
+
+
+## run a simulation based on parameters in the factorial frame
+update_and_simulate <- function(x, testdat){
+	print(x)
+	## Update and fix_pars need to be together right before simulating
+	paramsw0 <- update(params
+		, iso_t=pf[x,"iso_t"]
+		, testing_intensity = pf[x,"testing_intensity"]
+	)
+	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
+
+	## This can be a bit cleaner
+	if(pf[x,"testing_type"] == "constant"){
+ 		testdat$intensity <- pf[x,"testing_intensity"]
+	}
+	if(pf[x,"testing_type"] == "linear"){
+		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
+	}
+	if(pf[x,"testing_type"] == "logistic"){
+		testdat$intensity <- plogis(seq(qlogis(min_testing/max_testing),qlogis(0.99),length.out = nrow(testdat)))*max_testing
+	}
+
+	
+	sims <- (simtestify(p=paramsw0,testing_data=testdat)
+	%>% mutate(iso_t = pf[x,"iso_t"]
+     	 , Gbar = pf[x,"Gbar"]
+         , testing_type = pf[x,"testing_type"]
+			, testing_intensity = pf[x,"testing_intensity"]
+         )
+	)
+	return(sims)
+}
+
+simlist <- mclapply(1:nrow(pf),function(x)update_and_simulate(x,testdat=testdat),mc.cores = 3)
+
+print(simlist)
+
 simframe <- bind_rows(simlist)
 
+
 print(simframe)
+
+## What is this keep_all stuff?
 
 if (!keep_all) {
     simdat <- (simframe
@@ -72,25 +96,26 @@ if (!keep_all) {
                     , total_test = postest + negtest
                     , pos_per_million = 1e6*postest/total_test
                     , report
-                    , W_asymp
                     , iso_t
-                    , testing_intensity
+						  , omega
+                    , testing_type
+						  , Gbar
+						  , testing_intensity
                       )
-        %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_type, Gbar, testing_intensity))
     )
 } else {
     
     simdat <- (simframe
-        %>% select(-c(R,D,foi,N,P))
-        %>% gather(key="var",value="value",-c(date, W_asymp, iso_t, testing_intensity))
+        %>% select(-c(D,X,foi,N,P))
+        %>% gather(key="var",value="value",-c(date, iso_t, omega, testing_type, Gbar, testing_intensity))
         %>% separate(var,c("pref","testcat"),sep="_")
         %>% mutate_at("pref", ~ case_when(grepl("^([Hh]|IC)",.) ~ "hosp",
                                           grepl("^I[ap]",.) ~ "asymp_I",
-                                          TRUE ~ .)
-                      )
-        %>% group_by(date,W_asymp, iso_t, testing_intensity, pref, testcat)
+                                          TRUE ~ .))
+        %>% group_by(date, iso_t, omega, testing_type, pref, testcat, Gbar)
         %>% summarise(value=mean(value),.groups="drop")
-        %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp"))
+        %>% mutate_at("pref", factor, levels=c("S","E","asymp_I","Im","Is","hosp","R"))
         %>% mutate_at("testcat", factor, levels=c("u","n","p","t"))
     )
     
@@ -98,4 +123,4 @@ if (!keep_all) {
 
 warnings()
 
-saveVars(simdat, params)
+saveVars(simdat, params, update_and_simulate, pf)
