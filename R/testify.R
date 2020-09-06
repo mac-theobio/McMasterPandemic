@@ -103,15 +103,6 @@ make_test_posvec <- function(params,var_names=NULL) {
     return(vec)
 }
 
-<<<<<<< HEAD
-# ## use inside testify to expand states
-# ## DRY: use this inside expand_stateval_testing??
-# expand_states <- function(expandable,nonexpandable) {
-#     new_states <- c(paste0(expandable,c("_u","_p","_n","_t")),nonexpandable, "N", "P")
-# }
-
-=======
->>>>>>> master
 ##' expand states and values to include
 ##'
 ##' @param x state vector
@@ -124,12 +115,9 @@ make_test_posvec <- function(params,var_names=NULL) {
 ##' expand_stateval(s, params=pp)
 ##' expand_stateval(s, method="untested")
 ##' @export
-<<<<<<< HEAD
-expand_stateval_testing <- function(x, method=c("untested","spread"),
-=======
-expand_stateval <- function(x, method=c("eigvec","untested","spread"),
+
+expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
                             params=NULL,
->>>>>>> master
                             add_accum=TRUE)
 {
     method <- match.arg(method)
@@ -200,11 +188,7 @@ testify <- function(ratemat,params,debug=FALSE,
     expand_set <- setdiff(states, non_expanded_states)
     
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
-<<<<<<< HEAD
-    new_states <- names(expand_stateval_testing(dummy_states))
-=======
-    new_states <- names(expand_stateval(dummy_states,method="untested"))
->>>>>>> master
+    new_states <- names(expand_stateval_testing(dummy_states, method="untested"))
     
 	ns <- length(new_states)
 	new_M <- matrix(0,nrow=ns, ncol=ns
@@ -250,9 +234,7 @@ testify <- function(ratemat,params,debug=FALSE,
         new_M["Is_u",sn("n",j)] <- new_M["Is_u",sn("u",j)]*(1-posvec[["Is"]])
         new_M["Is_u",sn("u",j)] <- 0
     }
-<<<<<<< HEAD
     if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
-=======
     for (i in expand_set) {
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
         if (testing_time=="report") {
@@ -266,7 +248,6 @@ testify <- function(ratemat,params,debug=FALSE,
         }
     }
 
->>>>>>> master
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
     attr(new_M,"testing_time") <- testing_time
