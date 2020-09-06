@@ -89,7 +89,7 @@ rExp <- function(params, steps=100, ndt=1,
         M <- do.call(make_ratemat,c(list(state=state, params=params)))
     	if (testify) {
             M <- testify(M,params)
-            state <- expand_stateval(state,method="untested")
+            state <- expand_stateval_testing(state,method="untested")
     	}
 	r <- run_sim_range(params
                          , state

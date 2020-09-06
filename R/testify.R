@@ -112,8 +112,8 @@ make_test_posvec <- function(params,var_names=NULL) {
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' s <- make_state(params=pp)
-##' expand_stateval(s, params=pp)
-##' expand_stateval(s, method="untested")
+##' expand_stateval_testing(s, params=pp)
+##' expand_stateval_testing(s, method="untested")
 ##' @export
 
 expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
