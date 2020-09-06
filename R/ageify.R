@@ -26,14 +26,17 @@ expand_stateval_age <- function(x, age_cat=mk_agecats()) {
 #' @examples
 #' pp <- read_params("PHAC_testify.csv")
 #' state <- make_state(params=pp)
-#' M <- make_ratemat(state,pp)
+#' M <- make_ratemat(state,pp, sparse=TRUE)
 #' Ma <- ageify(M, pp)
 #' library(Matrix)
-#' image(Matrix(Ma))
-#' Mta <- Matrix(ageify(testify(M,pp),pp))
-#' image(Mta)
+#' Matrix::image(Ma)
+#' Mta <- ageify(testify(M,pp),pp))
+#' Matrix::image(Mta)
 ageify <- function(ratemat, params, age_cat=mk_agecats()) {
-    Matrix::kronecker(diag(length(age_cat)), ratemat)
+    m <- Matrix::kronecker(diag(length(age_cat)), ratemat)
+    new_names <- unlist(lapply(rownames(m), paste, age_cat, sep="_"))
+    dimnames(m) <- list(new_names, new_names)
+    return(m)
 }
 ## FIXME: age-dependent params??
     

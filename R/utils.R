@@ -663,4 +663,3 @@ get_ratemat_symbols <- function() {
 }
     
 make_flowchart <- vis_model ## back-compatibility
->>>>>>> master
