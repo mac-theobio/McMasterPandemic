@@ -3,6 +3,7 @@ title: "SIR model with testing flows"
 author: "Ali"
 date: "15/08/2020"
 output: html_document
+# output: pdf_document
 ---
 
 
@@ -35,6 +36,7 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 
 \begin{align}
+\label{mod:1}
 1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+\eta_1 I_n+\eta_1 I_p+ \eta_2 I_t)}{N_0} S_u - t (1-P_S) F(W_s) S_u \\
 2)\ d S_n/dt &= t (1-P_S) F(W_S) S_u - \omega S_n - \beta \frac{(I_u+\eta_1 I_n+\eta_1 I_p+ \eta_2 I_t)}{N_0} S_n   \\
 3)\ d I_u/dt &= \beta (I_u/N_0) (S_u+S_n) -t F(W_I) I_u + \omega I_n  - \gamma I_u  \\
@@ -144,8 +146,24 @@ ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
 
 There are two steady states for the above SIR model.
 
-- $E1$: $S_u= \frac{\omega}{\omega+t (1-P_S) F(W_S)} N_0, S_n= N_0-S_u$, and $I_j=R_j=0 \ \forall j$.
+\label{exp:dfe}
+- The Disease-Free Equilibrium, $E_1$: $S_u= \frac{\omega}{\omega+t (1-P_S) F(W_S)} N_0, S_n= N_0-S_u$, and $I_j=R_j=0 \ \forall j$.
+- (Not sure what is the right term for this one?), $E_2$.
 
+### E_2
+
+Let $S=S_u + S_n$, $I=I_u + I_n + I_p + I_t$ and $R=R_u + R_n + R_p + R_t$.
+We know $S+I+R=N_0$.
+
+$dI/ds=\frac{\gamma}{\beta S} N_0 -1$, thus $I = \frac{\gamma N_0}{\beta} \log(S) - S +C$, where $C= N_0(1-\frac{\gamma}{\beta} \ln(N_0))$.
+
+$dS/dR = \frac{-\beta}{\gamma N_0} S$, thus $S(R) = S(0) \exp(\frac{-\beta}{\gamma N_0}R)$
+
+$dR/dt=\gamma I = \gamma (N_0-S-R)$.
+
+as $t \rightarrow \infty, I \rightarrow 0,  dR/dt \rightarrow 0 $. Thus, $R_{\infty} = N_0 ( 1-\exp(\frac{-\beta}{\gamma N_0}R_{\infty}))$ which has a unique solution given that $\beta/\gamma N_0 >0$.
+
+Thus, as $t \rightarrow \infty$, $S \rightarrow S_{\infty}, I \rightarrow 0$ and $R \rightarrow R_{\infty}$. 
 
 ### Basic Reproduction Number
 
@@ -157,9 +175,9 @@ F= \left[ \begin {array}{cccc} \beta&0&0&0\\
  0&0&0&\beta\,\eta_{{2}}
  \end {array} \right], 
  V=
- \left[ \begin {array}{cccc}  F2+\gamma&-\omega&0&0\\
--\left( 1- P_I \right)  F2&\omega+\gamma&0&0\\ 
--P_I F2&0&\omega+\gamma&0\\ 
+ \left[ \begin {array}{cccc}  F_I+\gamma&-\omega&0&0\\
+-\left( 1- P_I \right)  F_I&\omega+\gamma&0&0\\ 
+-P_I F_I&0&\omega+\gamma&0\\ 
 0&0&-\omega&\gamma 
 \end {array} \right],
 \end{equation}
@@ -169,10 +187,10 @@ G = \left[ \begin {array}{cc}
 G_{11}&0 \\
 G_{21}&G_{22} 
 \end {array} \right], \text{ where } \\
-G_{11} =\frac{1}{\gamma(\omega+\gamma)+F2 (\gamma+\omega P_I)} 
+G_{11} =\frac{1}{\gamma(\omega+\gamma)+F_I (\gamma+\omega P_I)} 
 \left[ \begin {array}{cc}
-\beta (\omega+\gamma) + \gamma F2 (1-P_I) & \beta \omega + \gamma (\gamma+F2)\\
-\beta \eta_1 F2 (1-P_I) & \beta \eta_1 (\gamma +F2)
+\beta (\omega+\gamma) & \beta \omega \\
+\beta \eta_1 F_I (1-P_I) & \beta \eta_1 (\gamma +F_I)
 \end {array} \right],
 \\ 
 G_{22} =
@@ -183,10 +201,14 @@ G_{22} =
 \end{equation}
 
 The Eigenvalues of $G_{11}$, namely $\lambda_1$ and $\lambda_2$, are the roots of the following characteristic polynomial
-$a\lambda^2+b\lambda+c=0$, where
+\begin{equation}
+\label{eq:ch4}
+a\lambda^2+b\lambda+c=0   
+\end{equation}
+where
 $a=(\omega+\gamma)\gamma+(\gamma+\omega P_I)F_I$,
 $b=\beta (\omega+\gamma) + \beta \eta_1 (\gamma + F_I)$ and
-$c= \beta \eta_1$. Thus,
+$c= \beta^2 \eta_1$. Thus,
 $$
 \lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\
 \lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}.
@@ -200,12 +222,59 @@ Notes:
 
 - $\lambda_2 \leq \lambda_1$, since $b*c>0$.
 - $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_1/\eta_2$.
-- It seems, numerically, that $\cal{R_0}=\lambda_1$. (failed to proved it so far).
 
+**Proposition 1**
+If $\eta_1*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$.
+Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_2\leq\eta_1$.
 
+### Stability of Disease-Free Equilibrium, $E_1$
+**Proposition 2**
+If $\cal{R_0}<1$, results in stability of $E_1$.
 
+**Proposition 3**
+The sufficient condition for stability of model (\ref{mod:1}) at the disease-free equilibrium $E_1$ (\ref{exp:dfe}) is $\beta/\gamma<1$.
 
+Jacobian Matrix at the Disease-Free equilibrium is in the following form
 
+\begin{equation}
+\label{matrix:Jac}
+J = \left[ \begin {array}{ccccc} 
+J_{11}&0&0&0&0 \\
+0&J_{22}&0&0&0 \\
+0&0&J_{33}&0&0 \\
+0&0&0&J_{44}&0 \\
+0&0&0&0&J_{55} \\
+\end {array} \right],
+\end{equation}
+
+where the matrices $J_{ii}$'s on the diagonal of $J$ are all 2-by-2 and as follows
+
+$J_{11} = \left[ \begin {array}{cc} 
+-(1-P_S) F_S& \omega \\
+(1-P_S) F_S& -\omega
+\end {array} \right]$, 
+
+$J_{22} = \left[ \begin {array}{cc} 
+\beta-F_I-\gamma& \omega \\
+(1-P_I) F_I& \beta \eta_1-(\omega+\gamma)
+\end {array} \right]$, 
+
+$J_{33} = \left[ \begin {array}{cc} 
+\beta \eta_1-(\omega+\gamma)& 0 \\
+\omega& \beta \eta_2-\gamma
+\end {array} \right]$, 
+
+$J_{44} = \left[ \begin {array}{cc} 
+-F_R& \omega \\
+(1-P_R)F_R& -\omega  
+\end {array} \right]$, 
+
+$J_{55} = \left[ \begin {array}{cc} 
+-\omega& 0 \\
+\omega& 0  
+\end {array} \right]$.
+
+It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative.
 
 
 
