@@ -229,22 +229,22 @@ testify <- function(ratemat,params,debug=FALSE,
     ## hospitalization special cases: everyone gets tested when they leave the Is compartment
     ##  for H, ICUs, or ICUd
     for (j in c("H","ICUs","ICUd")) {
-        sn <- function(state, compartment) paste0(compartment, "_", state)
-        new_M["Is_u",sn("p",j)] <- new_M["Is_u",sn("u",j)]*posvec[["Is"]]
-        new_M["Is_u",sn("n",j)] <- new_M["Is_u",sn("u",j)]*(1-posvec[["Is"]])
-        new_M["Is_u",sn("u",j)] <- 0
+        sn1 <- function(state, compartment) paste0(compartment, "_", state)
+        new_M["Is_u",sn1("p",j)] <- new_M["Is_u",sn1("u",j)]*posvec[["Is"]]
+        new_M["Is_u",sn1("n",j)] <- new_M["Is_u",sn1("u",j)]*(1-posvec[["Is"]])
+        new_M["Is_u",sn1("u",j)] <- 0
     }
     if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
     for (i in expand_set) {
-        sn <- function(state, compartment=i) paste0(compartment, "_", state)
+        sn2 <- function(state, compartment=i) paste0(compartment, "_", state)
         if (testing_time=="report") {
             ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
-            new_M[sn("n"),"N"] <- new_M[sn("n"),sn("u")] 
-            new_M[sn("p"),"P"] <- new_M[sn("p"),sn("t")] 
+            new_M[sn2("n"),"N"] <- new_M[sn2("n"),sn2("u")] 
+            new_M[sn2("p"),"P"] <- new_M[sn2("p"),sn2("t")] 
         } else {
             ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
-            new_M[sn("u"),"N"] <- new_M[sn("u"),sn("n")]
-            new_M[sn("u"),"P"] <- new_M[sn("u"),sn("p")] 
+            new_M[sn2("u"),"N"] <- new_M[sn2("u"),sn2("n")]
+            new_M[sn2("u"),"P"] <- new_M[sn2("u"),sn2("p")] 
         }
     }
 

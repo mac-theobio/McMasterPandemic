@@ -9,6 +9,15 @@ expand_stateval_age(x, age_cat = mk_agecats())
 
 ageify(ratemat, params, age_cat = mk_agecats())
 }
+\arguments{
+\item{x}{state vector}
+
+\item{age_cat}{vector of age categories}
+
+\item{ratemat}{rate matrix}
+
+\item{params}{parameter vector}
+}
 \description{
 expand state vector and rate matrix by age classes
 }
@@ -18,10 +27,10 @@ ss <- make_state(params=pp)
 ss2 <- expand_stateval_age(ss)
 pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp)
-M <- make_ratemat(state,pp)
+M <- make_ratemat(state,pp, sparse=TRUE)
 Ma <- ageify(M, pp)
 library(Matrix)
-image(Matrix(Ma))
-Mta <- Matrix(ageify(testify(M,pp),pp))
-image(Mta)
+Matrix::image(Ma)
+Mta <- ageify(testify(M,pp),pp)
+Matrix::image(Mta)
 }

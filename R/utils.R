@@ -552,7 +552,7 @@ has_testing <- function(state,params=NULL) {
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
 smart_round <- function(x) {
   y <- floor(x)
-  indices <- tail(order(x-y), round(sum(x)) - sum(y))
+  indices <- utils::tail(order(x-y), round(sum(x)) - sum(y))
   y[indices] <- y[indices] + 1
   y
 }
@@ -578,7 +578,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
     if (is.null(do_symbols)) {
         do_symbols <- method=="diagram" && !has_testing(setNames(numeric(nrow(M)),rownames(M)))
     }
-    if (const_width) { M[M>0] <- 1 }
+    if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
         if (is.null(add_blocks)) {
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
@@ -611,10 +611,9 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
         pos <- cbind(xpos,ypos)/8
         M3 <- M[names(xpos),names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
-            rr <- get_ratemat_symbols()
-            M3[cbind(rr$from,rr$to)] <- rr$rate
+            M3 <- adjust_symbols(M3)
         } else {
-            M3[M3>0] <- ""  ## blank out all labels
+            M3[M3=="0"] <- ""  ## blank out all labels
         }
         diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
     }
@@ -624,42 +623,43 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
 ##' display flow chart on current graphics device
 ##' @param params parameters (flowchart is determined by non-zero flows)
 ##' @param testify add testing flows?
+##' @param ageify add age structure?
+##' @param method visualization method
 ##' @param ... parameters to pass to \code{\link{show_ratemat}}
 ##' @examples
 ##' vis_model()
 ##' vis_model(testify=TRUE)
 ##' vis_model(method="diagram")
 ##' @export
-vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE, ...) {
+vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE,
+                      ageify=FALSE, method=c("Matrix","diagram","igraph"), ...) {
+    method <- match.arg(method)
     ## FIXME: accept method= argument, make const_width = (method=="igraph") ?
     state <- make_state(N=1e6,E0=1)
     state[] <- 1  ## all population states occupied
-    M <- make_ratemat(state,params,do_ICU=TRUE)
+    M <- make_ratemat(state,params,do_ICU=TRUE, symbols=(method=="diagram"))
     if (testify) {
         M <- testify(M, params)
     }
-    p <- show_ratemat(M, ...)
+    if (ageify) {
+        M <- ageify(M)
+    }
+    p <- show_ratemat(M, method=method, ...)
     return(p)
 }
 
-## hack to convert make_ratemat() function definition directly into symbols for flows
-get_ratemat_symbols <- function() {
-    ss <- deparse(body(make_ratemat), width.cutoff=200)
-    ss <- ss[(grep("make_betavec",ss)+1):(grep("return",ss)-3)]
-    noICUpos <- grep("!do_ICU",ss)
-    ss <- ss[- (noICUpos:(noICUpos+5)) ]
-    ss <- ss[-grep("colnames",ss)]  ## drop X in colnames
-    n_from <- sapply(strsplit(ss,'"'),"[[",2)
-    n_to <- sapply(strsplit(ss,'"'),"[[",4)
-    rates <- gsub("^.*<-","",ss)
-    rates <- gsub("_([a-z])$","[\\1]",rates)
-    rates <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3",rates)
-    rates <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",rates)
-    rates <- gsub("nonhosp_mort +\\*?","",rates)
+adjust_symbols <- function(M) {
+    ## subscripts: _ + letter at end of line
+    M <- gsub("_([a-z])$","[\\1]",M)
+    ## subscripts (letter + number at end of word or line)
+    M <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3", M)
+    ## suppress 'nonhosp_mort'
+    M <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",M)
+    M <- gsub("nonhosp_mort +\\*?","",M)
     ## M -> X == M -> H
-    rates[grep("^M",rates)] <- rates[n_from=="Is" & n_to=="H"]
-    rates[grep("beta_vec",rates)] <- "sum(beta[j]*I[j])"
-    return(list(from=n_from,to=n_to,rate=rates))
+    M[grep("^M",M)] <- M["Is","H"]
+    M[grep("beta_vec",M)] <- "sum(beta[j]*I[j])"
+    return(M)
 }
     
 make_flowchart <- vis_model ## back-compatibility

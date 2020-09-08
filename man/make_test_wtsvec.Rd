@@ -23,9 +23,9 @@ make vector of test positivity
 pp <- read_params("PHAC_testify.csv")
 state1 <- state0 <- make_state(params=pp)   ## unexpanded
 state1[] <- 1  ## occupy all states
-state <- expand_stateval_testing(state0,params=pp)
+state <- expand_stateval_testing(state0, params=pp)
 vn <- setdiff(names(state0),non_expanded_states)
-wtsvec <- make_test_wtsvec(pp, var_names=vn)
+wtsvec <- make_test_wtsvec(pp, vn)
 posvec <- make_test_posvec(pp, vn)
 ## need to make_ratemate() with *unexpanded* state, then
 ##  expand it

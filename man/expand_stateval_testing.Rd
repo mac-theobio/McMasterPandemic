@@ -4,15 +4,28 @@
 \alias{expand_stateval_testing}
 \title{expand states and values to include}
 \usage{
-expand_stateval_testing(x, method = c("untested", "spread"), add_accum = TRUE)
+expand_stateval_testing(
+  x,
+  method = c("eigvec", "untested", "spread"),
+  params = NULL,
+  add_accum = TRUE
+)
 }
 \arguments{
 \item{x}{state vector}
 
 \item{method}{method for distributing values across new (expanded) states}
 
+\item{params}{parameters}
+
 \item{add_accum}{add N and P (neg/pos test) accumulator categories?}
 }
 \description{
 expand states and values to include
+}
+\examples{
+pp <- read_params("PHAC_testify.csv")
+s <- make_state(params=pp)
+expand_stateval_testing(s, params=pp)
+expand_stateval_testing(s, method="untested")
 }

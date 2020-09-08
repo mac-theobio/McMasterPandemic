@@ -4,7 +4,7 @@ author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Farr's law}
+  %\VignetteIndexEntry{Cumulative curves, Farr's law, and all that}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---

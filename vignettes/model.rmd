@@ -4,7 +4,7 @@ author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{design decisions}
+  %\VignetteIndexEntry{The 'McMaster Pandemic' model}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
@@ -18,7 +18,7 @@ The "McMasterPandemic" model is a compartmental model built for the purposes of 
 - structure for calibrating to data
 - flexibility in incorporating time-varying parameters
 
-```{r}
+```{r diag1,message=FALSE}
 library(McMasterPandemic)
 vis_model(method="diagram",do_symbols=FALSE)
 ```
@@ -40,6 +40,89 @@ The
 #### splines
 
 ### calibration
+
+## model expansion
+
+### Testing and tracing
+
+To incorporate testing and tracing mechanistically, we have 
+expanded the basic model in order to be able to
+
+- continue to make use of case reporting data (\ie positive test
+  confirmations per day) without having the results confounded by
+  variation in testing intensity (by incorporating both positive and
+  negative tests into our calibration);
+- facilitate analysis of scenarios involving changes in testing
+  intensity and contact tracing.
+
+Our basic approach is to add an additional set of compartments to our
+model, expanding each compartment into the following sub-compartments:
+
+- *untested* (`_u` extension) People with negative test results move back into this category since they can be tested again if there are new reasons for the test.
+- *tested, awaiting report, sample is negative* (`_n` extension) either
+  because the tested individual was uninfected, or because of a lack
+  of test sensitivity. We can assign compartment-specific
+  probabilities of a positive test (low for $S$ [currently set as 0],
+  high for $I$ compartments [currently set as 1], and possibly lower
+  for non-symptomatic/early stages than for later stages). 
+- *tested, awaiting report, sample is positive* (`_p` extensions) either because
+  the tested individual was infected, or because of a lack of test
+  specificity. 
+- *tested positive* (`_t` extension) Individuals who have a positive test will not
+  be tested again, and may change their behaviour (isolate), depending
+  on degree of compliance to public health advice.
+
+In addition to these compartments, we also add *accumulator compartments* 
+for negative and positive test reports. The appropriate accumulator is incremented at an appropriate time.
+
+- If test results are indexed to the time of sampling then the accumulators are incremented during the `_u` to `_n` and `_u` to `_p` transitions
+- If test results are indexed to the time of reporting then the accumulators are incremented during the `_n` to `_u` and `_p` to `_t` transitions
+
+We can then recover the daily numbers of negative and positive tests recorded by
+differencing the cumulative totals (and add observation error if desired).
+
+```{r echo=FALSE}
+source(system.file("pix","testing_flow_graph.R",package="McMasterPandemic"))
+```
+
+Individuals can also move between epidemiological compartments while
+awaiting test results, e.g. from "presymptomatic, awaiting positive
+test results" (`Ip_p`) to "mild infection, awaiting positive test
+results" (`Im_p`). This does not change their testing status, except that when
+untested, severely symptomatic individuals are hospitalized for COVID, we assume they are
+tested immediately (i.e. `
+
+In order to reflect the range of possible
+testing strategies, we assign a *testing weight* to each
+compartment in the model that specifies what fraction of the current
+testing intensity is allocated to that compartment. We take the
+current testing intensity $T$ (overall per capita tests/day) as a
+model input. Then, given testing weights $w_i$, the *per capita}
+rate at which individuals in epidemiological compartment $i$ move from
+`_u` to `_n` or `_p` (awaiting test results) is
+\begin{equation}
+\frac{T w_i}{\sum_j w_j P_j} \,,
+\end{equation}
+where $P_j$ is the proportion of the population in compartment $i$.
+The weights depend on the testing strategy and population state in
+complicated ways; if only confirmatory testing is being done (no
+screening or contact tracing or surveillance testing), then the
+weights will be skewed toward symptomatic compartments -- although not
+entirely, as observed test positivity rarely goes above 20%, and
+sensitivity is thought to be much higher than this.  More
+contact tracing will increase the weights of non-symptomatically
+infected people.  More random-surveillance testing will make the
+weights of all the groups more similar.
+
+Including the testing structure increases the number of compartments
+substantially, and consequently yields a much larger flow matrix
+
+
+```{r vis_testify}
+vis_model(testify=TRUE,aspect="fill")
+```
+
+## age structure
 
 ## goals
 

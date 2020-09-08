@@ -128,6 +128,7 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
+##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
 ##' @return matrix of (daily) transition rates
 ##  *need* Matrix version of rowSums imported to handle sparse stuff below!! 
 ##' @importFrom Matrix Matrix rowSums colSums
@@ -138,8 +139,10 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
 ##' if (require(Matrix)) {
 ##'    image(Matrix(M))
 ##' }
+##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE) {
+make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
+                         symbols=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H  <- NULL
     H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
@@ -158,35 +161,50 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE) {
     M <- matrix(0,
                 nrow=ns, ncol=ns,
                 dimnames=list(from=names(state),to=names(state)))
+
+    ## generic assignment function, indexes by regexp rather than string
+    afun <- function(to, from, val) {
+        ## <start> + label + (_ or <end>)
+        to_pos <- grep(sprintf("^%s(_|$)",to), rownames(M))
+        from_pos <- grep(sprintf("^%s(_|$)",from), colnames(M))
+        stopifnot(length(to_pos)==1, length(from_pos)==1)
+        if (!symbols) {
+            M[cbind(to_pos, from_pos)] <<- val
+        } else {
+            M[cbind(to_pos, from_pos)] <<- deparse(substitute(val))            
+        }
+    }
+    
     ## fill entries
     beta_vec <- make_betavec(state,params)
-    M["S","E"]   <- sum(beta_vec*state[names(beta_vec)])
-    M["E","Ia"]  <- alpha*sigma
-    M["E","Ip"]  <- (1-alpha)*sigma
-    M["Ia","R"]  <- gamma_a
-    M["Ip","Im"] <- mu*gamma_p
-    M["Ip","Is"] <- (1-mu)*gamma_p
-    M["Im","R"]  <- gamma_m
+    afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
+    afun("E", "Ia", alpha*sigma)
+    afun("E","Ip", (1-alpha)*sigma)
+    afun("Ia","R", gamma_a)
+    afun("Ip","Im", mu*gamma_p)
+    afun("Ip","Is", (1-mu)*gamma_p)
+    afun("Im","R", gamma_m)
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
-        M["Is","H"]  <- gamma_s
-        M["H","D"]   <- delta*rho
-        M["H","R"]   <- (1-delta)*rho
+        afun("Is","H", gamma_s)
+        afun("H","D", delta*rho)
+        afun("H","R", (1-delta)*rho)
     } else {
         ## FIXME: A better term than "acute" to mean the opposite of intensive?
         ## four-way split (direct to D, acute care, ICU/survive, ICUD/die)?
-        M["Is","H"] <- (1-nonhosp_mort)*phi1*gamma_s
-        M["Is","ICUs"] <- (1-nonhosp_mort)*(1-phi1)*(1-phi2)*gamma_s
-        M["Is","ICUd"] <- (1-nonhosp_mort)*(1-phi1)*phi2*gamma_s
-        M["Is","D"] <- nonhosp_mort*gamma_s
-        M["ICUs","H2"] <- psi1 ## ICU to post-ICU acute care
-        M["ICUd","D"] <- psi2  ## ICU to death
-        M["H2","R"]   <- psi3  ## post-ICU to discharge
+        afun("Is","H", (1-nonhosp_mort)*phi1*gamma_s)
+        afun("Is","ICUs", (1-nonhosp_mort)*(1-phi1)*(1-phi2)*gamma_s)
+        afun("Is","ICUd", (1-nonhosp_mort)*(1-phi1)*phi2*gamma_s)
+        afun("Is","D", nonhosp_mort*gamma_s)
+        afun("ICUs","H2", psi1) ## ICU to post-ICU acute care
+        afun("ICUd","D", psi2)  ## ICU to death
+        afun("H2","R", psi3)  ## post-ICU to discharge
         ## H now means 'acute care' only; all H survive & are discharged
-        M["H","D"]   <- 0
-        M["H","R"] <- rho ## all acute-care survive
+        afun("H","D", 0)
+        afun("H","R", rho) ## all acute-care survive
         if ("X" %in% colnames(M)) {
-            M["Is","X"] <- M["Is","H"] ## assuming that hosp admissions mean *all* (acute-care + ICU)
+            ## FIXME, extend for age
+            afun("Is","X", M["Is","H"]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
     if (sparse) {

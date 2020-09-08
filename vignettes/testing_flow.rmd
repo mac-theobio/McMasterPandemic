@@ -1,10 +1,10 @@
 ---
-title: "incorporating testing dynamics in the model"
+title: "Incorporating testing dynamics in the MacPan model"
 author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{incorporating testing dynamics}
+  %\VignetteIndexEntry{Incorporating testing dynamics in the MacPan model}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
