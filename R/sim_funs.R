@@ -70,10 +70,10 @@ make_jac <- function(params, state=NULL) {
 ##' @param state state vector
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
-##' @param testify expand to allow for testing status?
+##' @param Cmat contact matrix for age/social classes
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
-make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
+make_betavec <- function(state, params, full=TRUE, Cmat=NULL) {
     Icats <- c("Ia","Ip","Im","Is")
     testcats <- c("_u","_p","_n","_t")
     ## NB meaning of iso_* has switched from Stanford model
@@ -81,11 +81,18 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
     beta_vec0 <- with(as.list(params),
                       beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
     names(beta_vec0) <- Icats
+    if (!is.null(Cmat)) {
+        a_names <- rownames(Cmat)
+        new_names <- expand_names(Icats, a_names)
+        beta_vec0 <- Matrix(kronecker(t(matrix(beta_vec0)),Cmat),
+                            dimnames=list(a_names,new_names))
+    }
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
     if (has_testing(state=state)) {  ## testified!
+        if (!is.null(Cmat)) stop("can't combine age and testing yet")
         beta_vec0 <- rep(beta_vec0,each=length(testcats))
         names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
         ## FIXME: also adjust _n, _p components?
@@ -93,10 +100,16 @@ make_betavec <- function(state, params, full=TRUE, testify=FALSE) {
         beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
     }
     if (!full) return(beta_vec0)
-	 ## By default, make a vector of zeroes for all the states,
-	 ## then fill in infectious ones
-    beta_vec <- setNames(numeric(length(state)),names(state))
-    beta_vec[names(beta_vec0)] <- beta_vec0
+    ## By default, make a vector of zeroes for all the states,
+    ## then fill in infectious ones
+    if (is.null(Cmat)) {
+        beta_vec <- setNames(numeric(length(state)),names(state))
+        beta_vec[names(beta_vec0)] <- beta_vec0
+    } else {
+        beta_vec <- matrix(0, nrow=nrow(beta_vec0), ncol=length(state),
+                           dimnames=list(rownames(beta_vec0), names(state)))
+        beta_vec[rownames(beta_vec0),colnames(beta_vec0)] <- matrix(beta_vec0)
+    }
     return(beta_vec)
 }
 
@@ -162,16 +175,22 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
                 nrow=ns, ncol=ns,
                 dimnames=list(from=names(state),to=names(state)))
 
-    ## generic assignment function, indexes by regexp rather than string
-    afun <- function(to, from, val) {
+    pfun <- function(from, to) {
         ## <start> + label + (_ or <end>)
-        to_pos <- grep(sprintf("^%s(_|$)",to), rownames(M))
-        from_pos <- grep(sprintf("^%s(_|$)",from), colnames(M))
-        stopifnot(length(to_pos)==1, length(from_pos)==1)
+        from_pos <- grep(sprintf("^%s(_|$)",from), rownames(M))
+        to_pos <- grep(sprintf("^%s(_|$)",to), colnames(M))
+        ## FIXME: check for both length() == 1 if *not* age structured?
+        stopifnot(length(to_pos) == length(from_pos),
+                  length(to_pos)>0, length(from_pos)>0  ## must be positive
+                  )
+        return(cbind(from_pos, to_pos))
+    }
+    ## generic assignment function, indexes by regexp rather than string
+    afun <- function(from, to, val) {
         if (!symbols) {
-            M[cbind(to_pos, from_pos)] <<- val
+            M[pfun(from, to)] <<- val
         } else {
-            M[cbind(to_pos, from_pos)] <<- deparse(substitute(val))            
+            M[pfun(from,to)] <<- deparse(substitute(val))            
         }
     }
     
@@ -202,9 +221,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         ## H now means 'acute care' only; all H survive & are discharged
         afun("H","D", 0)
         afun("H","R", rho) ## all acute-care survive
-        if ("X" %in% colnames(M)) {
-            ## FIXME, extend for age
-            afun("Is","X", M["Is","H"]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
+        if (any(grepl("^X",colnames(M)))) {
+            ## FIXME: check for age?
+            afun("Is","X", M[pfun("Is","H")]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
     if (sparse) {
@@ -222,11 +241,17 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params, beta_vec) {
     ## update infection rate
-    if(length(state) != length(beta_vec)){
-        stop("length of state and beta_vec are not the same")
+    if (is.matrix(beta_vec)) {
+        ## FIXME, check dimensions etc.
+        foi <- beta_vec %*% state
+    } else {
+        if(length(state) != length(beta_vec)){
+            stop("length of state and beta_vec are not the same")
+        }
+        foi <- sum(state*beta_vec)
     }
-    foi <- sum(state*beta_vec)
     if (has_zeta(params)) {
+        ## ???? het at pop level or sub-category level??
         Susc <- sum(state[grep("^S_?",names(state))])
         foi <- foi*with(as.list(params), (Susc/N)^zeta)
     }

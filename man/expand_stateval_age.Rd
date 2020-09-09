@@ -19,7 +19,7 @@ ageify(ratemat, params, age_cat = mk_agecats())
 \item{params}{parameter vector}
 }
 \description{
-expand state vector and rate matrix by age classes
+epidemiological state varies fast, age category varies slowly
 }
 \examples{
 pp <- read_params("PHAC_testify.csv")

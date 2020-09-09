@@ -124,6 +124,9 @@ vis_model(testify=TRUE,aspect="fill")
 
 ## age structure
 
+- we can construct a larger rate matrix
+- how does beta work? Suppose we have $n_a$ age categories and $n_I$ infectious categories (e.g. $I_a$, $I_p$, $I_m$ etc.) We want a beta matrix with dimensions $n_a \times (n_a n_I)$ (because there is only one $S$ compartment per age category, at least until we introduce testing)
+
 ## goals
 
 The ability to simulate/forecast
