@@ -150,7 +150,7 @@ There are two steady states for the above SIR model.
 - The Disease-Free Equilibrium, $E_1$: $S_u= \frac{\omega}{\omega+t (1-P_S) F(W_S)} N_0, S_n= N_0-S_u$, and $I_j=R_j=0 \ \forall j$.
 - (Not sure what is the right term for this one?), $E_2$.
 
-### E_2
+### Final State, E_2
 
 Let $S=S_u + S_n$, $I=I_u + I_n + I_p + I_t$ and $R=R_u + R_n + R_p + R_t$.
 We know $S+I+R=N_0$.
@@ -207,7 +207,7 @@ a\lambda^2+b\lambda+c=0
 \end{equation}
 where
 $a=(\omega+\gamma)\gamma+(\gamma+\omega P_I)F_I$,
-$b=\beta (\omega+\gamma) + \beta \eta_1 (\gamma + F_I)$ and
+$b=-(\beta (\omega+\gamma) + \beta \eta_1 (\gamma + F_I))$ and
 $c= \beta^2 \eta_1$. Thus,
 $$
 \lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\
@@ -276,8 +276,67 @@ $J_{55} = \left[ \begin {array}{cc}
 
 It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative.
 
+## Simulation
+```{r sim_R0, message=FALSE}
+F_I <- function(state,params,t){
+  unpack(as.list(c(state,params)))
+  ## scaling the weights
+    sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
+    F2 <- sc*W_i
+    return(F2)
+}
+
+# just a test
+F_I(state=state_init,params=subset(params,!names(params) %in% c("t")),t=0)
+
+# specify the ranges
+beta <- 1
+gamma <-1
+eta1 <- 1
+P_I <- 0.5
+t <- seq(0,0.05,by=0.005)
+FI<-F_I(state=state_init,params=subset(params,!names(params) %in% c("t")),t=t)
+omega <- seq(0,0.5,by=0.05)
+eta2 <- seq(0,0.05,by=0.005)
 
 
+df1<- expand.grid(beta=beta,gamma=gamma,eta1=eta1,t=t,FI=FI,omega=omega,eta2=eta2,P_I=P_I)
+
+# Define the eigenvalues of next generation matrix G:
+lam1<- function(input){
+  unpack(input)
+  a<- (omega+gamma)*gamma+(gamma+omega*P_I)*FI
+    b<--(beta*(omega+gamma) + beta*eta1*(gamma + FI))
+    c<-beta^2*eta1
+  return((-b+sqrt(b^2-4*a*c))/(2*a))
+}
+
+
+lam3 <- function(input){
+  unpack(input)
+  return((beta*eta1)/(omega+gamma))
+}
+
+lam4 <- function(input){
+  unpack(input)
+  return((beta*eta2)/(gamma))
+}
+
+lambda1<-lam1(df1)
+lambda3<-lam3(df1)  
+lambda4<-lam4(df1)
+
+
+df2 <- data.frame(df1,"lambda1"=lambda1,"lambda3"=lambda3,"lambda4"=lambda4) #,"R0"=R0
+
+df2[, "R0"] <- apply(df2[, names(df2)%in%c("lambda1","lambda3","lambda4")], 1, max)
+which(df2[]<0)
+
+df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta2))
+
+p1<-ggplot(df2_long,aes(x=FI,y=omega,z=R0))
+p1 + geom_contour()
+```
 
 
 
