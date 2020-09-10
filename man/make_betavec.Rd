@@ -4,7 +4,7 @@
 \alias{make_betavec}
 \title{construct vector of transmission multipliers}
 \usage{
-make_betavec(state, params, full = TRUE, Cmat = NULL)
+make_betavec(state, params, full = TRUE)
 }
 \arguments{
 \item{state}{state vector}
@@ -12,8 +12,6 @@ make_betavec(state, params, full = TRUE, Cmat = NULL)
 \item{params}{parameter vector}
 
 \item{full}{include non-infectious compartments (with transmission of 0) as well as infectious compartments?}
-
-\item{Cmat}{contact matrix for age/social classes}
 }
 \description{
 construct vector of transmission multipliers

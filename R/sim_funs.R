@@ -70,7 +70,6 @@ make_jac <- function(params, state=NULL) {
 ##' @param state state vector
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
-##' @param Cmat contact matrix for age/social classes
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
 make_betavec <- function(state, params, full=TRUE) {
