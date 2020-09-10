@@ -175,6 +175,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
                 }
             }
             ## keep foi ... might need it for future add_reports ...
+            if ("foi" %in% names(object))
             dd <- data.frame(dd,foi=object[["foi"]])
         }  ## not keep_all
     } ## already condensed

@@ -22,8 +22,13 @@ expand_names <- function(x,y,sep="_") {
 expand_stateval_age <- function(x, age_cat=mk_agecats()) {
     new_names <- expand_names(names(x), age_cat)
     n_expand <- length(age_cat)
-    new_states <- smart_round(rep(x, n_expand)/n_expand)
+    new_states <- rep(x, n_expand)/n_expand
     names(new_states) <- new_names
+    ## round Susceptible and non-Susceptible compartments, maintaining sum *separately*
+    ## so we don't lose all the non-susc ...
+    S_pos <- grep("^S", names(new_states))
+    new_states[S_pos] <- smart_round(new_states[S_pos])
+    new_states[-S_pos] <- smart_round(new_states[-S_pos])
     return(new_states)
 }
 
@@ -58,17 +63,30 @@ if (FALSE) {
     pp <- read_params("PHAC_testify.csv")
     ss <- make_state(params=pp)
     ss2 <- expand_stateval_age(ss)
+    ## hack so we have an infective
+    ss2["Im_11-20"] <- 1
+    ss2["E_91+"] <- 0
+    tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
+    tot_I(ss)
+    sum(ss2)
+    tot_I(ss2)
+    condense.pansim(data.frame(date=NA,rbind(ss2)),add_reports=FALSE)
     M <- make_ratemat(ss2, pp, sparse=TRUE)
     show_ratemat(M)
     aa <- mk_agecats()
-    Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa),
-                   dimnames=list(aa,aa))
+    ## compound symmetric example
+    Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
     diag(Cmat) <- 1
-    Matrix::image(b1 <- make_betavec(ss2, pp, full=FALSE, Cmat=Cmat))
     ifun <- function(M) {
-        Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M), rot=90),
-                                            x=list(at=seq(ncol(M)),labels=colnames(M))))
+        Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
+                                            x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
     }
-    b2 <- Matrix(make_betavec(ss2, pp, full=TRUE, Cmat=Cmat))
-    ifun(b2[,1:20])
+    ppa <- c(as.list(pp),list(Cmat=Cmat))
+    b1 <- make_betavec(ss2, ppa, full=FALSE)
+    ifun(b1)
+    b2 <- Matrix(make_betavec(ss2, ppa, full=TRUE))
+    ifun(b2)
+    M <- make_ratemat(ss2, ppa, sparse=TRUE)
+    show_ratemat(M)
+    M %*% ss2
 }    

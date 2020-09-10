@@ -547,6 +547,10 @@ has_testing <- function(state,params=NULL) {
     }
 }
 
+has_age <- function(params) {
+    "Cmat" %in% names(params)
+}
+
 
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
