@@ -174,16 +174,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
                 nrow=ns, ncol=ns,
                 dimnames=list(from=names(state),to=names(state)))
 
-    pfun <- function(from, to) {
-        ## <start> + label + (_ or <end>)
-        from_pos <- grep(sprintf("^%s(_|$)",from), rownames(M))
-        to_pos <- grep(sprintf("^%s(_|$)",to), colnames(M))
-        ## FIXME: check for both length() == 1 if *not* age structured?
-        stopifnot(length(to_pos) == length(from_pos),
-                  length(to_pos)>0, length(from_pos)>0  ## must be positive
-                  )
-        return(cbind(from_pos, to_pos))
-    }
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
         if (!symbols) {
@@ -196,7 +186,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ## fill entries
     beta_vec <- make_betavec(state,params)
     ## FIXME: call update_foi() here?
-    if (!"Cmat" %in% names(params)) {
+    if (!has_age(params)) {
         afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
     } else {
         afun("S", "E", beta_vec %*% state[colnames(beta_vec)])
@@ -331,7 +321,9 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_exponential=FALSE,
                     testwt_scale="N") {
     x_states <- c("X","N","P")                  ## weird parallel accumulators
-    p_states <- setdiff(names(state), x_states) ## conserved states
+    x_regex <- sprintf("^(%s)_",paste(x_states,collapse="|"))
+    ## all states that are *not* weird parallel accumulators
+    p_states <- grep(x_regex,names(state),invert=TRUE,value=TRUE)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat <- update_ratemat(ratemat, state, params, testwt_scale=testwt_scale)
@@ -340,6 +332,7 @@ do_step <- function(state, params, ratemat, dt=1,
             ## from per capita rates to absolute changes
             flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
         } else {
+            ## FIXME: change var names? {S,E} is a little confusing (sum, exp not susc/exposed)
             ## use hazard function: assumes exponential change
             ## (constant per capita flows) rather than linear change
             ## (constant absolute flows) within time steps
@@ -484,11 +477,14 @@ run_sim <- function(params
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params)))
-    if(!is.null(ratemat_args)){
-    	if (ratemat_args$testify) {
-            M <- testify(M,params,testing_time=ratemat_args$testing_time)
-            state <- expand_stateval_testing(state, params=params)
-    	}
+    if (has_testing(params=params)) {
+        testing_time <- ratemat_args$testing_time
+        if (is.null(testing_time)) {
+            warning("setting testing time to 'sample'")
+            testing_time <- 'sample'
+        }
+        M <- testify(M,params,testing_time=testing_time)
+        state <- expand_stateval_testing(state, params=params)
     }
     state0 <- state
     params0 <- params ## save baseline (time-0) values

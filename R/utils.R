@@ -665,5 +665,16 @@ adjust_symbols <- function(M) {
     M[grep("beta_vec",M)] <- "sum(beta[j]*I[j])"
     return(M)
 }
-    
+
 make_flowchart <- vis_model ## back-compatibility
+
+pfun <- function(from, to, mat=M) {
+    ## <start> + label + (_ or <end>)
+    from_pos <- grep(sprintf("^%s(_|$)",from), rownames(mat))
+    to_pos <- grep(sprintf("^%s(_|$)",to), colnames(mat))
+    ## FIXME: check for both length() == 1 if *not* age structured?
+    stopifnot(length(to_pos) == length(from_pos),
+              length(to_pos)>0, length(from_pos)>0  ## must be positive
+              )
+    return(cbind(from_pos, to_pos))
+}
