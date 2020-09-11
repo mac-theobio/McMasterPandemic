@@ -1,0 +1,125 @@
+---
+title: "age examples"
+---
+
+**tl;dr** 
+
+- *Good news*: we can build structures that seem to make sense, and basic stuff runs without crashing
+- *Bad news*: need to spend more time thinking about scaling/normalization of contact matrices, age structure etc.
+
+```{r pkgs,message=FALSE}
+library(McMasterPandemic)
+library(cowplot)
+library(tidyverse)
+```
+
+Read regular parameters, make normal (non-testify, non-expanded) parameters
+
+```{r utils, echo=FALSE}
+tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
+ifun <- function(M,sub="") {
+    Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
+                                        x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)),
+                  xlab="",ylab="",
+                  sub=sub)
+}
+```
+
+```{r setup1}
+pp <- read_params("PHAC_testify.csv")
+ss <- make_state(params=pp)
+```
+
+Expand the state vector by age categories (by default, ten-year bins up to 91+)
+```{r}
+ss2 <- expand_stateval_age(ss)
+## hack so we have an infective
+ss2["Im_11-20"] <- 1
+ss2["E_91+"] <- 0
+head(ss2)
+tail(ss2)
+```
+
+Expanded rate matrix: `make_ratemat` bases its categories on the names of the state vector.
+
+```{r}
+M <- make_ratemat(ss2, pp, sparse=TRUE)
+show_ratemat(M)
+```
+
+Now we need to define a cross-age contact matrix. 
+
+* Eventually we should take it from that study (referenced somewhere in the notes) that estimated contact matrices for a variety of countries.
+* for now I'm going to define two, one simple "compound symmetric" matrix (1 on the diagonal, 0.1 off-diagonal) and one diagonal. 
+* with equal parameters across age categories, what contact matrices will give exactly equal to dynamics to homogeneous mixing? All-equal and diagonal?
+
+
+```{r}
+aa <- mk_agecats()
+## compound symmetric
+Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+diag(Cmat) <- 1
+## diagonal
+Cmat.d <- diag(length(aa))*10
+dimnames(Cmat.d) <- dimnames(Cmat)
+## uniform
+Cmat.u <- matrix(1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+```
+
+At present the indicator for whether the machinery should be run in an
+age-structured way or not is the presence/absence of a `Cmat` component in the parameters (now a list
+rather than a vector)
+
+Beta "vector" (now a matrix): including only infectious compartments (could also use `full=TRUE`)
+```{r}
+ppa <- c(as.list(pp),list(Cmat=Cmat))
+b1 <- make_betavec(ss2, ppa, full=FALSE)
+ppa.d <- c(as.list(pp),list(Cmat=Cmat.d))
+ppa.u <- c(as.list(pp),list(Cmat=Cmat.u))
+b1.d <- make_betavec(ss2, ppa.d, full=FALSE)
+plot_grid(ifun(b1,sub="compound"),ifun(b1.d,sub="diag"),nrow=2)
+```
+
+
+```{r}
+M <- make_ratemat(ss2, ppa, sparse=TRUE)
+show_ratemat(M)
+```
+
+Try `run_sim_range()` [lowest-level/simplest simulation engine]
+```{r}
+rr <- run_sim_range(ppa, ss2, nt=1000)
+matplot(rr[,1],rr[,-1],lty=1,type="l",log="y")
+```
+
+Try `run_sim`
+
+```{r}
+rr2 <- run_sim(ppa, ss2,end_date="2022-Nov-1",condense=FALSE)
+plot(rr2,log=TRUE)+theme(legend.position="none")
+```
+
+These are all giving *somewhat reasonable behaviours - but too slow!
+Did I accidentally rescale time parameters somehow?
+
+```{r}
+pp_list <- list(ppa,ppa.d,pp,ppa.u)
+ss_list <- list(ss2,ss2,ss,ss2)
+nm <- c("compound","diag","non_age","unif")
+sims <- map2(pp_list,ss_list, ~run_sim(.x,.y, end_date="2020-10-01"))
+names(sims) <- nm
+simplots <- map2(sims,names(sims), ~plot(.x,log=TRUE,log_lwr=1e-3,
+                                         keep_states=c("H","ICU","hosp","death","D"))+ggtitle(.y))
+plot_grid(plotlist=simplots,nrow=2)
+```
+
+- age-struc plots would be missing foi/report/cumRep, because foi is needed to compute report and cumRep and we're not storing foi for age struc right now
+- diag and unif are not *identical* to homogeneous run: visually OK at first glance, but hosp is noticeably different, and closer inspection shows that they're all slightly different
+
+## to do
+
+- implement age-dependent N in state construction ...
+- try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
+- foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
+- see how we do if we try to testify an age-structured matrix etc ...
+- clean up make_betavec: do we ever need "full"??

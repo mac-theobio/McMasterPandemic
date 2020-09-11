@@ -787,7 +787,10 @@ run_sim_range <- function(params
                                     state=colnames(M)))
         ## initialization
         res[1,names(state)] <- state
-        foi[[1]] <- update_foi(state,params, make_betavec(state, params))
+        if (!has_age(params)) {
+            ## FIXME: coherent strategy for accumulating incidence, etc etc
+            foi[[1]] <- update_foi(state,params, make_betavec(state, params))
+        }
         ## loop
         if (nt>1) {
             for (i in 2:nt) {
@@ -798,7 +801,7 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                foi[[i]] <- update_foi(state, params, make_betavec(state, params))
+                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_betavec(state, params))
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }

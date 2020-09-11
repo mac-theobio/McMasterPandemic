@@ -1,4 +1,5 @@
 library(McMasterPandemic)
+## devtools::load_all()
 library(testthat)
 
 context("ageify")
@@ -37,4 +38,8 @@ test_that("generic age stuff", {
     expect_equal(dim(M),c(130,130))
     show_ratemat(M)
     M %*% ss2
+    rr <- run_sim_range(ppa, ss2, nt=1000)
+    matplot(rr[,1],rr[,-1],lty=1,type="l",log="y")
+    rr2 <- run_sim(ppa, ss2,end_date="2022-Nov-1",condense=FALSE)
+    plot(rr2,log=TRUE)+theme(legend.position="none")
 })
