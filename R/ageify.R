@@ -1,3 +1,8 @@
+#' construct age categories
+#' @param min minimum age
+#' @param max maximum age
+#' @param da age bin width
+#' @export
 mk_agecats <- function(min=1,max=100,da=10) {
     s1 <- seq(min,max,by=da)
     c(sprintf("%d-%d",s1[-length(s1)],(s1[-1]-1)),
