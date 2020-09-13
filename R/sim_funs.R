@@ -177,9 +177,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
         if (!symbols) {
-            M[pfun(from, to)] <<- val
+            M[pfun(from, to, M)] <<- val
         } else {
-            M[pfun(from,to)] <<- deparse(substitute(val))            
+            M[pfun(from,to, M)] <<- deparse(substitute(val))            
         }
     }
     
@@ -217,7 +217,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         afun("H","R", rho) ## all acute-care survive
         if (any(grepl("^X",colnames(M)))) {
             ## FIXME: check for age?
-            afun("Is","X", M[pfun("Is","H")]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
+            afun("Is","X", M[pfun("Is","H",M)]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
     if (sparse) {
@@ -478,6 +478,9 @@ run_sim <- function(params
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params)))
     if (has_testing(params=params)) {
+        if (!is.null(ratemat_args$testify)) {
+            warning("'testify' no longer needs to be passed in ratemat_args")
+        }
         testing_time <- ratemat_args$testing_time
         if (is.null(testing_time)) {
             warning("setting testing time to 'sample'")

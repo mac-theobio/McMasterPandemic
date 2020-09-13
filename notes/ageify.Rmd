@@ -27,7 +27,7 @@ ifun <- function(M,sub="") {
 ```
 
 ```{r setup1}
-pp <- read_params("PHAC_testify.csv")
+pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
 ```
 
@@ -41,14 +41,7 @@ head(ss2)
 tail(ss2)
 ```
 
-Expanded rate matrix: `make_ratemat` bases its categories on the names of the state vector.
-
-```{r make_ratemat}
-M <- make_ratemat(ss2, pp, sparse=TRUE)
-show_ratemat(M)
-```
-
-Now we need to define a cross-age contact matrix. 
+We need to define a cross-age contact matrix. 
 
 * Eventually we should take it from that study (referenced somewhere in the notes) that estimated contact matrices for a variety of countries.
 * for now I'm going to define two, one simple "compound symmetric" matrix (1 on the diagonal, 0.1 off-diagonal) and one diagonal. 
@@ -81,6 +74,13 @@ b1.d <- make_betavec(ss2, ppa.d, full=FALSE)
 plot_grid(ifun(b1,sub="compound"),ifun(b1.d,sub="diag"),nrow=2)
 ```
 
+Expanded rate matrix: `make_ratemat` bases its categories on the names of the state vector.
+
+```{r make_ratemat}
+M <- make_ratemat(ss2, ppa, sparse=TRUE) ## some NA values??
+show_ratemat(M)
+```
+
 Try `run_sim_range()` [lowest-level/simplest simulation engine]
 ```{r run_sim_range, warning=FALSE}
 rr <- run_sim_range(ppa.u, ss2, nt=200)
@@ -110,6 +110,43 @@ plot_grid(plotlist=simplots,nrow=2)
 - in these plots we're automatically "condensing" everything, so age categories get aggregated before plotting.  Of course we don't have to (and could write some alternative plot methods that show time X age class grids)
 - age-struc runs are missing foi/report/cumRep, because foi is needed to compute report and cumRep and we're not storing foi for age struc right now
 - diag and unif are not *identical* to homogeneous run: visually OK at first glance, but hosp is noticeably different, and closer inspection shows that they're all slightly different
+
+## tests
+
+Summing over flows should give exactly the same answer for uniform and non-age-structured models
+(rounding-induced changes in initial conditions??
+```{r}
+ss0 <- condense_age(ss2)
+sim0 <- run_sim(pp, ss0, end_date="2020-10-01")
+res2 <- (map_dfr(list(homog=sim0, unif=sims$unif), pivot, .id="model")
+    %>% filter(var %in% c("I","H","D","S"))
+)
+gg1 <- (ggplot(res2, aes(date,value,colour=var,linetype=model))
+      + geom_line()
+      + scale_y_log10()
+)
+print(gg1+ facet_wrap(~var,scale="free"))
+res2 %>% arrange(date,var) %>% tail()
+```
+
+OK, there really is a difference - smallest in I, but still there. Go back to one-step flows ...
+
+```{r}
+M0 <- make_ratemat(ss, pp, sparse=TRUE)  ## non-age flow matrix
+step1 <-  do_step(ss2, ppa, M)
+step1C <- condense_age(step1)
+step0 <-  do_step(ss0, pp, M0)
+cbind(step0,step1C)
+which(step0!=step1C)
+```
+
+Where do different flows come from? S, E (of course)
+
+```{r}
+M0["S","E"]
+pfun <- McMasterPandemic::pfun
+M[pfun("S","E")]
+```
 
 ## to do
 

@@ -9,6 +9,18 @@ mk_agecats <- function(min=1,max=100,da=10) {
       paste0(s1[length(s1)],"+"))
 }
 
+##' collapse age/testing/etc. categories (only; don't do other condensation)
+##' @param x a state vector
+##' @export
+## wrap into condense() ?
+condense_age <- function(x) {
+    ## FIXME: should work on data frames too ...
+    epi_cat <- gsub("_.*$","",names(x))
+    epi_cat <- factor(epi_cat,levels=unique(epi_cat))
+    ret <- vapply(split(x,epi_cat),sum,numeric(1))
+    return(ret)
+}
+
 ## x_y, with x varying faster
 expand_names <- function(x,y,sep="_") {
     unlist(lapply(y, function(a) paste(x, a, sep=sep)))

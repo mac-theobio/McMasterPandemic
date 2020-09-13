@@ -1,6 +1,11 @@
 library(McMasterPandemic)
 library(testthat)
 
+## squash call so we ignore diffs when using all.equal()
+uncall <- function(x) {
+    attr(x,"call") <- NULL
+    return(x)
+}
 context("testify")
 
 pp <- read_params("PHAC_testify.csv")
@@ -63,16 +68,30 @@ test_that("FOI doesn't change (for 'untested' expansion)", {
     expect_equal(update_foi(state,pp2,beta_vec),
                  update_foi(state_testified,pp2,beta_vec_testified))
 })
- 
+
+sim0_testified_condensed <- run_sim(params = pp,
+                                    ## specify testing time to avoid warning 
+                                    ratemat_args = list(testing_time="sample"))
+
+test_that("obsolete testify spec", {
+    expect_warning(run_sim(params = pp,
+                           ratemat_args = list(testify=TRUE)),
+                   "no longer needs to be passed")
+})
+
+test_that("testing time default", {
+          expect_warning(sim0_tc2 <-  run_sim(params = pp),
+                         "setting testing time to 'sample'")
+          expect_equal(uncall(sim0_tc2), uncall(sim0_testified_condensed))
+})
+          
 test_that("condensation is OK", {
-     sim0_testified_condensed <- run_sim(params = pp,
-                                         ratemat_args = list(testify=TRUE))
-     expect_equal(names(sim0_testified_condensed),
-                  c("date", "S", "E", "I", "H", "ICU", "R",
-                    "hosp", "X", "death", "D", 
-                    "negtest", "N", "postest", "P",
-                    "foi", "incidence", "report", 
-                    "cumRep"))
+    expect_equal(names(sim0_testified_condensed),
+                 c("date", "S", "E", "I", "H", "ICU", "R",
+                   "hosp", "X", "death", "D", 
+                   "negtest", "N", "postest", "P",
+                   "foi", "incidence", "report", 
+                   "cumRep"))
  })
  
 test_that("time-varying test intensity", {
@@ -81,7 +100,7 @@ test_that("time-varying test intensity", {
                       Relative_value=c(0,4))
      pp[["testing_intensity"]] <- 0.002
      sim0_testified_timevar <- run_sim(params = pp,
-                                       ratemat_args = list(testify=TRUE),
+                                       ratemat_args = list(testing_time="sample"),
                                        params_timevar=pt)
 #     ## library(directlabels)
      p1 <- plot(sim0_testified_timevar,log=TRUE,log_lwr=1e-7)
@@ -97,7 +116,7 @@ test_that("testing with susceptibles only", {
      pp[["testing_intensity"]] <- 0.002
      pp_noinf <- update(pp,beta0=0,E0=0)  ## no transmission, no infected people
      sim0_noinf <- run_sim(params = pp_noinf,
-                           ratemat_args = list(testify=TRUE),
+                           ratemat_args = list(testing_time="sample"),
                            end_date="2021-01-01")
      ## negtest *should* converge on:
      expected_negtest <- with(as.list(pp),omega/(omega+testing_intensity)*testing_intensity*N)
@@ -120,12 +139,10 @@ plotfun <- function(L) {
 test_that("testify + sampling time", {
      rvars <- c("N","P")
      sim0_testified_report <- run_sim(params = pp,
-                                      ratemat_args = list(testify=TRUE,
-                                                          testing_time="report"))
+                                      ratemat_args = list(testing_time="report"))
      res_report <- tail(sim0_testified_report[rvars],1)
      sim0_testified_sample <- run_sim(params = pp,
-                                      ratemat_args = list(testify=TRUE,
-                                                          testing_time="sample"))
+                                      ratemat_args = list(testing_time="sample"))
      res_sample <- tail(sim0_testified_sample[rvars],1)
      expect(!(all(res_report==res_sample)), "results don't differ according to testing time")
 #     expect_equal(unlist(res_sample),c(N = 78578.6760706341, P = 107.200806051815))
@@ -139,14 +156,11 @@ test_that("testify + sampling time", {
      ppw1 <- update(ppw0,W_asymp=0.2)
      ppw2 <- update(ppw0,c(W_asymp=0.2, W_severe=1.5))
      sim0_w0 <- run_sim(params = pp,
-                        ratemat_args = list(testify=TRUE,
-                                            testing_time="report"))
+                        ratemat_args = list(testing_time="report"))
      sim0_w1 <- run_sim(params = ppw1,
-                        ratemat_args = list(testify=TRUE,
-                                            testing_time="report"))
+                        ratemat_args = list(testing_time="report"))
      sim0_w2 <- run_sim(params = ppw2,
-                        ratemat_args = list(testify=TRUE,
-                                            testing_time="report"))
+                        ratemat_args = list(testing_time="report"))
      gg1 <- plotfun(list(w0=sim0_w0,w1=sim0_w1,w2=sim0_w2))
      ref_val <- structure(list(N = c(62097.0986898706, 61789.5190257482, 61781.6457354169),
                                P = c(13.9744057111373, 16.3878085964286, 16.3569118395614)),

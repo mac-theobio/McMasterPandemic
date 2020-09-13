@@ -20,7 +20,8 @@ asymp_cat <- c("S","E","Ia","Ip","R")
 severe_cat <- c("Is","H","H2","ICUs","ICUd")
 
 check_var_names <- function(var_names) {
-    extra_states <- setdiff(var_names,c("Im",asymp_cat,severe_cat))
+    pat <- sprintf("^(%s)", paste(c("Im",asymp_cat,severe_cat), collapse="|"))
+    extra_states <- grep(pat, var_names, pat, value=TRUE, invert=TRUE)
     if (length(extra_states)>0) {
         stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
     }

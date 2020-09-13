@@ -4,7 +4,7 @@ library(testthat)
 
 context("ageify")
 
-pp <- read_params("PHAC_testify.csv")
+pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
 
@@ -39,7 +39,8 @@ test_that("generic age stuff", {
     show_ratemat(M)
     M %*% ss2
     rr <- run_sim_range(ppa, ss2, nt=1000)
-    matplot(rr[,1],rr[,-1],lty=1,type="l",log="y")
+    ## suppress warnings about values <0 (??)
+    suppressWarnings(matplot(rr[,1],rr[,-1],lty=1,type="l",log="y"))
     rr2 <- run_sim(ppa, ss2,end_date="2022-Nov-1",condense=FALSE)
     plot(rr2,log=TRUE)+theme(legend.position="none")
 })

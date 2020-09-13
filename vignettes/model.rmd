@@ -122,6 +122,16 @@ substantially, and consequently yields a much larger flow matrix
 vis_model(testify=TRUE,aspect="fill")
 ```
 
+Explicit testing structure is enabled if the parameter vector/list contains
+an element `testing_intensity` which is set >0. (As a side note, if you
+are using `read_params("PHAC_testify.csv")` to capture our most recent set
+of default parameters, and you *don't* want an explicit-testing model,
+you should use `update(., testing_intensity=0)`.) The argument `testing_time`
+to the `make_ratemat()` function determines when testing is counted
+("sample" or "report"); this can be passed to `run_sim()` (or from farther
+upstream) in the `ratemat_args` (list) argument; the default is to set
+counting time to "sample", with a warning.
+
 ## age structure
 
 - we can construct a larger rate matrix
