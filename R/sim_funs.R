@@ -289,8 +289,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
-    ratemat[cbind(grep("^S",rownames(ratemat)),
-                  grep("^E",colnames(ratemat)))]  <- update_foi(state,params,make_betavec(state,params))
+    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
         for (a in aa) {

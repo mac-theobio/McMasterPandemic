@@ -11,12 +11,13 @@ mk_agecats <- function(min=1,max=100,da=10) {
 
 ##' collapse age/testing/etc. categories (only; don't do other condensation)
 ##' @param x a state vector
+##' @param levels levels/sort order
 ##' @export
 ## wrap into condense() ?
-condense_age <- function(x) {
+condense_age <- function(x,levels=unique(epi_cat)) {
     ## FIXME: should work on data frames too ...
     epi_cat <- gsub("_.*$","",names(x))
-    epi_cat <- factor(epi_cat,levels=unique(epi_cat))
+    epi_cat <- factor(epi_cat,levels=levels)
     ret <- vapply(split(x,epi_cat),sum,numeric(1))
     return(ret)
 }
