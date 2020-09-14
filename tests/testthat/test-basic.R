@@ -151,9 +151,8 @@ test_that("var-specific obsdisp", {
     set.seed(101)
     s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
-    ## FIXME: figure this out!
-    ## expect_equal(tail(s0$I,1),16385.5)
-    ## expect_equal(tail(s0$E,1),31791)
+    expect_equal(tail(s0$I,1),16385.5)
+    expect_equal(tail(s0$E,1),31791)
 })
 
 test_that("mle prediction", {
