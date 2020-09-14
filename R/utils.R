@@ -680,3 +680,10 @@ pfun <- function(from, to, mat=M, value=FALSE) {
               )
     return(cbind(from_pos, to_pos))
 }
+
+## exclude states by regex 
+exclude_states <- function(nm,exclude_states) {
+    x_regex <- sprintf("^(%s)_?",paste(exclude_states,collapse="|"))
+    xx <- grep(x_regex,nm,invert=TRUE,value=TRUE)
+    return(xx)
+}

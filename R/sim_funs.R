@@ -319,10 +319,9 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch_proc=FALSE,
                     do_exponential=FALSE,
                     testwt_scale="N") {
+    
     x_states <- c("X","N","P")                  ## weird parallel accumulators
-    x_regex <- sprintf("^(%s)_?",paste(x_states,collapse="|"))
-    ## all states that are *not* weird parallel accumulators
-    p_states <- grep(x_regex,names(state),invert=TRUE,value=TRUE)
+    p_states <- exclude_states(names(state), x_states)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
     ratemat <- update_ratemat(ratemat, state, params, testwt_scale=testwt_scale)

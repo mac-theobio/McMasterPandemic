@@ -4,10 +4,12 @@
 \alias{condense_age}
 \title{collapse age/testing/etc. categories (only; don't do other condensation)}
 \usage{
-condense_age(x)
+condense_age(x, levels = unique(epi_cat))
 }
 \arguments{
 \item{x}{a state vector}
+
+\item{levels}{levels/sort order}
 }
 \description{
 collapse age/testing/etc. categories (only; don't do other condensation)

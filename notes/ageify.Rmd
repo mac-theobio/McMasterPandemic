@@ -56,7 +56,7 @@ aa <- mk_agecats()
 Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
 diag(Cmat) <- 1
 ## diagonal
-Cmat.d <- diag(length(aa))*10
+Cmat.d <- diag(length(aa))*length(aa)
 dimnames(Cmat.d) <- dimnames(Cmat)
 ## uniform
 Cmat.u <- matrix(1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
@@ -140,7 +140,28 @@ but diag is quite different: do we actually expect to be the same? under what co
 
 ```{r}
 mm <- mdiff_fun(sims[c("non_age","diag","unif")])
-ggplot(mm,aes(date,diff,colour=lab)) + geom_line()+facet_wrap(~var,scale="free") + scale_y_log10()
+gg4 <- ggplot(mm,aes(date,diff,colour=lab)) + geom_line()+facet_wrap(~var,scale="free") + scale_y_log10()
+print(gg4)
+```
+
+## checking diagonal case
+
+Focus on the first few steps ...
+	
+```{r}
+M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
+M.d <- make_ratemat(ss2, ppa.d, sparse=TRUE)
+nz(condense_age(do_step(ss2, ppa.u, M.u)))
+nz(condense_age(do_step(ss2, ppa.d, M.d)))
+mmh <- mm %>% head(120) %>% filter(var %in% c("S","E","I","H"))
+gg4 %+% mmh + geom_point()
+```
+
+## age + tests
+
+```{r}
+M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
+M.ut <- testify(M.u, ppa.u)
 ```
 
 ## to do

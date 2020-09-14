@@ -20,8 +20,7 @@ asymp_cat <- c("S","E","Ia","Ip","R")
 severe_cat <- c("Is","H","H2","ICUs","ICUd")
 
 check_var_names <- function(var_names) {
-    pat <- sprintf("^(%s)", paste(c("Im",asymp_cat,severe_cat), collapse="|"))
-    extra_states <- grep(pat, var_names, pat, value=TRUE, invert=TRUE)
+    extra_states <- exclude_states(var_names, c("Im",asymp_cat,severe_cat))
     if (length(extra_states)>0) {
         stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
     }
@@ -64,13 +63,16 @@ make_test_wtsvec <- function(params,var_names=NULL) {
     }
     if (match_pars("W_asymp")) {  ## W_asymp is the only weighting parameter
         ## one-parameter model: weights specified as (asymp=W_asymp, symp=1)
-        symp_cat <- setdiff(var_names,asymp_cat)
+        symp_cat <- exclude_states(var_names,asymp_cat)
+        ## all (extended) asymptomatic categories (possibly age-struc etc.)
+        asymp_catx <- setdiff(var_names, symp_cat)
         wts_vec <- rep(c(params[["W_asymp"]],1),
-                       c(length(asymp_cat),length(symp_cat)))
-        names(wts_vec) <- c(asymp_cat,symp_cat)
+                       c(length(asymp_catx),length(symp_cat)))
+        names(wts_vec) <- c(asymp_catx,symp_cat)
     } else if (match_pars(c("W_asymp","W_severe"))) {
         ## asymp= W_asymp (<1),  I_m=1, severe = W_severe (>1)
-        mild_cat <- setdiff(var_names, c(asymp_cat, severe_cat))
+        mild_cat <- exclude_states(var_names, c(asymp_cat, severe_cat))
+        if (has_age(params)) stop("this case not developed for age structure yet")
         wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
                        c(length(asymp_cat),length(mild_cat),length(severe_cat)))
         names(wts_vec) <- c(asymp_cat,mild_cat,severe_cat)
@@ -96,8 +98,20 @@ make_test_posvec <- function(params,var_names=NULL) {
     vec <- params[grepl("^P",names(params))]
     names(vec) <- gsub("^P_?","",names(vec))
     if (!is.null(var_names)) {
-        if (!all(sort(names(vec))==sort(var_names))) {
-            stop("vector names should match var names")
+        ## FIXME: check more specifically? don't have full params for has_age() ...
+        ## has_age() clause for testing states?
+        if (length(vec)<length(var_names) && any(grepl("0-9",var_names))) {
+            newvec <- rep(NA,length(var_names))
+            names(newvec) <- var_names
+            for (i in names(vec)) {
+                pos <- grep(sprintf("^%s_",i),var_names)
+                newvec[pos] <- vec[[i]]
+            }
+            vec <- newvec
+        } else {
+            if (!all(sort(names(vec))==sort(var_names))) {
+                stop("vector names should match var names")
+            }
         }
         vec <- vec[var_names] ## reorder
     }
@@ -122,13 +136,14 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
                             add_accum=TRUE)
 {
     method <- match.arg(method)
-    
-    newnames <- unlist(lapply(setdiff(names(x),non_expanded_states), paste, test_extensions, sep="_"))
+
+    expanded_states <- exclude_states(names(x),non_expanded_states)
+    newnames <- unlist(lapply(expanded_states, paste, test_extensions, sep="_"))
     new_states <- rep(0,length(newnames))
     names(new_states) <- newnames
     ## FIXME: check on names, attributes, etc.
     if (method=="untested") {
-        new_states[paste0(setdiff(names(x),non_expanded_states),"_u")] <- x[setdiff(names(x),non_expanded_states)]
+        new_states[paste0(expanded_states,"_u")] <- x[expanded_states]
     } else if (method=="spread") {
         ## slightly fragile: depends on ordering
         n_expand <- length(test_extensions)
@@ -177,7 +192,7 @@ testify <- function(ratemat,params,debug=FALSE,
             stop("unknown testing_time", testing_time)
         }
     }
-    vn <- setdiff(rownames(ratemat), non_expanded_states)
+    vn <- exclude_states(rownames(ratemat), non_expanded_states)
     wtsvec <- make_test_wtsvec(params, var_names=vn)
     posvec <- make_test_posvec(params, var_names=vn)
     omega <- params[["omega"]]
@@ -186,15 +201,15 @@ testify <- function(ratemat,params,debug=FALSE,
     M <- ratemat  ## FIXME: why two names (M and ratemat)
     states <- rownames(ratemat)
     ## testifiable vars will get expanded
-    expand_set <- setdiff(states, non_expanded_states)
+    expand_set <- exclude_states(states, non_expanded_states)
     
     dummy_states <- setNames(numeric(length(expand_set)), expand_set)
     new_states <- names(expand_stateval_testing(dummy_states, method="untested"))
     
-	ns <- length(new_states)
-	new_M <- matrix(0,nrow=ns, ncol=ns
-                 , dimnames=list(from=new_states,to=new_states)
-                   )
+    ns <- length(new_states)
+    new_M <- matrix(0,nrow=ns, ncol=ns
+                  , dimnames=list(from=new_states,to=new_states)
+                    )
    ## Between states
     for(i in rownames(ratemat)){
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
@@ -229,14 +244,18 @@ testify <- function(ratemat,params,debug=FALSE,
     }  ## loop over all states
     ## hospitalization special cases: everyone gets tested when they leave the Is compartment
     ##  for H, ICUs, or ICUd
+    ## FIXME: fix for age structure
     for (j in c("H","ICUs","ICUd")) {
-        sn1 <- function(state, compartment) paste0(compartment, "_", state)
-        new_M["Is_u",sn1("p",j)] <- new_M["Is_u",sn1("u",j)]*posvec[["Is"]]
-        new_M["Is_u",sn1("n",j)] <- new_M["Is_u",sn1("u",j)]*(1-posvec[["Is"]])
-        new_M["Is_u",sn1("u",j)] <- 0
+        sn1 <- function(state, compartment) grep(sprintf("%s.*_%s",compartment, state), colnames(new_M), value=TRUE)
+        Is_u_pos <- grep("Is.*_u",rownames(new_M), value=TRUE)
+        posvec_Is_pos <- grep("^Is",names(posvec),value=TRUE)
+        new_M[Is_u_pos,sn1("p",j)] <- new_M[Is_u_pos,sn1("u",j)]*posvec[posvec_Is_pos]
+        new_M[Is_u_pos,sn1("n",j)] <- new_M[Is_u_pos,sn1("u",j)]*(1-posvec[posvec_Is_pos])
+        new_M[Is_u_pos,sn1("u",j)] <- 0
     }
     if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
     for (i in expand_set) {
+        if (has_age(params)) stop("need to fix last bit of testify for age-spec")
         sn2 <- function(state, compartment=i) paste0(compartment, "_", state)
         if (testing_time=="report") {
             ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
