@@ -59,7 +59,7 @@ pred <- cbind(1,X) %*% coef(m)
 plot(pred)
 
 bb <- coef(m)/250  # not sure why /250? convert from report scale to Rt scale
-pred2 <- X %*% bb
+pred2 <- cbind(1,X) %*% bb
 plot(pred2)
 
 date <- environment(ff)$X_dat$date
@@ -67,7 +67,7 @@ stopifnot(nrow(X)==length(date))
 
 sims <- run_sim_loglin(params=params,
                extra_pars=list(time_beta=bb),
-               time_args=list(X_date=date, X=X),
+               time_args=list(X_date=date, X=cbind(1,X)),
                sim_args=list(start_date=date[1],end_date=tail(date,1))
                )
 
