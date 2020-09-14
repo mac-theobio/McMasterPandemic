@@ -99,7 +99,7 @@ plot(rr2,log=TRUE)+theme(legend.position="none")
 
 ```{r comp_sims}
 pp_list <- list(ppa,ppa.d,pp,ppa.u)
-ss_list <- list(ss2,ss2,ss,ss2)
+ss_list <- list(ss2,ss2,condense_age(ss2),ss2)
 nm <- c("compound","diag","non_age","unif")
 sims <- map2(pp_list,ss_list, ~run_sim(.x,.y, end_date="2020-10-01"))
 names(sims) <- nm
@@ -112,11 +112,39 @@ plot_grid(plotlist=simplots,nrow=2)
 - "compound" example is badly scaled (uniform should just work, and diag example is scaled to keep effective pop sizes the same)
 - in these plots we're automatically "condensing" everything, so age categories get aggregated before plotting.  Of course we don't have to (and could write some alternative plot methods that show time X age class grids)
 - age-struc runs are missing foi/report/cumRep, because foi is needed to compute report and cumRep and we're not storing foi for age struc right now
+
+Uniform-mixing and non-age are identical (up to small numeric fuzz):
+
+```{r check_equal}
+droprep <- . %>% select(-c(foi,incidence,report,cumRep))
+all.equal(droprep(sims$non_age),droprep(sims$unif),tolerance=1e-13)
+```
+
 - diag and unif are not *identical* to homogeneous run: visually OK at first glance, but hosp is noticeably different, and closer inspection shows that they're all slightly different
+
+```{r echo=FALSE}
+mdiff_fun  <- function(L) {
+    (map_dfr(L,
+             ~ select(., -c(foi,incidence,report,cumRep)) %>% pivot(),
+             .id="model")
+        %>% group_by(date,var)
+        %>% summarise(diff=abs(value-value[1])[-1],
+                      lab=sprintf("abs(%s-%s)",model,model[1])[-1],
+                      .groups="drop")
+    )
+}
+```
+
+unif is practically identical,
+but diag is quite different: do we actually expect to be the same? under what conditions/scaling?
+
+```{r}
+mm <- mdiff_fun(sims[c("non_age","diag","unif")])
+ggplot(mm,aes(date,diff,colour=lab)) + geom_line()+facet_wrap(~var,scale="free") + scale_y_log10()
+```
 
 ## to do
 
-- test individual steps etc. in uniform `Cmat` case to track down differences
 - implement age-dependent N in state construction ...
 - try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
