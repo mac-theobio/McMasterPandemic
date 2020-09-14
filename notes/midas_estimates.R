@@ -2,36 +2,13 @@ library(tidyverse)
 library(ggplot2)
 library(pins)
 
+source("makestuff/makeRfuns.R")
+commandEnvironments()
+if (!interactive()) makeGraphics()
+
 ## MIDAS estimates retrieved from
 midas_url <- "https://raw.githubusercontent.com/midas-network/COVID-19/master/parameter_estimates/2019_novel_coronavirus/estimates.csv"
-x_temp <- (read_csv(pin(midas_url)))
-x2<-(x_temp %>% select(authors,name,location_name,value_type,
-              value,uncertainty_type,lower_bound, upper_bound,
-              population)
-## fix typos/inconsistencies
-%>% mutate(name=tolower(name),
-           name=gsub("hospitilization","hospitalization",name),
-           name=gsub("reproductive","reproduction",name))
-%>% right_join(focal)
-## force numeric (FIXME, track down NAs later)
-%>% mutate_at(c("value","lower_bound","upper_bound"), as.numeric)
-%>% mutate(authora=collapse_authors(authors))
-)
-
-write.csv(as.data.frame(x2),"../inst/params/midas_estimates_sep.csv", row.names = FALSE)
-
-
-focal <- read.csv(header=TRUE, text="
-shortname, name
-R0,basic reproduction number
-inv_gamma_m1,time from symptom onset to isolation
-inv_gamma_m2,time from symptom onset to recovery
-inv_gamma_s1,time from symptom onset to hospitalization
-inv_sigma,incubation period
-latent,latent period
-serial,serial interval
-generation,generation interval
-beta0,transmission rate")
+x_temp <- (read_csv(pin(midas_url), na=c("","NA","Unspecified")))
 
 ## lastname of first author + initials of others (could be improved;
 ##  perhaps just disambiguating first author (Qifang+1, Qifang+2)
@@ -45,29 +22,46 @@ collapse_authors <- function(a) {
                               collapse=""))
 }
 
-## assumes we are in notes/ subdirectory ...
-x <- (read_csv("../inst/params/midas_estimates.csv")
+## define names and specify which parameters to track
+focal <- read.csv(header=TRUE, text="
+shortname, name
+R0,basic reproduction number
+inv_gamma_m1,time from symptom onset to isolation
+inv_gamma_m2,time from symptom onset to recovery
+inv_gamma_s1,time from symptom onset to hospitalization
+inv_sigma,incubation period
+latent,latent period
+serial,serial interval
+generation,generation interval
+beta0,transmission rate")
+
+## must be run AFTER defining focal, collapse_authors() ...
+x <- (x_temp
     %>% select(authors,name,location_name,value_type,
-               value,uncertainty_type,lower_bound, upper_bound,
-               population)
-    ## fix typos/inconsistencies
+              value,uncertainty_type,lower_bound, upper_bound,
+              population)
+## fix typos/inconsistencies
     %>% mutate(name=tolower(name),
                name=gsub("hospitilization","hospitalization",name),
                name=gsub("reproductive","reproduction",name))
-    %>% right_join(focal)
+    %>% right_join(focal, by="name")
     ## force numeric (FIXME, track down NAs later)
-    %>% mutate_at(c("value","lower_bound","upper_bound"), as.numeric)
+    ##  FIXME: at least some values are ranges (denoted by hyphens)
+    %>% mutate_at(c("value","lower_bound","upper_bound"), ~suppressWarnings(as.numeric(.)))
     %>% mutate(authora=collapse_authors(authors))
 )
 
-    
+write.csv(x, "../inst/params/midas_estimates_sep.csv", row.names = FALSE)
+
 gg0 <- (ggplot(x,aes(
               y=substr(authora,1,10), ## still not short enough
               x=value,xmin=lower_bound,xmax=upper_bound))
     + facet_wrap(~name,scale="free")
 )
 
-gg0 + geom_pointrange()
+## print(gg0 + geom_pointrange())
+
+## attempt to come up with a combined value for each parameter
 
 ## when there are multiple values for an author, what do they represent?
 
@@ -103,7 +97,10 @@ xx_comb <- bind_rows(dplyr::select(comb,-c(logmu,logsd)),
                      dplyr::select(x,
                                    authora,value,
                                    lower_bound,upper_bound,name))
-gg0 %+%  xx_comb + geom_pointrange(aes(colour=(authora=="zzzcombined"))) +
-    scale_colour_manual(values=c("black","red"),guide=FALSE)
+gg1 <- (gg0
+    %+%  xx_comb
+    + geom_pointrange(aes(colour=(authora=="zzzcombined")))
+    + scale_colour_manual(values=c("black","red"),guide=FALSE)
+)
 
-ggsave("midas_estimates.pdf")
+print(gg1)

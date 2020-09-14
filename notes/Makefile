@@ -56,6 +56,12 @@ spline_projection1.Rout: spline_projection1.R
 spline_projection2.Rout: spline_projection2.R
 	$(makeR)
 
+
+## parameter synthesis project
+
+midas_estimates.Rout: midas_estimates.R
+	$(makeR)
+
 ######################################################################
 
 ## Structural pictures from Ben
