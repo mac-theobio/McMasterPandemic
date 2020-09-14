@@ -1,9 +1,25 @@
 library(tidyverse)
 library(ggplot2)
-
+library(pins)
 
 ## MIDAS estimates retrieved from
 midas_url <- "https://raw.githubusercontent.com/midas-network/COVID-19/master/parameter_estimates/2019_novel_coronavirus/estimates.csv"
+x_temp <- (read_csv(pin(midas_url)))
+x2<-(x_temp %>% select(authors,name,location_name,value_type,
+              value,uncertainty_type,lower_bound, upper_bound,
+              population)
+## fix typos/inconsistencies
+%>% mutate(name=tolower(name),
+           name=gsub("hospitilization","hospitalization",name),
+           name=gsub("reproductive","reproduction",name))
+%>% right_join(focal)
+## force numeric (FIXME, track down NAs later)
+%>% mutate_at(c("value","lower_bound","upper_bound"), as.numeric)
+%>% mutate(authora=collapse_authors(authors))
+)
+
+write.csv(as.data.frame(x2),"../inst/params/midas_estimates_sep.csv", row.names = FALSE)
+
 
 focal <- read.csv(header=TRUE, text="
 shortname, name
