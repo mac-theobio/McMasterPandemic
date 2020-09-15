@@ -46,6 +46,9 @@ rshape.Rout: rshape.R
 spline_fit.Rout: spline_fit.R
 	$(makeR)
 
+spline_sim.Rout: spline_sim.R spline_fit.rda
+	$(makeR)
+
 spline_projection.Rout: spline_projection.R spline_fit.rda
 	$(makeR)
 
