@@ -36,11 +36,12 @@ ss <- make_state(params=pp)
 Expand the state vector by age categories (by default, ten-year bins up to 91+)
 ```{r expand_state}
 ss2 <- expand_stateval_age(ss)
+aa <- mk_agecats() ## default
 ## hack so we have an infective
-ss2["Im_11-20"] <- 1
-ss2["E_91+"] <- 0
-head(ss2)
-tail(ss2)
+ss2[grep("^Im",names(ss2))] <- 1
+ss2[grep("^E", names(ss2))] <- 0
+ss2[grep("^S",names(ss2))] <- pp[["N"]]/length(aa)-1
+sum(ss2)
 ```
 
 We need to define a cross-age contact matrix. 
@@ -144,22 +145,10 @@ gg4 <- ggplot(mm,aes(date,diff,colour=lab)) + geom_line()+facet_wrap(~var,scale=
 print(gg4)
 ```
 
-## checking diagonal case
-
-Focus on the first few steps ...
-	
-```{r}
-M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
-M.d <- make_ratemat(ss2, ppa.d, sparse=TRUE)
-nz(condense_age(do_step(ss2, ppa.u, M.u)))
-nz(condense_age(do_step(ss2, ppa.d, M.d)))
-mmh <- mm %>% head(120) %>% filter(var %in% c("S","E","I","H"))
-gg4 %+% mmh + geom_point()
-```
-
 ## age + tests
 
-```{r}
+```{r eval=FALSE}
+devtools::load_all("..")
 M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
 M.ut <- testify(M.u, ppa.u)
 ```
