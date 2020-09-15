@@ -12,7 +12,6 @@ current: target
 vim_session:
 	bash -cl "vmt"
 
-
 wrap_makeR=yes
 
 ######################################################################
@@ -58,7 +57,6 @@ spline_projection1.Rout: spline_projection1.R
 
 spline_projection2.Rout: spline_projection2.R
 	$(makeR)
-
 
 ## parameter synthesis project
 
