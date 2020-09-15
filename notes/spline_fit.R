@@ -17,6 +17,8 @@ h <- 2
 R0 <- 3
 c <- 2
 
+## The susceptible effect makes R smaller, and increases through time
+## The infections makes R bigger, and grows and saturates
 Q <- exp(r*t)
 S <- 1/(1+Q)
 I <- Q/(1+Q^2)
