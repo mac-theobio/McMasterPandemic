@@ -670,12 +670,19 @@ adjust_symbols <- function(M) {
 
 make_flowchart <- vis_model ## back-compatibility
 
+
 ## identify locations within matrix
 ## ##' @param value return character (TRUE) or numeric (FALSE) position?
 pfun <- function(from, to, mat=M, value=FALSE) {
     ## <start> + label + (_ or <end>)
     from_pos <- grep(sprintf("^%s(_|$)",from), rownames(mat), value=value)
     to_pos <- grep(sprintf("^%s(_|$)",to), colnames(mat), value=value)
+    nf <- length(from_pos)
+    nt <- length(to_pos)
+    if (nt==1 || nf==1) {
+        from_pos <- rep(from_pos,length.out=max(nt,nf))
+        to_pos <- rep(to_pos,length.out=max(nt,nf))
+    }
     ## FIXME: check for both length() == 1 if *not* age structured?
     stopifnot(length(to_pos) == length(from_pos),
               length(to_pos)>0, length(from_pos)>0  ## must be positive

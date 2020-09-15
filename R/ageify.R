@@ -47,6 +47,7 @@ expand_stateval_age <- function(x, age_cat=mk_agecats()) {
     S_pos <- grep("^S", names(new_states))
     new_states[S_pos] <- smart_round(new_states[S_pos])
     new_states[-S_pos] <- smart_round(new_states[-S_pos])
+    attr(new_states, "age_cat") <- age_cat
     return(new_states)
 }
 

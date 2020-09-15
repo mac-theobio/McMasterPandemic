@@ -27,7 +27,7 @@ state <- expand_stateval_testing(state0, params=pp)
 vn <- setdiff(names(state0),non_expanded_states)
 wtsvec <- make_test_wtsvec(pp, vn)
 posvec <- make_test_posvec(pp, vn)
-## need to make_ratemate() with *unexpanded* state, then
+## need to make_ratemat() with *unexpanded* state, then
 ##  expand it
 ratemat <- testify(make_ratemat(state1,pp), pp)
 betavec <- make_betavec(state,pp)

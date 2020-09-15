@@ -19,6 +19,10 @@ asymp_cat <- c("S","E","Ia","Ip","R")
 ##' @rdname non_expanded_states
 severe_cat <- c("Is","H","H2","ICUs","ICUd")
 
+mk_zero_vec <- function(n) {
+    setNames(numeric(length(n)),n)
+}
+
 check_var_names <- function(var_names) {
     extra_states <- exclude_states(var_names, c("Im",asymp_cat,severe_cat))
     if (length(extra_states)>0) {
@@ -38,7 +42,7 @@ check_var_names <- function(var_names) {
 ##' vn <- setdiff(names(state0),non_expanded_states)
 ##' wtsvec <- make_test_wtsvec(pp, vn)
 ##' posvec <- make_test_posvec(pp, vn)
-##' ## need to make_ratemate() with *unexpanded* state, then
+##' ## need to make_ratemat() with *unexpanded* state, then
 ##' ##  expand it
 ##' ratemat <- testify(make_ratemat(state1,pp), pp)
 ##' betavec <- make_betavec(state,pp)
@@ -100,7 +104,7 @@ make_test_posvec <- function(params,var_names=NULL) {
     if (!is.null(var_names)) {
         ## FIXME: check more specifically? don't have full params for has_age() ...
         ## has_age() clause for testing states?
-        if (length(vec)<length(var_names) && any(grepl("0-9",var_names))) {
+        if (length(vec)<length(var_names) && any(grepl("[0-9]",var_names))) {
             newvec <- rep(NA,length(var_names))
             names(newvec) <- var_names
             for (i in names(vec)) {
@@ -160,8 +164,14 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
         new_states[is_nonS] <- ee[is_nonS]*nonS_tot/sum(ee[is_nonS])
     }
     if (add_accum) {
-    ## FIXME, compare setNames = 0 code 
-        new_states <- c(new_states, setNames(numeric(length(non_expanded_states)), non_expanded_states), c(N=0,P=0))
+        ## FIXME, compare setNames = 0 code
+        non_expanded_vec <- mk_zero_vec(non_expanded_states)
+        accum_vec <- mk_zero_vec(test_accumulators)
+        if (has_age(params)) {
+            ## FIXME: non-default age categories???
+            accum_vec <- expand_stateval_age(accum_vec)
+        }
+        new_states <- c(new_states,non_expanded_vec, accum_vec)
     }
     return(new_states)
 }
@@ -203,31 +213,32 @@ testify <- function(ratemat,params,debug=FALSE,
     ## testifiable vars will get expanded
     expand_set <- exclude_states(states, non_expanded_states)
     
-    dummy_states <- setNames(numeric(length(expand_set)), expand_set)
-    new_states <- names(expand_stateval_testing(dummy_states, method="untested"))
+    dummy_states <- mk_zero_vec(expand_set)
+    new_states <- names(expand_stateval_testing(dummy_states, method="untested", params=params))
     
     ns <- length(new_states)
     new_M <- matrix(0,nrow=ns, ncol=ns
                   , dimnames=list(from=new_states,to=new_states)
                     )
-   ## Between states
+    ## Between states
+    ## FIXME: vectorize??
     for(i in rownames(ratemat)){
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
         
         ## Between states: epidemiological transitions are the same as X -> Y
-        for(j in colnames(ratemat)){
+        for (j in colnames(ratemat)){
             if (debug) { 
-      		print(cat(i,j,"\n"))
+      		cat(i,j,"\n")
             }
 
             ## source expanded, destination expanded: (k_i -> k_j) at same rate as i -> j
-            if((i %in% expand_set) && (j %in% expand_set)){
+            if ((i %in% expand_set) && (j %in% expand_set)){
                 for (k in test_extensions) {
                     new_M[sn(k,i),sn(k,j)] <- M[i,j]
                 }
             }
             ## source expanded, destination not expanded: all k_i - > j at same rate as i -> j
-            if((i %in% expand_set) && (j %in% non_expanded_states)){
+            if ((i %in% expand_set) && (j %in% non_expanded_states)){
                 for (k in test_extensions) {
                     new_M[sn(k,i),j] <- M[i,j]
                 }
@@ -245,7 +256,9 @@ testify <- function(ratemat,params,debug=FALSE,
     ## hospitalization special cases: everyone gets tested when they leave the Is compartment
     ##  for H, ICUs, or ICUd
     for (j in c("H","ICUs","ICUd")) {
-        sn1 <- function(state, compartment) grep(sprintf("%s.*_%s",compartment, state), colnames(new_M), value=TRUE)
+        sn1 <- function(state, compartment) {
+            grep(sprintf("%s.*_%s",compartment, state), colnames(new_M), value=TRUE)
+        }
         Is_u_pos <- grep("Is.*_u",rownames(new_M), value=TRUE)
         posvec_Is_pos <- grep("^Is",names(posvec),value=TRUE)
         new_M[Is_u_pos,sn1("p",j)] <- new_M[Is_u_pos,sn1("u",j)]*posvec[posvec_Is_pos]
@@ -254,19 +267,32 @@ testify <- function(ratemat,params,debug=FALSE,
     }
     if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
     for (i in expand_set) {
-        ## browser()
-        if (has_age(params)) stop("need to fix last bit of testify for age-spec")
-        sn2 <- function(state, compartment=i) paste0(compartment, "_", state)
+        ## find all pairs of compartments from (state_test) to accumulator
+        pfun2 <- function(test_state,test_accum=NULL,test_state2=NULL) {
+            ## ugh, protect "+" because this string will get used in a regexp ...
+            i <- gsub("\\+","\\\\+",i)
+            from <- paste(i,test_state,sep="_")
+            if (!is.null(test_accum)) {
+                ## find accumulator state corresponding to this
+                ## lookahead (?=_) to match an underscore but not replace it ...
+                to <- gsub("^[[A-Z]+[a-z]?2?+(?=_)?",test_accum,i, perl=TRUE)
+            } else {
+                to <- paste(i,test_state2,sep="_")
+            }
+            if (debug) cat(from,to,"\n")
+            pfun(from, to, new_M)
+        }
         if (testing_time=="report") {
             ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
-            new_M[sn2("n"),"N"] <- new_M[sn2("n"),sn2("u")] 
-            new_M[sn2("p"),"P"] <- new_M[sn2("p"),sn2("t")] 
+            new_M[pfun2("n","N")] <- new_M[pfun2("n",test_state2="u")] 
+            new_M[pfun2("p","P")] <- new_M[pfun2("p",test_state2="t")] 
         } else {
             ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
-            new_M[sn2("u"),"N"] <- new_M[sn2("u"),sn2("n")]
-            new_M[sn2("u"),"P"] <- new_M[sn2("u"),sn2("p")] 
+            new_M[pfun2("u","N")] <- new_M[pfun2("u","n")]
+            new_M[pfun2("u","P")] <- new_M[pfun2("u","p")] 
         }
     }
+
 
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
