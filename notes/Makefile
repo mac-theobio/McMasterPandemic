@@ -47,6 +47,9 @@ Sources += spline.csv
 spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 	$(makeR)
 
+spline_calib.Rout: spline_calib.R spline_sim.rda spline.csv
+	$(makeR)
+
 ######################################################################
 
 ## Older attempts from Ali
