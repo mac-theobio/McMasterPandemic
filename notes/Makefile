@@ -36,12 +36,9 @@ cachestuff:
 
 ## Playing with spline shapes
 
-rshape.Rout: rshape.R
-	$(makeR)
-
-### Separating two parts
-
-## These scripts seem to be deprecated; should we rename things and be clearer?
+## Create a phenomenological curve and
+## compare two different spline fits directly to the curve
+## could be modularized
 spline_fit.Rout: spline_fit.R
 	$(makeR)
 
