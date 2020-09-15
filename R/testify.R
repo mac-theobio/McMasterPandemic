@@ -244,7 +244,6 @@ testify <- function(ratemat,params,debug=FALSE,
     }  ## loop over all states
     ## hospitalization special cases: everyone gets tested when they leave the Is compartment
     ##  for H, ICUs, or ICUd
-    ## FIXME: fix for age structure
     for (j in c("H","ICUs","ICUd")) {
         sn1 <- function(state, compartment) grep(sprintf("%s.*_%s",compartment, state), colnames(new_M), value=TRUE)
         Is_u_pos <- grep("Is.*_u",rownames(new_M), value=TRUE)
@@ -255,6 +254,7 @@ testify <- function(ratemat,params,debug=FALSE,
     }
     if (inherits(M,"Matrix")) new_M <- Matrix(new_M)
     for (i in expand_set) {
+        ## browser()
         if (has_age(params)) stop("need to fix last bit of testify for age-spec")
         sn2 <- function(state, compartment=i) paste0(compartment, "_", state)
         if (testing_time=="report") {
