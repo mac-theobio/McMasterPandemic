@@ -539,12 +539,14 @@ has_zeta <- function(params) {
 
 ## test based *either* on state or params
 ## testing based on params fails when we have make_state -> get_evec -> make_state ...
-has_testing <- function(state,params=NULL) {
-    if (missing(state)) {
+has_testing <- function(state,params=NULL,ratemat=NULL) {
+    if (!is.null(params)) {
         return("testing_intensity" %in% names(params) && params[["testing_intensity"]]!=0)
-    } else {
-        return(any(grepl("_t$",names(state))))
     }
+    if (!is.null(ratemat)) {
+        return(any(grepl("_t$",rownames(ratemat))))
+    }
+    return(any(grepl("_t$",names(state))))
 }
 
 has_age <- function(params) {
@@ -580,7 +582,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
-        do_symbols <- method=="diagram" && !has_testing(setNames(numeric(nrow(M)),rownames(M)))
+        do_symbols <- method=="diagram" && !has_testing(M)
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
@@ -617,7 +619,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
         if (do_symbols) {
             M3 <- adjust_symbols(M3)
         } else {
-            M3[M3=="0"] <- ""  ## blank out all labels
+            M3[M3!="0"] <- ""  ## blank out all labels
         }
         diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
     }
