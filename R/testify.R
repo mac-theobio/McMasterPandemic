@@ -104,7 +104,7 @@ make_test_posvec <- function(params,var_names=NULL) {
     if (!is.null(var_names)) {
         ## FIXME: check more specifically? don't have full params for has_age() ...
         ## has_age() clause for testing states?
-        if (length(vec)<length(var_names) && any(grepl("[0-9]",var_names))) {
+        if (length(vec)<length(var_names) && any(grepl("_[0-9]",var_names))) {
             newvec <- rep(NA,length(var_names))
             names(newvec) <- var_names
             for (i in names(vec)) {
@@ -114,7 +114,7 @@ make_test_posvec <- function(params,var_names=NULL) {
             vec <- newvec
         } else {
             if (!all(sort(names(vec))==sort(var_names))) {
-                stop("vector names should match var names")
+                stop("pos vector names should match var names")
             }
         }
         vec <- vec[var_names] ## reorder
@@ -288,8 +288,8 @@ testify <- function(ratemat,params,debug=FALSE,
             new_M[pfun2("p","P")] <- new_M[pfun2("p",test_state2="t")] 
         } else {
             ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
-            new_M[pfun2("u","N")] <- new_M[pfun2("u","n")]
-            new_M[pfun2("u","P")] <- new_M[pfun2("u","p")] 
+            new_M[pfun2("u","N")] <- new_M[pfun2("u",test_state2="n")]
+            new_M[pfun2("u","P")] <- new_M[pfun2("u",test_state2="p")] 
         }
     }
 

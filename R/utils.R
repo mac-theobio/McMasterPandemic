@@ -549,8 +549,11 @@ has_testing <- function(state,params=NULL,ratemat=NULL) {
     return(any(grepl("_t$",names(state))))
 }
 
-has_age <- function(params) {
-    "Cmat" %in% names(params)
+has_age <- function(params, state=NULL) {
+    if (!is.null(state)) {
+        ## FIXME
+    }
+    return("Cmat" %in% names(params))
 }
 
 
@@ -673,13 +676,13 @@ make_flowchart <- vis_model ## back-compatibility
 
 ## identify locations within matrix
 ## ##' @param value return character (TRUE) or numeric (FALSE) position?
-pfun <- function(from, to, mat=M, value=FALSE) {
+pfun <- function(from, to, mat=M, value=FALSE, recycle=FALSE) {
     ## <start> + label + (_ or <end>)
     from_pos <- grep(sprintf("^%s(_|$)",from), rownames(mat), value=value)
     to_pos <- grep(sprintf("^%s(_|$)",to), colnames(mat), value=value)
     nf <- length(from_pos)
     nt <- length(to_pos)
-    if (nt==1 || nf==1) {
+    if (recycle && (nt==1 || nf==1)) {
         from_pos <- rep(from_pos,length.out=max(nt,nf))
         to_pos <- rep(to_pos,length.out=max(nt,nf))
     }
