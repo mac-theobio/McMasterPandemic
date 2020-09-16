@@ -37,4 +37,22 @@ print(sims)
 
 print(plot(sims$date,sims$report, log="y"))
 
-saveVars(sims, mod_ns, params, X, bt)
+
+## Check if MLi's X is the same as BMB's way to get X
+X2 <- calibrate_comb(data=sims, params=params
+	, use_spline=TRUE
+	, spline_type="ns"
+	, spline_df = 7
+	, spline_extrap="constant"
+	, return="X"
+)
+
+X2 <- cbind(1,X2)
+
+print(X2)
+
+print(dim(X2))
+
+print(all.equal(X,X2))
+
+saveVars(sims, mod_ns, params, X, bt,bb)
