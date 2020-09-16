@@ -1,6 +1,10 @@
 library(McMasterPandemic)
 
 source("makestuff/makeRfuns.R")
+
+# callArgs <- "spline_sim.Rout spline_sim.R spline_fit.rda spline.csv"
+
+
 commandEnvironments()
 makeGraphics()
 

@@ -20,18 +20,26 @@ opt_pars <- with(as.list(params)
 		, logit_phi1 = plogis(phi1)
 		)
 	, log_nb_disp = c(report=3, death=3)
+	, time_beta = c(bb[-1])
 	)
 )
 
+# debug(calibrate_comb)
+# debug(calibrate)
+# debug(run_sim_loglin)
+# x11()
+
 ff <- calibrate_comb(params = params
-	, debug_plot=TRUE
-	, use_DEoptim=FALSE
+	, debug_plot=FALSE
+	, use_DEoptim=TRUE
+	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
 	, spline_df = 7
 	, spline_type = "ns"
 	, data= dat
 	, start_date = as.Date("2020-01-01")
+	# , 
 )
 
 saveVars(ff, dat)
