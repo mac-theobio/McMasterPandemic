@@ -6,7 +6,7 @@ makeGraphics()
 
 print(plot(ff, data=dat))
 
-print(ff)
+coef(ff, "fitted")
 
 print(mod_ns)
 

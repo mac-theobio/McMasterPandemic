@@ -37,4 +37,4 @@ print(sims)
 
 print(plot(sims$date,sims$report, log="y"))
 
-saveVars(sims, mod_ns, params)
+saveVars(sims, mod_ns, params, X, bt)

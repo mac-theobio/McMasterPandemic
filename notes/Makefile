@@ -227,9 +227,6 @@ test_sir.Rout: test_sir.R
 
 Sources += Makefile
 
-## Sources += content.mk
-## include content.mk
-
 Ignore += makestuff
 msrepo = https://github.com/dushoff
 Makefile: makestuff/Makefile

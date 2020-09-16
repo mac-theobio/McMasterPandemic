@@ -23,7 +23,6 @@ opt_pars <- with(as.list(params)
 	)
 )
 
-
 ff <- calibrate_comb(params = params
 	, debug_plot=TRUE
 	, use_DEoptim=FALSE
@@ -36,7 +35,3 @@ ff <- calibrate_comb(params = params
 )
 
 saveVars(ff, dat)
-
-
-
-
