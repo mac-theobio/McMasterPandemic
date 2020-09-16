@@ -5,7 +5,7 @@ title: "age examples"
 **tl;dr** 
 
 - *Good news*: we can build structures that seem to make sense, and basic stuff runs without crashing
-- *Bad news*: need to spend more time thinking about scaling/normalization of contact matrices, age structure etc.. Age-structured runs that should be *identical* to homogeneous mixing results aren't, quite ... ??
+- *Bad news*: need to spend more time thinking about scaling/normalization of contact matrices, age structure etc.. Lots more testing to do.
 
 ```{r pkgs,message=FALSE}
 library(McMasterPandemic)
@@ -18,17 +18,31 @@ library(directlabels)
 Read regular parameters, make normal (non-testify, non-expanded) parameters
 
 ```{r utils, echo=FALSE}
-
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
+## nice plot of sparse matrices
 ifun <- function(M,sub="") {
     Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
                                         x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)),
                   xlab="",ylab="",
                   sub=sub)
 }
+## drop reporting-related columns (since they're missing in ageified sims)
+droprep <- . %>% select(-c(foi,incidence,report,cumRep))
+## combine sims and compute differences
+mdiff_fun  <- function(L) {
+    (map_dfr(L,
+             ~ droprep(.) %>% pivot(), ## piping to droprep doesn't work ...
+             .id="model")
+        %>% group_by(date,var)
+        %>% summarise(diff=abs(value-value[1])[-1],
+                      lab=sprintf("abs(%s-%s)",model,model[1])[-1],
+                      .groups="drop")
+    )
+}
 ```
 
 ```{r setup1}
+## set testing to zero so we don't get testing included to start
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
 ```
@@ -117,40 +131,24 @@ plot_grid(plotlist=simplots,nrow=2)
 Uniform-mixing and non-age are identical (up to small numeric fuzz):
 
 ```{r check_equal}
-droprep <- . %>% select(-c(foi,incidence,report,cumRep))
 all.equal(droprep(sims$non_age),droprep(sims$unif),tolerance=1e-13)
 ```
 
 - diag and unif are not *identical* to homogeneous run: visually OK at first glance, but hosp is noticeably different, and closer inspection shows that they're all slightly different
 
-```{r echo=FALSE}
-mdiff_fun  <- function(L) {
-    (map_dfr(L,
-             ~ select(., -c(foi,incidence,report,cumRep)) %>% pivot(),
-             .id="model")
-        %>% group_by(date,var)
-        %>% summarise(diff=abs(value-value[1])[-1],
-                      lab=sprintf("abs(%s-%s)",model,model[1])[-1],
-                      .groups="drop")
-    )
-}
-```
+Uniform and diagonal sims match non-age-structured, up to numeric fuzz
 
-unif is practically identical,
-but diag is quite different: do we actually expect to be the same? under what conditions/scaling?
-
-```{r}
+```{r plot_diffs}
 mm <- mdiff_fun(sims[c("non_age","diag","unif")])
-gg4 <- ggplot(mm,aes(date,diff,colour=lab)) + geom_line()+facet_wrap(~var,scale="free") + scale_y_log10()
-print(gg4)
+all(na.omit(abs(mm$diff))<1e-8)
 ```
 
 ## age + tests
 
-```{r eval=FALSE}
-devtools::load_all("..")
+```{r testify_test}
 M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
 M.ut <- testify(M.u, ppa.u)
+show_ratemat(M.ut)
 ```
 
 ## to do
@@ -158,5 +156,5 @@ M.ut <- testify(M.u, ppa.u)
 - implement age-dependent N in state construction ...
 - try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
-- see how we do if we try to testify an age-structured matrix etc ...
+- examine age-structured matrix etc ... improve visualization of age/test structured matrices
 - clean up make_betavec: do we ever need "full"??
