@@ -50,6 +50,9 @@ spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 spline_calib.Rout: spline_calib.R spline_sim.rda spline.csv
 	$(makeR)
 
+spline_compare.Rout: spline_compare.R cachestuff/spline_calib.rda spline_sim.rda
+	$(makeR)
+
 ######################################################################
 
 ## Older attempts from Ali
@@ -235,6 +238,9 @@ makestuff/Makefile:
 	ls $@
 
 -include makestuff/os.mk
+
+-include makestuff/cacheflow.mk
+-include makestuff/cacherepo.mk
 
 -include makestuff/makeR.mk
 -include makestuff/rmd.mk

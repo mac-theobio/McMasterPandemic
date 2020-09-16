@@ -13,8 +13,8 @@ dat <- (sims
 	%>% gather(key = "var", value="value", -date)
 	%>% mutate(value = round(value))
 )
-opt_pars <- with(as.list(params),
-	list(params=c(log_beta0=log(beta0)
+opt_pars <- with(as.list(params)
+	, list(params=c(log_beta0=log(beta0)
 		, log_E0=log(E0)
 		, logit_c_prop = plogis(c_prop)
 		, logit_phi1 = plogis(phi1)
@@ -32,10 +32,10 @@ ff <- calibrate_comb(params = params
 	, spline_df = 7
 	, spline_type = "ns"
 	, data= dat
-	# , start_date = as.Date("2020-01-01")
+	, start_date = as.Date("2020-01-01")
 )
 
-saveVars(ff)
+saveVars(ff, dat)
 
 
 
