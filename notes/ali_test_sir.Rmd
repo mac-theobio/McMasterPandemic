@@ -23,7 +23,7 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 ## Per Capita Rate of Flow from Untested to Positive or Negative Compartments
 
-- $t$: testing intensity with dimensions of $1/time$.
+- $t$: testing intensity with dimension of $1/time$.
 - $\omega$: the rate of *onward flow* from the awaiting positive compartment, $p$, to reported/tested compartment, $t$, or from awaiting negative compartment, $n$, back to $u$.  It has units of $1/time$.
 
 - Note: The complicated part is the flow rate from $Z_u$ to $Z_n$, $Z_p$.  The (total, not per capita) flow from $Z_u$ to $Z_n$ is $t (1-P_Z) F(W_Z) Z_u$, from $Z_u$ to $Z_p$ is $t P_Z F(W_Z) Z_u$. Where, $P_Z$ is the probability of positive test.  
@@ -37,12 +37,12 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 \begin{align}
 \label{mod:1}
-1)\  d S_u/dt &= \omega S_n -\beta \frac{(I_u+\eta_1 I_n+\eta_1 I_p+ \eta_2 I_t)}{N_0} S_u - t (1-P_S) F(W_s) S_u \\
-2)\ d S_n/dt &= t (1-P_S) F(W_S) S_u - \omega S_n - \beta \frac{(I_u+\eta_1 I_n+\eta_1 I_p+ \eta_2 I_t)}{N_0} S_n   \\
-3)\ d I_u/dt &= \beta (I_u/N_0) (S_u+S_n) -t F(W_I) I_u + \omega I_n  - \gamma I_u  \\
-4)\ d I_n/dt &= \beta (\eta_1 I_n/N_0) (S_u+S_n) +t (1-P_I) F(W_I) I_u - \omega I_n -\gamma I_n \\
-5)\ d I_p/dt &= \beta (\eta_1 I_p/N_0) (S_u+S_n) + t P_I F(W_I) I_u - \omega I_p -\gamma I_p \\
-6)\ d I_t/dt &= \beta (\eta_2 I_t/N_0) (S_u+S_n) + \omega I_p - \gamma I_t  \\
+1)\  d S_u/dt &= -\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_u - t (1-P_S) F(W_s) S_u +\omega S_n \\
+2)\ d S_n/dt &= -\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_n + t (1-P_S) F(W_S) S_u - \omega S_n   \\
+3)\ d I_u/dt &= \beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_u -t F(W_I) I_u + \omega I_n  - \gamma I_u  \\
+4)\ d I_n/dt &= \beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_n +t (1-P_I) F(W_I) I_u - \omega I_n -\gamma I_n \\
+5)\ d I_p/dt &= t P_I F(W_I) I_u - \omega I_p -\gamma I_p \\
+6)\ d I_t/dt &= \omega I_p - \gamma I_t  \\
 7)\ d R_u/dt &= \gamma I_u + \omega R_n - t F(W_R) R_u  \\
 8)\ d R_n/dt &= \gamma I_n + t (1-P_R) F(W_R) R_u - \omega R_n  \\
 9)\ d R_p/dt &= t P_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
@@ -53,7 +53,7 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 Where, $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$.
 For convenience, let $F_S=t*F(W_S), F_I=t*F(W_I)$ and $F_R=t*F(W_R)$ hereafter. 
-$\eta$ is the isolation parameter with the assumption of $\eta_2<\eta_1$.
+$\eta$ is the isolation parameter with the assumption of $\eta_t<\eta_w$.
 
 ```{r packages, message=FALSE}
 library(deSolve)
@@ -190,13 +190,13 @@ G_{21}&G_{22}
 G_{11} =\frac{1}{\gamma(\omega+\gamma)+F_I (\gamma+\omega P_I)} 
 \left[ \begin {array}{cc}
 \beta (\omega+\gamma) & \beta \omega \\
-\beta \eta_1 F_I (1-P_I) & \beta \eta_1 (\gamma +F_I)
+\beta \eta_w F_I (1-P_I) & \beta \eta_w (\gamma +F_I)
 \end {array} \right],
 \\ 
 G_{22} =
 \left[ \begin {array}{cc}
-\frac{\beta \eta_1}{\omega+\gamma} & 0\\
-\frac{\beta \eta_2 \omega}{\gamma(\omega+\gamma)} & \frac{\beta \eta_2}{\gamma}.
+\frac{\beta \eta_w}{\omega+\gamma} & 0\\
+\frac{\beta \eta_t \omega}{\gamma(\omega+\gamma)} & \frac{\beta \eta_t}{\gamma}.
 \end {array} \right]
 \end{equation}
 
@@ -207,25 +207,25 @@ a\lambda^2+b\lambda+c=0
 \end{equation}
 where
 $a=(\omega+\gamma)\gamma+(\gamma+\omega P_I)F_I$,
-$b=-(\beta (\omega+\gamma) + \beta \eta_1 (\gamma + F_I))$ and
-$c= \beta^2 \eta_1$. Thus,
+$b=-(\beta (\omega+\gamma) + \beta \eta_w (\gamma + F_I))$ and
+$c= \beta^2 \eta_w$. Thus,
 $$
 \lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\
 \lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}.
 $$
 
 The Eigenvalues of $G_{22}$ are:
-$$\lambda_3 =\frac{\beta \eta_1}{\omega+\gamma} \\
-\lambda_4 =\frac{\beta \eta_2}{\gamma}$$
+$$\lambda_3 =\frac{\beta \eta_w}{\omega+\gamma} \\
+\lambda_4 =\frac{\beta \eta_t}{\gamma}$$
 
 Notes:
 
 - $\lambda_2 \leq \lambda_1$, since $b*c>0$.
-- $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_1/\eta_2$.
+- $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_w/\eta_t$.
 
 **Proposition 1**
-If $\eta_1*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$.
-Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_2\leq\eta_1$.
+If $\eta_w*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$.
+Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_t\leq\eta_w$.
 
 ### Stability of Disease-Free Equilibrium, $E_1$
 **Proposition 2**
@@ -256,12 +256,12 @@ $J_{11} = \left[ \begin {array}{cc}
 
 $J_{22} = \left[ \begin {array}{cc} 
 \beta-F_I-\gamma& \omega \\
-(1-P_I) F_I& \beta \eta_1-(\omega+\gamma)
+(1-P_I) F_I& \beta \eta_w-(\omega+\gamma)
 \end {array} \right]$, 
 
 $J_{33} = \left[ \begin {array}{cc} 
-\beta \eta_1-(\omega+\gamma)& 0 \\
-\omega& \beta \eta_2-\gamma
+\beta \eta_w-(\omega+\gamma)& 0 \\
+\omega& \beta \eta_t-\gamma
 \end {array} \right]$, 
 
 $J_{44} = \left[ \begin {array}{cc} 
