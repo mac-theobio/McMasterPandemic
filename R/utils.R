@@ -687,7 +687,7 @@ make_flowchart <- vis_model ## back-compatibility
 
 ## identify locations within matrix
 ## ##' @param value return character (TRUE) or numeric (FALSE) position?
-pfun <- function(from, to, mat=M, value=FALSE, recycle=FALSE) {
+pfun <- function(from, to, mat, value=FALSE, recycle=FALSE) {
     ## <start> + label + (_ or <end>)
     from_pos <- grep(sprintf("^%s(_|$)",from), rownames(mat), value=value)
     to_pos <- grep(sprintf("^%s(_|$)",to), colnames(mat), value=value)

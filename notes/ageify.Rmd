@@ -13,11 +13,14 @@ library(Matrix)
 library(cowplot)
 library(tidyverse)
 library(directlabels)
+library(viridis)
 ```
 
 Read regular parameters, make normal (non-testify, non-expanded) parameters
 
 ```{r utils, echo=FALSE}
+## round, preserving sum
+smart_round <- McMasterPandemic:::smart_round
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
 ## nice plot of sparse matrices
 ifun <- function(M,sub="", axlabs=TRUE) {
@@ -168,14 +171,13 @@ But this should do for proof of concept
 Quadratic age structure. More or less the same criticisms apply
 (unrealistic, good enough, should use real data).
 
-```{r}
+```{r ageparams}
 ppa.u2 <- ppa.u
 vec_mu <- 1-(0.01*1.3^(0:9))
 ppa.u2[["mu"]] <- vec_mu
 ss3 <- ss2
 Spos <- grep("^S",names(ss3))
 sum(ss3[Spos])
-smart_round <- McMasterPandemic:::smart_round
 vec_N <- 26-((1:10)-5)^2
 vec_N <- smart_round(sum(ss3[Spos])*vec_N/sum(vec_N))
 ss3[Spos] <- vec_N
@@ -185,12 +187,17 @@ rr3H <- (rr3
     %>% filter(str_detect(var,"^(H|D)_"))
     %>% separate(var,c("var","age"),sep="_")
 )
-(ggplot(rr3H,aes(date,value,colour=age))
-    + geom_line()
-    + facet_wrap(~var)
-)
-               
 ```
+
+```{r age_plot1,width=10,height=5}
+print(ggplot(rr3H,aes(date,value,colour=age))
+    + geom_line()
+    + facet_wrap(~var,scale="free")
+    + scale_colour_viridis_d()
+)
+```
+
+Results seem sensible. I guess I should try some extreme cases (e.g. `mu==0` for  some age classes?) for testing purposes ...
 
 ```{r}
 ## something here?
@@ -198,7 +205,7 @@ rr3H <- (rr3
 
 ## to do
 
-- implement age-dependent N in state construction ...
+- extend `make_state` to implement age-dependent N in state construction ... i.e. allow a vector of relative sizes of age classes
 - try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
 - examine age-structured matrix etc ... improve visualization of age/test structured matrices

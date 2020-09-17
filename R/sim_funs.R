@@ -165,6 +165,21 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     nonhosp_mort <- 0
     ####
     np <- length(params)
+    if (is.list(params)) {
+        nps <- lengths(params)
+        if (has_age(params)) {
+            na <- nrow(params[["Cmat"]])
+            bad_len <- which(!nps %in% c(1,na,na^2))
+            if (length(bad_len)>0) {
+                stop(sprintf("elements of params must be length 1, %d or %d: %s",
+                             na,na^2,
+                             paste(names(params)[bad_len],collapse=", ")))
+            }
+        } else {
+            ## FIXME: better error message ...
+            stopifnot(all(nps==1))
+        }
+    }
     ns <- length(state)
     ## make state and param names locally available (similar to with())
     P <- c(as.list(state),as.list(params))

@@ -9,6 +9,7 @@ show_ratemat(
   method = c("Matrix", "diagram", "igraph"),
   aspect = "iso",
   add_blocks = NULL,
+  axlabs = TRUE,
   const_width = (method == "igraph"),
   do_symbols = NULL
 )
@@ -21,6 +22,8 @@ show_ratemat(
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
 \item{add_blocks}{add lines showing blocks for testified matrices?}
+
+\item{axlabs}{for flow matrices, show axis tick labels?}
 
 \item{const_width}{set flows to constant value of 1?}
 
