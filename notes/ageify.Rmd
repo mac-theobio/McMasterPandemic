@@ -20,9 +20,15 @@ Read regular parameters, make normal (non-testify, non-expanded) parameters
 ```{r utils, echo=FALSE}
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
 ## nice plot of sparse matrices
-ifun <- function(M,sub="") {
-    Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
-                                        x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)),
+ifun <- function(M,sub="", axlabs=TRUE) {
+    if (axlabs) {
+        rlabs <- rownames(M)
+        clabs <- colnames(M)
+    } else {
+        rlabs <- clabs <- rep("",nrow(M))
+    }
+    Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rlabs),
+                                        x=list(at=seq(ncol(M)),labels=clabs, rot=90)),
                   xlab="",ylab="",
                   sub=sub)
 }
@@ -145,10 +151,49 @@ all(na.omit(abs(mm$diff))<1e-8)
 
 ## age + tests
 
-```{r testify_test}
+```{r testify_test,message=FALSE}
 M.u <- make_ratemat(ss2, ppa.u, sparse=TRUE)
 M.ut <- testify(M.u, ppa.u)
-show_ratemat(M.ut)
+show_ratemat(M.ut,axlabs=FALSE)
+```
+
+Geometrically increasing severity (decreasing mildness)
+with constants tweaked.
+This is not very realistic:
+(1) average is not age-weighted
+(2) not severe enough in older age classes.
+Should use either actual values or curve fit from Papst et al paper.
+But this should do for proof of concept
+
+Quadratic age structure. More or less the same criticisms apply
+(unrealistic, good enough, should use real data).
+
+```{r}
+ppa.u2 <- ppa.u
+vec_mu <- 1-(0.01*1.3^(0:9))
+ppa.u2[["mu"]] <- vec_mu
+ss3 <- ss2
+Spos <- grep("^S",names(ss3))
+sum(ss3[Spos])
+smart_round <- McMasterPandemic:::smart_round
+vec_N <- 26-((1:10)-5)^2
+vec_N <- smart_round(sum(ss3[Spos])*vec_N/sum(vec_N))
+ss3[Spos] <- vec_N
+rr3 <- run_sim(ppa.u2, ss3,end_date="2020-10-01",condense=FALSE)
+rr3H <- (rr3
+    %>% pivot()
+    %>% filter(str_detect(var,"^(H|D)_"))
+    %>% separate(var,c("var","age"),sep="_")
+)
+(ggplot(rr3H,aes(date,value,colour=age))
+    + geom_line()
+    + facet_wrap(~var)
+)
+               
+```
+
+```{r}
+## something here?
 ```
 
 ## to do

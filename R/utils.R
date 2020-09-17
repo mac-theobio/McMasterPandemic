@@ -574,12 +574,15 @@ smart_round <- function(x) {
 ##' @param add_blocks add lines showing blocks for testified matrices?
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
+##' @param axlabs for flow matrices, show axis tick labels?
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
 ##' @export
-show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso", add_blocks=NULL,
+show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
+                         aspect="iso", add_blocks=NULL,
+                         axlabs=TRUE,
                          const_width=(method=="igraph"),
                          do_symbols=NULL) {
     method <- match.arg(method)
@@ -593,8 +596,16 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"), aspect="iso",
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
                                                      rownames(M)))
         }
-        p <- Matrix::image(Matrix(M), scales=list(x=list(at=seq(nrow(M)),labels=rownames(M), rot=90),
-                                                  y=list(at=seq(ncol(M)),labels=colnames(M))),
+        if (axlabs) {
+            rlabs <- rownames(M)
+            clabs <- colnames(M)
+        } else {
+            rlabs <- clabs <- rep("",nrow(M))
+        }
+        p <- Matrix::image(Matrix(M),
+                           scales=list(x=list(at=seq(nrow(M)),labels=rlabs,
+                                              rot=90),
+                                       y=list(at=seq(ncol(M)),labels=clabs)),
                            xlab="to",
                            ylab="from",
                            sub="",
