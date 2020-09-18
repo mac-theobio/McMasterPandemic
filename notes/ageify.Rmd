@@ -9,9 +9,15 @@ title: "age examples"
 
 ```{r pkgs,message=FALSE}
 library(McMasterPandemic)
-library(Matrix)
-library(cowplot)
+## tools
 library(tidyverse)
+library(Matrix)
+library(pins)
+library(readxl)
+## 
+library(socialmixr)
+## graphics stuff
+library(cowplot)
 library(directlabels)
 library(viridis)
 ```
@@ -199,13 +205,33 @@ print(ggplot(rr3H,aes(date,value,colour=age))
 
 Results seem sensible. I guess I should try some extreme cases (e.g. `mu==0` for  some age classes?) for testing purposes ...
 
+`socialmixr` doesn't appear to have any North American data, so we should probably go with Prem et al. 2013 WAIFW matrices divided by activity {school, home, work, other} (DOI: https://dx.doi.org/10.1371/journal.pcbi.1005697; machine-readable info at https://doi.org/10.1371/journal.pcbi.1005697.s002) [going to that URL downloads a zip file; not sure how to get it programmatically?]
+
 ```{r}
-## something here?
+list.files("contact_matrices_152_countries")
 ```
+
+```{r}
+## spreadsheets 1 and 2 are alphabetical (1 ends with Morocco)
+m1 <- read_excel("contact_matrices_152_countries/MUestimates_all_locations_1.xlsx",
+                 sheet="Canada") %>% as.matrix()
+prem_agecats <- mk_agecats(0,75,da=5)
+dimnames(m1) <- list(prem_agecats, prem_agecats)
+m1 <- as(m1,"Matrix")
+ifun(m1)
+```
+
+```{r}
+persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
+```
+
+- aggregate to 10-year rather than 5-year age classes?
+- check for normalization etc.?
 
 ## to do
 
 - extend `make_state` to implement age-dependent N in state construction ... i.e. allow a vector of relative sizes of age classes
+- best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
 - try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
 - examine age-structured matrix etc ... improve visualization of age/test structured matrices
