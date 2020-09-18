@@ -1,5 +1,5 @@
 ---
-title: "SIR model with testing flows"
+title: "SIR Model With Testing Flows and Isolation"
 author: "Ali"
 date: "15/08/2020"
 output: html_document
@@ -19,7 +19,7 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 - Assume there are 3 groups of individuals: $S$, $I$ and $R$.
 - Each group splits into 4 subgroups to incorporate the testing mechanism, so overall the model framework has 12 compartments as follows. $S_u,$ $S_n$, $S_p$, $S_t$, $I_u$, $I_n$, $I_p$, $I_t$, $R_u$, $R_n$, $R_p$, $R_t$.
-- Further, assume that (1) a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) there are two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported neg/pos tests. 
+- Further, assume that (1) a perfectly specific test, i.e. no false positives, then $S_p$ and $S_t$ are always zero (2) there are two 'integrator' or 'accumulator' compartments, $N$ and $P$, to collect cumulative reported negative or positive tests. 
 
 ## Per Capita Rate of Flow from Untested to Positive or Negative Compartments
 
@@ -34,26 +34,25 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 ![](../inst/pix/sir_test1.jpg)
 
+Let the force of infection $\Lambda=\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0}$, where $\eta$ is the isolation parameter with the assumption of $\eta_t<\eta_w$, i.e., the awaiting individuals for test results have higher transmission probability than the reported individuals. The scaling parameter is defined as $sc = t N_0/(W_s S_u + W_i I_u + W_r R_u)$ and $F_s = sc \times W_s$, $F_i=sc \times W_i$ and $F_r = sc\times W_r$. The model is
 
 \begin{align}
 \label{mod:1}
-1)\  d S_u/dt &= -\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_u - t (1-P_S) F(W_s) S_u +\omega S_n \\
-2)\ d S_n/dt &= -\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_n + t (1-P_S) F(W_S) S_u - \omega S_n   \\
-3)\ d I_u/dt &= \beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_u -t F(W_I) I_u + \omega I_n  - \gamma I_u  \\
-4)\ d I_n/dt &= \beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0} S_n +t (1-P_I) F(W_I) I_u - \omega I_n -\gamma I_n \\
-5)\ d I_p/dt &= t P_I F(W_I) I_u - \omega I_p -\gamma I_p \\
+1)\ d S_u/dt &= -\Lambda - (1-P_s) F_s S_u + \omega S_n \\
+2)\ d S_n/dt &= -\Lambda + (1-P_s) F_s S_u - \omega S_n \\
+3)\ d I_u/dt &= \Lambda - F_i I_u + \omega I_n  - \gamma I_u  \\
+4)\ d I_n/dt &= \Lambda + (1-P_i) F_i I_u - \omega I_n -\gamma I_n \\
+5)\ d I_p/dt &= P_i F_i I_u - \omega I_p -\gamma I_p \\
 6)\ d I_t/dt &= \omega I_p - \gamma I_t  \\
-7)\ d R_u/dt &= \gamma I_u + \omega R_n - t F(W_R) R_u  \\
-8)\ d R_n/dt &= \gamma I_n + t (1-P_R) F(W_R) R_u - \omega R_n  \\
-9)\ d R_p/dt &= t P_R F(W_R) R_u + \gamma I_p - \omega R_p  \\
-10)\ d R_t/dt &= \gamma I_t + \omega R_p  \\
+7)\ d R_u/dt &= \gamma I_u - F_r R_u + \omega R_n \\
+8)\ d R_n/dt &= \gamma I_n + (1-P_r) F_r R_u - \omega R_n  \\
+9)\ d R_p/dt &= \gamma I_p + P_r F_r R_u  - \omega R_p  \\
+10)\ d R_t/dt&= \gamma I_t + \omega R_p  \\
 11)\ dN/dt &= \omega (S_n + I_n + R_n)   \\
 12)\ dP/dt &= \omega(I_p + R_p).
 \end{align}
 
-Where, $F(W_Z) = (W_Z \cdot N_0)/\sum_{Z'} \left( W_{Z'} {Z'}_{u} \right)$.
-For convenience, let $F_S=t*F(W_S), F_I=t*F(W_I)$ and $F_R=t*F(W_R)$ hereafter. 
-$\eta$ is the isolation parameter with the assumption of $\eta_t<\eta_w$.
+
 
 ```{r packages, message=FALSE}
 library(deSolve)
@@ -67,22 +66,23 @@ unpack <- McMasterPandemic::unpack
 ```{r, model formulation}
 sir.model <- function(time,state,params){
     unpack(as.list(c(state,params)))
-  
+    ## Force of Infection  
+    Lambda <- beta * (I_u + eta_w*(I_n+I_p) + eta_t*I_t)/N0
     ## scaling the weights
     sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
-    F1 <- sc*W_s
-    F2 <- sc*W_i
-    F3 <- sc*W_r
+    F_s <- sc*W_s
+    F_i <- sc*W_i
+    F_r <- sc*W_r
 
-    dS_u.dt <- omega * S_n - beta * (I_u+eta1*(I_n+I_p)+eta2*I_t)/N0 * S_u - (1-P_s) * F1 * S_u
-    dS_n.dt <- (1-P_s) * F1 * S_u - omega * S_n - beta * (I_u+eta1*(I_n+I_p)+eta2*I_t)/N0 * S_n
-    dI_u.dt <- beta * (I_u/N0) * (S_u+S_n) + omega * I_n - F2 * I_u - gamma * I_u
-    dI_n.dt <- (1-P_i) * F2 * I_u + beta * (eta1*I_n/N0) * (S_u+S_n) - omega * I_n - gamma * I_n
-    dI_p.dt <- beta * (eta1*I_p/N0) * (S_u+S_n) + P_i * F2 * I_u - omega * I_p - gamma * I_p 
-    dI_t.dt <- beta * (eta2*I_t/N0) * (S_u+S_n) + omega * I_p - gamma * I_t 
-    dR_u.dt <- gamma * I_u + omega * R_n - F3 * R_u  
-    dR_n.dt <- gamma * I_n + (1-P_r) * F3 * R_u - omega * R_n
-    dR_p.dt <- P_r * F3 * R_u + gamma * I_p - omega * R_p
+    dS_u.dt <- - Lambda - (1-P_s) * F_s * S_u + omega * S_n
+    dS_n.dt <- - Lambda + (1-P_s) * F_s * S_u - omega * S_n 
+    dI_u.dt <-  Lambda + omega * I_n - F_i * I_u - gamma * I_u
+    dI_n.dt <-  Lambda + (1-P_i) * F_i * I_u  - omega * I_n - gamma * I_n
+    dI_p.dt <-  P_i * F_i * I_u - omega * I_p - gamma * I_p 
+    dI_t.dt <-  omega * I_p - gamma * I_t 
+    dR_u.dt <- gamma * I_u + omega * R_n - F_r * R_u  
+    dR_n.dt <- gamma * I_n + (1-P_r) * F_r * R_u - omega * R_n
+    dR_p.dt <- gamma * I_p + P_r * F_r * R_u - omega * R_p
     dR_t.dt <- gamma * I_t + omega * R_p
     dN.dt <- omega * (S_n + I_n + R_n)
     dP.dt <- omega *(I_p + R_p)
@@ -99,7 +99,7 @@ sir.model <- function(time,state,params){
 params <- c(N0=1000, beta=1,gamma=1/3, omega=0.25, t=0.01, 
              W_s=0.01, W_i=1, W_r=0.01, #weights
              P_s=0, P_i=0.5, P_r=0.5, #prob of waiting for being tested positive
-            eta1=0.02, eta2=0.01 #isolation parameter   
+            eta_w=0.02, eta_t=0.01 #isolation parameter   
             )
 class(params) <- "params_pansim"
 state_init <- c(S_u=params[["N0"]], S_n=0,
@@ -142,188 +142,177 @@ ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
   scale_y_log10(limits=c(0.1,params[["N0"]]))
     ```
 
-## Steady States
+### Steady States
 
-There are two steady states for the above SIR model.
+The Disease-Free Equilibrium, namely $E_1$, for the above SIR model is
+\label{exp:dfe} $S_n^*= \frac{t (1-P_s)}{\omega} N_0, S_u^*= N_0-S_n^*$, and $I_j=R_j=0 \ \forall j$.
 
-\label{exp:dfe}
-- The Disease-Free Equilibrium, $E_1$: $S_u= \frac{\omega}{\omega+t (1-P_S) F(W_S)} N_0, S_n= N_0-S_u$, and $I_j=R_j=0 \ \forall j$.
-- (Not sure what is the right term for this one?), $E_2$.
-
-### Final State, E_2
-
-Let $S=S_u + S_n$, $I=I_u + I_n + I_p + I_t$ and $R=R_u + R_n + R_p + R_t$.
-We know $S+I+R=N_0$.
-
-$dI/ds=\frac{\gamma}{\beta S} N_0 -1$, thus $I = \frac{\gamma N_0}{\beta} \log(S) - S +C$, where $C= N_0(1-\frac{\gamma}{\beta} \ln(N_0))$.
-
-$dS/dR = \frac{-\beta}{\gamma N_0} S$, thus $S(R) = S(0) \exp(\frac{-\beta}{\gamma N_0}R)$
-
-$dR/dt=\gamma I = \gamma (N_0-S-R)$.
-
-as $t \rightarrow \infty, I \rightarrow 0,  dR/dt \rightarrow 0 $. Thus, $R_{\infty} = N_0 ( 1-\exp(\frac{-\beta}{\gamma N_0}R_{\infty}))$ which has a unique solution given that $\beta/\gamma N_0 >0$.
-
-Thus, as $t \rightarrow \infty$, $S \rightarrow S_{\infty}, I \rightarrow 0$ and $R \rightarrow R_{\infty}$. 
 
 ### Basic Reproduction Number
 
 The next generation matrix, $G = F V^{-1}$, is in the lower triangular form with $F$ and $G$ as follows.
 
-\begin{equation}\label{FV}
-F= \left[ \begin {array}{cccc} \beta&0&0&0\\ 
- 0&\beta\,\eta_{{1}}&0&0\\ 0&0&\beta\,\eta_{{1}}&0\\ 
- 0&0&0&\beta\,\eta_{{2}}
- \end {array} \right], 
- V=
- \left[ \begin {array}{cccc}  F_I+\gamma&-\omega&0&0\\
--\left( 1- P_I \right)  F_I&\omega+\gamma&0&0\\ 
--P_I F_I&0&\omega+\gamma&0\\ 
-0&0&-\omega&\gamma 
-\end {array} \right],
-\end{equation}
+$R0= (A \times S_u^* + B \times S_n^*) \times C$, where
+$A=\gamma(\omega+\gamma+\eta_w F_i) + \omega \eta_t P_i F_i$,
+$B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma+\eta_w F_i)+(\gamma \eta_w+\omega \eta_t)P_i F_i \omega}{\omega+\gamma}$ and 
+$C=\frac{\beta}{N_0 \gamma (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
 
-\begin{equation}
-G = \left[ \begin {array}{cc} 
-G_{11}&0 \\
-G_{21}&G_{22} 
-\end {array} \right], \text{ where } \\
-G_{11} =\frac{1}{\gamma(\omega+\gamma)+F_I (\gamma+\omega P_I)} 
-\left[ \begin {array}{cc}
-\beta (\omega+\gamma) & \beta \omega \\
-\beta \eta_w F_I (1-P_I) & \beta \eta_w (\gamma +F_I)
-\end {array} \right],
-\\ 
-G_{22} =
-\left[ \begin {array}{cc}
-\frac{\beta \eta_w}{\omega+\gamma} & 0\\
-\frac{\beta \eta_t \omega}{\gamma(\omega+\gamma)} & \frac{\beta \eta_t}{\gamma}.
-\end {array} \right]
-\end{equation}
+<!-- \begin{equation}\label{FV} -->
+<!-- F= \left[ \begin {array}{cccc} \beta&0&0&0\\ -->
+<!--  0&\beta\,\eta_{{1}}&0&0\\ 0&0&\beta\,\eta_{{1}}&0\\ -->
+<!--  0&0&0&\beta\,\eta_{{2}} -->
+<!--  \end {array} \right], -->
+<!--  V= -->
+<!--  \left[ \begin {array}{cccc}  F_I+\gamma&-\omega&0&0\\ -->
+<!-- -\left( 1- P_i \right)  F_I&\omega+\gamma&0&0\\ -->
+<!-- -P_i F_I&0&\omega+\gamma&0\\ -->
+<!-- 0&0&-\omega&\gamma -->
+<!-- \end {array} \right], -->
+<!-- \end{equation} -->
 
-The Eigenvalues of $G_{11}$, namely $\lambda_1$ and $\lambda_2$, are the roots of the following characteristic polynomial
-\begin{equation}
-\label{eq:ch4}
-a\lambda^2+b\lambda+c=0   
-\end{equation}
-where
-$a=(\omega+\gamma)\gamma+(\gamma+\omega P_I)F_I$,
-$b=-(\beta (\omega+\gamma) + \beta \eta_w (\gamma + F_I))$ and
-$c= \beta^2 \eta_w$. Thus,
-$$
-\lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\
-\lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}.
-$$
+<!-- \begin{equation} -->
+<!-- G = \left[ \begin {array}{cc} -->
+<!-- G_{11}&0 \\ -->
+<!-- G_{21}&G_{22} -->
+<!-- \end {array} \right], \text{ where } \\ -->
+<!-- G_{11} =\frac{1}{\gamma(\omega+\gamma)+F_I (\gamma+\omega P_i)} -->
+<!-- \left[ \begin {array}{cc} -->
+<!-- \beta (\omega+\gamma) & \beta \omega \\ -->
+<!-- \beta \eta_w F_I (1-P_i) & \beta \eta_w (\gamma +F_I) -->
+<!-- \end {array} \right], -->
+<!-- \\ -->
+<!-- G_{22} = -->
+<!-- \left[ \begin {array}{cc} -->
+<!-- \frac{\beta \eta_w}{\omega+\gamma} & 0\\ -->
+<!-- \frac{\beta \eta_t \omega}{\gamma(\omega+\gamma)} & \frac{\beta \eta_t}{\gamma}. -->
+<!-- \end {array} \right] -->
+<!-- \end{equation} -->
 
-The Eigenvalues of $G_{22}$ are:
-$$\lambda_3 =\frac{\beta \eta_w}{\omega+\gamma} \\
-\lambda_4 =\frac{\beta \eta_t}{\gamma}$$
+<!-- The Eigenvalues of $G_{11}$, namely $\lambda_1$ and $\lambda_2$, are the roots of the following characteristic polynomial -->
+<!-- \begin{equation} -->
+<!-- \label{eq:ch4} -->
+<!-- a\lambda^2+b\lambda+c=0 -->
+<!-- \end{equation} -->
+<!-- where -->
+<!-- $a=(\omega+\gamma)\gamma+(\gamma+\omega P_i)F_I$, -->
+<!-- $b=-(\beta (\omega+\gamma) + \beta \eta_w (\gamma + F_I))$ and -->
+<!-- $c= \beta^2 \eta_w$. Thus, -->
+<!-- $$ -->
+<!-- \lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\ -->
+<!-- \lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}. -->
+<!-- $$ -->
 
-Notes:
+<!-- The Eigenvalues of $G_{22}$ are: -->
+<!-- $$\lambda_3 =\frac{\beta \eta_w}{\omega+\gamma} \\ -->
+<!-- \lambda_4 =\frac{\beta \eta_t}{\gamma}$$ -->
 
-- $\lambda_2 \leq \lambda_1$, since $b*c>0$.
-- $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_w/\eta_t$.
+<!-- Notes: -->
 
-**Proposition 1**
-If $\eta_w*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$.
-Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_t\leq\eta_w$.
+<!-- - $\lambda_2 \leq \lambda_1$, since $b*c>0$. -->
+<!-- - $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_w/\eta_t$. -->
 
-### Stability of Disease-Free Equilibrium, $E_1$
-**Proposition 2**
-If $\cal{R_0}<1$, results in stability of $E_1$.
+<!-- **Proposition 1** -->
+<!-- If $\eta_w*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$. -->
+<!-- Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_t\leq\eta_w$. -->
 
-**Proposition 3**
-The sufficient condition for stability of model (\ref{mod:1}) at the disease-free equilibrium $E_1$ (\ref{exp:dfe}) is $\beta/\gamma<1$.
+<!-- ### Stability of Disease-Free Equilibrium, $E_1$ -->
+<!-- **Proposition 2** -->
+<!-- If $\cal{R_0}<1$, results in stability of $E_1$. -->
 
-Jacobian Matrix at the Disease-Free equilibrium is in the following form
+<!-- **Proposition 3** -->
+<!-- The sufficient condition for stability of model (\ref{mod:1}) at the disease-free equilibrium $E_1$ (\ref{exp:dfe}) is $\beta/\gamma<1$. -->
 
-\begin{equation}
-\label{matrix:Jac}
-J = \left[ \begin {array}{ccccc} 
-J_{11}&0&0&0&0 \\
-0&J_{22}&0&0&0 \\
-0&0&J_{33}&0&0 \\
-0&0&0&J_{44}&0 \\
-0&0&0&0&J_{55} \\
-\end {array} \right],
-\end{equation}
+<!-- Jacobian Matrix at the Disease-Free equilibrium is in the following form -->
 
-where the matrices $J_{ii}$'s on the diagonal of $J$ are all 2-by-2 and as follows
+<!-- \begin{equation} -->
+<!-- \label{matrix:Jac} -->
+<!-- J = \left[ \begin {array}{ccccc} -->
+<!-- J_{11}&0&0&0&0 \\ -->
+<!-- 0&J_{22}&0&0&0 \\ -->
+<!-- 0&0&J_{33}&0&0 \\ -->
+<!-- 0&0&0&J_{44}&0 \\ -->
+<!-- 0&0&0&0&J_{55} \\ -->
+<!-- \end {array} \right], -->
+<!-- \end{equation} -->
 
-$J_{11} = \left[ \begin {array}{cc} 
--(1-P_S) F_S& \omega \\
-(1-P_S) F_S& -\omega
-\end {array} \right]$, 
+<!-- where the matrices $J_{ii}$'s on the diagonal of $J$ are all 2-by-2 and as follows -->
 
-$J_{22} = \left[ \begin {array}{cc} 
-\beta-F_I-\gamma& \omega \\
-(1-P_I) F_I& \beta \eta_w-(\omega+\gamma)
-\end {array} \right]$, 
+<!-- $J_{11} = \left[ \begin {array}{cc} -->
+<!-- -(1-P_s) F_S& \omega \\ -->
+<!-- (1-P_s) F_S& -\omega -->
+<!-- \end {array} \right]$, -->
 
-$J_{33} = \left[ \begin {array}{cc} 
-\beta \eta_w-(\omega+\gamma)& 0 \\
-\omega& \beta \eta_t-\gamma
-\end {array} \right]$, 
+<!-- $J_{22} = \left[ \begin {array}{cc} -->
+<!-- \beta-F_I-\gamma& \omega \\ -->
+<!-- (1-P_i) F_I& \beta \eta_w-(\omega+\gamma) -->
+<!-- \end {array} \right]$, -->
 
-$J_{44} = \left[ \begin {array}{cc} 
--F_R& \omega \\
-(1-P_R)F_R& -\omega  
-\end {array} \right]$, 
+<!-- $J_{33} = \left[ \begin {array}{cc} -->
+<!-- \beta \eta_w-(\omega+\gamma)& 0 \\ -->
+<!-- \omega& \beta \eta_t-\gamma -->
+<!-- \end {array} \right]$, -->
 
-$J_{55} = \left[ \begin {array}{cc} 
--\omega& 0 \\
-\omega& 0  
-\end {array} \right]$.
+<!-- $J_{44} = \left[ \begin {array}{cc} -->
+<!-- -F_R& \omega \\ -->
+<!-- (1-P_r)F_R& -\omega -->
+<!-- \end {array} \right]$, -->
 
-It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative.
+<!-- $J_{55} = \left[ \begin {array}{cc} -->
+<!-- -\omega& 0 \\ -->
+<!-- \omega& 0 -->
+<!-- \end {array} \right]$. -->
 
-## Simulation
-```{r sim_R0, message=FALSE}
-F_I <- function(state,params,t){
-  unpack(as.list(c(state,params)))
-  ## scaling the weights
-    sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
-    F2 <- sc*W_i
-    return(F2)
-}
+<!-- It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative. -->
 
-# just a test
-F_I(state=state_init,params=update(params,t=0))
 
-# specify the ranges
-beta  <- 2  ## set beta high enough to allow R0>1 in worst case
-gamma <- 1
-eta1  <- seq(0,1, length.out=11)
-P_I   <- 0.5
-t     <- seq(0,0.1, length.out=11)
-omega <- seq(0, 1, length.out=11)
-eta2  <- seq(0, 0.1, length.out=11)
-
-df1 <- expand.grid(beta=beta,gamma=gamma,eta1=eta1,t=t,omega=omega,eta2=eta2,P_I=P_I)
-df_FI <- data.frame(t=t, FI= sapply(t,
-                                    function(tt)
-                                        F_I(state=state_init,params=update(params,t=tt))))
-df1 <- merge(df1,df_FI,by="t")
-
-nrow(df1)
-
-# Define the eigenvalues of next generation matrix G:
-lam1<- function(input){
-  unpack(input)
-  a<- (omega+gamma)*gamma+(gamma+omega*P_I)*FI
-    b<--(beta*(omega+gamma) + beta*eta1*(gamma + FI))
-    c<-beta^2*eta1
-  return((-b+sqrt(b^2-4*a*c))/(2*a))
-}
+# ### Simulation
+# ```{r sim_R0, message=FALSE, warning=FALSE}
+# F_I <- function(state,params,t){
+#   unpack(as.list(c(state,params)))
+#   ## scaling the weights
+#     sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
+#     F_i <- sc*W_i
+#     return(F_i)
+# }
+# 
+# # just a test
+# F_I(state=state_init,params=update(params,t=0))
+# 
+# # specify the ranges
+# beta  <- 2  ## set beta high enough to allow R0>1 in worst case
+# gamma <- 1
+# eta_w  <- seq(0,1, length.out=11)
+# P_i   <- 0.5
+# t     <- seq(0,0.1, length.out=11)
+# omega <- seq(0, 1, length.out=11)
+# eta_t  <- seq(0, 0.1, length.out=11)
+# 
+# df1 <- expand.grid(beta=beta,gamma=gamma,eta_w=eta_w,t=t,omega=omega,eta_t=eta_t,P_i=P_i)
+# df_FI <- data.frame(t=t, FI= sapply(t,
+#                                     function(tt)
+#                                         F_I(state=state_init,params=update(params,t=tt))))
+# df1 <- merge(df1,df_FI,by="t")
+# 
+# nrow(df1)
+# 
+# # Define the eigenvalues of next generation matrix G:
+# lam1<- function(input){
+#   unpack(input)
+#   a<- (omega+gamma)*gamma+(gamma+omega*P_i)*FI
+#     b<--(beta*(omega+gamma) + beta*eta_w*(gamma + FI))
+#     c<-beta^2*eta_w
+#   return((-b+sqrt(b^2-4*a*c))/(2*a))
+# }
 
 
 lam3 <- function(input){
   unpack(input)
-  return((beta*eta1)/(omega+gamma))
+  return((beta*eta_w)/(omega+gamma))
 }
 
 lam4 <- function(input){
   unpack(input)
-  return((beta*eta2)/(gamma))
+  return((beta*eta_t)/(gamma))
 }
 
 lambda1<-lam1(df1)
@@ -336,10 +325,10 @@ df2 <- data.frame(df1,"lambda1"=lambda1,"lambda3"=lambda3,"lambda4"=lambda4)
 df2[, "R0"] <- apply(df2[, c("lambda1","lambda3","lambda4")], 1, max)
 which(df2[]<0)
 
-## df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta2,t))
+## df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta_t,t))
 
 p1<- ggplot(df2,aes(x=FI,y=omega,z=R0))
-p1 + geom_contour(breaks=1) + facet_grid(eta1~eta2, labeller=label_both)
+p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both)
 ```
 
 
