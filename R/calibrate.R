@@ -979,6 +979,7 @@ calibrate_comb <- function(data,
                      debug=FALSE,
                      debug_hist=FALSE,
                      return_val=c("fit","X","formula","args","time_args"),
+                     start_date=NULL,
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
     return_val <- match.arg(return_val)
@@ -1114,9 +1115,11 @@ calibrate_comb <- function(data,
                                                      byrow=TRUE)
     }
     if (return_val=="X") return(X)
+    if(is.null(opt_pars$time_beta)){
     ## matplot(X_dat$t_vec,X,type="l",lwd=2)
     opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
     names(opt_pars$time_beta) <- colnames(X)
+    }
     time_args <- nlist(X,X_date=X_dat$date)
     if (use_testing) {
         time_args <- c(time_args, list(testing_data = testing_data))
