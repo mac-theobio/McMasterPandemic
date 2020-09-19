@@ -15,12 +15,12 @@ dat <- (sims
 )
 opt_pars <- with(as.list(params)
 	, list(params=c(log_beta0=log(beta0)
-		, log_E0=log(E0)
-		, logit_c_prop = plogis(c_prop)
-		, logit_phi1 = plogis(phi1)
+		# , log_E0=log(E0)
+		# , logit_c_prop = plogis(c_prop)
+		# , logit_phi1 = plogis(phi1)
 		)
 	, log_nb_disp = c(report=3, death=3)
-	, time_beta = c(bb[-1])
+#	, time_beta = c(bb[-1])
 	)
 )
 
@@ -31,14 +31,14 @@ opt_pars <- with(as.list(params)
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=TRUE
+	, use_DEoptim=FALSE
 	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
 	, spline_df = 7
 	, spline_type = "ns"
 	, data= dat
-	, start_date = as.Date("2020-01-01")
+	, start_date_offset=0
 	# , 
 )
 
