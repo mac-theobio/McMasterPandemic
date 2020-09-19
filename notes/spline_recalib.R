@@ -20,7 +20,7 @@ opt_pars <- list(params=c(log_beta0=log(as.numeric(cc$params[1]))
 # , logit_c_prop = plogis(c_prop)
 # , logit_phi1 = plogis(phi1)
 	, log_nb_disp = log(cc$nb_disp)
-	, time_beta = cc$time_beta
+#	, time_beta = cc$time_beta
 )
 
 params <- ff$forecast_args$base_params
@@ -37,7 +37,7 @@ dd_resim <-(predict(ff,ensembles=FALSE)
 
 ff_refit <- calibrate_comb(params = params
 	, debug_plot=TRUE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
