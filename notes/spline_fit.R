@@ -17,6 +17,8 @@ h <- 2
 R0 <- 3
 c <- 2
 
+ndf <- 3
+
 ## The susceptible effect makes R smaller, and increases through time
 ## The infections makes R bigger, and grows and saturates
 Q <- exp(r*t)
@@ -27,8 +29,8 @@ logRt <- log(R0*S^h*I^(-c))
 Rf <- data.frame(t, logRt)
 
 # model fits
-mod_bs <- lm(logRt~bs(t,df=7),data=Rf)
-mod_ns <- lm(logRt~ns(t,df=7),data=Rf)
+mod_bs <- lm(logRt~bs(t,df=ndf),data=Rf)
+mod_ns <- lm(logRt~ns(t,df=ndf),data=Rf)
 
 Rfpredict <- (Rf
 	%>% mutate(bs_fit = predict(mod_bs)

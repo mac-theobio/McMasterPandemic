@@ -8,12 +8,15 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
+ndf <- 3
+
 print(ff)
 
 cc <- coef(ff,"fitted")
 
-opt_pars <- list(params=c(log_beta0=log(as.numeric(cc$params[1])))
-# , log_E0=log(E0)
+opt_pars <- list(params=c(log_beta0=log(as.numeric(cc$params[1]))
+#	, log_E0=log(as.numeric(cc$params[2]))
+		)
 # , logit_c_prop = plogis(c_prop)
 # , logit_phi1 = plogis(phi1)
 	, log_nb_disp = log(cc$nb_disp)
@@ -38,7 +41,7 @@ ff_refit <- calibrate_comb(params = params
 	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
-	, spline_df = 7
+	, spline_df = ndf
 	, spline_type = "ns"
 	, data= dd_resim
 	, start_date = min(dd_resim$date)

@@ -9,6 +9,11 @@ print(plot(ff, data=dat))
 
 aa <- coef(ff, "fitted")
 bb <- coef(ff_refit, "fitted")
+
+
+print(aa)
+print(bb)
+
 spline_df <- data.frame(time = 1:nrow(X)
 	, true_spline = exp(X[,-1] %*% matrix(aa$time_beta, ncol=1))
 	, refit_spline = exp(X[,-1] %*% matrix(bb$time_beta, ncol=1))

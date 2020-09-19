@@ -12,6 +12,8 @@ R0 <- 2
 
 fitmax <- 126 ## Copied from dependency 
 
+ndf <- 3
+
 params <- read_params(matchFile(".csv$"))
 
 X <- cbind(1,mod_ns$model[,-1])
@@ -46,7 +48,7 @@ print(plot(sims$date,sims$report, log="y"))
 X2 <- calibrate_comb(data=sims, params=params
 	, use_spline=TRUE
 	, spline_type="ns"
-	, spline_df = 7
+	, spline_df = ndf
 	, spline_extrap="constant"
 	, return="X"
 )
