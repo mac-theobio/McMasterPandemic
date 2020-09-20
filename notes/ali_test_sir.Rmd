@@ -38,10 +38,10 @@ Let the force of infection $\Lambda=\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta
 
 \begin{align}
 \label{mod:1}
-1)\ d S_u/dt &= -\Lambda - (1-P_s) F_s S_u + \omega S_n \\
-2)\ d S_n/dt &= -\Lambda + (1-P_s) F_s S_u - \omega S_n \\
-3)\ d I_u/dt &= \Lambda - F_i I_u + \omega I_n  - \gamma I_u  \\
-4)\ d I_n/dt &= \Lambda + (1-P_i) F_i I_u - \omega I_n -\gamma I_n \\
+1)\ d S_u/dt &= -\Lambda S_u - (1-P_s) F_s S_u + \omega S_n \\
+2)\ d S_n/dt &= -\Lambda S_n + (1-P_s) F_s S_u - \omega S_n \\
+3)\ d I_u/dt &= \Lambda S_u - F_i I_u + \omega I_n  - \gamma I_u  \\
+4)\ d I_n/dt &= \Lambda S_n + (1-P_i) F_i I_u - \omega I_n -\gamma I_n \\
 5)\ d I_p/dt &= P_i F_i I_u - \omega I_p -\gamma I_p \\
 6)\ d I_t/dt &= \omega I_p - \gamma I_t  \\
 7)\ d R_u/dt &= \gamma I_u - F_r R_u + \omega R_n \\
@@ -74,10 +74,10 @@ sir.model <- function(time,state,params){
     F_i <- sc*W_i
     F_r <- sc*W_r
 
-    dS_u.dt <- - Lambda - (1-P_s) * F_s * S_u + omega * S_n
-    dS_n.dt <- - Lambda + (1-P_s) * F_s * S_u - omega * S_n 
-    dI_u.dt <-  Lambda + omega * I_n - F_i * I_u - gamma * I_u
-    dI_n.dt <-  Lambda + (1-P_i) * F_i * I_u  - omega * I_n - gamma * I_n
+    dS_u.dt <- -Lambda*S_u - (1-P_s) * F_s * S_u + omega * S_n
+    dS_n.dt <- -Lambda*S_n + (1-P_s) * F_s * S_u - omega * S_n 
+    dI_u.dt <-  Lambda*S_u + omega * I_n - F_i * I_u - gamma * I_u
+    dI_n.dt <-  Lambda*S_n + (1-P_i) * F_i * I_u  - omega * I_n - gamma * I_n
     dI_p.dt <-  P_i * F_i * I_u - omega * I_p - gamma * I_p 
     dI_t.dt <-  omega * I_p - gamma * I_t 
     dR_u.dt <- gamma * I_u + omega * R_n - F_r * R_u  
@@ -96,13 +96,24 @@ sir.model <- function(time,state,params){
 ```
 
 ```{r model inputs, message=FALSE}
-params <- c(N0=1000, beta=1,gamma=1/3, omega=0.25, t=0.01, 
+params <- c(N0=1000000, beta=1,gamma=1/3, omega=0.25, t=0.01, 
              W_s=0.01, W_i=1, W_r=0.01, #weights
              P_s=0, P_i=0.5, P_r=0.5, #prob of waiting for being tested positive
             eta_w=0.02, eta_t=0.01 #isolation parameter   
             )
 class(params) <- "params_pansim"
 state_init <- c(S_u=params[["N0"]], S_n=0,
+                I_u=1,I_n=0,I_p=0,I_t=0,
+                R_u=0,R_n=0,R_p=0,R_t=0,
+                N=0,P=0)
+# Disease free equilibrium
+Sn_dfe <-function(params){
+  unpack(as.list(params))
+  return((t*(1-P_s)*N0)/omega)
+}
+Su_dfe<- params[["N0"]]-Sn_dfe(params)
+
+state_dfe <- c(S_u=Su_dfe, S_n=Sn_dfe(params),
                 I_u=1,I_n=0,I_p=0,I_t=0,
                 R_u=0,R_n=0,R_p=0,R_t=0,
                 N=0,P=0)
@@ -129,11 +140,33 @@ out <- as.data.frame(
     func=sir.model,
     y=state_init,
     times= d, 
-    parms=params,
-    rootfun = rootfun, 
+    parms=update(params,gamma=1/6),
+    rootfun = rootfun,
     method="lsodar"
   )
 )
+
+F_i <- function(state,params){
+   unpack(as.list(c(state,params)))
+   return(t*N0*W_i/(W_s*S_u+W_i*I_u+W_r*R_u))
+ }
+ # just a test
+  F_i(state=state_dfe,params=update(params,t=0))
+  
+R0<-function(state,params){
+unpack(as.list(c(state,params)))
+F_i <-F_i(state,params)
+A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
+B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
+C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
+R0 <- (A*S_u+B*S_n)*C 
+return(R0)
+}
+
+# R0<1:
+R0(state=state_dfe,params=params)
+# R0>1:
+R0(state=state_dfe,params=update(params,gamma=1/6))
 
 out2 <- out %>%
   pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
@@ -152,7 +185,7 @@ The Disease-Free Equilibrium, namely $E_1$, for the above SIR model is
 
 The next generation matrix, $G = F V^{-1}$, is in the lower triangular form with $F$ and $G$ as follows.
 
-$R0= (A \times S_u^* + B \times S_n^*) \times C$, where
+$$R_0= (A \times S_u^* + B \times S_n^*) \times C,$$ where
 $A=\gamma(\omega+\gamma+\eta_w F_i) + \omega \eta_t P_i F_i$,
 $B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma+\eta_w F_i)+(\gamma \eta_w+\omega \eta_t)P_i F_i \omega}{\omega+\gamma}$ and 
 $C=\frac{\beta}{N_0 \gamma (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
@@ -265,72 +298,60 @@ $C=\frac{\beta}{N_0 \gamma (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
 <!-- It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative. -->
 
 
-# ### Simulation
-# ```{r sim_R0, message=FALSE, warning=FALSE}
-# F_I <- function(state,params,t){
-#   unpack(as.list(c(state,params)))
-#   ## scaling the weights
-#     sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
-#     F_i <- sc*W_i
-#     return(F_i)
-# }
-# 
-# # just a test
-# F_I(state=state_init,params=update(params,t=0))
-# 
-# # specify the ranges
-# beta  <- 2  ## set beta high enough to allow R0>1 in worst case
-# gamma <- 1
-# eta_w  <- seq(0,1, length.out=11)
-# P_i   <- 0.5
-# t     <- seq(0,0.1, length.out=11)
-# omega <- seq(0, 1, length.out=11)
-# eta_t  <- seq(0, 0.1, length.out=11)
-# 
-# df1 <- expand.grid(beta=beta,gamma=gamma,eta_w=eta_w,t=t,omega=omega,eta_t=eta_t,P_i=P_i)
-# df_FI <- data.frame(t=t, FI= sapply(t,
-#                                     function(tt)
-#                                         F_I(state=state_init,params=update(params,t=tt))))
-# df1 <- merge(df1,df_FI,by="t")
-# 
-# nrow(df1)
-# 
-# # Define the eigenvalues of next generation matrix G:
-# lam1<- function(input){
-#   unpack(input)
-#   a<- (omega+gamma)*gamma+(gamma+omega*P_i)*FI
-#     b<--(beta*(omega+gamma) + beta*eta_w*(gamma + FI))
-#     c<-beta^2*eta_w
-#   return((-b+sqrt(b^2-4*a*c))/(2*a))
-# }
+
+ <!-- ```{r} -->
+<!--  # specify the ranges -->
+<!--  beta  <- 2  ## set beta high enough to allow R0>1 in worst case -->
+<!--  gamma <- 1 -->
+<!--  eta_w  <- seq(0,1, length.out=11) -->
+<!--  P_i   <- 0.5 -->
+<!--  t     <- seq(0,0.1, length.out=11) -->
+<!--  omega <- seq(0, 1, length.out=11) -->
+<!--  eta_t  <- seq(0, 0.1, length.out=11) -->
+
+<!--  df1 <- expand.grid(beta=beta,gamma=gamma,eta_w=eta_w,t=t,omega=omega,eta_t=eta_t,P_i=P_i) -->
+<!--  df_FI <- data.frame(t=t, FI= sapply(t, -->
+<!--                                      function(tt) -->
+<!--                                          F_I(state=state_init,params=update(params,t=tt)))) -->
+<!-- # df1 <- merge(df1,df_FI,by="t") -->
+<!-- # -->
+<!-- # nrow(df1) -->
+<!-- # -->
+<!-- # # Define the eigenvalues of next generation matrix G: -->
+<!-- # lam1<- function(input){ -->
+<!-- #   unpack(input) -->
+<!-- #   a<- (omega+gamma)*gamma+(gamma+omega*P_i)*FI -->
+<!-- #     b<--(beta*(omega+gamma) + beta*eta_w*(gamma + FI)) -->
+<!-- #     c<-beta^2*eta_w -->
+<!-- #   return((-b+sqrt(b^2-4*a*c))/(2*a)) -->
+<!-- # } -->
 
 
-lam3 <- function(input){
-  unpack(input)
-  return((beta*eta_w)/(omega+gamma))
-}
+<!-- lam3 <- function(input){ -->
+<!--   unpack(input) -->
+<!--   return((beta*eta_w)/(omega+gamma)) -->
+<!-- } -->
 
-lam4 <- function(input){
-  unpack(input)
-  return((beta*eta_t)/(gamma))
-}
+<!-- lam4 <- function(input){ -->
+<!--   unpack(input) -->
+<!--   return((beta*eta_t)/(gamma)) -->
+<!-- } -->
 
-lambda1<-lam1(df1)
-lambda3<-lam3(df1)  
-lambda4<-lam4(df1)
+<!-- lambda1<-lam1(df1) -->
+<!-- lambda3<-lam3(df1)   -->
+<!-- lambda4<-lam4(df1) -->
 
 
-df2 <- data.frame(df1,"lambda1"=lambda1,"lambda3"=lambda3,"lambda4"=lambda4)
+<!-- df2 <- data.frame(df1,"lambda1"=lambda1,"lambda3"=lambda3,"lambda4"=lambda4) -->
 
-df2[, "R0"] <- apply(df2[, c("lambda1","lambda3","lambda4")], 1, max)
-which(df2[]<0)
+<!-- df2[, "R0"] <- apply(df2[, c("lambda1","lambda3","lambda4")], 1, max) -->
+<!-- which(df2[]<0) -->
 
-## df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta_t,t))
+<!-- ## df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta_t,t)) -->
 
-p1<- ggplot(df2,aes(x=FI,y=omega,z=R0))
-p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both)
-```
-
+<!-- p1<- ggplot(df2,aes(x=FI,y=omega,z=R0)) -->
+<!-- p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both) -->
+<!-- ``` -->
 
 
 
