@@ -16,28 +16,49 @@ collect_pars <- function(x){
 	parsdf <- data.frame(beta0 = cc$params[1]
 		, E0 = cc$params[2]
 		, seed = x
-	)
-	parsdf <- (parsdf
-		%>% mutate(seed = gsub(".RDS",replace = "", seed)
-			, seed = gsub("spline_recalib.",replace = "", seed)
+		, type = "sim"
 		)
-		%>% gather(key="param",value="value",-seed)
-	)
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
 true_pars <- coef(ff,"fitted")
-true_pars$params
+true_pars_df <- data.frame(beta0 = true_pars$params[1]
+	, E0 = true_pars$params[2]
+	, seed = NA
+	, type = "true"
+)
 
 
 ### spline shape
 
-# collect_splines <- function(x){
-# 	modlist <- readRDS(paste0("cachestuff/",x))
-# 	cc <- coef(modlist,"fitted")
-# 	spline_df <- data.frame(time = 1:nrow(X)
-# 	, calib_spline = exp(X[,-1] %*% matrix(aa$time_beta, ncol=1))
-# 	, true_spline = exp(X[,-1] %*% matrix(bb[-1], ncol=1))
-# 	)
-# 	
-# }
+print(X)
+
+collect_splines <- function(x){
+	modlist <- readRDS(paste0("cachestuff/",x))
+	cc <- coef(modlist,"fitted")
+	spline_df <- data.frame(time = 1:nrow(X)
+	, bt = exp(X[,-1] %*% matrix(cc$time_beta, ncol=1))
+	, seed = x 
+	, type = "sim"
+	)
+}
+
+
+spline_df <- bind_rows(lapply(flist,collect_splines))
+
+tp <- coef(ff,"fitted")
+
+true_splines <- data.frame(time=1:nrow(X)
+	, bt = exp(X[,-1] %*% matrix(tp$time_beta,ncol=1))
+	, seed = NA
+	, type = "true"
+)
+
+spline_df <- bind_rows(spline_df, true_splines)
+
+saveVars(pars_df, true_pars_df, spline_df)
+
+### Combine True with simulation
+
+
+
