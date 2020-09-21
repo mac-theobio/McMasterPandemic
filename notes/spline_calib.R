@@ -1,13 +1,14 @@
 library(McMasterPandemic)
 library(tidyverse)
 
-callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline.csv"
+# callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline.csv"
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
-ndf <- 3
+pred_days <- 0
+
 
 dat <- (sims 
 	%>% select(date, report, death)
@@ -16,7 +17,7 @@ dat <- (sims
 )
 opt_pars <- with(as.list(params)
 	, list(params=c(log_beta0=log(beta0)
-#		, log_E0=log(E0)
+	, log_E0=log(E0)
 		# , logit_c_prop = plogis(c_prop)
 		# , logit_phi1 = plogis(phi1)
 		)
@@ -36,11 +37,13 @@ ff <- calibrate_comb(params = params
 	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
-	, spline_df = ndf
+	, spline_extrap = "constant"
+	, spline_setback = pred_days
+	, spline_df = 5
 	, spline_type = "ns"
 	, data= dat
 	, start_date_offset=0
 	# , 
 )
 
-saveVars(ff, dat)
+saveVars(ff, dat, pred_days)

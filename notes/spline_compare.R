@@ -9,10 +9,14 @@ print(plot(ff, data=dat))
 
 aa <- coef(ff, "fitted")
 
-spline_df <- data.frame(time = 1:nrow(X)
-	, calib_spline = exp(X[,-1] %*% matrix(aa$time_beta, ncol=1))
-	, true_spline = exp(X[,-1] %*% matrix(bb[-1], ncol=1))
-)
+print(aa)
+
+quit()
+
+#spline_df <- data.frame(time = 1:nrow(X)
+#	, calib_spline = exp(X[,-1] %*% matrix(aa$time_beta, ncol=1))
+#	, true_spline = exp(X[,-1] %*% matrix(bb[-1], ncol=1))
+#)
 
 print(spline_df)
 
@@ -26,4 +30,3 @@ gg <- (ggplot(sdf,aes(x=time,y=value,color=type))
 )
 
 print(gg)
-
