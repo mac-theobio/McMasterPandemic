@@ -56,7 +56,7 @@ spline_compare.Rout: spline_compare.R cachestuff/spline_calib.rda spline_sim.rda
 spline_recalib.Rout: spline_recalib.R batchtools.rda cachestuff/spline_calib.rda 
 	$(makeR)
 
-collect_recalib.Rout: collect_recalib.R 
+collect_recalib.Rout: collect_recalib.R cachestuff/spline_calib.rda spline_sim.rda 
 	$(makeR)
 
 spline_recalib_compare.Rout: spline_recalib_compare.R cachestuff/spline_recalib.rda cachestuff/spline_calib.rda spline_sim.rda
