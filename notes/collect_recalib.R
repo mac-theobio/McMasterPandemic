@@ -29,6 +29,10 @@ true_pars_df <- data.frame(beta0 = true_pars$params[1]
 )
 
 
+combo_pars <- (bind_rows(true_pars_df, pars_df)
+	%>% gather(key = "var", value = "value", -seed, -type)
+)
+
 ### spline shape
 
 print(X)
@@ -56,9 +60,5 @@ true_splines <- data.frame(time=1:nrow(X)
 
 spline_df <- bind_rows(spline_df, true_splines)
 
-saveVars(pars_df, true_pars_df, spline_df)
-
-### Combine True with simulation
-
-
+saveVars(combo_pars, spline_df)
 
