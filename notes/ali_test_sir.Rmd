@@ -140,9 +140,9 @@ out <- as.data.frame(
     func=sir.model,
     y=state_init,
     times= d, 
-    parms=update(params,gamma=1/6),
-    rootfun = rootfun,
-    method="lsodar"
+    parms=update(params,gamma=1/3),
+    # rootfun = rootfun,
+    # method="lsodar"
   )
 )
 
@@ -190,112 +190,35 @@ $A=\gamma(\omega+\gamma+\eta_w F_i) + \omega \eta_t P_i F_i$,
 $B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma+\eta_w F_i)+(\gamma \eta_w+\omega \eta_t)P_i F_i \omega}{\omega+\gamma}$ and 
 $C=\frac{\beta}{N_0 \gamma (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
 
-<!-- \begin{equation}\label{FV} -->
-<!-- F= \left[ \begin {array}{cccc} \beta&0&0&0\\ -->
-<!--  0&\beta\,\eta_{{1}}&0&0\\ 0&0&\beta\,\eta_{{1}}&0\\ -->
-<!--  0&0&0&\beta\,\eta_{{2}} -->
-<!--  \end {array} \right], -->
-<!--  V= -->
-<!--  \left[ \begin {array}{cccc}  F_I+\gamma&-\omega&0&0\\ -->
-<!-- -\left( 1- P_i \right)  F_I&\omega+\gamma&0&0\\ -->
-<!-- -P_i F_I&0&\omega+\gamma&0\\ -->
-<!-- 0&0&-\omega&\gamma -->
-<!-- \end {array} \right], -->
-<!-- \end{equation} -->
+\begin{equation}\label{FV}
+F= \beta/N_0 \left[ \begin {array}{cccc} 
+S_u&\eta_w\,S_u&\eta_w\,S_u&\eta_t\,S_u\\
+S_n&\eta_w\,S_n&\eta_w\,S_n&\eta_t\,S_n\\ 
+0&0&0&0\\
+0&0&0&0
+ \end {array} \right],
+ V=
+ \left[ \begin {array}{cccc}  
+F_i+\gamma&-\omega&0&0\\
+-(1-P_i)F_i&\omega+\gamma&0&0\\
+-P_i F_i&0&\omega+\gamma&0\\
+0&0&-\omega&\gamma
+\end {array} \right],
+\end{equation}
 
-<!-- \begin{equation} -->
-<!-- G = \left[ \begin {array}{cc} -->
-<!-- G_{11}&0 \\ -->
-<!-- G_{21}&G_{22} -->
-<!-- \end {array} \right], \text{ where } \\ -->
-<!-- G_{11} =\frac{1}{\gamma(\omega+\gamma)+F_I (\gamma+\omega P_i)} -->
-<!-- \left[ \begin {array}{cc} -->
-<!-- \beta (\omega+\gamma) & \beta \omega \\ -->
-<!-- \beta \eta_w F_I (1-P_i) & \beta \eta_w (\gamma +F_I) -->
-<!-- \end {array} \right], -->
-<!-- \\ -->
-<!-- G_{22} = -->
-<!-- \left[ \begin {array}{cc} -->
-<!-- \frac{\beta \eta_w}{\omega+\gamma} & 0\\ -->
-<!-- \frac{\beta \eta_t \omega}{\gamma(\omega+\gamma)} & \frac{\beta \eta_t}{\gamma}. -->
-<!-- \end {array} \right] -->
-<!-- \end{equation} -->
+\begin{equation}
+G = \left[ \begin {array}{cc}
+G_{11}&G_{12} \\
+0&0
+\end {array} \right], \text{ where } \\
+G_{11} =C
+\left[ \begin {array}{cc}
+A\,S_u & B\,S_u\\
+A\,S_n & B\,S_n & 
+\end {array} \right],
+\end{equation}
 
-<!-- The Eigenvalues of $G_{11}$, namely $\lambda_1$ and $\lambda_2$, are the roots of the following characteristic polynomial -->
-<!-- \begin{equation} -->
-<!-- \label{eq:ch4} -->
-<!-- a\lambda^2+b\lambda+c=0 -->
-<!-- \end{equation} -->
-<!-- where -->
-<!-- $a=(\omega+\gamma)\gamma+(\gamma+\omega P_i)F_I$, -->
-<!-- $b=-(\beta (\omega+\gamma) + \beta \eta_w (\gamma + F_I))$ and -->
-<!-- $c= \beta^2 \eta_w$. Thus, -->
-<!-- $$ -->
-<!-- \lambda_1 =\frac{-b+\sqrt{\Delta}}{2a}, \\ -->
-<!-- \lambda_2 =\frac{-b-\sqrt{\Delta}}{2a}. -->
-<!-- $$ -->
-
-<!-- The Eigenvalues of $G_{22}$ are: -->
-<!-- $$\lambda_3 =\frac{\beta \eta_w}{\omega+\gamma} \\ -->
-<!-- \lambda_4 =\frac{\beta \eta_t}{\gamma}$$ -->
-
-<!-- Notes: -->
-
-<!-- - $\lambda_2 \leq \lambda_1$, since $b*c>0$. -->
-<!-- - $\lambda_4 \geq \lambda_3 \iff \omega/\gamma+1 \geq \eta_w/\eta_t$. -->
-
-<!-- **Proposition 1** -->
-<!-- If $\eta_w*(\frac{F_I}{\gamma} +1)*(\frac{\omega}{\omega+\gamma}+1)\leq 1$ (\label{cond:1}), then $\cal{R_0}=\lambda_1$. -->
-<!-- Brief proof; show that $\lambda_3\leq\lambda_1$ and $\lambda_4\leq\lambda_1$. Also the assumption is that $\eta_t\leq\eta_w$. -->
-
-<!-- ### Stability of Disease-Free Equilibrium, $E_1$ -->
-<!-- **Proposition 2** -->
-<!-- If $\cal{R_0}<1$, results in stability of $E_1$. -->
-
-<!-- **Proposition 3** -->
-<!-- The sufficient condition for stability of model (\ref{mod:1}) at the disease-free equilibrium $E_1$ (\ref{exp:dfe}) is $\beta/\gamma<1$. -->
-
-<!-- Jacobian Matrix at the Disease-Free equilibrium is in the following form -->
-
-<!-- \begin{equation} -->
-<!-- \label{matrix:Jac} -->
-<!-- J = \left[ \begin {array}{ccccc} -->
-<!-- J_{11}&0&0&0&0 \\ -->
-<!-- 0&J_{22}&0&0&0 \\ -->
-<!-- 0&0&J_{33}&0&0 \\ -->
-<!-- 0&0&0&J_{44}&0 \\ -->
-<!-- 0&0&0&0&J_{55} \\ -->
-<!-- \end {array} \right], -->
-<!-- \end{equation} -->
-
-<!-- where the matrices $J_{ii}$'s on the diagonal of $J$ are all 2-by-2 and as follows -->
-
-<!-- $J_{11} = \left[ \begin {array}{cc} -->
-<!-- -(1-P_s) F_S& \omega \\ -->
-<!-- (1-P_s) F_S& -\omega -->
-<!-- \end {array} \right]$, -->
-
-<!-- $J_{22} = \left[ \begin {array}{cc} -->
-<!-- \beta-F_I-\gamma& \omega \\ -->
-<!-- (1-P_i) F_I& \beta \eta_w-(\omega+\gamma) -->
-<!-- \end {array} \right]$, -->
-
-<!-- $J_{33} = \left[ \begin {array}{cc} -->
-<!-- \beta \eta_w-(\omega+\gamma)& 0 \\ -->
-<!-- \omega& \beta \eta_t-\gamma -->
-<!-- \end {array} \right]$, -->
-
-<!-- $J_{44} = \left[ \begin {array}{cc} -->
-<!-- -F_R& \omega \\ -->
-<!-- (1-P_r)F_R& -\omega -->
-<!-- \end {array} \right]$, -->
-
-<!-- $J_{55} = \left[ \begin {array}{cc} -->
-<!-- -\omega& 0 \\ -->
-<!-- \omega& 0 -->
-<!-- \end {array} \right]$. -->
-
-<!-- It is easy to show that the eigenvalues of sub-matricies $J_{11}, J_{44}$ and $J_{55}$ are negative. -->
+The Eigenvalues of $G_{11}$, are 0 and $R_0$.
 
 
 
