@@ -114,7 +114,7 @@ Sn_dfe <-function(params){
 Su_dfe<- params[["N0"]]-Sn_dfe(params)
 
 state_dfe <- c(S_u=Su_dfe, S_n=Sn_dfe(params),
-                I_u=1,I_n=0,I_p=0,I_t=0,
+                I_u=0,I_n=0,I_p=0,I_t=0,
                 R_u=0,R_n=0,R_p=0,R_t=0,
                 N=0,P=0)
 
@@ -140,7 +140,7 @@ out <- as.data.frame(
     func=sir.model,
     y=state_init,
     times= d, 
-    parms=update(params,gamma=1/3),
+    parms=update(params,beta=2),
     # rootfun = rootfun,
     # method="lsodar"
   )
@@ -166,7 +166,7 @@ return(R0)
 # R0<1:
 R0(state=state_dfe,params=params)
 # R0>1:
-R0(state=state_dfe,params=update(params,gamma=1/6))
+R0(state=state_dfe,params=update(params,beta=2))
 
 out2 <- out %>%
   pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
@@ -222,59 +222,28 @@ The Eigenvalues of $G_{11}$, are 0 and $R_0$.
 
 
 
- <!-- ```{r} -->
-<!--  # specify the ranges -->
-<!--  beta  <- 2  ## set beta high enough to allow R0>1 in worst case -->
-<!--  gamma <- 1 -->
-<!--  eta_w  <- seq(0,1, length.out=11) -->
-<!--  P_i   <- 0.5 -->
-<!--  t     <- seq(0,0.1, length.out=11) -->
-<!--  omega <- seq(0, 1, length.out=11) -->
-<!--  eta_t  <- seq(0, 0.1, length.out=11) -->
+```{r contour R0 be 1 simulation,message=FALSE,warning=FALSE }
+ # specify the ranges
+ beta  <- 2  ## set beta high enough to allow R0>1 in worst case
+ eta_w <- seq(0,1, length.out=11)
+ eta_t <- seq(0, 0.1, length.out=11)
+ t     <- seq(0,0.1, length.out=11)
+ omega <- seq(0, 1, length.out=11)
+ 
 
-<!--  df1 <- expand.grid(beta=beta,gamma=gamma,eta_w=eta_w,t=t,omega=omega,eta_t=eta_t,P_i=P_i) -->
-<!--  df_FI <- data.frame(t=t, FI= sapply(t, -->
-<!--                                      function(tt) -->
-<!--                                          F_I(state=state_init,params=update(params,t=tt)))) -->
-<!-- # df1 <- merge(df1,df_FI,by="t") -->
-<!-- # -->
-<!-- # nrow(df1) -->
-<!-- # -->
-<!-- # # Define the eigenvalues of next generation matrix G: -->
-<!-- # lam1<- function(input){ -->
-<!-- #   unpack(input) -->
-<!-- #   a<- (omega+gamma)*gamma+(gamma+omega*P_i)*FI -->
-<!-- #     b<--(beta*(omega+gamma) + beta*eta_w*(gamma + FI)) -->
-<!-- #     c<-beta^2*eta_w -->
-<!-- #   return((-b+sqrt(b^2-4*a*c))/(2*a)) -->
-<!-- # } -->
+ df1 <- expand.grid(N0=params[["N0"]],beta=beta,gamma=params[["gamma"]],omega=omega,t=t,
+                    W_s=params[["W_s"]],W_i=params[["W_i"]],W_r=params[["W_r"]],
+                    P_s=params[["P_s"]],P_i=params[["P_i"]],P_r=params[["P_r"]],
+                    eta_w=eta_w,eta_t=eta_t)
 
+df2<- data.frame(df1,R0=apply(df1,1,function(params_in)R0(state=state_dfe,params=params_in)),
+                      Fi= apply(df1,1,function(params_in)F_i(state=state_dfe,params=params_in)))
+                                         
+which(df2[]<0)
 
-<!-- lam3 <- function(input){ -->
-<!--   unpack(input) -->
-<!--   return((beta*eta_w)/(omega+gamma)) -->
-<!-- } -->
-
-<!-- lam4 <- function(input){ -->
-<!--   unpack(input) -->
-<!--   return((beta*eta_t)/(gamma)) -->
-<!-- } -->
-
-<!-- lambda1<-lam1(df1) -->
-<!-- lambda3<-lam3(df1)   -->
-<!-- lambda4<-lam4(df1) -->
-
-
-<!-- df2 <- data.frame(df1,"lambda1"=lambda1,"lambda3"=lambda3,"lambda4"=lambda4) -->
-
-<!-- df2[, "R0"] <- apply(df2[, c("lambda1","lambda3","lambda4")], 1, max) -->
-<!-- which(df2[]<0) -->
-
-<!-- ## df2_long <- tidyr::pivot_longer(df2,-c(FI,omega,eta_t,t)) -->
-
-<!-- p1<- ggplot(df2,aes(x=FI,y=omega,z=R0)) -->
-<!-- p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both) -->
-<!-- ``` -->
+p1<- ggplot(df2,aes(x=Fi,y=omega,z=R0))
+p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both)
+```
 
 
 
