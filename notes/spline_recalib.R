@@ -56,5 +56,5 @@ saveRDS(object=ff_refit, file=paste0("./cachestuff/spline_recalib.",x,".RDS"))
 
 batch_setup()
 
-future_map(1:10,function(x)dd_resim(x))
+future_map(1:10,function(x)sim_recalib(x))
 
