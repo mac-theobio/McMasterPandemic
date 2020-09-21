@@ -17,7 +17,7 @@ dat <- (sims
 )
 opt_pars <- with(as.list(params)
 	, list(params=c(log_beta0=log(beta0)
-	, log_E0=log(E0)
+#	, log_E0=log(E0)
 		# , logit_c_prop = plogis(c_prop)
 		# , logit_phi1 = plogis(phi1)
 		)

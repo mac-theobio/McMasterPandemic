@@ -15,18 +15,15 @@ makeGraphics()
 
 ndf <- 5
 
-print(ff)
-
 cc <- coef(ff,"fitted")
 
 opt_pars <- list(params=c(log_beta0=log(as.numeric(cc$params[1]))
-, log_E0=log(as.numeric(cc$params[2]))
+# , log_E0=log(as.numeric(cc$params[2]))
 		)
 	, log_nb_disp = log(cc$nb_disp)
 )
 
 params <- ff$forecast_args$base_params
-
 
 sim_recalib <- function(x){
 	set.seed(x)
