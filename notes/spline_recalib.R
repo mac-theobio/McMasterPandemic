@@ -48,7 +48,7 @@ ff_refit <- calibrate_comb(params = params
 
 ff_list <- list(fit=ff_refit,data=dd_resim)
 
-saveRDS(object=ff_refit, file=paste0("./cachestuff/spline_recalib.",x,".RDS"))
+saveRDS(object=ff_refit, file=paste0("./cachestuff/spline_recalib.noE0",x,".RDS"))
 }
 
 batch_setup()
