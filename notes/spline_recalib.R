@@ -38,7 +38,7 @@ dd_resim <-(predict(ff,ensemble=TRUE,nsim=1)
 
 ff_refit <- calibrate_comb(params = params
 	, debug_plot=TRUE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 3
 	, opt_pars = opt_pars
 	, use_spline = TRUE
