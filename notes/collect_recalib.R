@@ -6,7 +6,7 @@ commandEnvironments() ## Read in any environments specified as dependencies
 ## makeGraphics()
 
 
-flist <- list.files(path="cachestuff/",pattern="recalib")
+flist <- list.files(path="cachestuff/",pattern="recalib.no")
 
 print(flist)
 
