@@ -17,7 +17,7 @@ h <- 2
 R0 <- 3
 c <- 2
 
-ndf <- 5
+ndf <- 3
 
 ## The susceptible effect makes R smaller, and increases through time
 ## The infections makes R bigger, and grows and saturates
