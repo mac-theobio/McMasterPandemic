@@ -225,7 +225,7 @@ The Eigenvalues of $G_{11}$, are 0 and $R_0$.
 ```{r contour R0 be 1 simulation,message=FALSE,warning=FALSE }
  # specify the ranges
  beta  <- 2  ## set beta high enough to allow R0>1 in worst case
- eta_w <- seq(0,1, length.out=11)
+ eta_w <- seq(0,0.05, length.out=11)
  eta_t <- seq(0, 0.1, length.out=11)
  t     <- seq(0,0.1, length.out=11)
  omega <- seq(0, 1, length.out=11)
