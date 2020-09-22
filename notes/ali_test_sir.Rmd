@@ -59,6 +59,7 @@ library(deSolve)
 library(ggplot2)
 library(tidyr)
 library(McMasterPandemic)
+library(directlabels)
 unpack <- McMasterPandemic::unpack
 
 ```
@@ -154,13 +155,13 @@ F_i <- function(state,params){
   F_i(state=state_dfe,params=update(params,t=0))
   
 R0<-function(state,params){
-unpack(as.list(c(state,params)))
-F_i <-F_i(state,params)
-A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
-B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
-C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
-R0 <- (A*S_u+B*S_n)*C 
-return(R0)
+    unpack(as.list(c(state,params)))
+    F_i <-F_i(state,params)
+    A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
+    B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
+    C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
+    R0 <- (A*S_u+B*S_n)*C 
+    return(R0)
 }
 
 # R0<1:
@@ -170,10 +171,40 @@ R0(state=state_dfe,params=update(params,beta=2))
 
 out2 <- out %>%
   pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
+```
 
-ggplot(data=out2, aes(x=time,y=value,col=compartment))+geom_line() +
-  scale_y_log10(limits=c(0.1,params[["N0"]]))
-    ```
+```{r plot_run1, warning=FALSE}
+gg1 <- (ggplot(data=out2, aes(x=time,y=value,col=compartment))
+    + geom_line()
+    + scale_y_log10(limits=c(0.1,params[["N0"]]))
+##    + scale_x_continuous(limits=c(0,240))
+)
+direct.label(gg1,"last.bumpup")
+```
+
+```{r run2, message=FALSE}
+d_long <- seq(0,300,by=0.1)
+## capturing badly behaved integrator warning messages
+cc <- capture.output(
+    out_long <- as.data.frame(
+        ode(
+    func=sir.model,
+    y=state_init,
+    times= d_long, 
+    parms=update(params,beta=2),
+    # rootfun = rootfun,
+    # method="lsodar"
+  )
+  ))
+out_long2 <- out_long %>%
+    pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t),
+                 names_to = "compartment", values_to = "value")
+
+```
+
+```{r plot_long, warning=FALSE}
+direct.label(gg1 %+% out_long2,"last.bumpup")
+```
 
 ### Steady States
 
@@ -221,8 +252,7 @@ A\,S_n & B\,S_n &
 The Eigenvalues of $G_{11}$, are 0 and $R_0$.
 
 
-
-```{r contour R0 be 1 simulation,message=FALSE,warning=FALSE }
+```{r contour_R0, message=FALSE,warning=FALSE }
  # specify the ranges
  beta  <- 2  ## set beta high enough to allow R0>1 in worst case
  eta_w <- seq(0,0.05, length.out=11)
@@ -240,8 +270,11 @@ df2<- data.frame(df1,R0=apply(df1,1,function(params_in)R0(state=state_dfe,params
                       Fi= apply(df1,1,function(params_in)F_i(state=state_dfe,params=params_in)))
                                          
 which(df2[]<0)
+```
 
-p1<- ggplot(df2,aes(x=Fi,y=omega,z=R0))
+```{r show_contours, width=16,height=16
+p1 <- ggplot(df2,aes(x=Fi,y=omega,z=R0))+ theme_bw() +
+     theme(panel.spacing=grid::unit(0,"lines"))
 p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both)
 ```
 
