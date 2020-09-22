@@ -12,7 +12,7 @@ R0 <- 2
 
 fitmax <- 126 ## Copied from dependency 
 
-ndf <- 5
+ndf <- 3
 
 params <- read_params(matchFile(".csv$"))
 

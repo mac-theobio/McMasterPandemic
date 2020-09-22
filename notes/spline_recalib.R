@@ -13,7 +13,7 @@ commandEnvironments()
 makeGraphics()
 
 
-ndf <- 5
+ndf <- 3
 
 cc <- coef(ff,"fitted")
 
