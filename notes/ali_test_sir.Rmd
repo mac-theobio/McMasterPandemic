@@ -38,8 +38,8 @@ Let the force of infection $\Lambda=\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta
 
 \begin{align}
 \label{mod:1}
-1)\ d S_u/dt &= -\Lambda S_u - (1-P_s) F_s S_u + \omega S_n \\
-2)\ d S_n/dt &= -\Lambda S_n + (1-P_s) F_s S_u - \omega S_n \\
+1)\ d S_u/dt &= -\Lambda S_u - F_s S_u + \omega S_n \\
+2)\ d S_n/dt &= -\Lambda S_n + F_s S_u - \omega S_n \\
 3)\ d I_u/dt &= \Lambda S_u - F_i I_u + \omega I_n  - \gamma I_u  \\
 4)\ d I_n/dt &= \Lambda S_n + (1-P_i) F_i I_u - \omega I_n -\gamma I_n \\
 5)\ d I_p/dt &= P_i F_i I_u - \omega I_p -\gamma I_p \\
@@ -154,23 +154,33 @@ F_i <- function(state,params){
  # just a test
   F_i(state=state_dfe,params=update(params,t=0))
   
-R0<-function(state,params){
-    unpack(as.list(c(state,params)))
-    F_i <-F_i(state,params)
+R0<-function(params){
+    unpack(as.list(params))
+    Sn_dfe<- Sn_dfe(params)
+    Su_dfe<- N0-Sn_dfe
+    F_i <-t*N0*W_i/(W_s*Su_dfe) #at DFE
     A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
     B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
     C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
-    R0 <- (A*S_u+B*S_n)*C 
+    R0 <- (A*Su_dfe+B*Sn_dfe)*C 
     return(R0)
 }
 
-# R0<1:
-R0(state=state_dfe,params=params)
-# R0>1:
-R0(state=state_dfe,params=update(params,beta=2))
-
 out2 <- out %>%
   pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
+```
+
+```{r checks}
+# R0<1:
+R0(params=params)
+# R0>1:
+R0(params=update(params,beta=2))
+
+# checking for t=0, if simple R_0 for SIR can be recovered?
+# Case #1: t=0
+all.equal(R0(params=update(params,t=0)), params[["beta"]]/params[["gamma"]])
+
+
 ```
 
 ```{r plot_run1, warning=FALSE}
@@ -217,9 +227,9 @@ The Disease-Free Equilibrium, namely $E_1$, for the above SIR model is
 The next generation matrix, $G = F V^{-1}$, is in the lower triangular form with $F$ and $G$ as follows.
 
 $$R_0= (A \times S_u^* + B \times S_n^*) \times C,$$ where
-$A=\gamma(\omega+\gamma+\eta_w F_i) + \omega \eta_t P_i F_i$,
-$B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma+\eta_w F_i)+(\gamma \eta_w+\omega \eta_t)P_i F_i \omega}{\omega+\gamma}$ and 
-$C=\frac{\beta}{N_0 \gamma (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
+$A=\gamma(\omega+\gamma) + (\gamma \eta_w + \omega \eta_t P_i) F_i$,
+$B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma) + \big(\gamma(\omega+\gamma)\eta_w +(\gamma \eta_w+\omega \eta_t)P_i \omega \big) F_i }{\omega+\gamma}$ and 
+$C=\frac{\beta/\gamma}{N_0 (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
 
 \begin{equation}\label{FV}
 F= \beta/N_0 \left[ \begin {array}{cccc} 
@@ -251,6 +261,9 @@ A\,S_n & B\,S_n &
 
 The Eigenvalues of $G_{11}$, are 0 and $R_0$.
 
+### On Behaviour of Testing at DFE Boundry
+Note that once the only untested people are $S_u$, the FoI $\Lambda=0$, $F_s=t N_0/S_u$. Thus,
+in the eq (1) of the model $d S_u/dt = - t N_0 + \omega S_n$ which is a linear rate of leaving the $S_u$ compartment. That means that the testing rate will be no longer defendant on $S_u$. 
 
 ```{r contour_R0, message=FALSE,warning=FALSE }
  # specify the ranges
@@ -266,7 +279,7 @@ The Eigenvalues of $G_{11}$, are 0 and $R_0$.
                     P_s=params[["P_s"]],P_i=params[["P_i"]],P_r=params[["P_r"]],
                     eta_w=eta_w,eta_t=eta_t)
 
-df2<- data.frame(df1,R0=apply(df1,1,function(params_in)R0(state=state_dfe,params=params_in)),
+df2<- data.frame(df1,R0=apply(df1,1,function(params_in)R0(params=params_in)),
                       Fi= apply(df1,1,function(params_in)F_i(state=state_dfe,params=params_in)))
                                          
 which(df2[]<0)
