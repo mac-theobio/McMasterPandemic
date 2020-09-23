@@ -21,8 +21,10 @@ X <- cbind(1,mod_ns$model[,-1])
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + nrow(mod_ns$model)
 pred_days <- 30
+obs_disp <- 3
 
 params <- fix_pars(params, target=c(R0=R0))
+params["obs_disp"] <- obs_disp 
 
 ## I should just worry about the shape and not the intercept right?
 time_beta <- c(1,as.numeric(coef(mod_ns)[-1]))
@@ -42,6 +44,7 @@ sim_recalib <- function(x){
 ddfull_sim <- (run_sim_loglin(
 	sim_args=list(start_date=start_date
 		, end_date = end_date + pred_days
+		, stoch = c(obs = TRUE, proc = FALSE)
 		)
 	, extra_pars = list(time_beta = time_beta)
 	, time_args = list(X=X
@@ -55,7 +58,8 @@ ddfull_sim <- (run_sim_loglin(
 )
 
 dd_sim <- (ddfull_sim
-	%>% filter(date <= end_date))
+	%>% filter(date <= end_date)
+	)
 
 ff_refit <- calibrate_comb(params = params
 	, debug_plot=FALSE

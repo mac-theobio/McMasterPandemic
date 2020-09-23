@@ -6,13 +6,13 @@ commandEnvironments() ## Read in any environments specified as dependencies
 ## makeGraphics()
 
 
-flist <- list.files(path="cachestuff/",pattern="recalib.no")
+flist <- list.files(path="cachestuff/",pattern="recalib.")
 
 print(flist)
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
-	cc <- coef(modlist,"fitted")
+	cc <- coef(modlist$fit,"fitted")
 	parsdf <- data.frame(beta0 = cc$params[1]
 		, E0 = cc$params[2]
 		, seed = x
@@ -21,6 +21,11 @@ collect_pars <- function(x){
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
+
+print(pars_df)
+
+quit()
+
 true_pars <- coef(ff,"fitted")
 true_pars_df <- data.frame(beta0 = true_pars$params[1]
 	, E0 = true_pars$params[2]

@@ -9,12 +9,14 @@ source("makestuff/makeRfuns.R")
 
 makeGraphics()
 
+set.seed(101)
+
 # parameters 
 fitmax <- 90
 t <- 1:fitmax
 r <- 0.04
 h <- 2
-R0 <- 3
+R0 <- 2
 c <- 2
 
 ndf <- 5
