@@ -10,7 +10,7 @@ source("makestuff/makeRfuns.R")
 makeGraphics()
 
 # parameters 
-fitmax <- 126
+fitmax <- 75
 t <- 1:fitmax
 r <- 0.04
 h <- 2
