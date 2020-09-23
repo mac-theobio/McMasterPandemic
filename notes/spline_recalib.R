@@ -5,26 +5,29 @@ library(parallel)
 library(furrr)
 library(future.batchtools)
 
-## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda cachestuff/spline_calib.rda spline_fit.rda spline.csv"
-
+## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda spline_fit.rda spline.csv"
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
 R0 <- 2
-fitmax <- 75 ## Copied from dependency 
-ndf <- 3
+ndf <- 5
 
 params <- read_params(matchFile(".csv$"))
 
-
+## FIXME: construct X here independently from mod_ns
 X <- cbind(1,mod_ns$model[,-1])
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + nrow(mod_ns$model)
-time_beta <- c(0,as.numeric(coef(mod_ns)[-1]))
+pred_days <- 30
 
 params <- fix_pars(params, target=c(R0=R0))
+
+## I should just worry about the shape and not the intercept right?
+time_beta <- c(1,as.numeric(coef(mod_ns)[-1]))
+
+print(plot(exp(X %*% time_beta)))
 
 opt_pars <- list(params=c(log_beta0 = log(params["beta0"])
 # , log_E0=log(as.numeric(cc$params[2]))
@@ -36,10 +39,9 @@ opt_pars <- list(params=c(log_beta0 = log(params["beta0"])
 sim_recalib <- function(x){
 	set.seed(x)
 
-dd_sim <- (run_sim_loglin(
+ddfull_sim <- (run_sim_loglin(
 	sim_args=list(start_date=start_date
-		, end_date = end_date
-		# , time_beta = time_beta
+		, end_date = end_date + pred_days
 		)
 	, extra_pars = list(time_beta = time_beta)
 	, time_args = list(X=X
@@ -47,10 +49,13 @@ dd_sim <- (run_sim_loglin(
 		)
 	, params = params
 	) 
+	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report","death"))
 	%>% mutate(value = round(value))
 )
-	
+
+dd_sim <- (ddfull_sim
+	%>% filter(date <= end_date))
 
 ff_refit <- calibrate_comb(params = params
 	, debug_plot=TRUE
@@ -60,14 +65,14 @@ ff_refit <- calibrate_comb(params = params
 	, use_spline = TRUE
 	, spline_df = ndf
 	, spline_type = "ns"
-	, data= dd_resim
-	, start_date = min(dd_resim$date)
+	, data= dd_sim
+	, start_date = min(dd_sim$date)
 	, start_date_offset = 0
 )				
 
-ff_list <- list(fit=ff_refit,data=dd_resim)
+ff_list <- list(fit=ff_refit,fitdat=dd_sim, full_dat=ddfull_sim)
 
-saveRDS(object=ff_refit, file=paste0("./cachestuff/spline_recalib.",x,".RDS"))
+saveRDS(object=ff_list, file=paste0("./cachestuff/spline_recalib.",x,".RDS"))
 }
 
 batch_setup()
