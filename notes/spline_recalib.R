@@ -5,36 +5,40 @@ library(parallel)
 library(furrr)
 library(future.batchtools)
 
-## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda spline_fit.rda spline.csv"
+## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda spline.csv"
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
-R0 <- 2
-ndf <- 5
+R0 <- 3
+splinedf <- 3
+fitmax <- 150
+spline_pars <- c(0.5,-0.3,0.2)
+
 
 params <- read_params(matchFile(".csv$"))
 
-## FIXME: construct X here independently from mod_ns
-X <- cbind(1,mod_ns$model[,-1])
+## construct intercept and spline basis
+X <- ns(1:fitmax,df=splinedf)
 start_date <- as.Date("2020-01-01")
-end_date <- start_date -1 + nrow(mod_ns$model)
+end_date <- start_date -1 + fitmax
 pred_days <- 30
-obs_disp <- 3
+obs_disp <- 50
 
+## Readjust beta0 and other parameters wrt R0
 params <- fix_pars(params, target=c(R0=R0))
-params["obs_disp"] <- obs_disp 
+params["obs_disp"] <- obs_disp
 
-## I should just worry about the shape and not the intercept right?
-time_beta <- c(1,as.numeric(coef(mod_ns)[-1]))
+## I just care about the shape here right?
+time_beta <- c(spline_pars)
 
 print(plot(exp(X %*% time_beta)))
 
-opt_pars <- list(params=c(log_beta0 = log(params["beta0"])
-# , log_E0=log(as.numeric(cc$params[2]))
+opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
+# , log_E0=log(as.numeric(params["E0"]))
 		)
-	, log_nb_disp = c(report=3,death=3)
+	# , log_nb_disp = c(report=3,death=3)
 )
 
 
@@ -61,9 +65,11 @@ dd_sim <- (ddfull_sim
 	%>% filter(date <= end_date)
 	)
 
+dd_sim
+
 ff_refit <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
