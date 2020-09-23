@@ -58,9 +58,9 @@ dd_sim <- (ddfull_sim
 	%>% filter(date <= end_date))
 
 ff_refit <- calibrate_comb(params = params
-	, debug_plot=TRUE
+	, debug_plot=FALSE
 	, use_DEoptim=FALSE
-	, DE_cores = 3
+	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
 	, spline_df = ndf
