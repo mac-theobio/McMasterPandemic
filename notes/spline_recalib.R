@@ -4,6 +4,7 @@ library(zoo)
 library(parallel)
 library(furrr)
 library(future.batchtools)
+library(splines)
 
 ## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda spline.csv"
 
@@ -73,7 +74,7 @@ ff_refit <- calibrate_comb(params = params
 	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
-	, spline_df = ndf
+	, spline_df = splinedf
 	, spline_type = "ns"
 	, data= dd_sim
 	, start_date = min(dd_sim$date)
