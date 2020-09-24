@@ -7,20 +7,22 @@ makeGraphics()
 
 print(head(forecastdat))
 
-forecastdat <- forecastdat %>% mutate(seed=ifelse(is.na(seed),101,seed))
-simdat <- forecastdat %>% filter(type == "sim")
-truedat <- forecastdat %>% filter(type == "true")
 
-gg <- (ggplot(data=simdat, aes(x=date))
-#	+ geom_line(aes(y=value),color="red")
-	+ geom_point(data=truedat, aes(x=date,y=value),color="black",size=0.1)
-	+ scale_y_log10()
-	+ geom_ribbon(aes(ymin=lwr,ymax=upr,fill=type),alpha=0.5)
+gg <- (ggplot(data=forecastdat, aes(x=date))
+#	+ scale_y_log10()
+	+ geom_point(aes(y=value,color=type,alpha=type),size=0.1)
+	+ scale_color_manual(values=c("red","black"))
+	+ scale_alpha_manual(values=c(0.3,1))
+	+ geom_ribbon(aes(ymin=lwr,ymax=upr,fill=type),alpha=0.3)
 	+ facet_wrap(~seed,scale="free")
+	+ scale_fill_manual(values=c("red","black"))
 )
 
 print(gg)
 
+print(gg + scale_y_log10())
+
+print(gg %+% filter(forecastdat, date>=as.Date("2020-05-30")))
 
 ## To save as .rda
 ## saveVars(y) ## OR

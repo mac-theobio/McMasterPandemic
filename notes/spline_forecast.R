@@ -8,30 +8,30 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 
 
-flist <- list.files(path="cachestuff/",pattern="recalib.no")
+flist <- list.files(path="cachestuff/",pattern="spline_recalib")
 
 forecasting <- function(x){
-	seed <- gsub("spline_recalib.noE0","",x)
-	seed <- gsub(".RDS","",seed)
-	set.seed(as.numeric(seed))
-
-true_forecast <- (predict(ff,ensemble=TRUE,nsim=1,end_date = as.Date("2020-06-01"))
-	%>% filter(var == "report")
-	%>% mutate(seed = seed
-		, type = "true"
+	
+	modlist <- readRDS(paste0("cachestuff/",x))
+	truedat <- (modlist$full_dat
+		%>% filter(var == "report")
+		%>% mutate(seed = x
+			, value = ifelse(is.na(value),NA,value)
+			, type = "true"
+			, lwr = value
+			, upr = value
+			)
 	)
-)
-
-print(head(true_forecast))
-
-sim_forecast <- (predict(readRDS(paste0("cachestuff/",x)),ensemble=TRUE,end_date=as.Date("2020-06-01"))
+	
+	sim_forecast <- (predict(readRDS(paste0("cachestuff/",x))$fit,ensemble=TRUE,end_date=max(truedat$date)
+		, stoch=c(proc=FALSE,obs=TRUE))
 	%>% filter(var == "report")
-	%>% mutate(seed = seed
+	%>% mutate(seed = x
 		, type = "sim"
 		)
+	%>% select(-vtype)
 )
-
-combodat <- bind_rows(true_forecast,sim_forecast)
+combodat <- bind_rows(truedat,sim_forecast)
 
 return(combodat)
 
