@@ -58,18 +58,22 @@ X <- tempmod$fit$forecast_args$time_args$X
 collect_splines <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
 	cc <- coef(modlist$fit,"fitted")
-	spline_df <- data.frame(time = 1:nrow(X)
+	spline_df <- (data.frame(time = 1:nrow(X)
 	, bt = exp(X %*% matrix(cc$time_beta, ncol=1))
 	, seed = x 
 	, type = "sim"
 	, mod = "withoutE0"
 	)
+	%>% mutate(beta0bt=bt*cc$params[1])
+	)
 	cc2 <- coef(modlist$fitE0,"fitted")
-	spline_df2 <- data.frame(time = 1:nrow(X)
+	spline_df2 <- (data.frame(time = 1:nrow(X)
 									, bt = exp(X %*% matrix(cc2$time_beta, ncol=1))
 									, seed = x 
 									, type = "sim"
 									, mod = "withE0"
+	)
+	%>% mutate(beta0bt=bt*cc2$params[1])
 	)
 	return(bind_rows(spline_df,spline_df2))
 }
@@ -82,6 +86,7 @@ tp <- c(0.5,-0.3,0.2)
 
 true_splines <- data.frame(time=1:nrow(X)
 	, bt = exp(X %*% matrix(tp,ncol=1))
+	, beta0bt = base_params["beta0"]*exp(X %*% matrix(tp,ncol=1))
 	, seed = NA
 	, type = "true"
 	, mod = "true"

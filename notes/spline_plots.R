@@ -17,11 +17,12 @@ print(gg)
 
 print(spline_df)
 
-ggsplines <- (ggplot(spline_df,aes(time,bt,color=mod,alpha=mod,group=seed))
-	+ geom_line()
+ggsplines <- (ggplot(spline_df,aes(time,color=mod,alpha=mod,group=seed))
 	+ facet_wrap(~mod)
 	+ scale_color_manual(values=c("black","blue","red"))
 	+ scale_alpha_manual(values=c(1,0.3,0.3))
 )
 
-print(ggsplines)
+print(ggsplines + geom_line(aes(y=bt)))
+
+print(ggsplines + geom_line(aes(y=beta0bt)))
