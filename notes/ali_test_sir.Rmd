@@ -34,8 +34,13 @@ Notes on other references: (1) [testing_flow.md](testing_flow.md)(I am using the
 
 ![](../inst/pix/sir_test1.jpg)
 
-Let the force of infection $\Lambda=\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0}$, where $\eta$ is the isolation parameter with the assumption of $\eta_t<\eta_w$, i.e., the awaiting individuals for test results have higher transmission probability than the reported individuals. The scaling parameter is defined as $sc = t N_0/(W_s S_u + W_i I_u + W_r R_u)$ and $F_s = sc \times W_s$, $F_i=sc \times W_i$ and $F_r = sc\times W_r$. The model is
+Let the force of infection $\Lambda=\beta \frac{(I_u+\eta_w I_n+\eta_w I_p+ \eta_t I_t)}{N_0}$, where $\eta$ is the isolation parameter with the following assumptions:
 
+(1) All susceptible individuals are exposed to all infectious individuals regardless of the group factor. 
+(2) $\eta_t<\eta_w$, i.e., the awaiting individuals for test results have higher transmission probability than the reported individuals. 
+(3) The scaling parameter is defined as $sc = t N_0/(W_s S_u + W_i I_u + W_r R_u)$ and $F_s = sc \times W_s$, $F_i=sc \times W_i$ and $F_r = sc\times W_r$. 
+
+The model is
 \begin{align}
 \label{mod:1}
 1)\ d S_u/dt &= -\Lambda S_u - F_s S_u + \omega S_n \\
@@ -71,6 +76,7 @@ sir.model <- function(time,state,params){
     Lambda <- beta * (I_u + eta_w*(I_n+I_p) + eta_t*I_t)/N0
     ## scaling the weights
     sc <- t*N0/(W_s*S_u+W_i*I_u+W_r*R_u)
+    # sc <- t*N0
     F_s <- sc*W_s
     F_i <- sc*W_i
     F_r <- sc*W_r
@@ -142,46 +148,16 @@ out <- as.data.frame(
     y=state_init,
     times= d, 
     parms=update(params,beta=2),
+    # atol = 1e+1, rtol = 1e+1
     # rootfun = rootfun,
     # method="lsodar"
   )
 )
 
-F_i <- function(state,params){
-   unpack(as.list(c(state,params)))
-   return(t*N0*W_i/(W_s*S_u+W_i*I_u+W_r*R_u))
- }
- # just a test
-  F_i(state=state_dfe,params=update(params,t=0))
-  
-R0<-function(params){
-    unpack(as.list(params))
-    Sn_dfe<- Sn_dfe(params)
-    Su_dfe<- N0-Sn_dfe
-    F_i <-t*N0*W_i/(W_s*Su_dfe) #at DFE
-    A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
-    B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
-    C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
-    R0 <- (A*Su_dfe+B*Sn_dfe)*C 
-    return(R0)
-}
-
 out2 <- out %>%
   pivot_longer(c(S_u,S_n,I_u,I_n,I_p,I_t, R_u,R_n,R_p,R_t), names_to = "compartment", values_to = "value")
 ```
 
-```{r checks}
-# R0<1:
-R0(params=params)
-# R0>1:
-R0(params=update(params,beta=2))
-
-# checking for t=0, if simple R_0 for SIR can be recovered?
-# Case #1: t=0
-all.equal(R0(params=update(params,t=0)), params[["beta"]]/params[["gamma"]])
-
-
-```
 
 ```{r plot_run1, warning=FALSE}
 gg1 <- (ggplot(data=out2, aes(x=time,y=value,col=compartment))
@@ -201,7 +177,7 @@ cc <- capture.output(
     func=sir.model,
     y=state_init,
     times= d_long, 
-    parms=update(params,beta=2),
+    parms=update(params,beta=2)
     # rootfun = rootfun,
     # method="lsodar"
   )
@@ -249,29 +225,67 @@ F_i+\gamma&-\omega&0&0\\
 
 \begin{equation}
 G = \left[ \begin {array}{cc}
-G_{11}&G_{12} \\
+G_{11}&G_{12}\\
 0&0
 \end {array} \right], \text{ where } \\
 G_{11} =C
-\left[ \begin {array}{cc}
+\left[\begin {array}{cc}
 A\,S_u & B\,S_u\\
-A\,S_n & B\,S_n & 
-\end {array} \right],
+A\,S_n & B\,S_n
+\end {array}\right],
 \end{equation}
 
 The Eigenvalues of $G_{11}$, are 0 and $R_0$.
+```{r R0}
+F_i <- function(state,params){
+   unpack(as.list(c(state,params)))
+   return(t*N0*W_i/(W_s*S_u+W_i*I_u+W_r*R_u))
+ }
+ # just a test
+  F_i(state=state_dfe,params=update(params,t=0))
+  
+R0<-function(params){
+    unpack(as.list(params))
+    Sn_dfe<- Sn_dfe(params)
+    Su_dfe<- N0-Sn_dfe
+    F_i <-t*N0*W_i/(W_s*Su_dfe) #at DFE
+    # F_i <-t*N0*W_i
+    A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
+    B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
+    C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
+    return((A*Su_dfe+B*Sn_dfe)*C)
+}
+
+# R0<1:
+R0(params=params)
+# R0>1:
+R0(params=update(params,beta=2))
+
+R0(params=update(params,omega=0.1))
+R0(params=update(params,omega=0.2))
+```
+
+Can we recover $R_0=\beta/\gamma$ of the simple SIR? -yes
+```{r checkings}
+# checking if simple R_0 for SIR can be recovered?
+# Case #1: t=0
+all.equal(R0(params=update(params,t=0)), params[["beta"]]/params[["gamma"]])
+# Case #2: 
+all.equal(R0(params=update(params,eta_t=1,eta_w=1)), params[["beta"]]/params[["gamma"]])
+```
 
 ### On Behaviour of Testing at DFE Boundry
-Note that once the only untested people are $S_u$, the FoI $\Lambda=0$, $F_s=t N_0/S_u$. Thus,
-in the eq (1) of the model $d S_u/dt = - t N_0 + \omega S_n$ which is a linear rate of leaving the $S_u$ compartment. That means that the testing rate will be no longer defendant on $S_u$. 
+(1) Note that once the only untested people are susceptibles, the FoI will be $\Lambda=0$, testing rate $F_s=t N_0/S_u$. Thus, eq(1) of the model will be $d S_u/dt = - t N_0 + \omega S_n$ which is a linear rate of leaving the $S_u$ compartment. That means that the testing rate will be no longer dependent on $S_u$.
+(2) Given that at DFE $S_n^*= \frac{t (1-P_s)}{\omega} N_0$, eq(1) will be $d S_u/dt = \frac{t N_0}{\omega}(1-P_s-\omega)$ which is always positive! So one would expect that $S_u$ grows. However we are at DFE!!!?
 
+### Contour plot of $R_0=1$ and interpretations 
 ```{r contour_R0, message=FALSE,warning=FALSE }
  # specify the ranges
  beta  <- 2  ## set beta high enough to allow R0>1 in worst case
- eta_w <- seq(0,0.05, length.out=11)
- eta_t <- seq(0, 0.1, length.out=11)
+ eta_w <- seq(0,1, length.out=11) 
+ eta_t <- seq(0,1, length.out=11) 
  t     <- seq(0,0.1, length.out=11)
- omega <- seq(0, 1, length.out=11)
+ omega <- seq(0.1,1 , length.out=11)
  
 
  df1 <- expand.grid(N0=params[["N0"]],beta=beta,gamma=params[["gamma"]],omega=omega,t=t,
@@ -285,12 +299,17 @@ df2<- data.frame(df1,R0=apply(df1,1,function(params_in)R0(params=params_in)),
 which(df2[]<0)
 ```
 
-```{r show_contours, width=16,height=16
-p1 <- ggplot(df2,aes(x=Fi,y=omega,z=R0))+ theme_bw() +
+```{r show_contours, width=24,height=24,message=FALSE,warning=FALSE}
+p1 <- ggplot(df2,aes(x=omega,y=Fi,z=R0))+ theme_bw() +
      theme(panel.spacing=grid::unit(0,"lines"))
 p1 + geom_contour(breaks=1) + facet_grid(eta_w~eta_t, labeller=label_both)
 ```
-
+Let call the $F_i$ the critical testing rate in the above plot.
+Interpretations:
+(1) Increasing $F_i$ gives decrease of $R_0$.
+(2) Increasing $\omega$ results in an increase in $R_0$.  
+(3) Lowering the transmission probability for awaiting people by isolation, $\eta_w$, when $\eta_t$ is kept fixed, results in lowering the critical $F_i$. This gives a threshold for testing rate $F_i$ to achieve $R_0<1$.
+(4) ?
 
 
 

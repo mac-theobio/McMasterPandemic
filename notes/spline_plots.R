@@ -6,21 +6,22 @@ makeGraphics()
 
 print(combo_pars)
 
-gg <- (ggplot(combo_pars, aes(x=var, y=value,color=type, alpha=type))
+gg <- (ggplot(combo_pars, aes(x=mod, y=value,color=mod, alpha=type))
 	+ geom_point()
 	+ facet_wrap(~var,scale="free")
-	+ scale_alpha_manual(values=c(0.3,1))
-	+ scale_color_manual(values=c("red","black"))
+	+ scale_alpha_manual(values=c(1,0.3,0.3))
+	+ scale_color_manual(values=c("black","blue","red"))
 )
 
 print(gg)
 
 print(spline_df)
 
-ggsplines <- (ggplot(spline_df,aes(time,bt,color=type,alpha=type,group=seed))
+ggsplines <- (ggplot(spline_df,aes(time,bt,color=mod,alpha=mod,group=seed))
 	+ geom_line()
-	+ scale_color_manual(values=c("red","black"))
-	+ scale_alpha_manual(values=c(0.3,1))
+	+ facet_wrap(~mod)
+	+ scale_color_manual(values=c("black","blue","red"))
+	+ scale_alpha_manual(values=c(1,0.3,0.3))
 )
 
 print(ggsplines)

@@ -22,7 +22,16 @@ collect_pars <- function(x){
 		, E0 = cc$params[2]
 		, seed = x
 		, type = "sim"
+		, mod = "withoutE0"
 		)
+	cc2 <- coef(modlist$fitE0,"fitted")
+	parsdf2 <- data.frame(beta0 = cc2$params[1]
+								, E0 = cc2$params[2]
+								, seed = x
+								, type = "sim"
+								, mod = "withE0"
+	)
+	return(bind_rows(parsdf,parsdf2))
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
@@ -34,11 +43,12 @@ true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, E0 = base_params["E0"]
 	, seed = NA
 	, type = "true"
+	, mod = "true"
 )
 
 
 combo_pars <- (bind_rows(true_pars_df, pars_df)
-	%>% gather(key = "var", value = "value", -seed, -type)
+	%>% gather(key = "var", value = "value", -seed, -type, -mod)
 )
 
 ### spline shape
@@ -52,7 +62,16 @@ collect_splines <- function(x){
 	, bt = exp(X %*% matrix(cc$time_beta, ncol=1))
 	, seed = x 
 	, type = "sim"
+	, mod = "withoutE0"
 	)
+	cc2 <- coef(modlist$fitE0,"fitted")
+	spline_df2 <- data.frame(time = 1:nrow(X)
+									, bt = exp(X %*% matrix(cc2$time_beta, ncol=1))
+									, seed = x 
+									, type = "sim"
+									, mod = "withE0"
+	)
+	return(bind_rows(spline_df,spline_df2))
 }
 
 
@@ -65,6 +84,7 @@ true_splines <- data.frame(time=1:nrow(X)
 	, bt = exp(X %*% matrix(tp,ncol=1))
 	, seed = NA
 	, type = "true"
+	, mod = "true"
 )
 
 spline_df <- bind_rows(spline_df, true_splines)

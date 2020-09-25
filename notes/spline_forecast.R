@@ -18,6 +18,7 @@ forecasting <- function(x){
 		%>% mutate(seed = x
 			, value = ifelse(is.na(value),NA,value)
 			, type = "true"
+			, mod = "true"
 			, lwr = value
 			, upr = value
 			)
@@ -28,10 +29,23 @@ forecasting <- function(x){
 	%>% filter(var == "report")
 	%>% mutate(seed = x
 		, type = "sim"
+		, mod = "withoutE0"
 		)
 	%>% select(-vtype)
 )
-combodat <- bind_rows(truedat,sim_forecast)
+	
+	sim_forecast2 <- (predict(readRDS(paste0("cachestuff/",x))$fitE0,ensemble=TRUE,end_date=max(truedat$date)
+									 , stoch=c(proc=FALSE,obs=TRUE))
+						  %>% filter(var == "report")
+						  %>% mutate(seed = x
+						  			  , type = "sim"
+						  			  , mod = "withE0"
+						  )
+						  %>% select(-vtype)
+	)
+	
+	
+combodat <- bind_rows(truedat,sim_forecast, sim_forecast2)
 
 return(combodat)
 
