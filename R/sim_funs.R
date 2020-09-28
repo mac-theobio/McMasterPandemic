@@ -260,9 +260,28 @@ update_foi <- function(state, params, beta_vec) {
         foi <- sum(state*beta_vec)
     }
     if (has_zeta(params)) {
+        ## suppose zeta is a vector zeta1, zeta2, zeta3, ...
+        ##  we also need parameters   zeta_break1, zeta_break2 (0<zbi<1)
+        ##  one *fewer* break parameter than zeta_i value
+        ## if 0< S/N < zeta_break1   -> zeta1
+        ##  zeta_break1 < S/N < zeta_break2 -> zeta2
+        ## ...
+        ##  zeta_breakx < S/N < 1  -> zetax
+        Susc_frac <- 1/N*sum(state[grep("^S_?",names(state))])
+        if (any(grepl("zeta[0-9]",names(params)))) {
+            if (Susc_frac<zeta_break) {
+                zeta <- zeta1
+            } else {
+                zeta <- zeta2
+            }
+        }
+        ## alternately could just make it a vector
+        ## ... but this messes with age-structured stuff
+        ## if (length(zeta)>0) {
+        ## ...
+        ## }
         ## ???? het at pop level or sub-category level??
-        Susc <- sum(state[grep("^S_?",names(state))])
-        foi <- foi*with(as.list(params), (Susc/N)^zeta)
+        foi <- foi*with(as.list(params), Susc_frac^zeta)
     }
     return(foi)
 }
