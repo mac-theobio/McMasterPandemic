@@ -43,16 +43,19 @@ spline_fit.Rout: spline_fit.R
 	$(makeR)
 
 ## Takes parameters from the ns fit and feeds it to MacPan to make data
+## Does not close the loop somehow
 Sources += spline.csv
 spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 	$(makeR)
 
+## Use Macpan to fit once
 spline_calib.Rout: spline_calib.R spline_sim.rda spline.csv
 	$(makeR)
 
 spline_compare.Rout: spline_compare.R cachestuff/spline_calib.rda spline_sim.rda
 	$(makeR)
 
+## Use Macpan simulator to simulate and fit many realizations
 spline_recalib.Rout: spline_recalib.R batchtools.rda spline.csv 
 	$(makeR)
 
