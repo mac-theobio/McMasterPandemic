@@ -267,7 +267,7 @@ update_foi <- function(state, params, beta_vec) {
         ##  zeta_break1 < S/N < zeta_break2 -> zeta2
         ## ...
         ##  zeta_breakx < S/N < 1  -> zetax
-        Susc_frac <- 1/N*sum(state[grep("^S_?",names(state))])
+        Susc_frac <- 1/params[["N"]]*sum(state[grep("^S_?",names(state))])
         if (any(grepl("zeta[0-9]",names(params)))) {
             if (Susc_frac<zeta_break) {
                 zeta <- zeta1
