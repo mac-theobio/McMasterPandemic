@@ -276,12 +276,11 @@ all.equal(R0(params=update(params,eta_t=1,eta_w=1)), params[["beta"]]/params[["g
 
 ### On Behaviour of Testing at DFE Boundry
 (1) Note that once the only untested people are susceptibles, the FoI will be $\Lambda=0$, testing rate $F_s=t N_0/S_u$. Thus, eq(1) of the model will be $d S_u/dt = - t N_0 + \omega S_n$ which is a linear rate of leaving the $S_u$ compartment. That means that the testing rate will be no longer dependent on $S_u$.
-(2) Given that at DFE $S_n^*= \frac{t (1-P_s)}{\omega} N_0$, eq(1) will be $d S_u/dt = \frac{t N_0}{\omega}(1-P_s-\omega)$ which is always positive! So one would expect that $S_u$ grows. However we are at DFE!!!?
 
 ### Contour plot of $R_0=1$ and interpretations 
 ```{r contour_R0, message=FALSE,warning=FALSE }
  # specify the ranges
- beta  <- 2  ## set beta high enough to allow R0>1 in worst case
+ beta  <- 1.5  ## set beta high enough to allow R0>1 in worst case
  eta_w <- seq(0,1, length.out=11) 
  eta_t <- seq(0,1, length.out=11) 
  t     <- seq(0,0.1, length.out=11)
@@ -311,11 +310,10 @@ p1 <- ggplot(df2,aes(x=omega,y=Fi,z=R0))+ theme_bw() +
 ```
 
 Let call the $F_i$ the critical testing rate in the above plot.
-Interpretations:
-(1) Increasing $F_i$ gives decrease of $R_0$.
-(2) Increasing $\omega$ results in an increase in $R_0$.  
-(3) Lowering the transmission probability for awaiting people by isolation, $\eta_w$, when $\eta_t$ is kept fixed, results in lowering the critical $F_i$. This gives a threshold for testing rate $F_i$ to achieve $R_0<1$.
-(4) ?
 
-
+**Propositions**
+(1) $\partial{R_0}/\partial{\eta_t} \geq 0$ and $\partial{R_0}/\partial{\eta_w} \geq 0$.
+(2) $\partial{R_0}/\partial{t} \leq 0$; this is concluded from the Taylor expansion of $R_0$ around $t=0$ which is
+$R_0 \approx \beta/\gamma + \frac{\beta t}{\omega (\omega+\gamma) \gamma^2 W_s} \Big(\gamma(\eta_w-1)(\gamma W_s+\omega W_i) + (\eta_t -1)P_iW_i \omega^2 \Big) + \mathcal{O}(t^2)$.
+(3) $\partial{R_0}/\partial{\omega} ?$
 
