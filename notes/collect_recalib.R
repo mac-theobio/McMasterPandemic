@@ -14,6 +14,7 @@ print(flist)
 
 tempmod <- readRDS(paste0("cachestuff/",flist[1]))
 base_params <- tempmod$fit$forecast_args$base_params
+rmult <- get_R0(base_params)/base_params[["beta0"]]
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
@@ -94,5 +95,5 @@ true_splines <- data.frame(time=1:nrow(X)
 
 spline_df <- bind_rows(spline_df, true_splines)
 
-saveVars(combo_pars, spline_df)
+saveVars(combo_pars, spline_df, rmult)
 

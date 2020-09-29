@@ -59,7 +59,8 @@ spline_compare.Rout: spline_compare.R cachestuff/spline_calib.rda spline_sim.rda
 spline_recalib.Rout: spline_recalib.R batchtools.rda spline.csv 
 	$(makeR)
 
-collect_recalib.Rout: collect_recalib.R spline_fit.rda 
+## Collect future map recalib
+collect_recalib.Rout: collect_recalib.R spline_fit.rda $(wildcard cachestuff/*.RDS)
 	$(makeR)
 
 spline_plots.Rout: spline_plots.R collect_recalib.rda

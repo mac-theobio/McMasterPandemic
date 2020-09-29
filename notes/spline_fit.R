@@ -19,7 +19,7 @@ h <- 2
 R0 <- 2
 c <- 2
 
-ndf <- 3
+ndf <- 6
 
 ## The susceptible effect makes R smaller, and increases through time
 ## The infections makes R bigger, and grows and saturates
@@ -50,4 +50,4 @@ gg <- (ggplot(Rfpredict, aes(t))
 
 print(gg)
 # bs is doing better than ns
-saveVars(Rf, Rfpredict, mod_bs, mod_ns)
+saveEnvironment()
