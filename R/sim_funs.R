@@ -269,11 +269,8 @@ update_foi <- function(state, params, beta_vec) {
         ##  zeta_breakx < S/N < 1  -> zetax
         Susc_frac <- 1/params[["N"]]*sum(state[grep("^S_?",names(state))])
         if (any(grepl("zeta[0-9]",names(params)))) {
-            if (Susc_frac<zeta_break) {
-                zeta <- zeta1
-            } else {
-                zeta <- zeta2
-            }
+            zeta <- with(as.list(params),
+                         if (Susc_frac<zeta_break) zeta1 else zeta2)
         }
         ## alternately could just make it a vector
         ## ... but this messes with age-structured stuff

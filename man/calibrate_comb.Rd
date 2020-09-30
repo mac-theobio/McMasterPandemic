@@ -33,6 +33,7 @@ calibrate_comb(
   debug = FALSE,
   debug_hist = FALSE,
   return_val = c("fit", "X", "formula", "args", "time_args"),
+  start_date = NULL,
   ...
 )
 }
@@ -105,6 +106,8 @@ which is probably wise)}
 \item{debug_hist}{keep information on parameter history?}
 
 \item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
+
+\item{start_date}{start date}
 
 \item{...}{extra args}
 }

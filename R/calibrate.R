@@ -917,6 +917,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param use_spline include spline?
 ##' @param vars which vars to use? (default is all in data)
 ##' @param return_val  "fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)
+##' @param start_date start date
 ##' @importFrom stats quantile reformulate model.matrix
 ##' @importFrom dplyr distinct select 
 ##' @importFrom tidyr drop_na
