@@ -48,7 +48,7 @@ Sources += spline.csv
 spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 	$(makeR)
 
-## Use Macpan to fit once
+## Use Macpan to calibrate fitted Rt spline simulation
 spline_calib.Rout: spline_calib.R spline_sim.rda spline.csv
 	$(makeR)
 

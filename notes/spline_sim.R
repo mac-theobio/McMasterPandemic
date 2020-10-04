@@ -17,7 +17,7 @@ first_date <- as.Date("2020-01-01")
 dd <- first_date -1 + 1:fitmax
 
 ## Construct a spline
-bb <- coef(mod_ns)
+bb <- coef(mod_bs)
 bt <-  exp(X %*% matrix(bb, ncol=1))
 print(bt)
 plot(bt)

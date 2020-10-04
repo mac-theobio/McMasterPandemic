@@ -12,7 +12,7 @@ makeGraphics()
 set.seed(101)
 
 # parameters 
-fitmax <- 90
+fitmax <- 120
 t <- 1:fitmax
 r <- 0.04
 h <- 2
