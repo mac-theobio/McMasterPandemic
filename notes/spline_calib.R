@@ -6,63 +6,34 @@ library(furrr)
 library(future.batchtools)
 library(splines)
 
-## callArgs <- "spline_recalib.Rout spline_recalib.R batchtools.rda spline.csv"
+callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline.csv"
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
-R0 <- 3
-splinedf <- 3
-fitmax <- 150
-spline_pars <- c(0.5,-0.3,0.2)
-
-
-params <- read_params(matchFile(".csv$"))
-
-## construct intercept and spline basis
-X <- ns(1:fitmax,df=splinedf)
-start_date <- as.Date("2020-01-01")
-end_date <- start_date -1 + fitmax
 pred_days <- 30
-obs_disp <- 50
-
-## Readjust beta0 and other parameters wrt R0
-params <- fix_pars(params, target=c(R0=R0))
-params["obs_disp"] <- obs_disp
-
-## I just care about the shape here right?
-time_beta <- c(spline_pars)
-
-print(plot(exp(X %*% time_beta)))
 
 opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
-# , log_E0=log(as.numeric(params["E0"]))
-		)
-	# , log_nb_disp = c(report=3,death=3)
-)
-
-opt_parsE0 <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
-								  , log_E0=log(as.numeric(params["E0"]))
+								  # , log_E0=log(as.numeric(params["E0"]))
 )
 # , log_nb_disp = c(report=3,death=3)
 )
 
+opt_parsE0 <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
+									 , log_E0=log(as.numeric(params["E0"]))
+)
+# , log_nb_disp = c(report=3,death=3)
+)
 
-sim_recalib <- function(x){
+sim_calib <- function(x){
 	set.seed(x)
 
-ddfull_sim <- (run_sim_loglin(
-	sim_args=list(start_date=start_date
-		, end_date = end_date + pred_days
-		, stoch = c(obs = TRUE, proc = FALSE)
-		)
-	, extra_pars = list(time_beta = time_beta)
-	, time_args = list(X=X
-		, X_date=start_date:end_date
-		)
-	, params = params
-	) 
+ddfull_sim<- (run_sim_loglin(params=params
+	, extra_pars=list(time_beta=bb)
+	, time_args=list(X_date=dd, X=X)
+	, sim_args=list(start_date=min(dd),end_date=max(dd))
+	)
 	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report","death"))
 	%>% mutate(value = round(value))
@@ -77,7 +48,7 @@ dd_sim
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
 	, use_DEoptim=TRUE
-	, DE_cores = 6
+	, DE_cores = ndf
 	, opt_pars = opt_pars
 	, use_spline = TRUE
 	, spline_df = splinedf
@@ -90,7 +61,7 @@ ff <- calibrate_comb(params = params
 ffE0 <- calibrate_comb(params = params
 	, debug_plot=FALSE
 	, use_DEoptim=TRUE
-	, DE_cores = 6
+	, DE_cores = ndf
 	, opt_pars = opt_pars2
 	, use_spline = TRUE
 	, spline_df = splinedf
@@ -102,10 +73,11 @@ ffE0 <- calibrate_comb(params = params
 
 ff_list <- list(fit=ff, fitE0=ffE0, fitdat=dd_sim, full_dat=ddfull_sim)
 
-saveRDS(object=ff_list, file=paste0("./cachestuff/spline_recalib.",x,".RDS"))
+saveRDS(object=ff_list, file=paste0("./cachestuff/spline_calib.",x,".RDS"))
 }
 
 batch_setup()
 
-future_map(1:10,function(x)sim_recalib(x))
+future_map(1:10,function(x)sim_calib(x))
+
 
