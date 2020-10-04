@@ -15,9 +15,6 @@ makeGraphics()
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
 obs_disp <- 50
-
-## Readjust beta0 and other parameters wrt R0
-params <- fix_pars(params, target=c(R0=R0))
 params["obs_disp"] <- obs_disp
 
 opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
