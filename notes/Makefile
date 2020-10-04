@@ -45,7 +45,7 @@ spline_fit.Rout: spline_fit.R
 ## Takes parameters from the ns fit and feeds it to MacPan to make data
 ## Does not close the loop somehow
 Sources += spline.csv
-spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
+spline_sim.Rout: spline_sim.R spline_fit.rda batchtools.rda spline.csv
 	$(makeR)
 
 ## Use Macpan to calibrate fitted Rt spline simulation
