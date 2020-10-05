@@ -52,6 +52,12 @@ spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 spline_calib.Rout: spline_calib.R spline_sim.rda batchtools.rda spline.csv
 	$(makeR)
 
+collect_calib.Rout: collect_calib.R spline_sim.rda 
+	$(makeR)
+
+spline_plots.Rout: spline_plots.R collect_calib.rda
+	$(makeR)
+
 spline_compare.Rout: spline_compare.R cachestuff/spline_calib.rda spline_sim.rda
 	$(makeR)
 
@@ -63,8 +69,8 @@ spline_recalib.Rout: spline_recalib.R batchtools.rda spline.csv
 collect_recalib.Rout: collect_recalib.R spline_fit.rda $(wildcard cachestuff/*.RDS)
 	$(makeR)
 
-spline_plots.Rout: spline_plots.R collect_recalib.rda
-	$(makeR)
+#spline_plots.Rout: spline_plots.R collect_recalib.rda
+#	$(makeR)
 
 spline_forecast.Rout: spline_forecast.R collect_recalib.rda cachestuff/spline_calib.rda
 	$(makeR)

@@ -49,5 +49,14 @@ gg <- (ggplot(Rfpredict, aes(t))
 )
 
 print(gg)
+
+gg2 <- (ggplot(Rfpredict, aes(t))
+	+ geom_point(aes(y=exp(logRt)),color="black")
+	+ geom_line(aes(y=exp(pred),color=spline_type))
+	+ scale_color_manual(values=c("red","blue"))
+	+ ylab("Rt")
+)
+
+print(gg2)
 # bs is doing better than ns
 saveEnvironment()
