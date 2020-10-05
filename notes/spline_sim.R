@@ -6,8 +6,6 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
-R0 <- 2
-
 params <- read_params(matchFile(".csv$"))
 
 X <- cbind(1,mod_ns$model[,-1])
@@ -24,6 +22,7 @@ plot(Rt)
 print(params)
 
 ## Time-vary betas are actually Rs, so we set base R to 1
+params <- fix_pars(params, target=c(R0=Rt[[1]]))  ## Wrong algebra, runs as expected
 params <- fix_pars(params, target=c(R0=1))
 print(params)
 summary(params)
