@@ -72,7 +72,7 @@ collect_recalib.Rout: collect_recalib.R spline_fit.rda $(wildcard cachestuff/*.R
 #spline_plots.Rout: spline_plots.R collect_recalib.rda
 #	$(makeR)
 
-spline_forecast.Rout: spline_forecast.R collect_recalib.rda cachestuff/spline_calib.rda
+spline_forecast.Rout: spline_forecast.R collect_calib.rda
 	$(makeR)
 
 spline_forecast_plot.Rout: spline_forecast_plot.R cachestuff/spline_forecast.rda

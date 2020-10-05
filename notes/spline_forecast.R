@@ -8,7 +8,7 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 
 
-flist <- list.files(path="cachestuff/",pattern="spline_recalib")
+flist <- list.files(path="cachestuff/",pattern="_calib[.]")
 
 forecasting <- function(x){
 	
