@@ -78,9 +78,16 @@ eget() {
 
 ## check uptime/load average on all nodes
 yupall() {
-    for i in 01 02 03 04 05 06; do
+    for i in $(seq -f "%02g" 1 22); do
 	echo "n$i"
 	ssh $YUSHAN_USER@yushan "ssh n$i uptime"
+    done
+}
+
+upall() {
+    for i in $(seq -f "%02g" 1 22); do
+	echo "n$i"
+	ssh n$i uptime
     done
 }
 
