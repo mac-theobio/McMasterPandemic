@@ -19,20 +19,17 @@ bb <- coef(mod_bs)
 Rt <-  exp(X %*% matrix(bb, ncol=1))
 print(Rt)
 plot(Rt)
-print(params)
 
-## Time-vary betas are actually Rs, so we set base R to 1
-params <- fix_pars(params, target=c(R0=Rt[[1]]))  ## Wrong algebra, runs as expected
-params <- fix_pars(params, target=c(R0=1))
-print(params)
-summary(params)
+## Time-varying betas are actually Rs, so we set base R to 1
+adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
+scaled_params <- fix_pars(params, target=c(R0=1))
 
-nullsim <- run_sim_loglin(params=params
+nullsim <- run_sim_loglin(params=adj_params
 	, time_args=list(X_date=dd, X=X)
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 )
 
-sim <- run_sim_loglin(params=params
+sim <- run_sim_loglin(params=scaled_params
 	, extra_pars=list(time_beta=bb)
 	, time_args=list(X_date=dd, X=X)
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
