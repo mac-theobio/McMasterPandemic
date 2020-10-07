@@ -15,6 +15,17 @@ tempmod <- readRDS(paste0("cachestuff/",flist[1]))
 base_params <- tempmod$fit$forecast_args$base_params
 rmult <- get_R0(base_params)/base_params[["beta0"]]
 
+print(summary(tempmod$fit)$R0)
+
+
+X <- cbind(1,tempmod$fit$forecast_args$time_args$X)
+cc <- coef(tempmod$fit,"fitted")
+bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
+
+print(bt)
+
+print(rmult)
+
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
 	cc <- coef(modlist$fit,"fitted")
@@ -53,28 +64,30 @@ combo_pars <- (bind_rows(true_pars_df, pars_df)
 
 ### spline shape
 
-X <- tempmod$fit$forecast_args$time_args$X
+X <- cbind(1,tempmod$fit$forecast_args$time_args$X)
 print(X)
 
 collect_splines <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
+	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
-	, bt = exp(X %*% matrix(cc$time_beta, ncol=1))
-	, seed = x 
+	, bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
+	, seed = x
+	, Rt = R0t[-1]
 	, type = "sim"
 	, mod = "withoutE0"
 	)
-	%>% mutate(beta0bt=bt*cc$params[1])
 	)
 	cc2 <- coef(modlist$fitE0,"fitted")
+	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
-									, bt = exp(X %*% matrix(cc2$time_beta, ncol=1))
+									, bt = exp(X %*% matrix(c(cc2$params[1],cc2$time_beta), ncol=1))
+									, Rt = R0t2[-1]
 									, seed = x 
 									, type = "sim"
 									, mod = "withE0"
 	)
-	%>% mutate(beta0bt=bt*cc2$params[1])
 	)
 	return(bind_rows(spline_df,spline_df2))
 }
@@ -85,14 +98,16 @@ spline_df <- bind_rows(lapply(flist,collect_splines))
 ## copied from spline_recalib.R 
 
 true_splines <- data.frame(time=1:nrow(X)
-	, bt = bt
-	, beta0bt = base_params["beta0"]*bt
+	, bt = Rt
+	, Rt = Rt
 	, seed = NA
 	, type = "true"
 	, mod = "true"
 )
 
 spline_df <- bind_rows(spline_df, true_splines)
+
+print(spline_df)
 
 saveVars(combo_pars, spline_df, rmult, base_params)
 

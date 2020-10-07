@@ -17,6 +17,8 @@ end_date <- start_date -1 + fitmax
 obs_disp <- 50
 
 params <- scaled_params
+print(params)
+
 params["obs_disp"] <- obs_disp
 
 opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))

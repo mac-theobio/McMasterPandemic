@@ -25,5 +25,5 @@ ggsplines <- (ggplot(spline_df,aes(time,color=mod,alpha=mod,group=seed))
 
 print(ggsplines + geom_line(aes(y=bt)))
 
-print(ggsplines + geom_line(aes(y=beta0bt/base_params["beta0"])) + ylab("Rt"))
+print(ggsplines + geom_line(aes(y=Rt)))
 
