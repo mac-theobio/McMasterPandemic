@@ -78,7 +78,7 @@ collect_splines <- function(x){
 	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
-		, bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
+		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)
 		, seed = x
 		, Rt = R0t[-1]
 		, type = "sim"
@@ -87,8 +87,8 @@ collect_splines <- function(x){
 	cc2 <- coef(modlist$fitE0,"fitted")
 	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
-		, bt = exp(X %*% matrix(c(cc2$params[1],cc2$time_beta), ncol=1))
 		, Rt = R0t2[-1]
+		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)
 		, seed = x 
 		, type = "sim"
 		, mod = "withE0"
