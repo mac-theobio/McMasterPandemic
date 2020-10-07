@@ -13,18 +13,20 @@ print(flist)
 
 tempmod <- readRDS(paste0("cachestuff/",flist[1]))
 base_params <- tempmod$fit$forecast_args$base_params
+
+## We expect the ratio of R/β to stay constant
 rmult <- get_R0(base_params)/base_params[["beta0"]]
+print(rmult)
 
 print(summary(tempmod$fit)$R0)
 
-
-X <- cbind(1,tempmod$fit$forecast_args$time_args$X)
+## Calculate time-varying betas
 cc <- coef(tempmod$fit,"fitted")
-bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
+X <- tempmod$fit$forecast_args$time_args$X
+beta0 <- cc$params[["beta0"]]
+bt <- beta0 * exp(X %*% matrix(cc$time_beta, ncol=1))
 
 print(bt)
-
-print(rmult)
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
@@ -72,23 +74,21 @@ collect_splines <- function(x){
 	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
-	, bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
-	, seed = x
-	, Rt = R0t[-1]
-	, type = "sim"
-	, mod = "withoutE0"
-	)
-	)
+		, bt = exp(X %*% matrix(c(cc$params[1],cc$time_beta), ncol=1))
+		, seed = x
+		, Rt = R0t[-1]
+		, type = "sim"
+		, mod = "withoutE0"
+	))
 	cc2 <- coef(modlist$fitE0,"fitted")
 	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
-									, bt = exp(X %*% matrix(c(cc2$params[1],cc2$time_beta), ncol=1))
-									, Rt = R0t2[-1]
-									, seed = x 
-									, type = "sim"
-									, mod = "withE0"
-	)
-	)
+		, bt = exp(X %*% matrix(c(cc2$params[1],cc2$time_beta), ncol=1))
+		, Rt = R0t2[-1]
+		, seed = x 
+		, type = "sim"
+		, mod = "withE0"
+	))
 	return(bind_rows(spline_df,spline_df2))
 }
 

@@ -21,6 +21,7 @@ print(Rt)
 plot(Rt)
 
 ## Time-varying betas are actually Rs, so we set base R to 1
+## nullsim tests that this scaling seems to work
 adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
 scaled_params <- fix_pars(params, target=c(R0=1))
 
