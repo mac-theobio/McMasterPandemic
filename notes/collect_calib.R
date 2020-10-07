@@ -21,10 +21,14 @@ print(rmult)
 print(summary(tempmod$fit)$R0)
 
 ## Calculate time-varying betas
-cc <- coef(tempmod$fit,"fitted")
-X <- tempmod$fit$forecast_args$time_args$X
-beta0 <- cc$params[["beta0"]]
-bt <- beta0 * exp(X %*% matrix(cc$time_beta, ncol=1))
+btfun <- function(cc, X){
+	bt <- cc$params[["beta0"]] * exp(X %*% matrix(cc$time_beta, ncol=1))
+}
+
+bt <- btfun(
+	cc = coef(tempmod$fit,"fitted")
+	, X = tempmod$fit$forecast_args$time_args$X
+)
 
 print(bt)
 
