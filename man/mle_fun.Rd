@@ -12,8 +12,8 @@ mle_fun(
   debug_hist = FALSE,
   opt_pars,
   base_params,
-  start_date,
-  end_date,
+  start_date = min(data$date),
+  end_date = max(data$date),
   time_args = NULL,
   sim_args = NULL,
   sim_fun = run_sim_break,
@@ -61,4 +61,17 @@ mle_fun(
 }
 \description{
 negative log-likelihood function
+}
+\examples{
+library(dplyr)
+p <- read_params("ICU1.csv")
+op <- get_opt_pars(p)
+dd <- ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("H","death"))
+mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p)
+op <- op["params"] ## exclude log_nb_disp
+try(mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p))
+p2 <- update(p, obs_disp=2)
+mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p2)
+p3 <- update(p, obs_disp_H=2, obs_disp_death=2)
+mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p3)
 }

@@ -387,6 +387,18 @@ do_debug_plot <- function(r2) {
 ##' @param checkpoint save file containing call information?
 ##' @param na_penalty value to add to NLL for NA values in log-likelihood
 ##' @inheritParams calibrate
+##' @examples
+##' library(dplyr)
+##' p <- read_params("ICU1.csv")
+##' op <- get_opt_pars(p)
+##' dd <- ont_all %>% trans_state_vars() %>% filter(var %in% c("H","death"))
+##' mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p)
+##' op <- op["params"] ## exclude log_nb_disp
+##' try(mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p))
+##' p2 <- update(p, obs_disp=2)
+##' mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p2)
+##' p3 <- update(p, obs_disp_H=2, obs_disp_death=2)
+##' mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p3)
 ##' @export
 mle_fun <- function(p, data,
                     debug=FALSE,
@@ -394,8 +406,8 @@ mle_fun <- function(p, data,
                     debug_hist=FALSE,
                     opt_pars,
                     base_params,
-                    start_date,
-                    end_date,
+                    start_date=min(data$date),
+                    end_date=max(data$date),
                     time_args=NULL,
                     sim_args=NULL,
                     sim_fun=run_sim_break,
@@ -441,9 +453,23 @@ mle_fun <- function(p, data,
     ## FIXME: fixed params can now be handled through mle2?
     pp <- invlink_trans(restore(p, opt_pars))
     nbd <- pp$nb_disp
+    v <- unique(r2$var)
+    if (is.null(nbd)) {
+        if (!any(grepl("obs_disp",names(base_params)))) {
+            stop("dispersion params must be specified in opt_pars *or* parameters")
+        }
+        ## dispersion parameters not specified in opt_pars ...
+        if (length(vn <- grep("obs_disp_", names(base_params), value=TRUE))>0) {
+            ## variable-specific dispersion specified
+            nbd <- base_params[vn]
+            names(nbd) <- gsub("obs_disp_","",vn)
+        } else {
+            nbd <- base_params[["obs_disp"]]
+            ## will be replicated/named in next step
+        }
+    }
     if (is.null(names(nbd))) {
         if (length(nbd)>1) stop("nbdisp must be named or length==1")
-        v <- unique(r2$var)
         nbd <- setNames(rep(nbd,length(v)),v)
     }
     r2 <- merge(r2,data.frame(var=names(nbd),nb_disp=nbd), by="var")
