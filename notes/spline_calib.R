@@ -37,7 +37,7 @@ sim_calib <- function(x){
 	set.seed(x)
 
 ddfull_sim<- (run_sim_loglin(params=params
-	, extra_pars=list(time_beta=bb)
+	, extra_pars=list(time_beta=bb[-1])  ## getting rid of the intercept
 	, time_args=list(X_date=dd, X=X)
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 	)
