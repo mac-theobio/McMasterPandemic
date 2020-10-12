@@ -8,7 +8,7 @@ makeGraphics()
 
 params <- read_params(matchFile(".csv$"))
 
-X <- cbind(1,mod_ns$model[,-1])
+X <- cbind(1,mod_bs$model[,-1])
 
 first_date <- as.Date("2020-01-01")
 

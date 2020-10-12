@@ -14,7 +14,7 @@ makeGraphics()
 
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
-obs_disp <- 50
+obs_disp <- 500
 
 params <- scaled_params
 print(params)
