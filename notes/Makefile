@@ -52,7 +52,7 @@ spline_calib.Rout: spline_calib.R spline_sim.rda batchtools.rda spline.csv
 	$(makeR)
 
 ## This depends cryptically on stuff that spline_calib puts into cachestuff
-collect_calib.Rout: collect_calib.R spline_sim.rda 
+collect_calib.Rout: collect_calib.R spline_sim.rda $(wildcard cachestuff/*.RDS)
 	$(makeR)
 
 spline_plots.Rout: spline_plots.R collect_calib.rda
