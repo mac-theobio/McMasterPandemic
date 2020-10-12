@@ -9,6 +9,7 @@ makeGraphics()
 params <- read_params(matchFile(".csv$"))
 
 X <- cbind(1,mod_bs$model[,-1])
+X <- mod_bs$model[,-1]
 
 first_date <- as.Date("2020-01-01")
 
@@ -16,14 +17,20 @@ dd <- first_date -1 + 1:fitmax
 
 ## Reconstruct the spline fit
 bb <- coef(mod_bs)
+bb <- coef(mod_bs)[-1]
+# Rt <-  exp(X %*% matrix(bb, ncol=1))
 Rt <-  exp(X %*% matrix(bb, ncol=1))
 print(Rt)
 plot(Rt)
 
+R0 <- 2
+
 ## Time-varying betas are actually Rs, so we set base R to 1
 ## nullsim tests that this scaling seems to work
 adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
-scaled_params <- fix_pars(params, target=c(R0=1))
+scaled_params <- fix_pars(params, target=c(R0=R0))
+scaled_params["obs_disp"] <- 5000
+
 
 nullsim <- run_sim_loglin(params=adj_params
 	, time_args=list(X_date=dd, X=X)
@@ -37,6 +44,9 @@ sim <- run_sim_loglin(params=scaled_params
 )
 
 print(sim)
+
+print(head(nullsim$report))
+print(head(sim$report))
 
 plot(nullsim$date,nullsim$report, log="y")
 lines(sim$date,sim$report)
