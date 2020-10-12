@@ -16,7 +16,7 @@ start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
 obs_disp <- 5000
 
-params <- scaled_params
+params <- adj_params
 print(params)
 
 params["obs_disp"] <- obs_disp

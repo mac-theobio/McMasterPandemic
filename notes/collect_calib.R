@@ -23,6 +23,7 @@ print(summary(tempmod$fit)$R0)
 ## Calculate time-varying betas
 btfun <- function(cc, X){
 	bt <- cc$params[["beta0"]] * exp(X %*% matrix(cc$time_beta, ncol=1))
+#	bt <- exp(X %*% matrix(cc$time_beta, ncol=1))
 }
 
 bt <- btfun(
@@ -78,7 +79,7 @@ collect_splines <- function(x){
 	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
-		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)
+		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)/base_params["beta0"]
 		, seed = x
 		, Rt = R0t[-1]
 		, type = "sim"
@@ -88,7 +89,7 @@ collect_splines <- function(x){
 	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
 		, Rt = R0t2[-1]
-		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)
+		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)/base_params["beta0"]
 		, seed = x 
 		, type = "sim"
 		, mod = "withE0"
@@ -102,7 +103,7 @@ spline_df <- bind_rows(lapply(flist,collect_splines))
 ## copied from spline_recalib.R 
 
 true_splines <- data.frame(time=1:nrow(X)
-	, bt = Rt
+	, bt = bt
 	, Rt = Rt
 	, seed = NA
 	, type = "true"

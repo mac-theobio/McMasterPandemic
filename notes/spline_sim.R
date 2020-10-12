@@ -17,18 +17,18 @@ dd <- first_date -1 + 1:fitmax
 
 ## Reconstruct the spline fit
 bb <- coef(mod_bs)
-bb <- coef(mod_bs)[-1]
 # Rt <-  exp(X %*% matrix(bb, ncol=1))
-Rt <-  exp(X %*% matrix(bb, ncol=1))
+bt <-  exp(X %*% matrix(bb[-1], ncol=1)) ## getting rid of the intercept
+Rt <-  exp(bb[1])*exp(X %*% matrix(bb[-1], ncol=1))
+
 print(Rt)
 plot(Rt)
 
-R0 <- 2
 
 ## Time-varying betas are actually Rs, so we set base R to 1
 ## nullsim tests that this scaling seems to work
 adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
-scaled_params <- fix_pars(params, target=c(R0=R0))
+scaled_params <- fix_pars(params, target=c(R0=Rt[[1]]))
 scaled_params["obs_disp"] <- 5000
 
 
