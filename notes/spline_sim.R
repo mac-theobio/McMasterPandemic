@@ -8,7 +8,7 @@ makeGraphics()
 
 params <- read_params(matchFile(".csv$"))
 
-X <- cbind(1,mod_bs$model[,-1])
+X0 <- cbind(1,mod_bs$model[,-1])
 X <- mod_bs$model[,-1]
 
 first_date <- as.Date("2020-01-01")
@@ -38,12 +38,11 @@ nullsim <- run_sim_loglin(params=adj_params
 )
 
 sim <- run_sim_loglin(params=scaled_params
-	, extra_pars=list(time_beta=bb[-1])
-	, time_args=list(X_date=dd, X=X)
+	, extra_pars=list(time_beta=bb)
+	, time_args=list(X_date=dd, X=X0)
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 )
 
-print(sim)
 
 print(head(nullsim$report))
 print(head(sim$report))
