@@ -16,7 +16,7 @@ start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
 obs_disp <- 5000
 
-params <- adj_params
+params <- scaled_params
 print(params)
 
 params["obs_disp"] <- obs_disp
@@ -37,8 +37,8 @@ sim_calib <- function(x){
 	set.seed(x)
 
 ddfull_sim<- (run_sim_loglin(params=params
-	, extra_pars=list(time_beta=bb[-1])  ## getting rid of the intercept
-	, time_args=list(X_date=dd, X=X)
+	, extra_pars=list(time_beta=bb)  ## getting rid of the intercept
+	, time_args=list(X_date=dd, X=X0)
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 	)
 	%>% gather(key = "var", value = "value", -date)
