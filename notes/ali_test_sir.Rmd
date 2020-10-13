@@ -204,7 +204,7 @@ The next generation matrix, $G = F V^{-1}$, is in the lower triangular form with
 
 $$R_0= (A \times S_u^* + B \times S_n^*) \times C,$$ where
 $A=\gamma(\omega+\gamma) + (\gamma \eta_w + \omega \eta_t P_i) F_i$,
-$B=\frac{\gamma(\omega+\gamma)(\omega+\eta_w \gamma) + \big(\gamma(\omega+\gamma)\eta_w +(\gamma \eta_w+\omega \eta_t)P_i \omega \big) F_i }{\omega+\gamma}$ and 
+$B=\big(\omega+(F_i+\gamma)\eta_w\big) \gamma+\frac{(\eta_w \gamma+ \eta_t\omega) \omega P_i F_i }{\omega+\gamma}$ and 
 $C=\frac{\beta/\gamma}{N_0 (\gamma(\omega+\gamma)+F_i(\gamma+\omega P_i))}$.
 
 \begin{equation}\label{FV}
@@ -251,7 +251,8 @@ R0<-function(params){
     F_i <-t*N0*W_i/(W_s*Su_dfe) #at DFE
     # F_i <-t*N0*W_i
     A <-gamma*(omega+gamma+eta_w*F_i) + omega*eta_t*P_i*F_i
-    B <-(gamma*(omega+gamma)*(omega+eta_w*gamma+eta_w*F_i)+(gamma*eta_w+omega*eta_t)*P_i*F_i*omega)/(omega+gamma)
+    B <-(omega+eta_w*(F_i+gamma))*gamma+(eta_w*gamma+eta_t*omega)*(omega*P_i*F_i)/(omega+gamma)
+      
     C <- beta/(N0*gamma*(gamma*(omega+gamma)+F_i*(gamma+omega*P_i)))
     return((A*Su_dfe+B*Sn_dfe)*C)
 }
@@ -260,9 +261,6 @@ R0<-function(params){
 R0(params=params)
 # R0>1:
 R0(params=update(params,beta=2))
-
-R0(params=update(params,omega=0.1))
-R0(params=update(params,omega=0.2))
 ```
 
 Can we recover $R_0=\beta/\gamma$ of the simple SIR? -yes
@@ -281,10 +279,10 @@ all.equal(R0(params=update(params,eta_t=1,eta_w=1)), params[["beta"]]/params[["g
 ```{r contour_R0, message=FALSE,warning=FALSE }
  # specify the ranges
  beta  <- 0.8  ## set beta high enough to allow R0>1 in worst case
- eta_w <- seq(0,1, length.out=11) 
- eta_t <- seq(0,1, length.out=11) 
- t     <- seq(0,0.1, length.out=11)
- omega <- seq(0.1,1 , length.out=11)
+ eta_w <- seq(0,1, length.out=5) 
+ eta_t <- seq(0,1, length.out=5) 
+ t     <- seq(0,0.01, length.out=20)
+ omega <- seq(0.1,1 , length.out=20) #note omega must be > t
  
 
  df1 <- expand.grid(N0=params[["N0"]],beta=beta,gamma=params[["gamma"]],omega=omega,t=t,
@@ -312,7 +310,7 @@ label_special <- function (labels, multi_line=FALSE, sep = "== ") {
 ```
 
 ```{r show_contours, width=24,height=24,message=FALSE,warning=FALSE}
-p1 <- ggplot(df2,aes(x=omega,y=Fi,z=R0))+ theme_bw() +
+p1 <- ggplot(df2,aes(x=omega,y=t,z=R0))+ theme_bw() +
     theme(panel.spacing=grid::unit(0,"lines"))
 (p1
     + geom_contour_filled(breaks=pretty(unique(df2$R0),5),
@@ -332,5 +330,28 @@ Let call the $F_i$ the critical testing rate in the above plot.
 1. $\partial{R_0}/\partial{\eta_t} \geq 0$ and $\partial{R_0}/\partial{\eta_w} \geq 0$.
 2. $\partial{R_0}/\partial{t} \leq 0$; this is concluded from the Taylor expansion of $R_0$ around $t=0$ which is
 $R_0 \approx \beta/\gamma + \frac{\beta t}{\omega (\omega+\gamma) \gamma^2 W_s} \Big(\gamma(\eta_w-1)(\gamma W_s+\omega W_i) + (\eta_t -1)P_iW_i \omega^2 \Big) + \mathcal{O}(t^2)$.
-(3) $\partial{R_0}/\partial{\omega} ?$
+3. Based on the above Taylor expansion around $t=0$,
+$$\partial{R_0}/\partial{\omega}=  \frac{-\beta t}{\gamma W_s\omega^2 (\gamma+\omega)^2}  (a \omega^2 + b \omega + c), $$
+where $a=(\eta_w-1)W_i-(\eta_t-1)P_iW_i$, $b=2(\eta_w-1)\gamma W_s$ and $c=(\eta_w-1)\gamma^2 W_s$.
+Given that $\eta_t\leq \eta_w$, it is inferred that $a\geq 0$, $b\leq 0$ and $c \leq 0$.
+Let $\omega_1<0$ and $\omega_2>0$ be the roots of the quadratic expression in $\partial{R_0}/\partial{\omega}$. Thus, $\partial{R_0}/\partial{\omega}<0$ for $0<\omega<\omega_2$ and  $\partial{R_0}/\partial{\omega}>0$ for $\omega>\omega_2$.
+
+**Interpretation of the R0 contour plot**
+
+Note that $\eta_t\leq \eta_w$, i.e., reported people have a lower transmission probability than awaiting individuals. The perfect isolation/quarantine occurs when $\eta_w=\eta_t=0$ (see the upper left corner panel). Thus, we only consider the lower-triangle panels in the plot [not sure how to extract them in ggplot?].
+(1) Looking at the first column of panels, there seems to be a compensatory relation between $t$ and $\omega$. i.e., higher $t$ requires smaller $\omega$ to keep R0 lower than 1. Also, for a fixed $\omega$, increasing $\eta_w$ requires higher $t$ to achive the critical R0.
+
+
+
+## Literature Review
+\cite{bergstrom2020frequency}
+(1) Model, assumptions: They developed a function, namely expected expoisour $E(C,\tau)$, to approximate trade-offs between the frequency of testing, n, the sensitivity of testing, q, and the delay between
+testing and results, d. This function is explicitly derived and was connected the effective reproduction number $R=R_0 S$, where $S$ is the proportion of population susciptable.
+assumption that transmission rates are a step function: individuals who
+have COVID go from non-infectious to fully infectious instantaneously,
+and remain fully infectious until they are no longer able to transmit disease. Test sensitivity takes the same form over the course of infection.
+More sophisticated models could allow varying infectiousness and varying
+sensitivity over time, as in \citep{larremore2020test}.
+
+
 
