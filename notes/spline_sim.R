@@ -20,7 +20,7 @@ bb <- coef(mod_bs)
 # Rt <-  exp(X %*% matrix(bb, ncol=1))
 bt <-  exp(X %*% matrix(bb[-1], ncol=1)) ## getting rid of the intercept
 Rt <-  exp(bb[1])*exp(X %*% matrix(bb[-1], ncol=1))
-
+bt <- Rt
 print(Rt)
 plot(Rt)
 

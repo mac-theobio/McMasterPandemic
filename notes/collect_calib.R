@@ -26,12 +26,12 @@ btfun <- function(cc, X){
 #	bt <- exp(X %*% matrix(cc$time_beta, ncol=1))
 }
 
-bt <- btfun(
-	cc = coef(tempmod$fit,"fitted")
-	, X = tempmod$fit$forecast_args$time_args$X
-)
+#bt <- btfun(
+#	cc = coef(tempmod$fit,"fitted")
+#	, X = tempmod$fit$forecast_args$time_args$X
+#)
 
-print(bt)
+#print(bt)
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
@@ -79,7 +79,7 @@ collect_splines <- function(x){
 	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
-		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)
+		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)/base_params["beta0"]
 		, seed = x
 		, Rt = R0t[-1]
 		, type = "sim"
@@ -89,7 +89,7 @@ collect_splines <- function(x){
 	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
 		, Rt = R0t2[-1]
-		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)
+		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)/base_params["beta0"]
 		, seed = x 
 		, type = "sim"
 		, mod = "withE0"
