@@ -29,7 +29,7 @@ plot(Rt)
 ## nullsim tests that this scaling seems to work
 adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
 scaled_params <- fix_pars(params, target=c(R0=1))
-scaled_params["obs_disp"] <- 5000
+scaled_params["obs_disp"] <- 50
 
 
 nullsim <- run_sim_loglin(params=adj_params

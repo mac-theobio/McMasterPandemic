@@ -12,14 +12,14 @@ makeGraphics()
 set.seed(101)
 
 # parameters 
-fitmax <- 120
+fitmax <- 200
 t <- 1:fitmax
 r <- 0.04
 h <- 2
 R0 <- 2
 c <- 2
 
-ndf <- 4
+ndf <- 6
 
 ## The susceptible effect makes R smaller, and increases through time
 ## The infections makes R bigger, and grows and saturates
