@@ -13,6 +13,7 @@ print(flist)
 plot_fits <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
 	print(plot(modlist$fit, data=modlist$fitdat))
+	print(modlist$fitdat)
 }
 
 sapply(flist,plot_fits)

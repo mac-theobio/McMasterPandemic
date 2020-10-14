@@ -39,14 +39,17 @@ opt_parsE0 <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
 sim_calib <- function(x){
 	set.seed(x)
 
-ddfull_sim<- (run_sim_loglin(params=params
-	, extra_pars=list(time_beta=bb)  ## getting rid of the intercept
-	, time_args=list(X_date=dd, X=X0)
-	, sim_args=list(start_date=min(dd),end_date=max(dd))
+ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
+	, opt_pars = opt_pars
+	, base_params = params
+	, stoch = list(obs=TRUE,proc=FALSE)
+	, time_args = list(X_date=dd, X=X0,extra_pars=list(time_beta=bb))
+	, start_date = min(dd)
+	, end_date = max(dd)
+	, sim_fun = run_sim_loglin
 	)
 	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report","death"))
-	%>% mutate(value = round(value))
 )
 
 dd_sim <- (ddfull_sim
@@ -54,6 +57,8 @@ dd_sim <- (ddfull_sim
 	)
 
 dd_sim
+
+return(dd_sim)
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
