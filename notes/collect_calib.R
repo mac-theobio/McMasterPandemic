@@ -1,6 +1,9 @@
 library(McMasterPandemic)
 library(tidyverse)
 
+callArgs <- "collect_calib.Rout collect_calib.R spline_sim.rda cachestuff/simcalib.1.RDS cachestuff/spline_calib.8.RDS cachestuff/spline_calib.9.RDS cachestuff/spline_recalib.10.RDS cachestuff/simcalib.2.RDS cachestuff/spline_calib.3.RDS cachestuff/spline_recalib.7.RDS cachestuff/spline_recalib.8.RDS cachestuff/spline_calib.6.RDS cachestuff/spline_calib.4.RDS cachestuff/spline_recalib.3.RDS cachestuff/spline_calib.1.RDS cachestuff/spline_recalib.9.RDS cachestuff/spline_recalib.4.RDS cachestuff/spline_recalib.1.RDS cachestuff/spline_calib.5.RDS cachestuff/spline_recalib.6.RDS cachestuff/spline_calib.2.RDS cachestuff/spline_recalib.5.RDS cachestuff/spline_recalib.2.RDS cachestuff/spline_calib.7.RDS"
+
+
 source("makestuff/makeRfuns.R") ## Will eventually be a package
 commandEnvironments() ## Read in any environments specified as dependencies
 ## makeGraphics()
@@ -71,11 +74,9 @@ combo_pars <- (bind_rows(true_pars_df, pars_df)
 
 ### spline shape
 
-X <- cbind(1,tempmod$fit$forecast_args$time_args$X)
-print(X)
-
 collect_splines <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
+	print(x)
 	R0t <- summary(modlist$fit)$R0
 	cc <- coef(modlist$fit,"fitted")
 	spline_df <- (data.frame(time = 1:nrow(X)
