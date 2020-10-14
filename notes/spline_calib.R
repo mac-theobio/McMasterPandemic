@@ -48,19 +48,14 @@ ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	, end_date = max(dd)
 	, sim_fun = run_sim_loglin
 	)
-	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report"))
 #	%>% mutate(value = ifelse(is.na(value),0,value))
 )
 
-print(ddfull_sim)
-
-return(ddfull_sim)
 
 dd_sim <- (ddfull_sim
 	%>% filter(date <= end_date)
 	)
-return(dd_sim)
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
