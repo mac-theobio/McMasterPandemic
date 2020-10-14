@@ -14,12 +14,15 @@ makeGraphics()
 
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
-obs_disp <- 5000
+obs_disp <- 50
 
 params <- scaled_params
 print(params)
 
 params["obs_disp"] <- obs_disp
+# params["obs_disp_report"] <- obs_disp
+# params["obs_disp_death"] <- obs_disp
+
 
 opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
 								  # , log_E0=log(as.numeric(params["E0"]))
