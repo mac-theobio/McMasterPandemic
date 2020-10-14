@@ -50,12 +50,17 @@ ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	)
 	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report"))
-	%>% filter(!is.na(value))
+#	%>% mutate(value = ifelse(is.na(value),0,value))
 )
+
+print(ddfull_sim)
+
+return(ddfull_sim)
 
 dd_sim <- (ddfull_sim
 	%>% filter(date <= end_date)
 	)
+return(dd_sim)
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
