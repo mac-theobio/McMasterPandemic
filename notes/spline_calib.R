@@ -50,6 +50,7 @@ ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	)
 	%>% gather(key = "var", value = "value", -date)
 	%>% filter(var %in% c("report"))
+	%>% filter(!is.na(value))
 )
 
 dd_sim <- (ddfull_sim
