@@ -559,7 +559,9 @@ print.fit_pansim <- function(x, ...) {
 ##' ont_cal2 <- ont_cal1
 ##' ont_cal2$forecast_args$base_params["zeta"] <- 4
 ##' pp2 <- predict(ont_cal2, keep_vars="Rt")
-##' ## if zeta is fitted probably need to hack x$mle2@coef
+##' ## if zeta is fitted probably need to hack x$mle2@coef, e.g.
+##' ont_cal3 <- ont_cal1
+##' 
 ##' \dontrun{
 ##' ## non-pos-def vcov ... ???
 ##' predict(ont_cal_2brks,ensemble=TRUE)

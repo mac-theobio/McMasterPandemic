@@ -17,7 +17,7 @@
 - DE.optim Sigma vs mle2$Sigma
 
 - What parameters can we leave out of pop_pred_samp?
-
+  
 - Not optimizing dispersion parameters but including them as fixed and flexibly adjusting in forecast/ensembles.
 
 
