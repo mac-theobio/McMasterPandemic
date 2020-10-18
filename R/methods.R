@@ -533,7 +533,11 @@ update.pansim <- function(object, ...) {
 ## FIXME: do better than this?
 ##' @export
 print.fit_pansim <- function(x, ...) {
-    print(x$mle2)
+    cat("call:\n")
+    print(ont_cal1$call)
+    xx <- x$mle2
+    xx@call <- xx@call.orig <- quote(call_deleted)
+    print(xx)
 }
 
 ##' make forecasts from sim
@@ -550,7 +554,12 @@ print.fit_pansim <- function(x, ...) {
 ##' @importFrom bbmle coef
 ##' @export
 ##' @examples
-##' ##' predict(ont_cal1)
+##' pp1 <- predict(ont_cal1, keep_vars="Rt")
+##' ## example of hacking params
+##' ont_cal2 <- ont_cal1
+##' ont_cal2$forecast_args$base_params["zeta"] <- 4
+##' pp2 <- predict(ont_cal2, keep_vars="Rt")
+##' ## if zeta is fitted probably need to hack x$mle2@coef
 ##' \dontrun{
 ##' ## non-pos-def vcov ... ???
 ##' predict(ont_cal_2brks,ensemble=TRUE)

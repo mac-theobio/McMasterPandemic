@@ -256,6 +256,7 @@ run_sim_decay <- function(params,
 ##' simulate/forecast a single trajectory
 ##' 
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
+##'
 ##' @importFrom stats update
 ##' @inheritParams calibrate
 ##' @inheritParams run_sim
@@ -315,7 +316,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          time_args,
                          condense_args,
                          sim_args),
-                   pp)
+                      pp)
     r <- do.call(sim_fun, all_sim_args)
     ## FIXME: remove? already condensed?
     ## if (condense) r_agg <- condense(r)

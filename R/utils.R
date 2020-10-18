@@ -451,59 +451,47 @@ add_d_log <- function(x) {
     return(x)
 }
 
-##' extract vector of effective Rt
-## FIXME: now redundant with code inside forecast_sim
-## if this gets erased, save the @importFrom stuff!
-##' @param x a fitted object
-##' @importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble case_when
-##' @export
-get_Rt <- function(x) {
-    Symbol <- value <- rel_beta0 <- S <- zeta <- NULL
-    ## process args etc.
-    f_args <- x$forecast_args
-    pp <- coef(x,"fitted")
-    extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
-    ## calc R0 base, rel beta, S
-    R0_base <- summary(coef(x))[["R0"]]
-    bb <- with(f_args,sim_fun(params=coef(x),
-                              extra_pars=extra_pars,
-                              time_args=time_args,sim_args=sim_args,
-                              return_timevar=TRUE))
-    S_pred <- (predict(x,keep_vars="S")
-        %>% select(date,value)
-        %>% rename(S="value")
-    )
-    ## combine rel_beta and S information
-    if (!is.null(bb)) {
-        bb <- (bb
-            %>% as_tibble()
-            %>% dplyr::filter(Symbol=="beta0")
-            %>% dplyr::select(-Symbol)
-            %>% rename(rel_beta0="Relative_value",date="Date")
-        )
-        x2 <- full_join(bb,S_pred,by="date") %>% arrange(date)
-    }  else {
-        x2 <- mutate(S_pred,rel_beta0=1)
-    }
-    ## fill in values preceding/following estimated beta0 values
-    x2_nona <- na.omit(x2)
-    x3 <- (x2 
-        %>% mutate_at("rel_beta0",
-                      ~ case_when(
-    is.na(.) & date<x2_nona$date[1] ~ x2_nona$rel_beta0[1],
-    is.na(.) & date>last(x2_nona$date) ~ last(x2_nona$rel_beta0),
-    TRUE ~ .
-)))
-    if (has_zeta(coef(x))) {
-        N <- coef(x)[["N"]]
-        ## FIXME: use hetS!
-        x4 <- (x3
-            %>% transmute(date=date,
-                          R0=R0_base*rel_beta0*(S/N)^(1+zeta))
-        )
-    }
-    return(x4)
-}
+## extract vector of effective Rt
+## now redundant with code inside forecast_sim
+## fix this up as a standalone function, then replace stuff inside forecast_sim
+## @param x a fitted object
+##'@importFrom dplyr rename mutate_at filter transmute mutate arrange full_join as_tibble case_when
+## @export
+## get_Rt <- function(x, new_params=NULL, S=NULL) {
+##     f_args$base_params <- do.call(update.params_pansim,
+##                                   c(list(f_args$base_params), new_params))
+
+##     R0_base <- summary(params)[["R0"]]
+##         ## retrieve time-varying beta
+##         bb <- do.call(sim_fun,c(all_sim_args,list(return_timevar=TRUE)))
+##         if (!is.null(bb)) {
+##             bb <- (bb
+##                 %>% as_tibble()
+##                 %>% dplyr::filter(Symbol=="beta0")
+##                 %>% dplyr::select(-Symbol)
+##                 %>% rename(rel_beta0="Relative_value",date="Date")
+##             )
+##             vars <- c("date","S")
+##             if (has_zeta(params)) vars <- c(vars,"hetS")
+##             x2 <- (full_join(bb,select(r_agg,vars),
+##                              by="date")
+##                 %>% arrange(date))
+##         }  else {
+##             x2 <- r_agg %>% select(date,S, hetS) %>% mutate(rel_beta0=1)
+##         }
+##         x3 <- (x2
+##             %>% mutate_at("rel_beta0", fill_edge_values)
+##             %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0)
+##         )
+##         if (has_zeta(params)) {
+##             x3 <- (x3
+##                 %>% mutate_at("Rt", ~.*hetS)
+##                 %>% select(-hetS)
+##             )
+##         }
+##         r_agg <- full_join(r_agg, x3, by="date")
+
+## }
     
 
 ## replace values before first non-NA value with first non-NA value; na.locf everything else
