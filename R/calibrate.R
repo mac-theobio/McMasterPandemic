@@ -617,7 +617,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
     ## translate state variables names in data to expected internal names (e.g. newConfirmations -> reports)
     ## FIXME: should this be external?
     data$var <- trans_state_vars(data$var)
-    if (is.null(opt_pars$log_nb_disp) & is.null(params["obs_disp"])) {
+    ## FIXME: test this clause ...
+    if (is.null(opt_pars$log_nb_disp) && !any(grepl("^obs_disp", names(base_params)))) {
         nvar <- length(var_names <- unique(data$var))
         opt_pars$log_nb_disp <- setNames(rep(0,nvar),var_names)
     }

@@ -534,7 +534,7 @@ update.pansim <- function(object, ...) {
 ##' @export
 print.fit_pansim <- function(x, ...) {
     cat("call:\n")
-    print(ont_cal1$call)
+    print(x$call)
     xx <- x$mle2
     xx@call <- xx@call.orig <- quote(call_deleted)
     print(xx)
@@ -567,7 +567,9 @@ print.fit_pansim <- function(x, ...) {
 ##' ont_cal3$mle2@fullcoef["params.log_beta0"] <- 0
 ##' pp3 <- predict(ont_cal3, keep_vars="Rt")
 ##' pp <- dplyr::bind_rows(base=pp1,zeta=pp2,beta0=pp3, .id="fit")
-##' ggplot(pp,aes(date,value,colour=fit))+geom_line()
+##' if (require("ggplot2"))
+##'    ggplot(pp,aes(date,value,colour=fit))+geom_line()
+##' }
 ##' \dontrun{
 ##' ## non-pos-def vcov ... ???
 ##' predict(ont_cal_2brks,ensemble=TRUE)

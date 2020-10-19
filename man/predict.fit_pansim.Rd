@@ -83,23 +83,3 @@
 \description{
 make forecasts from sim
 }
-\examples{
-pp1 <- predict(ont_cal1, keep_vars="Rt")
-## example of hacking params
-ont_cal2 <- ont_cal1
-ont_cal2$forecast_args$base_params["zeta"] <- 4
-pp2 <- predict(ont_cal2, keep_vars="Rt")
-## if zeta is fitted probably need to hack x$mle2@coef, e.g.
-ont_cal3 <- ont_cal1
-## increase beta0 (from -0.34) rather than
-## mess with zeta, since phenom het isn't
-## estimated in this fit
-ont_cal3$mle2@fullcoef["params.log_beta0"] <- 0
-pp3 <- predict(ont_cal3, keep_vars="Rt")
-pp <- dplyr::bind_rows(base=pp1,zeta=pp2,beta0=pp3, .id="fit")
-ggplot(pp,aes(date,value,colour=fit))+geom_line()
-\dontrun{
-## non-pos-def vcov ... ???
-predict(ont_cal_2brks,ensemble=TRUE)
-}
-}
