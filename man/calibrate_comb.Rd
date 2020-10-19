@@ -34,6 +34,7 @@ calibrate_comb(
   debug_hist = FALSE,
   return_val = c("fit", "X", "formula", "args", "time_args"),
   start_date = NULL,
+  priors = list(),
   ...
 )
 }
@@ -108,6 +109,8 @@ which is probably wise)}
 \item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
 
 \item{start_date}{start date}
+
+\item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{...}{extra args}
 }

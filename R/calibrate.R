@@ -1009,6 +1009,7 @@ calibrate_comb <- function(data,
                      debug_hist=FALSE,
                      return_val=c("fit","X","formula","args","time_args"),
                      start_date=NULL,
+                     priors=list(),
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
     return_val <- match.arg(return_val)
@@ -1091,7 +1092,7 @@ calibrate_comb <- function(data,
             q_vec <- quantile(knot_dat$cum,seq(1,spline_df-3)/(spline_df-2))
             ## find closest dates to times with these cum sums
             knot_t_vec <- with(knot_dat,approx(cum,t_vec,xout=q_vec,ties=mean))$y
-            cat("knots:",knot_t_vec,sep="\n","\n")
+            ## cat("knots:",knot_t_vec,sep="\n","\n")
             knot_args <- c(knot_args, "knots=knot_t_vec")
         }
         if (spline_setback>0) {
@@ -1154,12 +1155,11 @@ calibrate_comb <- function(data,
         time_args <- c(time_args, list(testing_data = testing_data))
 	      if(return_val == "time_args")return(time_args)
     }
-    priors <- NULL
-    if (spline_pen>0) {
-        ## FIXME: this is fragile
-        spline_beg <- if (use_mobility) 2 else 1
-        spline_end <- ncol(X)
-        priors <- bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=1/spline_pen)))
+    if (use_spline && spline_pen>0) {
+        spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_beta))
+        spline_beg <- spline_pars[1]
+        spline_end <- spline_pars[length(spline_pars)]
+        priors <- c(priors,list(bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=.(1/spline_pen))))))
     }
     ## do the calibration
     ## debug <- use_DEoptim
@@ -1174,7 +1174,8 @@ calibrate_comb <- function(data,
                      , mle2_args=list(skip.hessian=skip.hessian)
                      , opt_pars
                      , time_args
-                     , sim_fun = run_sim_loglin)
+                     , sim_fun = run_sim_loglin
+                     , priors)
                , list(...))
 
     if (return_val=="args") return(argList)

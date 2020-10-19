@@ -567,7 +567,7 @@ print.fit_pansim <- function(x, ...) {
 ##' ont_cal3$mle2@fullcoef["params.log_beta0"] <- 0
 ##' pp3 <- predict(ont_cal3, keep_vars="Rt")
 ##' pp <- dplyr::bind_rows(base=pp1,zeta=pp2,beta0=pp3, .id="fit")
-##' if (require("ggplot2"))
+##' if (require("ggplot2")) {
 ##'    ggplot(pp,aes(date,value,colour=fit))+geom_line()
 ##' }
 ##' \dontrun{
