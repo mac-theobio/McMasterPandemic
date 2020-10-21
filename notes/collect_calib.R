@@ -98,7 +98,7 @@ collect_splines <- function(x){
 	spline_df1 <- (data.frame(time = 1:nrow(X)
 									 , bt = btfun(cc=coef(modlist$fitpen,"fitted"),X=modlist$fitpen$forecast_args$time_args$X)/base_params["beta0"]
 									 , seed = x
-									 , Rt = R0t[-1]
+									 , Rt = R0t1[-1]
 									 , type = "sim"
 									 , mod = "withoutE0 spline pen"
 	))
