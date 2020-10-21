@@ -1,4 +1,5 @@
 library(ggplot2);theme_set(theme_bw())
+library(dplyr)
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
@@ -7,6 +8,11 @@ makeGraphics()
 print(combo_pars)
 
 print(spline_df)
+
+combo_pars <- (combo_pars
+	%>% mutate(spline_pen = ifelse(type == "true", "no", spline_pen))
+)
+
 
 gg <- (ggplot(combo_pars, aes(x=mod, y=value,color=spline_pen, alpha=type, shape = spline_pen))
 	+ geom_point()
