@@ -100,7 +100,21 @@ ffE0 <- calibrate_comb(params = params
 	, start_date_offset = 0
 )
 
-ff_list <- list(fit=ff, fitE0=ffE0, fitpen=ff2, fitdat=dd_sim, full_dat=ddfull_sim)
+ffE02 <- calibrate_comb(params = params
+							  , debug_plot=FALSE
+							  , use_DEoptim=TRUE
+							  , DE_cores = 6
+							  , opt_pars = opt_parsE0
+							  , use_spline = TRUE
+							  , spline_df = ndf
+							  , spline_type = "bs"
+							  , spline_pen = 10
+							  , data= dd_sim
+							  , start_date = min(dd_sim$date)
+							  , start_date_offset = 0
+)
+
+ff_list <- list(fit=ff, fitE0=ffE0, fitpen=ff2, fitE0pen=ffE02, fitdat=dd_sim, full_dat=ddfull_sim)
 
 saveRDS(object=ff_list, file=paste0("./cachestuff/spline_calib.",x,".RDS"))
 }
