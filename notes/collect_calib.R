@@ -45,6 +45,13 @@ collect_pars <- function(x){
 		, type = "sim"
 		, mod = "withoutE0"
 		)
+	cc1 <- coef(modlist$fitpen,"fitted")
+	parsdf1 <- data.frame(beta0 = cc1$params[1]
+								, E0 = cc1$params[2]
+								, seed = x
+								, type = "sim"
+								, mod = "withoutE0 spline pen"
+	)
 	cc2 <- coef(modlist$fitE0,"fitted")
 	parsdf2 <- data.frame(beta0 = cc2$params[1]
 								, E0 = cc2$params[2]
@@ -52,7 +59,7 @@ collect_pars <- function(x){
 								, type = "sim"
 								, mod = "withE0"
 	)
-	return(bind_rows(parsdf,parsdf2))
+	return(bind_rows(parsdf,parsdf1,parsdf2))
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
@@ -86,6 +93,15 @@ collect_splines <- function(x){
 		, type = "sim"
 		, mod = "withoutE0"
 	))
+	R0t1 <- summary(modlist$fitpen)$R0
+	cc1 <- coef(modlist$fitpen,"fitted")
+	spline_df1 <- (data.frame(time = 1:nrow(X)
+									 , bt = btfun(cc=coef(modlist$fitpen,"fitted"),X=modlist$fitpen$forecast_args$time_args$X)/base_params["beta0"]
+									 , seed = x
+									 , Rt = R0t[-1]
+									 , type = "sim"
+									 , mod = "withoutE0 spline pen"
+	))
 	cc2 <- coef(modlist$fitE0,"fitted")
 	R0t2 <- summary(modlist$fitE0)$R0
 	spline_df2 <- (data.frame(time = 1:nrow(X)
@@ -95,7 +111,7 @@ collect_splines <- function(x){
 		, type = "sim"
 		, mod = "withE0"
 	))
-	return(bind_rows(spline_df,spline_df2))
+	return(bind_rows(spline_df,spline_df1,spline_df2))
 }
 
 
