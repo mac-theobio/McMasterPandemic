@@ -44,13 +44,15 @@ collect_pars <- function(x){
 		, seed = x
 		, type = "sim"
 		, mod = "withoutE0"
+		, spline_pen = "no"
 		)
 	cc1 <- coef(modlist$fitpen,"fitted")
 	parsdf1 <- data.frame(beta0 = cc1$params[1]
 								, E0 = cc1$params[2]
 								, seed = x
 								, type = "sim"
-								, mod = "withoutE0 spline pen"
+								, mod = "withoutE0"
+								, spline_pen = "yes"
 	)
 	cc2 <- coef(modlist$fitE0,"fitted")
 	parsdf2 <- data.frame(beta0 = cc2$params[1]
@@ -58,8 +60,17 @@ collect_pars <- function(x){
 								, seed = x
 								, type = "sim"
 								, mod = "withE0"
+								, spline_pen = "no"
 	)
-	return(bind_rows(parsdf,parsdf1,parsdf2))
+	cc3 <- coef(modlist$fitE0pen,"fitted")
+	parsdf3 <- data.frame(beta0 = cc3$params[1]
+								 , E0 = cc3$params[2]
+								 , seed = x
+								 , type = "sim"
+								 , mod = "withE0"
+								 , spline_pen = "yes"
+	)
+	return(bind_rows(parsdf,parsdf1,parsdf2,parsdf3))
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
@@ -72,11 +83,12 @@ true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, seed = NA
 	, type = "true"
 	, mod = "true"
+	, spline_pen=NA
 )
 
 
 combo_pars <- (bind_rows(true_pars_df, pars_df)
-	%>% gather(key = "var", value = "value", -seed, -type, -mod)
+	%>% gather(key = "var", value = "value", -seed, -type, -mod, -spline_pen)
 )
 
 ### spline shape
@@ -92,6 +104,8 @@ collect_splines <- function(x){
 		, Rt = R0t[-1]
 		, type = "sim"
 		, mod = "withoutE0"
+		, spline_pen = "no"
+		
 	))
 	R0t1 <- summary(modlist$fitpen)$R0
 	cc1 <- coef(modlist$fitpen,"fitted")
@@ -100,7 +114,9 @@ collect_splines <- function(x){
 									 , seed = x
 									 , Rt = R0t1[-1]
 									 , type = "sim"
-									 , mod = "withoutE0 spline pen"
+									 , mod = "withoutE0"
+									 , spline_pen = "yes"
+									 
 	))
 	cc2 <- coef(modlist$fitE0,"fitted")
 	R0t2 <- summary(modlist$fitE0)$R0
@@ -110,8 +126,21 @@ collect_splines <- function(x){
 		, seed = x 
 		, type = "sim"
 		, mod = "withE0"
+		, spline_pen = "no"
+		
 	))
-	return(bind_rows(spline_df,spline_df1,spline_df2))
+	cc3 <- coef(modlist$fitE0pen,"fitted")
+	R0t3 <- summary(modlist$fitE0pen)$R0
+	spline_df3 <- (data.frame(time = 1:nrow(X)
+									  , Rt = R0t3[-1]
+									  , bt = btfun(cc=coef(modlist$fitE0pen,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)/base_params["beta0"]
+									  , seed = x 
+									  , type = "sim"
+									  , mod = "withE0"
+									  , spline_pen = "yes"
+									  
+	))
+	return(bind_rows(spline_df,spline_df1,spline_df2,spline_df3))
 }
 
 
@@ -125,6 +154,7 @@ true_splines <- data.frame(time=1:nrow(X)
 	, seed = NA
 	, type = "true"
 	, mod = "true"
+	, spline_pen = NA
 )
 
 spline_df <- bind_rows(spline_df, true_splines)
