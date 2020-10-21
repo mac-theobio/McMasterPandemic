@@ -15,11 +15,13 @@ makeGraphics()
 start_date <- as.Date("2020-01-01")
 end_date <- start_date -1 + fitmax
 obs_disp <- 50
+proc_disp <- 1
 
 params <- scaled_params
 print(params)
 
 params["obs_disp"] <- obs_disp
+params["proc_disp"] <- proc_disp
 # params["obs_disp_report"] <- obs_disp
 # params["obs_disp_death"] <- obs_disp
 
@@ -42,7 +44,8 @@ sim_calib <- function(x){
 ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	, opt_pars = opt_pars
 	, base_params = params
-	, stoch = list(obs=TRUE,proc=FALSE)
+	, stoch = list(obs=TRUE,proc=TRUE)
+	, stoch_start = c(proc=min(dd),obs=min(dd))
 	, time_args = list(X_date=dd, X=X0,extra_pars=list(time_beta=bb))
 	, start_date = min(dd)
 	, end_date = max(dd)
@@ -70,6 +73,20 @@ ff <- calibrate_comb(params = params
 	, start_date_offset = 0
 )
 
+ff2 <- calibrate_comb(params = params
+							, debug_plot=FALSE
+							, use_DEoptim=TRUE
+							, DE_cores = 6
+							, opt_pars = opt_pars
+							, use_spline = TRUE
+							, spline_df = ndf
+							, spline_pen = 10
+							, spline_type = "bs"
+							, data= dd_sim
+							, start_date = min(dd_sim$date)
+							, start_date_offset = 0
+)
+
 ffE0 <- calibrate_comb(params = params
 	, debug_plot=FALSE
 	, use_DEoptim=TRUE
@@ -83,7 +100,7 @@ ffE0 <- calibrate_comb(params = params
 	, start_date_offset = 0
 )
 
-ff_list <- list(fit=ff, fitE0=ffE0, fitdat=dd_sim, full_dat=ddfull_sim)
+ff_list <- list(fit=ff, fitE0=ffE0, fitpen=ff2, fitdat=dd_sim, full_dat=ddfull_sim)
 
 saveRDS(object=ff_list, file=paste0("./cachestuff/spline_calib.",x,".RDS"))
 }
