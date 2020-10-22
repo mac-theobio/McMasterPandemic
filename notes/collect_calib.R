@@ -38,45 +38,27 @@ btfun <- function(cc, X){
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
-	cc <- coef(modlist$fit,"fitted")
-	parsdf <- data.frame(beta0 = cc$params[1]
-		, E0 = cc$params[2]
-		, seed = x
-		, type = "sim"
-		, mod = "withoutE0"
-		, spline_pen = "no"
+	mods <- c("fit","fitpen","fitE0","fitE0")
+	df_funs <- function(seed,y){
+		tempmod <- modlist[[y]]
+		cc <- coef(tempmod, "fitted")
+		parsdf <- data.frame(beta0 = cc$params[["beta0"]]
+			, E0 = cc$params[["E0"]]
+			, seed = seed
+			, type = "sim"
+			, mod = y
 		)
-	cc1 <- coef(modlist$fitpen,"fitted")
-	parsdf1 <- data.frame(beta0 = cc1$params[1]
-								, E0 = cc1$params[2]
-								, seed = x
-								, type = "sim"
-								, mod = "withoutE0"
-								, spline_pen = "yes"
-	)
-	cc2 <- coef(modlist$fitE0,"fitted")
-	parsdf2 <- data.frame(beta0 = cc2$params[1]
-								, E0 = cc2$params[2]
-								, seed = x
-								, type = "sim"
-								, mod = "withE0"
-								, spline_pen = "no"
-	)
-	cc3 <- coef(modlist$fitE0pen,"fitted")
-	parsdf3 <- data.frame(beta0 = cc3$params[1]
-								 , E0 = cc3$params[2]
-								 , seed = x
-								 , type = "sim"
-								 , mod = "withE0"
-								 , spline_pen = "yes"
-	)
-	return(bind_rows(parsdf,parsdf1,parsdf2,parsdf3))
+		return(parsdf)
+	}
+	dflist <- lapply(mods,function(y){df_funs(seed=x,y)})
+	return(bind_rows(dflist))
 }
 
 pars_df <- bind_rows(lapply(flist,collect_pars))
 
 print(pars_df)
 
+quit()
 
 true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, E0 = base_params["E0"]
