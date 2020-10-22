@@ -30,12 +30,12 @@ btfun <- function(cc, X){
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
-	mods <- c("fit","fitpen","fitE0","fitE0")
+	mods <- c("fit","fitpen","fitE0","fitE0pen")
 	df_funs <- function(seed,y){
 		tempmod <- modlist[[y]]
 		cc <- coef(tempmod, "fitted")
 		parsdf <- data.frame(beta0 = cc$params[["beta0"]]
-			, E0 = cc$params[["E0"]]
+			, E0 = as.numeric(cc$params[2]) ## cannot say E0, it will give an error for mods without E0
 			, seed = seed
 			, type = "sim"
 			, mod = y
@@ -50,7 +50,6 @@ pars_df <- bind_rows(lapply(flist,collect_pars))
 
 print(pars_df)
 
-quit()
 
 true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, E0 = base_params["E0"]
@@ -69,52 +68,22 @@ combo_pars <- (bind_rows(true_pars_df, pars_df)
 
 collect_splines <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
-	print(x)
-	R0t <- summary(modlist$fit)$R0
-	cc <- coef(modlist$fit,"fitted")
-	spline_df <- (data.frame(time = 1:nrow(X)
-		, bt = btfun(cc=coef(modlist$fit,"fitted"),X=modlist$fit$forecast_args$time_args$X)/base_params["beta0"]
+	mods <- c("fit","fitpen","fitE0","fitE0pen")
+	df_funs <- function(seed,y){
+		tempmod <- modlist[[y]]
+		R0t <- summary(tempmod)[["R0"]]
+		cc <- coef(tempmod, "fitted")
+		spline_df <- data.frame(time = 1:nrow(X)
+		, bt = btfun(cc=cc,X=tempmod$forecast_args$time_args$X)/base_params[["beta0"]]
 		, seed = x
 		, Rt = R0t[-1]
 		, type = "sim"
-		, mod = "withoutE0"
-		, spline_pen = "no"
-		
-	))
-	R0t1 <- summary(modlist$fitpen)$R0
-	cc1 <- coef(modlist$fitpen,"fitted")
-	spline_df1 <- (data.frame(time = 1:nrow(X)
-									 , bt = btfun(cc=coef(modlist$fitpen,"fitted"),X=modlist$fitpen$forecast_args$time_args$X)/base_params["beta0"]
-									 , seed = x
-									 , Rt = R0t1[-1]
-									 , type = "sim"
-									 , mod = "withoutE0"
-									 , spline_pen = "yes"
-									 
-	))
-	cc2 <- coef(modlist$fitE0,"fitted")
-	R0t2 <- summary(modlist$fitE0)$R0
-	spline_df2 <- (data.frame(time = 1:nrow(X)
-		, Rt = R0t2[-1]
-		, bt = btfun(cc=coef(modlist$fitE0,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)/base_params["beta0"]
-		, seed = x 
-		, type = "sim"
-		, mod = "withE0"
-		, spline_pen = "no"
-		
-	))
-	cc3 <- coef(modlist$fitE0pen,"fitted")
-	R0t3 <- summary(modlist$fitE0pen)$R0
-	spline_df3 <- (data.frame(time = 1:nrow(X)
-									  , Rt = R0t3[-1]
-									  , bt = btfun(cc=coef(modlist$fitE0pen,"fitted"),X=modlist$fitE0$forecast_args$time_args$X)/base_params["beta0"]
-									  , seed = x 
-									  , type = "sim"
-									  , mod = "withE0"
-									  , spline_pen = "yes"
-									  
-	))
-	return(bind_rows(spline_df,spline_df1,spline_df2,spline_df3))
+		, mod = y
+		)
+		return(spline_df)
+	}
+	spline_dflist <- lapply(mods,function(y){df_funs(seed=x,y)})
+	return(bind_rows(spline_dflist))
 }
 
 
@@ -128,7 +97,6 @@ true_splines <- data.frame(time=1:nrow(X)
 	, seed = NA
 	, type = "true"
 	, mod = "true"
-	, spline_pen = NA
 )
 
 spline_df <- bind_rows(spline_df, true_splines)

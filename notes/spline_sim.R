@@ -18,6 +18,7 @@ dd <- first_date -1 + 1:fitmax
 ## Reconstruct the spline fit
 bb <- coef(mod_bs)
 Rt <-  exp(bb[[1]])*exp(X %*% matrix(bb[-1], ncol=1))
+bt <- Rt
 print(Rt)
 plot(Rt)
 
