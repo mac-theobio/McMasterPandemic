@@ -26,15 +26,7 @@ print(summary(tempmod$fit)$R0)
 ## Calculate time-varying betas
 btfun <- function(cc, X){
 	bt <- cc$params[["beta0"]] * exp(X %*% matrix(cc$time_beta, ncol=1))
-#	bt <- exp(X %*% matrix(cc$time_beta, ncol=1))
 }
-
-#bt <- btfun(
-#	cc = coef(tempmod$fit,"fitted")
-#	, X = tempmod$fit$forecast_args$time_args$X
-#)
-
-#print(bt)
 
 collect_pars <- function(x){
 	modlist <- readRDS(paste0("cachestuff/",x))
