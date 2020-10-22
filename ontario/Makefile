@@ -26,6 +26,12 @@ cachestuff:
 	git clone https://github.com/wzmli/MacPan_cache.git $@
 
 ######################################################################
+## Example
+
+example.pdf: example.rmd
+	$(rmdpdf)
+
+
 
 ## Ontario_calibration_setup.rda.cache
 Ontario_calibration_setup.Rout: Ontario_calibration_setup.R
@@ -139,7 +145,7 @@ makestuff/Makefile:
 -include makestuff/rmd.mk
 
 
-
+-include makestuff/pandoc.mk
 -include makestuff/git.mk
 -include makestuff/visual.mk
 -include makestuff/projdir.mk

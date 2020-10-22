@@ -1,0 +1,120 @@
+---
+title: "MacPan Example"
+output: pdf_document
+---
+
+## Installing MacPan 
+
+Clone/download the repository (from [here](https://github.com/bbolker/McMasterPandemic)) and install locally or use:
+
+`remotes::install_github("bbolker/McMasterPandemic")`
+to install the package. You will need to first install the developer version of `bbmle` 
+(`remotes::install_github("bbolker/bbmle")`) 
+before installing `McMasterPandemic`.
+
+
+## Simulating data time series 
+```{r load pkg, include=FALSE}
+library(McMasterPandemic)
+library(tidyverse)
+```
+
+MLi: Do we have a document of the basic model (e.g. the flow diagram, and what the states/compartments mean?)
+
+```{r load params and simulate}
+
+params <- read_params("ICU1.csv")
+
+## Need to set up opt_pars because you need this for forecast_sim
+opt_pars <- list(params=c(beta0=params[["beta0"]])) 
+simdat <- forecast_sim(p = unlist(opt_pars)
+	, opt_pars = opt_pars
+	, base_params = params
+	, start_date = "2020-01-01"
+	, end_date = "2020-11-01"
+)
+
+```
+
+## Plotting simulated time series
+
+```{r plotting simdat, warning=FALSE}
+
+gg <- (ggplot(simdat, aes(x=date,y=value))
+	+ geom_point()
+	+ geom_line()
+	+ facet_wrap(~var,scale="free")
+)
+
+print(gg)
+
+```
+
+## Changing parameters 
+
+MLi: Maybe use Zach's shinny app to play around with different parameters combinations. This is the way to manually change it via code.
+
+```{r change params and simulate}
+
+print(summary(params))
+
+## Change R0 
+newparams <- fix_pars(params, target=c(R0=2)) 
+
+print(summary(newparams))
+
+new_opt_pars <- list(params=c(beta0=newparams[["beta0"]])) 
+
+simdat2 <- forecast_sim(p = unlist(new_opt_pars)
+	, opt_pars = new_opt_pars
+	, base_params = newparams    ## change parameter set here!
+	, start_date = "2020-01-01"
+	, end_date = "2020-11-01"
+)
+
+print(gg %+% simdat2)
+
+```
+Question: Extract the reported cases time series and use epigrowthfit to estimate little r. Double check if it is the same using the summary function in macpan. 
+
+## Adding Stochastic Noise
+
+```{r simulate noisy dynamics}
+
+newparams2 <- update(newparams, obs_disp = 50, proc_disp=1)
+
+simdat3 <- forecast_sim(p = unlist(new_opt_pars)
+	, opt_pars = new_opt_pars
+	, base_params = newparams2
+	, stoch = c(proc=TRUE,obs=TRUE)
+	, stoch_start = c(proc="2020-01-01",obs="2020-01-01")
+	, start_date = "2020-01-01"
+	, end_date = "2020-11-01"
+)
+
+print(gg %+% simdat3)
+```
+
+## Calibrating to simuated data
+
+```{r calibrate, warning =FALSE}
+
+report_dat <- (simdat3
+	%>% filter(var == "report")	
+)
+
+## I am estimating beta0 only, you need to specify what parameters you want to estimate
+
+opt_pars <- list(params = c(beta0=0.1))
+
+fitmod <- calibrate_comb(data = report_dat
+	, params = newparams2
+	, opt_pars = opt_pars
+	, use_DEoptim = FALSE ## We don't want to wait that long
+	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
+)
+
+print(summary(fitmod))
+print(summary(newparams2))
+
+```
