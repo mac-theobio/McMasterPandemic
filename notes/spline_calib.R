@@ -6,7 +6,7 @@ library(furrr)
 library(future.batchtools)
 library(splines)
 
-callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline.csv"
+callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline_fit.rda batchtools.rda spline.csv"
 
 source("makestuff/makeRfuns.R")
 commandEnvironments()
@@ -48,7 +48,7 @@ ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	, base_params = params
 	, stoch = list(obs=TRUE,proc=TRUE)
 	, stoch_start = c(proc=min(dd),obs=min(dd))
-	, time_args = list(X_date=dd, X=X0,extra_pars=list(time_beta=bb))
+	, time_args = list(X_date=dd, X=X,extra_pars=list(time_beta=bb[-1]))
 	, start_date = min(dd)
 	, end_date = max(dd)
 	, sim_fun = run_sim_loglin

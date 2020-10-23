@@ -17,6 +17,8 @@ print(flist)
 tempmod <- readRDS(paste0("cachestuff/",flist[1]))
 base_params <- tempmod$fit$forecast_args$base_params
 
+X <- X0[,-1]
+
 ## We expect the ratio of R/β to stay constant
 rmult <- get_R0(base_params)/base_params[["beta0"]]
 print(rmult)
@@ -51,7 +53,7 @@ pars_df <- bind_rows(lapply(flist,collect_pars))
 print(pars_df)
 
 
-true_pars_df <- data.frame(beta0 = base_params["beta0"]
+true_pars_df <- data.frame(beta0 = base_params["beta0"] + bb[1]
 	, E0 = base_params["E0"]
 	, seed = NA
 	, type = "true"
@@ -92,6 +94,7 @@ spline_df <- bind_rows(lapply(flist,collect_splines))
 ## copied from spline_recalib.R 
 
 true_splines <- data.frame(time=1:nrow(X)
+	, bt = Rt
 	, Rt = Rt
 	, seed = NA
 	, type = "true"
