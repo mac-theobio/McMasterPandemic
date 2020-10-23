@@ -39,7 +39,6 @@ sim <- run_sim_loglin(params=scaled_params
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 )
 
-
 print(head(nullsim$report))
 print(head(sim$report))
 
