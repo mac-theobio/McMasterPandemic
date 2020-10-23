@@ -54,4 +54,4 @@ print(head(sim$report))
 plot(nullsim$date,nullsim$report, log="y")
 lines(sim$date,sim$report)
 
-saveVars(bb, X0, Rt, scaled_params, dd)
+saveVars(bb, X0,X,Rt, scaled_params, dd)

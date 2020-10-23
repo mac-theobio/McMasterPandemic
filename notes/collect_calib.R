@@ -53,7 +53,7 @@ pars_df <- bind_rows(lapply(flist,collect_pars))
 print(pars_df)
 
 
-true_pars_df <- data.frame(beta0 = base_params["beta0"] + bb[1]
+true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, E0 = base_params["E0"]
 	, seed = NA
 	, type = "true"
