@@ -18,7 +18,6 @@ dd <- first_date -1 + 1:fitmax
 ## Reconstruct the spline fit
 bb <- coef(mod_bs)
 Rt <-  exp(bb[[1]])*exp(X %*% matrix(bb[-1], ncol=1))
-bt <- Rt
 print(Rt)
 plot(Rt)
 
@@ -33,6 +32,8 @@ nullsim <- run_sim_loglin(params=adj_params
 	, sim_args=list(start_date=min(dd),end_date=max(dd))
 )
 
+## Is this similar enough to the calib step? 
+## Latter uses forecast_sim
 sim <- run_sim_loglin(params=scaled_params
 	, extra_pars=list(time_beta=bb)
 	, time_args=list(X_date=dd, X=X0)
@@ -45,4 +46,4 @@ print(head(sim$report))
 plot(nullsim$date,nullsim$report, log="y")
 lines(sim$date,sim$report)
 
-saveEnvironment()
+saveVars(bb, X0, Rt)

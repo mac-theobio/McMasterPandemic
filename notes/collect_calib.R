@@ -92,7 +92,6 @@ spline_df <- bind_rows(lapply(flist,collect_splines))
 ## copied from spline_recalib.R 
 
 true_splines <- data.frame(time=1:nrow(X)
-	, bt = bt
 	, Rt = Rt
 	, seed = NA
 	, type = "true"

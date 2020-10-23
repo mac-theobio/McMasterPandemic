@@ -33,6 +33,6 @@ ggsplines <- (ggplot(spline_df,aes(time,color=mod,group=seed))
 	+ scale_color_manual(values=c("blue","blue","red","red","black"))
 )
 
-print(ggsplines + geom_line(aes(y=bt)))
+## print(ggsplines + geom_line(aes(y=bt)))
 print(ggsplines + geom_line(aes(y=Rt)))
 

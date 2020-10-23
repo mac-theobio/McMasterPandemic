@@ -41,8 +41,8 @@ cachestuff:
 spline_fit.Rout: spline_fit.R
 	$(makeR)
 
-## Takes parameters from spline_fit and feeds it to MacPan to make data
-## Does not close the loop somehow
+## Takes parameters from spline_fit and feeds it to MacPan
+## to check how things work
 Sources += spline.csv
 spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 	$(makeR)
