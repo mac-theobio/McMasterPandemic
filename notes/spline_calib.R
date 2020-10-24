@@ -64,7 +64,7 @@ dd_sim <- (ddfull_sim
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
