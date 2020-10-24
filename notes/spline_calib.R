@@ -40,8 +40,6 @@ opt_parsE0 <- list(
 	# , log_nb_disp = c(report=3,death=3)
 )
 
-quit()
-
 sim_calib <- function(x){
 	set.seed(x)
 
@@ -66,7 +64,7 @@ dd_sim <- (ddfull_sim
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
@@ -80,7 +78,7 @@ ff <- calibrate_comb(params = params
 
 ff2 <- calibrate_comb(params = params
 							, debug_plot=FALSE
-							, use_DEoptim=FALSE
+							, use_DEoptim=TRUE
 							, DE_cores = 6
 							, opt_pars = opt_pars
 							, use_spline = TRUE
@@ -95,7 +93,7 @@ ff2 <- calibrate_comb(params = params
 
 ffE0 <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=FALSE
+	, use_DEoptim=TRUE
 	, DE_cores = 6
 	, opt_pars = opt_parsE0
 	, use_spline = TRUE
@@ -109,7 +107,7 @@ ffE0 <- calibrate_comb(params = params
 
 ffE02 <- calibrate_comb(params = params
 							  , debug_plot=FALSE
-							  , use_DEoptim=FALSE
+							  , use_DEoptim=TRUE
 							  , DE_cores = 6
 							  , opt_pars = opt_parsE0
 							  , use_spline = TRUE

@@ -43,7 +43,7 @@ opt_pars <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
 )
 
 opt_parsE0 <- list(params=c(log_beta0 = as.numeric(log(params["beta0"]))
-								  , log_E0=log(as.numeric(params["E0"]))
+	, log_E0=log(as.numeric(params["E0"]))
 )
 # , log_nb_disp = c(report=3,death=3)
 )
@@ -91,7 +91,7 @@ ffE0 <- calibrate_comb(params = params
 	, debug_plot=FALSE
 	, use_DEoptim=TRUE
 	, DE_cores = 6
-	, opt_pars = opt_pars2
+	, opt_pars = opt_parsE0
 	, use_spline = TRUE
 	, spline_df = splinedf
 	, spline_type = "ns"
