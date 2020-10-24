@@ -22,6 +22,7 @@ gg <- (ggplot(combo_pars, aes(x=mod, y=value,color=mod))
 	+ facet_wrap(~var,scale="free")
 	+ scale_alpha_manual(values=c(1,0.3,0.3,0.3,0.3))
 	+ scale_color_manual(values=c("blue","blue","red","red","black"))
+	+ coord_flip()
 )
 
 print(gg)
@@ -34,6 +35,6 @@ ggsplines <- (ggplot(spline_df,aes(time,color=mod,group=seed))
 	+ ylim(c(0,10))
 )
 
-## print(ggsplines + geom_line(aes(y=bt)))
+# print(ggsplines + geom_line(aes(y=bt)))
 print(ggsplines + geom_line(aes(y=Rt)))
 

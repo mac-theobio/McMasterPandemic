@@ -17,8 +17,6 @@ print(flist)
 tempmod <- readRDS(paste0("cachestuff/",flist[1]))
 base_params <- tempmod$fit$forecast_args$base_params
 
-X <- X0[,-1]
-
 ## We expect the ratio of R/β to stay constant
 rmult <- get_R0(base_params)/base_params[["beta0"]]
 print(rmult)
@@ -27,7 +25,7 @@ print(summary(tempmod$fit)$R0)
 
 ## Calculate time-varying betas
 btfun <- function(cc, X){
-	bt <- cc$params[["beta0"]] * exp(X %*% matrix(cc$time_beta, ncol=1))
+	bt <- cc$params[["beta0"]] * exp(X0 %*% matrix(cc$time_beta, ncol=1))
 }
 
 collect_pars <- function(x){
@@ -38,6 +36,14 @@ collect_pars <- function(x){
 		cc <- coef(tempmod, "fitted")
 		parsdf <- data.frame(beta0 = cc$params[["beta0"]]
 			, E0 = as.numeric(cc$params[2]) ## cannot say E0, it will give an error for mods without E0
+			, tbint = cc$time_beta[1]
+			, tb1 = cc$time_beta[2]
+			, tb2 = cc$time_beta[3]
+			, tb3 = cc$time_beta[4]
+			, tb4 = cc$time_beta[5]
+			, tb5 = cc$time_beta[6]
+			, tb6 = cc$time_beta[7]
+			, beta0sum = cc$time_beta[1] + cc$params[["beta0"]]
 			, seed = seed
 			, type = "sim"
 			, mod = y
@@ -55,6 +61,14 @@ print(pars_df)
 
 true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, E0 = base_params["E0"]
+	, tbint = bb[1]
+	, tb1 = bb[2]
+	, tb2 = bb[3]
+	, tb3 = bb[4]
+	, tb4 = bb[5]
+	, tb5 = bb[6]
+	, tb6 = bb[7]
+	, beta0sum = base_params["beta0"] + bb[1]
 	, seed = NA
 	, type = "true"
 	, mod = "true"
