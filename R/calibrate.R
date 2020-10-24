@@ -994,6 +994,7 @@ calibrate_comb <- function(data,
                      knot_quantile_var=NA,
                      spline_pen=0,
                      spline_type="bs",
+                     spline_int=FALSE,
                      testing_data=NULL,
                      maxit=10000,
                      skip.hessian=FALSE,
@@ -1112,6 +1113,10 @@ calibrate_comb <- function(data,
             knot_args <- c(knot_args, "Boundary.knots=c(min(t_vec),max(t_vec)-spline_setback)")
         }
         spline_term <- sprintf("%s(%s)",spline_type,paste(knot_args,collapse=","))
+        if(spline_int){
+            spline_term <- c("spline_int",spline_term)
+            X_dat$spline_int <- 1
+        }
         loglin_terms <- c(loglin_terms, spline_term)
     }
     form <- reformulate(loglin_terms)
