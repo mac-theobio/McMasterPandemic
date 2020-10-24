@@ -40,6 +40,8 @@ opt_parsE0 <- list(
 	# , log_nb_disp = c(report=3,death=3)
 )
 
+quit()
+
 sim_calib <- function(x){
 	set.seed(x)
 
@@ -48,7 +50,7 @@ ddfull_sim<- (forecast_sim(p = unlist(opt_pars)
 	, base_params = params
 	, stoch = list(obs=TRUE,proc=TRUE)
 	, stoch_start = c(proc=min(dd),obs=min(dd))
-	, time_args = list(X_date=dd, X=X0,extra_pars=list(time_beta=bb))
+	, time_args = list(X_date=dd, X=X,extra_pars=list(time_beta=bb))
 	, start_date = min(dd)
 	, end_date = max(dd)
 	, sim_fun = run_sim_loglin
@@ -64,13 +66,13 @@ dd_sim <- (ddfull_sim
 
 ff <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=TRUE
+	, use_DEoptim=FALSE
 	, DE_cores = 6
 	, opt_pars = opt_pars
 	, use_spline = TRUE
 	, spline_df = ndf
 	, spline_type = "bs"
-	, spline_int = TRUE
+	, spline_int = FALSE
 	, data= dd_sim
 	, start_date = min(dd_sim$date)
 	, start_date_offset = 0
@@ -78,14 +80,14 @@ ff <- calibrate_comb(params = params
 
 ff2 <- calibrate_comb(params = params
 							, debug_plot=FALSE
-							, use_DEoptim=TRUE
+							, use_DEoptim=FALSE
 							, DE_cores = 6
 							, opt_pars = opt_pars
 							, use_spline = TRUE
 							, spline_df = ndf
 							, spline_pen = 10
 							, spline_type = "bs"
-							, spline_int=TRUE
+							, spline_int=FALSE
 							, data= dd_sim
 							, start_date = min(dd_sim$date)
 							, start_date_offset = 0
@@ -93,13 +95,13 @@ ff2 <- calibrate_comb(params = params
 
 ffE0 <- calibrate_comb(params = params
 	, debug_plot=FALSE
-	, use_DEoptim=TRUE
+	, use_DEoptim=FALSE
 	, DE_cores = 6
 	, opt_pars = opt_parsE0
 	, use_spline = TRUE
 	, spline_df = ndf
 	, spline_type = "bs"
-	, spline_int = TRUE
+	, spline_int = FALSE
 	, data= dd_sim
 	, start_date = min(dd_sim$date)
 	, start_date_offset = 0
@@ -107,14 +109,14 @@ ffE0 <- calibrate_comb(params = params
 
 ffE02 <- calibrate_comb(params = params
 							  , debug_plot=FALSE
-							  , use_DEoptim=TRUE
+							  , use_DEoptim=FALSE
 							  , DE_cores = 6
 							  , opt_pars = opt_parsE0
 							  , use_spline = TRUE
 							  , spline_df = ndf
 							  , spline_type = "bs"
 							  , spline_pen = 10
-							  , spline_int = TRUE
+							  , spline_int = FALSE
 							  , data= dd_sim
 							  , start_date = min(dd_sim$date)
 							  , start_date_offset = 0
