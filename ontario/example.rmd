@@ -17,6 +17,7 @@ before installing `McMasterPandemic`.
 ```{r load pkg, include=FALSE}
 library(McMasterPandemic)
 library(tidyverse)
+library(zoo)
 ```
 
 MLi: Do we have a document of the basic model (e.g. the flow diagram, and what the states/compartments mean?)
@@ -118,3 +119,210 @@ print(summary(fitmod))
 print(summary(newparams2))
 
 ```
+
+
+## Ontario, Canada
+
+Reading in data from MLi's github page
+
+```{r ontariodat}
+tsdat_url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
+	
+tsdat <- read_csv(tsdat_url)
+
+## Section 2: Clean data
+### Clean ts data
+Ontario_dat <- (tsdat
+	%>% filter(Province=="ON")
+   %>% select(Province,Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
+	%>% mutate(newDeaths=c(NA,diff(deceased))
+   	## ON hosp includes ICU, our model compartment is just acute care
+   	, Hospitalization=Hospitalization-ICU)
+   %>% select(-deceased)
+   %>% pivot_longer(names_to="var",-c(Date,Province))
+   %>% setNames(tolower(names(.)))
+	%>% ungroup()
+)
+
+```
+
+Question: Make some time series plots using the data and describe what is going on. Adding important dates!
+
+```{r ont_plots, warning=FALSE}
+
+ggont <- (ggplot(data=Ontario_dat, aes(x=date,y=value))
+	+ geom_point()
+	+ facet_wrap(~var, scale="free")
+)
+
+print(ggont)
+
+```
+
+### Ontario MacPan setup
+
+```{r ont_macpan_dat}
+
+## translate variable names to internally used values
+## drop unused variables
+keep_vars <- c("H","ICU","death","report","newTests")
+
+## Maybe keep reports only for simplicity
+
+keep_vars <- c("report")
+
+clean_tsdata <- (Ontario_dat
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% keep_vars)
+)
+
+date_vec <- as.Date(min(clean_tsdata$date):max(clean_tsdata$date))
+
+date_df <- data.frame(date = rep(date_vec,1)
+   , var = rep(c("report"),each=length(date_vec))
+   )
+
+calibrate_dat <- (left_join(date_df,clean_tsdata))
+
+```
+
+### Fitting basic MacPan model
+
+```{r ont_calibrate, warning=FALSE}
+
+ontmod0 <- calibrate_comb(data = calibrate_dat
+	, params = newparams2
+	, opt_pars = opt_pars
+	, use_DEoptim = FALSE ## We don't want to wait that long
+	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
+)
+
+
+print(summary(ontmod0))
+
+print(plot(ontmod0,data=calibrate_dat))
+```
+
+Question: Why are the fits so bad? 
+Ans:
+	- Model is too simple
+	- strong assumptions
+	- interventions and lockdown
+	- two distinct waves
+	
+## Initial wave
+
+```{r ont_calibrate 1stwave, warning=FALSE}
+
+ont1stwave <- calibrate_dat %>% filter(date <= as.Date("2020-04-26"))
+
+ontmod1 <- calibrate_comb(data = ont1stwave
+	, params = newparams2
+	, opt_pars = opt_pars
+	, use_DEoptim = FALSE ## We don't want to wait that long
+	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
+)
+
+
+print(summary(ontmod1))
+
+print(plot(ontmod1,data=ont1stwave))
+```
+
+Question: What is the growth rate (little r)? Do we get similar estimates as epigrowthfit?
+
+MLi: Maybe do the same thing for second wave? 
+
+## Mobility 
+
+We can use mobility as a proxy for change in transmission rate. 
+
+```{r googledat}
+google_url <- "https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv"
+
+google <- read_csv(google_url)
+
+clean_google <- (google
+    %>% filter(country_region == "Canada", sub_region_1 == "Ontario")
+    %>% select(date, contains("baseline"))
+    %>% pivot_longer(names_to="type", values_to="value", -c(date))
+    %>% mutate_at("date", as.Date)
+    %>% mutate_at("type", str_remove, "\\_percent.*")
+    %>% mutate_at("value", ~./100+1)
+)
+
+clean_mobdat <- (clean_google
+    %>% mutate(tvec=as.numeric(date-min(date,na.rm=TRUE)))
+    %>% filter(type %in% c("retail_and_recreation","workplaces","driving"))
+    %>% dplyr::select(date,value)
+    %>% group_by(date)
+    %>% summarise_at("value",mean,na.rm=TRUE)
+    %>% na.omit()
+    %>% rename(rel_activity = value)
+#   %>% mutate_at("rel_activity", ~pmin(., 1))  ## cap at 100% (? should we ?)
+	 %>% ungroup()
+)
+```
+
+Make a plot of relative activity and explain how this might have an effect for disease transmission/dynamics.
+
+```{r mobplot}
+
+ggmob <- (ggplot(clean_mobdat,aes(date,rel_activity))
+	+ geom_point()			 
+)
+
+print(ggmob)
+
+```
+
+## Calibrating mobility model 
+
+```{r ont_calibrate_mob, warning=FALSE}
+
+ontmod_mob <- calibrate_comb(data = calibrate_dat
+	, params = newparams2
+	, opt_pars = opt_pars
+	, use_DEoptim = FALSE ## We don't want to wait that long
+	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
+	, mob_data = clean_mobdat
+	, use_mobility = TRUE
+)
+
+
+print(summary(ontmod_mob))
+
+print(plot(ontmod_mob,data=calibrate_dat))
+```
+
+MLi: It is trying to fit a bit better. 
+
+Question: What assumptions are we making? Do we think mobility have the same effect throughout the pandemic? 
+
+## Adding more mobility flexibilities 
+
+- mob break
+- new mob intercept and slope
+- smoother on the breakpoint
+
+```{r ont_calibrate_mob_breaks, warning=FALSE}
+
+ontmod_mob2 <- calibrate_comb(data = calibrate_dat
+	, params = newparams2
+	, opt_pars = opt_pars
+	, use_DEoptim = FALSE ## We don't want to wait that long
+	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
+	, mob_data = clean_mobdat
+	, use_mobility = TRUE
+	, mob_breaks = c("2020-04-15", "2020-08-8")
+	, mob_breaks_int = TRUE
+	, mob_logist_scale = 3
+)
+
+
+print(summary(ontmod_mob2))
+
+print(plot(ontmod_mob2,data=calibrate_dat))
+```
+
+MLi: The last curve down is probably due to new lockdown/stage restrictions. Maybe add another breakpoint, idk.
