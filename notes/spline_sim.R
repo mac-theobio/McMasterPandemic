@@ -26,14 +26,11 @@ adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
 scaled_params <- fix_pars(params, target=c(R0=1))
 print(scaled_params)
 
-print(bb[1])
-
-scaled_params <- update(scaled_params,beta0=as.numeric(bb[1]))
-
 scaled_params["obs_disp"] <- 50
 
 print(scaled_params)
 print(summary(scaled_params))
+
 
 nullsim <- run_sim_loglin(params=adj_params
 	, time_args=list(X_date=dd, X=X)

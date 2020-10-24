@@ -31,6 +31,7 @@ print(spline_df)
 ggsplines <- (ggplot(spline_df,aes(time,color=mod,group=seed))
 	+ facet_wrap(~mod)
 	+ scale_color_manual(values=c("blue","blue","red","red","black"))
+	+ ylim(c(0,10))
 )
 
 ## print(ggsplines + geom_line(aes(y=bt)))
