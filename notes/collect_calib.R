@@ -12,8 +12,6 @@ flist <- list.files(path="cachestuff/",pattern="_calib[.]")
 
 print(flist)
 
-flist <- flist[c(1,3,4,5,6)]
-
 ## true beta0 is the same, it lives inside base_params
 
 tempmod <- readRDS(paste0("cachestuff/",flist[1]))
@@ -42,9 +40,10 @@ collect_pars <- function(x){
 			, tb1 = cc$time_beta[1]
 			, tb2 = cc$time_beta[2]
 			, tb3 = cc$time_beta[3]
-#			, tb4 = cc$time_beta[4]
-#			, tb5 = cc$time_beta[5]
-#			, tb6 = cc$time_beta[6]
+			, tb4 = cc$time_beta[4]
+			, tb5 = cc$time_beta[5]
+			, tb6 = cc$time_beta[6]
+			, tb7 = cc$time_beta[7]
 #			, beta0sum = cc$time_beta[1] + cc$params[["beta0"]]
 			, seed = seed
 			, type = "sim"
@@ -67,9 +66,10 @@ true_pars_df <- data.frame(beta0 = base_params["beta0"]
 	, tb1 = bb[1]
 	, tb2 = bb[2]
 	, tb3 = bb[3]
-#	, tb4 = bb[4]
-#	, tb5 = bb[5]
-#	, tb6 = bb[6]
+	, tb4 = bb[4]
+	, tb5 = bb[5]
+	, tb6 = bb[6]
+	, tb7 = bb[7]
 #	, beta0sum = base_params["beta0"] + bb[1]
 	, seed = NA
 	, type = "true"
