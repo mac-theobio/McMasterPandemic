@@ -12,7 +12,7 @@ params <- read_params(matchFile(".csv$"))
 first_date <- as.Date("2020-01-01")
 fitmax <- 100
 dd <- first_date -1 + 1:fitmax
-ndf <- 6
+ndf <- 3
 
 R0 <- 2
 
@@ -22,7 +22,7 @@ X <- bs(dd, df=ndf)
 
 
 ## Reconstruct the spline fit
-bb <- c(-1,-0.8,-0.5,-1,-0.3,-.5)
+bb <- c(-2,-0.5,0)
 Rt <-  R0*exp(X %*% matrix(bb, ncol=1))
 plot(Rt)
 
