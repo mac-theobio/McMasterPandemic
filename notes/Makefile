@@ -54,10 +54,13 @@ spline_calib.Rout: spline_calib.R spline_sim.rda batchtools.rda spline.csv
 spline_shape_calib.Rout: spline_shape_calib.R spline_sim.rda batchtools.rda spline.csv
 
 ## This depends cryptically on stuff that spline_calib puts into cachestuff
-collect_calib.Rout: collect_calib.R spline_sim.rda $(wildcard cachestuff/*.RDS)
+collect_calib.Rout: collect_calib.R spline_sim.rda $(wildcard cachestuff/spline_calib.*.RDS)
 	$(makeR)
 
-spline_plots.Rout: spline_plots.R collect_calib.rda spline_sim.rda
+collect_spline_shape_calib.Rout: collect_spline_shape_calib.R spline_sim.rda $(wildcard cachestuff/spline_shape_calib.*.RDS)
+	$(makeR)
+
+spline_plots.Rout: spline_plots.R collect_calib.rda collect_spline_shape_calib.rda spline_sim.rda
 	$(makeR)
 
 spline_fitplots.Rout: spline_fitplots.R
