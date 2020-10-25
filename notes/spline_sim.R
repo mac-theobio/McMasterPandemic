@@ -29,4 +29,4 @@ plot(Rt)
 
 ## Everything below is experimenting, I think all we need is X, bb, and Rt from above.
 
-saveVars(bb,X,Rt,dd, first_date, fitmax)
+saveVars(bb,X,Rt,dd, first_date, fitmax, ndf)
