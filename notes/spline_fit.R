@@ -19,39 +19,45 @@ h <- 2
 R0 <- 2
 c <- 2
 
-ndf <- 6
+ndf <- 7
 
 ## The susceptible effect makes R smaller, and increases through time
 ## The infections makes R bigger, and grows and saturates
 Q <- exp(r*t)
 S <- 1/(1+Q)
 I <- Q/(1+Q^2)
-logRt <- log(R0*S^h*I^(-c))
+Rt = R0*S^h*I^(-c)
+logRt <- log(Rt)
 
-Rf <- data.frame(t, logRt)
-
-# model fits
-mod_bs <- lm(logRt~bs(t,df=ndf),data=Rf)
-mod_ns <- lm(logRt~ns(t,df=ndf),data=Rf)
-
-Rfpredict <- (Rf
-	%>% mutate(bs_fit = predict(mod_bs)
-		, ns_fit = predict(mod_ns))
-	%>% gather(key = "spline_type", value="pred", -t, -logRt)
+Rf <- data.frame(t, Rt)
+Sf <- data.frame(t
+	, logss = log(Rt/R0)
 )
 
-print(Rfpredict)
+print(plot(Sf))
 
-gg <- (ggplot(Rfpredict, aes(t))
-	+ geom_point(aes(y=logRt), color="black")
+# model fits
+mod_bs <- lm(logss~bs(t,df=ndf)-1,data=Sf)
+mod_ns <- lm(logss~ns(t,df=ndf)-1,data=Sf)
+
+Sfpredict <- (Sf
+	%>% mutate(bs_fit = predict(mod_bs)
+		, ns_fit = predict(mod_ns))
+	%>% gather(key = "spline_type", value="pred", -t, -logss)
+)
+
+print(Sfpredict)
+
+gg <- (ggplot(Sfpredict, aes(t))
+	+ geom_point(aes(y=logss), color="black")
 	+ geom_line(aes(y=pred,color=spline_type))
 	+ scale_color_manual(values=c("red","blue"))
 )
 
 print(gg)
 
-gg2 <- (ggplot(Rfpredict, aes(t))
-	+ geom_point(aes(y=exp(logRt)),color="black")
+gg2 <- (ggplot(Sfpredict, aes(t))
+	+ geom_point(aes(y=exp(logss)),color="black")
 	+ geom_line(aes(y=exp(pred),color=spline_type))
 	+ scale_color_manual(values=c("red","blue"))
 	+ ylab("Rt")

@@ -8,7 +8,10 @@ makeGraphics()
 
 params <- read_params(matchFile(".csv$"))
 
-X0 <- cbind(1,mod_bs$model[,-1])
+print(head(mod_bs$model))
+
+## The first column in mod_bs$model is logss
+
 X <- mod_bs$model[,-1]
 
 first_date <- as.Date("2020-01-01")
@@ -17,38 +20,13 @@ dd <- first_date -1 + 1:fitmax
 
 ## Reconstruct the spline fit
 bb <- coef(mod_bs)
-Rt <-  exp(bb[[1]])*exp(X %*% matrix(bb[-1], ncol=1))
+
+### This is not Rt, B(0) is 1, it is relative to R0, Rt = R0*spline_shape, if there is an intercept parameter, then Rt = R0*spline_shape/B0
+
+Rt <-  R0*exp(X %*% matrix(bb, ncol=1))
 plot(Rt)
 
-## Time-varying betas are actually Rs, so we set base R to 1
-## nullsim tests that this scaling seems to work
-adj_params <- fix_pars(params, target=c(R0=Rt[[1]]))
-scaled_params <- fix_pars(params, target=c(R0=1))
-print(scaled_params)
 
-scaled_params["obs_disp"] <- 50
+## Everything below is experimenting, I think all we need is X, bb, and Rt from above.
 
-print(scaled_params)
-print(summary(scaled_params))
-
-
-nullsim <- run_sim_loglin(params=adj_params
-	, time_args=list(X_date=dd, X=X)
-	, sim_args=list(start_date=min(dd),end_date=max(dd))
-)
-
-## Is this similar enough to the calib step? 
-## Latter uses forecast_sim
-sim <- run_sim_loglin(params=scaled_params
-	, extra_pars=list(time_beta=bb)
-	, time_args=list(X_date=dd, X=X0)
-	, sim_args=list(start_date=min(dd),end_date=max(dd))
-)
-
-print(head(nullsim$report))
-print(head(sim$report))
-
-plot(nullsim$date,nullsim$report, log="y")
-lines(sim$date,sim$report)
-
-saveVars(bb, X0,X,Rt, scaled_params, dd)
+saveVars(bb,X,Rt,dd, first_date, fitmax)

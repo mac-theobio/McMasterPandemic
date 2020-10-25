@@ -47,11 +47,11 @@ Sources += spline.csv
 spline_sim.Rout: spline_sim.R spline_fit.rda spline.csv
 	$(makeR)
 
-simple_spline_sim.Rout: simple_spline_sim.R spline.csv 
-
 ## Use Macpan to calibrate fitted Rt spline simulation
-spline_calib.Rout: spline_calib.R simple_spline_sim.rda batchtools.rda spline.csv
+spline_calib.Rout: spline_calib.R spline_sim.rda batchtools.rda spline.csv
 	$(makeR)
+
+
 
 ## This depends cryptically on stuff that spline_calib puts into cachestuff
 collect_calib.Rout: collect_calib.R simple_spline_sim.rda $(wildcard cachestuff/*.RDS)

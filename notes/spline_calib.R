@@ -6,21 +6,22 @@ library(furrr)
 library(future.batchtools)
 library(splines)
 
-callArgs <- "spline_calib.Rout spline_calib.R spline_sim.rda spline_fit.rda batchtools.rda spline.csv"
-
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 makeGraphics()
 
 objects()
 
-start_date <- as.Date("2020-01-01")
+start_date <- first_date
 end_date <- start_date -1 + fitmax
 obs_disp <- 50
 proc_disp <- 1
 
-params <- scaled_params
-print(params)
+params <- read_params(matchFile(".csv$"))
+
+print(bb)
+
+params <- fix_pars(params, target=c(R0=Rt[[1]]))
 
 params["obs_disp"] <- obs_disp
 params["proc_disp"] <- proc_disp
@@ -83,7 +84,7 @@ ff2 <- calibrate_comb(params = params
 							, opt_pars = opt_pars
 							, use_spline = TRUE
 							, spline_df = ndf
-							, spline_pen = 10
+							, spline_pen = 5
 							, spline_type = "bs"
 							, spline_int=FALSE
 							, data= dd_sim
@@ -113,7 +114,7 @@ ffE02 <- calibrate_comb(params = params
 							  , use_spline = TRUE
 							  , spline_df = ndf
 							  , spline_type = "bs"
-							  , spline_pen = 10
+							  , spline_pen = 5
 							  , spline_int = FALSE
 							  , data= dd_sim
 							  , start_date = min(dd_sim$date)

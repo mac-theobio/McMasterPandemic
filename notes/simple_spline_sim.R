@@ -18,6 +18,8 @@ R0 <- 2
 
 scaled_params <- fix_pars(params, target=c(R0=R0))
 
+
+## No intercept 
 X <- bs(dd, df=ndf)
 
 
