@@ -109,6 +109,7 @@ ontario_calibration_report.html: ontario_clean.RData ont_cal.RData epiestim.RDat
 ont_cal_splinecomp_plots.Rout: ont_keep.Rout ont_cal_splinecomp.RData
 
 batchtools.Rout: batchtools.R
+	$(makeR)
 
 ## spline factorial
 ont_spline_factorial.%.Rout: ont_spline_factorial.R ontario_clean.rda batchtools.rda
