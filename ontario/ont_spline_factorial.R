@@ -37,7 +37,6 @@ print(splinef)
 calibrate_factorial <- function(x){
 	spline_params <- splinef[x,]
 	print(spline_params)
-	return(spline_params)
 	ff <- calibrate_comb(params = params
 		, use_DEoptim=TRUE
 		, DE_core = 7
@@ -50,7 +49,7 @@ calibrate_factorial <- function(x){
 		, start_date = min(trimdat)
 		, start_date_offset = 0
 	)
-	ff_list <- list(fit=ff, fitdat=trimdat, spline_params=params)
+	ff_list <- list(fit=ff, fitdat=trimdat, spline_params=spline_params)
 	saveRDS(object=ff_list, file=paste0("./cachestuff/ont_spline.",x,".RDS"))
 }
 
