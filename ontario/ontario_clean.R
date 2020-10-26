@@ -1,48 +1,51 @@
+library(McMasterPandemic)
 library(readr)
 library(dplyr)
 library(tidyr)
+library(zoo)
 
-url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
-if (require(pins)) {
-    dd <- pin(url) %>% read_csv()
-} else {
-    dd <- read_csv(url)
-}
+source("makestuff/makeRfuns.R")
+commandEnvironments()
 
-ont_all <- (dd
-    %>% filter(Province=="ON")
-    %>% select(Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
-    %>% mutate(newDeaths=c(NA,diff(deceased)),
-               ## ON hosp includes ICU, our model compartment is just acute care
-               Hospitalization=Hospitalization-ICU)
-    %>% select(-deceased)
-    %>% pivot_longer(-Date,names_to="var")
-    %>% setNames(tolower(names(.)))
-)
-min_day <- function(day,value) {
-    good <- !is.na(value) & value>0
-    if (all(good)) min(day) else min(day[good])
-}
+tsdat_url <- "https://wzmli.github.io/COVID19-Canada/git_push/clean.Rout.csv"
+	
+tsdat <- read_csv(tsdat_url)
 
-start_date <- "2020-03-15"
-## start_date <- "2020-03-01"
-
-ont_recent <- (ont_all
-    %>% filter(date>=as.Date(start_date))
-    %>% mutate(day=as.numeric(date-min(date)))
-    %>% group_by(var)
-    %>% mutate(vday=day-min_day(day,value))
-    %>% ungroup()
+### Clean ts data
+Ontario_dat <- (tsdat
+	%>% filter(Province=="ON")
+   %>% select(Province,Date,Hospitalization,ICU,Ventilator,deceased,newConfirmations,newTests)
+	%>% mutate(newDeaths=c(NA,diff(deceased))
+   	## ON hosp includes ICU, our model compartment is just acute care
+   	, Hospitalization=Hospitalization-ICU)
+   %>% select(-deceased)
+   %>% pivot_longer(names_to="var",-c(Date,Province))
+   %>% setNames(tolower(names(.)))
+	%>% ungroup()
 )
 
-ont_recent_nt <- filter(ont_recent,var != "newTests")
-ont_all_nt <- filter(ont_all,var != "newTests")
+## translate variable names to internally used values
+## drop unused variables
+keep_vars <- c("H","ICU","death","report","newTests")
 
-save("ont_all", file=sprintf("ONdata_%s.rda",
-                              format(Sys.time(),"%Y%b%d")))
+## Maybe keep reports only for simplicity
 
+keep_vars <- c("report")
 
-# rdsave("ont_all", "ont_recent", "ont_all_nt", "ont_recent_nt", "start_date")
+clean_tsdata <- (Ontario_dat
+    %>% mutate_at("var",trans_state_vars)
+    %>% filter(var %in% keep_vars)
+)
 
+date_vec <- as.Date(min(clean_tsdata$date):max(clean_tsdata$date))
 
+date_df <- data.frame(date = rep(date_vec,1)
+   , var = rep(c("report"),each=length(date_vec))
+   )
+
+ont_dat <- (left_join(date_df,clean_tsdata))
+
+print(ont_dat)
+
+saveVars(ont_dat)
 

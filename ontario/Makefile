@@ -32,7 +32,6 @@ example.pdf: example.rmd
 	$(rmdpdf)
 
 
-
 ## Ontario_calibration_setup.rda.cache
 Ontario_calibration_setup.Rout: Ontario_calibration_setup.R
 	$(makeR)
@@ -59,7 +58,7 @@ reference_mod_forecast.Rout: reference_mod_forecast.R
 ontario_nbfit.Rout: ontario_clean.Rout ontario_nbfit.R
 
 ontario_clean.Rout: ontario_clean.R
-	$(run-R)
+	$(makeR)
 
 ont_keep.Rout: ontario_clean.Rout ont_keep.R
 	$(run-R)
@@ -108,6 +107,13 @@ epiestim_plot.Rout: ontario_clean.Rout ont_cal.Rout epiestim.Rout epiestim_plot.
 ontario_calibration_report.html: ontario_clean.RData ont_cal.RData epiestim.RData epiestim_plot.Rout.png ontario_nbfit.Rout.png ont_cal1.png ontario_calibration_report.Rmd
 
 ont_cal_splinecomp_plots.Rout: ont_keep.Rout ont_cal_splinecomp.RData
+
+## spline factorial
+ont_spline_factorial.%.Rout: ont_spline_factorial.R ontario_clean.rda
+	$(makeR)
+
+## ont_spline_factorial.full.Rout: ont_spline_factorial.R
+## ont_spline_factorial.short.Rout: ont_spline_factorial.R
 
 Ignore += *.datatime
 %.datatime: ; touch $@
