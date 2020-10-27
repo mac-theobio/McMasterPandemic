@@ -21,15 +21,15 @@ gg <- (ggplot(data=filter(shortdat,var == "report")
 print(gg + ggtitle("short fit reported cases") + scale_y_log10())
 print(gg %+% filter(shortdat,var == "Rt") + ggtitle("short fit Rt"))
 
-print(gg %+% filter(fulldat,var == "report")
-	+ ggtitle("full fit reported cases")
-	+ scale_y_log10()
-	)
+#print(gg %+% filter(fulldat,var == "report")
+#	+ ggtitle("full fit reported cases")
+#	+ scale_y_log10()
+#	)
 
-print(gg %+% filter(fulldat,var == "Rt")
-	+ ggtitle("full fit Rt")
-	+ scale_y_continuous(limit=c(0,4), oob=scales::squish)
-)
+#print(gg %+% filter(fulldat,var == "Rt")
+#	+ ggtitle("full fit Rt")
+#	+ scale_y_continuous(limit=c(0,4), oob=scales::squish)
+#)
 
 
 
