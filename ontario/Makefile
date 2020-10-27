@@ -118,6 +118,13 @@ ont_spline_factorial.%.Rout: ont_spline_factorial.R ontario_clean.rda batchtools
 ## ont_spline_factorial.full.Rout: ont_spline_factorial.R
 ## ont_spline_factorial.short.Rout: ont_spline_factorial.R
 
+collect_spline_factorial.Rout: collect_spline_factorial.R $(wildcard cachestuff/ont_spline_factorial.*.RDS) 
+	$(makeR)
+
+plot_spline_factorial.Rout: plot_spline_factorial.R collect_spline_factorial.rda
+	$(makeR)
+
+
 Ignore += *.datatime
 %.datatime: ; touch $@
 ontario_clean.Rout: 0601.datatime
