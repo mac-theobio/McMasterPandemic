@@ -20,17 +20,19 @@ start_date <- ifelse(grepl("full",targetname())
 	, as.Date("2020-09-01")
 )
 
+start_date_offset <- 15
+
 type <- ifelse(grepl("full",targetname()),"full","short")
 
 trimdat <- filter(ont_dat,date>=start_date)
 
 maxdf <- floor(nrow(trimdat)/14)
 
-spline_df = maxdf - c(0, 1, 2, 4)
+spline_df = maxdf - c(0, 1, 2, 3)
 spline_pen = c(4,6,8,10)
 
 
-splinef <- expand.grid(spline_df=pmax(spline_df,0)
+splinef <- expand.grid(spline_df=pmax(spline_df,1)
 	, spline_pen = spline_pen
 )
 
@@ -49,9 +51,9 @@ calibrate_factorial <- function(x){
 		, spline_int = FALSE
 		, data = trimdat
 		, start_date = min(trimdat)
-		, start_date_offset = 0
+		, start_date_offset = start_date_offset
 	)
-	ff_list <- list(fit=ff, fitdat=trimdat, spline_params=spline_params)
+	ff_list <- list(fit=ff, fitdat=trimdat, spline_params=spline_params, start_date_offset=start_date_offset)
 	saveRDS(object=ff_list, file=paste0("./cachestuff/ont_spline.",type,x,".RDS"))
 }
 
