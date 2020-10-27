@@ -20,6 +20,8 @@ start_date <- ifelse(grepl("full",targetname())
 	, as.Date("2020-09-01")
 )
 
+type <- ifelse(grepl("full",targetname()),"full","short")
+
 trimdat <- filter(ont_dat,date>=start_date)
 
 maxdf <- floor(nrow(trimdat)/14)
@@ -50,7 +52,7 @@ calibrate_factorial <- function(x){
 		, start_date_offset = 0
 	)
 	ff_list <- list(fit=ff, fitdat=trimdat, spline_params=spline_params)
-	saveRDS(object=ff_list, file=paste0("./cachestuff/ont_spline.",x,".RDS"))
+	saveRDS(object=ff_list, file=paste0("./cachestuff/ont_spline.",type,x,".RDS"))
 }
 
 batch_setup()
