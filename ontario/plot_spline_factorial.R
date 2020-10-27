@@ -18,8 +18,12 @@ gg <- (ggplot(data=filter(shortdat,var == "report")
 	+ facet_grid(spline_df~spline_pen)
 )
 
-print(gg + ggtitle("short fit reported cases") + scale_y_log10())
-print(gg %+% filter(shortdat,var == "Rt") + ggtitle("short fit Rt"))
+print(ggreport <- gg + ggtitle("short fit reported cases") + scale_y_log10())
+print(ggrt <- gg %+% filter(shortdat,var == "Rt") + ggtitle("short fit Rt"))
+
+print(ggreport %+% (shortdat %>% filter(var == "report") %>% filter(convergence_code == 0)))
+print(ggrt %+% (shortdat %>% filter(var == "Rt") %>% filter(convergence_code ==0)))
+
 
 #print(gg %+% filter(fulldat,var == "report")
 #	+ ggtitle("full fit reported cases")
