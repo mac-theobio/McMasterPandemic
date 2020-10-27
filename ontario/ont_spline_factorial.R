@@ -45,7 +45,7 @@ calibrate_factorial <- function(x){
 		, opt_pars = opt_pars
 		, use_spline = TRUE
 		, spline_df = spline_params[["spline_df"]]
-		, spline_type = "bs"
+		, spline_type = "ns"
 		, spline_int = FALSE
 		, data = trimdat
 		, start_date = min(trimdat)
