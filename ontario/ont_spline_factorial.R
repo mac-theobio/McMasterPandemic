@@ -49,6 +49,7 @@ calibrate_factorial <- function(x){
 		, spline_df = spline_params[["spline_df"]]
 		, spline_type = "ns"
 		, spline_int = FALSE
+		, sim_args = list(ndt = 2)
 		, data = trimdat
 		, start_date = min(trimdat)
 		, start_date_offset = start_date_offset
