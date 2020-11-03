@@ -12,11 +12,11 @@ source("makestuff/makeRfuns.R")
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 
+
 if (!exists("keep_all")) keep_all <- FALSE
 
 params <- (read_params("PHAC_testify.csv")
-	%>% update(omega = omega
-		, W_asymp = W_asymp
+	%>% update(W_asymp = W_asymp
 	)
 )
 
@@ -36,7 +36,7 @@ pf <- expand.grid(iso_t=iso_t
 
 print(pf)
 
-print(pf <- pf[c(1,2,7,8),])
+# print(pf <- pf[c(1,2,7,8),])
 
 datevec <- as.Date(start):as.Date(end)
 testdat <- data.frame(Date = as.Date(datevec)
@@ -52,6 +52,7 @@ update_and_simulate <- function(x, testdat){
 	paramsw0 <- update(params
 		, iso_t=pf[x,"iso_t"]
 		, testing_intensity = pf[x,"testing_intensity"]
+		, omega = pf[x,"omega"]
 	)
 	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
 
@@ -72,6 +73,7 @@ update_and_simulate <- function(x, testdat){
      	 , Gbar = pf[x,"Gbar"]
          , testing_type = pf[x,"testing_type"]
 			, testing_intensity = pf[x,"testing_intensity"]
+			, omega = pf[x,"omega"]
          )
 	)
 	return(sims)

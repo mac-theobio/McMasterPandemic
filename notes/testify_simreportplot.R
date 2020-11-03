@@ -24,6 +24,9 @@ varnames <- data.frame(var = c("total_test", "report", "postest", "pos_per_milli
 )
 
 simdat2 <- (simdat
+	 %>% filter(iso_t %in% c(0,1))
+	 %>% filter(omega == 0.25)
+	 %>% filter(testing_intensity == 0.01)
     %>% left_join(.,varnames)
     %>% mutate(Isolation = ifelse(iso_t == 1, "Yes","No")
              , speed = factor(Gbar, levels=c(6,12), labels=c("faster","slower"))
@@ -57,4 +60,16 @@ gg1 <- gg %+% filter(simdat2, var=="% positive tests") + labs(y="Percent")
 gg2 <- gg %+% filter(simdat2, var!="% positive tests") + scale_y_log10(limits=c(1,NA))
 
 plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
+
+
+
+ggall <- (ggplot(simdat)
+			 + aes(x=date,y=value,colour=factor(iso_t), alpha=factor(Gbar), linetype=factor(omega))
+			 + scale_alpha_manual(values=c(0.5,1))
+			 + scale_colour_manual(values=c("red","blue","black"))
+			 + geom_line()
+			 + facet_grid(var~testing_intensity, scale="free")
+)
+
+print(ggall %+% filter(simdat,var != "total_test"))
 

@@ -137,7 +137,7 @@ impmakeR += sims
 
 ## BMB's new code
 
-# testwt_N.testify_simreportplot.Rout: 
+# testwt_N.testify_simreportplot.Rout: testify_simreportplot.R testwt_N.R 
 %.testify_simreportplot.Rout: testify_simreportplot.R %.sims.rda
 	$(makeR)
 
