@@ -72,4 +72,6 @@ res_list <- lapply(ln,clean_res)
 
 dat <- bind_rows(res_list)
 
+print(dat,n=Inf)
+
 saveVars(dat)

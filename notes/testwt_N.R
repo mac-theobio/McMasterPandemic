@@ -11,7 +11,7 @@ pop <- 1.5e7
 R0 <- 2
 W_asymp <- 0.05
 Gbar <- c(6,12)
-set.seed(0807)
+set.seed(1104)
 keep_vars <- c("death/H/postest")
 keep_all <- FALSE
 stoch_obs <- FALSE

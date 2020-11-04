@@ -125,18 +125,14 @@ Sources += slow.csv
 
 ## testify_funs.R
 
+## Simulate factorial design testify data
+
 impmakeR += sims
 # testwt_N.sims.Rout: testify_sim.R testwt_N.R
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
-# testwt_N.simplots.Rout: testify_simplot.R testwt_N.R
-%.simplots.Rout: testify_simplot.R %.sims.rda
-	$(makeR)
-
-
-## BMB's new code
-
+## Plot factorial design testify simulated data
 # testwt_N.testify_simreportplot.Rout: testify_simreportplot.R testwt_N.R 
 %.testify_simreportplot.Rout: testify_simreportplot.R %.sims.rda
 	$(makeR)

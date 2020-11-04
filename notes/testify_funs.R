@@ -14,7 +14,7 @@ simtestify <- function(p, testing_data){
       )
    )
    
-	sim_args <- list(ratemat_args = list(testify=TRUE, testing_time=testing_time)
+	sim_args <- list(ratemat_args = list(testing_time=testing_time)
 	   , start_date = start
            , end_date = end
            , use_ode = use_ode
@@ -51,7 +51,7 @@ calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
         opt_pars <- c(opt_pars,
                       list(log_testing_intensity = log(pars[["testing_intensity"]])))
     }
-    sim_args <- list(ratemat_args = list(testify=TRUE, testing_time="report"))
+    sim_args <- list(ratemat_args = list(testing_time=testing_time))
     mod <- do.call(calibrate_comb
 		, c(nlist(params = pars
 			, use_DEoptim = FALSE
@@ -64,6 +64,7 @@ calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
 			, sim_args = sim_args
 			, use_testing = TRUE
 			, testing_data = testing_data
+			, start_date_offset=0
 			, maxit = 1000
 			)
 		)

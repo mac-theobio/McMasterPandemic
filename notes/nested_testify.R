@@ -5,7 +5,7 @@ library(parallel)
 library(furrr)
 library(future.batchtools)
 
-callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda sims.csv"
+callArgs <- "testwt_N.nested_testify.Rout nested_testify.R batchtools.rda testify_funs.rda testwt_N.rda"
 
 source("makestuff/makeRfuns.R")
 print(commandEnvironments())
@@ -26,14 +26,16 @@ for (nm in names(default_vals)) {
     if (!exists(nm)) assign(nm,default_vals[[nm]])
 }
     
-
 pars <- (read_params("PHAC_testify.csv")
-    %>% fix_pars(target=c(R0=R0, Gbar=Gbar))
+    %>% fix_pars(target=c(R0=R0, Gbar=Gbar[1]))
     %>% update(N=pop)
 )
 
 ## If we are not optimizing for it, we need to set min/starting to true
-pars[["testing_intensity"]] <- testing_intensity 
+pars[["testing_intensity"]] <- testing_intensity[1] 
+
+
+
 
 ## single dispersion parameter for *all* observed vars ...
 if (stoch_obs) {
@@ -52,10 +54,11 @@ print(comboframe)
 
 datevec <- as.Date(start):as.Date(end)
 testdat <- data.frame(Date = as.Date(datevec)
-	, intensity = testing_intensity
+	, intensity = testing_intensity[1]
 )
 
 plot(testdat)
+
 
 dd<- (simtestify(p=pars, testdat)
    %>% select(date,H,death,postest)
@@ -93,6 +96,8 @@ print(seq(nrow(comboframe)))
 
 ## getting rid of res_list (so it is not a giant object)
 future_map(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=FALSE))
+# lapply(seq(nrow(comboframe)),function(x) sim_and_calibrate(x,testdat,debug_plot=TRUE))
+
 
 ## interactive playing around stuff
 
