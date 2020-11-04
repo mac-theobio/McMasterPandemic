@@ -774,6 +774,7 @@ forecast_ensemble <- function(fit,
                               scale_Sigma=1,
                               calc_Rt=FALSE,
                               fix_pars_re="nb_disp",
+                              raw_ensembles = FALSE,
                               .progress=if (interactive()) "text" else "none"
                               ) {
 
@@ -850,6 +851,12 @@ forecast_ensemble <- function(fit,
         return(aa)
     } else {
         e_res2 <- e_res %>% dplyr::bind_cols()
+        if(raw_ensembles){
+            e0 <- (dplyr::select(r,date,var)
+                   %>% dplyr::as_tibble())
+            e_res2 <- dplyr::bind_cols(e0, e_res2)
+            return(e_res2)
+        }
 
         ## get quantiles per observation
         ## safe version of wtd quantile
