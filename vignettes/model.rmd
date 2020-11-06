@@ -23,7 +23,7 @@ library(McMasterPandemic)
 vis_model(method="diagram",do_symbols=FALSE)
 ```
 
-## basic operation
+## basic operation (simulation)
 
 
 

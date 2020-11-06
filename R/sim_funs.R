@@ -520,38 +520,45 @@ run_sim <- function(params
     }
     state0 <- state
     params0 <- params ## save baseline (time-0) values
-    ## no explicit switches, and (no process error) or (process error for full time)
+    ## no explicit switches, and (no process error) or (process error for full time);
+    ## we will be able to run the whole sim directly
     if (is.null(params_timevar) && (!stoch[["proc"]] || is.null(stoch_start))) {
         switch_times <- NULL
     } else {
-        if (!is.null(params_timevar)) {
+        if (is.null(params_timevar)) {
+            ## starting times for process/obs error specified, but no other time-varying parameters;
+            ##  we need an empty data frame with the right structure so we can append the process-error switch times
+            params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
+        } else {
             ## check column names
-            ## FIXME:: tolower()?
+            ## FIXME:: use case-insensitive matching (apply tolower() throughout) to allow some slop?
             npt <- names(params_timevar)
             if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
                 stop("bad names in params_timevar: ",paste(npt,collapse=","))
             }
             params_timevar$Date <- anydate(params_timevar$Date)
+            ## tryCatch(
+            ##     params_timevar$Date <- as.Date(params_timevar$Date),
+            ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
             params_timevar <- params_timevar[order(params_timevar$Date),]
-        } else {
-            params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
         }
+        ## append process-observation switch to timevar
         if (stoch[["proc"]] && !is.null(stoch_start)) {
             params_timevar <- rbind(params_timevar,
                                     dfs(Date=stoch_start[["proc"]],
-                                               Symbol="proc_disp",Relative_value=1))
+                                        Symbol="proc_disp",Relative_value=1))
             params[["proc_disp"]] <- -1 ## special value: signal no proc error
         }
-        ## convert char to date
         switch_dates <- params_timevar[["Date"]]
         ## match specified times with time sequence
-        switch_times <- unique(match(switch_dates, date_vec))
+        switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) {
             bad <- which(is.na(switch_times))
             stop("non-matching dates in params_timevar: ",paste(switch_dates[bad], collapse=","))
         }
         if (any(switch_times==length(date_vec))) {
-            ## drop switch times on final day (should we warn???)
+            ## drop switch times on final day
+            warning("dropped switch times on final day")
             switch_times <- switch_times[switch_times<length(date_vec)]
         }
     } ## steps
@@ -572,7 +579,8 @@ run_sim <- function(params
         t_cur <- 1
         ## want to *include* end date 
         switch_times <- switch_times + 1
-        times <- c(1,switch_times,nt+1)
+        ## add beginning and ending time
+        times <- c(1,unique(switch_times),nt+1)
         resList <- list()
         for (i in seq(length(times)-1)) {
             for (j in which(switch_times==times[i])) {
@@ -586,6 +594,7 @@ run_sim <- function(params
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                             s,params0[[s]],params[[s]],i))
                 ## FIXME: so far still assuming that params only change foi
+                ## if we change another parameter we will have to recompute M 
             }
 
             resList[[i]] <- drop_last(

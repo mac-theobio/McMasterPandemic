@@ -29,7 +29,7 @@ D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names 
     expect_equal(tail(s0,1), ss,
                  tolerance=1e-8)
     expect_is(state,"state_pansim")
-    s1 <- run_sim(params,state,start_date="1-March-2020",end_date="1-Jun-2020")
+    s1 <- run_sim(params,state,start_date="01-Mar-2020",end_date="01-Jun-2020")
     expect_is(s1,"pansim")
 })
 
@@ -47,8 +47,8 @@ time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
 
 test_that("time-varying example", {
     resICU_t <- run_sim(params,state,
-                        start_date="1-Mar-2020",
-                        end_date="1-Jun-2020",
+                        start_date="01-Mar-2020",
+                        end_date="01-Jun-2020",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE))
     expect_is(resICU_t,"pansim")
@@ -57,6 +57,11 @@ test_that("time-varying example", {
     suppressWarnings(print(plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))))
     ## FIXME: test values!
 })
+
+## TO DO: switch dates from anydate()
+## test for 'bad date' error
+## test multiple param switch
+
 
 test_that("time-varying with ndt>1", {
     resICU_t2 <- run_sim(params,state,
