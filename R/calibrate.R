@@ -137,17 +137,17 @@ run_sim_loglin <- function(params,
         constant_rel_val <- data.frame(Date= zoo:::as.Date(as.Date(sim_args$start_date):(as.Date(min(timevar$Date))-1))
             , Symbol = "beta0"
             , Relative_value = 1)
-        timevar <- bind_rows(constant_rel_val,timevar)
+        timevar <- rbind(constant_rel_val,timevar)
     }
     if(sim_args$end_date > max(timevar$Date)){
         freeze_dat <- data.frame(Date = zoo:::as.Date((max(timevar$Date)+1):as.Date(sim_args$end_date))
             , Symbol = "beta0"
             , Relative_value = timevar$Relative_value[nrow(timevar)]
         )
-        timevar <- dplyr:::bind_rows(timevar,freeze_dat)
+        timevar <- rbind(timevar,freeze_dat)
     }
     if ("testing_data" %in% names(time_args)) {
-        timevar <- dplyr:::rbind(timevar,time_args$testing_data)
+        timevar <- rbind(timevar,time_args$testing_data)
     }
     if (return_timevar) return(timevar)
     sim_args <- c(sim_args
