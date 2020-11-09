@@ -144,10 +144,10 @@ run_sim_loglin <- function(params,
             , Symbol = "beta0"
             , Relative_value = timevar$Relative_value[nrow(timevar)]
         )
-        timevar <- bind_rows(timevar,freeze_dat)
+        timevar <- dplyr:::bind_rows(timevar,freeze_dat)
     }
     if ("testing_data" %in% names(time_args)) {
-        timevar <- rbind(timevar,time_args$testing_data)
+        timevar <- dplyr:::rbind(timevar,time_args$testing_data)
     }
     if (return_timevar) return(timevar)
     sim_args <- c(sim_args
