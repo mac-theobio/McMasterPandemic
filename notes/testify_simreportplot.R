@@ -64,12 +64,16 @@ plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
 
 
 ggall <- (ggplot(simdat)
-			 + aes(x=date,y=value,colour=factor(iso_t), alpha=factor(Gbar), linetype=factor(omega))
-			 + scale_alpha_manual(values=c(0.5,1))
+			 + aes(x=date,y=value,colour=factor(iso_t), linetype=factor(omega))
 			 + scale_colour_manual(values=c("red","blue","black"))
 			 + geom_line()
 			 + facet_grid(var~testing_intensity, scale="free")
 )
 
-print(ggall %+% filter(simdat,var != "total_test"))
+print(ggall 
+	%+% (simdat 
+		%>% filter(var != "total_test")
+		%>% filter(Gbar == 6)
+		)
+	)
 
