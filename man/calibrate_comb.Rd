@@ -19,6 +19,7 @@ calibrate_comb(
   knot_quantile_var = NA,
   spline_pen = 0,
   spline_type = "bs",
+  spline_int = FALSE,
   testing_data = NULL,
   maxit = 10000,
   skip.hessian = FALSE,
@@ -79,6 +80,8 @@ which is probably wise)}
 \item{spline_pen}{penalization for spline}
 
 \item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
+
+\item{spline_int}{spline intercept (??)}
 
 \item{testing_data}{data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)}
 

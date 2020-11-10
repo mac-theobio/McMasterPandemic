@@ -46,3 +46,4 @@ P_R,0,probability of positive in R,,,
 omega,0.25,1/waiting time for tests to be returned,,,
 testing_intensity,0.002,tests per capita per day
 iso_t,0.6,Relative self-isolation/distancing of tested-positives,NA?
+testing_tau,0.2,tests per capita per infected person per day

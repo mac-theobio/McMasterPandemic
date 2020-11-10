@@ -303,16 +303,22 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         if (is.null(posvec)) stop("expected ratemat to have a posvec attribute")
         wtsvec <- attr(ratemat,"wtsvec")
         if (is.null(wtsvec)) stop("expected ratemat to have a wtsvec attribute")
-        ## scaling ... ?
-        ## wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
-        if (testwt_scale!="none") {
-            sc <- switch(testwt_scale,
-                         N=params[["N"]],
-                         sum_u=sum(state[u_pos]))
-            wtsvec <- wtsvec/sum(wtsvec*state[u_pos])*sc
-        }
-        ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
-        ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
+        ## scaling ...
+        testing_intensity <- params[["testing_intensity"]]
+        testing_tau <- params[["testing_tau"]]
+        N0 <- params[["N"]]
+        W <- sum(wtsvec*state[u_pos])
+        sc <- switch(testwt_scale,
+                     none=1,
+                     N=N0/W,
+                     sum_u=sum(state[u_pos])/W,
+                     sum_smooth={
+                         rho <- testing_intensity
+                         tau <- testing_tau
+                         tau*rho*N0/(tau*W + rho*N0)
+                     })
+        ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
+        ratemat[cbind(u_pos,p_pos)] <- testing_intensity*sc*wtsvec*posvec
         if (testing_time=="sample") {
             N_pos <- which(rownames(ratemat)=="N")
             P_pos <- which(rownames(ratemat)=="P")
@@ -592,7 +598,8 @@ run_sim <- function(params
                     state <- round(state)
                 }
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
-                            s,params0[[s]],params[[s]],i))
+                                         s,params0[[s]],params[[s]],i))
+                
                 ## FIXME: so far still assuming that params only change foi
                 ## if we change another parameter we will have to recompute M 
             }

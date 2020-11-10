@@ -756,6 +756,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param forecast_args arguments to pass to \code{forecast_sim}
 ##' @param imp_wts use importance weighting, i.e. weight ensemble based on log-likelihood?
 ##' @param qvec vector of quantiles: NULL to return an array (nt x nvars x nsims) instead of a tibble with date/var+ quantiles
+##' @param raw_ensembles (logical) return ensembles (FIXME: should implement return_type=c("array","quantiles","raw") (but not really raw, "dataframe"??))
 ##' @param qnames quantile names
 ##' @param fix_pars_re a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble
 ##' @param .progress progress bar?
@@ -944,6 +945,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
 ##' @param spline_pen penalization for spline
 ##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
+##' @param spline_int spline intercept (??)
 ##' @param spline_extrap spline extrapolation model ("linear" or "constant")
 ##' @param testing_data data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)
 ##' @param use_mobility include mobility as a covariate in the model?
