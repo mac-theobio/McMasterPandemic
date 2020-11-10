@@ -133,6 +133,22 @@ run_sim_loglin <- function(params,
                        Symbol="beta0",
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     }
+    
+    if(sim_args$start_date < min(timevar$Date)){
+        constant_rel_val <- data.frame(Date= seq.Date(as.Date(sim_args$start_date),as.Date(min(timevar$Date))-1, by =1)
+                                       , Symbol = "beta0"
+                                       , Relative_value = 1)
+        timevar <- rbind(constant_rel_val,timevar)
+    }
+    if(sim_args$end_date > max(timevar$Date)){
+        freeze_dat <- data.frame(Date = seq.Date(as.Date(max(timevar$Date))+1, as.Date(sim_args$end_date), by = 1)
+                                 , Symbol = "beta0"
+                                 , Relative_value = timevar$Relative_value[nrow(timevar)]
+        )
+        timevar <- rbind(timevar,freeze_dat)
+    }
+    
+    
     if ("testing_data" %in% names(time_args)) {
         timevar <- rbind(timevar,time_args$testing_data)
     }
