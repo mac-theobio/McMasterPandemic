@@ -148,6 +148,8 @@ run_sim_loglin <- function(params,
         timevar <- rbind(timevar,freeze_dat)
     }
     
+    ## This is a temp fix. Need to look inside run_sim time switches at these discontinuities rather than stitching bt
+    
     
     if ("testing_data" %in% names(time_args)) {
         timevar <- rbind(timevar,time_args$testing_data)
