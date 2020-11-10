@@ -19,8 +19,8 @@ scientific_10 <- function(x,suppress_ones=TRUE) {
    parse(text=s2)
 }
 
-varnames <- data.frame(var = c("total_test", "report", "postest", "pos_per_million", "incidence")
-	, varname = c("Daily Test", "Report", "Positive tests\nper day", "Positive test per million", "Incidence")
+varnames <- data.frame(var = c("total_test", "positivity", "postest", "pos_per_million", "incidence")
+	, varname = c("Daily Test", "Positivity", "Positive tests\nper day", "Positive test per million", "Incidence")
 )
 
 simdat2 <- (simdat

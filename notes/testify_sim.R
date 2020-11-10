@@ -97,7 +97,7 @@ if (!keep_all) {
                     , postest
                     , total_test = postest + negtest
                     , pos_per_million = 1e6*postest/total_test
-                    , report
+                    , positivity = postest/total_test
                     , iso_t
 						  , omega
                     , testing_type
