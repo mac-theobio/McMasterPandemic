@@ -60,7 +60,7 @@ gg <- (ggplot(simdat2)
 gg1 <- gg %+% filter(simdat2, var=="% positive tests") + labs(y="Percent")
 gg2 <- gg %+% filter(simdat2, var!="% positive tests") + scale_y_log10(limits=c(1,NA))
 
-plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
+# plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
 
 
 
@@ -76,5 +76,6 @@ print(ggall
 		%>% filter(var != "total_test")
 		%>% filter(Gbar == 6)
 		)
-	)
+	+ ggtitle(targetname())
+)
 

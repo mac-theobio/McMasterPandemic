@@ -1,5 +1,5 @@
 ## callArgs only works interactively and is target-dependent
-callArgs <- "testwt_N.sims.Rout testify_sim.R testwt_N.rda testify_funs.rda sims.csv"
+callArgs <- "testwt_N.random_sims.Rout testify_sim.R testwt_N.rda testify_funs.rda random.csv"
 
 library(tidyverse)
 library(parallel)
@@ -15,26 +15,11 @@ commandEnvironments()
 
 if (!exists("keep_all")) keep_all <- FALSE
 
-params <- (read_params("PHAC_testify.csv")
-# %>% update(W_asymp = NULL
-# )
-	%>% update(WS = 0.05
-		, WE = 0.5
-		, WIa = 0.5
-		, WIp = 0.5
-		, WIm = 0.8
-		, WIs = 0.8
-		, WH = 0.5
-		, WH2 = 0.5
-		, WICUs = 0.5
-		, WICUd = 0.5
-		, WR = 0.05
-	)
-)
-
+params <- read_params(makeArgs()[5])
 print(params)
 
 summary(params)
+
 
 ## create factorial combination of parameter vectors
 pf <- expand.grid(iso_t=iso_t

@@ -132,11 +132,25 @@ impmakeR += sims
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
-## Plot factorial design testify simulated data
-# testwt_N.testify_simreportplot.Rout: testify_simreportplot.R testwt_N.R 
-%.testify_simreportplot.Rout: testify_simreportplot.R %.sims.rda
+# testwt_N.random_sims.Rout: testify_sim.R random.csv
+%.random_sims.Rout: testify_sim.R %.rda testify_funs.rda random.csv
 	$(makeR)
 
+# testwt_N.focus_sims.Rout: testify_sim.R focus.csv
+%.focus_sims.Rout: testify_sim.R %.rda testify_funs.rda focus.csv
+	$(makeR)
+
+# testwt_N.symptomatic_sims.Rout: testify_sim.R symptomatic.csv
+%.symptomatic_sims.Rout: testify_sim.R %.rda testify_funs.rda symptomatic.csv
+	$(makeR)
+
+## Plot factorial design testify simulated data
+# testwt_N.random.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
+%.simreportplot.Rout: testify_simreportplot.R %_sims.rda
+	$(makeR)
+
+testify_sims.pdf: testwt_N.random.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf
+	pdftk testwt_N.random.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf output $@
 
 ## Absolute testing rates (oops, that's what basic is already doing?)
 ## Play here anyway
