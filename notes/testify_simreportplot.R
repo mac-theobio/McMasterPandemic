@@ -23,6 +23,7 @@ varnames <- data.frame(var = c("total_test", "positivity", "postest", "pos_per_m
 	, varname = c("Daily Test", "Positivity", "Positive tests\nper day", "Positive test per million", "Incidence")
 )
 
+
 simdat2 <- (simdat
 	 %>% filter(iso_t %in% c(0,1))
 	 %>% filter(omega == 0.25)
