@@ -8,6 +8,12 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 if (!interactive()) makeGraphics()
 
+
+if(grepl("random",targetname()))testing_type <- "Random Testing"
+if(grepl("symptomatic",targetname()))testing_type <- "Symptomatic Testing"
+if(grepl("focus",targetname()))testing_type <- "Focus Testing"
+
+
 scientific_10 <- function(x,suppress_ones=TRUE) {
    s <- scales::scientific_format()(x)
    ## substitute for exact zeros
@@ -63,12 +69,21 @@ gg2 <- gg %+% filter(simdat2, var!="% positive tests") + scale_y_log10(limits=c(
 # plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
 
 
+simdat <- (simdat 
+	%>% left_join(.,varnames)
+	%>% rename(result_turnover_rate = omega)
+	%>% rename(isolation = iso_t)
+	%>% mutate(result_turnover_rate = paste0(result_turnover_rate,"/day")
+		, isolation = as.character(isolation)
+		, testing_intensity = paste0(testing_intensity, " of the population")
+	)
+)
 
 ggall <- (ggplot(simdat)
-			 + aes(x=date,y=value,colour=factor(iso_t), linetype=factor(omega))
+			 + aes(x=date,y=value,colour=isolation, linetype=result_turnover_rate)
 			 + scale_colour_manual(values=c("red","blue","black"))
 			 + geom_line()
-			 + facet_grid(var~testing_intensity, scale="free")
+			 + facet_grid(varname~testing_intensity, scale="free")
 )
 
 print(ggall 
@@ -76,6 +91,6 @@ print(ggall
 		%>% filter(var != "total_test")
 		%>% filter(Gbar == 6)
 		)
-	+ ggtitle(targetname())
+	+ ggtitle(testing_type)
 )
 
