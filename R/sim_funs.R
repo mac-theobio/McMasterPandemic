@@ -316,6 +316,9 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
                          rho <- testing_intensity
                          tau <- testing_tau
                          tau*N0/(tau*W + rho*N0)
+			 ## NOTE 'smoothing' doc has numerator rho*tau*N0,
+                         ## but testing intensity (rho) is included in ratemat 
+                         ## calculation below ...
                      })
         ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- testing_intensity*sc*wtsvec*posvec
