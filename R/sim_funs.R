@@ -315,7 +315,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
                      sum_smooth={
                          rho <- testing_intensity
                          tau <- testing_tau
-                         tau*rho*N0/(tau*W + rho*N0)
+                         tau*N0/(tau*W + rho*N0)
                      })
         ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
         ratemat[cbind(u_pos,p_pos)] <- testing_intensity*sc*wtsvec*posvec
