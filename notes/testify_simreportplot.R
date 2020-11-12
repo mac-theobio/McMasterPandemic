@@ -19,8 +19,8 @@ scientific_10 <- function(x,suppress_ones=TRUE) {
    parse(text=s2)
 }
 
-varnames <- data.frame(var = c("total_test", "positivity", "postest", "pos_per_million", "incidence")
-	, varname = c("Daily Test", "Positivity", "Positive tests\nper day", "Positive test per million", "Incidence")
+varnames <- data.frame(var = c("total_test", "positivity", "postest", "CumIncidence", "incidence")
+	, varname = c("Daily Test", "Positivity", "Positive tests\nper day", "Cumulative Incidence", "Incidence")
 )
 
 
@@ -35,8 +35,8 @@ simdat2 <- (simdat
     %>% filter(var != "report")
     %>% select(-c(iso_t,testing_type,omega,var))
     %>% pivot_wider(names_from=varname,values_from=value)
-    %>% mutate(`% positive tests`= `Positive test per million`/1e4)
-    %>% select(-c(`Daily Test`, `Positive test per million`, Gbar))
+#    %>% mutate(`% positive tests`= `Positive test per million`/1e4)
+    %>% select(-c(`Daily Test`, Gbar))
     %>% pivot_longer(-c(date, speed, Isolation, testing_intensity), names_to="var")
 )
 

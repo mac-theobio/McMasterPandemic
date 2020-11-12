@@ -149,8 +149,8 @@ impmakeR += sims
 %.simreportplot.Rout: testify_simreportplot.R %_sims.rda
 	$(makeR)
 
-testify_sims.pdf: testwt_N.random.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf
-	pdftk testwt_N.random.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf output $@
+testify_sims.pdf: testwt_N.random.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf
+	pdftk testwt_N.random.simreportplot.Rout.pdf testwt_N.symptomatic.simreportplot.Rout.pdf testwt_N.focus.simreportplot.Rout.pdf output $@
 
 ## Absolute testing rates (oops, that's what basic is already doing?)
 ## Play here anyway

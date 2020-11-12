@@ -15,6 +15,7 @@ commandEnvironments()
 
 if (!exists("keep_all")) keep_all <- FALSE
 
+
 params <- read_params(makeArgs()[5])
 print(params)
 
@@ -88,11 +89,13 @@ print(simframe)
 
 if (!keep_all) {
     simdat <- (simframe
+	 	  %>% group_by(iso_t,Gbar,testing_intensity,omega,testing_type)
         %>% transmute(date
                     , incidence
+						  , CumIncidence = cumsum(incidence)
                     , postest
                     , total_test = postest + negtest
-                    , pos_per_million = 1e6*postest/total_test
+#                    , pos_per_million = 1e6*postest/total_test
                     , positivity = postest/total_test
                     , iso_t
 						  , omega
@@ -100,6 +103,7 @@ if (!keep_all) {
 						  , Gbar
 						  , testing_intensity
                       )
+		  %>% ungroup()
         %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_type, Gbar, testing_intensity))
     )
 } else {

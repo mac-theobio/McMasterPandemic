@@ -19,7 +19,7 @@ simtestify <- function(p, testing_data){
            , end_date = end
            , use_ode = use_ode
            , stoch=c(obs=stoch_obs, proc=FALSE)  
-           , step_args = list(testwt_scale = testwt_scale)
+           , step_args = list(testwt_scale = "sum_smooth")
            , condense_args = list(keep_all = keep_all
                                 , add_reports = !keep_all
                                   )
