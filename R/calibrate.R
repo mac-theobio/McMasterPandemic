@@ -287,7 +287,6 @@ run_sim_decay <- function(params,
 ##' @param return_val specify values to return (aggregated simulation, or just the values?)
 ##' @param calc_Rt calculate and include R(t) in prediction/forecast?
 ##' @param ... extra args (ignored)
-
 ##' @examples
 ##' ff <- ont_cal1$forecast_args
 ##' op <- ff$opt_pars
