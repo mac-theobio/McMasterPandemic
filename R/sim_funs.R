@@ -444,16 +444,16 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
-##' @param dt time step for do_step
-##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
-##' @param step_args additional arguments to pass to \code{do_step}
+##' @param dt time step for \code{\link{do_step}}
+##' @param ratemat_args additional arguments to pass to \code{\link{make_ratemat}}
+##' @param step_args additional arguments to pass to \code{\link{do_step}}
 ##' @param ndt number of internal time steps per time step
 ##' @param stoch a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)
 ##' @param stoch_start dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')
-##' @param condense condense results?
+##' @param condense if \code{TRUE}, use \code{\link{condense.pansim}} to reduce the number of variables in the output (in particular, collapse subclasses and return only one \code{I}, \code{H}, and \code{ICU} variable)
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @param use_ode integrate via ODE rather than discrete step?
-##' @param ode_args additional arguments to deSolve::ode
+##' @param ode_args additional arguments to \code{\link[deSolve]{ode}}
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
