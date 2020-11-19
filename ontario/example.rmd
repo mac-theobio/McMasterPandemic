@@ -14,7 +14,7 @@ before installing `McMasterPandemic`.
 
 
 ## Simulating data time series 
-```{r load pkg, include=FALSE}
+```{r load_pkg, include=FALSE}
 library(McMasterPandemic)
 library(tidyverse)
 library(zoo)
@@ -22,7 +22,7 @@ library(zoo)
 
 MLi: Do we have a document of the basic model (e.g. the flow diagram, and what the states/compartments mean?)
 
-```{r load params and simulate}
+```{r load_params_and_simulate}
 
 params <- read_params("ICU1.csv")
 
@@ -39,7 +39,7 @@ simdat <- forecast_sim(p = unlist(opt_pars)
 
 ## Plotting simulated time series
 
-```{r plotting simdat, warning=FALSE}
+```{r plotting_simdat, warning=FALSE}
 
 gg <- (ggplot(simdat, aes(x=date,y=value))
 	+ geom_point()
@@ -55,7 +55,7 @@ print(gg)
 
 MLi: Maybe use Zach's shinny app to play around with different parameters combinations. This is the way to manually change it via code.
 
-```{r change params and simulate}
+```{r change_params_and_simulate}
 
 print(summary(params))
 
@@ -80,7 +80,7 @@ Question: Extract the reported cases time series and use epigrowthfit to estimat
 
 ## Adding Stochastic Noise
 
-```{r simulate noisy dynamics}
+```{r simulate_noisy_dynamics}
 
 newparams2 <- update(newparams, obs_disp = 50, proc_disp=1)
 
@@ -212,7 +212,7 @@ Ans:
 	
 ## Initial wave
 
-```{r ont_calibrate 1stwave, warning=FALSE}
+```{r ont_calibrate_1stwave, warning=FALSE}
 
 ont1stwave <- calibrate_dat %>% filter(date <= as.Date("2020-04-26"))
 
@@ -237,7 +237,11 @@ MLi: Maybe do the same thing for second wave?
 
 We can use mobility as a proxy for change in transmission rate. 
 
-```{r googledat}
+```{r googledat, cache=TRUE}
+## seems this can be very slow, so we cache ...
+## mobility CSV *won't* get redownloaded after the first time you run this chunk ...
+## we should consider saving a CSV file ... could also use the 'pins' package, which
+## does smart URL caching
 google_url <- "https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv"
 
 google <- read_csv(google_url)
@@ -289,9 +293,10 @@ ontmod_mob <- calibrate_comb(data = calibrate_dat
 	, use_mobility = TRUE
 )
 
+```
 
+```{r ont_calibrate_mob_show}
 print(summary(ontmod_mob))
-
 print(plot(ontmod_mob,data=calibrate_dat))
 ```
 
@@ -305,7 +310,7 @@ Question: What assumptions are we making? Do we think mobility have the same eff
 - new mob intercept and slope
 - smoother on the breakpoint
 
-```{r ont_calibrate_mob_breaks, warning=FALSE}
+```{r ont_calibrate_mob_breaks, warning=FALSE, cache=TRUE}
 
 ontmod_mob2 <- calibrate_comb(data = calibrate_dat
 	, params = newparams2
