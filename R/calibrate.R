@@ -534,18 +534,42 @@ update_debug_hist <- function(params, NLL) {
     })
 }
 
-##' estimate parameters from data
-##' calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
-##' @param start_date starting date for sims (far enough back to allow states to sort themselves out)
+##' Estimate model parameters from data
+##'
+##' Given time series data and a set of starting
+##' parameters/structure/etc., calibrate the model via negative
+##' binomial maximum likelihood estimation (MLE), simultaneously
+##' fitting initial conditions, initial growth rate, time-changes in
+##' growth rate, and dispersion parameters.
+##'
+##' \code{\link[bbmle]{mle2}}
+##' is used to estimate parameters by trajectory matching.
+##' Differential evolution optimization is conducted
+##' via \code{\link[DEoptim]{DEoptim}}.
+##' 
+##' @param start_date starting date for sims (far enough back to allow
+##'     states to sort themselves out)
 ##' @param start_date_offset days to go back before first data value
 ##' @param end_date ending date
-##' @param time_args list containing \code{break_dates} or other information needed for time-dependent variation
-##' @param base_params baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)
-##' @param data a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)
-##' @param opt_pars starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters
+##' @param time_args list containing \code{break_dates} or other
+##'     information needed for time-dependent variation
+##' @param base_params baseline parameters (an object (vector?) of
+##'     type \code{params_pansim} containing all of the parameters
+##'     needed for a simulation; some may be overwritten during the
+##'     calibration process)
+##' @param data a data set to compare to, containing date/var/value
+##'     (current version assumes that only a single state var is
+##'     included)
+##' @param opt_pars starting parameters (and structure).  Parameters
+##'     that are part of the \code{params_pansim} parameter vector can
+##'     be specified within the \code{params} element (with prefixes
+##'     if they are transformed); other parameters can include
+##'     distributional parameters or time-varying parameters
 ##' @param fixed_pars parameters to fix
-##' @param sim_args additional arguments to pass to \code{\link{run_sim}}
-##' @param aggregate_args arguments passed to \code{\link{aggregate.pansim}}
+##' @param sim_args additional arguments to pass to
+##'     \code{\link{run_sim}}
+##' @param aggregate_args arguments passed to
+##'     \code{\link{aggregate.pansim}}
 ##' @param time_args arguments passed to \code{sim_fun}
 ##' @param break_dates legacy
 ##' @param mle2_control control args for mle2
@@ -553,20 +577,28 @@ update_debug_hist <- function(params, NLL) {
 ##' @param mle2_args additional arguments for mle2
 ##' @param debug print debugging messages?
 ##' @param debug_hist keep information on parameter history?
-##' @param debug_plot plot debugging curves? (doesn't work with parallel DEoptim)
-##' @param last_debug_plot plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)
-##' @param priors a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
+##' @param debug_plot plot debugging curves? (doesn't work with
+##'     parallel DEoptim)
+##' @param last_debug_plot plot debugging curve for \emph{only} last
+##'     parameter set (stored in \code{.debug_plot.pdf} in current
+##'     directory)
+##' @param priors a list of tilde-delimited expressions giving prior
+##'     distributions expressed in terms of the elements of
+##'     \code{opt_pars},
+##'     e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}
 ##' @param seed random-number seed (for DE)
 ##' @param use_DEoptim use differential evolution as first stage?
 ##' @param DE_args arguments for \code{\link{DEoptim}}
 ##' @param DE_lwr lower bounds for DE optimization
 ##' @param DE_upr upper bounds, ditto
 ##' @param DE_cores number of parallel workers for DE
-##' @param condense_args arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]
-##' @param sim_fun function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})
+##' @param condense_args arguments to pass to \code{\link{condense}}
+##'     (via \code{\link{run_sim}}) [not implemented yet?]
+##' @param sim_fun function for simulating a single run
+##'     (e.g. \code{\link{run_sim_break}},
+##'     \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
-##' @importFrom bbmle parnames<- mle2
-## DON'T import stats::coef !
+##' @importFrom bbmle parnames<- mle2 DON'T import stats::coef !
 ##' @examples
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
@@ -937,7 +969,10 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
     return(r)
 }
 
-##' top-level calibration based on mobility, splines, phenom het
+##' Combined calibration of model to multiple types of data
+##'
+##' Top-level calibration based on mobility, splines, and
+##' phenomenological heterogeneity.
 ##' @param params parameters
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
 ##' @param skip.hessian skip Hessian calculation?
@@ -959,24 +994,31 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##'     specified scale.
 ##' @param spline_days days between spline knots
 ##' @param spline_df overall spline degrees of freedom
-##' @param spline_setback days before end of time series to set boundary knots for spline
-##' (this implies \emph{linear} extrapolation after knots if \code{spline_type="ns"} is specified,
-##' which is probably wise)
+##' @param spline_setback days before end of time series to set
+##'     boundary knots for spline (this implies \emph{linear}
+##'     extrapolation after knots if \code{spline_type="ns"} is
+##'     specified, which is probably wise)
 ##' @param knot_quantile_var variable to use cum dist for knotspacing
 ##' @param spline_pen penalization for spline
-##' @param spline_type spline type ("ns" for natural spline or "bs" for b-spline)
+##' @param spline_type spline type ("ns" for natural spline or "bs"
+##'     for b-spline)
 ##' @param spline_int spline intercept (??)
-##' @param spline_extrap spline extrapolation model ("linear" or "constant")
-##' @param testing_data data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)
+##' @param spline_extrap spline extrapolation model ("linear" or
+##'     "constant")
+##' @param testing_data data frame with columns containing dates
+##'     (\code{Date}) and testing intensity (\code{intensity}) (=
+##'     tests per capita per day)
 ##' @param use_mobility include mobility as a covariate in the model?
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_testing include variation in testing intensity?
 ##' @param use_spline include spline?
 ##' @param vars which vars to use? (default is all in data)
-##' @param return_val  "fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)
+##' @param return_val "fit" (return calibrated value); "X"
+##'     (short-circuit/return model matrix?); "formula" (return
+##'     log-linear formula for time-varying beta)
 ##' @param start_date start date
 ##' @importFrom stats quantile reformulate model.matrix
-##' @importFrom dplyr distinct select 
+##' @importFrom dplyr distinct select
 ##' @importFrom tidyr drop_na
 ##' @importFrom stats plogis
 ##' @importFrom splines bs

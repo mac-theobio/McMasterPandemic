@@ -2,7 +2,7 @@
 % Please edit documentation in R/calibrate.R
 \name{calibrate_comb}
 \alias{calibrate_comb}
-\title{top-level calibration based on mobility, splines, phenom het}
+\title{Combined calibration of model to multiple types of data}
 \usage{
 calibrate_comb(
   data,
@@ -40,11 +40,17 @@ calibrate_comb(
 )
 }
 \arguments{
-\item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
+\item{data}{a data set to compare to, containing date/var/value
+(current version assumes that only a single state var is
+included)}
 
 \item{params}{parameters}
 
-\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
+\item{opt_pars}{starting parameters (and structure).  Parameters
+that are part of the \code{params_pansim} parameter vector can
+be specified within the \code{params} element (with prefixes
+if they are transformed); other parameters can include
+distributional parameters or time-varying parameters}
 
 \item{mob_data}{mobility data}
 
@@ -67,11 +73,13 @@ specified scale.}
 
 \item{spline_days}{days between spline knots}
 
-\item{spline_setback}{days before end of time series to set boundary knots for spline
-(this implies \emph{linear} extrapolation after knots if \code{spline_type="ns"} is specified,
-which is probably wise)}
+\item{spline_setback}{days before end of time series to set
+boundary knots for spline (this implies \emph{linear}
+extrapolation after knots if \code{spline_type="ns"} is
+specified, which is probably wise)}
 
-\item{spline_extrap}{spline extrapolation model ("linear" or "constant")}
+\item{spline_extrap}{spline extrapolation model ("linear" or
+"constant")}
 
 \item{spline_df}{overall spline degrees of freedom}
 
@@ -79,11 +87,14 @@ which is probably wise)}
 
 \item{spline_pen}{penalization for spline}
 
-\item{spline_type}{spline type ("ns" for natural spline or "bs" for b-spline)}
+\item{spline_type}{spline type ("ns" for natural spline or "bs"
+for b-spline)}
 
 \item{spline_int}{spline intercept (??)}
 
-\item{testing_data}{data frame with columns containing dates (\code{Date}) and testing intensity (\code{intensity}) (= tests per capita per day)}
+\item{testing_data}{data frame with columns containing dates
+(\code{Date}) and testing intensity (\code{intensity}) (=
+tests per capita per day)}
 
 \item{maxit}{maximum iterations for Nelder-Mead/optimization step}
 
@@ -103,22 +114,29 @@ which is probably wise)}
 
 \item{vars}{which vars to use? (default is all in data)}
 
-\item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+\item{debug_plot}{plot debugging curves? (doesn't work with
+parallel DEoptim)}
 
 \item{debug}{print debugging messages?}
 
 \item{debug_hist}{keep information on parameter history?}
 
-\item{return_val}{"fit" (return calibrated value); "X" (short-circuit/return model matrix?); "formula" (return log-linear formula for time-varying beta)}
+\item{return_val}{"fit" (return calibrated value); "X"
+(short-circuit/return model matrix?); "formula" (return
+log-linear formula for time-varying beta)}
 
 \item{start_date}{start date}
 
-\item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
+\item{priors}{a list of tilde-delimited expressions giving prior
+distributions expressed in terms of the elements of
+\code{opt_pars},
+e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{...}{extra args}
 }
 \description{
-top-level calibration based on mobility, splines, phenom het
+Top-level calibration based on mobility, splines, and
+phenomenological heterogeneity.
 }
 \examples{
 if (require(dplyr)) {

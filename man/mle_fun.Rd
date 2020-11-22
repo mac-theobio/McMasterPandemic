@@ -27,33 +27,51 @@ mle_fun(
 \arguments{
 \item{p}{parameter vector (in unlisted form)}
 
-\item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
+\item{data}{a data set to compare to, containing date/var/value
+(current version assumes that only a single state var is
+included)}
 
 \item{debug}{print debugging messages?}
 
-\item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+\item{debug_plot}{plot debugging curves? (doesn't work with
+parallel DEoptim)}
 
 \item{debug_hist}{keep information on parameter history?}
 
-\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
+\item{opt_pars}{starting parameters (and structure).  Parameters
+that are part of the \code{params_pansim} parameter vector can
+be specified within the \code{params} element (with prefixes
+if they are transformed); other parameters can include
+distributional parameters or time-varying parameters}
 
-\item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
+\item{base_params}{baseline parameters (an object (vector?) of
+type \code{params_pansim} containing all of the parameters
+needed for a simulation; some may be overwritten during the
+calibration process)}
 
-\item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
+\item{start_date}{starting date for sims (far enough back to allow
+states to sort themselves out)}
 
 \item{end_date}{ending date}
 
 \item{time_args}{arguments passed to \code{sim_fun}}
 
-\item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
+\item{sim_args}{additional arguments to pass to
+\code{\link{run_sim}}}
 
-\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
+\item{sim_fun}{function for simulating a single run
+(e.g. \code{\link{run_sim_break}},
+\code{\link{run_sim_mobility}})}
 
 \item{checkpoint}{save file containing call information?}
 
-\item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+\item{aggregate_args}{arguments passed to
+\code{\link{aggregate.pansim}}}
 
-\item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
+\item{priors}{a list of tilde-delimited expressions giving prior
+distributions expressed in terms of the elements of
+\code{opt_pars},
+e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{na_penalty}{value to add to NLL for NA values in log-likelihood}
 

@@ -2,8 +2,7 @@
 % Please edit documentation in R/calibrate.R
 \name{calibrate}
 \alias{calibrate}
-\title{estimate parameters from data
-calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters}
+\title{Estimate model parameters from data}
 \usage{
 calibrate(
   start_date = min(data$date) - start_date_offset,
@@ -37,7 +36,8 @@ calibrate(
 )
 }
 \arguments{
-\item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
+\item{start_date}{starting date for sims (far enough back to allow
+states to sort themselves out)}
 
 \item{start_date_offset}{days to go back before first data value}
 
@@ -47,31 +47,51 @@ calibrate(
 
 \item{break_dates}{legacy}
 
-\item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
+\item{base_params}{baseline parameters (an object (vector?) of
+type \code{params_pansim} containing all of the parameters
+needed for a simulation; some may be overwritten during the
+calibration process)}
 
-\item{data}{a data set to compare to, containing date/var/value (current version assumes that only a single state var is included)}
+\item{data}{a data set to compare to, containing date/var/value
+(current version assumes that only a single state var is
+included)}
 
-\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
+\item{opt_pars}{starting parameters (and structure).  Parameters
+that are part of the \code{params_pansim} parameter vector can
+be specified within the \code{params} element (with prefixes
+if they are transformed); other parameters can include
+distributional parameters or time-varying parameters}
 
 \item{fixed_pars}{parameters to fix}
 
-\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
+\item{sim_fun}{function for simulating a single run
+(e.g. \code{\link{run_sim_break}},
+\code{\link{run_sim_mobility}})}
 
-\item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
+\item{sim_args}{additional arguments to pass to
+\code{\link{run_sim}}}
 
-\item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+\item{aggregate_args}{arguments passed to
+\code{\link{aggregate.pansim}}}
 
-\item{condense_args}{arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}}) [not implemented yet?]}
+\item{condense_args}{arguments to pass to \code{\link{condense}}
+(via \code{\link{run_sim}}) [not implemented yet?]}
 
-\item{priors}{a list of tilde-delimited expressions giving prior distributions expressed in terms of the elements of \code{opt_pars}, e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
+\item{priors}{a list of tilde-delimited expressions giving prior
+distributions expressed in terms of the elements of
+\code{opt_pars},
+e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{debug}{print debugging messages?}
 
-\item{debug_plot}{plot debugging curves? (doesn't work with parallel DEoptim)}
+\item{debug_plot}{plot debugging curves? (doesn't work with
+parallel DEoptim)}
 
 \item{debug_hist}{keep information on parameter history?}
 
-\item{last_debug_plot}{plot debugging curve for \emph{only} last parameter set (stored in \code{.debug_plot.pdf} in current directory)}
+\item{last_debug_plot}{plot debugging curve for \emph{only} last
+parameter set (stored in \code{.debug_plot.pdf} in current
+directory)}
 
 \item{use_DEoptim}{use differential evolution as first stage?}
 
@@ -92,8 +112,17 @@ calibrate(
 \item{DE_cores}{number of parallel workers for DE}
 }
 \description{
-estimate parameters from data
-calibrate via negative binomial MLE, simultaneously fitting initial conditions, initial growth rate, time-changes in growth rate, and dispersion parameters
+Given time series data and a set of starting
+parameters/structure/etc., calibrate the model via negative
+binomial maximum likelihood estimation (MLE), simultaneously
+fitting initial conditions, initial growth rate, time-changes in
+growth rate, and dispersion parameters.
+}
+\details{
+\code{\link[bbmle]{mle2}}
+is used to estimate parameters by trajectory matching.
+Differential evolution optimization is conducted
+via \code{\link[DEoptim]{DEoptim}}.
 }
 \examples{
 library(dplyr)

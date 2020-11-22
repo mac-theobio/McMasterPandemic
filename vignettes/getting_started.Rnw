@@ -257,6 +257,23 @@ plot_grid(plot(restimedep, log=TRUE, condense=FALSE),
           plot(restimedep, condense=FALSE))
 @
 
+\section{Changing parameters}
+
+Some parameters you might wish to change are not directly available in
+the parameter file.  Instead, you can adjust them using
+\code{fix_pars()}.  For example, if you would like to change the
+default value of $\R_0$ implied in the parameter list \code{params1}
+you can do the following.
+
+<<changeR0>>=
+print(summary(params1))
+## Change R0 to 2
+newparams1 <- fix_pars(params1, target=c(R0=2)) 
+print(summary(newparams1))
+@ 
+
+\david{See \texttt{refactor.Rmd} for functions not yet described here.}
+
 \section{Calibration}
 
 In a typical epidemic forecasting application, we have imperfect
@@ -267,7 +284,19 @@ will differ under various intervention scenarios.
 
 The natural approach is to find a set of parameters that lies within
 the estimated constraints and best fits the observed part of the
-epidemic.
+epidemic.  This is referred to as ``calibrating'' the model to the data.
+
+Unsurprisingly, there is a function \code{calibrate()} for doing just this.
+
+Imagine that the simulated data saved in \code{res1proc2} are were the
+observed data to which want to fit the model.  We can calibrate to
+these data as follows.
+
+<<calibrateTOres1proc2>>=
+
+@ 
+
+
 
 
 \end{document}
