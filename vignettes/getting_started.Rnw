@@ -288,37 +288,12 @@ epidemic.  This is referred to as ``calibrating'' the model to the data.
 
 Unsurprisingly, there is a function \code{calibrate()} for doing just this.
 
-Imagine that the simulated data saved in \code{res1proc2} are were the
+Imagine that the simulated data saved in \code{res1obs} were the
 observed data to which want to fit the model.  We can calibrate to
 these data as follows.
 
-<<calibrateTOres1proc2>>=
-report_data <- (res1proc2 
-    %>% mutate(value=round(report), var="report")
-    %>% select(date, value, var)
-    %>% na.omit()
-)
-## beta0 is the only parameter we're going to optimize:
-opt_pars <- list(params = c(beta0=0.1))
-fitted.mod <- calibrate(
-    data = report_data
-  , start_date = sdate
-    ## skip breaks that are present by default:
-  , time_args = list(break_dates = NULL)
-  , base_params = params1proc2
-  , opt_pars = opt_pars
-  ##, debug_plot = TRUE # instructive plotting during optimization
-)
-plot(fitted.mod, data=report_data)
-coef(fitted.mod, "fitted") # spit out fitted parameters
-@ 
-Note that the when we print the fitted parameters values, we get 
-a list with two elements (\code{params} and \code{nb_disp})
-
-Try now with observation noise only, since we have no way to fit
-process noise in our fitting machinery.
-
 <<calibrateTOres1obs>>=
+library(dplyr)
 report_data <- (res1obs 
     %>% mutate(value=round(report), var="report")
     %>% select(date, value, var)
@@ -342,6 +317,7 @@ coef(fitted.mod, "fitted") # spit out fitted parameters
 Now try to fit to both reports and deaths.
 
 <<calibrateTOres1obs.both.reports.and.deaths>>=
+library(tidyr)
 report_data <- (res1obs 
     %>% select(date, report, death)
     %>% pivot_longer(names_to = "var", -date)
@@ -361,7 +337,30 @@ fitted.mod <- calibrate(
 )
 plot(fitted.mod, data=report_data)
 coef(fitted.mod, "fitted") # spit out fitted parameters
-summary(fitted.mod)
+##summary(fitted.mod)
+@ 
+
+Finally, consider the case where we have both observation and process noise.  Fitting to these data won't do as well, because \code{calibrate()} does not have a way of fitting to process noise.  Consequently, the quality of our fit can be expected to be worse.  Of course, real data always contain process noise\dots
+
+<<calibrateTOres1proc2>>=
+report_data <- (res1proc2 
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit()
+)
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0=0.1))
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1proc2
+  , opt_pars = opt_pars
+  ##, debug_plot = TRUE # instructive plotting during optimization
+)
+plot(fitted.mod, data=report_data)
+coef(fitted.mod, "fitted") # spit out fitted parameters
 @ 
 
 \end{document}
