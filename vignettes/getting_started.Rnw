@@ -361,6 +361,7 @@ fitted.mod <- calibrate(
 )
 plot(fitted.mod, data=report_data)
 coef(fitted.mod, "fitted") # spit out fitted parameters
+summary(coef(fitted.mod,"all"))
 @ 
 
 \end{document}
