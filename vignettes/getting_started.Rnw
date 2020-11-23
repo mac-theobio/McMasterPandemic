@@ -190,7 +190,7 @@ res1proc <- run_sim(params1proc, start_date=sdate, end_date=edate,
 Making \code{proc_disp} positive simulates with additional process noise:
 
 <<proc2>>=
-params1proc2 <- update(params1,E0=200,proc_disp=0.5)
+params1proc2 <- update(params1,E0=200, proc_disp=0.5, obs_disp=5)
 res1proc2 <- run_sim(params1proc2, start_date=sdate, end_date=edate,
                     stoch=c(obs=FALSE, proc=TRUE))
 plot_grid(plot(res1proc2, log=TRUE), plot(res1proc2))
@@ -293,10 +293,75 @@ observed data to which want to fit the model.  We can calibrate to
 these data as follows.
 
 <<calibrateTOres1proc2>>=
+report_data <- (res1proc2 
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit()
+)
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0=0.1))
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1proc2
+  , opt_pars = opt_pars
+  ##, debug_plot = TRUE # instructive plotting during optimization
+)
+plot(fitted.mod, data=report_data)
+coef(fitted.mod, "fitted") # spit out fitted parameters
+@ 
+Note that the when we print the fitted parameters values, we get 
+a list with two elements (\code{params} and \code{nb_disp})
 
+Try now with observation noise only, since we have no way to fit
+process noise in our fitting machinery.
+
+<<calibrateTOres1obs>>=
+report_data <- (res1obs 
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit()
+)
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0=0.1))
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1obs
+  , opt_pars = opt_pars
+  ##, debug_plot = TRUE # instructive plotting during optimization
+)
+plot(fitted.mod, data=report_data)
+coef(fitted.mod, "fitted") # spit out fitted parameters
 @ 
 
+Now try to fit to both reports and deaths.
 
-
+<<calibrateTOres1obs.both.reports.and.deaths>>=
+report_data <- (res1obs 
+    %>% select(date, report, death)
+    %>% pivot_longer(names_to = "var", -date)
+    %>% mutate(value=round(value))
+    %>% na.omit()
+)
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0=0.1))
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1obs
+  , opt_pars = opt_pars
+  ##, debug_plot = TRUE # instructive plotting during optimization
+)
+plot(fitted.mod, data=report_data)
+coef(fitted.mod, "fitted") # spit out fitted parameters
+summary(fitted.mod)
+@ 
 
 \end{document}
