@@ -264,6 +264,7 @@ clean_mobdat <- (clean_google
     %>% na.omit()
     %>% rename(rel_activity = value)
 #   %>% mutate_at("rel_activity", ~pmin(., 1))  ## cap at 100% (? should we ?)
+	%>% mutate(moving_avg = zoo::rollmean(c(rep(1,6),rel_activity),k=7))
 	 %>% ungroup()
 )
 ```
@@ -272,11 +273,12 @@ Make a plot of relative activity and explain how this might have an effect for d
 
 ```{r mobplot}
 
-ggmob <- (ggplot(clean_mobdat,aes(date,rel_activity))
-	+ geom_point()			 
+ggmob <- (ggplot(clean_mobdat,aes(x=date))
 )
 
-print(ggmob)
+print(ggmob + geom_point(aes(y=rel_activity)))
+
+print(ggmob + geom_point(aes(y=moving_avg)))
 
 ```
 
@@ -296,7 +298,7 @@ ontmod_mob <- calibrate_comb(data = calibrate_dat
 ```
 
 ```{r ont_calibrate_mob_show}
-print(summary(ontmod_mob))
+# print(summary(ontmod_mob))
 print(plot(ontmod_mob,data=calibrate_dat))
 ```
 
@@ -310,7 +312,28 @@ Question: What assumptions are we making? Do we think mobility have the same eff
 - new mob intercept and slope
 - smoother on the breakpoint
 
-```{r ont_calibrate_mob_breaks, warning=FALSE, cache=TRUE}
+```{r mob_vs_reports, warning=FALSE}
+
+## normalize mobility and reports 
+
+clean_mobdat_z <- (clean_mobdat
+	%>% mutate(zmob = (rel_activity - mean(rel_activity))/sd(rel_activity))
+)
+
+calibrate_dat_z <- (calibrate_dat
+	%>% mutate(zreport = (value - mean(value,na.rm=TRUE))/sd(value,na.rm=TRUE))
+)
+
+print(ggplot(clean_mobdat_z, aes(x=date,y=zmob))
+	+ geom_point(color="black")
+	+ geom_point(data=calibrate_dat_z, aes(x=date,y=zreport), color="red")
+	+ scale_x_date(date_breaks = "1 month",date_labels = "%b")
+)
+
+
+```
+
+```{r ont_calibrate_mob_breaks, warning=FALSE, cache=FALSE}
 
 ontmod_mob2 <- calibrate_comb(data = calibrate_dat
 	, params = newparams2
@@ -319,13 +342,13 @@ ontmod_mob2 <- calibrate_comb(data = calibrate_dat
 	, debug_plot = FALSE ## TRUE to watch fitting process, don't do it in rmd
 	, mob_data = clean_mobdat
 	, use_mobility = TRUE
-	, mob_breaks = c("2020-04-15", "2020-08-8")
+	, mob_breaks = c("2020-03-01", "2020-06-01","2020-08-01")
 	, mob_breaks_int = TRUE
 	, mob_logist_scale = 3
 )
 
 
-print(summary(ontmod_mob2))
+# print(summary(ontmod_mob2))
 
 print(plot(ontmod_mob2,data=calibrate_dat))
 ```
