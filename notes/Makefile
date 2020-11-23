@@ -120,6 +120,11 @@ midas_estimates.Rout: midas_estimates.R
 Sources += ../inst/params/PHAC_testify.csv
 Sources += slow.csv
 
+
+testify_check.Rout: testify_check.R random.csv
+	$(makeR)
+
+
 ## How many parameter files do we have?
 ## testwt_N.R basic.R simple.R ode.R
 
