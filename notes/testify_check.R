@@ -8,6 +8,7 @@ makeGraphics()
 
 
 p <- read_params(makeArgs()[3])
+p <- update(p,c(rho=1/5,c_prop=1,testing_intensity=1))
 
 print(p)
 
@@ -20,7 +21,7 @@ dateVec <- seq.Date(from=as.Date(start)
 )
 
 
-intensity <- rep(0.002,length(dateVec))
+intensity <- rep(1,length(dateVec))
 
 testing_data <- data.frame(Date = dateVec
 	, Symbol = "testing_intensity"
@@ -39,7 +40,7 @@ sim_args <- list(ratemat_args = list(testing_time = "report")
 sims <- do.call(run_sim, c(list(params=p), sim_args))
 
 simdat <- (sims
-	%>% select(date,postest,hosp,H,report)
+	%>% select(date,postest,hosp,H,report,I,S)
 	%>% pivot_longer(names_to = "var", -date)
 	%>% filter(value>1)
 )
