@@ -50,7 +50,7 @@ print(simdat)
 gg <- (ggplot(simdat,aes(x=date,y=value))
 	+ geom_point()
 	+ geom_line()
-	+ facet_wrap(~var,scale="free",nrow=2)
+	+ facet_wrap(~var,nrow=2)
 )
 
 print(gg)
