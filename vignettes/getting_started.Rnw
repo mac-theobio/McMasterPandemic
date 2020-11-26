@@ -77,17 +77,32 @@ In the example, the time unit is assumed to be days.
 The term ``in acute care'' means ``in hospital but not in the
 intensive care unit (ICU)''.
 
-If \code{p} is a parameter set (e.g. the result of
-\code{read_params}), then \code{print(p, describe=TRUE)} will return a
-data frame with a column giving the meaning of each parameter.
-
 <<set_params>>=
 params1 <- read_params("ICU1.csv")
 @
+\noindent
+(by default \code{read_params} looks first in the working directory
+for CSV files, then in the \code{params} directory installed with the
+package (\code{system.file("params", package="McMasterPandemic")}).
+All the built-in parameter files can be found as follows:
 
-(by default \code{read_params} looks first in the working directory for CSV files, then in the \code{params} directory installed with the package (\code{system.file("params", package="McMasterPandemic")}).
+<<params_files>>=
+folder <- system.file("params", package="McMasterPandemic")
+list.files(folder)
+@ 
+\noindent
+If you want to edit one of these files, you need to copy it to your
+working directory first.  To find the full path to \texttt{ICU1.csv},
+for example, use:
+<<find_full_path, tidy=FALSE>>=
+system.file("params/ICU1.csv", package="McMasterPandemic")
+@ 
 
-<<params_kable,echo=FALSE>>=
+If \code{p} is a parameter set (e.g., the result of
+\code{read_params}), then \code{print(p, describe=TRUE)} or,
+equivalently, \code{describe_params(p)} will return a data frame with
+a column giving the meaning of each parameter.
+<<params_kable>>=
 knitr::kable(describe_params(params1))
 @
 
