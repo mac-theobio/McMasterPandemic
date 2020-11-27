@@ -150,7 +150,7 @@ impmakeR += sims
 	$(makeR)
 
 ## Plot factorial design testify simulated data
-# testwt_N.random.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
+# testwt_N.symptomatic.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
 %.simreportplot.Rout: testify_simreportplot.R %_sims.rda
 	$(makeR)
 
