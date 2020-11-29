@@ -377,10 +377,23 @@ fitted.mod <- calibrate(
   ##, debug_plot = TRUE # instructive plotting during optimization
 )
 plot(fitted.mod, data=report_death_data)
+@ 
+\noindent
+If you wish, you can plot just the data being fitted, and the fitted
+model, via:
+<<plot.report.and.death.only>>=
+plot(fitted.mod, data=report_death_data, 
+     predict_args=list(keep_vars=c("report","death")))
+@ 
+\noindent
+That fit looks remarkably good.  Let's see how good:
+<<fitted.mod.summary>>=
 coef(fitted.mod, "fitted") # spit out fitted parameters
 summary(coef(fitted.mod))
 @ 
 \noindent
+Amazing: our fitted \code{beta0} is exactly the value used
+in the simulation that generated the data.
 Note that in the summary at the end, \code{r0} refers to the
 initial exponential growth rate from the fitted model.
 This provides an alternative to the \code{epigrowthfit}
@@ -408,6 +421,12 @@ fitted.mod <- calibrate(
 plot(fitted.mod, data=report_data)
 coef(fitted.mod, "fitted") # spit out fitted parameters
 summary(coef(fitted.mod,"all"))
+@ 
+\noindent
+As above, you can plot just the data being fitted, and the fitted
+model, via:
+<<plot.report.only>>=
+plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
 @ 
 
 \end{document}

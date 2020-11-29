@@ -136,7 +136,13 @@ e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 }
 \description{
 Top-level calibration based on mobility, splines, and
-phenomenological heterogeneity.
+phenomenological heterogeneity.  This function is a wrapper for
+\code{\link{calibrate}}, which first sets up the model matrix for
+time-dependent transmission rates \eqn{\beta(t)}.  For example,
+for splines, it sets up the spline basis and the coefficients of
+each basis function.  For mobility, it sets up the slope and
+intercept parameters (since mobility is treated as a log-linear
+function between break points).
 }
 \examples{
 if (require(dplyr)) {
