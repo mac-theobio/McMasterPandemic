@@ -23,60 +23,92 @@ summary(params)
 
 
 ## create factorial combination of parameter vectors
-pf <- expand.grid(iso_t=iso_t
-	, omega=omega
-	, testing_type=testing_type
-	, Gbar=Gbar
-#	, W_asymp = W_asymp
+pf <- expand.grid(R0=R0
 	, testing_intensity = testing_intensity
+	, testing_type = c("constant","reduceR","increaseT","mix")
+	# , testing_type = c("mix")
+	, iso_t = iso_t
 )
 
 print(pf)
 
-# print(pf <- pf[c(1,2,7,8),])
+dateVec <- seq.Date(start,end,by=1)
 
-datevec <- as.Date(start):as.Date(end)
-testdat <- data.frame(Date = as.Date(datevec)
-        , intensity =  NA
+timevars_constant <- data.frame(Date= rep(dateVec,2)
+	, Symbol = rep(c("beta0","testing_intensity")
+		,each=length(dateVec)
+		)
+	, Relative_value = c(seq(1,1,length.out=length(dateVec))
+		, seq(1,1,length.out=length(dateVec))
+	)
+)
+
+timevars_reduceR <- data.frame(Date= rep(dateVec,2)
+	, Symbol = rep(c("beta0","testing_intensity")
+		, each=length(dateVec)
+		)
+	, Relative_value = c(seq(1,0.5,length.out=length(dateVec))
+		, seq(1,1,length.out=length(dateVec))
+	)
+)
+
+timevars_increaseT <- data.frame(Date= rep(dateVec,2)
+	, Symbol = rep(c("beta0","testing_intensity")
+		, each=length(dateVec)
+		)
+	, Relative_value = c(seq(1,1,length.out=length(dateVec))
+		, seq(1,5,length.out=length(dateVec))
+	)
+)
+
+timevars_mix <- data.frame(Date = rep(dateVec,2)
+	, Symbol = rep(c("beta0","testing_intensity")
+		, each = length(dateVec)
+		)
+	, Relative_value = c(seq(1,0.5,length.out=length(dateVec))
+		, seq(1,5, length.out=length(dateVec))
+	)
 )
 
 
 
 ## run a simulation based on parameters in the factorial frame
-update_and_simulate <- function(x, testdat){
+update_and_simulate <- function(x){
 	print(x)
 	## Update and fix_pars need to be together right before simulating
 	paramsw0 <- update(params
-		, iso_t=pf[x,"iso_t"]
+		, iso_t= pf[x,"iso_t"]
 		, testing_intensity = pf[x,"testing_intensity"]
-		, omega = pf[x,"omega"]
+		, omega = omega
 	)
-	paramsw0 <- fix_pars(paramsw0, target=c(R0=R0,Gbar=pf[x,"Gbar"]))
 
-	## This can be a bit cleaner
 	if(pf[x,"testing_type"] == "constant"){
- 		testdat$intensity <- pf[x,"testing_intensity"]
+		testdat <- timevars_constant
 	}
-	if(pf[x,"testing_type"] == "linear"){
-		testdat$intensity <- seq(min_testing,max_testing,length.out =nrow(testdat))
+	if(pf[x,"testing_type"] == "reduceR"){
+		testdat <- timevars_reduceR
 	}
-	if(pf[x,"testing_type"] == "logistic"){
-		testdat$intensity <- plogis(seq(qlogis(min_testing/max_testing),qlogis(0.99),length.out = nrow(testdat)))*max_testing
+	if(pf[x,"testing_type"] == "increaseT"){
+		testdat <- timevars_increaseT
+	}
+	if(pf[x,"testing_type"] == "mix"){
+		testdat <- timevars_mix
 	}
 
-	
-	sims <- (simtestify(p=paramsw0,testing_data=testdat)
-	%>% mutate(iso_t = pf[x,"iso_t"]
-     	 , Gbar = pf[x,"Gbar"]
-         , testing_type = pf[x,"testing_type"]
+
+	paramsw0 <- fix_pars(paramsw0, target=c(R0=pf[x,"R0"],Gbar=Gbar))
+
+	sims <- (simtestify(p=paramsw0,timevars=testdat)
+	%>% mutate(R0 = pf[x,"R0"]
 			, testing_intensity = pf[x,"testing_intensity"]
-			, omega = pf[x,"omega"]
+			, testing_type = pf[x,"testing_type"]
+			, iso_t = pf[x,"iso_t"]
          )
 	)
 	return(sims)
 }
 
-simlist <- mclapply(1:nrow(pf),function(x)update_and_simulate(x,testdat=testdat),mc.cores = 3)
+simlist <- mclapply(1:nrow(pf),function(x)update_and_simulate(x),mc.cores = 3)
 
 print(simlist)
 
@@ -89,7 +121,7 @@ print(simframe)
 
 if (!keep_all) {
     simdat <- (simframe
-	 	  %>% group_by(iso_t,Gbar,testing_intensity,omega,testing_type)
+	 	  %>% group_by(R0,testing_intensity,testing_type,iso_t)
         %>% transmute(date
                     , incidence
 						  , CumIncidence = cumsum(incidence)
@@ -104,7 +136,7 @@ if (!keep_all) {
 						  , testing_intensity
                       )
 		  %>% ungroup()
-        %>% gather(key="var",value="value",-c(date, iso_t, omega,testing_type, Gbar, testing_intensity))
+        %>% gather(key="var",value="value",-c(date, iso_t,testing_type, testing_intensity,R0))
     )
 } else {
     

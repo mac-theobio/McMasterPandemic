@@ -8,7 +8,7 @@ makeGraphics()
 
 
 p <- read_params(makeArgs()[3])
-p <- fix_pars(p, target = c(R0=1.1, Gbar=6))
+p <- fix_pars(p, target = c(R0=2, Gbar=6))
 p <- update(p,c(rho=1/5,c_prop=1,testing_intensity=0.002))
 
 print(p)
@@ -24,11 +24,12 @@ dateVec <- seq.Date(from=as.Date(start)
 
 intensity <- rep(1,length(dateVec))
 
-testing_data <- data.frame(Date = dateVec
-	, Symbol = "testing_intensity"
-	, Relative_value = c(1, intensity[-1]/intensity[1])
+timevars <- data.frame(Date= rep(dateVec,2)
+	, Symbol = rep(c("beta0","testing_intensity"),each=length(dateVec))
+	, Relative_value = c(seq(1,0.6,length.out=length(dateVec))
+		, rep(1,1,length.out=length(dateVec))
+	)
 )
-
 
 sim_args <- list(ratemat_args = list(testing_time = "report")
 	, start_date = start
@@ -36,7 +37,7 @@ sim_args <- list(ratemat_args = list(testing_time = "report")
 	, step_args = list(testwt_scale = "N")
 	, condense_args = list(keep_all = FALSE
 		, add_reports = TRUE)
-	, params_timevar = testing_data)
+	, params_timevar = timevars)
 
 sims <- do.call(run_sim, c(list(params=p), sim_args))
 

@@ -149,8 +149,19 @@ impmakeR += sims
 %.symptomatic_sims.Rout: testify_sim.R %.rda testify_funs.rda symptomatic.csv
 	$(makeR)
 
+# testwt_N.random.clean_testing.Rout: clean_testing.R
+# testwt_N.symptomatic.clean_testing.Rout: clean_testing.R
+# testwt_N.focus.clean_testing.Rout: clean_testing.R
+%.clean_testing.Rout: clean_testing.R %_sims.rda
+	$(makeR)
+
+combine_testing.Rout: combine_testing.R testwt_N.random.clean_testing.rda testwt_N.symptomatic.clean_testing.rda testwt_N.focus.clean_testing.rda
+	$(makeR)
+
+
+
 ## Plot factorial design testify simulated data
-# testwt_N.symptomatic.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
+# testwt_N.random.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
 %.simreportplot.Rout: testify_simreportplot.R %_sims.rda
 	$(makeR)
 
