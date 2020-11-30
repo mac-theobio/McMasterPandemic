@@ -11,7 +11,7 @@ if (!interactive()) makeGraphics()
 
 if(grepl("random",targetname()))testing_wts <- "Random"
 if(grepl("symptomatic",targetname()))testing_wts <- "Symptomatic"
-if(grepl("focus",targetname()))testing_wts <- "Symptomatic Smart"
+if(grepl("focus",targetname()))testing_wts <- "Proactive"
 
 
 varnames <- data.frame(var = c("total_test", "positivity", "postest", "CumIncidence", "incidence")
@@ -23,7 +23,7 @@ simdat <- (simdat
 	%>% rename(isolation = iso_t)
 	%>% rename(strength = R0)
 	%>% mutate(isolation = as.character(isolation)
-		, testing_intensity = paste0(testing_intensity, " of the population")
+		, testing_intensity = paste0(testing_intensity*1000, " Test per 1000 per day")
 		, strength = ifelse(strength == 2, "fast", "slow")
 	)
 	%>% ungroup()
@@ -52,10 +52,10 @@ print(ggall
 )
 
 simdat2 <- (simdat
-	%>% filter(testing_intensity == "0.002 of the population")
+	%>% filter(testing_intensity == "2 Test per 1000 per day")
 	%>% filter(strength == "fast")
-	%>% mutate(testing_intensity2 = ifelse(testing_type %in% c("mix","increaseT"), "More test","Constant test")
-		, strength2 = ifelse(testing_type %in% c("mix","reduceR"), "Slower spread", "Constant spread")
+	%>% mutate(testing_intensity2 = ifelse(testing_type %in% c("mix","increaseT"), "Increasing Testing","Constant Testing")
+		, strength2 = ifelse(testing_type %in% c("mix","reduceR"), "Decreasing R", "Constant R")
 	)
 	%>% select(-testing_type)
 	%>% mutate(testing_type = testing_wts)

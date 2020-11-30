@@ -34,6 +34,16 @@ print(pf)
 
 dateVec <- seq.Date(start,end,by=1)
 
+#S <- 2
+#F <- 0.5
+# h <- 6
+# sat <- (F-S)*m/(h+m) + S
+
+
+satfun <- function(S,F,h,m){
+	(F-S)*m/(h+m) + S
+}
+
 timevars_constant <- data.frame(Date= rep(dateVec,2)
 	, Symbol = rep(c("beta0","testing_intensity")
 		,each=length(dateVec)
@@ -47,29 +57,48 @@ timevars_reduceR <- data.frame(Date= rep(dateVec,2)
 	, Symbol = rep(c("beta0","testing_intensity")
 		, each=length(dateVec)
 		)
-	, Relative_value = c(seq(1,0.5,length.out=length(dateVec))
+	, Relative_value = c(satfun(S=1
+		, F= 0.5
+		, h= length(dateVec)/2
+		, m = seq(0,length(dateVec)-1,by=1)
+	)
 		, seq(1,1,length.out=length(dateVec))
 	)
 )
+
 
 timevars_increaseT <- data.frame(Date= rep(dateVec,2)
 	, Symbol = rep(c("beta0","testing_intensity")
 		, each=length(dateVec)
 		)
 	, Relative_value = c(seq(1,1,length.out=length(dateVec))
-		, seq(1,5,length.out=length(dateVec))
+			, satfun(S=1
+			, F=5
+			, h=length(dateVec)/2
+			, m=seq(0,length(dateVec)-1,by=1)
+			)
+		)
 	)
-)
+
+print(timevars_increaseT)
 
 timevars_mix <- data.frame(Date = rep(dateVec,2)
 	, Symbol = rep(c("beta0","testing_intensity")
 		, each = length(dateVec)
 		)
-	, Relative_value = c(seq(1,0.5,length.out=length(dateVec))
-		, seq(1,5, length.out=length(dateVec))
+	, Relative_value = c(
+		satfun(S=1
+		 , F=0.5
+		 , h = length(dateVec)/2
+		 , m = seq(0,length(dateVec)-1,by=1)
+		)
+		, satfun(S=1
+			, F=5
+			, h = length(dateVec)/2
+			, m = seq(0,length(dateVec)-1, by=1)
+		)
 	)
 )
-
 
 
 ## run a simulation based on parameters in the factorial frame

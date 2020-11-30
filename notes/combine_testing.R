@@ -10,16 +10,27 @@ source("makestuff/makeRfuns.R")
 commandEnvironments()
 if (!interactive()) makeGraphics()
 
-simdat1 <- bind_rows(
+simdat1 <- (bind_rows(
 	getEnvironment("random")[["simdat1"]]
 	, getEnvironment("symptomatic")[["simdat1"]]
 	, getEnvironment("focus")[["simdat1"]]
+	)
+	%>% mutate(testing_intensity = factor(testing_intensity,levels=c("2 Test per 1000 per day","10 Test per 1000 per day"))
+		, testing_type = factor(testing_type, levels = c("Random", "Symptomatic", "Proactive")
+		)
+	)
 )
 
-simdat2 <- bind_rows(
+simdat2 <- (bind_rows(
 	getEnvironment("random")[["simdat2"]]
 	, getEnvironment("symptomatic")[["simdat2"]]
 	, getEnvironment("focus")[["simdat2"]]
+	)
+	%>% mutate(testing_intensity = factor(testing_intensity
+		, levels=c("2 Test per 1000 per day", "10 Test per 1000 per day"))
+		, testing_type = factor(testing_type, levels = c("Random", "Symptomatic", "Proactive")
+		)
+	)
 )
 
 ggall <- (ggplot(simdat1
