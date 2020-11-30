@@ -133,22 +133,27 @@ testify_check.Rout: testify_check.R random.csv
 ## Simulate factorial design testify data
 
 impmakeR += sims
+## Not working 2020 Nov 30 (Mon)
 # testwt_N.sims.Rout: testify_sim.R testwt_N.R
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
+impmakeR += random_sims
 # testwt_N.random_sims.Rout: testify_sim.R random.csv
 %.random_sims.Rout: testify_sim.R %.rda testify_funs.rda random.csv
 	$(makeR)
 
+impmakeR += focus_sims
 # testwt_N.focus_sims.Rout: testify_sim.R focus.csv
 %.focus_sims.Rout: testify_sim.R %.rda testify_funs.rda focus.csv
 	$(makeR)
 
+impmakeR += symptomatic_sims
 # testwt_N.symptomatic_sims.Rout: testify_sim.R symptomatic.csv
 %.symptomatic_sims.Rout: testify_sim.R %.rda testify_funs.rda symptomatic.csv
 	$(makeR)
 
+impmakeR += clean_testing
 # testwt_N.random.clean_testing.Rout: clean_testing.R
 # testwt_N.symptomatic.clean_testing.Rout: clean_testing.R
 # testwt_N.focus.clean_testing.Rout: clean_testing.R
@@ -162,6 +167,7 @@ combine_testing.Rout: combine_testing.R testwt_N.random.clean_testing.rda testwt
 
 ## Plot factorial design testify simulated data
 # testwt_N.random.simreportplot.Rout: testify_simreportplot.R testwt_N.R 
+impmakeR += simreportplot
 %.simreportplot.Rout: testify_simreportplot.R %_sims.rda
 	$(makeR)
 
@@ -173,6 +179,8 @@ testify_sims.pdf: testwt_N.random.simreportplot.Rout.pdf testwt_N.symptomatic.si
 # absolute.simplots.Rout: absolute.R testify_sim.R
 # absolute.sims.Rout: absolute.R testify_sim.R
 
+curve_shapes.Rout: curve_shapes.R
+
 ######################################################################
 
 ## Nested testify sims
@@ -183,18 +191,22 @@ testify_funs.Rout: testify_funs.R
 batchtools.Rout: batchtools.R
 	$(makeR)
 
+impmakeR += nested_testify
 ## testwt_N.nested_testify.Rout: nested_testify.R testify_funs.R
 %.nested_testify.Rout: nested_testify.R batchtools.rda testify_funs.rda %.rda 
 	$(makeR)
 
 ## Temporarily suppressing slow dependency (bad form?)
+## 以後 do this with .cache
 ## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
 ## %.simcalib_tidy.Rout: simcalib_tidy.R %.nested_testify.rda 
 
-testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
+impmakeR += simcalib_tidy
+## testwt_N.simcalib_tidy.Rout: simcalib_tidy.R
 %.simcalib_tidy.Rout: simcalib_tidy.R %.rda 
 	$(makeR)
 
+impmakeR += simcalib_plot
 testwt_N.simcalib_plot.Rout: simcalib_plot.R
 %.simcalib_plot.Rout: simcalib_plot.R %.simcalib_tidy.rda
 	$(makeR)
