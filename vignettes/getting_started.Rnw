@@ -157,7 +157,7 @@ sdate <- "2020-Feb-10"
 edate <- "2020-Jun-1"
 @
 
-\section{Running a simulation}
+\section{Running a simulation}\label{sec:run_sim}
 
 A simple deterministic simulation is run as follows, and returns a
 \code{pansim} object.  The \code{summary} method computes the times
@@ -427,6 +427,91 @@ As above, you can plot just the data being fitted, and the fitted
 model, via:
 <<plot.report.only>>=
 plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
+@ 
+
+\section{Scenario exploration}
+
+Typically, after calibrating to observed data, you are likely to be
+interested in forecasting what might happen in the future, under
+various scenarios of possible changes in control measures/policies.
+Here, we give an example involving changing the transmission rate
+($\beta$) in the future.
+
+First we load some data manipulation packages for convenience.
+<<time.varying.bt.using.run_sim, message=FALSE>>=
+library(zoo)
+library(tidyverse)
+@ 
+\noindent
+Now we modify the \code{run_sim} example (\cref{sec:run_sim}).  We
+first check that setting \code{Relative_value=1} and using
+non-\code{timevar} \code{run_sim} yield the same results.
+<<modified.example.from.run_sim>>=
+params <- read_params("ICU1.csv")
+pp <- fix_pars(params, target = c(R0 = 1.3, Gbar=6))
+state <- make_state(params=pp)
+startdate <- as.Date("2020-01-01")
+enddate <- as.Date("2020-10-01")
+@ 
+\noindent
+This is checking if we can get the same thing if we don't add stoch:
+<<check.get.same.thing>>=
+sim0 <- run_sim(pp,state,start_date=startdate,end_date=enddate)
+gg0 <- (ggplot(sim0,aes(x=date))
+	+ geom_point(aes(y=incidence))
+)
+print(gg0)
+@ 
+\noindent
+We want a dataframe that includes the time varying relative $\beta$ at
+each saved time point.  If relative $\beta$ is constant though time,
+it should give back the same trajectory.
+<<set.time_pars>>=
+time_pars <- data.frame(Date=as.Date(startdate:enddate)
+	, Symbol="beta0"
+	, Relative_value=1
+)
+	# , stringsAsFactors=FALSE)
+@ 
+\noindent
+This fits a \code{timevar} dataframe where \code{beta0=1}:
+<<>>=
+sim0_t <- update(sim0, params_timevar=time_pars)
+print(gg0
+	+ geom_point(data=sim0_t, aes(x=date,y=incidence), color="red")
+)
+@ 
+\noindent
+Now, as an example, we set relative $\beta$ to drop by a factor of 2
+(linearly) between 1 July 2020 and 1 Oct 2020.
+<<>>=
+lockdown <- as.Date("2020-07-01")
+time_pars2 <- 
+    data.frame(Date=as.Date(startdate:enddate)
+             , Symbol="beta0"
+             , Relative_value = 
+                   c(rep(1, length(startdate:lockdown)-1)
+                   , seq(1,0.5,length.out = length(lockdown:enddate))
+                     )
+               )
+##print(time_pars2)
+head(time_pars2)
+@ 
+
+<<>>=
+sim0_t_reduce <- update(sim0, params_timevar=time_pars2)
+gg_rel_beta <- (ggplot(time_pars, aes(x=Date))
+	+ geom_point(aes(y=Relative_value))
+	+ geom_point(data=time_pars2, aes(x=Date, y=Relative_value), color="red")
+)
+@ 
+\noindent
+We can now look at the relative value of $\beta$ in each scenario, and the corresponding forecasted epidemic curves.
+<<>>=
+print(gg_rel_beta)
+print(gg0
+		+ geom_point(data=sim0_t_reduce, aes(x=date,y=incidence), color="red")
+)
 @ 
 
 \end{document}
