@@ -155,7 +155,15 @@ run_sim_loglin <- function(params,
     
     
     if ("testing_data" %in% names(time_args)) {
-        timevar <- rbind(timevar,time_args$testing_data)
+        freeze_testing <- data.frame()
+        if (sim_args$end_date > max(time_args$testing_data$Date)){
+            freeze_testing <- data.frame(Date = seq.Date(as.Date(max(time_args$testing_data$Date))+1, as.Date(sim_args$end_date), by = 1)
+                                     , Symbol = "testing_intensity"
+                                     , Relative_value = time_args$testing_data$Relative_value[nrow(time_args$testing_data)]
+            )
+        }
+        testing_dat <- rbind(time_args$testing_data,freeze_testing)
+        timevar <- rbind(timevar,testing_dat)
     }
     if (return_timevar) return(timevar)
     sim_args <- c(sim_args
