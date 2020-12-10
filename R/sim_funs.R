@@ -871,9 +871,17 @@ run_sim_range <- function(params
 ## cv = 1/sqrt(a)
 ## s = mean/cv^2
 ## a = 1/cv^2
-make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=10) {
+make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=ceiling(tail_val), tail_crit=0.95) {
+    
     gamma_shape <- 1/delay_cv^2
     gamma_scale <- delay_mean/gamma_shape
-    v <- prop*diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
+    tail_val <- qgamma(tail_crit, shape=gamma_shape, scale=gamma_scale)
+    if (max_len < tail_val) {
+        warning(sprintf("max_len (%d) is less than qgamma(%f, %1.1f, %1.1f)=%1.1f",
+                        max_len, tail_crit, gamma_shape, gamma_scale, tail_val))
+    }
+    pp <- diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
+    pp <- pp/sum(pp) ## normalize to 1
+    v <- prop*pp
     return(v)
 }
