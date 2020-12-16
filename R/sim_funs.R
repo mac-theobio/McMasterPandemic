@@ -206,6 +206,15 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     } else {
         afun("S", "E", beta_vec %*% state[colnames(beta_vec)])
     }
+    if (has_vacc(params)) {
+        ## FIXME: do we need transitions from *all* categories to R?
+        ## FIXME: 'waiting' period?
+        ## FIXME: need to deal with time-varying vacc rates
+        ##       (part of the general fix to allow time-variation in
+        ##        parameters other than beta0, i.e. updating full transition matrix
+        ##       rather than just update_foi()
+        afun("S", "R", vacc)
+    }
     afun("E", "Ia", alpha*sigma)
     afun("E","Ip", (1-alpha)*sigma)
     afun("Ia","R", gamma_a)
@@ -283,6 +292,8 @@ update_foi <- function(state, params, beta_vec) {
     return(foi)
 }
 
+## update the entire rate matrix; we need this when we are doing testify models
+##  because we expect testing rates to change daily ...
 update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
     if (inherits(ratemat,"Matrix")) {
         aa <- c("wtsvec","posvec","testing_time")
@@ -330,6 +341,9 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         }
     }
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+    if (has_vacc(params)) {
+        ratemat[pfun("S","R",ratemat)]  <- params[["vacc"]]
+    }
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
         for (a in aa) {
