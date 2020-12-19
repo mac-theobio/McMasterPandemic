@@ -4,7 +4,13 @@
 \alias{make_delay_kernel}
 \title{construct a Gamma-distributed delay kernel}
 \usage{
-make_delay_kernel(prop, delay_mean, delay_cv, max_len = 10)
+make_delay_kernel(
+  prop,
+  delay_mean,
+  delay_cv,
+  max_len = ceiling(tail_val),
+  tail_crit = 0.95
+)
 }
 \arguments{
 \item{prop}{area under the curve (proportion reported)}
