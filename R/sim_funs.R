@@ -865,7 +865,8 @@ run_sim_range <- function(params
 ##' @param delay_mean mean value
 ##' @param delay_cv coeff of var
 ##' @param max_len maximum delay
-##' @importFrom stats pgamma
+##' @param tail_crit criterion for selecting maximum delay
+##' @importFrom stats pgamma qgamma
 ## mean = a*s
 ## sd = sqrt(a)*s
 ## cv = 1/sqrt(a)

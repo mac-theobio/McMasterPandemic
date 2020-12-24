@@ -20,6 +20,8 @@ make_delay_kernel(
 \item{delay_cv}{coeff of var}
 
 \item{max_len}{maximum delay}
+
+\item{tail_crit}{criterion for selecting maximum delay}
 }
 \description{
 construct a Gamma-distributed delay kernel

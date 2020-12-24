@@ -606,7 +606,8 @@ update_debug_hist <- function(params, NLL) {
 ##'     (e.g. \code{\link{run_sim_break}},
 ##'     \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
-##' @importFrom bbmle parnames<- mle2 DON'T import stats::coef !
+##' @importFrom bbmle parnames<- mle2 
+# DON'T import stats::coef !
 ##' @examples
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
