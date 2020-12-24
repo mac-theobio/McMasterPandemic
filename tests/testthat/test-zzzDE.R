@@ -13,8 +13,10 @@ opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
                  log_nb_disp=NULL)
 dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 
-if (Sys.getenv("TRAVIS") != "true" &&
-    Sys.getenv("SKIP_SLOW_TESTS") != "true") { ## too slow for Travis?
+## skip on Travis/GitHub Actions
+if ((Sys.getenv("TRAVIS") != "true" ||
+     nzchar(Sys.getenv("CI_WORKFLOW"))) &&
+    Sys.getenv("SKIP_SLOW_TESTS") != "true") {
     ## so, export SKIP_SLOW_TESTS=true   in the shell environment if you want to skip this test
     suppressWarnings(cal1_DE <- calibrate(data=dd,
                                           base_params=params,
