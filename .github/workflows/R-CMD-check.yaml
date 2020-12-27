@@ -45,7 +45,9 @@ jobs:
           tinytex::tlmgr_install("fancyhdr")
           tinytex::tlmgr_install("ulem")
           tinytex::tlmgr_install("caption")
-          tinytex::tlmgr_install("frontendlayer") # tikz
+          tinytex::tlmgr_install("babel-english")
+          tinytex::tlmgr_install("frontendlayer") # tikz (maybe bogus?)
+          tinytex::tlmgr_install("pgf") # tikz
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
