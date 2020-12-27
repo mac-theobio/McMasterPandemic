@@ -139,6 +139,8 @@ ref_val <- list(params = c(E0 = 63.3150461392819, beta0 = 0.649997557506806),
 ## ref_val <- list(params = c(E0 = 2.22166438860786, beta0 = 0.873467646391076),
 ##                 nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
 
+print(ref_val)
+print(coef(c_r2, "fitted"))
 stopifnot(all.equal(coef(c_r2,"fitted"),
                     ref_val, 
                     tolerance=1e-6))

@@ -1,6 +1,7 @@
 # For help debugging build failures open an issue on the RStudio community with the 'github-actions' tag.
 # https://community.rstudio.com/new-topic?category=Package%20development&tags=github-actions
 # using https://github.com/r-lib/actions/tree/master/setup-pandoc
+# https://github.com/marketplace/actions/ci-skip-action
 on:
   push:
     branches:
@@ -20,15 +21,18 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       
     steps:
+      - uses: mstachniuk/ci-skip@v1
       - uses: actions/checkout@master
       - uses: r-lib/actions/setup-pandoc@v1
         with:
           pandoc-version: '2.7.3' # The pandoc version to download (if necessary) and use
       - name: Install pandoc
+        if: ${{ env.CI_SKIP == 'false' }}
         run: echo "# Test" | pandoc -t html
       - uses: actions/checkout@v2
       - uses: r-lib/actions/setup-r@v1
       - name: Install dependencies
+        if: ${{ env.CI_SKIP == 'false' }}
         run: |
           install.packages(c("remotes", "rcmdcheck"))
           remotes::install_deps(dependencies = TRUE)
@@ -53,5 +57,6 @@ jobs:
           tinytex::tlmgr_install("listings")
         shell: Rscript {0}
       - name: Check
+        if: ${{ env.CI_SKIP == 'false' }}
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
