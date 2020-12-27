@@ -37,6 +37,7 @@ jobs:
           tinytex::install_tinytex()
           tinytex::tlmgr_install("koma-script") # for scrtime.sty
           tinytex::tlmgr_install("amscls")      # for amsthm.sty
+          tinytex::tlmgr_install("multirow")
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
