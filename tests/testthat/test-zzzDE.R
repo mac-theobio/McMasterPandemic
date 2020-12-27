@@ -14,10 +14,13 @@ opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
 dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 
 ## skip on Travis/GitHub Actions
-if ((Sys.getenv("TRAVIS") != "true" ||
-     nzchar(Sys.getenv("CI_WORKFLOW"))) &&
+if (Sys.getenv("TRAVIS") != "true"  ## not on Travis
+    &&
+    Sys.getenv("CI_WORKFLOW")==""   ## not on GH Actions (use NOT_CRAN?)
+    &&
     Sys.getenv("SKIP_SLOW_TESTS") != "true") {
-    ## so, export SKIP_SLOW_TESTS=true   in the shell environment if you want to skip this test
+    ## export SKIP_SLOW_TESTS=true in the shell environment if you want to skip this test
+    ## or Sys.setenv(SKIP_SLOW_TESTS="true") from within R
     suppressWarnings(cal1_DE <- calibrate(data=dd,
                                           base_params=params,
                                           opt_pars=opt_pars,
@@ -42,6 +45,6 @@ if ((Sys.getenv("TRAVIS") != "true" ||
                                                DE_args=list(control=list(itermax=5,trace=FALSE)))
                      )
 
-}
+} ## skip slow tests
 
 ## test parallel?
