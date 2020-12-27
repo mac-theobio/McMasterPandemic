@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-	  fetch-depth: '0'
+          fetch-depth: '0'
       - uses: mstachniuk/ci-skip@v1
         with:
           fail-fast: true
