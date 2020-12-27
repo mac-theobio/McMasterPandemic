@@ -4,6 +4,9 @@ library(parallel)
 
 context("DEoptim")
 
+test_level <- if(nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL")) &&
+                 is.finite(s <- as.numeric(s))) s else 1
+
 library(dplyr)
 params <- fix_pars(read_params("ICU1.csv"))
 opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
@@ -18,9 +21,7 @@ if (Sys.getenv("TRAVIS") != "true"  ## not on Travis
     &&
     Sys.getenv("CI_WORKFLOW")==""   ## not on GH Actions (use NOT_CRAN?)
     &&
-    Sys.getenv("SKIP_SLOW_TESTS") != "true") {
-    ## export SKIP_SLOW_TESTS=true in the shell environment if you want to skip this test
-    ## or Sys.setenv(SKIP_SLOW_TESTS="true") from within R
+    test_level>1) {
     suppressWarnings(cal1_DE <- calibrate(data=dd,
                                           base_params=params,
                                           opt_pars=opt_pars,
@@ -47,4 +48,4 @@ if (Sys.getenv("TRAVIS") != "true"  ## not on Travis
 
 } ## skip slow tests
 
-## test parallel?
+
