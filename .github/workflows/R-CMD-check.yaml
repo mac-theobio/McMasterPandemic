@@ -35,7 +35,7 @@ jobs:
           remotes::install_github("bbolker/bbmle")
           install.packages('tinytex')
           tinytex::install_tinytex()
-	  tinytex::tlmgr_install("koma-script") # for scrtime.sty
+          tinytex::tlmgr_install("koma-script") # for scrtime.sty
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
