@@ -10,7 +10,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Zach Levine", role="ctb"))
 Depends: R (>= 3.5.0)
 Imports: lattice, Matrix, MASS, dplyr, ggplot2, tidyr, plyr, purrr, anytime, pomp, scales, bbmle (>= 1.0.23.5), Hmisc, DEoptim, mvtnorm, bdsmatrix, zoo, deSolve, splines, diagram
-Suggests: knitr, testthat, cowplot, tikzDevice, igraph, memoise, latticeExtra, directlabels
+Suggests: knitr, testthat, cowplot, tikzDevice, igraph, memoise, latticeExtra, directlabels, rmarkdown
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL
