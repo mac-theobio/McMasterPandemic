@@ -27,7 +27,6 @@ jobs:
       - uses: mstachniuk/ci-skip@v1
         with:
           fail-fast: true
-          exit-code: 0
       - uses: actions/checkout@master
       - uses: r-lib/actions/setup-pandoc@v1
         with:
