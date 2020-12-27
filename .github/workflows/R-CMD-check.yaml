@@ -51,6 +51,7 @@ jobs:
           tinytex::tlmgr_install("placeins")
           tinytex::tlmgr_install("lastpage")
           tinytex::tlmgr_install("cleveref")
+          tinytex::tlmgr_install("listings")
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
