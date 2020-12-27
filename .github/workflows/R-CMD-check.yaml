@@ -49,6 +49,8 @@ jobs:
           tinytex::tlmgr_install("frontendlayer") # tikz (maybe bogus?)
           tinytex::tlmgr_install("pgf") # tikz
           tinytex::tlmgr_install("placeins")
+          tinytex::tlmgr_install("lastpage")
+          tinytex::tlmgr_install("cleveref")
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
