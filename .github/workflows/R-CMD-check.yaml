@@ -40,6 +40,7 @@ jobs:
           tinytex::tlmgr_install("multirow")
           tinytex::tlmgr_install("colortbl")
           tinytex::tlmgr_install("siunitx")
+          tinytex::tlmgr_install("setspace")
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
