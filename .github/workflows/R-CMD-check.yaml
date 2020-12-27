@@ -28,7 +28,7 @@ jobs:
         with:
           fail-fast: true
           exit-code: 0
-- uses: actions/checkout@master
+      - uses: actions/checkout@master
       - uses: r-lib/actions/setup-pandoc@v1
         with:
           pandoc-version: '2.7.3' # The pandoc version to download (if necessary) and use
