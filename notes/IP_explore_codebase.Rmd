@@ -1,0 +1,7 @@
+---
+title: "Getting to know MacPan"
+author: "Irena Papst"
+output: bookdown::html_notebook2
+---
+
+I'm using this doc to record notes as I explore MacPan's codebase.
