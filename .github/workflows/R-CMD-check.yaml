@@ -42,20 +42,11 @@ jobs:
           tinytex::install_tinytex()
           tinytex::tlmgr_install("koma-script") # for scrtime.sty
           tinytex::tlmgr_install("amscls")      # for amsthm.sty
-          tinytex::tlmgr_install("multirow")
-          tinytex::tlmgr_install("colortbl")
-          tinytex::tlmgr_install("siunitx")
-          tinytex::tlmgr_install("setspace")
-          tinytex::tlmgr_install("lineno")
-          tinytex::tlmgr_install("fancyhdr")
-          tinytex::tlmgr_install("ulem")
-          tinytex::tlmgr_install("caption")
+          tinytex::tlmgr_install(c("multirow","colortbl","siunitx","setspace"))
+          tinytex::tlmgr_install(c("lineno","fancyhdr","ulem","caption"))
           tinytex::tlmgr_install("babel-english")
           tinytex::tlmgr_install("pgf") # tikz
-          tinytex::tlmgr_install("placeins")
-          tinytex::tlmgr_install("lastpage")
-          tinytex::tlmgr_install("cleveref")
-          tinytex::tlmgr_install("listings")
+          tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
