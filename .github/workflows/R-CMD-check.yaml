@@ -16,17 +16,16 @@ name: R-CMD-check
 
 jobs:
   R-CMD-check:
+    if: "! contains(github.event.head_commit.message, '[skip ci]')"
+
     runs-on: macOS-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      
+
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: '0'
-      - uses: mstachniuk/ci-skip@v1
-        with:
-          fail-fast: true
       - uses: actions/checkout@master
       - uses: r-lib/actions/setup-pandoc@v1
         with:
@@ -59,6 +58,5 @@ jobs:
           tinytex::tlmgr_install("listings")
         shell: Rscript {0}
       - name: Check
-        if: ${{ env.CI_SKIP == 'false' }}
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
