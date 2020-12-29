@@ -151,8 +151,18 @@ install: $(TARBALL)
 
 ######################################################################
 
+## Looks cool; clashes with current Bolker rules.
+Ignore += maker
 maker: 
 	git clone https://github.com/ComputationalProteomicsUnit/maker.git
+## -include maker/Makefile
+
+## Why the hell this doesn't work?
+## mr_build:
+mr_%:
+	make $* -f maker/Makefile MAKERMAKEFILE=maker/Makefile PKGDIR=.
+
+######################################################################
 
 ### Makestuff
 
