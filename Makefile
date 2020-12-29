@@ -151,6 +151,9 @@ install: $(TARBALL)
 
 ######################################################################
 
+maker: 
+	git clone https://github.com/ComputationalProteomicsUnit/maker.git
+
 ### Makestuff
 
 Sources += Makefile
