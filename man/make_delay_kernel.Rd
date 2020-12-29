@@ -4,7 +4,13 @@
 \alias{make_delay_kernel}
 \title{construct a Gamma-distributed delay kernel}
 \usage{
-make_delay_kernel(prop, delay_mean, delay_cv, max_len = 10)
+make_delay_kernel(
+  prop,
+  delay_mean,
+  delay_cv,
+  max_len = ceiling(tail_val),
+  tail_crit = 0.95
+)
 }
 \arguments{
 \item{prop}{area under the curve (proportion reported)}
@@ -14,6 +20,8 @@ make_delay_kernel(prop, delay_mean, delay_cv, max_len = 10)
 \item{delay_cv}{coeff of var}
 
 \item{max_len}{maximum delay}
+
+\item{tail_crit}{criterion for selecting maximum delay}
 }
 \description{
 construct a Gamma-distributed delay kernel

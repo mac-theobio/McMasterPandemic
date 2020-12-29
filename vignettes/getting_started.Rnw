@@ -429,6 +429,18 @@ model, via:
 plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
 @ 
 
+\subsection{Troubleshooting calibrations}
+
+If you find that the fitted model trajectory is peculiarly jagged, the
+likely culprit is the time step.  In this case, increase the number of
+internal time steps per time step (\code{ndt}), via adding
+\code{sim_args} to your \code{calibrate()} call as follows:
+<<troubleshooting.ndt, eval=FALSE>>=
+    , sim_args = list(ndt = 2)
+@ 
+\noindent
+You may need to experiment with \code{ndt} to get a smooth result.
+
 \section{Scenario exploration}
 
 Typically, after calibrating to observed data, you are likely to be

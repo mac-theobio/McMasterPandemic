@@ -11,9 +11,9 @@ forecasting and analysis of infectious disease pandemics.
 }
 \details{
 To get started, read the introductory vignette, which can be viewed via
-\code{vignette("McMasterPandemic-intro",package="McMasterPandemic")}.
+\code{vignette("getting_started",package="McMasterPandemic")}.
 Use \code{browseVignettes("McMasterPandemic")} to find other vignettes
-for this package.  
+for this package.
 
 While (even the strictly deterministic version of) the model is
 not implemented as ODEs, its solutions are similar to those of the

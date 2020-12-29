@@ -133,12 +133,19 @@ plot(c_r2, data=dd_r)
 ##                 nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
 
 ## CHANGED again (X/hosp accumulator)
-ref_val <- list(params = c(E0 = 63.3150461392819, beta0 = 0.649997557506806),
-                nb_disp = c(report = 0.495604121823216), time_beta = numeric(0))
+## ref_val <- list(params = c(E0 = 63.3150461392819, beta0 = 0.649997557506806),
+##                 nb_disp = c(report = 0.495604121823216), time_beta = numeric(0))
 
+## ??
 ## ref_val <- list(params = c(E0 = 2.22166438860786, beta0 = 0.873467646391076),
 ##                 nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
 
+##  CHANGED: fixed max_delay in report convolution
+ref_val <- list(params = c(E0 = 3.1289277729037, beta0 = 1.0124985248704
+), nb_disp = c(report = 1.09396908228576), time_beta = numeric(0))
+
+
+print(coef(c_r2, "fitted"))
 stopifnot(all.equal(coef(c_r2,"fitted"),
                     ref_val, 
                     tolerance=1e-6))
