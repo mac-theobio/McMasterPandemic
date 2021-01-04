@@ -4,4 +4,52 @@ author: "Irena Papst"
 output: bookdown::html_notebook2
 ---
 
-I'm using this doc to record notes as I explore MacPan's codebase.
+I'm using this doc to record notes as I explore MacPan's codebase. Here's a [handy link](https://jozef.io/r916-exploring-r-code-interactively/) with tools for inspecting code in R (really for debugging).  
+
+```{r load-libraries, echo = FALSE, message = FALSE}
+library(McMasterPandemic)
+library(ggplot2); theme_set(theme_bw())
+library(cowplot)
+```
+
+# Setup
+
+## Load params
+
+```{r}
+debug(read_params)
+params1 <- read_params("ICU1.csv")
+print(class(params1))
+print(head(params1))
+```
+
+Params are loaded in as a named vector, where elements can be accessed as follows:
+
+```{r}
+print(params1["alpha"])
+```
+
+If a description column (`desc_col`) was provided in the original param file (describing the parameter symbols), it will be stored as the `"description"` attribute (a named list where the parameter symbols are the column names):
+
+```{r}
+print(head(attr(params1, "description")))
+```
+
+There is also a `describe_params()` method that takes `params_pansim` objects and nice table with both parameter values and meanings aggregated:
+
+```{r}
+describe_params(params1)
+```
+
+Not sure why each column is of type factor (or if this may cause problems down the road...)
+
+## Summarise params
+
+The `summary` method will take the raw parameters and calculate some derived model quantities:
+
+```{r}
+debug(summary)
+params1_summary <- summary(params1)
+print(params1_summary)
+```
+

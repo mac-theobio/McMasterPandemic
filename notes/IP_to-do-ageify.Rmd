@@ -1,0 +1,13 @@
+---
+title: "To do to 'ageify'"
+output: html_notebook
+---
+
+# Methods to modify
+
+* `summary` for `params_pansim`?
+  * can we use the same one for the age-structured model? do all the summary parameters still make sense?
+
+# Other
+
+* Demo param file with age-specific params
