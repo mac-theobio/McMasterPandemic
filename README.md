@@ -14,7 +14,7 @@ The repository contains an R package and various workflows/analyses. You can for
 
 * to re-install the package, including re-building and incorporating vignettes, use `make build`
 * If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
-* **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [travis-ci](https://travis-ci.org/github/bbolker/McMasterPandemic).) Please don't make a habit of pushing without testing.
+* **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/bbolker/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Please don't make a habit of pushing without testing.
 
 ### Documentation 
 
