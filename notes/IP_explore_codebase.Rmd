@@ -4,20 +4,27 @@ author: "Irena Papst"
 output: bookdown::html_notebook2
 ---
 
-I'm using this doc to record notes as I explore MacPan's codebase. Here's a [handy link](https://jozef.io/r916-exploring-r-code-interactively/) with tools for inspecting code in R (really for debugging).  
+I'm using this doc to record notes as I explore MacPan's codebase. Here's a [handy link](https://jozef.io/r916-exploring-r-code-interactively/) with tools for inspecting code in R (really for debugging). I've since discovered the `lookup` package, which contains the aptly-named function `lookup()` that enables one inspect the source code of a specified function, without entering the dubugging workflow (e.g using `debug()` or `debugonce()`). More info on using `lookup` [here](https://blog.r-hub.io/2019/05/14/read-the-source/).
 
 ```{r load-libraries, echo = FALSE, message = FALSE}
 library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(cowplot)
+library(lookup) # devtools::install_github("jimhester/lookup")
 ```
 
-# Setup
+# Load vignette
+
+```{r}
+vignette("getting_started", package = "McMasterPandemic")
+```
+
+# Model setup
 
 ## Load params
 
 ```{r}
-debug(read_params)
+lookup(read_params)
 params1 <- read_params("ICU1.csv")
 print(class(params1))
 print(head(params1))
@@ -48,8 +55,50 @@ Not sure why each column is of type factor (or if this may cause problems down t
 The `summary` method will take the raw parameters and calculate some derived model quantities:
 
 ```{r}
-debug(summary)
+lookup(summary)
 params1_summary <- summary(params1)
 print(params1_summary)
+```
+
+In adding age structure, we need to make sure the methods that calculate these derived quantities (`get_r`, `get_R0`, `get_Gbar`) are updated.
+
+```{r}
+lookup(get_R0)
+get_R0(params1, components=TRUE)
+```
+
+There are two methods for `get_R0`: "analytical" and "kernel". The kernel  approach seems flexible (though may require changes to `get_kernel_moments`), while "analytical" is hard-coded. 
+
+## Initial conditions
+
+```{r}
+lookup(make_state)
+state1 <- make_state(params=params1)
+```
+
+Will need to update `make_state` by adding a new model type that has the correct list of compartment names for the initial conditions.
+
+# Simulate a model 
+
+```{r}
+sdate <- "2020-Feb-10"
+edate <- "2020-Jun-1"
+
+lookup(run_sim)
+res1 <- run_sim(params=params1, state=state1, start_date=sdate, end_date=edate)
+summary(res1)
+```
+
+Key step seems to be use of `thin()`, for which I cannot find any documentation...
+In `thin()` we see a `do.call` on `run_sim_range` with parameters/states declared using an object constructed with `nlist`.
+
+```{r}
+#lookup(summary)
+summary(res1)
+```
+
+```{r}
+plot_grid(plot(res1, log=TRUE), ## logarithmic 
+          plot(res1)) ## linear
 ```
 
