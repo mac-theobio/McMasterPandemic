@@ -3,13 +3,32 @@ title: "To do to 'ageify'"
 output: html_notebook
 ---
 
-# Methods to modify
+# Goal
 
-* `summary` for `params_pansim`?
-  * can we use the same one for the age-structured model? do all the summary parameters still make sense?
+Simulate an age-structured version of the MacPan model with vaccination to explore various (age-structured) vaccine roll-out strategies.
 
-# Other
+# What we have
+
+* contact matricies to adjust $\beta_0$ for each pair of age groups
+
+# What we need 
+
+* to verify scaling/normalization of contact matricies (more testing)
+* to be able to specify age-specific parameters for hospitalization, ICU admission, death
+* age-specific vaccination
+
+# Required updates
+
 ## Methods
 
+* `summary.params_pansim`?
+  * update `get_r`, `get_R0`, `get_Gbar` to perform the relevant calculations for the age-specific model
+* `make_state`
+* `run_sim_range` to actually run the simulation (and `nlist`?)
+* `summary.pansim` that is age-specific?
+* `plot.pansim`
+
+## Other
 
 * Demo param file with age-specific params
+* Stochastic simulations
