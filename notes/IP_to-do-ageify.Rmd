@@ -9,5 +9,7 @@ output: html_notebook
   * can we use the same one for the age-structured model? do all the summary parameters still make sense?
 
 # Other
+## Methods
+
 
 * Demo param file with age-specific params
