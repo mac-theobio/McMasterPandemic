@@ -1,5 +1,6 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
+## FIXME: document these for real!
 ##' global variables for testify expansion
 #' @export
 non_expanded_states <- c("D","X")
@@ -19,6 +20,11 @@ asymp_cat <- c("S","E","Ia","Ip","R")
 ##' @rdname non_expanded_states
 severe_cat <- c("Is","H","H2","ICUs","ICUd")
 
+##' @rdname non_expanded_states
+## these are 'asymptomatic' (= pre- or asymptomatic)
+##' @export
+cryptic_cat <- c("Ia","Ip")
+
 mk_zero_vec <- function(n) {
     setNames(numeric(length(n)),n)
 }
@@ -37,6 +43,7 @@ check_var_names <- function(var_names) {
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
+##' 
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval_testing(state0, params=pp)
 ##' vn <- setdiff(names(state0),non_expanded_states)
@@ -62,7 +69,7 @@ make_test_wtsvec <- function(params,var_names=NULL) {
     ## test whether a specific set of W-parameters are the *only*
     ##  W-parameters in the parameter vector
     match_pars <- function(pars) {
-        Wpars <- grep("^W",names(params),value=TRUE)
+        Wpars <- grep("^W_",names(params),value=TRUE)
         return(identical(pars,sort(Wpars)))
     }
     if (match_pars("W_asymp")) {  ## W_asymp is the only weighting parameter
@@ -80,6 +87,10 @@ make_test_wtsvec <- function(params,var_names=NULL) {
         wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
                        c(length(asymp_cat),length(mild_cat),length(severe_cat)))
         names(wts_vec) <- c(asymp_cat,mild_cat,severe_cat)
+    } else if (match_pars(c("W_cryptic","W_S","W_severe"))) {
+        ## I_m=1, {I_a, I_p} = W_cryptic (<1),  I_h = W_severe (>1)
+        stop("not implemented yet!")
+        ##
     } else {
         ## general
         wts_vec <- params[grepl("^W",names(params))]
@@ -292,7 +303,6 @@ testify <- function(ratemat,params,debug=FALSE,
             new_M[pfun2("u","P")] <- new_M[pfun2("u",test_state2="p")] 
         }
     }
-
 
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
