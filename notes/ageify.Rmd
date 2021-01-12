@@ -2,7 +2,7 @@
 title: "age examples"
 ---
 
-**tl;dr** 
+# tl;dr
 
 - *Good news*: we can build structures that seem to make sense, and basic stuff runs without crashing
 - *Bad news*: need to spend more time thinking about scaling/normalization of contact matrices, age structure etc.. Lots more testing to do.
@@ -57,31 +57,70 @@ mdiff_fun  <- function(L) {
 ```
 
 ```{r setup1}
-## set testing to zero so we don't get testing included to start
+## set testing to zero so we don't get testing included to
+## start 
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
+
+## FIXME: have read_params check for age structure
+## (maybe grep on "\_[:digit:]+-[:digit:]+) and if so,
+## attach an "age_cat" attribute with the list of age groups
+## found to the params_pansim object 
+
+## TODO: verify input setup with BB. will the implied
+## param.csv structure work well (e.g. having
+## MODELCAT_AGECAT as param names)?
+
 ss <- make_state(params=pp)
+## FIXME: have make_state check for an age_cat attribute and
+## if found, initialize age-structured state (maybe using
+## existing code from expand_stateval_age to just ~evenly
+## distribute people across age categories, mod smart
+## rounding?)
+
+## TODO: ask BB about what the get_evec stuff does in
+## make_state with the default method = expsim... looks like
+## we start with a state where N = 1, E0 = 1e-5, run an
+## exponential simulation with the given params for 100
+## steps, takes the state at the last time step (minus
+## non-infected states) and normalizes it using the sum,
+## returning this as the eigenvector... why? what's the math
+## behind this?
+
+## TODO: check if make_state can intialize at least the S
+## classes from a population distribution already (i think
+## it can with the x argument). i'd still have to figure out
+## how to get initial distributions for the E and I classes
+## in a reasonable way (use the evec method for this part?)
 ```
 
 Expand the state vector by age categories (by default, ten-year bins up to 91+)
+
 ```{r expand_state}
 ss2 <- expand_stateval_age(ss)
-aa <- mk_agecats() ## default
+## pull out age categories
+aa <- attr(ss2, "age_cat")
+
 ## hack so we have an infective
 ss2[grep("^Im",names(ss2))] <- 1
 ss2[grep("^E", names(ss2))] <- 0
 ss2[grep("^S",names(ss2))] <- pp[["N"]]/length(aa)-1
 sum(ss2)
+
+## TODO: ask BB about why we want an infective when we have
+## exposed individuals in ss2 already
 ```
 
 We need to define a cross-age contact matrix. 
 
-* Eventually we should take it from that study (referenced somewhere in the notes) that estimated contact matrices for a variety of countries.
+* Eventually we should take it from that study (referenced somewhere in the notes) that estimated contact matrices for a variety of countries. (**IP:** are there estimates during the pandemic, specifically? we may want to include the possibility of a time-dependent contact matrix to model different phases of social distancing... need to think about this more for sure, since some of this is already incorporated in the beta structure)
 * for now I'm going to define two, one simple "compound symmetric" matrix (1 on the diagonal, 0.1 off-diagonal) and one diagonal. 
 * with equal parameters across age categories, what contact matrices will give exactly equal to dynamics to homogeneous mixing? All-equal and diagonal?
 
-
 ```{r Cmats}
+## define various contact matrices
+
 aa <- mk_agecats()
+
 ## compound symmetric
 Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
 diag(Cmat) <- 1
@@ -92,11 +131,12 @@ dimnames(Cmat.d) <- dimnames(Cmat)
 Cmat.u <- matrix(1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
 ```
 
-At present the indicator for whether the machinery should be run in an
-age-structured way or not is the presence/absence of a `Cmat` component in the parameters (now a list
-rather than a vector)
+At present the indicator for whether the machinery should be run in an age-structured way or not is the presence/absence of a `Cmat` component in the parameters (now a list rather than a vector). (**IP:** The age-structured list of parameters is not of class `params_pansim` yet. I'm assuming that's because custom methods and unit tests haven't been written for it... Could hack by having the methods check for the presence of the `Cmat` element, and if it's there, remove it and convert the params list to a `params_pansim` object, then run the rest of the code as usual and deal with `Cmat` separately.)
 
 Beta "vector" (now a matrix): including only infectious compartments (could also use `full=TRUE`)
+
+(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? What are the implied units on `Cmat`? Should add units for these quantities in the documentation/included in param descriptions for parsets that ship with the package.)
+
 ```{r beta_vec_etc}
 ppa <- c(as.list(pp),list(Cmat=Cmat))
 b1 <- make_betavec(ss2, ppa, full=FALSE)
@@ -126,6 +166,8 @@ Try `run_sim`
 rr2 <- run_sim(ppa.u, ss2,end_date="2020-10-01",condense=FALSE)
 plot(rr2,log=TRUE)+theme(legend.position="none")
 ```
+
+(*IP:* This function runs `run_sim_range` if the simulation is deterministic and with constant parameters.) 
 
 ```{r comp_sims}
 pp_list <- list(ppa,ppa.d,pp,ppa.u)
