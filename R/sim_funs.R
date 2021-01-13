@@ -481,7 +481,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params
-        , state=make_state(params[["N"]], params[["E0"]])
+        , state=NULL
         , start_date="2020-Mar-20"
         , end_date="2020-May-1"
         , params_timevar=NULL
@@ -496,7 +496,11 @@ run_sim <- function(params
         , condense = TRUE
         , condense_args=NULL
         , verbose = FALSE
+        , ...
 ) {
+    if(is.null(state)){
+        state <- make_state(params=params,params[["N"]], params[["E0"]])
+    }
     call <- match.call()
 
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")

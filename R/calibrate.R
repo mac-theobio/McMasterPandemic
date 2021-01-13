@@ -133,21 +133,6 @@ run_sim_loglin <- function(params,
                        Symbol="beta0",
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     }
-<<<<<<< HEAD
-    if(sim_args$start_date < min(timevar$Date)){
-        constant_rel_val <- data.frame(Date= zoo:::as.Date(as.Date(sim_args$start_date):(as.Date(min(timevar$Date))-1))
-            , Symbol = "beta0"
-            , Relative_value = 1)
-        timevar <- rbind(constant_rel_val,timevar)
-    }
-    if(sim_args$end_date > max(timevar$Date)){
-        freeze_dat <- data.frame(Date = zoo:::as.Date((max(timevar$Date)+1):as.Date(sim_args$end_date))
-            , Symbol = "beta0"
-            , Relative_value = timevar$Relative_value[nrow(timevar)]
-        )
-        timevar <- rbind(timevar,freeze_dat)
-    }
-=======
 
     if (!is.null(timevar) && length(sim_args)>0) {
         ## FIXME: under what circumstances can sim_args be empty?
@@ -169,7 +154,6 @@ run_sim_loglin <- function(params,
     ## This is a temp fix. Need to look inside run_sim time switches at these discontinuities rather than stitching bt
     
     
->>>>>>> origin/master
     if ("testing_data" %in% names(time_args)) {
         freeze_testing <- data.frame()
         if (sim_args$end_date > max(time_args$testing_data$Date)){
@@ -333,6 +317,7 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          sim_fun=run_sim_break,
                          calc_Rt = FALSE,
                          debug = FALSE,
+                         params_timevar,
                          ...)
 
 {
@@ -359,7 +344,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          end_date,
                          time_args,
                          condense_args,
-                         sim_args),
+                         sim_args,
+                         params_timevar),
                       pp)
     r <- do.call(sim_fun, all_sim_args)
     ## FIXME: remove? already condensed?
