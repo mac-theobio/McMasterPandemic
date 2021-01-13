@@ -303,16 +303,25 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         if (is.null(posvec)) stop("expected ratemat to have a posvec attribute")
         wtsvec <- attr(ratemat,"wtsvec")
         if (is.null(wtsvec)) stop("expected ratemat to have a wtsvec attribute")
-        ## scaling ... ?
-        ## wtsvec <- wtsvec/sum(wtsvec*state[u_pos])
-        if (testwt_scale!="none") {
-            sc <- switch(testwt_scale,
-                         N=params[["N"]],
-                         sum_u=sum(state[u_pos]))
-            wtsvec <- wtsvec/sum(wtsvec*state[u_pos])*sc
-        }
-        ratemat[cbind(u_pos,n_pos)] <- params[["testing_intensity"]]*wtsvec*(1-posvec)
-        ratemat[cbind(u_pos,p_pos)] <- params[["testing_intensity"]]*wtsvec*posvec
+        ## scaling ...
+        testing_intensity <- params[["testing_intensity"]]
+        testing_tau <- params[["testing_tau"]]
+        N0 <- params[["N"]]
+        W <- sum(wtsvec*state[u_pos])
+        sc <- switch(testwt_scale,
+                     none=1,
+                     N=N0/W,
+                     sum_u=sum(state[u_pos])/W,
+                     sum_smooth={
+                         rho <- testing_intensity
+                         tau <- testing_tau
+                         tau*N0/(tau*W + rho*N0)
+			 ## NOTE 'smoothing' doc has numerator rho*tau*N0,
+                         ## but testing intensity (rho) is included in ratemat 
+                         ## calculation below ...
+                     })
+        ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
+        ratemat[cbind(u_pos,p_pos)] <- testing_intensity*sc*wtsvec*posvec
         if (testing_time=="sample") {
             N_pos <- which(rownames(ratemat)=="N")
             P_pos <- which(rownames(ratemat)=="P")
@@ -435,16 +444,16 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
 ##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
-##' @param dt time step for do_step
-##' @param ratemat_args additional arguments to pass to \code{make_ratemat}
-##' @param step_args additional arguments to pass to \code{do_step}
+##' @param dt time step for \code{\link{do_step}}
+##' @param ratemat_args additional arguments to pass to \code{\link{make_ratemat}}
+##' @param step_args additional arguments to pass to \code{\link{do_step}}
 ##' @param ndt number of internal time steps per time step
 ##' @param stoch a logical vector with elements "obs" (add obs error?) and "proc" (add process noise?)
 ##' @param stoch_start dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')
-##' @param condense condense results?
+##' @param condense if \code{TRUE}, use \code{\link{condense.pansim}} to reduce the number of variables in the output (in particular, collapse subclasses and return only one \code{I}, \code{H}, and \code{ICU} variable)
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @param use_ode integrate via ODE rather than discrete step?
-##' @param ode_args additional arguments to deSolve::ode
+##' @param ode_args additional arguments to \code{\link[deSolve]{ode}}
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
@@ -592,7 +601,8 @@ run_sim <- function(params
                     state <- round(state)
                 }
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
-                            s,params0[[s]],params[[s]],i))
+                                         s,params0[[s]],params[[s]],i))
+                
                 ## FIXME: so far still assuming that params only change foi
                 ## if we change another parameter we will have to recompute M 
             }
@@ -855,15 +865,24 @@ run_sim_range <- function(params
 ##' @param delay_mean mean value
 ##' @param delay_cv coeff of var
 ##' @param max_len maximum delay
-##' @importFrom stats pgamma
+##' @param tail_crit criterion for selecting maximum delay
+##' @importFrom stats pgamma qgamma
 ## mean = a*s
 ## sd = sqrt(a)*s
 ## cv = 1/sqrt(a)
 ## s = mean/cv^2
 ## a = 1/cv^2
-make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=10) {
+make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=ceiling(tail_val), tail_crit=0.95) {
+    
     gamma_shape <- 1/delay_cv^2
     gamma_scale <- delay_mean/gamma_shape
-    v <- prop*diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
+    tail_val <- qgamma(tail_crit, shape=gamma_shape, scale=gamma_scale)
+    if (max_len < tail_val) {
+        warning(sprintf("max_len (%d) is less than qgamma(%f, %1.1f, %1.1f)=%1.1f",
+                        max_len, tail_crit, gamma_shape, gamma_scale, tail_val))
+    }
+    pp <- diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
+    pp <- pp/sum(pp) ## normalize to 1
+    v <- prop*pp
     return(v)
 }

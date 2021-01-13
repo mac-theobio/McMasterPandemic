@@ -6,30 +6,23 @@ commandEnvironments()
 
 ##' @param p a set of parameters
 ##' @param testing_data a data frame with dates, per capita testing intensity per day
-simtestify <- function(p, testing_data){
-   testing_data <- with(testing_data
-      , data.frame(Date=Date
-         , Symbol="testing_intensity"
-         , Relative_value=c(1, intensity[-1]/intensity[1])
-      )
-   )
-   
+simtestify <- function(p,timevars){
 	sim_args <- list(ratemat_args = list(testing_time=testing_time)
 	   , start_date = start
            , end_date = end
            , use_ode = use_ode
            , stoch=c(obs=stoch_obs, proc=FALSE)  
-           , step_args = list(testwt_scale = testwt_scale)
+           , step_args = list(testwt_scale = "sum_smooth")
            , condense_args = list(keep_all = keep_all
                                 , add_reports = !keep_all
                                   )
-	        , params_timevar = testing_data
+	        , params_timevar = timevars
 	)
    sims <- do.call(run_sim,c(list(params=p),sim_args))
 	return(sims)
 }
 
-calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
+calibrate_sim <- function(dd, pars, p,timevars,debug_plot=FALSE,
                           debug=FALSE, debug_hist=FALSE){
     ## change sim output to input format
     dat <- (dd %>% select(date
@@ -40,6 +33,7 @@ calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
 		%>% gather(key="var",value="value",-date)
 		%>% mutate(value=round(value))
     )
+
     dat2 <- dat %>% rowwise() %>% filter(grepl(var,p$keep_vars))
     opt_pars <- with(as.list(pars)
                    , list(params=c(log_beta0 = log(beta0)
@@ -47,7 +41,12 @@ calibrate_sim <- function(dd, pars, p,testing_data,debug_plot=FALSE,
                                    )
                           )
                      )
-    if(p$opt_testify){
+    testing_data <- (timevars
+	 	%>% filter(Symbol == "testing_intensity")
+		%>% select(Date, intensity = Relative_value)
+	)
+
+	 if(p$opt_testify){
         opt_pars <- c(opt_pars,
                       list(log_testing_intensity = log(pars[["testing_intensity"]])))
     }

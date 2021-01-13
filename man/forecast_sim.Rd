@@ -27,11 +27,19 @@ forecast_sim(
 \arguments{
 \item{p}{vector of parameters - on the link (log/logit) scale as appropriate; these are the parameters that will be adjusted during calibration}
 
-\item{opt_pars}{starting parameters (and structure).  Parameters that are part of the \code{params_pansim} parameter vector can be specified within the \code{params} element (with prefixes if they are transformed); other parameters can include distributional parameters or time-varying parameters}
+\item{opt_pars}{starting parameters (and structure).  Parameters
+that are part of the \code{params_pansim} parameter vector can
+be specified within the \code{params} element (with prefixes
+if they are transformed); other parameters can include
+distributional parameters or time-varying parameters}
 
-\item{base_params}{baseline parameters (an object (vector?) of type \code{params_pansim} containing all of the parameters needed for a simulation; some may be overwritten during the calibration process)}
+\item{base_params}{baseline parameters (an object (vector?) of
+type \code{params_pansim} containing all of the parameters
+needed for a simulation; some may be overwritten during the
+calibration process)}
 
-\item{start_date}{starting date for sims (far enough back to allow states to sort themselves out)}
+\item{start_date}{starting date for sims (far enough back to allow
+states to sort themselves out)}
 
 \item{end_date}{ending date}
 
@@ -43,15 +51,19 @@ forecast_sim(
 
 \item{stoch_start}{dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')}
 
-\item{sim_args}{additional arguments to pass to \code{\link{run_sim}}}
+\item{sim_args}{additional arguments to pass to
+\code{\link{run_sim}}}
 
-\item{aggregate_args}{arguments passed to \code{\link{aggregate.pansim}}}
+\item{aggregate_args}{arguments passed to
+\code{\link{aggregate.pansim}}}
 
 \item{condense_args}{arguments to pass to \code{\link{condense}} (via \code{\link{run_sim}})}
 
 \item{return_val}{specify values to return (aggregated simulation, or just the values?)}
 
-\item{sim_fun}{function for simulating a single run (e.g. \code{\link{run_sim_break}}, \code{\link{run_sim_mobility}})}
+\item{sim_fun}{function for simulating a single run
+(e.g. \code{\link{run_sim_break}},
+\code{\link{run_sim_mobility}})}
 
 \item{calc_Rt}{calculate and include R(t) in prediction/forecast?}
 

@@ -17,10 +17,8 @@ calc_conv <- function(i,params) {
     kern <- with(as.list(params),
                  make_delay_kernel(c_prop,
                                    c_delay_mean,
-                                   c_delay_cv,
-                                   max_len=10)
+                                   c_delay_cv)
                  )
-    ## FIXME: don't hard-code max len ...
     ret <- as.numeric(stats::filter(i,kern,sides=1))
     return(ret)
 }

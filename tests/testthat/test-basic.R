@@ -162,7 +162,8 @@ test_that("var-specific obsdisp", {
 
 test_that("mle prediction", {
     load(system.file("testdata","Ontario_basic.rda",package="McMasterPandemic"))
-    test_mle_pred <- predict(Ontario_fit)
+    ## suppress "dropped switch times on final day" warning
+    suppressWarnings(test_mle_pred <- predict(Ontario_fit))
     ## hack around test comparison 
     test_mle_pred$var <- unname(test_mle_pred$var)
     ## FIXME: recalculate and save Ontario_basic after conservation fixes

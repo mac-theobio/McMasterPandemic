@@ -34,7 +34,7 @@ run_sim(
 
 \item{params_timevar}{three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})}
 
-\item{dt}{time step for do_step}
+\item{dt}{time step for \code{\link{do_step}}}
 
 \item{ndt}{number of internal time steps per time step}
 
@@ -42,15 +42,15 @@ run_sim(
 
 \item{stoch_start}{dates on which to enable stochasticity (vector of dates with names 'proc' and 'obs')}
 
-\item{ratemat_args}{additional arguments to pass to \code{make_ratemat}}
+\item{ratemat_args}{additional arguments to pass to \code{\link{make_ratemat}}}
 
-\item{step_args}{additional arguments to pass to \code{do_step}}
+\item{step_args}{additional arguments to pass to \code{\link{do_step}}}
 
-\item{ode_args}{additional arguments to deSolve::ode}
+\item{ode_args}{additional arguments to \code{\link[deSolve]{ode}}}
 
 \item{use_ode}{integrate via ODE rather than discrete step?}
 
-\item{condense}{condense results?}
+\item{condense}{if \code{TRUE}, use \code{\link{condense.pansim}} to reduce the number of variables in the output (in particular, collapse subclasses and return only one \code{I}, \code{H}, and \code{ICU} variable)}
 
 \item{condense_args}{arguments to pass to \code{\link{condense}} (before adding observation error)}
 

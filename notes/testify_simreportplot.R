@@ -3,10 +3,16 @@ library(dplyr)
 library(tidyr)
 library(cowplot)
 
-callArgs <- "testwt_N.simplots.Rout testify_simplot.R testwt_N.sims.rda"
+callArgs <- "testwt_N.random.simreportplot.Rout testify_simreportplot.R testwt_N.random_sims.rda"
 source("makestuff/makeRfuns.R")
 commandEnvironments()
 if (!interactive()) makeGraphics()
+
+
+if(grepl("random",targetname()))testing_type <- "Random Testing"
+if(grepl("symptomatic",targetname()))testing_type <- "Symptomatic Testing"
+if(grepl("focus",targetname()))testing_type <- "Focus Testing"
+
 
 scientific_10 <- function(x,suppress_ones=TRUE) {
    s <- scales::scientific_format()(x)
@@ -19,57 +25,69 @@ scientific_10 <- function(x,suppress_ones=TRUE) {
    parse(text=s2)
 }
 
-varnames <- data.frame(var = c("total_test", "report", "postest", "pos_per_million", "incidence")
-	, varname = c("Daily Test", "Report", "Positive tests\nper day", "Positive test per million", "Incidence")
+varnames <- data.frame(var = c("total_test", "positivity", "postest", "CumIncidence", "incidence")
+	, varname = c("Daily Test", "Positivity", "Positive tests\nper day", "Cumulative Incidence", "Incidence")
 )
+# 
+# simdat2 <- (simdat
+# 	 %>% filter(iso_t %in% c(0,1))
+# 	 %>% filter(omega == 0.25)
+# 	 %>% filter(testing_intensity == 0.01)
+#     %>% left_join(.,varnames)
+#     %>% mutate(Isolation = ifelse(iso_t == 1, "Yes","No")
+#              , speed = factor(Gbar, levels=c(6,12), labels=c("faster","slower"))
+#                )
+#     %>% filter(var != "report")
+#     %>% select(-c(iso_t,testing_type,omega,var))
+#     %>% pivot_wider(names_from=varname,values_from=value)
+# #    %>% mutate(`% positive tests`= `Positive test per million`/1e4)
+#     %>% select(-c(`Daily Test`, Gbar))
+#     %>% pivot_longer(-c(date, speed, Isolation, testing_intensity), names_to="var")
+# )
+# 
+# 
+# ymin <- 1    
+# ymax <- NA
+# 
+# print(simdat2)
+# 
+# gg <- (ggplot(simdat2)
+#     + aes(x=date,y=value,colour=Isolation, size=Isolation)
+#     + geom_line(alpha=0.7)
+#     + scale_color_manual(values=c("black","red"))
+#     + scale_size_manual(values=c(2,1))
+#     ## + scale_y_log10(labels = scientific_10, limits=c(ymin,ymax), oob=scales::squish)
+#     + ylab("Daily count")
+#     + theme(legend.position = "bottom")
+#     + facet_grid(speed~var)
+# )
+# 
+# gg1 <- gg %+% filter(simdat2, var=="% positive tests") + labs(y="Percent")
+# gg2 <- gg %+% filter(simdat2, var!="% positive tests") + scale_y_log10(limits=c(1,NA))
+# 
+# # plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
 
-simdat2 <- (simdat
-	 %>% filter(iso_t %in% c(0,1))
-	 %>% filter(omega == 0.25)
-	 %>% filter(testing_intensity == 0.01)
-    %>% left_join(.,varnames)
-    %>% mutate(Isolation = ifelse(iso_t == 1, "Yes","No")
-             , speed = factor(Gbar, levels=c(6,12), labels=c("faster","slower"))
-               )
-    %>% filter(var != "report")
-    %>% select(-c(iso_t,testing_type,omega,var))
-    %>% pivot_wider(names_from=varname,values_from=value)
-    %>% mutate(`% positive tests`= `Positive test per million`/1e4)
-    %>% select(-c(`Daily Test`, `Positive test per million`, Gbar))
-    %>% pivot_longer(-c(date, speed, Isolation, testing_intensity), names_to="var")
+
+simdat <- (simdat 
+	%>% left_join(.,varnames)
+	%>% rename(isolation = iso_t)
+	%>% rename(strength = R0)
+	%>% mutate(isolation = as.character(isolation)
+		, testing_intensity = paste0(testing_intensity, " of the population")
+	)
 )
-
-
-ymin <- 1    
-ymax <- NA
-
-print(simdat2)
-
-gg <- (ggplot(simdat2)
-    + aes(x=date,y=value,colour=Isolation, size=Isolation)
-    + geom_line(alpha=0.7)
-    + scale_color_manual(values=c("black","red"))
-    + scale_size_manual(values=c(2,1))
-    ## + scale_y_log10(labels = scientific_10, limits=c(ymin,ymax), oob=scales::squish)
-    + ylab("Daily count")
-    + theme(legend.position = "bottom")
-    + facet_grid(speed~var)
-)
-
-gg1 <- gg %+% filter(simdat2, var=="% positive tests") + labs(y="Percent")
-gg2 <- gg %+% filter(simdat2, var!="% positive tests") + scale_y_log10(limits=c(1,NA))
-
-plot_grid(gg2,gg1,nrow=1,rel_widths=c(2,1))
-
-
 
 ggall <- (ggplot(simdat)
-			 + aes(x=date,y=value,colour=factor(iso_t), alpha=factor(Gbar), linetype=factor(omega))
-			 + scale_alpha_manual(values=c(0.5,1))
-			 + scale_colour_manual(values=c("red","blue","black"))
+			 + aes(x=date,y=value,colour=testing_type, linetype=isolation)
+			 # + scale_colour_manual(values=c("red","blue","black"))
 			 + geom_line()
-			 + facet_grid(var~testing_intensity, scale="free")
+			 + facet_grid(strength~testing_intensity, scale="free")
 )
 
-print(ggall %+% filter(simdat,var != "total_test"))
+print(ggall 
+	%+% (simdat 
+		%>% filter(var == "CumIncidence")
+		)
+	+ ggtitle(testing_type)
+)
 
