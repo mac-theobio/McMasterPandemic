@@ -7,6 +7,7 @@
 \alias{test_accumulators}
 \alias{asymp_cat}
 \alias{severe_cat}
+\alias{cryptic_cat}
 \title{global variables for testify expansion}
 \format{
 An object of class \code{character} of length 2.
@@ -18,6 +19,8 @@ An object of class \code{character} of length 2.
 An object of class \code{character} of length 5.
 
 An object of class \code{character} of length 5.
+
+An object of class \code{character} of length 2.
 }
 \usage{
 non_expanded_states
@@ -29,6 +32,8 @@ test_accumulators
 asymp_cat
 
 severe_cat
+
+cryptic_cat
 }
 \description{
 global variables for testify expansion
