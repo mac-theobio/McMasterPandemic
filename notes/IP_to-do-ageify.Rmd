@@ -32,3 +32,14 @@ Simulate an age-structured version of the MacPan model with vaccination to explo
 
 * Demo param file with age-specific params
 * Stochastic simulations
+
+---
+
+# General to do
+- read refactor.Rmd
+- read Mistry et al to figure out how others are modelling age structure/scaling their matrices
+- make param table with units
+- add FOI to ageified sim result
+- figure out scaling of contact matrix
+- try running ageify with non-homogenous parameters accross age classes (e.g. delta
+- try running ageify with non-homogenous initial state of susceptibles

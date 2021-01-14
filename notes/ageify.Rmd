@@ -62,23 +62,11 @@ mdiff_fun  <- function(L) {
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 
 ## FIXME: params are currently stored as named vecs by
-## default... is there a good reason not to convert them to
-## (named) lists by default so that we can provide
-## age-structured parameters as a named vec in a list entry
-## e.g. for delta = frac of acute care cases that are fatal
-## pp$delta = P(death|hosp) from age struct paper
-## names(pp$delta) = attr(pp, "age_cat")
-## --- will this mess with calibration? would need to check
-## unit tests
-
-## FIXME: have read_params check for age structure
-## (maybe grep on "\_[:digit:]+-[:digit:]+) and if so,
-## attach an "age_cat" attribute with the list of age groups
-## found to the params_pansim object 
-
-## TODO: verify input setup with BB. will the implied
-## param.csv structure work well (e.g. having
-## MODELCAT_AGECAT as param names)?
+## default... convert them to (named) lists by default so
+## that we can provide age-structured parameters as a named
+## vec in a list entry e.g. for delta = frac of acute care
+## cases that are fatal pp$delta = P(death|hosp) from age
+## struct paper names(pp$delta) = attr(pp, "age_cat")
 
 ss <- make_state(params=pp)
 ## FIXME: have make_state check for an age_cat attribute and
@@ -86,15 +74,6 @@ ss <- make_state(params=pp)
 ## existing code from expand_stateval_age to just ~evenly
 ## distribute people across age categories, mod smart
 ## rounding?)
-
-## TODO: ask BB about what the get_evec stuff does in
-## make_state with the default method = expsim... looks like
-## we start with a state where N = 1, E0 = 1e-5, run an
-## exponential simulation with the given params for 100
-## steps, takes the state at the last time step (minus
-## non-infected states) and normalizes it using the sum,
-## returning this as the eigenvector... why? what's the math
-## behind this?
 
 ## TODO: check if make_state can initialize at least the S
 ## classes from a population distribution already (i think
@@ -110,14 +89,12 @@ ss2 <- expand_stateval_age(ss)
 ## pull out age categories
 aa <- attr(ss2, "age_cat")
 
-## hack so we have an infective
+## hack so we have an infective because rounding in
+## exapend_stateval_age loses it
 ss2[grep("^Im",names(ss2))] <- 1
 ss2[grep("^E", names(ss2))] <- 0
 ss2[grep("^S",names(ss2))] <- pp[["N"]]/length(aa)-1
 sum(ss2)
-
-## TODO: ask BB about why we want an infective when we have
-## exposed individuals in ss2 already
 ```
 
 We need to define a cross-age contact matrix. 
@@ -144,7 +121,7 @@ At present the indicator for whether the machinery should be run in an age-struc
 
 Beta "vector" (now a matrix): including only infectious compartments (could also use `full=TRUE`)
 
-(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? What are the implied units on `Cmat`? Should add units for these quantities (and others) in the documentation/included in param descriptions for parsets that ship with the package.)
+(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? `beta0` is a pure rate (units of days$^{-1}$) What are the implied units on `Cmat`? Should add units for these quantities (and others) in the documentation/included in param descriptions for parsets that ship with the package.)
 
 ```{r beta_vec_etc}
 ppa <- c(as.list(pp),list(Cmat=Cmat))
@@ -179,8 +156,6 @@ Try `run_sim`
 rr2 <- run_sim(ppa.u, ss2,end_date="2020-10-01",condense=FALSE)
 plot(rr2,log=TRUE)+theme(legend.position="none")
 ```
-
-(*IP:* This function runs `run_sim_range` if the simulation is deterministic and with constant parameters.) 
 
 ```{r comp_sims}
 pp_list <- list(ppa,ppa.d,pp,ppa.u)
