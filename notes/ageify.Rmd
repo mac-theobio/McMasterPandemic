@@ -61,6 +61,16 @@ mdiff_fun  <- function(L) {
 ## start 
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 
+## FIXME: params are currently stored as named vecs by
+## default... is there a good reason not to convert them to
+## (named) lists by default so that we can provide
+## age-structured parameters as a named vec in a list entry
+## e.g. for delta = frac of acute care cases that are fatal
+## pp$delta = P(death|hosp) from age struct paper
+## names(pp$delta) = attr(pp, "age_cat")
+## --- will this mess with calibration? would need to check
+## unit tests
+
 ## FIXME: have read_params check for age structure
 ## (maybe grep on "\_[:digit:]+-[:digit:]+) and if so,
 ## attach an "age_cat" attribute with the list of age groups
@@ -86,7 +96,7 @@ ss <- make_state(params=pp)
 ## returning this as the eigenvector... why? what's the math
 ## behind this?
 
-## TODO: check if make_state can intialize at least the S
+## TODO: check if make_state can initialize at least the S
 ## classes from a population distribution already (i think
 ## it can with the x argument). i'd still have to figure out
 ## how to get initial distributions for the E and I classes
@@ -118,7 +128,6 @@ We need to define a cross-age contact matrix.
 
 ```{r Cmats}
 ## define various contact matrices
-
 aa <- mk_agecats()
 
 ## compound symmetric
@@ -135,7 +144,7 @@ At present the indicator for whether the machinery should be run in an age-struc
 
 Beta "vector" (now a matrix): including only infectious compartments (could also use `full=TRUE`)
 
-(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? What are the implied units on `Cmat`? Should add units for these quantities in the documentation/included in param descriptions for parsets that ship with the package.)
+(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? What are the implied units on `Cmat`? Should add units for these quantities (and others) in the documentation/included in param descriptions for parsets that ship with the package.)
 
 ```{r beta_vec_etc}
 ppa <- c(as.list(pp),list(Cmat=Cmat))
@@ -151,6 +160,10 @@ Expanded rate matrix: `make_ratemat` bases its categories on the names of the st
 ```{r make_ratemat}
 M <- make_ratemat(ss2, ppa, sparse=TRUE) ## some NA values??
 show_ratemat(M)
+
+## TODO: ask BB if the following gives the FOI
+M_sub <- M[grep("^S", rownames(M)), grep("^E", colnames(M))]
+print(diag(M_sub))
 ```
 
 Try `run_sim_range()` [lowest-level/simplest simulation engine]
@@ -272,9 +285,12 @@ persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
 
 ## to do
 
+- how should `Cmat` be scaled? Should it be normalized?
+    - BB: best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
+- what data structure should we use for age-specific parameters other than `Cmat` (e.g. $\delta$, the fraction of acute care cases that are fatal)
+    - BB: try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - extend `make_state` to implement age-dependent N in state construction ... i.e. allow a vector of relative sizes of age classes
-- best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
-- try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
+- what kind of unit tests do we want to run with age structure so that we can trust the results?
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
 - examine age-structured matrix etc ... improve visualization of age/test structured matrices
 - clean up make_betavec: do we ever need "full"??
