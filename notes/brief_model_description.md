@@ -12,6 +12,9 @@ mildly/moderately symptomatic or severely symptomatic. All symptomatic
 individuals are presumed to have had a period of pre-symptomatic
 infectiousness. Recovered individuals are assumed to be immune.
 
+A fixed (fitted) proportion of deaths are assumed to occur in
+hospital.
+
 We allow for abrupt changes in transmission rate on specific dates
 (associated with policy changes). The degrees of change in
 transmission rate on these dates are fitted parameters.
@@ -23,13 +26,3 @@ hospital occupancy and ICU occupancy.
 Unless otherwise stated, forecasts are based on the status quo being
 maintained, i.e., we assume all parameters retain their values on the
 final date of observed data.
-
-----
-
-I removed this sentence:
-
-All individuals who die are assumed to have have spent time in the
-ICU.
-
-Do we fit a parameter for the proportion of deaths in hospital? Or is
-this a fixed parameter? How are we dealing with it?
