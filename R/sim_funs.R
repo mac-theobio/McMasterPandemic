@@ -496,12 +496,14 @@ run_sim <- function(params
         , condense = TRUE
         , condense_args=NULL
         , verbose = FALSE
+        , return_timevar = FALSE
         , ...
 ) {
     if(is.null(state)){
         state <- make_state(params=params,params[["N"]], params[["E0"]])
     }
     call <- match.call()
+    if (return_timevar) return(params_timevar)
 
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to

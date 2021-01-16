@@ -357,6 +357,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
     }
     if (calc_Rt) {
         R0_base <- summary(params)[["R0"]]
+        N <- params[["N"]]
+        
         ## retrieve time-varying beta
         bb <- do.call(sim_fun,c(all_sim_args,list(return_timevar=TRUE)))
         if (!is.null(bb)) {
@@ -376,12 +378,18 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
         }
         x3 <- (x2
             %>% mutate_at("rel_beta0", fill_edge_values)
-            %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0)
+            %>% transmute(date=date, hetS=hetS, Rt=R0_base*rel_beta0, S)
         )
         if (has_zeta(params)) {
             x3 <- (x3
                 %>% mutate_at("Rt", ~.*hetS)
                 %>% select(-hetS)
+            )
+        }
+        if (!has_zeta(params)) {
+            x3 <- (x3
+                   %>% mutate_at("Rt", ~.*S/N)
+                   %>% select(-c(hetS,S))
             )
         }
         r_agg <- full_join(r_agg, x3, by="date")
