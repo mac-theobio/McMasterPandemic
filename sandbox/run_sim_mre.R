@@ -4,7 +4,9 @@ library(tidyverse)
 
 ## Copying example from run_sim and modifying it
 
-##1. testing if Relative_value=1 and non-timevar run_sim are the same
+##1. testing if Relative_value=1 and non-timevar run_sim are the same (done)
+## MLi: This means I can always construct my own timevar for any time-varying simulation 
+## Move this to testhat?!? 
 
 params <- read_params("ICU1.csv")
 paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
@@ -34,14 +36,80 @@ all.equal(res1,res1_t)
 all.equal(res1$report,res1_t$report)
 
 
-## Checking predict and run_sim from mre
+## Rt and death spikes (discontinuity problem)
+
+## This is the latest ON calibation using the break_date model
+modlist <- readRDS("ON.short.breaks.RDS")
+
+print(plot(modlist$fit,data=modlist$trimdat))
+
+## Not plotting the data exposes the spikes in death and hosp (these are the compartments where we do diff from accumulating boxes
+print(plot(modlist$fit))
+
+## Projecting to Dec 2021 using the default settings
+pp <- predict(modlist$fit,ensembles=FALSE
+	, end_date = "2021-12-01"
+	, keep_vars = c("hosp", "death","report","Rt")
+)
+
+
+
+print(gg <- ggplot(pp,aes(date,value))
+		+ geom_line()
+		+ facet_wrap(~var,scale="free")
+)
+
+## We can see the spikes and Rt does not account for depletion of S
+
+
+## Now I am going to manually construct the break_date timevar dataframe and use run_sim to simulate
+
+break_date <- modlist$fit$forecast_args$time_args$break_dates
+rel_beta <- coef(modlist$fit,"fitted")$rel_beta0
+
+## including the first date and last date (pp is the simulation above using the default settings, I am just using it to set up the same projection window
+
+break_date2 <- c(min(pp$date),break_date,max(pp$date))
+
+## Before the first break_date, relative_val = 1
+rel_beta2 <- c(1,rel_beta)
+
+rel_betaf <- data.frame()
+for(i in 1:(length(break_date2)-1)){
+	tempdf <- data.frame(Date = seq.Date(from = break_date2[i], to = break_date2[i+1], by=1)
+			, Symbol = "beta0"
+			, Relative_value = rel_beta2[i]
+	)
+	rel_betaf <- rbind(rel_betaf,tempdf)
+}
+
+
+## manually  and use timevar to simulate it
+
+pp2 <- run_sim(params=coef(modlist$fit,"all")
+					, state = make_state(params = coef(modlist$fit,"all"))
+					,start_date=min(pp$date)
+					,end_date=max(pp$date)
+					, params_timevar = rel_betaf
+	)
+
+pp2 <- (pp2 %>% select(date,hosp,death,report)
+	%>% gather(var,value,-date))
+
+print(gg %+% pp2)
+
+## No more spikes!! 
+
+
+## STOP HERE: 
+## This is another example of the discontinuity problem
 
 modlist <- readRDS("ON.short.spline.RDS")
 
 spline_lims <- range(modlist$fit$forecast_args$time_args$X_date)
 
 pp <- predict(modlist$fit,ensembles=FALSE,
-				  end_date="2020-12-01",
+				  end_date="2021-02-01",
 				  keep_vars = c("hosp", "death"))
 
 ## This is already using mli stitching code
