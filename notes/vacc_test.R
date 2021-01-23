@@ -16,12 +16,12 @@ r2 <- run_sim(params=p1,
 tv <- data.frame(Date=c("01-Apr-2020",
                         "30-Apr-2020"),
                  Symbol=rep("vacc",2),
-                 Relative_value=c(1e7,1e5))
+                 Relative_value=c(1e5,1e6))
 r3 <- run_sim(params=p2,
               start_date="01-Mar-2020",
               end_date="01-Jul-2020",
               params_timevar=tv)
-r4 <- run_sim(params=update(p2,vacc=1),
+r4 <- run_sim(params=update(p2,vacc=1e-7),
               start_date="01-Mar-2020",
               end_date="01-Jul-2020")
 
