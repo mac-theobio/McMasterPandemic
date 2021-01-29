@@ -85,7 +85,7 @@ ss <- make_state(params=pp)
 Expand the state vector by age categories (by default, ten-year bins up to 91+)
 
 ```{r expand_state}
-ss2 <- expand_stateval_age(ss)
+ss2 <- expand_stateval_age(ss, age_cat = mk_agecats(min = 1, max = 3, da = 1))
 ## pull out age categories
 aa <- attr(ss2, "age_cat")
 
@@ -93,7 +93,7 @@ aa <- attr(ss2, "age_cat")
 ## exapend_stateval_age loses it
 ss2[grep("^Im",names(ss2))] <- 1
 ss2[grep("^E", names(ss2))] <- 0
-ss2[grep("^S",names(ss2))] <- pp[["N"]]/length(aa)-1
+ss2[grep("^S",names(ss2))] <- round(pp[["N"]]/length(aa)-1)
 sum(ss2)
 ```
 
@@ -105,7 +105,7 @@ We need to define a cross-age contact matrix.
 
 ```{r Cmats}
 ## define various contact matrices
-aa <- mk_agecats()
+# aa <- mk_agecats()
 
 ## compound symmetric
 Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
@@ -269,3 +269,122 @@ persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
 - examine age-structured matrix etc ... improve visualization of age/test structured matrices
 - clean up make_betavec: do we ever need "full"??
+
+---
+
+# Scaling `Cmat`
+
+## Current transmission model
+
+If we were to ignore the different types of infections (asymptomatic, presymptomatic, mild infection, severe infection), the existing MacPan model with constant $\beta$ would have the following force of infection
+$$
+\lambda(t) = \beta_0 \frac{I(t)}{N}
+$$
+In general, the force of infection gives the rate of disease transmission per unit time and per susceptible. A helpful way to break it down is as follows: (the average number of contacts a susceptible has with any other individual in the population per susceptible per unit time) $\times$ (the probability this contact is with an infective) $\times$ (the probability this contact between and infective and susceptible leads to transmission). 
+
+The per-capita prevalence, $I(t)/N$, models the middle term above: the proprotion of contacts that are infectious (under the assumption of homogenous mixing in the population). $\beta_0$ must then be the product of the other two terms: (the average number of contacts a susceptible has per susceptible per unit time) $\times$ (the probability that contact between and infective and susceptible leads to transmission). While I find this a little difficult to conceptualize, I think it's fair to think of $\beta_0$ as the average number of infection-yielding contacts (transmissions) per unit time and per susceptible *given that all contacts are with an infective*. 
+
+In MacPan, the default value is $\beta_0 = 1$, which can be interpreted as an average of one transmission per day per susceptible given all contacts are with an infective. We scale this down by the proportion of contacts that are actually with with infectives (proportion $I(t)/N$) to get the transmission rate per susceptible and per unit time (the force of infection). 
+
+## Age-dependent transmission model
+
+In order to introduce heterogeneity in disease transmission based on age-dependent contacts, we use the basic framework of Del Valle *et. al.* (2012). 
+
+Suppose each compartment in the model is split into $n$ different age classes. The (total) force of infection associated with susceptibles in age class $i$ can be broken down by the individual contribution of infecteds in age class $j$: $\lambda_{ij}$. We can break this force of infection down into three components, as we did in the previous section, being mindful of the fact that susceptibles are specifically of age $i$ and infecteds are of age $j$: (the average number of contacts a susceptible *of age $i$* has with any other individual in the population per susceptible *of age $i$* per unit time) $\times$ (the probability this contact is with an infective *of age $j$*) $\times$ (the probability this contact is between an infective *of age $j$* and susceptible *of age $i$* leads to transmission). Since we want to assume that the average number of contacts between age groups varies based on the ages involved, the first two terms need to be modified as follows: (the average number of contacts a susceptible of age $i$ has *with an individual of age $j$* per susceptible *of age $i$* per unit time) $\times$ (the probability this contact *with an individual of age $j$* is with an infective).
+
+Translating the above into notation, we have
+
+$$
+\lambda_{ij} = c_{ij} \times \frac{I_j}{N_j} \times p_{ij},
+$$
+
+where $c_{ij}$ is the average number of contacts a susceptible of age $i$ has with an individual of age $j$ per susceptible of age $i$ per unit time, $I_j/N_j$ is the probability this contact with an individual of age $j$ is with an infective, and $p_{ij}$ is the probability this contact between an infective of age $j$ and susceptible of age $i$ leads to transmission.
+
+We still need to determine how we will model $c_{ij}$ and $p_{ij}$. 
+
+In the Del Valle paper, they choose a Poisson model for $p_{ij}$ using the age-dependent mean duration of the contact $t_ij$ and a mean number of transmission events per unit time $\xi$: $p_{ij} = 1- e^{\xi t_{ij}}$. It's probably fine to just take $p_{ij} = p$ as constant across age classes for now. (One could also incorporate susceptibility of age $i$ individuals and infectivity of age $j$ individuals, as Del Valle does, but I'm omitting that here for simplicity.)
+
+For $c_{ij}$, the Del Valle paper calculates this quantity using a matrix of *total* contacts between ages $i$ and $j$ per unit time $\{C_{ij} \}$, and then row normalizes by the age-specific population ($N_i$) to get the average number of contacts between ages $i$ and $j$ per individual of age $i$ per unit time. While the matrix $\{C_{ij} \}$ is necessarily symmetric, $\{c_{ij} \} = \{C_{ij}/N_i \}$ is not, unless the population is uniformly distributed across ages.
+
+So, we can express the age-specific force of infection as
+$$
+\lambda_{ij} = \frac{C_{ij}}{N_i} \times \frac{I_j}{N_j} \times p,
+$$
+
+where $C_{ij}$ is the total number of contacts between ages $i$ and $j$ per unit time, $N_i$ and $N_j$ are the age-specific population sizes of ages $i$ and $j$, respectively, and $p$ is the constant probability of infection given contact between a susceptible and infective. 
+
+This would imply that $\beta_{ij} = (C_{ij}/N_i)p$ is the age-specific transmission rate. If we assume $C_{ij}$ from studies of contact frequency and $N_i$ from census data, the only thing left to callibrate is $p$.
+
+# Existing contact data
+
+## Prem *et al.*
+
+The extrapolate from POLYMOD + some demographic surveys using a Baysian hierarchical model to generate matrices for countries that weren't in the original Polymod set. They also break up the contact matrix into components based on setting. 
+
+## Mistry *et al.*
+
+These synthetic matrices constructed from census and survey data and are readily available on [Github](https://github.com/mobs-lab/mixing-patterns). They offer four setting-specific contact matrices with "the per capita *probability* of contact for *an* individual of age i with individuals of age j in that setting k". They also offer an aggregate contact matrix using a linear combo of the four setting-specific ones; they weights they use in this linear combo are "the average number of effective contacts made in the setting that can lead to disease transmission". These quantities are disease specific, but they fit under the conditions for an airborne disease to spread across several countries from "diary-based" survey contact matrices. So the overall matrix gives "per capita number of contacts an individual of age i has with individuals of age j".
+
+There is a specific matrix for Ontario (and the other provinces/territories), so that's appealing. The age groups are predetermined as 1-year ages to 84, then 85+, but they also give the age distributions they use (so we can verify if those are sensisible). If the normalization is as I expect it is, we could recover the non-normalized versions of the matrices and normalize with our own population distributions from StatCan.
+
+Let's look at one example of a setting-specific contact matrix:
+
+```{r mistry-contacts-ON}
+## this is the overall contact rate linear comb of the setting-specific frequency matrices, 
+
+## these are "the per capita *probability* of contact in the community setting for an individual of age i with individuals of age j in that setting k"
+community <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_F_community_setting_85.csv",
+                               col_names = FALSE)
+## why is each row identical? see paper?
+
+## school setting
+school <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_F_school_setting_85.csv",
+                   col_names = FALSE)
+
+## work
+work <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_F_work_setting_85.csv", col_names = FALSE)
+
+## household 
+household <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_F_household_setting_85.csv", col_names = FALSE)
+
+## check frequency across all settings
+all_settings <- community + school + work + household
+
+image(Matrix(as.matrix(all_settings)))
+
+mat_diffs <- as.matrix(school)-t(as.matrix(school))
+max(mat_diffs)
+min(mat_diffs)
+## so the school matrix isn't symmetric (which is what i
+## would expect) but if we were to multiply each row by the
+## population of the row age, the resulting matrix should
+## (in theory) be symmetric, based on how it's defined
+## let's check that now
+
+age_dist <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_age_distribution_85.csv", col_names = FALSE)
+## population distribution
+# ggplot(data = age_dist, mapping = aes(x = X1, y = X2)) +
+#     geom_line()
+
+## try scaling up rows by the age-specific pop to check for symmetry
+scaled_school <- sweep(school,
+                        STATS = (age_dist 
+                        %>% pull(X2)),
+                        MARGIN = 1,
+                        FUN = "*"
+                       )
+image(Matrix(as.matrix(scaled_school)))
+mat_diffs <- as.matrix(scaled_school) - t(as.matrix(scaled_school))
+image(Matrix(mat_diffs))
+max(mat_diffs)
+min(mat_diffs)
+## looks pretty close to symmetric!
+```
+
+So we could scale up the setting-specific contact matrices with the age-specific population (by row), aggregate contacts into wider bins (if need be), and then divide by the (aggregated) age-specific population.
+
+This paper discusses the application of their matrices to an age-structured SIR model, and at first glance it's pretty similar to the Del Valle framework. Need to look at how they define $\beta$ to make sense of it. They say "$\beta$ is the transmissibility of the infection", but nothing else... no units, no bounds. But it is constant across ages (of both S and I). In the Fig. 7 caption, they say "The transmission rate is set such that R0 = 1.5 when using the country-level matrix", so they fit $\beta$ based on the desired $\mathcal{R}_0$, all else being equal.
+
+# Remaining questions
+
+* How do we connect this back to $\beta$(s) calibrated from data in MacPan?
