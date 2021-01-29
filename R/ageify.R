@@ -59,6 +59,72 @@ expand_stateval_age <- function(x, age_cat=mk_agecats()) {
     return(new_states)
 }
 
+#' Make contact matrix using Mistry et al. approach
+#'
+#' @param weights named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
+#' @param province
+#'
+#' @return
+#' @export
+#'
+#' @examples
+mk_mistry_cmat <- function(weights =
+                             c(household = 4.11,
+                               school = 11.41,
+                               work = 8.07,
+                               community = 2.79),
+                           province = "Ontario"){
+
+  ## check that weights were specified correctly
+  if(sort(names(weights)) != c("community", "household", "school", "work")){
+    stop("weights vector must be named with names 'household', 'school', 'work', 'community'")
+  }
+
+  ## preallocate memory for the output
+  cmat <- matrix(rep(0, 85*85), nrow = 85)
+
+  ## combine setting-specific frequency matrices through a
+  ## linear combination with the specified weights (in units
+  ## of avg number of setting-specific contacts per
+  ## individual of age i per unit time) to generate an
+  ## overall contact matrix (in units of avg number of
+  ## contacts per individual of age i per day)
+
+  ## set up filename prefix/suffix for each
+  ## setting-specific matrix
+  filename_prefix <- paste0("Canada_subnational_", province,
+                            "_F_")
+  filename_suffix <- "_setting_85.csv"
+
+  settings <- c("household", "school", "work", "community")
+  for (set in settings){
+    filename <- system.file("params", "mistry-cmats",
+                            paste0(filename_prefix,
+                                   set,
+                                   filename_suffix),
+                            package = "McMasterPandemic")
+    ## load setting-specific matrix
+    set_mat <- readr::read_csv(filename,
+                               col_names = FALSE,
+                               col_types = cols(
+                                 .default = col_double()
+                               )) %>%
+      as.matrix()
+
+    ## update overall contact matrix by adding a weighted
+    ## version of the current setting-specific frequency
+    ## matrix
+    cmat <- cmat + weights[set]*set_mat
+  }
+
+  ## update row and colnames of cmat with age categories
+  age_cats <- mk_agecats(min = 0, max = 84, da = 1)
+  rownames(cmat) <- age_cats
+  colnames(cmat) <- age_cats
+
+  return(cmat)
+}
+
 ## FIXME: carry age categories as attribute of stateval?
 ## assign class state_pansim?
 

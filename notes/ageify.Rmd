@@ -8,7 +8,8 @@ title: "age examples"
 - *Bad news*: need to spend more time thinking about scaling/normalization of contact matrices, age structure etc.. Lots more testing to do.
 
 ```{r pkgs,message=FALSE}
-library(McMasterPandemic)
+# library(McMasterPandemic)
+devtools::load_all("../.") # use my dev version of macpan
 ## tools
 library(tidyverse)
 library(Matrix)
@@ -26,7 +27,7 @@ Read regular parameters, make normal (non-testify, non-expanded) parameters
 
 ```{r utils, echo=FALSE}
 ## round, preserving sum
-smart_round <- McMasterPandemic:::smart_round
+# smart_round <- McMasterPandemic:::smart_round
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
 ## nice plot of sparse matrices
 ifun <- function(M,sub="", axlabs=TRUE) {
@@ -54,6 +55,9 @@ mdiff_fun  <- function(L) {
                       .groups="drop")
     )
 }
+
+## find categories starting with "cat" in a vector
+find <- function(vec, cat){ vec[grep(paste0("^", cat), names(vec))]}
 ```
 
 ```{r setup1}
@@ -85,7 +89,7 @@ ss <- make_state(params=pp)
 Expand the state vector by age categories (by default, ten-year bins up to 91+)
 
 ```{r expand_state}
-ss2 <- expand_stateval_age(ss, age_cat = mk_agecats(min = 1, max = 3, da = 1))
+ss2 <- expand_stateval_age(ss, age_cat = mk_agecats(min = 1, max = 100, da = 10))
 ## pull out age categories
 aa <- attr(ss2, "age_cat")
 
@@ -321,7 +325,7 @@ They offer four setting-specific contact matrices with "the per capita *probabil
 
 Let's take a look at the contact matrices (setting-specific and overall) for Ontario:
 
-```{r mistry-contacts-ON}
+```{r mistry-contacts-ON, eval = FALSE}
 ## these are "the per capita *probability* of contact in the community setting for an individual of age i with individuals of age j in that setting k"
 community <- read_csv("mistry-contact-matrices/Canada_subnational_Ontario_F_community_setting_85.csv",
                                col_names = FALSE)
@@ -375,6 +379,78 @@ min(mat_diffs)
 So we could scale up the setting-specific contact matrices with the age-specific population (by row), aggregate contacts into wider bins (if need be), and then divide by the (aggregated) age-specific population.
 
 Something I'm still not getting is why, if the setting-specific matrices represent "frequencies" or "probabilities", I can't get any row or column sums to 1... The most intuitive to me would be that the overall contact matrix with weights equal to 1 would give a probability distribution in each row (otherwise, contacts are not accounted for). The way the paper is set up, it seems like household, workplace, and school contacts are taken from survey data and general community is "everything else". In which case, there should be no unaccounted for contacts
+
+# Incorporating the Mistry *et al.* contact structure into sims
+
+The basic ageify structure is already basically set up to directly use the Mistry *et al.* contact matrices; we just need to ensure that age-specific prevalence gets divided by the *age-specific* population in the force of infection term.
+
+## Constructing Cmat
+
+Misty *et al.* estimate weights used for combining the setting-specific contact frequency matrices into an overall contact matrix (through a linear combination). These weights are 4.11 contacts (per individual of age $i$ per unit time) in the household setting, 11.41 contacts in schools, 8.07 contacts in workplaces, and 2.79 contacts for the general community setting.
+
+As a confidence check, let's see if we can reconstruct the overall contact matrix downloaded from their repo using the setting-specific ones and the weights above
+
+```{r mistry-cmats}
+
+## get overall cmat as computed by mistry et al
+filename <- file.path("..", "inst", "params", "mistry-cmats",
+                      "Canada_subnational_Ontario_M_overall_contact_matrix_85.csv")
+overall_cmat <- readr::read_csv(filename,
+                                col_names = FALSE,
+                                col_types = cols(
+                                    .default = col_double()
+                                )) %>% as.matrix()
+## update row and colnames of cmat with age categories
+age_cats <- mk_agecats(min = 0, max = 84, da = 1)
+rownames(overall_cmat) <- colnames(overall_cmat) <- age_cats
+
+
+## compute my own version of the cmat based on their recipe
+## FIXME: set up file loading in this so it's clear it's
+## relative to the MacPan home directory (not depending on
+## the location of the file in which the function is being
+## used)---check how read_params is defined
+cmat <- mk_mistry_cmat()
+
+## check element-wise equality of the matrices
+all.equal(overall_cmat, cmat)
+
+## check differences
+cmat_diffs <- abs(overall_cmat-cmat)
+max(cmat_diffs)
+Matrix::image(Matrix(cmat_diffs), colorkey = TRUE)
+```
+
+Not sure what explains these inconsistencies... 
+
+```{r compare-mistry-cmats}
+Matrix::image(Matrix(overall_cmat), colorkey = TRUE)
+Matrix::image(Matrix(cmat), colorkey = TRUE)
+```
+
+Larger error in groups where there are more contacts...
+
+```{r state-and-params}
+## set up state with age cats that agree with Mistry et al
+## matrices
+ss2 <- expand_stateval_age(ss,
+            age_cat = mk_agecats(min = 0, max = 84, da = 1))
+## pull out age categories
+aa <- attr(ss2, "age_cat")
+
+## make age-structured params (using mistry-calculated
+## overall matrix)
+ppa <- c(as.list(pp),list(Cmat=overall_cmat))
+# b1 <- make_betavec(ss2, ppa, full=FALSE)
+
+## hack so we have an infective because rounding in
+## exapend_stateval_age loses it
+# ss2[grep("^Im",names(ss2))] <- 1
+# ss2[grep("^E", names(ss2))] <- 0
+# ss2[grep("^S",names(ss2))] <- round((pp[["N"]]-sum(ss2[grep("^Im", names(ss2))])/length(aa)-1)
+# sum(ss2)
+```
+
 
 # Remaining questions
 
