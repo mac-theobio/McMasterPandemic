@@ -4,9 +4,17 @@
 #' @param da age bin width
 #' @export
 mk_agecats <- function(min=1,max=100,da=10) {
-    s1 <- seq(min,max,by=da)
-    c(sprintf("%d-%d",s1[-length(s1)],(s1[-1]-1)),
-      paste0(s1[length(s1)],"+"))
+  s1 <- seq(min,max,by=da)
+  ## if we have one-year age groups, don't make hyphenated
+  ## categories
+  if(da == 1){
+    out <- c(as.character(s1[-length(s1)]),
+             paste0(s1[length(s1)], "+"))
+  } else {
+    out <- c(sprintf("%d-%d",s1[-length(s1)],(s1[-1]-1)),
+             paste0(s1[length(s1)],"+"))
+  }
+  return(out)
 }
 
 ##' collapse age/testing/etc. categories (only; don't do other condensation)
@@ -108,4 +116,4 @@ if (FALSE) {
     M <- make_ratemat(ss2, ppa, sparse=TRUE)
     show_ratemat(M)
     M %*% ss2
-}    
+}
