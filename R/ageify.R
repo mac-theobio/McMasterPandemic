@@ -62,12 +62,12 @@ expand_stateval_age <- function(x, age_cat=mk_agecats()) {
 #' Make contact matrix using Mistry et al. approach
 #'
 #' @param weights named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
-#' @param province
+#' @param province province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)
 #'
-#' @return
+#' @return matrix of average contacts between individuals of ages i and j per individual of age i per day
 #' @export
 #'
-#' @examples
+#' @examples mk_mistry_cmat()
 mk_mistry_cmat <- function(weights =
                              c(household = 4.11,
                                school = 11.41,
@@ -92,8 +92,12 @@ mk_mistry_cmat <- function(weights =
 
   ## set up filename prefix/suffix for each
   ## setting-specific matrix
-  filename_prefix <- paste0("Canada_subnational_", province,
-                            "_F_")
+  if(is.null(province)){
+    filename_prefix <- paste0("Canada_country_level_F_")
+  } else {
+    filename_prefix <- paste0("Canada_subnational_", province,
+                              "_F_")
+  }
   filename_suffix <- "_setting_85.csv"
 
   settings <- c("household", "school", "work", "community")
