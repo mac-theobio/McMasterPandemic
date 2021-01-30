@@ -76,7 +76,8 @@ mk_mistry_cmat <- function(weights =
                            province = "Ontario"){
 
   ## check that weights were specified correctly
-  if(sort(names(weights)) != c("community", "household", "school", "work")){
+  if(!all.equal(sort(names(weights)),
+                c("community", "household", "school", "work"))){
     stop("weights vector must be named with names 'household', 'school', 'work', 'community'")
   }
 
