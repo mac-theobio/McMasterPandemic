@@ -28,6 +28,16 @@ new_r <- function(m) get_r(update(p1,beta0=p1[["beta0"]]*(1+m)))
 bvec <- seq(0,1.5,length=51)
 rvec <- sapply(bvec, new_r)
 plot(bvec,rvec,xlab="proportional change in beta", ylab="r",type="l")
+```
+
+To get from parameters to SC, use `get_r()` and compare to original.
+To specify SC, use `fix_pars()` ...
+
+## Proportional change in beta vs difference in r
+
+```{r}
+rdiffvec <- rvec - min(rvec)
+plot(bvec,rdiffvec,xlab="proportional change in beta", ylab="rdiff",type="l")
 m1 <- lm(rvec~bvec) ## can we say why change in r is ~ 0.15*delta_beta?
 coef(m1)
 abline(m1,col="red")
@@ -39,8 +49,3 @@ p3 <- fix_pars(target=c(r=get_r(p1)*1.1),
          pars_adj="beta0")
 get_r(p3)/get_r(p1)
 ```
-
-To get from parameters to SC, use `get_r()` and compare to original.
-To specify SC, use `fix_pars()` ...
-
-
