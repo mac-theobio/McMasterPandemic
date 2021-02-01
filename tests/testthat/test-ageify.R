@@ -20,14 +20,24 @@ test_that("generic age stuff", {
     M <- make_ratemat(ss2, pp, sparse=TRUE)
     show_ratemat(M)
     aa <- mk_agecats()
-    ## compound symmetric example
+    ## convert params to list in prep for adding population
+    ## size vector and contact matrix update population
+    ppa <- as.list(pp)
+    ## param to a vector of age-specific populations
+    ## (uniform distribution)
+    N_vec <- rep(pp[["N"]]/length(aa), length(aa))
+    ppa <- update(ppa, N = N_vec)
+    ## compound symmetric example (for a uniformly
+    ## distributed population---otherwise Cmat would not be
+    ## symmetric since each row should be divided by the
+    ## size of the susceptible population)
     Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
     diag(Cmat) <- 1
+    ppa <- c(ppa,list(Cmat=Cmat))
     ifun <- function(M) {
         Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
                                             x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
     }
-    ppa <- c(as.list(pp),list(Cmat=Cmat))
     b1 <- make_betavec(ss2, ppa, full=FALSE)
     expect_equal(dim(b1), c(10,40))
     ifun(b1)

@@ -386,9 +386,9 @@ The basic ageify structure is already basically set up to directly use the Mistr
 
 ## Constructing Cmat
 
-Misty *et al.* estimate weights used for combining the setting-specific contact frequency matrices into an overall contact matrix (through a linear combination). These weights are 4.11 contacts (per individual of age $i$ per unit time) in the household setting, 11.41 contacts in schools, 8.07 contacts in workplaces, and 2.79 contacts for the general community setting.
+Mistry *et al.* estimate weights used for combining the setting-specific contact frequency matrices into an overall contact matrix (through a linear combination). These weights are 4.11 contacts (per individual of age $i$ per unit time) in the household setting, 11.41 contacts in schools, 8.07 contacts in workplaces, and 2.79 contacts for the general community setting.
 
-As a confidence check, let's see if we can reconstruct the overall contact matrix downloaded from their repo using the setting-specific ones and the weights above
+As a confidence check, let's see if we can reconstruct the overall contact matrix [downloaded from their repo](https://github.com/mobs-lab/mixing-patterns/tree/main/data/contact_matrices) using the setting-specific ones and the weights above:
 
 ```{r mistry-cmats}
 
@@ -404,12 +404,7 @@ overall_cmat <- readr::read_csv(filename,
 age_cats <- mk_agecats(min = 0, max = 84, da = 1)
 rownames(overall_cmat) <- colnames(overall_cmat) <- age_cats
 
-
 ## compute my own version of the cmat based on their recipe
-## FIXME: set up file loading in this so it's clear it's
-## relative to the MacPan home directory (not depending on
-## the location of the file in which the function is being
-## used)---check how read_params is defined
 cmat <- mk_mistry_cmat()
 
 ## check element-wise equality of the matrices
@@ -428,7 +423,7 @@ Matrix::image(Matrix(overall_cmat), colorkey = TRUE)
 Matrix::image(Matrix(cmat), colorkey = TRUE)
 ```
 
-Larger error in groups where there are more contacts...
+Larger error in groups where there are more contacts per capita... Rounding error getting scaled up? Maybe they generated the overall matrices with frequency matrices and/or weights that have more precision than what's published? Anyway, seems like a small discrepancy.
 
 ```{r state-and-params}
 ## set up state with age cats that agree with Mistry et al
@@ -450,7 +445,6 @@ ppa <- c(as.list(pp),list(Cmat=overall_cmat))
 # ss2[grep("^S",names(ss2))] <- round((pp[["N"]]-sum(ss2[grep("^Im", names(ss2))])/length(aa)-1)
 # sum(ss2)
 ```
-
 
 # Remaining questions
 
