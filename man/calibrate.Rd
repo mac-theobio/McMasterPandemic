@@ -133,11 +133,10 @@ params <- fix_pars(read_params("ICU1.csv"))
                                    log_nb_disp=NULL)
 dd <- (ont_all \%>\% trans_state_vars() \%>\% filter(var \%in\% c("report", "death", "H")))
 \dontrun{
-   cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+  cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
   cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
-
-   if (require(bbmle)) {
+  if (require(bbmle)) {
      -logLik(cal2$mle2)
    }
    attr(cal2,"de")$optim$bestval

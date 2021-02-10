@@ -25,6 +25,7 @@ calibrate_comb(
   skip.hessian = FALSE,
   use_DEoptim = TRUE,
   DE_cores = 1,
+  beta_breakdates = NULL,
   use_mobility = FALSE,
   use_phenomhet = FALSE,
   use_spline = FALSE,
@@ -133,6 +134,8 @@ distributions expressed in terms of the elements of
 e.g. \code{list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))}}
 
 \item{...}{extra args}
+
+\item{beta_break_dates}{discrete break dates for transmission changes}
 }
 \description{
 Top-level calibration based on mobility, splines, and
