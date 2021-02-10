@@ -1265,7 +1265,7 @@ calibrate_comb <- function(data,
     ## do the calibration
     ## debug <- use_DEoptim
     if (use_break_dates) {
-        sim_fun <- run_sim_breaks
+        sim_fun <- run_sim_break
     } else {
         sim_fun <- run_sim_loglin
     }
