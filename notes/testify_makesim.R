@@ -23,3 +23,9 @@ s4 <- sort(make_state(N=1e6,E0=1000, params=pp))
 s4 <- s4[s4>0]
 plot(seq_along(s4),s4,type="n",log="y")
 text(seq_along(s4),s4,labels=names(s4))
+
+
+## make_ratemat
+
+state <- make_state(pp[["N"]],E0=pp[["E0"]],params=pp)
+M <- make_ratemat(state,pp)
