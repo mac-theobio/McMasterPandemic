@@ -5,18 +5,18 @@ library(tidyverse)
 library(parallel)
 library(zoo)
 library(McMasterPandemic)
-source("makestuff/makeRfuns.R")
+library(shellpipes)
 
 ## Double-sourcing will be necessary sometimes until we 
 ## make makeR a real package
-source("makestuff/makeRfuns.R")
+
 commandEnvironments()
 
 
 if (!exists("keep_all")) keep_all <- FALSE
 
 
-params <- read_params(makeArgs()[5])
+params <- read_params(shellpipes:::makeArgs()[5])
 print(params)
 
 summary(params)

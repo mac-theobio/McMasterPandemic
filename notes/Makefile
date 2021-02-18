@@ -312,7 +312,7 @@ makestuff/Makefile:
 -include makestuff/cacheflow.mk
 -include makestuff/cacherepo.mk
 
--include makestuff/makeR.mk
+-include makestuff/pipeR.mk
 -include makestuff/rmd.mk
 -include makestuff/yushan.mk
 -include makestuff/nodes.mk
