@@ -4,7 +4,6 @@ library(testthat)
 
 context("ageify")
 
-pp <- update(read_params("ICU1.csv"), testing_intensity=0)
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
 tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])

@@ -10,7 +10,7 @@ context("testify")
 
 pp <- read_params("PHAC_testify.csv")
 ## Making states and expanding states
-state <- make_state(params=pp,testify=FALSE)
+state <- make_state(params=pp)
 state_testified <- expand_stateval_testing(state, params=pp, method="untested")
 
 
