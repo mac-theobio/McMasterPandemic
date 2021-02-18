@@ -6,7 +6,6 @@ uncall <- function(x) {
     attr(x,"call") <- NULL
     return(x)
 }
-context("testify")
 
 pp <- read_params("PHAC_testify.csv")
 ## Making states and expanding states

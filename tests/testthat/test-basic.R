@@ -156,10 +156,15 @@ test_that("cum_rep vs rep", {
 test_that("var-specific obsdisp", {
     params <- update(params,obs_disp=1,obs_disp_I=NA,obs_disp_E=1000)
     set.seed(101)
-    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    ## initial state *without* using eigvec, to match previous reference results
+    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss)
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
     expect_equal(tail(s0$I,1),16385.5)
     expect_equal(tail(s0$E,1),31791)
+    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    expect_equal(tail(s1$I,1),23251.568)
+    expect_equal(tail(s1$E,1),44563)
 })
 
 test_that("mle prediction", {
