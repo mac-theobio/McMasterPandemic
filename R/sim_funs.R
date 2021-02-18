@@ -24,7 +24,8 @@ make_jac <- function(params, state=NULL) {
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
     if (is.null(state)) {
-        state <- make_state(N=params[["N"]],E0=1e-3)
+        state <- make_state(N=params[["N"]],E0=1e-3,
+                            use_eigvec=FALSE)
     }
     np <- length(params)
     ns <- length(state)
@@ -414,9 +415,9 @@ do_step <- function(state, params, ratemat, dt=1,
         notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
         notS_pos <- setdiff(notS_pos, x_states)
         outflow <- setNames(numeric(ncol(flows)),colnames(flows))
-        ## only count flows to S_pos
+        ## only count outflows from S_pos to other S_pos (e.g. testing flows)
         outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
-        ## count flows to p_states (i.e. states that are *not* parallel accumulators)
+        ## count flows from infected etc. to p_states (i.e. states that are *not* parallel accumulators)
         outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
     }
     inflow <-  colSums(flows)
@@ -481,7 +482,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params
-        , state=make_state(params[["N"]], params[["E0"]])
+        , state=make_state(params[["N"]], params[["E0"]], params=params)
         , start_date="2020-Mar-20"
         , end_date="2020-May-1"
         , params_timevar=NULL
@@ -498,7 +499,7 @@ run_sim <- function(params
         , verbose = FALSE
 ) {
     call <- match.call()
-
+    
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
@@ -719,10 +720,12 @@ make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
                        type="ICU1h",
                        state_names=NULL,
-                       use_eigvec=!is.null(params),
+                       use_eigvec=TRUE,
                        params=NULL,
                        x=NULL,
-                       testify=FALSE) {
+                       testify=NULL) {
+    if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
+    if (use_eigvec && is.null(params)) stop("must specify params")
     ## select vector of state names
     state_names <- switch(type,
                           ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
@@ -739,10 +742,13 @@ make_state <- function(N=params[["N"]],
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
-            ee <- round(get_evec(params)*E0)
+            ## here E0 is effectively "number NOT susceptible"
+            ee <- round(get_evec(params,
+                                 testify=testify)*E0)
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
-                ee[["E"]] <- 1
+                if (testify) stop("this case isn't handled for testify")
+                ee[["E"]] <- 1  
                 warning('initial values too small for rounding')
             }
             istart <- sum(ee)
@@ -750,8 +756,19 @@ make_state <- function(N=params[["N"]],
         }
         ## make sure to conserve N by subtracting starting number infected
         ## *after* rounding etc.
-        state[["S"]] <- N-istart
-        
+        ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
+        ##  class; (2) distribute (N-istart) across the S classes, then round
+        if (!testify) {
+            state[["S"]] <- N-istart
+        } else {
+            ## if A = testing rate and B = test-return rate then
+            ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
+            ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
+            ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
+            ## FIXME: get_evec() should work for S!
+            ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
+            state[c("S_u","S_n")] <- round((N-istart)*c(ufrac,1-ufrac))
+        }
     } else {
         if (length(names(x))==0) {
             stop("provided state vector must be named")
