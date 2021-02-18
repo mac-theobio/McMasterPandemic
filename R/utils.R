@@ -576,7 +576,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
-        do_symbols <- method=="diagram" && !has_testing(M)
+        do_symbols <- method=="diagram" && !has_testing(ratemat=M)
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
@@ -686,9 +686,14 @@ pfun <- function(from, to, mat, value=FALSE, recycle=FALSE) {
         to_pos <- rep(to_pos,length.out=max(nt,nf))
     }
     ## FIXME: check for both length() == 1 if *not* age structured?
-    stopifnot(length(to_pos) == length(from_pos),
-              length(to_pos)>0, length(from_pos)>0  ## must be positive
-              )
+    if (! (length(to_pos) == length(from_pos) &&
+           length(to_pos)>0 && length(from_pos)>0)) {  ## must be positive
+        stop(sprintf("to_pos, from_pos don't match: from_pos=%s, to_pos=%s",
+                     paste(colnames(mat)[from_pos],collapse=", "),
+                     paste(rownames(mat)[to_pos],collapse=", ")
+                     ))
+    }
+
     return(cbind(from_pos, to_pos))
 }
 
