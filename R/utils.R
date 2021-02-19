@@ -686,8 +686,14 @@ pfun <- function(from, to, mat, value=FALSE, recycle=FALSE) {
         to_pos <- rep(to_pos,length.out=max(nt,nf))
     }
     ## FIXME: check for both length() == 1 if *not* age structured?
-    if (! (length(to_pos) == length(from_pos) &&
-           length(to_pos)>0 && length(from_pos)>0)) {  ## must be positive
+    lens_OK <- (length(to_pos) == length(from_pos)
+        || (length(from_pos==o
+    if (any(c(
+
+        
+            , length(to_pos) == 0,
+            , length(from_pos) == 0
+              ) {
         stop(sprintf("to_pos, from_pos don't match: from_pos=%s, to_pos=%s",
                      paste(colnames(mat)[from_pos],collapse=", "),
                      paste(rownames(mat)[to_pos],collapse=", ")

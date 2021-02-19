@@ -86,8 +86,11 @@ rExp <- function(params, steps=100, ndt=1,
         if (ndt>1) warning("ndt not fully implemented")
         params[["N"]] <- 1   ## ? redundant ?
         ## potential recursion here: have to make sure
-	state <- make_state(N=1, E0=1e-5, type="ICU1", use_eigvec=FALSE)  ## FIXME: don't assume ICU1?
-        M <- do.call(make_ratemat,c(list(state=state, params=params)))
+	state <- make_state(N=1, E0=1e-5, type="ICU1",
+                            use_eigvec=FALSE,
+                            params=params,
+                            testify=FALSE)  ## FIXME: don't assume ICU1?
+        M <- make_ratemat(state=state, params=params)
     	if (testify) {
             M <- testify(M,params)
             state <- expand_stateval_testing(state,method="untested")

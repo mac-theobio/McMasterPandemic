@@ -29,6 +29,11 @@ test_that("testified states make sense", {
                  c(sort(c("N","P",names(state)))))
 })
 
+test_that("make_state from scratch", {
+    expect_equal(names(make_state(params=pp)),
+                 names(state_testified))
+}
+
 ## Making beta_vec wtr states (infectious compartments only)
 beta_vec0 <- make_betavec(state,pp,full=FALSE)
 beta_vec0_testified <- make_betavec(state_testified,pp,full=FALSE)

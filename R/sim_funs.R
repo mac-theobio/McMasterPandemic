@@ -736,11 +736,12 @@ make_state <- function(N=params[["N"]],
                           stop("unknown type")
                           )
     state <- setNames(numeric(length(state_names)),state_names)
+    if (testify) state <- expand_stateval_testing(state,method="untested")
     if (is.null(x)) {
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
-            if (testify) stop("this won't work with testify")
-            state[["E"]] <- E0
+            ## set **first** E compartment
+            state[[grep("E",names(state))[1]]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
