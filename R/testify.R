@@ -319,3 +319,12 @@ testify <- function(ratemat,params,debug=FALSE,
     attr(new_M,"testing_time") <- testing_time
     return(new_M)
 }
+
+## REMOVE testify structure in state names, if present
+untestify_statenames <- function(x) {
+    ## lookahead: _ + test extension followed by _ or end-of-string
+    regex <- sprintf("_[%s](?=(_|$))",paste(test_extensions,collapse=""))
+    x <- unique(gsub(regex,"",x,perl=TRUE))
+    x <- setdiff(x, test_accumulators)
+    return(x)
+}

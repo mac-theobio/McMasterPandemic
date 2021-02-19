@@ -34,6 +34,17 @@ test_that("make_state from scratch", {
                  names(state_testified))
 })
 
+test_that("make_ratemat from scratch (ignore testify in state)", {
+    s0 <- make_state(params=pp, testify=FALSE)
+    M0 <- make_ratemat(s0, pp)
+    s1 <- make_state(params=pp)
+    M1 <- make_ratemat(state=s1,params=pp)
+    ## FIXME: why does testify/untestify swap order of D and R?
+    ## should be harmless but ...
+    M1 <- M1[rownames(M0),colnames(M0)]
+    expect_equal(dim(M0),dim(M1))
+})
+
 ## Making beta_vec wtr states (infectious compartments only)
 beta_vec0 <- make_betavec(state,pp,full=FALSE)
 beta_vec0_testified <- make_betavec(state_testified,pp,full=FALSE)

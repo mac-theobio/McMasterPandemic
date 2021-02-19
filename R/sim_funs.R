@@ -181,14 +181,18 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
             stopifnot(all(nps==1))
         }
     }
-    ns <- length(state)
-    ## make state and param names locally available (similar to with())
-    P <- c(as.list(state),as.list(params))
+    state_names <- untestify_statenames(names(state))
+    ns <- length(state_names)
+    ## make param names locally available (similar to with())
+    ## DON'T unpack states, we don't need them
+    ## (the only state-dependent per capita rates are testing
+    ## and infection, those get handled elsewhere)
+    P <- as.list(params) 
     unpack(P)
     ## blank matrix
     M <- matrix(0,
                 nrow=ns, ncol=ns,
-                dimnames=list(from=names(state),to=names(state)))
+                dimnames=list(from=state_names, to=state_names))
 
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
