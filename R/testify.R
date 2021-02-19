@@ -152,6 +152,11 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
 {
     method <- match.arg(method)
 
+    if (any(grepl("_u(_|$)",names(x)))) {
+        message("already testified, skipping")
+        return(x)
+    }
+
     expanded_states <- exclude_states(names(x),non_expanded_states)
     newnames <- unlist(lapply(expanded_states, paste, test_extensions, sep="_"))
     new_states <- rep(0,length(newnames))
@@ -206,6 +211,11 @@ testify <- function(ratemat,params,debug=FALSE,
     ## Assuming false positive/negative is (1-trueprob)
     ## omega is waiting time for tests to be returned
     ## don't use match.args() because we may get handed NULL ...
+
+    if (any(grepl("_u(_|$)",colnames(ratemat)))) {
+        message("already testified, skipping")
+        return(ratemat)
+    }
     if (is.null(testing_time)) {
         testing_time <- "report"
     } else {

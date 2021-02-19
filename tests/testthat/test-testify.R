@@ -12,7 +12,6 @@ pp <- read_params("PHAC_testify.csv")
 state <- make_state(params=pp,testify=FALSE)
 state_testified <- expand_stateval_testing(state, params=pp, method="untested")
 
-
 ## global variables
 ## print(non_expanded_states)
 ## print(test_extensions)
@@ -72,6 +71,7 @@ sim0_testified_condensed <- run_sim(params = pp,
                                     ## specify testing time to avoid warning 
                                     ratemat_args = list(testing_time="sample"))
 
+make_state(pp[["N"]], pp[["E0"]], params=pp)
 test_that("obsolete testify spec", {
     expect_warning(run_sim(params = pp,
                            ratemat_args = list(testify=TRUE)),
@@ -114,9 +114,10 @@ test_that("time-varying test intensity", {
 test_that("testing with susceptibles only", {
      pp[["testing_intensity"]] <- 0.002
      pp_noinf <- update(pp,beta0=0,E0=0)  ## no transmission, no infected people
-     sim0_noinf <- run_sim(params = pp_noinf,
+     ## suppress warning about "initial values too small for rounding"
+     sim0_noinf <- suppressWarnings(run_sim(params = pp_noinf,
                            ratemat_args = list(testing_time="sample"),
-                           end_date="2021-01-01")
+                           end_date="2021-01-01"))
      ## negtest *should* converge on:
      expected_negtest <- with(as.list(pp),omega/(omega+testing_intensity)*testing_intensity*N)
      ## expect_equal(tail(sim0_noinf[["negtest"]],1),expected_negtest)

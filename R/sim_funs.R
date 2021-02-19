@@ -482,7 +482,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params
-        , state=make_state(params[["N"]], params[["E0"]], params=params)
+        , state=NULL
         , start_date="2020-Mar-20"
         , end_date="2020-May-1"
         , params_timevar=NULL
@@ -515,7 +515,8 @@ run_sim <- function(params
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
-    M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    if (is.null(state)) state <- make_state(params=params, testify=FALSE)
+    M <- make_ratemat(state=state, params=params)
     if (has_testing(params=params)) {
         if (!is.null(ratemat_args$testify)) {
             warning("'testify' no longer needs to be passed in ratemat_args")
@@ -738,13 +739,13 @@ make_state <- function(N=params[["N"]],
     if (is.null(x)) {
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
+            if (testify) stop("this won't work with testify")
             state[["E"]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ## here E0 is effectively "number NOT susceptible"
-            ee <- round(get_evec(params,
-                                 testify=testify)*E0)
+            ee <- round(get_evec(params, testify=testify)*E0)
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
                 if (testify) stop("this case isn't handled for testify")
@@ -778,7 +779,7 @@ make_state <- function(N=params[["N"]],
         }
         state[names(x)] <- x
     }
-    untestify_state <- state
+    untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
     return(state)
 }
