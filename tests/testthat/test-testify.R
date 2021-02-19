@@ -32,7 +32,7 @@ test_that("testified states make sense", {
 test_that("make_state from scratch", {
     expect_equal(names(make_state(params=pp)),
                  names(state_testified))
-}
+})
 
 ## Making beta_vec wtr states (infectious compartments only)
 beta_vec0 <- make_betavec(state,pp,full=FALSE)
