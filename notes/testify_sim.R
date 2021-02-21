@@ -17,6 +17,7 @@ if (!exists("keep_all")) keep_all <- FALSE
 
 
 params <- read_params(shellpipes:::makeArgs()[5])
+
 print(params)
 
 summary(params)

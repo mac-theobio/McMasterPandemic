@@ -138,6 +138,10 @@ impmakeR += sims
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
+
+testwt_N.Rout: testwt_N.R
+	$(makeR)
+
 impmakeR += random_sims
 # testwt_N.random_sims.Rout: testify_sim.R random.csv
 %.random_sims.Rout: testify_sim.R %.rda testify_funs.rda random.csv
