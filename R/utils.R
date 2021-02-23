@@ -643,7 +643,7 @@ vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE,
                       ageify=FALSE, method=c("Matrix","diagram","igraph"), ...) {
     method <- match.arg(method)
     ## FIXME: accept method= argument, make const_width = (method=="igraph") ?
-    state <- make_state(N=1e6,E0=1)
+    state <- make_state(N=1e6, E0=1, params=params)
     state[] <- 1  ## all population states occupied
     M <- make_ratemat(state,params,do_ICU=TRUE, symbols=(method=="diagram"))
     if (testify) {
