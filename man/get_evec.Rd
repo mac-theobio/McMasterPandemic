@@ -4,12 +4,14 @@
 \alias{get_evec}
 \title{get dominant eigenvector}
 \usage{
-get_evec(p, method = c("expsim", "analytical"))
+get_evec(p, method = c("expsim", "analytical"), ...)
 }
 \arguments{
 \item{p}{parameters}
 
 \item{method}{computational method}
+
+\item{...}{args passed through to rExp (esp testify flag!)}
 }
 \description{
 get dominant eigenvector

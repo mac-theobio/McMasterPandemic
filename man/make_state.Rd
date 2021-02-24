@@ -9,10 +9,10 @@ make_state(
   E0 = params[["E0"]],
   type = "ICU1h",
   state_names = NULL,
-  use_eigvec = !is.null(params),
+  use_eigvec = TRUE,
   params = NULL,
   x = NULL,
-  testify = FALSE
+  testify = NULL
 )
 }
 \arguments{
