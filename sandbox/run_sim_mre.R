@@ -23,36 +23,29 @@ time_pars <- data.frame(Date=as.Date(startdate:enddate),
 
 res1 <- run_sim(params,state,start_date=startdate,end_date=enddate)
 res2 <- run_sim(params,state,start_date=startdate,end_date=enddate)
-res1 == res2
-all.equal(res1,res2)
-
+stopifnot(identical(res1,res2))
 
 ## This fits a timevar dataframe where beta0 = 1 
 res1_t <- update(res1, params_timevar=time_pars)
 
+## keep only numeric values
+stopifnot(identical(c(res1),c(res1_t)))
 
-all.equal(res1,res1_t)
-## Only attributes are different?
-all.equal(res1$report,res1_t$report)
-
-
-## Rt and death spikes (discontinuity problem)
-
-## This is the latest ON calibation using the break_date model
+## This is the latest ON calibration using the break_date model
 modlist <- readRDS("ON.short.breaks.RDS")
 
 print(plot(modlist$fit,data=modlist$trimdat))
 
 ## Not plotting the data exposes the spikes in death and hosp (these are the compartments where we do diff from accumulating boxes
 print(plot(modlist$fit))
+## FIXME: may break with testify_eigvec branch?
 
 ## Projecting to Dec 2021 using the default settings
 pp <- predict(modlist$fit,ensembles=FALSE
 	, end_date = "2021-12-01"
 	, keep_vars = c("hosp", "death","report","Rt")
-)
-
-
+          )
+## warning about testing time?
 
 print(gg <- ggplot(pp,aes(date,value))
 		+ geom_line()
@@ -98,8 +91,11 @@ pp2 <- (pp2 %>% select(date,hosp,death,report)
 
 print(gg %+% pp2)
 
+## compare modlist$fit params_timevar component with rel_betaf
 ## No more spikes!! 
 
+## 1. Allow MLi hack (construct timepars by hand) to work with ensembles
+## 2. fix whatever's causing the spikes in the first place
 
 ## STOP HERE: 
 ## This is another example of the discontinuity problem

@@ -9,7 +9,7 @@ make_state(
   E0 = params[["E0"]],
   type = "ICU1h",
   state_names = NULL,
-  use_eigvec = TRUE,
+  use_eigvec = NULL,
   params = NULL,
   x = NULL,
   testify = NULL
@@ -26,7 +26,7 @@ for (e.g., \code{"ICU1"}, \code{"CI"}); determines state names}
 \item{state_names}{vector of state names, must include S and E}
 
 \item{use_eigvec}{use dominant eigenvector to distribute non-Susc values
-to zero}
+to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL}
 
 \item{params}{parameter vector (looked in for N and E0)}
 

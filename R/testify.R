@@ -42,15 +42,14 @@ check_var_names <- function(var_names) {
 ##' @param var_names variables names, \emph{in matching order to state vector/rate matrix}
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
-##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
+##' state1 <- state0 <- make_state(params=pp, testify=FALSE)   ## unexpanded
 ##' 
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval_testing(state0, params=pp)
 ##' vn <- setdiff(names(state0),non_expanded_states)
 ##' wtsvec <- make_test_wtsvec(pp, vn)
 ##' posvec <- make_test_posvec(pp, vn)
-##' ## need to make_ratemat() with *unexpanded* state, then
-##' ##  expand it
+##' ## need to make_ratemat() with *unexpanded* state, then expand it
 ##' ratemat <- testify(make_ratemat(state1,pp), pp)
 ##' betavec <- make_betavec(state,pp)
 ##' tt2 <- ratemat

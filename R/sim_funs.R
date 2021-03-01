@@ -6,7 +6,7 @@
 ##' @export
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
 ##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' state[["E"]] <- 1
 ##' J <- make_jac(params,state)
@@ -149,7 +149,7 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' @importFrom Matrix Matrix rowSums colSums
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
 ##' M <- make_ratemat(state,params)
 ##' if (require(Matrix)) {
 ##'    image(Matrix(M))
@@ -711,7 +711,7 @@ run_sim <- function(params
 ##' @param params parameter vector (looked in for N and E0)
 ##' @param x proposed (named) state vector; missing values will be set
 ##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
-##'     to zero
+##' to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL
 ##' @param testify expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
@@ -725,12 +725,14 @@ make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
                        type="ICU1h",
                        state_names=NULL,
-                       use_eigvec=TRUE,
+                       use_eigvec=NULL,
                        params=NULL,
                        x=NULL,
                        testify=NULL) {
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
-    if (use_eigvec && is.null(params)) stop("must specify params")
+    ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
+    if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
+    if (is.null(use_eigvec)) use_eigvec <- !is.null(params)
     ## select vector of state names
     state_names <- switch(type,
                           ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
