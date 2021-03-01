@@ -1,3 +1,7 @@
+library(shellpipes)
+
+commandEnvironments()
+
 use_ode <- FALSE
 testwt_scale <- "N"  ## experiment with rescaling testing weights
 testing_type <- c("logistic") ## we know constant is good, linear is kind of like logistic
@@ -22,3 +26,6 @@ opt_testify <- FALSE
 
 testing_intensity <- min_testing
 testing_intensity <- c(0.002,0.01)
+
+saveEnvironment()
+
