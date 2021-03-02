@@ -106,14 +106,16 @@ test_that("ndt>1", {
 })
 
 test_that("state methods", {
-    expect_equal(make_state(N=1,E0=1),
+    ## simple/old
+    expect_equal(make_state(N=1,E0=1, use_eigvec=FALSE),
                  structure(c(S = 0, E = 1, Ia = 0, Ip = 0,
                              Im = 0, Is = 0, H = 0,
                              H2 = 0, 
                              ICUs = 0, ICUd = 0,
                              D = 0, R = 0, X=0), class = "state_pansim"))
-    expect_error(make_state(x=1:5),regexp="must be named")
-    expect_warning(make_state(x=c(N=1,E0=1,K=5)),"extra state variables")
+    expect_error(make_state(x=1:5, use_eigvec=FALSE),regexp="must be named")
+    expect_warning(make_state(x=c(N=1,E0=1,K=5),
+                              use_eigvec=FALSE),"extra state variables")
 })
 
 test_that("calibration", {
@@ -154,10 +156,15 @@ test_that("cum_rep vs rep", {
 test_that("var-specific obsdisp", {
     params <- update(params,obs_disp=1,obs_disp_I=NA,obs_disp_E=1000)
     set.seed(101)
-    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    ## initial state *without* using eigvec, to match previous reference results
+    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss)
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
     expect_equal(tail(s0$I,1),16385.5)
     expect_equal(tail(s0$E,1),31791)
+    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    expect_equal(tail(s1$I,1),23251.568)
+    expect_equal(tail(s1$E,1),44563)
 })
 
 test_that("mle prediction", {

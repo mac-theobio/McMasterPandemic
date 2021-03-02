@@ -1,0 +1,54 @@
+---
+title: "selection coefficients"
+---
+
+Based on math and common sense and what's going on in MacPan, what are the relationships
+between $r$, $R_0$, and `beta0` ? (And what exactly do we mean by "selection coefficient"?)
+
+For a simple SIR model, we have $r = \beta - \gamma$, and the SC is (I think) is the
+difference in relative fitness, i.e. $(r_m-r_w)/r_w = r_m/r_w - 1$ ($m$=mutant, $w$=wild type),
+so a change in $\beta$ only of $\Delta \beta$ will give a selection coefficient of
+
+$$
+\frac{\beta+\Delta beta - \gamma}{\beta - \gamma} - 1 =
+1 + \frac{\Delta beta}{r} -1 = \frac{\Delta beta}{r}
+$$
+
+```{r}
+library(McMasterPandemic)
+p1 <- read_params("ICU1.csv")
+p2 <- update(p1, beta0=p1[["beta0"]]*1.1)
+print(get_r(p2)/get_r(p1)-1) ## proportional change in r
+print(0.1/get_r(p1))  ## Delta-beta0/r
+```
+
+Compute
+```{r}
+new_r <- function(m) get_r(update(p1,beta0=p1[["beta0"]]*(1+m)))
+bvec <- seq(0,1.5,length=51)
+rvec <- sapply(bvec, new_r)
+plot(bvec,rvec,xlab="proportional change in beta", ylab="r",type="l")
+```
+
+To get from parameters to SC, use `get_r()` and compare to original.
+To specify SC, use `fix_pars()` ...
+
+## Proportional change in beta vs difference in r
+
+```{r}
+rdiffvec <- rvec - min(rvec)
+plot(bvec,rdiffvec,xlab="proportional change in beta", ylab="rdiff",type="l")
+m1 <- lm(rvec~bvec) ## can we say why change in r is ~ 0.15*delta_beta?
+coef(m1)
+abline(m1,col="red")
+p3 <- fix_pars(target=c(r=get_r(p1)*1.1),
+         params=p1,
+         u_interval=c(0,0.5), ## interval for adjusting values:
+         ## range from 1*original to exp(0.5)*original
+         ## multiply original value by {exp(lwr)} up to {exp(upr)}
+         pars_adj="beta0")
+get_r(p3)/get_r(p1)
+```
+
+
+

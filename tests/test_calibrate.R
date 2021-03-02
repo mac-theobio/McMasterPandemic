@@ -29,7 +29,9 @@ simdat <- (pivot(condense(sim1S))
 ## sim1S %>% filter(date==as.Date("2020-03-17")) %>% select(D)
 ## reasonable trajectories
 ## note H > ICU > D as it should be
+## FIXME:: suppress warnings?
 plot(sim1S,log=TRUE) + geom_point(data=simdat)
+
 
 ## DRY: condense this some more
 
@@ -114,10 +116,25 @@ p3 <- update(p2, E0=exp(4), beta0=exp(-1))  ## set parameters to *original* star
 c_r2 <- calibrate_comb(params=p3,
                        use_phenomhet=FALSE,
                        debug_plot=FALSE,
-                       data=dd_r, use_DEoptim=FALSE,
+                       data=dd_r,
+                       use_DEoptim=FALSE,
+                       use_spline=FALSE,
+                       sim_args=list(use_eigvec=FALSE))
+
+get_last_rpt <- function(x) {
+    predict(x) %>% filter(var=="report") %>% tail(1) %>% pull(value)
+}
+plot(c_r2, data=dd_r) + ggtitle("old (use_eigvec=FALSE)")
+
+c_r2e <- calibrate_comb(params=p3,
+                       use_phenomhet=FALSE,
+                       debug_plot=FALSE,
+                       data=dd_r,
+                       use_DEoptim=FALSE,
                        use_spline=FALSE)
 
-plot(c_r2, data=dd_r)
+plot(c_r2e, data=dd_r) + ggtitle("use_eigvec")
+                            
 ## list(params = c(E0 = 0.969447127312371,
 ##                 beta0 = 0.999559822048325
 ##                 ),
@@ -133,12 +150,28 @@ plot(c_r2, data=dd_r)
 ##                 nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
 
 ## CHANGED again (X/hosp accumulator)
-ref_val <- list(params = c(E0 = 63.3150461392819, beta0 = 0.649997557506806),
-                nb_disp = c(report = 0.495604121823216), time_beta = numeric(0))
+## ref_val <- list(params = c(E0 = 63.3150461392819, beta0 = 0.649997557506806),
+##                 nb_disp = c(report = 0.495604121823216), time_beta = numeric(0))
 
+## ??
 ## ref_val <- list(params = c(E0 = 2.22166438860786, beta0 = 0.873467646391076),
 ##                 nb_disp = c(report = 0.996186838808113), time_beta = numeric(0))
 
-stopifnot(all.equal(coef(c_r2,"fitted"),
+##  CHANGED: fixed max_delay in report convolution
+## ref_val <- list(params = c(E0 = 3.1289277729037, beta0 = 1.0124985248704
+## ), nb_disp = c(report = 1.09396908228576), time_beta = numeric(0))
+
+
+## CHANGE again: use_eigvec
+## FIXME: figure out why c_r2 (use_eigvec=FALSE) parameters do *not* match
+##   previous values ... ???
+
+ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531
+), nb_disp = c(report = 1.10114796707075), time_beta = numeric(0))
+
+print(coef(c_r2e, "fitted"))
+stopifnot(all.equal(coef(c_r2e,"fitted"),
                     ref_val, 
                     tolerance=1e-6))
+
+stopifnot(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance=1e-5))

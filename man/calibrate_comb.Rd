@@ -25,6 +25,7 @@ calibrate_comb(
   skip.hessian = FALSE,
   use_DEoptim = TRUE,
   DE_cores = 1,
+  beta_break_dates = NULL,
   use_mobility = FALSE,
   use_phenomhet = FALSE,
   use_spline = FALSE,
@@ -103,6 +104,8 @@ tests per capita per day)}
 \item{use_DEoptim}{use differential evolution as first stage?}
 
 \item{DE_cores}{number of parallel workers for DE}
+
+\item{beta_break_dates}{discrete break dates for transmission changes}
 
 \item{use_mobility}{include mobility as a covariate in the model?}
 

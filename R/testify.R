@@ -1,5 +1,6 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
+## FIXME: document these for real!
 ##' global variables for testify expansion
 #' @export
 non_expanded_states <- c("D","X")
@@ -19,6 +20,11 @@ asymp_cat <- c("S","E","Ia","Ip","R")
 ##' @rdname non_expanded_states
 severe_cat <- c("Is","H","H2","ICUs","ICUd")
 
+##' @rdname non_expanded_states
+## these are 'asymptomatic' (= pre- or asymptomatic)
+##' @export
+cryptic_cat <- c("Ia","Ip")
+
 mk_zero_vec <- function(n) {
     setNames(numeric(length(n)),n)
 }
@@ -36,14 +42,14 @@ check_var_names <- function(var_names) {
 ##' @param var_names variables names, \emph{in matching order to state vector/rate matrix}
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
-##' state1 <- state0 <- make_state(params=pp)   ## unexpanded
+##' state1 <- state0 <- make_state(params=pp, testify=FALSE)   ## unexpanded
+##' 
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval_testing(state0, params=pp)
 ##' vn <- setdiff(names(state0),non_expanded_states)
 ##' wtsvec <- make_test_wtsvec(pp, vn)
 ##' posvec <- make_test_posvec(pp, vn)
-##' ## need to make_ratemat() with *unexpanded* state, then
-##' ##  expand it
+##' ## need to make_ratemat() with *unexpanded* state, then expand it
 ##' ratemat <- testify(make_ratemat(state1,pp), pp)
 ##' betavec <- make_betavec(state,pp)
 ##' tt2 <- ratemat
@@ -62,7 +68,7 @@ make_test_wtsvec <- function(params,var_names=NULL) {
     ## test whether a specific set of W-parameters are the *only*
     ##  W-parameters in the parameter vector
     match_pars <- function(pars) {
-        Wpars <- grep("^W",names(params),value=TRUE)
+        Wpars <- grep("^W_",names(params),value=TRUE)
         return(identical(pars,sort(Wpars)))
     }
     if (match_pars("W_asymp")) {  ## W_asymp is the only weighting parameter
@@ -80,6 +86,10 @@ make_test_wtsvec <- function(params,var_names=NULL) {
         wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
                        c(length(asymp_cat),length(mild_cat),length(severe_cat)))
         names(wts_vec) <- c(asymp_cat,mild_cat,severe_cat)
+    } else if (match_pars(c("W_cryptic","W_S","W_severe"))) {
+        ## I_m=1, {I_a, I_p} = W_cryptic (<1),  I_h = W_severe (>1)
+        stop("not implemented yet!")
+        ##
     } else {
         ## general
         wts_vec <- params[grepl("^W",names(params))]
@@ -141,6 +151,11 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
 {
     method <- match.arg(method)
 
+    if (any(grepl("_u(_|$)",names(x)))) {
+        message("already testified, skipping")
+        return(x)
+    }
+
     expanded_states <- exclude_states(names(x),non_expanded_states)
     newnames <- unlist(lapply(expanded_states, paste, test_extensions, sep="_"))
     new_states <- rep(0,length(newnames))
@@ -195,6 +210,11 @@ testify <- function(ratemat,params,debug=FALSE,
     ## Assuming false positive/negative is (1-trueprob)
     ## omega is waiting time for tests to be returned
     ## don't use match.args() because we may get handed NULL ...
+
+    if (any(grepl("_u(_|$)",colnames(ratemat)))) {
+        message("already testified, skipping")
+        return(ratemat)
+    }
     if (is.null(testing_time)) {
         testing_time <- "report"
     } else {
@@ -293,9 +313,17 @@ testify <- function(ratemat,params,debug=FALSE,
         }
     }
 
-
     attr(new_M,"wtsvec") <- wtsvec
     attr(new_M,"posvec") <- posvec
     attr(new_M,"testing_time") <- testing_time
     return(new_M)
+}
+
+## REMOVE testify structure in state names, if present
+untestify_statenames <- function(x) {
+    ## lookahead: _ + test extension followed by _ or end-of-string
+    regex <- sprintf("_[%s](?=(_|$))",paste(test_extensions,collapse=""))
+    x <- unique(gsub(regex,"",x,perl=TRUE))
+    x <- setdiff(x, test_accumulators)
+    return(x)
 }

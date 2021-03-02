@@ -351,7 +351,7 @@ Let's now now try to fit the model to both reports and deaths.
 It is easiest to create the required long-form data frame
 using the \code{pivot_longer} function in the \code{tidyr} package.
 
-<<make.long.form.reports.and.deaths, message=FALSE>>=
+<<make_long_form_reports_and_deaths, message=FALSE>>=
 library(tidyr)
 report_death_data <- (res1obs 
     %>% select(date, report, death)
@@ -364,7 +364,7 @@ head(report_death_data, n=12)
 
 Now let's fit to both reports and deaths.
 
-<<calibrateTOres1obs.both.reports.and.deaths, message=FALSE>>=
+<<calibrateTOres1obs_both_reports_and_deaths, message=FALSE>>=
 ## beta0 is the only parameter we're going to optimize:
 opt_pars <- list(params = c(beta0=0.1))
 fitted.mod <- calibrate(
@@ -381,13 +381,13 @@ plot(fitted.mod, data=report_death_data)
 \noindent
 If you wish, you can plot just the data being fitted, and the fitted
 model, via:
-<<plot.report.and.death.only>>=
+<<plot_report_and_death_only>>=
 plot(fitted.mod, data=report_death_data, 
      predict_args=list(keep_vars=c("report","death")))
 @ 
 \noindent
 That fit looks remarkably good.  Let's see how good:
-<<fitted.mod.summary>>=
+<<fitted_mod_summary>>=
 coef(fitted.mod, "fitted") # spit out fitted parameters
 summary(coef(fitted.mod))
 @ 
@@ -425,9 +425,21 @@ summary(coef(fitted.mod,"all"))
 \noindent
 As above, you can plot just the data being fitted, and the fitted
 model, via:
-<<plot.report.only>>=
+<<plot_report_only>>=
 plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
 @ 
+
+\subsection{Troubleshooting calibrations}
+
+If you find that the fitted model trajectory is peculiarly jagged, the
+likely culprit is the time step.  In this case, increase the number of
+internal time steps per time step (\code{ndt}), via adding
+\code{sim_args} to your \code{calibrate()} call as follows:
+<<troubleshooting_ndt, eval=FALSE>>=
+    , sim_args = list(ndt = 2)
+@ 
+\noindent
+You may need to experiment with \code{ndt} to get a smooth result.
 
 \section{Scenario exploration}
 
@@ -438,7 +450,7 @@ Here, we give an example involving changing the transmission rate
 ($\beta$) in the future.
 
 First we load some data manipulation packages for convenience.
-<<time.varying.bt.using.run_sim, message=FALSE>>=
+<<time_varying_bt_using_run_sim, message=FALSE>>=
 library(zoo)
 library(tidyverse)
 @ 
@@ -446,7 +458,7 @@ library(tidyverse)
 Now we modify the \code{run_sim} example (\cref{sec:run_sim}).  We
 first check that setting \code{Relative_value=1} and using
 non-\code{timevar} \code{run_sim} yield the same results.
-<<modified.example.from.run_sim>>=
+<<modified_example_from_run_sim>>=
 params <- read_params("ICU1.csv")
 pp <- fix_pars(params, target = c(R0 = 1.3, Gbar=6))
 state <- make_state(params=pp)
@@ -455,7 +467,7 @@ enddate <- as.Date("2020-10-01")
 @ 
 \noindent
 This is checking if we can get the same thing if we don't add stoch:
-<<check.get.same.thing>>=
+<<check_get_same_thing>>=
 sim0 <- run_sim(pp,state,start_date=startdate,end_date=enddate)
 gg0 <- (ggplot(sim0,aes(x=date))
 	+ geom_point(aes(y=incidence))
@@ -466,7 +478,7 @@ print(gg0)
 We want a dataframe that includes the time varying relative $\beta$ at
 each saved time point.  If relative $\beta$ is constant though time,
 it should give back the same trajectory.
-<<set.time_pars>>=
+<<set_time_pars>>=
 time_pars <- data.frame(Date=as.Date(startdate:enddate)
 	, Symbol="beta0"
 	, Relative_value=1

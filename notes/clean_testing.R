@@ -2,6 +2,7 @@ library(ggplot2);theme_set(theme_bw()+theme(panel.spacing=grid::unit(0,"lines"))
 library(dplyr)
 library(tidyr)
 library(cowplot)
+library(shellpipes)
 
 callArgs <- "testwt_N.random.simreportplot.Rout testify_simreportplot.R testwt_N.random_sims.rda"
 source("makestuff/makeRfuns.R")

@@ -138,6 +138,10 @@ impmakeR += sims
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
 	$(makeR)
 
+
+testwt_N.Rout: testwt_N.R
+	$(makeR)
+
 impmakeR += random_sims
 # testwt_N.random_sims.Rout: testify_sim.R random.csv
 %.random_sims.Rout: testify_sim.R %.rda testify_funs.rda random.csv
@@ -312,7 +316,7 @@ makestuff/Makefile:
 -include makestuff/cacheflow.mk
 -include makestuff/cacherepo.mk
 
--include makestuff/makeR.mk
+-include makestuff/pipeR.mk
 -include makestuff/rmd.mk
 -include makestuff/yushan.mk
 -include makestuff/nodes.mk

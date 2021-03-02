@@ -4,6 +4,9 @@ library(parallel)
 
 context("DEoptim")
 
+test_level <- if(nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL")) &&
+                 is.finite(s <- as.numeric(s))) s else 1
+
 library(dplyr)
 params <- fix_pars(read_params("ICU1.csv"))
 opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
@@ -13,9 +16,12 @@ opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
                  log_nb_disp=NULL)
 dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 
-if (Sys.getenv("TRAVIS") != "true" &&
-    Sys.getenv("SKIP_SLOW_TESTS") != "true") { ## too slow for Travis?
-    ## so, export SKIP_SLOW_TESTS=true   in the shell environment if you want to skip this test
+## skip on Travis/GitHub Actions
+if (Sys.getenv("TRAVIS") != "true"  ## not on Travis
+    &&
+    Sys.getenv("CI_WORKFLOW")==""   ## not on GH Actions (use NOT_CRAN?)
+    &&
+    test_level>1) {
     suppressWarnings(cal1_DE <- calibrate(data=dd,
                                           base_params=params,
                                           opt_pars=opt_pars,
@@ -40,6 +46,6 @@ if (Sys.getenv("TRAVIS") != "true" &&
                                                DE_args=list(control=list(itermax=5,trace=FALSE)))
                      )
 
-}
+} ## skip slow tests
 
-## test parallel?
+

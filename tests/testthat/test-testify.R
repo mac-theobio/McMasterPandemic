@@ -6,13 +6,11 @@ uncall <- function(x) {
     attr(x,"call") <- NULL
     return(x)
 }
-context("testify")
 
 pp <- read_params("PHAC_testify.csv")
 ## Making states and expanding states
-state <- make_state(params=pp)
+state <- make_state(params=pp,testify=FALSE)
 state_testified <- expand_stateval_testing(state, params=pp, method="untested")
-
 
 ## global variables
 ## print(non_expanded_states)
@@ -29,6 +27,22 @@ test_that("testified states make sense", {
     expect_equal(length(state_testified), lfun(state)+2)
     expect_equal(sort(unique(gsub("_.*$","",names(state_testified)))),
                  c(sort(c("N","P",names(state)))))
+})
+
+test_that("make_state from scratch", {
+    expect_equal(names(make_state(params=pp)),
+                 names(state_testified))
+})
+
+test_that("make_ratemat from scratch (ignore testify in state)", {
+    s0 <- make_state(params=pp, testify=FALSE)
+    M0 <- make_ratemat(s0, pp)
+    s1 <- make_state(params=pp)
+    M1 <- make_ratemat(state=s1,params=pp)
+    ## FIXME: why does testify/untestify swap order of D and R?
+    ## should be harmless but ...
+    M1 <- M1[rownames(M0),colnames(M0)]
+    expect_equal(dim(M0),dim(M1))
 })
 
 ## Making beta_vec wtr states (infectious compartments only)
@@ -73,6 +87,7 @@ sim0_testified_condensed <- run_sim(params = pp,
                                     ## specify testing time to avoid warning 
                                     ratemat_args = list(testing_time="sample"))
 
+make_state(pp[["N"]], pp[["E0"]], params=pp)
 test_that("obsolete testify spec", {
     expect_warning(run_sim(params = pp,
                            ratemat_args = list(testify=TRUE)),
@@ -115,9 +130,10 @@ test_that("time-varying test intensity", {
 test_that("testing with susceptibles only", {
      pp[["testing_intensity"]] <- 0.002
      pp_noinf <- update(pp,beta0=0,E0=0)  ## no transmission, no infected people
-     sim0_noinf <- run_sim(params = pp_noinf,
+     ## suppress warning about "initial values too small for rounding"
+     sim0_noinf <- suppressWarnings(run_sim(params = pp_noinf,
                            ratemat_args = list(testing_time="sample"),
-                           end_date="2021-01-01")
+                           end_date="2021-01-01"))
      ## negtest *should* converge on:
      expected_negtest <- with(as.list(pp),omega/(omega+testing_intensity)*testing_intensity*N)
      ## expect_equal(tail(sim0_noinf[["negtest"]],1),expected_negtest)

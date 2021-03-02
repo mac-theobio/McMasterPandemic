@@ -166,13 +166,29 @@ run_sim_loglin <- function(params,
         timevar <- rbind(timevar,testing_dat)
     }
     if (return_timevar) return(timevar)
+
+    ## DRY: make this into an independent function
+    ## (but do want to modify sim_args as well ...)
+
+    state <- statefun(params, sim_args)
+    sim_args$use_eigvec <- NULL
     sim_args <- c(sim_args
                 , extra_pars
                 , nlist(params,
-                        state=make_state(params=params),
+                        state,
                         params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
+
+
+statefun <- function(params,sim_args) {
+    argList <- nlist(params)
+    if (!is.null(use_eigvec <- sim_args$use_eigvec)) {
+        argList <- c(argList, nlist(use_eigvec))
+    }
+    return(do.call(make_state, argList))
+}
+
 
 ##' run with transmission propto relative mobility 
 ##' @inheritParams run_sim_break
@@ -606,7 +622,8 @@ update_debug_hist <- function(params, NLL) {
 ##'     (e.g. \code{\link{run_sim_break}},
 ##'     \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
-##' @importFrom bbmle parnames<- mle2 DON'T import stats::coef !
+##' @importFrom bbmle parnames<- mle2 
+# DON'T import stats::coef !
 ##' @examples
 ##' library(dplyr)
 ##' params <- fix_pars(read_params("ICU1.csv"))
@@ -616,11 +633,10 @@ update_debug_hist <- function(params, NLL) {
 ##'                                    log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
-##'    cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
+##'   cal1 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, debug_plot=TRUE)
 ##'   cal1_DE <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE, DE_cores=1)
 ##'   cal2 <- calibrate(data=dd, base_params=params, opt_pars=opt_pars, use_DEoptim=TRUE)
-##' 
-##'    if (require(bbmle)) {
+##'   if (require(bbmle)) {
 ##'      -logLik(cal2$mle2)
 ##'    }
 ##'    attr(cal2,"de")$optim$bestval
@@ -1027,6 +1043,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' @param use_phenomhet include phenomenological heterogeneity?
 ##' @param use_testing include variation in testing intensity?
 ##' @param use_spline include spline?
+##' @param beta_break_dates discrete break dates for transmission changes
 ##' @param vars which vars to use? (default is all in data)
 ##' @param return_val "fit" (return calibrated value); "X"
 ##'     (short-circuit/return model matrix?); "formula" (return
@@ -1086,6 +1103,7 @@ calibrate_comb <- function(data,
                      skip.hessian=FALSE,
                      use_DEoptim=TRUE,
                      DE_cores=1,
+                     beta_break_dates=NULL,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
                      use_spline=FALSE,
@@ -1100,6 +1118,8 @@ calibrate_comb <- function(data,
                      ...) {
     spline_extrap <- match.arg(spline_extrap)
     return_val <- match.arg(return_val)
+    use_break_dates <- !is.null(beta_break_dates)
+    if (use_break_dates && (use_spline || use_mobility)) stop("can't do both spline/mobility and beta break dates")
     t_vec <- value <- NULL ## global var check
     ## choose variables
     if (!is.null(vars)) {
@@ -1237,14 +1257,20 @@ calibrate_comb <- function(data,
     }
     if (return_val=="X") return(X)
     if(is.null(opt_pars$time_beta)){
-    ## matplot(X_dat$t_vec,X,type="l",lwd=2)
-    opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
-    names(opt_pars$time_beta) <- colnames(X)
+        ## matplot(X_dat$t_vec,X,type="l",lwd=2)
+        opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+        names(opt_pars$time_beta) <- colnames(X)
     }
-    time_args <- nlist(X,X_date=X_dat$date)
+    if (use_spline || use_mobility) {
+        time_args <- nlist(X,X_date=X_dat$date)
+    } else if (use_break_dates) {
+        time_args <- list(break_dates=beta_break_dates)
+    } else {
+        time_args <- NULL
+    }
     if (use_testing) {
         time_args <- c(time_args, list(testing_data = testing_data))
-	      if(return_val == "time_args")return(time_args)
+	      if(return_val == "time_args") return(time_args)
     }
     if (use_spline && spline_pen>0) {
         spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_beta))
@@ -1254,6 +1280,11 @@ calibrate_comb <- function(data,
     }
     ## do the calibration
     ## debug <- use_DEoptim
+    if (use_break_dates) {
+        sim_fun <- run_sim_break
+    } else {
+        sim_fun <- run_sim_loglin
+    }
     argList <- c(nlist(data
                      , use_DEoptim
                      , DE_cores
@@ -1265,7 +1296,7 @@ calibrate_comb <- function(data,
                      , mle2_args=list(skip.hessian=skip.hessian)
                      , opt_pars
                      , time_args
-                     , sim_fun = run_sim_loglin
+                     , sim_fun
                      , priors)
                , list(...))
 

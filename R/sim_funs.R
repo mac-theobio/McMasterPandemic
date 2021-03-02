@@ -6,7 +6,7 @@
 ##' @export
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
 ##' ## state[c("E","Ia","Ip","Im","Is")] <- 1
 ##' state[["E"]] <- 1
 ##' J <- make_jac(params,state)
@@ -24,7 +24,8 @@ make_jac <- function(params, state=NULL) {
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
     ####
     if (is.null(state)) {
-        state <- make_state(N=params[["N"]],E0=1e-3)
+        state <- make_state(N=params[["N"]],E0=1e-3,
+                            use_eigvec=FALSE)
     }
     np <- length(params)
     ns <- length(state)
@@ -148,7 +149,7 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' @importFrom Matrix Matrix rowSums colSums
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' state <- make_state(params[["N"]],E0=params[["E0"]])
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
 ##' M <- make_ratemat(state,params)
 ##' if (require(Matrix)) {
 ##'    image(Matrix(M))
@@ -180,14 +181,18 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
             stopifnot(all(nps==1))
         }
     }
-    ns <- length(state)
-    ## make state and param names locally available (similar to with())
-    P <- c(as.list(state),as.list(params))
+    state_names <- untestify_statenames(names(state))
+    ns <- length(state_names)
+    ## make param names locally available (similar to with())
+    ## DON'T unpack states, we don't need them
+    ## (the only state-dependent per capita rates are testing
+    ## and infection, those get handled elsewhere)
+    P <- as.list(params) 
     unpack(P)
     ## blank matrix
     M <- matrix(0,
                 nrow=ns, ncol=ns,
-                dimnames=list(from=names(state),to=names(state)))
+                dimnames=list(from=state_names, to=state_names))
 
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
@@ -428,9 +433,9 @@ do_step <- function(state, params, ratemat, dt=1,
         notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
         notS_pos <- setdiff(notS_pos, x_states)
         outflow <- setNames(numeric(ncol(flows)),colnames(flows))
-        ## only count flows to S_pos
+        ## only count outflows from S_pos to other S_pos (e.g. testing flows)
         outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
-        ## count flows to p_states (i.e. states that are *not* parallel accumulators)
+        ## count flows from infected etc. to p_states (i.e. states that are *not* parallel accumulators)
         outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
     }
     inflow <-  colSums(flows)
@@ -495,7 +500,7 @@ do_step <- function(state, params, ratemat, dt=1,
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params
-        , state=make_state(params[["N"]], params[["E0"]])
+        , state=NULL
         , start_date="2020-Mar-20"
         , end_date="2020-May-1"
         , params_timevar=NULL
@@ -512,7 +517,7 @@ run_sim <- function(params
         , verbose = FALSE
 ) {
     call <- match.call()
-
+    
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
@@ -528,7 +533,8 @@ run_sim <- function(params
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
-    M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    if (is.null(state)) state <- make_state(params=params, testify=FALSE)
+    M <- make_ratemat(state=state, params=params)
     if (has_testing(params=params)) {
         if (!is.null(ratemat_args$testify)) {
             warning("'testify' no longer needs to be passed in ratemat_args")
@@ -719,7 +725,7 @@ run_sim <- function(params
 ##' @param params parameter vector (looked in for N and E0)
 ##' @param x proposed (named) state vector; missing values will be set
 ##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
-##'     to zero
+##' to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL
 ##' @param testify expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
@@ -733,10 +739,14 @@ make_state <- function(N=params[["N"]],
                        E0=params[["E0"]],
                        type="ICU1h",
                        state_names=NULL,
-                       use_eigvec=!is.null(params),
+                       use_eigvec=NULL,
                        params=NULL,
                        x=NULL,
-                       testify=FALSE) {
+                       testify=NULL) {
+    if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
+    ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
+    if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
+    if (is.null(use_eigvec)) use_eigvec <- !is.null(params)
     ## select vector of state names
     state_names <- switch(type,
                           ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
@@ -746,17 +756,21 @@ make_state <- function(N=params[["N"]],
                           stop("unknown type")
                           )
     state <- setNames(numeric(length(state_names)),state_names)
+    if (testify) state <- expand_stateval_testing(state,method="untested")
     if (is.null(x)) {
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
-            state[["E"]] <- E0
+            ## set **first** E compartment
+            state[[grep("E",names(state))[1]]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
-            ee <- round(get_evec(params)*E0)
+            ## here E0 is effectively "number NOT susceptible"
+            ee <- round(get_evec(params, testify=testify)*E0)
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
-                ee[["E"]] <- 1
+                if (testify) stop("this case isn't handled for testify")
+                ee[["E"]] <- 1  
                 warning('initial values too small for rounding')
             }
             istart <- sum(ee)
@@ -764,8 +778,19 @@ make_state <- function(N=params[["N"]],
         }
         ## make sure to conserve N by subtracting starting number infected
         ## *after* rounding etc.
-        state[["S"]] <- N-istart
-        
+        ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
+        ##  class; (2) distribute (N-istart) across the S classes, then round
+        if (!testify) {
+            state[["S"]] <- N-istart
+        } else {
+            ## if A = testing rate and B = test-return rate then
+            ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
+            ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
+            ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
+            ## FIXME: get_evec() should work for S!
+            ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
+            state[c("S_u","S_n")] <- round((N-istart)*c(ufrac,1-ufrac))
+        }
     } else {
         if (length(names(x))==0) {
             stop("provided state vector must be named")
@@ -775,7 +800,7 @@ make_state <- function(N=params[["N"]],
         }
         state[names(x)] <- x
     }
-    untestify_state <- state
+    untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
     return(state)
 }
@@ -879,7 +904,8 @@ run_sim_range <- function(params
 ##' @param delay_mean mean value
 ##' @param delay_cv coeff of var
 ##' @param max_len maximum delay
-##' @importFrom stats pgamma
+##' @param tail_crit criterion for selecting maximum delay
+##' @importFrom stats pgamma qgamma
 ## mean = a*s
 ## sd = sqrt(a)*s
 ## cv = 1/sqrt(a)
