@@ -158,6 +158,18 @@ mm <- mdiff_fun(sims[c("non_age","diag","unif")])
 all(na.omit(abs(mm$diff))<1e-8)
 ```
 
+## vaccination
+
+```{r}
+ppa.v <- ppa
+ppa.v$vacc <- rep(0:1, c(6,4))
+Mv <- make_ratemat(ss2, ppa.v, sparse=TRUE) ## some NA values??
+young <- grep("1-10",rownames(Mv))
+show_ratemat(Mv[young,young])
+old <- grep("91+",rownames(Mv))
+show_ratemat(Mv[old,old])
+```
+
 ## age + tests
 
 ```{r testify_test,message=FALSE}
@@ -230,9 +242,18 @@ persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
 
 ## to do
 
+### definitely needs to be done
+
 - extend `make_state` to implement age-dependent N in state construction ... i.e. allow a vector of relative sizes of age classes
-- best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
+- extend timevars stuff to allow setting a single element in the param list by element (BMB) (unlist/relist)
+
+### might already work
+
 - try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
+
+### let Irena worry about it
+
+- best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
 - foi stuff: time to implement an incidence accumulator and derive foi from it rather than storing foi on the fly? Do we want to store age-structured foi?
 - examine age-structured matrix etc ... improve visualization of age/test structured matrices
 - clean up make_betavec: do we ever need "full"??
