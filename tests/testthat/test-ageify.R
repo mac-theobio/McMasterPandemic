@@ -16,18 +16,13 @@ ss <- make_state(params=pp)
 ## set age categories
 age_cat <- mk_agecats()
 ## draw random population distribution
-N_dist <- rpois(length(age_cat), lambda = 5)
-N_dist <- N_dist/sum(N_dist)
+N_draw <- rpois(length(age_cat), lambda = 10)
+N_dist <- N_draw/sum(N_draw) ## normalize as a distribution
+## distribute scale up population distribution to match total population count
+## in ss
+N_vec <- distribute_counts(total = sum(ss), dist = N_dist)
 ## generate state vec
-ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_dist = N_dist)
-
-## helpers ##
-
-## sum counts based on category specified by cat_regex (which searches list names)
-total_by_cat <- function(x, cat_regex){
-    total <- sum(x[grep(cat_regex, names(x))])
-    return(total)
-}
+ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_vec = N_vec)
 
 ## tests ##
 
@@ -40,30 +35,33 @@ test_that("population sizes don't change when adding age structure",
     counts_by_state <- unlist(map(state_regex, total_by_cat, x = ss2))
     expect_equal(counts_by_state,
                  as.vector(ss))
+    ## population size of each age class
+    age_cat <- attr(ss2, "age_cat")
+    age_cat <- sub("\\+", "\\\\+", age_cat) ## escape + in age group for regex
+    age_cat_regex <- paste0(age_cat,"$")
+    counts_by_age <- unlist(map(age_cat_regex, total_by_cat, x = ss2))
+    expect_equal(counts_by_age,
+                 N_vec)
 })
 
 ## not really proper tests yet: FIXME/clean me up!
 test_that("generic age stuff", {
-    ## states with default age groups and 
-    ## default (uniform) population distribution
-    ss2 <- expand_stateval_age(ss)
-    condense.pansim(data.frame(date=NA,rbind(ss2)),add_reports=FALSE)
+    #condense.pansim(data.frame(date=NA,rbind(ss2)),add_reports=FALSE)
     M <- make_ratemat(ss2, pp, sparse=TRUE)
     show_ratemat(M)
-    ## get age categories
-    aa <- attr(ss2, "age_cat")
     ## convert params to list in prep for adding population
     ## size vector and contact matrix update population
     ppa <- as.list(pp)
     ## param to a vector of age-specific populations
     ## (uniform distribution)
-    N_vec <- rep(pp[["N"]]/length(aa), length(aa))
+    N_vec <- rep(pp[["N"]]/length(age_cat), length(age_cat))
     ppa <- update(ppa, N = N_vec)
     ## compound symmetric example (for a uniformly
     ## distributed population---otherwise Cmat would not be
     ## symmetric since each row should be divided by the
     ## size of the susceptible population)
-    Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+    Cmat <- matrix(0.1, nrow=length(age_cat), ncol=length(age_cat),
+                   dimnames=list(age_cat,age_cat))
     diag(Cmat) <- 1
     ppa <- c(ppa,list(Cmat=Cmat))
     ifun <- function(M) {

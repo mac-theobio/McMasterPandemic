@@ -51,48 +51,81 @@ distribute_counts <- function(total, dist){
   return(counts)
 }
 
+#' sum counts based on category
+#'
+#' @param x named list
+#' @param cat_regex regular expression used to search names(x)
+#' @export
+total_by_cat <- function(x, cat_regex){
+  total <- sum(x[grep(cat_regex, names(x))])
+  return(total)
+}
+
 #' expand state vector and rate matrix by age classes and population distribution
 #'
 #' epidemiological state varies fast, age category varies slowly
 #' @param x state vector
 #' @param age_cat vector of age categories
-#' @param N_dist distribution of population over ages (sums to 1)
+#' @param N_vec population count by age
 #' @examples
 #' pp <- read_params("PHAC_testify.csv")
 #' ss <- make_state(params=pp)
 #' ss2 <- expand_stateval_age(ss)
 #' @export
 expand_stateval_age <- function(x, age_cat=mk_agecats(),
-                                N_dist = NULL) {
+                                N_vec = NULL) {
   
     ## if no population is provided, assume a uniform distribution
-    if(is.null(N_dist)){
+    if(is.null(N_vec)){
       tot_N <- sum(x)
       n_agecats <- length(age_cat)
-      N_dist <- rep(tot_N/n_agecats, n_agecats)/tot_N
-    }
-    
-    ## check that population distribution vector sums to 1
-    if(sum(N_dist) != 1){
-      stop("the population distribution (N_dist) must sum to 1")
+      N_vec <- distribute_counts(tot_N, rep(1/n_agecats, n_agecats))
     }
   
     ## check that number of age groups matches 
-    if(length(age_cat) != length(N_dist)){
-      stop("state and population vectors must have same length")
+    if(length(age_cat) != length(N_vec)){
+      stop("population distribution must have same length as the number of age categories")
     }
+    
+    ## check that state vector and population distribution 
+    ## sum to the same value
+    if(sum(x) != sum(N_vec)){
+      stop("state and population distributions must have same sum")
+    }
+  
+    ## make population distribution
+    N_dist <- N_vec/sum(N_vec)
     
     ## expand state labels with ages
     new_names <- expand_names(names(x), age_cat)
     
-    ## split total count for each class over age categories
-    ## based on population distribution
-    ## (map_dfr -> t -> as vector business is to ensure counts
-    ## are returned sorted by age category, then by state category)
-    x <- as.vector(t(map_dfr(x, distribute_counts, dist = N_dist)))
-    names(x) <- new_names
+    ## distribute total state counts over subcategories in a way that respects
+    ## the overall population distribution
+    x <- (
+      ## get all states but S
+      x[!grepl("^S", names(x))] 
+      ## distribute counts across all states but S 
+      ## guided by population distribution
+        %>% map_dfr(distribute_counts, dist = N_dist)
+      ## get total counts by age over all states but S
+        %>% mutate(total = rowSums(across(everything())))
+      ## calculate S by age as the age-specific population - count over all
+      ## other states
+        %>% mutate(S = N_vec - total)
+      ## drop total col and move S to far left of the table (so state columns
+      ## are ordered as we usually order them)
+        %>% select(-total)
+        %>% relocate(S)
+      )
+    
+    ## flatten to vector, AND ensure counts
+    ## are first sorted by age category, then by state category
+    x <- as.vector(t(x))
 
+    ## add sensible names and age cat attribute to output
+    names(x) <- new_names
     attr(x, "age_cat") <- age_cat
+    
     return(x)
 }
 
