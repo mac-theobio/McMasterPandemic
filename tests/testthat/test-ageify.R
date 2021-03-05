@@ -15,26 +15,34 @@ ss <- make_state(params=pp)
 
 ## set age categories
 age_cat <- mk_agecats()
+n <- length(age_cat)
 
 ## tests ##
 
-test_that("population sizes don't change when adding age structure",
+## set up simulation with arbitrary population distribution
+
+## draw random population distribution
+N_draw <- rpois(n, lambda = 10)
+N_dist <- N_draw/sum(N_draw) ## normalize as a distribution
+## distribute scale up population distribution to match total population count
+## in ss
+N_vec <- distribute_counts(total = sum(ss), dist = N_dist)
+## generate state vec
+ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_vec = N_vec)
+
+## INITIAL STATE
+
+test_that("initial state population sizes don't change when adding age structure",
 {
-    ## draw random population distribution
-    N_draw <- rpois(length(age_cat), lambda = 10)
-    N_dist <- N_draw/sum(N_draw) ## normalize as a distribution
-    ## distribute scale up population distribution to match total population count
-    ## in ss
-    N_vec <- distribute_counts(total = sum(ss), dist = N_dist)
-    ## generate state vec
-    ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_vec = N_vec)
     ## total population sizes
     expect_equal(sum(ss2), sum(ss))
+    
     ## population size of each state
     state_regex <- paste0("^", names(ss))
     counts_by_state <- unlist(map(state_regex, total_by_cat, x = ss2))
     expect_equal(counts_by_state,
                  as.vector(ss))
+    
     ## population size of each age class
     age_cat <- attr(ss2, "age_cat")
     age_cat <- sub("\\+", "\\\\+", age_cat) ## escape + in age group for regex
@@ -44,24 +52,64 @@ test_that("population sizes don't change when adding age structure",
                  N_vec)
 })
 
-## set test that ageified simulation reproduces results using the base model
-test_that("age-structured simulation reduces to homogeneous case", {
-    ## generate state vec
-    ss2 <- expand_stateval_age(ss, age_cat = age_cat) ## by default, assumes uniform distribution
-    ## construct contact matrix with uniform contacts
+## SIMULATIONS
+
+## age_cat = vector of age categories
+random_Cmat <- function(age_cat = mk_agecats()){
+    
+    ## set up matrix
     n <- length(age_cat)
-    Cmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
-    ## update parameters
-    ppa_unif <- c(as.list(pp), list(Cmat=Cmat_unif))
-    ## age-structured sim
-    end_date <- "2021-02-15"
-    rr2 <- run_sim(ppa_unif, ss2, end_date = end_date, condense=TRUE)
+    Cmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
+    
+    ## fill matrix with a random distribution in each row)
+    for (i in 1:n){
+        row <- rpois(n, lambda = 5)
+        row <- row/sum(row)
+        
+        Cmat[i,] <- row
+    }
+    
+    return(Cmat)
+}
+
+# test_that("age-specific population doesn't change over the course of a simulation",
+# {
+#     ## set up random contact matrix
+#     Cmat <- random_Cmat(age_cat)
+#     ppa <- c(as.list(pp), list(Cmat = Cmat))
+#     ## age-structured sim
+#     end_date <- "2021-02-15"
+#     
+#     ## uniform population distribution
+#     rr2 <- run_sim(ppa, ss2, end_date = end_date, condense=FALSE)
+# })
+
+## run homogeneous ageified simulation
+## generate state vec
+ss2 <- expand_stateval_age(ss, age_cat = age_cat) ## by default, assumes uniform distribution
+## construct contact matrix with uniform contacts
+Cmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
+## update parameters
+ppa_unif <- c(as.list(pp), list(Cmat=Cmat_unif))
+## age-structured sim
+end_date <- "2021-02-15"
+rr2 <- run_sim(ppa_unif, ss2, end_date = end_date, condense=FALSE)
+
+# test_that("homogeneous case of age-structured model yields identical epidemics in each age category", {
+#         
+# })
+
+test_that("homogeneous case of age-structured model reduces to base (non-ageified) model (comparing simulations)", {
+    ## condense homogeneous simulation
+    rr2 <- condense.pansim(rr2)
     ## base sim (no age-structure, same params)
     rr <- run_sim(pp, ss, end_date = end_date)
     ## check subset of state variables (some special cols in sim not set up for
     ## ageify case, like foi)
     expect_equal(rr2 %>% select(S:D), rr %>% select(S:D))
 })
+
+## run sim with different age pop
 
 ## not really proper tests yet: FIXME/clean me up!
 # test_that("generic age stuff", {

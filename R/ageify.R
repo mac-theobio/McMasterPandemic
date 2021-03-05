@@ -30,6 +30,55 @@ condense_age <- function(x,levels=unique(epi_cat)) {
     return(ret)
 }
 
+#' sum counts based on category
+#'
+#' @param x named list
+#' @param cat_regex regular expression used to search names(x)
+#' @export
+total_by_cat <- function(x, cat_regex){
+  total <- sum(x[grep(cat_regex, names(x))])
+  return(total)
+}
+
+#' collapse (non-accumulator) states into subcategories (ages)
+#' @param x a state vector or data frame (each row is a different time point)
+# condense_states <- function(x){
+#   
+#   ## define non-accumulator state names
+#   # states <- c("S", "E",
+#   #             "I",
+#   #             "H", "H",
+#   #             "ICU", "ICU",
+#   #             "R", "D")
+#   # states_regex <- paste0("^", states)
+#   
+#   ## convert vector to a (wide) tibble
+#   if(!("data.frame" %in% class(x))){
+#     x <- as.data.frame(t(x))
+#   }
+#   
+#   x <- tibble::tibble(x)
+#   #             tibble::enframe(x),
+#   #             pivot_longer(x,
+#   #                          everything(),
+#   #                          names_to = "name",
+#   #                          values_to = "value"))
+#   
+#   (x 
+#     %>% mutate(across(contains("_.*$"),
+#                       rowSums))
+#   )
+#   # ## condense states 
+#   # (x
+#   #   ## keep only non-accumulator states
+#   #   %>% select(matches(paste0("^", states))) 
+#   #   ## sum over states
+#   # )
+#   
+#   return(x)
+# 
+# }
+
 ## x_y, with x varying faster
 expand_names <- function(x,y,sep="_") {
     unlist(lapply(y, function(a) paste(x, a, sep=sep)))
@@ -49,16 +98,6 @@ distribute_counts <- function(total, dist){
   ## FIXME: smart round always shifts counts to the end of the distribution
   ## (older age groups here)... is this a problem
   return(counts)
-}
-
-#' sum counts based on category
-#'
-#' @param x named list
-#' @param cat_regex regular expression used to search names(x)
-#' @export
-total_by_cat <- function(x, cat_regex){
-  total <- sum(x[grep(cat_regex, names(x))])
-  return(total)
 }
 
 #' expand state vector and rate matrix by age classes and population distribution
