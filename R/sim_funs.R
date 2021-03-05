@@ -104,6 +104,7 @@ make_betavec <- function(state, params, full=TRUE) {
         } else {
             if (length(params$N)!=nrow(params$Cmat)) stop("N must either be a scalar (total population) or a vector of the same length as the number of age groups specified via Cmat.")
         }
+        
         ## if beta0 is a scalar, assume the same beta across age groups
         if (length(params$beta0)==1){
             # print("assuming constant beta0 across ages...")
@@ -113,7 +114,7 @@ make_betavec <- function(state, params, full=TRUE) {
         }
         
         ## check that Cmat rows sum to 1
-        if (!all.equal(unname(rowSums(Cmat)), rep(1, nrow(Cmat)))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
+        if (!all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat)))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
         
         ## incorporate contact matrix and /N_j in beta term, and attach age cats
         
