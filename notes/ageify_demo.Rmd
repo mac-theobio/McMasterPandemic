@@ -1,0 +1,90 @@
+---
+title: "Ageify demo"
+author: "Irena Papst"
+date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+library(tidyverse)
+devtools::load_all(path = "..")
+```
+
+# Simulation demo
+
+Let's keep it simple and assume four age groups.
+
+## Homogeneous mixing
+
+To reduce the ageified model to the case of homogenous mixing, we need to set:
+
+1. $\beta_i = \beta$ for all $i$: constant contact rate (and transmission probability) across age groups (default in the software if only one $\beta_i$ is provided),
+1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups (default in the software if only one $N$ is provided; this is assumed to be the total population size),
+1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups (some contact matrix `Cmat` must be provided since this is how the software currently checks whether or not age-structure is provided).
+
+```{r homogenous_sim}
+## READ INITIAL PARAMETERS (for base sim)
+pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
+
+## SET UP STATE (for base sim)
+## make state vector
+ss <- make_state(params=pp)
+
+## AGEIFY
+## expand state to include age categories
+n <- 4 # number of age categories
+ss2 <- expand_stateval_age(ss,
+                           age_cat = mk_agecats(min = 1, max = n, da = 1))
+## pull out age categories
+aa <- attr(ss2, "age_cat")
+
+## construct uniform contact matrix (homogeneous mixing)
+Cmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(aa,aa))
+print("contact matrix:")
+Matrix::image(Matrix(Cmat_unif))
+
+## expand parameters to include contact matrix
+ppa_unif <- c(as.list(pp), list(Cmat=Cmat_unif))
+
+## MAKE AGEIFIED BETA VECTOR
+beta_unif <- make_betavec(ss2, ppa_unif, full=FALSE)
+print("betavec:")
+Matrix::image(Matrix(beta_unif))
+
+## MAKE AGEIFIED RATE MATRIX
+M <- make_ratemat(ss2, ppa_unif, sparse=TRUE)
+print("ratemat:")
+show_ratemat(M)
+
+## set end date for simulations
+end_date <- "2021-02-15"
+```
+
+Run the ageified simulation and inspect results:
+
+```{r run-sim-unif}
+rr2 <- run_sim(ppa_unif, ss2, end_date = end_date, condense=FALSE)
+plot(rr2,log=TRUE)
+```
+
+Looks pretty homogeneous, in that it appears all age classes have identical epidemics.
+
+TODO: check that this is the case.
+
+```{r compare_sim_unif}
+## age-structured sim, condense ages
+rr2_condensed <- condense.pansim(rr2)
+rr <- run_sim(pp, ss, end_date = end_date)
+
+plot(rr2_condensed)
+plot(rr %>% select(-cumRep))
+```
+
+```{r other_cmats, eval = FALSE}
+## case 2: diagonal (mixing only within age groups)
+Cmat_diag <- diag(n)
+
+## case 3: predominantly mixing within age categories
+Cmat_compound <- (Cmat_unif + Cmat_diag)/rowSums(Cmat_unif + Cmat_diag)
+```
+
