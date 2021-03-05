@@ -95,7 +95,7 @@ ss2 <- expand_stateval_age(ss, age_cat = mk_agecats(min = 1, max = 100, da = 10)
 aa <- attr(ss2, "age_cat")
 
 ## hack so we have an infective because rounding in
-## exapend_stateval_age loses it
+## expand_stateval_age loses it
 ss2[grep("^Im",names(ss2))] <- 1
 ss2[grep("^E", names(ss2))] <- 0
 ss2[grep("^S",names(ss2))] <- round(pp[["N"]]/length(aa)-1)
