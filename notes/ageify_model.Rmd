@@ -1,0 +1,60 @@
+---
+title: "Age-structure in the `McMasterPandemic` model"
+author: "Irena Papst"
+date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
+output: html_document
+---
+
+# The model
+
+## Basic SIR
+
+Let $S, I,$ and $R$ represent the *number* of susceptible, infected, and removed individuals in a population of $N$ individuals. In the basic SIR model, the force of infection (FOI), which is the rate of new infections (per susceptible, per unit time) is given by 
+
+$$
+\lambda = \beta \frac{I}{N}
+$$
+While this is often simply explained as the product of the transmission rate (per susceptible, per unit time) with the probability of encountering an infective in the population (under the assumption of homogeneous mixing), it will help us to build up an age-structured model if we break the FOI down a bit further. Namely, we want to specifically reference "contacts" between individuals in the population, because this will be the primary source of heterogeneity between age groups.
+
+Defining a contact is a bit of a tricky endeavor, but I like to think about it as an interaction between two individuals where disease \emph{could} pass between individuals, but may not for a variety of reasons (e.g., the pair states of the of individuals isn't susceptible-infected, the duration of contact wasn't sufficient for the disease to pass, the viral load of the infected individual wasn't large enough to pass the disease under the circumstances, etc.).
+
+The FOI can be thought of as the product of three different terms:
+
+$$
+\begin{align}
+\lambda = &\left ( \frac{\text{average number of contacts}}{\text{per susceptible, per unit time}} \right ) \\
+&\times \mathbb{P}\text{(transmission | contact with an infective)} \\
+&\times \mathbb{P}\text{(contact with infective | contact with any individual in the population)},
+\end{align}
+$$
+where $\mathbb{P}(A | B)$ is the conditional probability of event $A$ given event $B$ has occurred.
+
+Going back to the form of $\lambda$ in the basic SIR model, $\mathbb{P}\text{(contact with infective | contact with any individual in the population)}$ is modeled by $I/N$, and so the product of the remaining two terms is equal to $\beta$.
+
+## Adding age-structure
+
+Now imagine the population is subdivided into $n$ age groups, indexed by $i = 1, ..., n$, and the time scale is short enough relative to the age group size that the aging process can be ignored. We want to incorporate age-based heterogeneity in (1) the average number of contacts per susceptible, per unit time, and (2) the frequency of contacts between age groups. The first point affects the first term of the FOI (encoded in $\beta$), while the second point affects the conditional probability of contact with an infective (given contact with any individual in the population).
+
+For age group $i$, the force of infection is given by
+
+$$
+\lambda_i = \beta_i \sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j},
+$$
+
+where $\beta_i$ is the age-specific transmission rate (meant to reflect heterogeneity in the *number* of contacts), $P_{ij}$ is a matrix where row $i$ specifies how the number of contacts for an individual of age group $i$ are distributed across all age groups, and $\frac{I_j}{N_j}$ models the conditional probability of contact with an infective in age group $j$ (given contact with an individual in age group $j$). ($N_j$ is the population of age group $j$.) The matrix $P = \{ P_{ij} \}$ thus must have rows that sum to 1, *i.e.,* it is a (right) stochastic matrix. It does not need to be symmetric, however.
+
+Since $P_{ij}$ is a probability distribution for fixed $i$, the term $\sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j}$ is essentially a weighted average of the probability of contacting an infective across patches, *i.e.* it's the average probability of contacting an infective over the entire population. Thus, it's exactly analogous to $I/N$ in the basic (homogenous) model.
+
+(Assuming this force of infection is equivalent to using a meta-population model, but instead of each "patch" representing a spatial region, it represents an age group.)
+
+## Reducing back to the homogeneous case
+
+The age-structured model reduces to the homogeneous model if the following three assumptions are made:
+
+1. $\beta_i = \beta$ for all $i$: constant contact rate (and transmission probability) across age groups,
+1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups,
+1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups. 
+
+## Assumption vs callibration
+
+We will assume the contact *structure* $P_{ij}$ from studies on age-structured contact mixing patterns (e.g. POLYMOD, Mistry *et al.* 2021), but we will allow `McMasterPandemic` to calibrate the average *number* of contacts by age via $\beta_i$ from the data. In this way, the fundamental interpretation of $\beta$ does not change, whether or not age-structure is included in the model.
