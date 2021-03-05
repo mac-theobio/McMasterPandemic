@@ -35,28 +35,65 @@ expand_names <- function(x,y,sep="_") {
     unlist(lapply(y, function(a) paste(x, a, sep=sep)))
 }
 
-#' expand state vector and rate matrix by age classes
+#' distribute counts given a desired distribution
+#' 
+#' @param total total count to distribute
+#' @param dist target distribution (a vector that sums to 1)
+#' @export
+distribute_counts <- function(total, dist){
+  ## scale up distribution to total
+  scaled_dist <- total*dist
+  ## use smart_round in utils to round to whole numbers 
+  ## while preserving sum of vector
+  counts <- smart_round(scaled_dist)
+  ## FIXME: smart round always shifts counts to the end of the distribution
+  ## (older age groups here)... is this a problem
+  return(counts)
+}
+
+#' expand state vector and rate matrix by age classes and population distribution
 #'
 #' epidemiological state varies fast, age category varies slowly
 #' @param x state vector
 #' @param age_cat vector of age categories
+#' @param N_dist distribution of population over ages (sums to 1)
 #' @examples
 #' pp <- read_params("PHAC_testify.csv")
 #' ss <- make_state(params=pp)
 #' ss2 <- expand_stateval_age(ss)
 #' @export
-expand_stateval_age <- function(x, age_cat=mk_agecats()) {
+expand_stateval_age <- function(x, age_cat=mk_agecats(),
+                                N_dist = NULL) {
+  
+    ## if no population is provided, assume a uniform distribution
+    if(is.null(N_dist)){
+      tot_N <- sum(x)
+      n_agecats <- length(age_cat)
+      N_dist <- rep(tot_N/n_agecats, n_agecats)/tot_N
+    }
+    
+    ## check that population distribution vector sums to 1
+    if(sum(N_dist) != 1){
+      stop("the population distribution (N_dist) must sum to 1")
+    }
+  
+    ## check that number of age groups matches 
+    if(length(age_cat) != length(N_dist)){
+      stop("state and population vectors must have same length")
+    }
+    
+    ## expand state labels with ages
     new_names <- expand_names(names(x), age_cat)
-    n_expand <- length(age_cat)
-    new_states <- rep(x, n_expand)/n_expand
-    names(new_states) <- new_names
-    ## round Susceptible and non-Susceptible compartments, maintaining sum *separately*
-    ## so we don't lose all the non-susc ...
-    S_pos <- grep("^S", names(new_states))
-    new_states[S_pos] <- smart_round(new_states[S_pos])
-    new_states[-S_pos] <- smart_round(new_states[-S_pos])
-    attr(new_states, "age_cat") <- age_cat
-    return(new_states)
+    
+    ## split total count for each class over age categories
+    ## based on population distribution
+    ## (map_dfr -> t -> as vector business is to ensure counts
+    ## are returned sorted by age category, then by state category)
+    x <- as.vector(t(map_dfr(x, distribute_counts, dist = N_dist)))
+    names(x) <- new_names
+
+    attr(x, "age_cat") <- age_cat
+    return(x)
 }
 
 #' Make contact matrix using Mistry et al. approach

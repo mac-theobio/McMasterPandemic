@@ -2,24 +2,56 @@ library(McMasterPandemic)
 ## devtools::load_all()
 library(testthat)
 
+## apparently context() is depreciated/superseded
+## tests are now be auto-named with the filename
+## ?testthat::context
 context("ageify")
 
+## set up testing environment ##
+
+## base params and states 
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
-tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
+
+## set age categories
+age_cat <- mk_agecats()
+## draw random population distribution
+N_dist <- rpois(length(age_cat), lambda = 5)
+N_dist <- N_dist/sum(N_dist)
+## generate state vec
+ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_dist = N_dist)
+
+## helpers ##
+
+## sum counts based on category specified by cat_regex (which searches list names)
+total_by_cat <- function(x, cat_regex){
+    total <- sum(x[grep(cat_regex, names(x))])
+    return(total)
+}
+
+## tests ##
+
+test_that("population sizes don't change when adding age structure",
+{
+    ## total population sizes
+    expect_equal(sum(ss2), sum(ss))
+    ## population size of each state
+    state_regex <- paste0("^", names(ss))
+    counts_by_state <- unlist(map(state_regex, total_by_cat, x = ss2))
+    expect_equal(counts_by_state,
+                 as.vector(ss))
+})
 
 ## not really proper tests yet: FIXME/clean me up!
 test_that("generic age stuff", {
+    ## states with default age groups and 
+    ## default (uniform) population distribution
     ss2 <- expand_stateval_age(ss)
-    ## hack so we have an infective
-    ss2["Im_11-20"] <- 1
-    ss2["E_91+"] <- 0
-    expect_equal(sum(ss),sum(ss2))
-    expect_equal(tot_I(ss2),1)
     condense.pansim(data.frame(date=NA,rbind(ss2)),add_reports=FALSE)
     M <- make_ratemat(ss2, pp, sparse=TRUE)
     show_ratemat(M)
-    aa <- mk_agecats()
+    ## get age categories
+    aa <- attr(ss2, "age_cat")
     ## convert params to list in prep for adding population
     ## size vector and contact matrix update population
     ppa <- as.list(pp)
