@@ -23,14 +23,14 @@ expand_names <- function(x,y,sep="_") {
 }
 
 #' distribute counts given a desired distribution (with smart rounding)
-#' 
+#'
 #' @param total total count to distribute
 #' @param dist target distribution (a vector that sums to 1)
 #' @export
 distribute_counts <- function(total, dist){
   ## scale up distribution to total
   scaled_dist <- total*dist
-  ## use smart_round in utils to round to whole numbers 
+  ## use smart_round in utils to round to whole numbers
   ## while preserving sum of vector
   counts <- smart_round(scaled_dist)
   ## FIXME: smart round always shifts counts to the end of the distribution
@@ -53,35 +53,35 @@ distribute_counts <- function(total, dist){
 #' @export
 expand_state_age <- function(x, age_cat=mk_agecats(),
                              Nvec = NULL) {
-  
+
     ## if no population is provided, assume a uniform distribution
     if(is.null(Nvec)){
       Nvec <- mk_Nvec(age_cat, Ntot = sum(x))
     }
-  
-    ## check that number of age groups matches 
+
+    ## check that number of age groups matches
     if(length(age_cat) != length(Nvec)){
       stop("population distribution must have same length as the number of age categories")
     }
-    
-    ## check that state vector and population distribution 
+
+    ## check that state vector and population distribution
     ## sum to the same value
     if(sum(x) != sum(Nvec)){
       stop("state and population distributions must have same sum")
     }
-  
+
     ## make population distribution
     Ndist <- Nvec/sum(Nvec)
-    
+
     ## expand state labels with ages
     new_names <- expand_names(names(x), age_cat)
-    
+
     ## distribute total state counts over subcategories in a way that respects
     ## the overall population distribution
     x <- (
       ## get all states but S
-      x[!grepl("^S", names(x))] 
-      ## distribute counts across all states but S 
+      x[!grepl("^S", names(x))]
+      ## distribute counts across all states but S
       ## guided by population distribution
         %>% map_dfr(distribute_counts, dist = Ndist)
       ## get total counts by age over all states but S
@@ -92,9 +92,9 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
       ## drop total col and move S to far left of the table (so state columns
       ## are ordered as we usually order them)
         %>% select(-total)
-        %>% relocate(S)
+        %>% dplyr::relocate(S)
       )
-    
+
     ## flatten to vector, AND ensure counts
     ## are first sorted by age category, then by state category
     x <- as.vector(t(x))
@@ -102,10 +102,10 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
     ## add sensible names and age cat attribute to output
     names(x) <- new_names
     attr(x, "age_cat") <- age_cat
-    
+
     ## add class
     class(x) <- "state_pansim"
-    
+
     return(x)
 }
 
@@ -119,10 +119,10 @@ condense_age <- function(x,levels=unique(epi_cat)) {
   epi_cat <- gsub("_.*$","",names(x))
   epi_cat <- factor(epi_cat,levels=levels)
   ret <- vapply(split(x,epi_cat),sum,numeric(1))
-  
+
   ## re-add class (lost after vapply)
   class(ret) <- "state_pansim"
-  
+
   return(ret)
 }
 
@@ -130,18 +130,18 @@ condense_age <- function(x,levels=unique(epi_cat)) {
 #' @param x a state vector or data frame (each row is a different time point)
 #' @export
 condense_state <- function(x){
-  
+
   ## define non-accumulator state names
   states <- c("S", "E",
-              "I", "H", "ICU", 
+              "I", "H", "ICU",
               "R", "D")
   states_regex <- paste0("^", states)
-  
+
   ## if x is a vector (e.g. a state vec), convert it to a (wide) df
   if(is.null(nrow(x))){
     x <- as.data.frame(t(unclass(x)))
   }
-  
+
   (x
     ## keep only non-accumulator states
     %>% select(matches(paste(states_regex, collapse = "|"),
@@ -160,7 +160,7 @@ condense_state <- function(x){
                  sep = "_",
                  extra = "merge")
     ## turn subcat column into factor to keep original ordering
-    %>% mutate(subcat = as_factor(subcat))
+    %>% mutate(subcat = as.factor(subcat))
     ## aggregate value by timestep and subcategory
     %>% group_by(obs_number, subcat)
     %>% summarise(value = sum(value), .groups = "drop")
@@ -170,7 +170,7 @@ condense_state <- function(x){
     ## drop observation number
     %>% select(-obs_number)
   )  -> x
-  
+
   return(x)
 }
 
@@ -186,31 +186,31 @@ mk_Nvec <- function(age_cat = mk_agecats(),
                     Ntot = 1e6,
                     dist = "unif",
                     names = FALSE){
-  
+
   if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
-  
+
   n <- length(age_cat)
-  
+
   ## uniform distribution
   if(dist == "unif"){
     Ndist <- rep(1/n, n)
   }
-  
+
   ## random distribution
   if(dist == "rand"){
     Ndraw <- runif(n)
     Ndist <- Ndraw/sum(Ndraw) ## normalize
   }
-  
+
   ## distribute scale up population distribution to match total population count
   ## in ss
   Nvec <- distribute_counts(total = Ntot, dist = Ndist)
-  
+
   ## add names?
   if (names){
-    names(Nvec) <- age_cat  
+    names(Nvec) <- age_cat
   }
-  
+
   return(Nvec)
 }
 
@@ -222,29 +222,29 @@ mk_Nvec <- function(age_cat = mk_agecats(),
 #' @export
 mk_Cmat <- function(age_cat = mk_agecats(),
                     dist = "unif"){
-  
+
   if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
-  
+
   ## set up matrix
   n <- length(age_cat)
-  
+
   if(dist == "unif"){
     Cmat <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
   }
-  
+
   if(dist == "rand"){
     ## preallocate memory
     Cmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
-    
+
     ## fill matrix with a random distribution in each row)
     for (i in 1:n){
       row <- runif(n)
       row <- row/sum(row)
-      
+
       Cmat[i,] <- row
-    } 
+    }
   }
-  
+
   return(Cmat)
 }
 
@@ -339,13 +339,13 @@ expand_params_age <- function(pp,
   pp[["N"]] <- Nvec
   ## update Cmat
   pp <- c(pp, list(Cmat = Cmat))
-  
+
   ## add age cats as attribute
   attr(pp, "age_cat") <- age_cat
-  
+
   ## add class
   class(pp) <- "params_pansim"
-    
+
   return(pp)
 }
 
