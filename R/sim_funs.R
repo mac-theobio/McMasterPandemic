@@ -96,9 +96,8 @@ make_betavec <- function(state, params, full=TRUE) {
         ## across age groups
         if (length(params$N)==1){
             # print("assuming a uniform population distribution...")
-            params$N <- distribute_counts(total = params$N, 
-                                   dist = rep(1/nrow(params$Cmat),
-                                              nrow(params$Cmat)))
+            params$N <- mk_Nvec(age_cat = attr(params, "age_cat"),
+                                Ntot = params$N)
             ## dist given in terms of Cmat since has_age checks existence of 
             ## Cmat in params
         } else {
