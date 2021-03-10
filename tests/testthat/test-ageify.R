@@ -62,7 +62,7 @@ res_rr <- run_sim(params_rr, state_r, end_date = end_date, condense = FALSE)
 ## TESTS
 
 ## population count tests
-    
+
 test_that("population distributions are properly initialized", {
     ## uniform population
     expect_equal(sum(mk_Nvec(Ntot = 1e6)), 1e6)
@@ -81,7 +81,7 @@ test_that("initial state population sizes don't change after adding age structur
                  state)
     expect_equal(condense_age(state_r),
                  state)
-    
+
     ## population size of each age class
     ## uniform population
     expect_equal(as.numeric(condense_state(state_u)),
@@ -99,13 +99,13 @@ check_const_pop <- function(res, params){
                  ## convert rows to a single list-col containing the age-specific
                  ## population distribution at each time step
                  %>% transmute(dist = transpose(select(.,everything()))))
-    
+
     ## check every row of the sim result data frame against the pop distribution
     ## (doing ifelse here because i don't
     ## know how to get all.equal to return FALSE instead of mean relative diff)
     check_rows <- map_lgl(res_pops$dist,
                           ~ isTRUE(all.equal(unname(unlist(.)), params[["N"]])))
-    ## check that all rows passed the test 
+    ## check that all rows passed the test
     check_all <- all(check_rows)
     return(check_all)
 }
@@ -114,13 +114,13 @@ test_that("age-specific population doesn't change over the course of a simulatio
 {
     ## unif pop, unif Cmat
     expect_true(check_const_pop(res_uu, params_uu))
-    
+
     ## unif pop, rand Cmat
     expect_true(check_const_pop(res_ur, params_ur))
-    
+
     ## rand pop, unif Cmat
     expect_true(check_const_pop(res_ru, params_ru))
-    
+
     ## rand pop, rand Cmat
     expect_true(check_const_pop(res_rr, params_rr))
 })
@@ -134,7 +134,7 @@ test_that("age-structured beta0 has correct dimensions", {
 
 ## simulation tests
 
-test_that("homogeneous case of age-structured model reduces to base (non-ageified) model (comparing simulations)", {
+test_that("homogeneous case of age-structured model condenses to base (non-ageified) model (comparing simulations)", {
     ## condense homogeneous simulation
     res_uu_cond <- condense.pansim(res_uu)
     ## base sim (no age-structure, same params)
@@ -143,6 +143,60 @@ test_that("homogeneous case of age-structured model reduces to base (non-ageifie
     ## ageify case, like foi)
     expect_equal((res_uu_cond %>% select(S:D)),
                  (res_hom %>% select(S:D)))
+})
+
+## utility function to check that all elements of a vector are equal
+## based on:
+## https://stackoverflow.com/questions/4752275/test-for-equality-among-all-elements-of-a-single-numeric-vector
+zero_range <- function(x, tol = .Machine$double.eps ^ 0.5) {
+    if (length(x) == 1) return(TRUE)
+    if(anyNA(x)) return(FALSE)
+    ## if the input is a list, unpack it
+    if(is.list(x)) x <- unlist(x)
+    x <- range(x) / mean(x)
+    return(isTRUE(all.equal(x[1], x[2], tolerance = tol)))
+}
+
+test_that("homogeneous case of age-structured model yields identical epidemics in age classes that did not seed the epidemic",{
+    ## find age classes that didn't seed the epidemic
+    (as.data.frame(t(unclass(state_u)))
+     %>% pivot_longer(everything())
+     %>% separate(name, into = c("state", "age_cat"),
+                  sep = "_", extra = "merge")
+     %>% mutate(state = ifelse(state == "S", "S", "nonS"))
+     %>% group_by(state, age_cat)
+     %>% summarise(value = sum(value), .groups = "drop")
+     %>% filter(state == "nonS", value == 0)
+     ## replace non-alpha numeric values in age cats with periods,
+     ## as in simulation result
+     %>% mutate(age_cat = stringr::str_replace(age_cat, "-|\\+", "."))
+     %>% pull(age_cat)
+     ) -> age_cats_to_test
+
+    (res_uu
+     ## keep only cols of age classes that didn't seed the epidemic
+     ## (and date for grouping observations)
+     %>% select(matches("\\d+"), contains("date"))
+     ## pivot to be able to easily group observations using substrings in column
+     ## name
+     %>% pivot_longer(-date)
+     %>% separate(name, into = c("state", "age_cat"),
+                  sep = "_", extra = "merge")
+     ## expand age classes back into separate columns,
+     ## keep only age classes that didn't seed the epidemic
+     ## and then compress into a single list-col,
+     ## so that we can iterate over a list at a time
+     %>% pivot_wider(names_from = "age_cat",
+                     values_from = "value")
+     %>% select(all_of(age_cats_to_test))
+     %>% mutate(values = transpose(select(.,matches("\\d+"))))
+     ## check for equality across age groups
+     %>% mutate(values_all_equal = map_lgl(values, zero_range))
+     ## pull check vector to use in an expectation
+     %>% pull(values_all_equal)
+     ) -> values_all_equal
+
+    expect_true(all(values_all_equal))
 })
 
 ## not really proper tests yet: FIXME/clean me up!
