@@ -4,7 +4,7 @@
 \alias{mk_agecats}
 \title{construct age categories}
 \usage{
-mk_agecats(min = 1, max = 100, da = 10)
+mk_agecats(min = 0, max = 90, da = 10)
 }
 \arguments{
 \item{min}{minimum age}
