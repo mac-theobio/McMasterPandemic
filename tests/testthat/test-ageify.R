@@ -7,134 +7,146 @@ library(testthat)
 ## ?testthat::context
 context("ageify")
 
-## set up testing environment ##
+## SETUP ##
 
-## base params and states 
-pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
-ss <- make_state(params=pp)
+## base params and state
+params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
+state <- make_state(params=params)
 
-## set age categories
-age_cat <- mk_agecats()
-n <- length(age_cat)
+## generate state vecs ##
 
-## tests ##
+## uniform population distribution
+Nvec_u <- mk_Nvec(Ntot = sum(state))
+state_u <- expand_state_age(state)
 
-## set up simulation with arbitrary population distribution
+## random population distribution
+Nvec_r <- mk_Nvec(Ntot = sum(state),
+                     dist = "rand")
+state_r <- expand_state_age(state, Nvec = Nvec_r)
 
-## draw random population distribution
-N_draw <- rpois(n, lambda = 10)
-N_dist <- N_draw/sum(N_draw) ## normalize as a distribution
-## distribute scale up population distribution to match total population count
-## in ss
-N_vec <- distribute_counts(total = sum(ss), dist = N_dist)
-## generate state vec
-ss2 <- expand_stateval_age(ss, age_cat = age_cat, N_vec = N_vec)
+## generate param sets ##
 
-## INITIAL STATE
+Cmat_r <- mk_Cmat(dist = "rand")
 
-test_that("initial state population sizes don't change when adding age structure",
-{
-    ## total population sizes
-    expect_equal(sum(ss2), sum(ss))
+## params with unif pop
+## + unif cmat
+params_uu <- expand_params_age(params)
+## + random cmat
+params_ur <- expand_params_age(params,
+                               Cmat = Cmat_r)
+
+## params with random pop
+## + unif cmat
+params_ru <- expand_params_age(params,
+                               Nvec = Nvec_r)
+## + random cmat
+params_rr <- expand_params_age(params,
+                               Nvec = Nvec_r,
+                               Cmat = Cmat_r)
+
+## generate sims ###
+end_date <- "2021-02-15"
+
+## sims with unif pop
+## + unif cmat
+res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
+## + rand cmat
+res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
+
+## sims with random pop
+## + unif cmat
+res_ru <- run_sim(params_ru, state_r, end_date = end_date, condense = FALSE)
+## + rand cmat
+res_rr <- run_sim(params_rr, state_r, end_date = end_date, condense = FALSE)
+
+## TESTS
+
+## population count tests
     
-    ## population size of each state
-    state_regex <- paste0("^", names(ss))
-    counts_by_state <- unlist(map(state_regex, total_by_cat, x = ss2))
-    expect_equal(counts_by_state,
-                 as.vector(ss))
-    
-    ## population size of each age class
-    age_cat <- attr(ss2, "age_cat")
-    age_cat <- sub("\\+", "\\\\+", age_cat) ## escape + in age group for regex
-    age_cat_regex <- paste0(age_cat,"$")
-    counts_by_age <- unlist(map(age_cat_regex, total_by_cat, x = ss2))
-    expect_equal(counts_by_age,
-                 N_vec)
+test_that("population distributions are properly initialized", {
+    ## uniform population
+    expect_equal(sum(mk_Nvec(Ntot = 1e6)), 1e6)
+    ## random population
+    expect_equal(sum(mk_Nvec(Ntot = 1e6, dist = "rand")), 1e6)
 })
 
-## SIMULATIONS
+test_that("initial state population sizes don't change after adding age structure",
+{
+    ## total population sizes
+    expect_equal(sum(state_u), sum(state))
+    expect_equal(sum(state_r), sum(state))
 
-## age_cat = vector of age categories
-random_Cmat <- function(age_cat = mk_agecats()){
+    ## population size of each state
+    expect_equal(condense_age(state_u),
+                 state)
+    expect_equal(condense_age(state_r),
+                 state)
     
-    ## set up matrix
-    n <- length(age_cat)
-    Cmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
+    ## population size of each age class
+    ## uniform population
+    expect_equal(as.numeric(condense_state(state_u)),
+                 Nvec_u)
+    ## random population
+    expect_equal(as.numeric(condense_state(state_r)),
+                 Nvec_r)
+})
+
+## helper function to check that population remains constant across age groups
+## and time steps in a simulation
+check_const_pop <- function(res, params){
+    ## condense states
+    res_pops <- (condense_state(res)
+                 ## convert rows to a single list-col containing the age-specific
+                 ## population distribution at each time step
+                 %>% transmute(dist = transpose(select(.,everything()))))
     
-    ## fill matrix with a random distribution in each row)
-    for (i in 1:n){
-        row <- rpois(n, lambda = 5)
-        row <- row/sum(row)
-        
-        Cmat[i,] <- row
-    }
-    
-    return(Cmat)
+    ## check every row of the sim result data frame against the pop distribution
+    ## (doing ifelse here because i don't
+    ## know how to get all.equal to return FALSE instead of mean relative diff)
+    check_rows <- map_lgl(res_pops$dist,
+                          ~ isTRUE(all.equal(unname(unlist(.)), params[["N"]])))
+    ## check that all rows passed the test 
+    check_all <- all(check_rows)
+    return(check_all)
 }
 
-# test_that("age-specific population doesn't change over the course of a simulation",
-# {
-#     ## set up random contact matrix
-#     Cmat <- random_Cmat(age_cat)
-#     ppa <- c(as.list(pp), list(Cmat = Cmat))
-#     ## age-structured sim
-#     end_date <- "2021-02-15"
-#     
-#     ## uniform population distribution
-#     rr2 <- run_sim(ppa, ss2, end_date = end_date, condense=FALSE)
-# })
+test_that("age-specific population doesn't change over the course of a simulation",
+{
+    ## unif pop, unif Cmat
+    expect_true(check_const_pop(res_uu, params_uu))
+    
+    ## unif pop, rand Cmat
+    expect_true(check_const_pop(res_ur, params_ur))
+    
+    ## rand pop, unif Cmat
+    expect_true(check_const_pop(res_ru, params_ru))
+    
+    ## rand pop, rand Cmat
+    expect_true(check_const_pop(res_rr, params_rr))
+})
 
-## run homogeneous ageified simulation
-## generate state vec
-ss2 <- expand_stateval_age(ss, age_cat = age_cat) ## by default, assumes uniform distribution
-## construct contact matrix with uniform contacts
-Cmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
-## update parameters
-ppa_unif <- c(as.list(pp), list(Cmat=Cmat_unif))
-## age-structured sim
-end_date <- "2021-02-15"
-rr2 <- run_sim(ppa_unif, ss2, end_date = end_date, condense=FALSE)
+## beta tests
 
-# test_that("homogeneous case of age-structured model yields identical epidemics in each age category", {
-#         
-# })
+test_that("age-structured beta0 has correct dimensions", {
+    expect_identical(dim(make_betavec(state_u, params_uu)),
+                     as.integer(c(1, 13))*length(mk_agecats()))
+})
+
+## simulation tests
 
 test_that("homogeneous case of age-structured model reduces to base (non-ageified) model (comparing simulations)", {
     ## condense homogeneous simulation
-    rr2 <- condense.pansim(rr2)
+    res_uu_cond <- condense.pansim(res_uu)
     ## base sim (no age-structure, same params)
-    rr <- run_sim(pp, ss, end_date = end_date)
+    res_hom <- run_sim(params, state, end_date = end_date)
     ## check subset of state variables (some special cols in sim not set up for
     ## ageify case, like foi)
-    expect_equal(rr2 %>% select(S:D), rr %>% select(S:D))
+    expect_equal((res_uu_cond %>% select(S:D)),
+                 (res_hom %>% select(S:D)))
 })
-
-## run sim with different age pop
 
 ## not really proper tests yet: FIXME/clean me up!
 # test_that("generic age stuff", {
-#     #condense.pansim(data.frame(date=NA,rbind(ss2)),add_reports=FALSE)
-#     M <- make_ratemat(ss2, pp, sparse=TRUE)
-#     show_ratemat(M)
-#     ## convert params to list in prep for adding population
-#     ## size vector and contact matrix update population
-#     ppa <- as.list(pp)
-#     ## param to a vector of age-specific populations
-#     ## (uniform distribution)
-#     N_vec <- rep(pp[["N"]]/length(age_cat), length(age_cat))
-#     ppa <- update(ppa, N = N_vec)
-#     ## compound symmetric example (for a uniformly
-#     ## distributed population---otherwise Cmat would not be
-#     ## symmetric since each row should be divided by the
-#     ## size of the susceptible population)
-#     Cmat <- matrix(0.1, nrow=length(age_cat), ncol=length(age_cat),
-#                    dimnames=list(age_cat,age_cat))
-#     diag(Cmat) <- 1
-#     ppa <- c(ppa,list(Cmat=Cmat))
-#     ifun <- function(M) {
-#         Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
-#                                             x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
-#     }
 #     b1 <- make_betavec(ss2, ppa, full=FALSE)
 #     expect_equal(dim(b1), c(10,40))
 #     ifun(b1)

@@ -76,7 +76,7 @@ pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 ss <- make_state(params=pp)
 ## FIXME: have make_state check for an age_cat attribute and
 ## if found, initialize age-structured state (maybe using
-## existing code from expand_stateval_age to just ~evenly
+## existing code from expand_state_age to just ~evenly
 ## distribute people across age categories, mod smart
 ## rounding?)
 
@@ -90,12 +90,12 @@ ss <- make_state(params=pp)
 Expand the state vector by age categories (by default, ten-year bins up to 91+)
 
 ```{r expand_state}
-ss2 <- expand_stateval_age(ss, age_cat = mk_agecats(min = 1, max = 100, da = 10))
+ss2 <- expand_state_age(ss, age_cat = mk_agecats(min = 1, max = 100, da = 10))
 ## pull out age categories
 aa <- attr(ss2, "age_cat")
 
 ## hack so we have an infective because rounding in
-## expand_stateval_age loses it
+## expand_state_age loses it
 ss2[grep("^Im",names(ss2))] <- 1
 ss2[grep("^E", names(ss2))] <- 0
 ss2[grep("^S",names(ss2))] <- round(pp[["N"]]/length(aa)-1)
@@ -523,7 +523,7 @@ ss <- make_state(params=pp)
 
 ## set up state with age cats that agree with Mistry et al
 ## matrices
-ss2 <- expand_stateval_age(ss,
+ss2 <- expand_state_age(ss,
             age_cat = age_cats)
 
 glue("number of exposed: {sum(find(ss2, 'E'))}")

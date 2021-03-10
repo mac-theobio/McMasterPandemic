@@ -114,7 +114,7 @@ make_betavec <- function(state, params, full=TRUE) {
         }
         
         ## check that Cmat rows sum to 1
-        if (!all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat)))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
+        if (!isTRUE(all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat))))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
         
         ## incorporate contact matrix and /N_j in beta term, and attach age cats
         

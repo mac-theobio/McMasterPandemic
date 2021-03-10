@@ -537,11 +537,9 @@ has_testing <- function(state,params=NULL,ratemat=NULL) {
     return(any(grepl("_t$",names(state))))
 }
 
-has_age <- function(params, state=NULL) {
-    if (!is.null(state)) {
-        ## FIXME
-    }
-    return("Cmat" %in% names(params))
+has_age <- function(x) {
+  ## look for presence of the "age_cat" attribute
+    return("age_cat" %in% names(attributes(x)))
 }
 
 

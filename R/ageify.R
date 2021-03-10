@@ -3,7 +3,7 @@
 #' @param max maximum age
 #' @param da age bin width
 #' @export
-mk_agecats <- function(min=1,max=100,da=10) {
+mk_agecats <- function(min=0,max=90,da=10) {
   s1 <- seq(min,max,by=da)
   ## if we have one-year age groups, don't make hyphenated
   ## categories
@@ -17,74 +17,12 @@ mk_agecats <- function(min=1,max=100,da=10) {
   return(out)
 }
 
-##' collapse age/testing/etc. categories (only; don't do other condensation)
-##' @param x a state vector
-##' @param levels levels/sort order
-##' @export
-## wrap into condense() ?
-condense_age <- function(x,levels=unique(epi_cat)) {
-    ## FIXME: should work on data frames too ...
-    epi_cat <- gsub("_.*$","",names(x))
-    epi_cat <- factor(epi_cat,levels=levels)
-    ret <- vapply(split(x,epi_cat),sum,numeric(1))
-    return(ret)
-}
-
-#' sum counts based on category
-#'
-#' @param x named list
-#' @param cat_regex regular expression used to search names(x)
-#' @export
-total_by_cat <- function(x, cat_regex){
-  total <- sum(x[grep(cat_regex, names(x))])
-  return(total)
-}
-
-#' collapse (non-accumulator) states into subcategories (ages)
-#' @param x a state vector or data frame (each row is a different time point)
-# condense_states <- function(x){
-#   
-#   ## define non-accumulator state names
-#   # states <- c("S", "E",
-#   #             "I",
-#   #             "H", "H",
-#   #             "ICU", "ICU",
-#   #             "R", "D")
-#   # states_regex <- paste0("^", states)
-#   
-#   ## convert vector to a (wide) tibble
-#   if(!("data.frame" %in% class(x))){
-#     x <- as.data.frame(t(x))
-#   }
-#   
-#   x <- tibble::tibble(x)
-#   #             tibble::enframe(x),
-#   #             pivot_longer(x,
-#   #                          everything(),
-#   #                          names_to = "name",
-#   #                          values_to = "value"))
-#   
-#   (x 
-#     %>% mutate(across(contains("_.*$"),
-#                       rowSums))
-#   )
-#   # ## condense states 
-#   # (x
-#   #   ## keep only non-accumulator states
-#   #   %>% select(matches(paste0("^", states))) 
-#   #   ## sum over states
-#   # )
-#   
-#   return(x)
-# 
-# }
-
 ## x_y, with x varying faster
 expand_names <- function(x,y,sep="_") {
     unlist(lapply(y, function(a) paste(x, a, sep=sep)))
 }
 
-#' distribute counts given a desired distribution
+#' distribute counts given a desired distribution (with smart rounding)
 #' 
 #' @param total total count to distribute
 #' @param dist target distribution (a vector that sums to 1)
@@ -100,40 +38,40 @@ distribute_counts <- function(total, dist){
   return(counts)
 }
 
+## STATES
+
 #' expand state vector and rate matrix by age classes and population distribution
 #'
 #' epidemiological state varies fast, age category varies slowly
 #' @param x state vector
 #' @param age_cat vector of age categories
-#' @param N_vec population count by age
+#' @param Nvec population distribution (as counts)
 #' @examples
 #' pp <- read_params("PHAC_testify.csv")
 #' ss <- make_state(params=pp)
-#' ss2 <- expand_stateval_age(ss)
+#' ss2 <- expand_state_age(ss)
 #' @export
-expand_stateval_age <- function(x, age_cat=mk_agecats(),
-                                N_vec = NULL) {
+expand_state_age <- function(x, age_cat=mk_agecats(),
+                             Nvec = NULL) {
   
     ## if no population is provided, assume a uniform distribution
-    if(is.null(N_vec)){
-      tot_N <- sum(x)
-      n_agecats <- length(age_cat)
-      N_vec <- distribute_counts(tot_N, rep(1/n_agecats, n_agecats))
+    if(is.null(Nvec)){
+      Nvec <- mk_Nvec(age_cat, Ntot = sum(x))
     }
   
     ## check that number of age groups matches 
-    if(length(age_cat) != length(N_vec)){
+    if(length(age_cat) != length(Nvec)){
       stop("population distribution must have same length as the number of age categories")
     }
     
     ## check that state vector and population distribution 
     ## sum to the same value
-    if(sum(x) != sum(N_vec)){
+    if(sum(x) != sum(Nvec)){
       stop("state and population distributions must have same sum")
     }
   
     ## make population distribution
-    N_dist <- N_vec/sum(N_vec)
+    Ndist <- Nvec/sum(Nvec)
     
     ## expand state labels with ages
     new_names <- expand_names(names(x), age_cat)
@@ -145,12 +83,12 @@ expand_stateval_age <- function(x, age_cat=mk_agecats(),
       x[!grepl("^S", names(x))] 
       ## distribute counts across all states but S 
       ## guided by population distribution
-        %>% map_dfr(distribute_counts, dist = N_dist)
+        %>% map_dfr(distribute_counts, dist = Ndist)
       ## get total counts by age over all states but S
         %>% mutate(total = rowSums(across(everything())))
       ## calculate S by age as the age-specific population - count over all
       ## other states
-        %>% mutate(S = N_vec - total)
+        %>% mutate(S = Nvec - total)
       ## drop total col and move S to far left of the table (so state columns
       ## are ordered as we usually order them)
         %>% select(-total)
@@ -165,7 +103,149 @@ expand_stateval_age <- function(x, age_cat=mk_agecats(),
     names(x) <- new_names
     attr(x, "age_cat") <- age_cat
     
+    ## add class
+    class(x) <- "state_pansim"
+    
     return(x)
+}
+
+##' collapse age/testing/etc. categories (only; don't do other condensation)
+##' @param x a state vector
+##' @param levels levels/sort order
+##' @export
+## wrap into condense() ?
+condense_age <- function(x,levels=unique(epi_cat)) {
+  ## FIXME: should work on data frames too ...
+  epi_cat <- gsub("_.*$","",names(x))
+  epi_cat <- factor(epi_cat,levels=levels)
+  ret <- vapply(split(x,epi_cat),sum,numeric(1))
+  
+  ## re-add class (lost after vapply)
+  class(ret) <- "state_pansim"
+  
+  return(ret)
+}
+
+#' collapse (non-accumulator) states into subcategories (ages)
+#' @param x a state vector or data frame (each row is a different time point)
+#' @export
+condense_state <- function(x){
+  
+  ## define non-accumulator state names
+  states <- c("S", "E",
+              "I", "H", "ICU", 
+              "R", "D")
+  states_regex <- paste0("^", states)
+  
+  ## if x is a vector (e.g. a state vec), convert it to a (wide) df
+  if(is.null(nrow(x))){
+    x <- as.data.frame(t(unclass(x)))
+  }
+  
+  (x
+    ## keep only non-accumulator states
+    %>% select(matches(paste(states_regex, collapse = "|"),
+                       ignore.case = FALSE))
+    ## append row number to keep value from the same timestep together
+    ## before pivoting longer
+    ## (sim observations have a date col, but state vectors do not
+    ## and i want this function to work in both cases)
+    %>% mutate(obs_number = 1:nrow(x))
+    ## pivot longer to make state aggregation easier
+    %>% pivot_longer(-obs_number,
+                     names_to = "var")
+    ## separate state from subcategory
+    %>% separate(var,
+                 into = c("state", "subcat"),
+                 sep = "_",
+                 extra = "merge")
+    ## turn subcat column into factor to keep original ordering
+    %>% mutate(subcat = as_factor(subcat))
+    ## aggregate value by timestep and subcategory
+    %>% group_by(obs_number, subcat)
+    %>% summarise(value = sum(value), .groups = "drop")
+    ## put data back into wide format
+    %>% pivot_wider(names_from = "subcat",
+                    values_from = "value")
+    ## drop observation number
+    %>% select(-obs_number)
+  )  -> x
+  
+  return(x)
+}
+
+## POPULATION DISTRIBUTIONS
+
+#' generate a population distribution (as a vector of counts)
+#' @param age_cat age categories (made with `mk_agecats()`)
+#' @param Ntot total population size
+#' @param dist (character) either "unif" for uniform or "rand" for a random population distribution
+#' @param names (logical) return a named vector? (names are given age categories)
+#' @export
+mk_Nvec <- function(age_cat = mk_agecats(),
+                    Ntot = 1e6,
+                    dist = "unif",
+                    names = FALSE){
+  
+  if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
+  
+  n <- length(age_cat)
+  
+  ## uniform distribution
+  if(dist == "unif"){
+    Ndist <- rep(1/n, n)
+  }
+  
+  ## random distribution
+  if(dist == "rand"){
+    Ndraw <- runif(n)
+    Ndist <- Ndraw/sum(Ndraw) ## normalize
+  }
+  
+  ## distribute scale up population distribution to match total population count
+  ## in ss
+  Nvec <- distribute_counts(total = Ntot, dist = Ndist)
+  
+  ## add names?
+  if (names){
+    names(Nvec) <- age_cat  
+  }
+  
+  return(Nvec)
+}
+
+## CONTACT MATRICES
+
+#' generate a contact matrix (where each row is a probability distribution)
+#' @param age_cat age categories (made with `mk_agecats()`)
+#' @param dist (character) either "unif" for uniform or "rand" for a random distributions
+#' @export
+mk_Cmat <- function(age_cat = mk_agecats(),
+                    dist = "unif"){
+  
+  if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
+  
+  ## set up matrix
+  n <- length(age_cat)
+  
+  if(dist == "unif"){
+    Cmat <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
+  }
+  
+  if(dist == "rand"){
+    ## preallocate memory
+    Cmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
+    
+    ## fill matrix with a random distribution in each row)
+    for (i in 1:n){
+      row <- runif(n)
+      row <- row/sum(row)
+      
+      Cmat[i,] <- row
+    } 
+  }
+  
+  return(Cmat)
 }
 
 #' Make contact matrix using Mistry et al. approach
@@ -239,10 +319,37 @@ mk_mistry_cmat <- function(weights =
   return(cmat)
 }
 
-## FIXME: carry age categories as attribute of stateval?
-## assign class state_pansim?
+#' expand parameter list to include age structure
+#'
+#' @param pp parameter list (e.g. read in with `read_params()`)
+#' @param age_cat vector of age categories
+#' @param Cmat contact matrix; default is uniform
+#' @param Nvec population distribution (as counts); default is uniform
+#' @examples
+#' pp <- read_params("PHAC_testify.csv")
+#' ppa <- expand_params_age(pp)
+#' @export
+expand_params_age <- function(pp,
+                              age_cat = mk_agecats(),
+                              Cmat = mk_Cmat(),
+                              Nvec = mk_Nvec()){
+  ## convert to list
+  pp <- as.list(pp)
+  ## update pop
+  pp[["N"]] <- Nvec
+  ## update Cmat
+  pp <- c(pp, list(Cmat = Cmat))
+  
+  ## add age cats as attribute
+  attr(pp, "age_cat") <- age_cat
+  
+  ## add class
+  class(pp) <- "params_pansim"
+    
+  return(pp)
+}
 
-#' @rdname expand_stateval_age
+#' @rdname expand_state_age
 #'
 #' @param ratemat rate matrix
 #' @param params parameter vector
@@ -269,7 +376,7 @@ if (FALSE) {
     devtools::load_all()
     pp <- read_params("PHAC_testify.csv")
     ss <- make_state(params=pp)
-    ss2 <- expand_stateval_age(ss)
+    ss2 <- expand_state_age(ss)
     ## hack so we have an infective
     ss2["Im_11-20"] <- 1
     ss2["E_91+"] <- 0
