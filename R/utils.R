@@ -563,16 +563,22 @@ smart_round <- function(x) {
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
+##' @param box.size box size for diagram
+##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
-                         aspect="iso", add_blocks=NULL,
+                         aspect="iso",
+                         add_blocks=NULL,
+                         blocksize=NULL,
+                         block_col=2,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
-                         do_symbols=NULL) {
+                         do_symbols=NULL,
+                         box.size=0.02,...) {
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
@@ -598,11 +604,12 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            ylab="from",
                            sub="",
                            colorkey = !const_width,
-                           aspect=aspect)
+                           aspect=aspect, ...)
         if (add_blocks) {
             if (requireNamespace("latticeExtra")) {
                 ## FIXME: don't hardcode length (but evaluation within layer() is weird !
-                p <- (p + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
+                p <- (p
+                    + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
                     + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
             }
         }
@@ -611,7 +618,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
            stop("igraph not available")
        } else {
            g <- igraph::graph_from_adjacency_matrix(M)
-           plot(g, layout=igraph::layout_as_tree)
+           plot(g, layout=igraph::layout_as_tree, ...)
        }
     } else if (method=="diagram") {
         xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,D=7,R=7,X=7)
@@ -623,7 +630,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
         } else {
             M3[M3!="0"] <- ""  ## blank out all labels
         }
-        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
+        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=box.size, add=FALSE, ...)
     }
     return(p)
 }
@@ -657,13 +664,14 @@ vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE,
 }
 
 adjust_symbols <- function(M) {
+    ## use [] throughout to avoid losing dimnames ...
     ## subscripts: _ + letter at end of line
-    M <- gsub("_([a-z])$","[\\1]",M)
+    M[] <- gsub("_([a-z])$","[\\1]",M)
     ## subscripts (letter + number at end of word or line)
-    M <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3", M)
+    M[] <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3", M)
     ## suppress 'nonhosp_mort'
-    M <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",M)
-    M <- gsub("nonhosp_mort +\\*?","",M)
+    M[] <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",M)
+    M[] <- gsub("nonhosp_mort +\\*?","",M)
     ## M -> X == M -> H
     M[grep("^M",M)] <- M["Is","H"]
     M[grep("beta_vec",M)] <- "sum(beta[j]*I[j])"
