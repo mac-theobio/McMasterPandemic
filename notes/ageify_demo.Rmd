@@ -7,12 +7,10 @@ output: html_document
 
 ```{r setup, message = FALSE}
 library(tidyverse)
-devtools::load_all(path = "..")
+devtools::load_all()
 ```
 
 # Simulation demo
-
-Let's keep it simple and assume four age groups.
 
 ## Homogeneous mixing
 
@@ -22,7 +20,113 @@ To reduce the ageified model to the case of homogenous mixing, we need to set:
 1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups (default in the software if only one $N$ is provided; this is assumed to be the total population size),
 1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups (some contact matrix `Cmat` must be provided since this is how the software currently checks whether or not age-structure is provided).
 
-```{r homogenous_sim}
+Ageify tests now include checks to ensure that the homogeneous case of the age-structured model reduces down to the base simulation. 
+
+Here's a demo of simulations with age-varying transmission:
+
+```{r}
+prep_res_for_plotting <- function(res){
+  (res  
+    %>% select(-c(foi))
+    %>% pivot_longer(-date)
+    %>% separate(name, into = c("state", "age_cat"),
+                 sep = "_", extra = "merge")
+    %>% mutate(state = as_factor(state))
+   ## fix age labels
+    %>% mutate(age_cat = str_replace(age_cat, "\\.$", "\\+"))
+    %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
+  ) -> res
+  
+  return(res)
+}
+```
+
+```{r plot_res_by_age}
+plot_res_by_age <- function(res){
+  (prep_res_for_plotting(res)
+    %>% ggplot(aes(x = date, y = value, colour = state))
+    + geom_line()
+    + facet_wrap(vars(age_cat))
+  ) -> gg
+  
+  return(gg)
+}
+```
+
+```{r plot_res_by_state}
+plot_res_by_state <- function(res){
+  (prep_res_for_plotting(res)
+    %>% ggplot(aes(x = date, y = value, colour = age_cat))
+    + geom_line()
+    + facet_wrap(vars(state))
+  ) -> gg
+  
+  return(gg)
+}
+```
+
+```{r plot_res_uu}
+base_params <- update(read_params("PHAC_testify.csv"),
+                      testing_intensity=0,
+                      beta0 = 5)
+base_state <- make_state(params = base_params)
+
+end_date <- "2020-08-01"
+
+res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
+                         end_date = end_date)
+
+(plot_res_by_age(res_uu)
+  + labs(
+    title = "uniform population distribution, uniform contacts, constant beta")
+  )
+plot_res_by_state(res_uu)
+```
+```{r plot_res_ur}
+beta0vec <- mk_beta0vec(age_cat = mk_agecats(),
+                        mean_beta0 = 10,
+                        dist = "rand")
+res_ur <- run_sim_ageify(base_params, base_state,
+                         beta0vec = beta0vec,
+                         Cmat = mk_Cmat(dist = "rand"),
+                         condense = FALSE,
+                         end_date = end_date)
+
+(plot_res_by_age(res_ur)
+  + labs(
+    title = "uniform population distribution, random contacts, random beta0")
+  ) 
+plot_res_by_state(res_ur)
+```
+
+```{r plot_res_ru}
+res_ru <- run_sim_ageify(base_params, base_state,
+                         Nvec = mk_Nvec(dist = "rand"),
+                         condense = FALSE,
+                         end_date = end_date)
+
+(plot_res_by_age(res_ru)
+  + labs(
+    title = "random population distribution, uniform contacts, constant beta0")
+  ) 
+plot_res_by_state(res_ru)
+```
+
+```{r plot_res_rr}
+res_rr <- run_sim_ageify(base_params, base_state,
+                         Nvec = mk_Nvec(dist = "rand"),
+                         Cmat = mk_Cmat(dist = "rand"),
+                         beta0vec = beta0vec,
+                         condense = FALSE,
+                         end_date = end_date)
+
+(plot_res_by_age(res_rr)
+  + labs(
+    title = "random population distribution, random contacts, random beta0")
+  ) 
+plot_res_by_state(res_rr)
+```
+```{r old, eval = FALSE, echo = FALSE}
 ## READ INITIAL PARAMETERS (for base sim)
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 
@@ -60,27 +164,7 @@ show_ratemat(M)
 end_date <- "2021-02-15"
 ```
 
-Run the ageified simulation and inspect results:
-
-```{r run-sim-unif}
-rr2 <- run_sim(ppa_unif, ss2, end_date = end_date, condense=FALSE)
-plot(rr2,log=TRUE)
-```
-
-Looks pretty homogeneous, in that it appears all age classes have identical epidemics.
-
-TODO: check that this is the case.
-
-```{r compare_sim_unif}
-## age-structured sim, condense ages
-rr2_condensed <- condense.pansim(rr2)
-rr <- run_sim(pp, ss, end_date = end_date)
-
-plot(rr2_condensed)
-plot(rr %>% select(-cumRep))
-```
-
-```{r other_cmats, eval = FALSE}
+```{r other_cmats, eval = FALSE, echo = FALSE}
 ## case 2: diagonal (mixing only within age groups)
 Cmat_diag <- diag(n)
 
