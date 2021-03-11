@@ -86,39 +86,40 @@ make_betavec <- function(state, params, full=TRUE) {
     Icat_prop_vec <- with(as.list(params),
                           c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
     names(Icat_prop_vec) <- Icats
-    
+
     ## deal with age structure
     if (has_age(params)) {
-        
+
         ## perform checks
-        
+
         ## if only total population size is given, assume a uniform distribution
         ## across age groups
         if (length(params$N)==1){
             # print("assuming a uniform population distribution...")
             params$N <- mk_Nvec(age_cat = attr(params, "age_cat"),
                                 Ntot = params$N)
-            ## dist given in terms of Cmat since has_age checks existence of 
+            ## dist given in terms of Cmat since has_age checks existence of
             ## Cmat in params
         } else {
             if (length(params$N)!=nrow(params$Cmat)) stop("N must either be a scalar (total population) or a vector of the same length as the number of age groups specified via Cmat.")
         }
-        
+
         ## if beta0 is a scalar, assume the same beta across age groups
         if (length(params$beta0)==1){
             # print("assuming constant beta0 across ages...")
-            params$beta0 <- rep(params$beta0, nrow(params$Cmat))
+            params$beta0 <- mk_beta0vec(age_cat = attr(params, "age_cat"),
+                                        mean_beta0 = params$beta0)
         } else {
             if(length(params$beta0)!=nrow(params$Cmat)) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via Cmat.")
         }
-        
+
         ## check that Cmat rows sum to 1
         if (!isTRUE(all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat))))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
-        
+
         ## incorporate contact matrix and /N_j in beta term, and attach age cats
-        
-        ## grab contact matrix (with susceptibles as rows 
-        ## and infectives as columns) and scale each row by beta corresponding 
+
+        ## grab contact matrix (with susceptibles as rows
+        ## and infectives as columns) and scale each row by beta corresponding
         ## to that susceptible age group
         Cmat <- with(params, beta0*Cmat)
         ## transpose newly-scaled Cmat to enable calculations below
@@ -135,9 +136,9 @@ make_betavec <- function(state, params, full=TRUE) {
         beta_vec0 <- t(kronecker(Cmat,matrix(Icat_prop_vec)))
         dimnames(beta_vec0) <- list(a_names,new_names)
         beta_vec0 <- Matrix(beta_vec0)
-        
+
     } else {
-        ## without age structure, multiply by single beta0 and 
+        ## without age structure, multiply by single beta0 and
         ## normalize by total population N for I/N term in force of infection
         beta_vec0 <- with(as.list(params), beta0*Icat_prop_vec/N)
     }
