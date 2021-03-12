@@ -84,7 +84,6 @@ pp2 <- run_sim(params=coef(modlist$fit,"all")
 					,start_date=min(pp$date)
 					,end_date=max(pp$date)
 					, params_timevar = rel_betaf
-					# , ndt = modlist$fit$forecast_args$sim_args$ndt
 	)
 
 pp2 <- (pp2 %>% select(date,hosp,death,report)
