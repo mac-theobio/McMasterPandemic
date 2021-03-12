@@ -296,12 +296,12 @@ mk_beta0vec <- function(age_cat = mk_agecats(),
 
 #' generate a contact matrix (where each row is a probability distribution)
 #' @param age_cat age categories (made with `mk_agecats()`)
-#' @param dist (character) either "unif" for uniform or "rand" for a random distributions
+#' @param dist (character) either "unif" for uniform, "rand" for a random distributions by age, or "diag" for strictly within-age mixing (Cmat = the identity matrix)
 #' @export
 mk_Cmat <- function(age_cat = mk_agecats(),
                     dist = "unif"){
 
-  if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
+  if(!(dist %in% c("unif", "rand", "diag"))) stop("dist must be either 'unif', 'rand', or 'diag'")
 
   ## set up matrix
   n <- length(age_cat)
@@ -321,6 +321,11 @@ mk_Cmat <- function(age_cat = mk_agecats(),
 
       Cmat[i,] <- row
     }
+  }
+
+  if(dist == "diag"){
+    Cmat <- diag(1, nrow = n, ncol = n, names = TRUE)
+    dimnames(Cmat) <- list(age_cat, age_cat)
   }
 
   return(Cmat)

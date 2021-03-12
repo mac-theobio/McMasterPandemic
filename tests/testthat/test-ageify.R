@@ -12,6 +12,11 @@ context("ageify")
 ## base params and state
 params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 state <- make_state(params=params)
+## set up so there will be a single infectious seed in each age group (for the
+## age-structured sims)
+state["E"] <- length(mk_agecats())
+state["S"] <- 1e6 - state["E"]
+state[!grepl("^(S|E)", names(state))] <- rep(0, length(state)-2)
 
 ## generate state vecs ##
 
@@ -27,6 +32,7 @@ state_r <- expand_state_age(state, Nvec = Nvec_r)
 ## generate param sets ##
 
 Cmat_r <- mk_Cmat(dist = "rand")
+Cmat_d <- mk_Cmat(dist = "diag")
 
 ## params with unif pop
 ## + unif cmat
@@ -34,6 +40,9 @@ params_uu <- expand_params_age(params)
 ## + random cmat
 params_ur <- expand_params_age(params,
                                Cmat = Cmat_r)
+## + diag cmat
+params_ud <- expand_params_age(params,
+                               Cmat = Cmat_d)
 
 ## params with random pop
 ## + unif cmat
@@ -52,6 +61,8 @@ end_date <- "2021-02-15"
 res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
 ## + rand cmat
 res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
+## + diag cmat
+res_ud <- run_sim(params_ud, state_d, end_date = end_date, condense = FALSE)
 
 ## sims with random pop
 ## + unif cmat
@@ -157,46 +168,59 @@ zero_range <- function(x, tol = .Machine$double.eps ^ 0.5) {
     return(isTRUE(all.equal(x[1], x[2], tolerance = tol)))
 }
 
-test_that("homogeneous case of age-structured model yields identical epidemics in age classes that did not seed the epidemic",{
-    ## find age classes that didn't seed the epidemic
-    (as.data.frame(t(unclass(state_u)))
-     %>% pivot_longer(everything())
-     %>% separate(name, into = c("state", "age_cat"),
-                  sep = "_", extra = "merge")
-     %>% mutate(state = ifelse(state == "S", "S", "nonS"))
-     %>% group_by(state, age_cat)
-     %>% summarise(value = sum(value), .groups = "drop")
-     %>% filter(state == "nonS", value == 0)
-     ## replace non-alpha numeric values in age cats with periods,
-     ## as in simulation result
-     %>% mutate(age_cat = stringr::str_replace(age_cat, "-|\\+", "."))
-     %>% pull(age_cat)
-     ) -> age_cats_to_test
-
-    (res_uu
-     ## keep only cols of age classes that didn't seed the epidemic
-     ## (and date for grouping observations)
-     %>% select(matches("\\d+"), contains("date"))
-     ## pivot to be able to easily group observations using substrings in column
-     ## name
-     %>% pivot_longer(-date)
-     %>% separate(name, into = c("state", "age_cat"),
-                  sep = "_", extra = "merge")
-     ## expand age classes back into separate columns,
-     ## keep only age classes that didn't seed the epidemic
-     ## and then compress into a single list-col,
-     ## so that we can iterate over a list at a time
-     %>% pivot_wider(names_from = "age_cat",
-                     values_from = "value")
-     %>% select(all_of(age_cats_to_test))
-     %>% mutate(values = transpose(select(.,matches("\\d+"))))
-     ## check for equality across age groups
-     %>% mutate(values_all_equal = map_lgl(values, zero_range))
-     ## pull check vector to use in an expectation
-     %>% pull(values_all_equal)
+## helper function to check for equality across age groups for a given state and
+## simulation date (returns a logical vector of length date*states)
+check_equality_across_ages <- function(df){
+    (df
+        ## pivot to be able to easily group observations using substrings in column
+        ## name
+        %>% select(-foi)
+        %>% pivot_longer(-date)
+        %>% separate(name, into = c("state", "age_cat"),
+                     sep = "_", extra = "merge")
+        ## expand age classes back into separate columns,
+        ## and then compress into a single list-col,
+        ## so that we can iterate over a list at a time to check for no variance
+        ## "zero range"
+        %>% pivot_wider(names_from = "age_cat")
+        %>% mutate(values = transpose(select(.,matches("\\d+"))))
+        ## check for equality across age groups
+        %>% mutate(values_all_equal = map_lgl(values, zero_range))
+        ## pull check vector to use in an expectation
+        %>% pull(values_all_equal)
      ) -> values_all_equal
 
-    expect_true(all(values_all_equal))
+    return(values_all_equal)
+}
+
+test_that("homogeneous case of age-structured model yields identical epidemics in age classes that did not seed the epidemic",{
+    # ## find age classes that didn't seed the epidemic
+    # (as.data.frame(t(unclass(state_u)))
+    #  %>% pivot_longer(everything())
+    #  %>% separate(name, into = c("state", "age_cat"),
+    #               sep = "_", extra = "merge")
+    #  %>% mutate(state = ifelse(state == "S", "S", "nonS"))
+    #  %>% group_by(state, age_cat)
+    #  %>% summarise(value = sum(value), .groups = "drop")
+    #  %>% filter(state == "nonS", value == 0)
+    #  ## replace non-alpha numeric values in age cats with periods,
+    #  ## as in simulation result
+    #  %>% mutate(age_cat = stringr::str_replace(age_cat, "-|\\+", "."))
+    #  %>% pull(age_cat)
+    #  ) -> age_cats_to_test
+
+    # (res_uu
+    #  ## keep only cols of age classes that didn't seed the epidemic
+    #  ## (and date for grouping observations)
+    #  %>% select(matches("\\d+"), contains("date"))
+    #
+    #  ) -> values_all_equal
+    #
+    expect_true(all(check_equality_across_ages(res_uu)))
+})
+
+test_that("diagonal contacts yield identical epidemics in each age group (with an infectious seed in each age group)",{
+    expect_true(all(check_equality_across_ages(res_ud)))
 })
 
 ## not really proper tests yet: FIXME/clean me up!
