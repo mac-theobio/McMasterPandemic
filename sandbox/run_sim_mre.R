@@ -49,7 +49,7 @@ pp <- predict(modlist$fit,ensembles=FALSE
 
 print(gg <- ggplot(pp,aes(date,value))
 		+ geom_line()
-		+ facet_wrap(~var,scale="free")
+		+ facet_wrap(~var,scale="free",nrow=2)
 )
 
 ## We can see the spikes and Rt does not account for depletion of S
@@ -84,6 +84,7 @@ pp2 <- run_sim(params=coef(modlist$fit,"all")
 					,start_date=min(pp$date)
 					,end_date=max(pp$date)
 					, params_timevar = rel_betaf
+					# , ndt = modlist$fit$forecast_args$sim_args$ndt
 	)
 
 pp2 <- (pp2 %>% select(date,hosp,death,report)
