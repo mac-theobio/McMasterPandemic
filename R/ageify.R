@@ -444,6 +444,62 @@ mk_Cmat <- function(age_cat = mk_agecats(),
 
 }
 
+#' Make population distribution using Mistry et al. data
+#'
+#' @inheritParams mk_mistry_Cmat
+#'
+#' @return a tibble with age groups and population counts
+#' @export
+#'
+#' @examples mk_mistry_Nvec()
+mk_mistry_Nvec <- function(province = "Ontario",
+                           age_cat = NULL){
+
+  ## check that age categories are correctly specified
+  if(!is.null(age_cat)){
+    ## process age cat string into integers
+    ages <- as.integer(sub("\\+", "", unlist(strsplit(age_cat, "-")), "+", ""))
+    if(min(ages) != 0) stop("minimum age must be 0")
+    if(max(ages) > 84) stop("maximum age can't exceed 84")
+  }
+
+  ## process whether any  aggregation needs to be done across ages
+  aggregate <- !is.null(age_cat)
+  if(is.null(age_cat)){
+    ## initialize default age_cat vector, if unspecified
+    age_cat <- mk_agecats(min = 0, max = 84, da = 1)
+  }
+
+  ## set up filename prefix/suffix for each
+  ## setting-specific matrix
+  if(is.null(province)){
+    filename_prefix <- paste0("Canada_country_level_")
+  } else {
+    filename_prefix <- paste0("Canada_subnational_", province,
+                              "_")
+  }
+
+  pop_dist <- (read_csv(system.file("params", "mistry-cmats",
+                                    paste0(filename_prefix,
+                                           "age_distribution_85.csv"),
+                                    package = "McMasterPandemic"),
+                        col_names = c("age", "pop"),
+                        col_types = cols(
+                          .default = col_double()
+                        )))
+
+  if (aggregate){
+    bin_edges_lower <- as.numeric(sub("-\\d+|\\+", "", age_cat))
+    pop_dist <- (pop_dist
+                 %>% mutate(age_group = make_age_groups(age, bin_edges_lower))
+                 %>% group_by(age_group)
+                 %>% summarise(pop = sum(pop))
+    )
+  }
+
+  return(pop_dist)
+}
+
 #' Make contact matrix using Mistry et al. approach
 #'
 #' @param weights named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
@@ -487,6 +543,18 @@ mk_mistry_Cmat <- function(weights =
 
   n <- length(age_cat)
 
+  ## if aggregating, set up lower bin edges of age groups,
+  ## load population by age, and generate new aggregated population counts
+  if (aggregate){
+    ## get lower age bins for aggregation
+    bin_edges_lower <- as.numeric(sub("-\\d+|\\+", "", age_cat))
+
+    pop_dist <- mk_mistry_Nvec(province = province)
+
+    pop_dist_agg <- mk_mistry_Nvec(province = province,
+                                   age_cat = age_cat)
+  }
+
   ## preallocate memory for the output
   cmat <- matrix(rep(0, n*n), nrow = n)
 
@@ -508,28 +576,6 @@ mk_mistry_Cmat <- function(weights =
   filename_suffix <- "_setting_85.csv"
 
   settings <- c("household", "school", "work", "community")
-
-  ## if aggregating, load populations by age and generate new aggregated
-  ## population vector
-  if (aggregate){
-    ## get lower age bins for aggregation
-    bin_edges_lower <- as.numeric(sub("-\\d+|\\+", "", age_cat))
-
-    pop_dist <- (read_csv(system.file("params", "mistry-cmats",
-                                      paste0(filename_prefix,
-                                      "age_distribution_85.csv"),
-                                      package = "McMasterPandemic"),
-      col_names = c("age", "pop"),
-      col_types = cols(
-        .default = col_double()
-      )))
-
-    pop_dist_agg <- (pop_dist
-      %>% mutate(age_group = make_age_groups(age, bin_edges_lower))
-      %>% group_by(age_group)
-      %>% summarise(pop = sum(pop))
-      )
-  }
 
   for (set in settings){
     filename <- system.file("params", "mistry-cmats",
@@ -635,7 +681,7 @@ expand_params_age <- function(pp,
 }
 
 
-#' Agify a basic simulation
+#' Ageify a basic simulation
 #'
 #' Wrapper function for `run_sim()` that incorporates existing ageify tools
 #'
