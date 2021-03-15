@@ -5,9 +5,17 @@ date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
 output: html_document
 ---
 
-# The model
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(message = FALSE)
 
-## Basic SIR
+library(tidyverse)
+devtools::load_all()
+library(glue)
+```
+
+# Model setup
+
+## Homogeneous force of infection
 
 Let $S, I,$ and $R$ represent the *number* of susceptible, infected, and removed individuals in a population of $N$ individuals. In the basic SIR model, the force of infection (FOI), which is the rate of new infections (per susceptible, per unit time) is given by 
 
@@ -31,30 +39,232 @@ where $\mathbb{P}(A | B)$ is the conditional probability of event $A$ given even
 
 Going back to the form of $\lambda$ in the basic SIR model, $\mathbb{P}\text{(contact with infective | contact with any individual in the population)}$ is modeled by $I/N$, and so the product of the remaining two terms is equal to $\beta$.
 
-## Adding age-structure
+## Age-structures force of infection
 
-Now imagine the population is subdivided into $n$ age groups, indexed by $i = 1, ..., n$, and the time scale is short enough relative to the age group size that the aging process can be ignored. We want to incorporate age-based heterogeneity in (1) the average number of contacts per susceptible, per unit time, and (2) the frequency of contacts between age groups. The first point affects the first term of the FOI (encoded in $\beta$), while the second point affects the conditional probability of contact with an infective (given contact with any individual in the population).
+Now imagine the population is subdivided into $n$ age groups, indexed by $i = 1, ..., n$, and the time scale is short enough relative to the age group size that the aging process can be ignored. We want to incorporate age-based heterogeneity in (1) the average number of contacts per susceptible, per unit time, and (2) the frequency of contacts between age groups. 
 
-For age group $i$, the force of infection is given by
+The first point affects the first term of the FOI (encoded in $\beta$), while the second point affects the conditional probability of contact with an infective (given contact with any individual in the population). To disentangle the average number of contacts per susceptible from the probability of transmission given contact with an infective, let's factor $\beta = \sigma \tau c$, where $\sigma$ is susceptibility (unitless), $\tau$ is infectivity (unitless), and $c$ is the average number of contacts per individual per unit time.
+
+For age group $i$, the force of infection is then given by
 
 $$
-\lambda_i = \beta_i \sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j},
+\lambda_i = (\sigma_i \tau_j) c_i  \sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j},
 $$
 
-where $\beta_i$ is the age-specific transmission rate (meant to reflect heterogeneity in the *number* of contacts), $P_{ij}$ is a matrix where row $i$ specifies how the number of contacts for an individual of age group $i$ are distributed across all age groups, and $\frac{I_j}{N_j}$ models the conditional probability of contact with an infective in age group $j$ (given contact with an individual in age group $j$). ($N_j$ is the population of age group $j$.) The matrix $P = \{ P_{ij} \}$ thus must have rows that sum to 1, *i.e.,* it is a (right) stochastic matrix. It does not need to be symmetric, however.
+where
 
-Since $P_{ij}$ is a probability distribution for fixed $i$, the term $\sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j}$ is essentially a weighted average of the probability of contacting an infective across patches, *i.e.* it's the average probability of contacting an infective over the entire population. Thus, it's exactly analogous to $I/N$ in the basic (homogenous) model.
+* $\sigma_i\tau_j$ gives the probability of transmission to a susceptible of age $i$ (with susceptibility $\sigma_i$) given contact with an infective of age $j$ (with infectivity $\tau_j$)
+* $c_i$ is the average number of contacts per susceptible of age $i$ per unit time 
+* $P_{ij}$ is a matrix where row $i$ specifies how the number of contacts for an individual of age group $i$ are distributed across all age groups, and so its rows must sum to 1, but it does not have to be symmetric (the distribution of $i$'s contacts across the population does not have to be equal to the frequency of contacts $j$ receives from the rest of the population)
+* $I_j/N_j$ models the conditional probability of contact with an infective in age group $j$, given contact with an individual in age group $j$. ($N_j$ is the population of age group $j$.)
 
-(Assuming this force of infection is equivalent to using a meta-population model, but instead of each "patch" representing a spatial region, it represents an age group.)
+For the moment, assume there isn't any heterogeneity in susceptibility and infectivity, so without loss of generality set $\sigma_i = \tau_j = 1$.
+
+Since $P_{ij}$ is a probability distribution for fixed $i$, the term $\sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j}$ is essentially a weighted average of the probability of contacting an infective across age groups, *i.e.* it's the average probability of contacting an infective over the entire population. Thus, it's exactly analogous to $I/N$ in the basic (homogenous) model.
 
 ## Reducing back to the homogeneous case
 
 The age-structured model reduces to the homogeneous model if the following three assumptions are made:
 
-1. $\beta_i = \beta$ for all $i$: constant contact rate (and transmission probability) across age groups,
+1. $c_i = c$ for all $i$: constant contact rate (and transmission probability) across age groups (or if we let $\sigma_i$ and $\tau_j$ vary by age, then we need  $\beta_{ij} = \sigma_i\tau_j c_i = \beta$ constant),
 1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups,
 1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups. 
 
-## Assumption vs callibration
+# Model parameterization
 
-We will assume the contact *structure* $P_{ij}$ from studies on age-structured contact mixing patterns (e.g. POLYMOD, Mistry *et al.* 2021), but we will allow `McMasterPandemic` to calibrate the average *number* of contacts by age via $\beta_i$ from the data. In this way, the fundamental interpretation of $\beta$ does not change, whether or not age-structure is included in the model.
+## "Balance" of contacts 
+
+The way the model is set up is so that $c_i$ specifies the average number of contacts per susceptible of age $i$ per day while $P_{ij}$ determines the proportion these contacts that occur with age group $j$. In parameterizing these quantities, we want to ensure that that contacts are "balanced", *i.e.*, that a contact between $i$ and $j$ counts as a contact for $i$ and a contact for $j$. In other words, the total number of contacts between age groups $i$ and $j$ implied by the model parameters must be conserved, no matter which age group is in the susceptible role and which is in the infective role. In the notation of the model, the equation we want to satisfy is
+
+$$
+c_iN_iP_{ij} = c_jN_jP_{ji}.
+$$
+for all age classes $i$ and $j$. We call this the "balance" condition.
+
+## Mistry *et. al.* model
+
+### Contact matrices
+
+Mistry *et. al.* provide synthetic contact matrices that are constructed as follows: 
+
+1. Use census data, household surveys, etc. of a region to construct a contact network, where individual characteristics like age and employment status are logged.
+1. Let contacts occur in "configurations", which are specific instances of settings (households, schools, workplaces, or community locations). Assuming mixing is homogeneous within a configuration, then the relative abundance of contacts between age groups $i$ and $j$ in a specific configuration $s$ of a setting $k$ is given by <br/><br/>
+$$
+\Gamma_{ij}^{k(s)} = \frac{\phi_i^{k(s)}(\phi_j^{k(s)}- \delta_{ij})}{\nu^{k(s)} - 1}
+$$
+<br/>where $\phi_i^{k(s)}$ is the number of individuals of age $i$ in configuration $s$ of setting $k$, $\delta_{ij}$ is the Kronecker delta function, and $\nu^{k(s)}$ is the total number of individuals in configuration $s$ of setting $k$. <br/><br/>In other words, the numerator counts the number of possible pairs of individuals in configuration $s$ (not including the pair of a person with themselves), and the denominator counts the total number of possible contacts per individual in the configuration. This matrix is necessarily symmetric, which we will see later is key to ensuring that contacts are "balanced" by the previously described condition.
+1. Define $\Gamma_{ij}^{k} = \sum{s: \nu^{k(s)} > 1} \Gamma_{ij}^{k(s)}$, which tallies the relative abundance of contacts across all configurations $s$ of a setting $k$ where there is more than one individual in the configuration (and so contacts are actually occurring). This matrix is also symmetric since the component coming from each configuration is symmetric.
+1. Now let $F_{ij}^{k} = \Gamma_{ij}^{k}/N_i$ be the frequency of contact between individuals of ages $i$ and $j$ *per individual of age $i$* in setting $k$. These matrices are no longer a symmetric (unless the population distribution is perfectly uniform). The paper calls these the "per capita **probability** of contact of an individual of age $i$ with an individual of age $j$ in setting $k$, but neither the rows nor the columns of this matrix sum to 1, so I'm not sure how exactly this is a probability...
+1. Lastly, construct an overall contact matrix, $M_{ij}$ as a linear combination of the setting-specific frequency matrices: $M_{ij} = \sum_k \omega_{k} F_{ij}^k$. The weights $\omega_{k}$ are in units of contacts per unit time, so this is where $M$ inherits its units from. Based on the setup of $M$, I think the $\omega_k$ have to be the average number of contacts per unit time in a given setting, but across age groups, and then the relative abundance of each age group in a setting (built into $F_{ij}^k$) takes care of adjusting to an age-specific contact rate from the base weight $\omega_k$.
+
+Let's check that we can get recover the symmetric setting-specific $\Gamma$ matrix with a specific example:
+
+```{r, message = FALSE}
+popbyage <- read_csv(
+  system.file("params", "mistry-cmats", "Canada_subnational_Ontario_age_distribution_85.csv",
+              package = "McMasterPandemic"),
+  col_names = c("age_group", "mistry_value")
+)
+household <- mk_mistry_Cmat(weights = c(household = 1,
+                                        school = 0, 
+                                        work = 0, 
+                                        community = 0))
+
+gamma_household <- household*popbyage$mistry_value
+isSymmetric(gamma_household)
+```
+
+### Epidemic model setup
+
+The force of infection used in the Mistry paper is
+
+$$
+\lambda_i = \beta \sum_j M_{ij} \frac{I_j}{N_j},
+$$
+
+where $\beta$, "the transmisibility of the infection", must be a unitless quantity since $M_{ij}$ already has units of contacts between ages $i$ and $j$ per susceptible of age $i$ per unit time. 
+
+The balance condition (in the notation of this model) is $N_i M_{ij} = N_j M_{ji}$. We can see this balance is satisfied for any weights $\omega_k$:
+
+$$
+N_i M_{ij} = N_i \sum_k \omega_k F_{ij}^k = N_i \sum_k \omega_k \frac{\Gamma_{ij}^k}{N_i} \\
+= \sum_k \omega_k \Gamma_{ij}^k = \sum_k \omega_k \Gamma_{ji}^k \frac{N_j}{N_j} = N_j \sum_k \omega_k \frac{\Gamma_{ji}^k}{N_j} = N_j M_{ji}
+$$
+(by the symmetry in $\Gamma^k$). This equation implies that if we multiply the rows of $M$ with the relevant age-specific population, we should get a symmetric matrix, and we see that we do:
+ 
+```{r}
+M <- mk_mistry_Cmat()
+isSymmetric(M*popbyage$mistry_value)
+```
+
+## Convert from Mistry to MacPan model
+
+### Force of infection
+
+The Mistry *et. al.* force of infection is
+
+$$
+\lambda_i = \beta \sum_j M_{ij} \frac{I_j}{N_j},
+$$
+
+while ours is
+
+$$
+\lambda_i = c_i  \sum_{j = 1}^{n}P_{ij}\frac{I_j}{N_j},
+$$
+
+We can make the following change of variables to go from one to the other:
+
+$$
+c_i = \beta \bar{M_{i}} \\
+P_{ij} = M_{ij}/\bar{M_{i}}
+$$
+where $\bar{M_{i}}$ is the $i$th row sum of $M$. In other words, we just need to row-normalize $M_{ij}$. 
+
+While $\beta$ can be anything, it's the *same* constant multiple across age groups, which means that the $c_i$ must be proportional to the vector of $\bar{M_i}$ in order for the balance condition to be satisfied:
+
+$$
+c_i N_i P_{ij} = \beta \bar{M_i} N_i M_{ij}/\bar{M_i} = \beta N_i M_{ij} \\
+= \beta N_j M_{ji} \quad \text{(by balance shown above)} \\
+= \beta \bar{M_j}/\bar{M_j} N_j M_{ji} = \beta \bar{M_j} N_j P_{ji} = c_j N_j P_{ji}
+$$
+In order to use the Mistry matrices in our framework while still satisfying the balance criterion, we have three options for calibration:
+
+1. assume the setting-specific weights $\omega_k$  (contacts/day) from the Mistry paper and fit an age-independent "transmissibility" parameter $\beta$ (not a rate!) to get the $c_i$'s (simple, but assuming everything about age-specific contacts a priori)
+2. fit the four setting-specific $\omega_k$'s and the $\beta$ that scales $c_i = \beta \bar{M_i} = \beta (\sum_k \omega_k \bar{F_{ij}})$ (potentially difficult to calibrate, but we can learn about age-specific contacts via the data)
+3. forget about the balance condition since infection reports are likely not observed homogeneously across the population and just pick the $\omega_k$'s and $c_i$'s to best fit the data (potentially running into identifiability issues)
+
+**Idea:** take the already-calibrated $\beta(t)$ values and translate them into this framework to look at the fit between the age-stratified observations and this simple model?
+
+### Population distribution
+
+How do the Mistry *et al.* population distributions compare with the Statcan population projections for 2020 that I've been using?
+
+```{r}
+popproj <- (
+  read_csv("../../covid_age/data/statcan-pop/age_dist.csv",
+                    ) 
+  %>% filter(projection == "Projection scenario M1: medium-growth")
+  %>% select(-projection)  
+  %>% mutate(age_group = case_when(
+    age < 84 ~ age,
+    T ~ 84
+  ))
+  %>% group_by(age_group)
+  %>% summarise(statcan_value = sum(value*1000), .groups = "drop")
+)
+
+popbyage <- (
+  left_join(popbyage, popproj, by = "age_group")
+  %>% pivot_longer(-age_group)
+)
+
+(ggplot(popbyage,
+       aes(x = age_group, y = value, colour = name, group = name))
+  + geom_point()
+  + geom_line()
+)
+
+(popbyage 
+  %>% pivot_wider()
+  %>% mutate(diff = statcan_value-mistry_value)
+  %>% mutate(abs_diff = abs(diff))
+  %>% mutate(rel_diff = abs_diff/statcan_value)
+) -> popbyage
+
+glue("total difference: {popbyage %>% summarise(tot = sum(diff)) %>% pull(tot)}")
+glue("total (absolute) difference between mistry and statcan pops: {popbyage %>% summarise(tot = sum(abs_diff)) %>% pull(tot)}")
+
+(ggplot(popbyage,
+       aes(x = age_group, y = rel_diff*100))
+  + geom_point()
+  + geom_line()
+  + labs(y = "% difference from statcan")
+)
+```
+
+OK, not terrible, not great. Since the synthetic network that generates the $\Gamma_{ij}^{k(s)}$s was built with this population distribution, it would probably be best to just use this one in the model so at least it's consistent? I'm a little worried about the large discrepancy in the 20-40 population, which makes up a bulk of the known infections. 
+
+The alternative would be to rescale the $F_{ij}^k$ matrices using the updated population distribution, 
+
+$$
+\tilde{F_{ij}^k} = F_{ij}^k\frac{N_i}{\tilde{N_i}},
+$$
+where $\tilde{\cdot}$ denotes parameters based on updated population values.
+
+I'm not sure if this is the smart thing to do... I suppose I could compare simulation results between the two cases?
+
+# Contact abundance ($\Gamma^k$) matrices
+
+## Compare provinces
+
+```{r}
+household_ontario <- mk_mistry_Cmat(weights = c(household = 1,
+                                                school = 0,
+                                                work = 0,
+                                                community = 0))
+household_pei <- mk_mistry_Cmat(weights = c(household = 1,
+                                                school = 0,
+                                                work = 0,
+                                                community = 0),
+                                province = "Prince_Edward_Island")
+
+pop_ontario <- read_csv(
+  system.file("params", "mistry-cmats", "Canada_subnational_Ontario_age_distribution_85.csv",
+              package = "McMasterPandemic"),
+  col_names = c("age", "pop")
+)
+
+pop_pei <- read_csv(
+  system.file("params", "mistry-cmats", "Canada_subnational_Prince_Edward_Island_age_distribution_85.csv",
+              package = "McMasterPandemic"),
+  col_names = c("age", "pop")
+)
+
+gamma_household_ontario <- household_ontario*pop_ontario$pop
+gamma_household_pei <- household_pei*pop_pei$pop
+
+Matrix::image(Matrix(gamma_household_ontario))
+Matrix::image(Matrix(gamma_household_pei))
+```
+
