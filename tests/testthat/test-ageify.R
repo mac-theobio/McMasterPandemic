@@ -140,7 +140,15 @@ test_that("age-specific population doesn't change over the course of a simulatio
 
 test_that("age-structured beta0 has correct dimensions", {
     expect_identical(dim(make_betavec(state_u, params_uu)),
-                     as.integer(c(1, 13))*length(mk_agecats()))
+                     as.integer(c(1, length(state)))*length(mk_agecats()))
+})
+
+## ratemat tests
+
+test_that("age-structure rate matrix has correct dimensions", {
+    M <- make_ratemat(state_u, params_uu, sparse=TRUE)
+    expect_equal(dim(M),
+                 c(length(state), length(state))*length(mk_agecats()))
 })
 
 ## simulation tests
@@ -194,50 +202,9 @@ check_equality_across_ages <- function(df){
 }
 
 test_that("homogeneous case of age-structured model yields identical epidemics in age classes that did not seed the epidemic",{
-    # ## find age classes that didn't seed the epidemic
-    # (as.data.frame(t(unclass(state_u)))
-    #  %>% pivot_longer(everything())
-    #  %>% separate(name, into = c("state", "age_cat"),
-    #               sep = "_", extra = "merge")
-    #  %>% mutate(state = ifelse(state == "S", "S", "nonS"))
-    #  %>% group_by(state, age_cat)
-    #  %>% summarise(value = sum(value), .groups = "drop")
-    #  %>% filter(state == "nonS", value == 0)
-    #  ## replace non-alpha numeric values in age cats with periods,
-    #  ## as in simulation result
-    #  %>% mutate(age_cat = stringr::str_replace(age_cat, "-|\\+", "."))
-    #  %>% pull(age_cat)
-    #  ) -> age_cats_to_test
-
-    # (res_uu
-    #  ## keep only cols of age classes that didn't seed the epidemic
-    #  ## (and date for grouping observations)
-    #  %>% select(matches("\\d+"), contains("date"))
-    #
-    #  ) -> values_all_equal
-    #
     expect_true(all(check_equality_across_ages(res_uu)))
 })
 
 test_that("diagonal contacts yield identical epidemics in each age group (with an infectious seed in each age group)",{
     expect_true(all(check_equality_across_ages(res_ud)))
 })
-
-## not really proper tests yet: FIXME/clean me up!
-# test_that("generic age stuff", {
-#     b1 <- make_betavec(ss2, ppa, full=FALSE)
-#     expect_equal(dim(b1), c(10,40))
-#     ifun(b1)
-#     b2 <- Matrix(make_betavec(ss2, ppa, full=TRUE))
-#     ifun(b2)
-#     expect_equal(dim(b2), c(10,130))
-#     M <- make_ratemat(ss2, ppa, sparse=TRUE)
-#     expect_equal(dim(M),c(130,130))
-#     show_ratemat(M)
-#     M %*% ss2
-#     rr <- run_sim_range(ppa, ss2, nt=1000)
-#     ## suppress warnings about values <0 (??)
-#     suppressWarnings(matplot(rr[,1],rr[,-1],lty=1,type="l",log="y"))
-#     rr2 <- run_sim(ppa, ss2,end_date="2022-Nov-1",condense=FALSE)
-#     plot(rr2,log=TRUE)+theme(legend.position="none")
-# })
