@@ -17,6 +17,117 @@ mk_agecats <- function(min=0,max=90,da=10) {
   return(out)
 }
 
+#' Assign age groups
+#'
+#' A function that takes a vector of ages (either numeric or factor)
+#' and returns assigned age groups based on desired lower bin edges
+#' provided by the user.
+#'
+#' This is a helper function for \code{\link{plot.agetime}}.
+#'
+#' @param age Numeric or factor vector of ages
+#' @param bin_edges_lower list of numeric values for the lower edges
+#'   of desired age group bins in panel 2. If ages are of type factor,
+#'   all user-specified lower bin edges must match lower bin edges in
+#'   the age data.
+#'
+#' @return
+#' @export
+#'
+#' @examples make_age_groups(seq(0, 90, by = 1), c(25, 45))
+
+make_age_groups <- function(age,
+                            bin_edges_lower){
+
+  ## 1. Set up age df and binning column
+  ########################################
+
+  ## Set up a df so we can use dplyr tools to add the age groups
+  df <- data.frame(age = age)
+
+  ## By default, use the age column as the column to bin age
+  ## groups over
+  binning_colname <- "age"
+
+  ## If ages are factors, create new (numeric) column with which
+  ## we will do age group binning
+  if (is.factor(age) || is.character(age)){
+    df <- (df %>% mutate(lower_bin_edge = as.numeric(
+      stringr::str_extract(age, "^[0-9]*"))
+    ))
+
+    ## Check that lower bin edges, as given by user, can be found in
+    ## the data as lower bin edges
+    edge_check <- (bin_edges_lower %in% df$lower_bin_edge)
+    if (!all(edge_check)){
+      missing_bins <- bin_edges_lower[!edge_check]
+      err_msg <- paste0("The following lower bin edges were not found in the original data: ",
+                        paste(as.character(missing_bins),
+                              collapse=", "), ". Values provided as lower_bin_edges must all be lower bin edges in the data.")
+      stop(err_msg)
+    }
+
+    ## Changing binning column to lower_bin_edge for
+    ## factor data, since it is numeric
+    binning_colname <- "lower_bin_edge"
+  }
+
+  ## 2. Format bin edges
+  ########################
+
+  ## Sort given bin edges
+  bin_edges_lower <- c(sort(bin_edges_lower))
+
+  ## If zero wasn't given as a lower bin edge, add it
+  if(bin_edges_lower[1] != 0){
+    bin_edges_lower <- c(0, bin_edges_lower)
+  }
+
+  ## If Inf wasn't given as as upper limit,
+  ## Add Inf to bin edges to properly bin data
+  bin_edges <- c(bin_edges_lower, Inf)
+
+  ## 3. Make age group labels
+  #############################
+
+  ## Make human-readible age group labels from lower bin edges
+  labels <- c()
+  for (i in 1:length(bin_edges_lower)){
+    ## for all but the last age group, make labels in format of
+    ## bottom edge age - (next bottom edge age -1)
+    if (i < length(bin_edges_lower)){
+      new_label <- paste0(bin_edges_lower[i], "-",
+                          bin_edges_lower[i+1]-1)
+      labels <- c(labels, new_label)
+    } else {
+      ## for last label, format is "age+"
+      new_label <- paste0(bin_edges_lower[i],"+")
+      labels <- c(labels, new_label)
+    }
+  }
+
+  ## Make lookup table for age group labels
+  labels_lookup <- data.frame(
+    id = 1:length(labels),
+    age_group = forcats::as_factor(labels))
+
+  ## 4. Generate vector of age groups
+  #####################################
+
+  df %>%
+    ## identify each age (or lower bin edge in the case of factor
+    ## ages) with the age group bin it belongs in
+    mutate(id = .bincode(get(binning_colname), bin_edges,
+                         right = FALSE,
+                         include.lowest = TRUE)) %>%
+    ## left join lookup table to add our age group labels
+    left_join(labels_lookup, by = "id") %>%
+    ## pull just the age group col
+    pull(age_group) -> age_group
+
+  return(age_group)
+}
+
 ## x_y, with x varying faster
 expand_names <- function(x,y,sep="_") {
     unlist(lapply(y, function(a) paste(x, a, sep=sep)))
@@ -329,12 +440,15 @@ mk_Cmat <- function(age_cat = mk_agecats(),
   }
 
   return(Cmat)
+
+
 }
 
 #' Make contact matrix using Mistry et al. approach
 #'
 #' @param weights named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
 #' @param province province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)
+#' @param age_cat (optional) list of age groups to aggregate ages in; use mk_agecats() to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category
 #'
 #' @return matrix of average contacts between individuals of ages i and j per individual of age i per day
 #' @export
@@ -345,7 +459,8 @@ mk_mistry_Cmat <- function(weights =
                                school = 11.41,
                                work = 8.07,
                                community = 2.79),
-                           province = "Ontario"){
+                           province = "Ontario",
+                           age_cat = NULL){
 
   ## check that weights were specified correctly
   if(!all.equal(sort(names(weights)),
@@ -353,8 +468,27 @@ mk_mistry_Cmat <- function(weights =
     stop("weights vector must be named with names 'household', 'school', 'work', 'community'")
   }
 
+  ## check that age categories are correctly specified
+  if(!is.null(age_cat)){
+    ## process age cat string into integers
+    ages <- as.integer(sub("\\+", "", unlist(strsplit(age_cat, "-")), "+", ""))
+    if(min(ages) != 0) stop("minimum age must be 0")
+    if(max(ages) > 84) stop("maximum age can't exceed 84")
+  }
+
+  ## process whether any contact abundance aggregation needs to be done across
+  ## ages (if no age cat has been provided, assume default age breakdown from
+  ## Mistry paper and don't do any aggregation)
+  aggregate <- !is.null(age_cat)
+  if(is.null(age_cat)){
+    ## initialize default age_cat vector, if unspecified
+    age_cat <- mk_agecats(min = 0, max = 84, da = 1)
+  }
+
+  n <- length(age_cat)
+
   ## preallocate memory for the output
-  cmat <- matrix(rep(0, 85*85), nrow = 85)
+  cmat <- matrix(rep(0, n*n), nrow = n)
 
   ## combine setting-specific frequency matrices through a
   ## linear combination with the specified weights (in units
@@ -366,27 +500,86 @@ mk_mistry_Cmat <- function(weights =
   ## set up filename prefix/suffix for each
   ## setting-specific matrix
   if(is.null(province)){
-    filename_prefix <- paste0("Canada_country_level_F_")
+    filename_prefix <- paste0("Canada_country_level_")
   } else {
     filename_prefix <- paste0("Canada_subnational_", province,
-                              "_F_")
+                              "_")
   }
   filename_suffix <- "_setting_85.csv"
 
   settings <- c("household", "school", "work", "community")
+
+  ## if aggregating, load populations by age and generate new aggregated
+  ## population vector
+  if (aggregate){
+    ## get lower age bins for aggregation
+    bin_edges_lower <- as.numeric(sub("-\\d+|\\+", "", age_cat))
+
+    pop_dist <- (read_csv(system.file("params", "mistry-cmats",
+                                      paste0(filename_prefix,
+                                      "age_distribution_85.csv"),
+                                      package = "McMasterPandemic"),
+      col_names = c("age", "pop"),
+      col_types = cols(
+        .default = col_double()
+      )))
+
+    pop_dist_agg <- (pop_dist
+      %>% mutate(age_group = make_age_groups(age, bin_edges_lower))
+      %>% group_by(age_group)
+      %>% summarise(pop = sum(pop))
+      )
+  }
+
   for (set in settings){
     filename <- system.file("params", "mistry-cmats",
                             paste0(filename_prefix,
+                                   "F_",
                                    set,
                                    filename_suffix),
                             package = "McMasterPandemic")
+
     ## load setting-specific matrix
     set_mat <- readr::read_csv(filename,
                                col_names = FALSE,
                                col_types = cols(
                                  .default = col_double()
-                               )) %>%
-      as.matrix()
+                               ))
+
+    ## aggregation step
+    ## aggregate matrix entries into age groups (sum blocks)---use a pivot trick?
+    ## divide rows by new N_i (aggregated)
+    if (aggregate){
+
+      ## multiply rows by original N_i
+      set_mat <- as_tibble(as.matrix(set_mat)*pop_dist$pop)
+
+      ## aggregate
+      colnames(set_mat) <- mk_agecats(0, 84, 1)
+
+      set_mat <- (set_mat
+            %>% mutate(row_age_group = make_age_groups(
+              mk_agecats(0, 84, 1),
+              bin_edges_lower))
+            %>% pivot_longer(-row_age_group,
+                             names_to = "col_age_group")
+            %>% mutate(col_age_group = make_age_groups(
+              col_age_group,
+              bin_edges_lower
+            ))
+            %>% group_by(row_age_group, col_age_group)
+            %>% summarise(value = sum(value), .groups = "drop")
+            %>% pivot_wider(names_from = col_age_group)
+            %>% select(-row_age_group)
+            %>% as.matrix()
+      )
+
+      ## row normalize by aggregated population
+      set_mat <- set_mat/pop_dist_agg$pop
+    }
+
+    ## convert to matrix if need be
+    if(!aggregate) set_mat <- as.matrix(set_mat)
 
     ## update overall contact matrix by adding a weighted
     ## version of the current setting-specific frequency
@@ -395,9 +588,9 @@ mk_mistry_Cmat <- function(weights =
   }
 
   ## update row and colnames of cmat with age categories
-  age_cats <- mk_agecats(min = 0, max = 84, da = 1)
-  rownames(cmat) <- age_cats
-  colnames(cmat) <- age_cats
+  if (aggregate) age_cat <- make_age_groups(age_cat, bin_edges_lower)
+  rownames(cmat) <- age_cat
+  colnames(cmat) <- age_cat
 
   return(cmat)
 }

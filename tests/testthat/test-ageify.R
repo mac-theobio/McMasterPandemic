@@ -136,6 +136,13 @@ test_that("age-specific population doesn't change over the course of a simulatio
     expect_true(check_const_pop(res_rr, params_rr))
 })
 
+## Cmat tests
+test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
+    age_cat <- mk_agecats(min = 0, max = 84, da  = 10)
+    expect_equal(dim(mk_mistry_Cmat(age_cat = age_cat)),
+                 c(length(age_cat), length(age_cat)))
+})
+
 ## beta tests
 
 test_that("age-structured beta0 has correct dimensions", {
