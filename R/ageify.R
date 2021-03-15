@@ -339,8 +339,8 @@ mk_Cmat <- function(age_cat = mk_agecats(),
 #' @return matrix of average contacts between individuals of ages i and j per individual of age i per day
 #' @export
 #'
-#' @examples mk_mistry_cmat()
-mk_mistry_cmat <- function(weights =
+#' @examples mk_mistry_Cmat()
+mk_mistry_Cmat <- function(weights =
                              c(household = 4.11,
                                school = 11.41,
                                work = 8.07,

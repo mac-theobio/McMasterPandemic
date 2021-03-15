@@ -8,7 +8,8 @@ expand_params_age(
   pp,
   age_cat = mk_agecats(),
   Cmat = mk_Cmat(),
-  Nvec = mk_Nvec()
+  Nvec = mk_Nvec(),
+  beta0vec = NULL
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ expand_params_age(
 \item{Cmat}{contact matrix; default is uniform}
 
 \item{Nvec}{population distribution (as counts); default is uniform}
+
+\item{beta0vec}{vector of beta0 values; default is all the same value}
 }
 \description{
 expand parameter list to include age structure

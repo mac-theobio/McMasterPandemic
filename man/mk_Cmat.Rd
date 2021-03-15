@@ -9,7 +9,7 @@ mk_Cmat(age_cat = mk_agecats(), dist = "unif")
 \arguments{
 \item{age_cat}{age categories (made with `mk_agecats()`)}
 
-\item{dist}{(character) either "unif" for uniform or "rand" for a random distributions}
+\item{dist}{(character) either "unif" for uniform, "rand" for a random distributions by age, or "diag" for strictly within-age mixing (Cmat = the identity matrix)}
 }
 \description{
 generate a contact matrix (where each row is a probability distribution)
