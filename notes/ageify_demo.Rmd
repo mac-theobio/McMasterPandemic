@@ -24,7 +24,7 @@ Ageify tests now include checks to ensure that the homogeneous case of the age-s
 
 Here's a demo of simulations with age-varying transmission:
 
-```{r}
+```{r prep_res_for_plotting}
 prep_res_for_plotting <- function(res){
   (res  
     %>% select(-c(foi))
@@ -65,14 +65,16 @@ plot_res_by_state <- function(res){
 }
 ```
 
-```{r plot_res_uu}
+```{r sim_setup_basic}
 base_params <- update(read_params("PHAC_testify.csv"),
                       testing_intensity=0,
                       beta0 = 5)
 base_state <- make_state(params = base_params)
 
 end_date <- "2020-08-01"
+```
 
+```{r plot_res_uu}
 res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
                          end_date = end_date)
 
@@ -82,6 +84,7 @@ res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
   )
 plot_res_by_state(res_uu)
 ```
+
 ```{r plot_res_ur}
 beta0vec <- mk_beta0vec(age_cat = mk_agecats(),
                         mean_beta0 = 10,
@@ -126,6 +129,77 @@ res_rr <- run_sim_ageify(base_params, base_state,
   ) 
 plot_res_by_state(res_rr)
 ```
+
+## Using a "compound" contact matrix
+```{r other_cmats, eval = FALSE, echo = FALSE}
+## case 2: diagonal (mixing only within age groups)
+Cmat_diag <- diag(n)
+
+## case 3: predominantly mixing within age categories
+Cmat_compound <- (Cmat_unif + Cmat_diag)/rowSums(Cmat_unif + Cmat_diag)
+```
+
+## Using a Mistry *et al.* contact matrix
+
+Here's a demo using the Mistry *et al.* contact matrix for Ontario:
+
+```{r sim_setup_mistry}
+age_cat <- mk_agecats(0, 84, 10)
+M <- mk_mistry_Cmat(age_cat = age_cat)
+M_bar <- rowSums(M)
+Cmat <- M/M_bar
+Nvec <- mk_mistry_Nvec(age_cat = age_cat)$pop
+
+## update state so that population size matches to new distribution
+state <- base_state
+state[["S"]] <- sum(Nvec) - 4
+
+mistry_beta <- 0.5
+beta0vec <- mistry_beta*M_bar
+
+res_mistry <- run_sim_ageify(base_params, state,
+                             age_cat = age_cat,
+                             beta0vec = beta0vec,
+                             Cmat = Cmat,
+                             Nvec = Nvec,
+                             condense = FALSE,
+                             end_date = end_date)
+
+(prep_res_for_plotting(res_mistry)
+  %>% mutate(state = fct_recode(state,
+    I = "Ia",
+    I = "Ip",
+    I = "Im",
+    I = "Is"
+  ))  
+  %>% group_by(date, state, age_cat)
+  %>% summarise(value = sum(value), .groups = "drop")
+  %>% filter(state %in% c("S", "E", "I", "X", "R", "D"))
+) -> res_mistry_cond
+
+(res_mistry_cond
+  %>% ggplot(aes(x = date, y = value, colour = state))
+    + geom_line()
+    + scale_y_continuous(
+      labels = scales::label_number_si()
+      )
+    + facet_wrap(vars(age_cat))
+    + labs(
+        title = "Ontario contact data and population distribution")
+) 
+
+(res_mistry_cond
+    %>% ggplot(aes(x = date, y = value, colour = age_cat))
+    + geom_line()
+    + scale_y_continuous(
+      labels = scales::label_number_si()
+      )
+    + facet_wrap(vars(state), scales = "free_y")
+  )
+```
+
+<!----------------------------------------------------------------------------->
+
 ```{r old, eval = FALSE, echo = FALSE}
 ## READ INITIAL PARAMETERS (for base sim)
 pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
@@ -164,11 +238,5 @@ show_ratemat(M)
 end_date <- "2021-02-15"
 ```
 
-```{r other_cmats, eval = FALSE, echo = FALSE}
-## case 2: diagonal (mixing only within age groups)
-Cmat_diag <- diag(n)
 
-## case 3: predominantly mixing within age categories
-Cmat_compound <- (Cmat_unif + Cmat_diag)/rowSums(Cmat_unif + Cmat_diag)
-```
 
