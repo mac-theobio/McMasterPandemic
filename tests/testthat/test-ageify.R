@@ -62,7 +62,7 @@ res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
 ## + rand cmat
 res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
 ## + diag cmat
-res_ud <- run_sim(params_ud, state_d, end_date = end_date, condense = FALSE)
+res_ud <- run_sim(params_ud, state_u, end_date = end_date, condense = FALSE)
 
 ## sims with random pop
 ## + unif cmat
