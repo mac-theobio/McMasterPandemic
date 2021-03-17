@@ -1,5 +1,13 @@
 library(McMasterPandemic)
 library(cowplot)
+library(shellpipes)
+library(ggplot2)
+theme_set(theme_bw())
+
+commandEnvironments()
+makeGraphics()
+
+
 devtools::load_all("..")
 p0 <- fix_pars(read_params("ICU1.csv"), target = c(R0=1.5,Gbar=6))
 p1 <- update(p0, vacc=0.001)
@@ -28,9 +36,9 @@ r4 <- run_sim(params=update(p2,vacc=1e-2),
               end_date="01-Jul-2020")
 
 
-plot_grid(
-    plot(r1,keep_states=c("S","R")),
-    plot(r2,keep_states=c("S","R")),
-    plot(r3,keep_states=c("S","R")),
-    plot(r4,keep_states=c("S","R")),
-    ncol=2)
+print(plot_grid(plot(r1,keep_states=c("S","R"))
+	, plot(r2,keep_states=c("S","R")) 
+	, plot(r3,keep_states=c("S","R")) 
+	, plot(r4,keep_states=c("S","R")) 
+	, ncol=2)
+)

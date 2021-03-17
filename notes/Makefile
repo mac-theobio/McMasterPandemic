@@ -32,6 +32,11 @@ cachestuff:
 	$(rmdh_r)
 
 ######################################################################
+## Playing with vacc
+
+vacc_test.Rout: vacc_test.R
+	$(pipeR)
+
 
 ## Playing with spline shapes
 
