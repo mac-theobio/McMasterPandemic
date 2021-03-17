@@ -39,7 +39,7 @@ where $\mathbb{P}(A | B)$ is the conditional probability of event $A$ given even
 
 Going back to the form of $\lambda$ in the basic SIR model, $\mathbb{P}\text{(contact with infective | contact with any individual in the population)}$ is modeled by $I/N$, and so the product of the remaining two terms is equal to $\beta$.
 
-## Age-structures force of infection
+## Age-structured force of infection
 
 Now imagine the population is subdivided into $n$ age groups, indexed by $i = 1, ..., n$, and the time scale is short enough relative to the age group size that the aging process can be ignored. We want to incorporate age-based heterogeneity in (1) the average number of contacts per susceptible, per unit time, and (2) the frequency of contacts between age groups. 
 
@@ -93,7 +93,7 @@ $$
 \Gamma_{ij}^{k(s)} = \frac{\phi_i^{k(s)}(\phi_j^{k(s)}- \delta_{ij})}{\nu^{k(s)} - 1}
 $$
 <br/>where $\phi_i^{k(s)}$ is the number of individuals of age $i$ in configuration $s$ of setting $k$, $\delta_{ij}$ is the Kronecker delta function, and $\nu^{k(s)}$ is the total number of individuals in configuration $s$ of setting $k$. <br/><br/>In other words, the numerator counts the number of possible pairs of individuals in configuration $s$ (not including the pair of a person with themselves), and the denominator counts the total number of possible contacts per individual in the configuration. This matrix is necessarily symmetric, which we will see later is key to ensuring that contacts are "balanced" by the previously described condition.
-1. Define $\Gamma_{ij}^{k} = \sum{s: \nu^{k(s)} > 1} \Gamma_{ij}^{k(s)}$, which tallies the relative abundance of contacts across all configurations $s$ of a setting $k$ where there is more than one individual in the configuration (and so contacts are actually occurring). This matrix is also symmetric since the component coming from each configuration is symmetric.
+1. Define $\Gamma_{ij}^{k} = \sum_{s: \nu^{k(s)} > 1} \Gamma_{ij}^{k(s)}$, which tallies the relative abundance of contacts across all configurations $s$ of a setting $k$ where there is more than one individual in the configuration (and so contacts are actually occurring). This matrix is also symmetric since the component coming from each configuration is symmetric.
 1. Now let $F_{ij}^{k} = \Gamma_{ij}^{k}/N_i$ be the frequency of contact between individuals of ages $i$ and $j$ *per individual of age $i$* in setting $k$. These matrices are no longer a symmetric (unless the population distribution is perfectly uniform). The paper calls these the "per capita **probability** of contact of an individual of age $i$ with an individual of age $j$ in setting $k$, but neither the rows nor the columns of this matrix sum to 1, so I'm not sure how exactly this is a probability...
 1. Lastly, construct an overall contact matrix, $M_{ij}$ as a linear combination of the setting-specific frequency matrices: $M_{ij} = \sum_k \omega_{k} F_{ij}^k$. The weights $\omega_{k}$ are in units of contacts per unit time, so this is where $M$ inherits its units from. Based on the setup of $M$, I think the $\omega_k$ have to be the average number of contacts per unit time in a given setting, but across age groups, and then the relative abundance of each age group in a setting (built into $F_{ij}^k$) takes care of adjusting to an age-specific contact rate from the base weight $\omega_k$.
 
@@ -174,13 +174,13 @@ In order to use the Mistry matrices in our framework while still satisfying the 
 2. fit the four setting-specific $\omega_k$'s and the $\beta$ that scales $c_i = \beta \bar{M_i} = \beta (\sum_k \omega_k \bar{F_{ij}})$ (potentially difficult to calibrate, but we can learn about age-specific contacts via the data)
 3. forget about the balance condition since infection reports are likely not observed homogeneously across the population and just pick the $\omega_k$'s and $c_i$'s to best fit the data (potentially running into identifiability issues)
 
-**Idea:** take the already-calibrated $\beta(t)$ values and translate them into this framework to look at the fit between the age-stratified observations and this simple model?
+**Idea:** can I take the already-calibrated $\beta(t)$ values (for the base model) and translate them into this framework to look at the fit between the age-stratified observations and this simple model?
 
 ### Population distribution
 
 How do the Mistry *et al.* population distributions compare with the Statcan population projections for 2020 that I've been using?
 
-```{r}
+```{r, echo = FALSE}
 popproj <- (
   read_csv("../../covid_age/data/statcan-pop/age_dist.csv",
                     ) 
@@ -232,13 +232,13 @@ $$
 $$
 where $\tilde{\cdot}$ denotes parameters based on updated population values.
 
-I'm not sure if this is the smart thing to do... I suppose I could compare simulation results between the two cases?
+I'm not sure if this is the smart thing to do... I suppose I could compare simulation results between the two cases? Maybe best to just stick to the Mistry population data for now.
 
 # Contact abundance ($\Gamma^k$) matrices
 
 ## Compare provinces
 
-```{r}
+```{r, echo = FALSE}
 household_ontario <- mk_mistry_Cmat(weights = c(household = 1,
                                                 school = 0,
                                                 work = 0,
@@ -263,8 +263,17 @@ pop_pei <- read_csv(
 
 gamma_household_ontario <- household_ontario*pop_ontario$pop
 gamma_household_pei <- household_pei*pop_pei$pop
+```
+Ontario households (contact "abundance"):
 
+```{r}
 Matrix::image(Matrix(gamma_household_ontario))
+```
+
+PEI households (contact "abundance"):
+
+```{r}
 Matrix::image(Matrix(gamma_household_pei))
 ```
+
 
