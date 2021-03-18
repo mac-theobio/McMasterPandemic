@@ -10,48 +10,50 @@ context("ageify")
 ## SETUP ##
 
 ## base params and state
-params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
-state <- make_state(params=params)
-## set up so there will be a single infectious seed in each age group (for the
-## age-structured sims)
-state["E"] <- length(mk_agecats())
-state["S"] <- 1e6 - state["E"]
-state[!grepl("^(S|E)", names(state))] <- rep(0, length(state)-2)
+age_cat <- mk_agecats()
+params <- update(read_params("PHAC_testify.csv")
+                 , testing_intensity=0
+                 , beta0 = 2
+                 )
+state <- make_state(N = params[["N"]],
+                    E0 = length(age_cat))
+
+## generate population distributions
+Nvec_u <- mk_Nvec(Ntot = params[["N"]], age_cat = age_cat,
+                  dist = "unif")
+## random population distribution
+Nvec_r <- mk_Nvec(Ntot = sum(state), age_cat = age_cat,
+                  dist = "rand")
 
 ## generate state vecs ##
-
-## uniform population distribution
-Nvec_u <- mk_Nvec(Ntot = sum(state))
-state_u <- expand_state_age(state)
-
-## random population distribution
-Nvec_r <- mk_Nvec(Ntot = sum(state),
-                     dist = "rand")
-state_r <- expand_state_age(state, Nvec = Nvec_r)
+state_u <- expand_state_age(state, age_cat = age_cat,
+                            Nvec = Nvec_u)
+state_r <- expand_state_age(state, age_cat = age_cat,
+                            Nvec = Nvec_r)
 
 ## generate param sets ##
-
-Cmat_r <- mk_Cmat(dist = "rand")
-Cmat_d <- mk_Cmat(dist = "diag")
+Cmat_u <- mk_Cmat(age_cat = age_cat, dist = "unif")
+Cmat_r <- mk_Cmat(age_cat = age_cat, dist = "rand")
+Cmat_d <- mk_Cmat(age_cat = age_cat, dist = "diag")
 
 ## params with unif pop
 ## + unif cmat
-params_uu <- expand_params_age(params)
+params_uu <- expand_params_age(params, age_cat = age_cat,
+                               Cmat = Cmat_u, Nvec = Nvec_u)
 ## + random cmat
-params_ur <- expand_params_age(params,
-                               Cmat = Cmat_r)
+params_ur <- expand_params_age(params, age_cat = age_cat,
+                               Cmat = Cmat_r, Nvec = Nvec_u)
 ## + diag cmat
-params_ud <- expand_params_age(params,
-                               Cmat = Cmat_d)
+params_ud <- expand_params_age(params, age_cat = age_cat,
+                               Cmat = Cmat_d, Nvec = Nvec_u)
 
 ## params with random pop
 ## + unif cmat
-params_ru <- expand_params_age(params,
-                               Nvec = Nvec_r)
+params_ru <- expand_params_age(params, age_cat = age_cat,
+                               Cmat = Cmat_u, Nvec = Nvec_r)
 ## + random cmat
-params_rr <- expand_params_age(params,
-                               Nvec = Nvec_r,
-                               Cmat = Cmat_r)
+params_rr <- expand_params_age(params, age_cat = age_cat,
+                               Cmat = Cmat_r, Nvec = Nvec_r)
 
 ## generate sims ###
 end_date <- "2021-02-15"
