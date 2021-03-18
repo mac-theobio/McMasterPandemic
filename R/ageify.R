@@ -768,9 +768,9 @@ if (FALSE) {
                                             x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
     }
     ppa <- c(as.list(pp),list(pmat=pmat))
-    b1 <- make_betavec(ss2, ppa, full=FALSE)
+    b1 <- make_beta(ss2, ppa, full=FALSE)
     ifun(b1)
-    b2 <- Matrix(make_betavec(ss2, ppa, full=TRUE))
+    b2 <- Matrix(make_beta(ss2, ppa, full=TRUE))
     ifun(b2)
     M <- make_ratemat(ss2, ppa, sparse=TRUE)
     show_ratemat(M)

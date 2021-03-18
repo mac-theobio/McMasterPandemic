@@ -72,7 +72,7 @@ make_jac <- function(params, state=NULL) {
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
-make_betavec <- function(state, params, full=TRUE) {
+make_beta <- function(state, params, full=TRUE) {
     Icats <- c("Ia","Ip","Im","Is")
     testcats <- c("_u","_p","_n","_t")
     ## NB meaning of iso_* has switched from Stanford model
@@ -100,7 +100,7 @@ make_betavec <- function(state, params, full=TRUE) {
         if (!isTRUE(all.equal(unname(rowSums(params$pmat)), rep(1, nrow(params$pmat))))) stop("each pmat row must sum to 1 (it should be a probability distribution)")
 
         ## Nvec check
-        if (length(params$N != nrow(params$pmat))) stop("N must a vector of the same length as the number of age groups specified via pmat.")
+        if (length(params$N) != nrow(params$pmat)) stop("N must be a vector of the same length as the number of age groups specified via pmat.")
 
         ## beta0 check
         if (!(length(params$beta0 %in% c(1, nrow(params$pmat))))) stop("beta0 must either be a scalar (same beta0 for all ages) or a vector of the same length as the number of age groups specified via pmat.")
@@ -243,7 +243,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     }
 
     ## fill entries
-    beta_vec <- make_betavec(state,params)
+    beta_vec <- make_beta(state,params)
     ## FIXME: call update_foi() here?
     if (!has_age(params)) {
         afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
@@ -373,7 +373,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
-    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
         for (a in aa) {
@@ -820,7 +820,7 @@ make_state <- function(N=params[["N"]],
 ##' @param M rate matrix
 gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
-    foi <- update_foi(y, parms, make_betavec(state=y, parms))
+    foi <- update_foi(y, parms, make_beta(state=y, parms))
     ## compute
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
@@ -883,7 +883,7 @@ run_sim_range <- function(params
         res[1,names(state)] <- state
         if (!has_age(params)) {
             ## FIXME: coherent strategy for accumulating incidence, etc etc
-            foi[[1]] <- update_foi(state,params, make_betavec(state, params))
+            foi[[1]] <- update_foi(state,params, make_beta(state, params))
         }
         ## loop
         if (nt>1) {
@@ -895,7 +895,7 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_betavec(state, params))
+                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_beta(state, params))
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }

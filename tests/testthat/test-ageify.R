@@ -148,7 +148,7 @@ test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
 ## beta tests
 
 test_that("age-structured beta0 has correct dimensions", {
-    expect_identical(dim(make_betavec(state_u, params_uu)),
+    expect_identical(dim(make_beta(state_u, params_uu)),
                      as.integer(c(1, length(state)))*length(mk_agecats()))
 })
 
