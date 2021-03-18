@@ -102,3 +102,18 @@ plot_grid(plot(res1, log=TRUE), ## logarithmic
           plot(res1)) ## linear
 ```
 
+## Abbreviated call list
+
+When `run_sim` gets called when `has_age(params) == TRUE`, here are roughly the major functions that get run (in order):
+
+```
+run_sim
+  make_ratemat
+    make_betavec
+  run_sim_range
+    do_step
+      update_ratemat
+        update_foi
+          beta_vec = make_betavec
+          foi <- beta_vec %*% state
+```
