@@ -664,12 +664,12 @@ expand_params_age <- function(pp,
   ## update Cmat
   pp <- c(pp, list(Cmat = Cmat))
   ## update beta0vec
-  if(is.null(beta0vec)){
-    beta0vec <- mk_beta0vec(age_cat = age_cat,
-                            mean_beta0 = pp[["beta0"]],
-                            dist = "unif")
-  }
-  pp[["beta0"]] <- beta0vec
+  # if(is.null(beta0vec)){
+  #   beta0vec <- mk_beta0vec(age_cat = age_cat,
+  #                           mean_beta0 = pp[["beta0"]],
+  #                           dist = "unif")
+  # }
+  # pp[["beta0"]] <- beta0vec
 
   ## add age cats as attribute
   attr(pp, "age_cat") <- age_cat
