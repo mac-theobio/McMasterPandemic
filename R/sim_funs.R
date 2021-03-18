@@ -98,10 +98,10 @@ make_betavec <- function(state, params, full=TRUE) {
             # print("assuming a uniform population distribution...")
             params$N <- mk_Nvec(age_cat = attr(params, "age_cat"),
                                 Ntot = params$N)
-            ## dist given in terms of Cmat since has_age checks existence of
-            ## Cmat in params
+            ## dist given in terms of pmat since has_age checks existence of
+            ## pmat in params
         } else {
-            if (length(params$N)!=nrow(params$Cmat)) stop("N must either be a scalar (total population) or a vector of the same length as the number of age groups specified via Cmat.")
+            if (length(params$N)!=nrow(params$pmat)) stop("N must either be a scalar (total population) or a vector of the same length as the number of age groups specified via pmat.")
         }
 
         ## if beta0 is a scalar, assume the same beta across age groups
@@ -111,29 +111,29 @@ make_betavec <- function(state, params, full=TRUE) {
         #                                 mean_beta0 = params$beta0)
         # } else {
         # }
-        if(!(length(params$beta0 %in% c(1, nrow(params$Cmat))))) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via Cmat.")
+        if(!(length(params$beta0 %in% c(1, nrow(params$pmat))))) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via pmat.")
 
-        ## check that Cmat rows sum to 1
-        if (!isTRUE(all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat))))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
+        ## check that pmat rows sum to 1
+        if (!isTRUE(all.equal(unname(rowSums(params$pmat)), rep(1, nrow(params$pmat))))) stop("each pmat row must sum to 1 (it should be a probability distribution)")
 
         ## incorporate contact matrix and /N_j in beta term, and attach age cats
 
         ## grab contact matrix (with susceptibles as rows
         ## and infectives as columns) and scale each row by beta corresponding
         ## to that susceptible age group
-        Cmat <- params$beta0*params$Cmat
-        ## transpose newly-scaled Cmat to enable calculations below
+        pmat <- params$beta0*params$pmat
+        ## transpose newly-scaled pmat to enable calculations below
         ##
         ## calculate c_{ij}/N_j to incorporate 1/N_j from
         ## I_j/N_j in force of infection (for mat/vec, R will
         ## divide the entire first row of mat by the first
         ## element of vec, etc.)
-        Cmat <- t(Cmat)/params$N
-        a_names <- rownames(Cmat)
+        pmat <- t(pmat)/params$N
+        a_names <- rownames(pmat)
         new_names <- expand_names(Icats, a_names)
         ## transpose back so rows represent susceptibles and
         ## columns represent infectives again
-        beta_vec0 <- t(kronecker(Cmat,matrix(Icat_prop_vec)))
+        beta_vec0 <- t(kronecker(pmat,matrix(Icat_prop_vec)))
         dimnames(beta_vec0) <- list(a_names,new_names)
         beta_vec0 <- Matrix(beta_vec0)
 
@@ -222,7 +222,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     if (is.list(params)) {
         nps <- lengths(params)
         if (has_age(params)) {
-            na <- nrow(params[["Cmat"]])
+            na <- nrow(params[["pmat"]])
             bad_len <- which(!nps %in% c(1,na,na^2))
             if (length(bad_len)>0) {
                 stop(sprintf("elements of params must be length 1, %d or %d: %s",

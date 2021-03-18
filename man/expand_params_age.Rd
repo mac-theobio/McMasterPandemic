@@ -7,7 +7,7 @@
 expand_params_age(
   pp,
   age_cat = mk_agecats(),
-  Cmat = mk_Cmat(),
+  pmat = mk_pmat(),
   Nvec = mk_Nvec(),
   beta0vec = NULL
 )
@@ -17,7 +17,7 @@ expand_params_age(
 
 \item{age_cat}{vector of age categories}
 
-\item{Cmat}{contact matrix; default is uniform}
+\item{pmat}{contact matrix; default is uniform}
 
 \item{Nvec}{population distribution (as counts); default is uniform}
 

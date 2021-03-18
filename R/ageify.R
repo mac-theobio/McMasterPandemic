@@ -407,9 +407,9 @@ mk_beta0vec <- function(age_cat = mk_agecats(),
 
 #' generate a contact matrix (where each row is a probability distribution)
 #' @param age_cat age categories (made with `mk_agecats()`)
-#' @param dist (character) either "unif" for uniform, "rand" for a random distributions by age, or "diag" for strictly within-age mixing (Cmat = the identity matrix)
+#' @param dist (character) either "unif" for uniform, "rand" for a random distributions by age, or "diag" for strictly within-age mixing (pmat = the identity matrix)
 #' @export
-mk_Cmat <- function(age_cat = mk_agecats(),
+mk_pmat <- function(age_cat = mk_agecats(),
                     dist = "unif"){
 
   if(!(dist %in% c("unif", "rand", "diag"))) stop("dist must be either 'unif', 'rand', or 'diag'")
@@ -418,35 +418,35 @@ mk_Cmat <- function(age_cat = mk_agecats(),
   n <- length(age_cat)
 
   if(dist == "unif"){
-    Cmat <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
+    pmat <- matrix(1/n, nrow=n, ncol=n, dimnames=list(age_cat, age_cat))
   }
 
   if(dist == "rand"){
     ## preallocate memory
-    Cmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
+    pmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
 
     ## fill matrix with a random distribution in each row)
     for (i in 1:n){
       row <- runif(n)
       row <- row/sum(row)
 
-      Cmat[i,] <- row
+      pmat[i,] <- row
     }
   }
 
   if(dist == "diag"){
-    Cmat <- diag(1, nrow = n, ncol = n, names = TRUE)
-    dimnames(Cmat) <- list(age_cat, age_cat)
+    pmat <- diag(1, nrow = n, ncol = n, names = TRUE)
+    dimnames(pmat) <- list(age_cat, age_cat)
   }
 
-  return(Cmat)
+  return(pmat)
 
 
 }
 
 #' Make population distribution using Mistry et al. data
 #'
-#' @inheritParams mk_mistry_Cmat
+#' @inheritParams mk_mistry_pmat
 #'
 #' @return a tibble with age groups and population counts
 #' @export
@@ -506,11 +506,11 @@ mk_mistry_Nvec <- function(province = "Ontario",
 #' @param province province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)
 #' @param age_cat (optional) list of age groups to aggregate ages in; use mk_agecats() to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category
 #'
-#' @return matrix of average contacts between individuals of ages i and j per individual of age i per day
+#' @return matrix of average contacts between individuals of ages i and j per individual of age i per unit time (day)
 #' @export
 #'
-#' @examples mk_mistry_Cmat()
-mk_mistry_Cmat <- function(weights =
+#' @examples mk_mistry_pmat()
+mk_mistry_pmat <- function(weights =
                              c(household = 4.11,
                                school = 11.41,
                                work = 8.07,
@@ -556,7 +556,7 @@ mk_mistry_Cmat <- function(weights =
   }
 
   ## preallocate memory for the output
-  cmat <- matrix(rep(0, n*n), nrow = n)
+  pmat <- matrix(rep(0, n*n), nrow = n)
 
   ## combine setting-specific frequency matrices through a
   ## linear combination with the specified weights (in units
@@ -630,15 +630,15 @@ mk_mistry_Cmat <- function(weights =
     ## update overall contact matrix by adding a weighted
     ## version of the current setting-specific frequency
     ## matrix
-    cmat <- cmat + weights[set]*set_mat
+    pmat <- pmat + weights[set]*set_mat
   }
 
-  ## update row and colnames of cmat with age categories
+  ## update row and colnames of pmat with age categories
   if (aggregate) age_cat <- make_age_groups(age_cat, bin_edges_lower)
-  rownames(cmat) <- age_cat
-  colnames(cmat) <- age_cat
+  rownames(pmat) <- age_cat
+  colnames(pmat) <- age_cat
 
-  return(cmat)
+  return(pmat)
 }
 
 #' expand parameter list to include age structure
@@ -646,7 +646,7 @@ mk_mistry_Cmat <- function(weights =
 #' @param pp parameter list (e.g. read in with `read_params()`)
 #' @param age_cat vector of age categories
 #' @param beta0vec vector of beta0 values; default is all the same value
-#' @param Cmat contact matrix; default is uniform
+#' @param pmat contact matrix; default is uniform
 #' @param Nvec population distribution (as counts); default is uniform
 #' @examples
 #' pp <- read_params("PHAC_testify.csv")
@@ -654,15 +654,15 @@ mk_mistry_Cmat <- function(weights =
 #' @export
 expand_params_age <- function(pp,
                               age_cat = mk_agecats(),
-                              Cmat = mk_Cmat(),
+                              pmat = mk_pmat(),
                               Nvec = mk_Nvec(),
                               beta0vec = NULL){
   ## convert to list
   pp <- as.list(pp)
   ## update pop
   pp[["N"]] <- Nvec
-  ## update Cmat
-  pp <- c(pp, list(Cmat = Cmat))
+  ## update pmat
+  pp <- c(pp, list(pmat = pmat))
   ## update beta0vec
   # if(is.null(beta0vec)){
   #   beta0vec <- mk_beta0vec(age_cat = age_cat,
@@ -689,7 +689,7 @@ expand_params_age <- function(pp,
 #' @param base_state base state vector without age structure (e.g. generated by `make_state()`)
 #' @param age_cat age categories (e.g. generated by `mk_agecats()`)
 #' @param beta0vec vector of beta0 values for each age group (e.g. generated by `mk_beta0vec()`)
-#' @param Cmat contact matrix (e.g. generated by `mk_Cmat()`)
+#' @param pmat contact matrix (e.g. generated by `mk_pmat()`)
 #' @param Nvec population distribution (e.g. generated by `mk_Nvec()`)
 #' @param ... additional arguments to `run_sim()`
 #'
@@ -704,13 +704,13 @@ run_sim_ageify <- function(base_params,
                            base_state,
                            age_cat = mk_agecats(),
                            beta0vec = NULL,
-                           Cmat = mk_Cmat(),
+                           pmat = mk_pmat(),
                            Nvec = mk_Nvec(),
                            ...){
   params <- expand_params_age(base_params,
                               age_cat = age_cat,
                               beta0vec = beta0vec,
-                              Cmat = Cmat,
+                              pmat = pmat,
                               Nvec = Nvec)
   state <- expand_state_age(base_state,
                             age_cat = age_cat,
@@ -761,13 +761,13 @@ if (FALSE) {
     show_ratemat(M)
     aa <- mk_agecats()
     ## compound symmetric example
-    Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
-    diag(Cmat) <- 1
+    pmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+    diag(pmat) <- 1
     ifun <- function(M) {
         Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
                                             x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
     }
-    ppa <- c(as.list(pp),list(Cmat=Cmat))
+    ppa <- c(as.list(pp),list(pmat=pmat))
     b1 <- make_betavec(ss2, ppa, full=FALSE)
     ifun(b1)
     b2 <- Matrix(make_betavec(ss2, ppa, full=TRUE))

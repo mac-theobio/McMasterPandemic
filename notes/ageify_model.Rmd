@@ -105,7 +105,7 @@ popbyage <- read_csv(
               package = "McMasterPandemic"),
   col_names = c("age_group", "mistry_value")
 )
-household <- mk_mistry_Cmat(weights = c(household = 1,
+household <- mk_mistry_pmat(weights = c(household = 1,
                                         school = 0, 
                                         work = 0, 
                                         community = 0))
@@ -133,7 +133,7 @@ $$
 (by the symmetry in $\Gamma^k$). This equation implies that if we multiply the rows of $M$ with the relevant age-specific population, we should get a symmetric matrix, and we see that we do:
  
 ```{r}
-M <- mk_mistry_Cmat()
+M <- mk_mistry_pmat()
 isSymmetric(M*popbyage$mistry_value)
 ```
 
@@ -239,11 +239,11 @@ I'm not sure if this is the smart thing to do... I suppose I could compare simul
 ## Compare provinces
 
 ```{r, echo = FALSE}
-household_ontario <- mk_mistry_Cmat(weights = c(household = 1,
+household_ontario <- mk_mistry_pmat(weights = c(household = 1,
                                                 school = 0,
                                                 work = 0,
                                                 community = 0))
-household_pei <- mk_mistry_Cmat(weights = c(household = 1,
+household_pei <- mk_mistry_pmat(weights = c(household = 1,
                                                 school = 0,
                                                 work = 0,
                                                 community = 0),

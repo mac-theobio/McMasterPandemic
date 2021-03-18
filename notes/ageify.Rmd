@@ -108,31 +108,31 @@ We need to define a cross-age contact matrix.
 * for now I'm going to define two, one simple "compound symmetric" matrix (1 on the diagonal, 0.1 off-diagonal) and one diagonal. 
 * with equal parameters across age categories, what contact matrices will give exactly equal to dynamics to homogeneous mixing? All-equal and diagonal?
 
-```{r Cmats}
+```{r pmats}
 ## define various contact matrices
 # aa <- mk_agecats()
 
 ## compound symmetric
-Cmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
-diag(Cmat) <- 1
+pmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+diag(pmat) <- 1
 ## diagonal
-Cmat.d <- diag(length(aa))*length(aa)
-dimnames(Cmat.d) <- dimnames(Cmat)
+pmat.d <- diag(length(aa))*length(aa)
+dimnames(pmat.d) <- dimnames(pmat)
 ## uniform
-Cmat.u <- matrix(1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
+pmat.u <- matrix(1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
 ```
 
-At present the indicator for whether the machinery should be run in an age-structured way or not is the presence/absence of a `Cmat` component in the parameters (now a list rather than a vector). (**IP:** The age-structured list of parameters is not of class `params_pansim` yet. I'm assuming that's because custom methods and unit tests haven't been written for it... Could hack by having the methods check for the presence of the `Cmat` element, and if it's there, remove it and convert the params list to a `params_pansim` object, then run the rest of the code as usual and deal with `Cmat` separately.)
+At present the indicator for whether the machinery should be run in an age-structured way or not is the presence/absence of a `pmat` component in the parameters (now a list rather than a vector). (**IP:** The age-structured list of parameters is not of class `params_pansim` yet. I'm assuming that's because custom methods and unit tests haven't been written for it... Could hack by having the methods check for the presence of the `pmat` element, and if it's there, remove it and convert the params list to a `params_pansim` object, then run the rest of the code as usual and deal with `pmat` separately.)
 
 Beta "vector" (now a matrix): including only infectious compartments (could also use `full=TRUE`)
 
-(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? `beta0` is a pure rate (units of days$^{-1}$) What are the implied units on `Cmat`? Should add units for these quantities (and others) in the documentation/included in param descriptions for parsets that ship with the package.)
+(*IP:*: what are the units on the `beta` "vector"/matrix? `beta0` in the param file? `beta0` is a pure rate (units of days$^{-1}$) What are the implied units on `pmat`? Should add units for these quantities (and others) in the documentation/included in param descriptions for parsets that ship with the package.)
 
 ```{r beta_vec_etc, eval = FALSE}
-ppa <- c(as.list(pp),list(Cmat=Cmat))
+ppa <- c(as.list(pp),list(pmat=pmat))
 b1 <- make_betavec(ss2, ppa, full=FALSE)
-ppa.d <- c(as.list(pp),list(Cmat=Cmat.d))
-ppa.u <- c(as.list(pp),list(Cmat=Cmat.u))
+ppa.d <- c(as.list(pp),list(pmat=pmat.d))
+ppa.u <- c(as.list(pp),list(pmat=pmat.u))
 b1.d <- make_betavec(ss2, ppa.d, full=FALSE)
 plot_grid(ifun(b1,sub="compound"),ifun(b1.d,sub="diag"),nrow=2)
 ```
@@ -268,9 +268,9 @@ persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
 
 ## to do
 
-- how should `Cmat` be scaled? Should it be normalized?
+- how should `pmat` be scaled? Should it be normalized?
     - BB: best way to adjust a contact matrix? set lead eigenvalue to 1? symmetrize?
-- what data structure should we use for age-specific parameters other than `Cmat` (e.g. $\delta$, the fraction of acute care cases that are fatal)
+- what data structure should we use for age-specific parameters other than `pmat` (e.g. $\delta$, the fraction of acute care cases that are fatal)
     - BB: try non-homogeneous parameters across age classes; should work to make params a list and replace some of the scalar/length-1 elements with vectors [if params is a list, should test: all elements should be (1) vector of length 1 or (2) vector of length `n_age` or (3) `n_age * n_age` matrix
 - extend `make_state` to implement age-dependent N in state construction ... i.e. allow a vector of relative sizes of age classes
 - what kind of unit tests do we want to run with age structure so that we can trust the results?
@@ -280,7 +280,7 @@ persp(as(m1,"matrix"),col="gray",phi=25,theta=100)
 
 ---
 
-# Scaling `Cmat`
+# Scaling `pmat`
 
 ## Current transmission model
 
@@ -548,15 +548,15 @@ ppa <- as.list(pp)
 ## pop dist from Mistry et al
 ppa <- update(ppa, N = (age_dist %>% pull(X2)))
 ## contact matrix from mistry
-Cmat <- (all_settings_given
+pmat <- (all_settings_given
     %>% pivot_wider(names_from = I_age,
                     values_from = value)
     %>% select(-S_age)
     %>% as.matrix()
 )
-rownames(Cmat) <- age_cats
-colnames(Cmat) <- age_cats
-ppa <- c(ppa, list(Cmat=Cmat))
+rownames(pmat) <- age_cats
+colnames(pmat) <- age_cats
+ppa <- c(ppa, list(pmat=pmat))
 
 ## make age-structured params (using mistry-calculated
 ## overall matrix)

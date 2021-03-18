@@ -32,44 +32,44 @@ state_r <- expand_state_age(state, age_cat = age_cat,
                             Nvec = Nvec_r)
 
 ## generate param sets ##
-Cmat_u <- mk_Cmat(age_cat = age_cat, dist = "unif")
-Cmat_r <- mk_Cmat(age_cat = age_cat, dist = "rand")
-Cmat_d <- mk_Cmat(age_cat = age_cat, dist = "diag")
+pmat_u <- mk_pmat(age_cat = age_cat, dist = "unif")
+pmat_r <- mk_pmat(age_cat = age_cat, dist = "rand")
+pmat_d <- mk_pmat(age_cat = age_cat, dist = "diag")
 
 ## params with unif pop
-## + unif cmat
+## + unif pmat
 params_uu <- expand_params_age(params, age_cat = age_cat,
-                               Cmat = Cmat_u, Nvec = Nvec_u)
-## + random cmat
+                               pmat = pmat_u, Nvec = Nvec_u)
+## + random pmat
 params_ur <- expand_params_age(params, age_cat = age_cat,
-                               Cmat = Cmat_r, Nvec = Nvec_u)
-## + diag cmat
+                               pmat = pmat_r, Nvec = Nvec_u)
+## + diag pmat
 params_ud <- expand_params_age(params, age_cat = age_cat,
-                               Cmat = Cmat_d, Nvec = Nvec_u)
+                               pmat = pmat_d, Nvec = Nvec_u)
 
 ## params with random pop
-## + unif cmat
+## + unif pmat
 params_ru <- expand_params_age(params, age_cat = age_cat,
-                               Cmat = Cmat_u, Nvec = Nvec_r)
-## + random cmat
+                               pmat = pmat_u, Nvec = Nvec_r)
+## + random pmat
 params_rr <- expand_params_age(params, age_cat = age_cat,
-                               Cmat = Cmat_r, Nvec = Nvec_r)
+                               pmat = pmat_r, Nvec = Nvec_r)
 
 ## generate sims ###
 end_date <- "2021-02-15"
 
 ## sims with unif pop
-## + unif cmat
+## + unif pmat
 res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
-## + rand cmat
+## + rand pmat
 res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
-## + diag cmat
+## + diag pmat
 res_ud <- run_sim(params_ud, state_u, end_date = end_date, condense = FALSE)
 
 ## sims with random pop
-## + unif cmat
+## + unif pmat
 res_ru <- run_sim(params_ru, state_r, end_date = end_date, condense = FALSE)
-## + rand cmat
+## + rand pmat
 res_rr <- run_sim(params_rr, state_r, end_date = end_date, condense = FALSE)
 
 ## TESTS
@@ -125,23 +125,23 @@ check_const_pop <- function(res, params){
 
 test_that("age-specific population doesn't change over the course of a simulation",
 {
-    ## unif pop, unif Cmat
+    ## unif pop, unif pmat
     expect_true(check_const_pop(res_uu, params_uu))
 
-    ## unif pop, rand Cmat
+    ## unif pop, rand pmat
     expect_true(check_const_pop(res_ur, params_ur))
 
-    ## rand pop, unif Cmat
+    ## rand pop, unif pmat
     expect_true(check_const_pop(res_ru, params_ru))
 
-    ## rand pop, rand Cmat
+    ## rand pop, rand pmat
     expect_true(check_const_pop(res_rr, params_rr))
 })
 
-## Cmat tests
+## pmat tests
 test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
     age_cat <- mk_agecats(min = 0, max = 84, da  = 10)
-    expect_equal(dim(mk_mistry_Cmat(age_cat = age_cat)),
+    expect_equal(dim(mk_mistry_pmat(age_cat = age_cat)),
                  c(length(age_cat), length(age_cat)))
 })
 
