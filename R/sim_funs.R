@@ -105,13 +105,13 @@ make_betavec <- function(state, params, full=TRUE) {
         }
 
         ## if beta0 is a scalar, assume the same beta across age groups
-        if (length(params$beta0)==1){
+        # if (length(params$beta0)==1){
             # print("assuming constant beta0 across ages...")
-            params$beta0 <- mk_beta0vec(age_cat = attr(params, "age_cat"),
-                                        mean_beta0 = params$beta0)
-        } else {
-            if(length(params$beta0)!=nrow(params$Cmat)) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via Cmat.")
-        }
+        #     params$beta0 <- mk_beta0vec(age_cat = attr(params, "age_cat"),
+        #                                 mean_beta0 = params$beta0)
+        # } else {
+        # }
+        if(!(length(params$beta0 %in% c(1, nrow(params$Cmat))))) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via Cmat.")
 
         ## check that Cmat rows sum to 1
         if (!isTRUE(all.equal(unname(rowSums(params$Cmat)), rep(1, nrow(params$Cmat))))) stop("each Cmat row must sum to 1 (it should be a probability distribution)")
@@ -121,14 +121,14 @@ make_betavec <- function(state, params, full=TRUE) {
         ## grab contact matrix (with susceptibles as rows
         ## and infectives as columns) and scale each row by beta corresponding
         ## to that susceptible age group
-        Cmat <- with(params, beta0*Cmat)
+        Cmat <- params$beta0*params$Cmat
         ## transpose newly-scaled Cmat to enable calculations below
         ##
         ## calculate c_{ij}/N_j to incorporate 1/N_j from
         ## I_j/N_j in force of infection (for mat/vec, R will
         ## divide the entire first row of mat by the first
         ## element of vec, etc.)
-        Cmat <- with(params, t(Cmat)/N)
+        Cmat <- t(Cmat)/params$N
         a_names <- rownames(Cmat)
         new_names <- expand_names(Icats, a_names)
         ## transpose back so rows represent susceptibles and
@@ -485,7 +485,7 @@ do_step <- function(state, params, ratemat, dt=1,
     {
         calc_N <- sum(state[p_states])
         if (!isTRUE(all.equal(calc_N,sum(params[["N"]]), tolerance=MP_badsum_tol))) {
-            msg <- sprintf("sum(states) != original N (delta=%1.2g)",params[["N"]]-calc_N)
+            msg <- sprintf("sum(states) != original N (delta=%1.2g)",sum(params[["N"]])-calc_N)
             get(MP_badsum_action)(msg)
         }
     } ## not exponential run or stoch proc or ignore-sum
