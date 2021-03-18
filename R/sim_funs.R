@@ -90,37 +90,27 @@ make_betavec <- function(state, params, full=TRUE) {
     ## deal with age structure
     if (has_age(params)) {
 
-        ## perform checks
+        ## check that all components for ageified transmission multipliers are
+        ## present in params and in the right format
+        if (!is.list(params)) stop("must expand parameters to include age componets first (use expand_params_age())")
 
-        ## if only total population size is given, assume a uniform distribution
-        ## across age groups
-        if (length(params$N)==1){
-            # print("assuming a uniform population distribution...")
-            params$N <- mk_Nvec(age_cat = attr(params, "age_cat"),
-                                Ntot = params$N)
-            ## dist given in terms of pmat since has_age checks existence of
-            ## pmat in params
-        } else {
-            if (length(params$N)!=nrow(params$pmat)) stop("N must either be a scalar (total population) or a vector of the same length as the number of age groups specified via pmat.")
-        }
-
-        ## if beta0 is a scalar, assume the same beta across age groups
-        # if (length(params$beta0)==1){
-            # print("assuming constant beta0 across ages...")
-        #     params$beta0 <- mk_beta0vec(age_cat = attr(params, "age_cat"),
-        #                                 mean_beta0 = params$beta0)
-        # } else {
-        # }
-        if(!(length(params$beta0 %in% c(1, nrow(params$pmat))))) stop("beta0 must either be a scalar or a vector of the same length as the number of age groups specified via pmat.")
-
+        ## pmat checks
+        if (is.null(params$pmat)) stop("must specify params$pmat component")
         ## check that pmat rows sum to 1
         if (!isTRUE(all.equal(unname(rowSums(params$pmat)), rep(1, nrow(params$pmat))))) stop("each pmat row must sum to 1 (it should be a probability distribution)")
 
+        ## Nvec check
+        if (length(params$N != nrow(params$pmat))) stop("N must a vector of the same length as the number of age groups specified via pmat.")
+
+        ## beta0 check
+        if (!(length(params$beta0 %in% c(1, nrow(params$pmat))))) stop("beta0 must either be a scalar (same beta0 for all ages) or a vector of the same length as the number of age groups specified via pmat.")
+
         ## incorporate contact matrix and /N_j in beta term, and attach age cats
 
-        ## grab contact matrix (with susceptibles as rows
-        ## and infectives as columns) and scale each row by beta corresponding
-        ## to that susceptible age group
+        ## grab contact matrix (with susceptibles as rows and infectives as
+        ## columns) and scale each row by beta0 corresponding to that
+        ## susceptible age group (if beta0 is a scalar, scale the whole matrix
+        ## with it)
         pmat <- params$beta0*params$pmat
         ## transpose newly-scaled pmat to enable calculations below
         ##
@@ -569,6 +559,9 @@ run_sim <- function(params
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
     M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    if(has_age(params)){
+        ## warning that checks for balance in contacts
+    }
     if (has_testing(params=params)) {
         if (!is.null(ratemat_args$testify)) {
             warning("'testify' no longer needs to be passed in ratemat_args")
