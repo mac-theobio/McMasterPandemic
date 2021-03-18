@@ -123,14 +123,14 @@ make_beta <- function(state, params, full=TRUE) {
         new_names <- expand_names(Icats, a_names)
         ## transpose back so rows represent susceptibles and
         ## columns represent infectives again
-        beta_vec0 <- t(kronecker(pmat,matrix(Icat_prop_vec)))
-        dimnames(beta_vec0) <- list(a_names,new_names)
-        beta_vec0 <- Matrix(beta_vec0)
+        beta_0 <- t(kronecker(pmat,matrix(Icat_prop_vec)))
+        dimnames(beta_0) <- list(a_names,new_names)
+        beta_0 <- Matrix(beta_0)
 
     } else {
         ## without age structure, multiply by single beta0 and
         ## normalize by total population N for I/N term in force of infection
-        beta_vec0 <- with(as.list(params), beta0*Icat_prop_vec/N)
+        beta_0 <- with(as.list(params), beta0*Icat_prop_vec/N)
     }
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
@@ -138,24 +138,24 @@ make_beta <- function(state, params, full=TRUE) {
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
     if (has_testing(state=state)) {  ## testified!
         if (has_age(params)) stop("can't combine age and testing yet")
-        beta_vec0 <- rep(beta_vec0,each=length(testcats))
-        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
+        beta_0 <- rep(beta_0,each=length(testcats))
+        names(beta_0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
         ## FIXME: also adjust _n, _p components?
-        pos_vals <- grep("_t$",names(beta_vec0))
-        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
+        pos_vals <- grep("_t$",names(beta_0))
+        beta_0[pos_vals] <- beta_0[pos_vals]*(1-params[["iso_t"]])
     }
-    if (!full) return(beta_vec0)
+    if (!full) return(beta_0)
     ## By default, make a vector of zeroes for all the states,
     ## then fill in infectious ones
     if (!has_age(params)) {
-        beta_vec <- setNames(numeric(length(state)),names(state))
-        beta_vec[names(beta_vec0)] <- beta_vec0
+        beta <- setNames(numeric(length(state)),names(state))
+        beta[names(beta_0)] <- beta_0
     } else {
-        beta_vec <- matrix(0, nrow=nrow(beta_vec0), ncol=length(state),
-                           dimnames=list(rownames(beta_vec0), names(state)))
-        beta_vec[rownames(beta_vec0),colnames(beta_vec0)] <- matrix(beta_vec0)
+        beta <- matrix(0, nrow=nrow(beta_0), ncol=length(state),
+                           dimnames=list(rownames(beta_0), names(state)))
+        beta[rownames(beta_0),colnames(beta_0)] <- matrix(beta_0)
     }
-    return(beta_vec)
+    return(beta)
 }
 
 ## make_ratemat()
