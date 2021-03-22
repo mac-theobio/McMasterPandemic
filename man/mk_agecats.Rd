@@ -2,7 +2,7 @@
 % Please edit documentation in R/ageify.R
 \name{mk_agecats}
 \alias{mk_agecats}
-\title{construct age categories}
+\title{Construct vector of age category labels}
 \usage{
 mk_agecats(min = 0, max = 90, da = 10)
 }
@@ -14,5 +14,5 @@ mk_agecats(min = 0, max = 90, da = 10)
 \item{da}{age bin width}
 }
 \description{
-construct age categories
+Construct vector of age category labels
 }

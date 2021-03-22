@@ -5,28 +5,28 @@
 \title{expand parameter list to include age structure}
 \usage{
 expand_params_age(
-  pp,
+  params,
   age_cat = mk_agecats(),
+  beta0 = NULL,
   pmat = mk_pmat(),
-  Nvec = mk_Nvec(),
-  beta0vec = NULL
+  Nvec = mk_Nvec()
 )
 }
 \arguments{
-\item{pp}{parameter list (e.g. read in with `read_params()`)}
+\item{params}{parameter list (e.g. read in with `read_params()`)}
 
 \item{age_cat}{vector of age categories}
+
+\item{beta0}{vector of age-specific beta0 values (if NULL, assume same beta0 for all age groups as already provided in params)}
 
 \item{pmat}{contact matrix; default is uniform}
 
 \item{Nvec}{population distribution (as counts); default is uniform}
-
-\item{beta0vec}{vector of beta0 values; default is all the same value}
 }
 \description{
 expand parameter list to include age structure
 }
 \examples{
-pp <- read_params("PHAC_testify.csv")
-ppa <- expand_params_age(pp)
+params <- read_params("PHAC_testify.csv")
+params_age <- expand_params_age(params)
 }

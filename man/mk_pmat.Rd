@@ -4,12 +4,14 @@
 \alias{mk_pmat}
 \title{generate a contact matrix (where each row is a probability distribution)}
 \usage{
-mk_pmat(age_cat = mk_agecats(), dist = "unif")
+mk_pmat(age_cat = mk_agecats(), dist = "unif", Nvec = NULL)
 }
 \arguments{
 \item{age_cat}{age categories (made with `mk_agecats()`)}
 
 \item{dist}{(character) either "unif" for uniform, "rand" for a random distributions by age, or "diag" for strictly within-age mixing (pmat = the identity matrix)}
+
+\item{Nvec}{population distribution vector (needed to generate a "balanced" random contact probability matrix if population distribution isn't perfectly uniform)}
 }
 \description{
 generate a contact matrix (where each row is a probability distribution)

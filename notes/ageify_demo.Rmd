@@ -78,6 +78,13 @@ base_state[!grepl("^S|^E", names(base_state))] <-  rep(0, length(base_state)-2)
 end_date <- "2020-07-01"
 ```
 
+```{r}
+run_sim_ageify(base_params, base_state,
+               condense = FALSE,
+               end_date = end_date)
+```
+
+
 ```{r compare_res_uu_with_homog}
 res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
                          end_date = end_date)
@@ -113,12 +120,8 @@ plot_res_by_state(res_uu)
 ```
 
 ```{r plot_res_ur, eval = FALSE}
-beta0vec <- mk_beta0vec(age_cat = mk_agecats(),
-                        mean_beta0 = 10,
-                        dist = "rand")
 res_ur <- run_sim_ageify(base_params, base_state,
-                         beta0vec = beta0vec,
-                         Cmat = mk_Cmat(dist = "rand"),
+                         pmat = mk_pmat(dist = "rand"),
                          condense = FALSE,
                          end_date = end_date)
 
@@ -145,8 +148,7 @@ plot_res_by_state(res_ru)
 ```{r plot_res_rr, eval = FALSE}
 res_rr <- run_sim_ageify(base_params, base_state,
                          Nvec = mk_Nvec(dist = "rand"),
-                         Cmat = mk_Cmat(dist = "rand"),
-                         beta0vec = beta0vec,
+                         pmat = mk_pmat(dist = "rand"),
                          condense = FALSE,
                          end_date = end_date)
 
@@ -162,19 +164,19 @@ plot_res_by_state(res_rr)
 (There's also a test written with this contact matrix, checking whether identical epidemics are generated within each age group.)
 
 ```{r, eval = FALSE}
-Cmat_d <- mk_Cmat(dist = "diag")
+pmat_d <- mk_pmat(dist = "diag")
 res_ud <- run_sim_ageify(base_params, base_state, 
-                         Cmat = Cmat_d, end_date = end_date, condense = FALSE)
+                         pmat = pmat_d, end_date = end_date, condense = FALSE)
 ```
 
 ## Using a "compound" contact matrix
 
 ```{r other_cmats, eval = FALSE, echo = FALSE}
 ## case 2: diagonal (mixing only within age groups)
-Cmat_diag <- diag(n)
+pmat_diag <- diag(n)
 
 ## case 3: predominantly mixing within age categories
-Cmat_compound <- (Cmat_unif + Cmat_diag)/rowSums(Cmat_unif + Cmat_diag)
+pmat_compound <- (pmat_unif + pmat_diag)/rowSums(pmat_unif + pmat_diag)
 ```
 
 ## Using a Mistry *et al.* contact matrix
@@ -183,9 +185,9 @@ Here's a demo using the Mistry *et al.* contact matrix for Ontario:
 
 ```{r sim_setup_mistry, eval = FALSE}
 age_cat <- mk_agecats(0, 84, 10)
-M <- mk_mistry_Cmat(age_cat = age_cat)
+M <- mk_mistry_pmat(age_cat = age_cat)
 M_bar <- rowSums(M)
-Cmat <- M/M_bar
+pmat <- M/M_bar
 Nvec <- mk_mistry_Nvec(age_cat = age_cat)$pop
 
 ## update state so that population size matches to new distribution
@@ -200,7 +202,7 @@ beta0vec <- mistry_beta*M_bar
 res_mistry <- run_sim_ageify(base_params, state,
                              age_cat = age_cat,
                              beta0vec = beta0vec,
-                             Cmat = Cmat,
+                             pmat = pmat,
                              Nvec = Nvec,
                              condense = FALSE,
                              end_date = end_date)
@@ -238,6 +240,8 @@ res_mistry <- run_sim_ageify(base_params, state,
   )
 ```
 
+# Using $\beta(t)$ calibrated to overall pop in age-specific sims
+
 <!----------------------------------------------------------------------------->
 
 ```{r old, eval = FALSE, echo = FALSE}
@@ -257,15 +261,15 @@ ss2 <- expand_stateval_age(ss,
 aa <- attr(ss2, "age_cat")
 
 ## construct uniform contact matrix (homogeneous mixing)
-Cmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(aa,aa))
+pmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(aa,aa))
 print("contact matrix:")
-Matrix::image(Matrix(Cmat_unif))
+Matrix::image(Matrix(pmat_unif))
 
 ## expand parameters to include contact matrix
-ppa_unif <- c(as.list(pp), list(Cmat=Cmat_unif))
+ppa_unif <- c(as.list(pp), list(pmat=pmat_unif))
 
 ## MAKE AGEIFIED BETA VECTOR
-beta_unif <- make_betavec(ss2, ppa_unif, full=FALSE)
+beta_unif <- make_beta(ss2, ppa_unif, full=FALSE)
 print("betavec:")
 Matrix::image(Matrix(beta_unif))
 

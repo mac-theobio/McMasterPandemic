@@ -24,15 +24,15 @@ ageify(ratemat, params, age_cat = mk_agecats())
 epidemiological state varies fast, age category varies slowly
 }
 \examples{
-pp <- read_params("PHAC_testify.csv")
-ss <- make_state(params=pp)
+params <- read_params("PHAC_testify.csv")
+ss <- make_state(params=params)
 ss2 <- expand_state_age(ss)
-pp <- read_params("PHAC_testify.csv")
-state <- make_state(params=pp)
-M <- make_ratemat(state,pp, sparse=TRUE)
-Ma <- ageify(M, pp)
+params <- read_params("PHAC_testify.csv")
+state <- make_state(params=params)
+M <- make_ratemat(state,params, sparse=TRUE)
+Ma <- ageify(M, params)
 library(Matrix)
 Matrix::image(Ma)
-Mta <- ageify(testify(M,pp),pp)
+Mta <- ageify(testify(M,params),params)
 Matrix::image(Mta)
 }
