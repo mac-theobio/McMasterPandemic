@@ -1,6 +1,7 @@
 library(McMasterPandemic)
 ## devtools::load_all()
 library(testthat)
+library(purrr) ## for transpose()
 
 ## apparently context() is depreciated/superseded
 ## tests are now be auto-named with the filename
@@ -22,38 +23,47 @@ state <- make_state(N = params[["N"]],
 Nvec_u <- mk_Nvec(Ntot = params[["N"]], age_cat = age_cat,
                   dist = "unif")
 ## random population distribution
-Nvec_r <- mk_Nvec(Ntot = sum(state), age_cat = age_cat,
-                  dist = "rand")
+# Nvec_r <- mk_Nvec(Ntot = sum(state), age_cat = age_cat,
+#                   dist = "rand")
 
 ## generate state vecs ##
 state_u <- expand_state_age(state, age_cat = age_cat,
                             Nvec = Nvec_u)
-state_r <- expand_state_age(state, age_cat = age_cat,
-                            Nvec = Nvec_r)
+# state_r <- expand_state_age(state, age_cat = age_cat,
+#                             Nvec = Nvec_r)
 
 ## generate param sets ##
-pmat_u <- mk_pmat(age_cat = age_cat, dist = "unif")
-pmat_r <- mk_pmat(age_cat = age_cat, dist = "rand")
-pmat_d <- mk_pmat(age_cat = age_cat, dist = "diag")
 
 ## params with unif pop
 ## + unif pmat
 params_uu <- expand_params_age(params, age_cat = age_cat,
-                               pmat = pmat_u, Nvec = Nvec_u)
+                               pmat = mk_pmat(age_cat = age_cat,
+                                              dist = "unif"),
+                               Nvec = Nvec_u)
 ## + random pmat
-params_ur <- expand_params_age(params, age_cat = age_cat,
-                               pmat = pmat_r, Nvec = Nvec_u)
+# params_ur <- expand_params_age(params, age_cat = age_cat,
+#                                pmat = mk_pmat(age_cat = age_cat,
+#                                               dist = "rand"),
+#                                Nvec = Nvec_u)
 ## + diag pmat
 params_ud <- expand_params_age(params, age_cat = age_cat,
-                               pmat = pmat_d, Nvec = Nvec_u)
+                               pmat = mk_pmat(age_cat = age_cat,
+                                              dist = "diag"),
+                               Nvec = Nvec_u)
 
 ## params with random pop
 ## + unif pmat
-params_ru <- expand_params_age(params, age_cat = age_cat,
-                               pmat = pmat_u, Nvec = Nvec_r)
+# params_ru <- expand_params_age(params, age_cat = age_cat,
+#                                pmat = mk_pmat(age_cat = age_cat,
+#                                               dist = "unif",
+#                                               Nvec = Nvec_r),
+#                                Nvec = Nvec_r)
 ## + random pmat
-params_rr <- expand_params_age(params, age_cat = age_cat,
-                               pmat = pmat_r, Nvec = Nvec_r)
+# params_rr <- expand_params_age(params, age_cat = age_cat,
+#                                pmat = mk_pmat(age_cat = age_cat,
+#                                               dist = "rand",
+#                                               Nvec = Nvec_r),
+#                                Nvec = Nvec_r)
 
 ## generate sims ###
 end_date <- "2021-02-15"
@@ -62,15 +72,15 @@ end_date <- "2021-02-15"
 ## + unif pmat
 res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
 ## + rand pmat
-res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
+# res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
 ## + diag pmat
 res_ud <- run_sim(params_ud, state_u, end_date = end_date, condense = FALSE)
 
 ## sims with random pop
 ## + unif pmat
-res_ru <- run_sim(params_ru, state_r, end_date = end_date, condense = FALSE)
+# res_ru <- run_sim(params_ru, state_r, end_date = end_date, condense = FALSE)
 ## + rand pmat
-res_rr <- run_sim(params_rr, state_r, end_date = end_date, condense = FALSE)
+# res_rr <- run_sim(params_rr, state_r, end_date = end_date, condense = FALSE)
 
 ## TESTS
 
@@ -80,28 +90,28 @@ test_that("population distributions are properly initialized", {
     ## uniform population
     expect_equal(sum(mk_Nvec(Ntot = 1e6)), 1e6)
     ## random population
-    expect_equal(sum(mk_Nvec(Ntot = 1e6, dist = "rand")), 1e6)
+    # expect_equal(sum(mk_Nvec(Ntot = 1e6, dist = "rand")), 1e6)
 })
 
 test_that("initial state population sizes don't change after adding age structure",
 {
     ## total population sizes
     expect_equal(sum(state_u), sum(state))
-    expect_equal(sum(state_r), sum(state))
+    # expect_equal(sum(state_r), sum(state))
 
     ## population size of each state
     expect_equal(condense_age(state_u),
                  state)
-    expect_equal(condense_age(state_r),
-                 state)
+    # expect_equal(condense_age(state_r),
+    #              state)
 
     ## population size of each age class
     ## uniform population
     expect_equal(as.numeric(condense_state(state_u)),
                  Nvec_u)
     ## random population
-    expect_equal(as.numeric(condense_state(state_r)),
-                 Nvec_r)
+    # expect_equal(as.numeric(condense_state(state_r)),
+    #              Nvec_r)
 })
 
 ## helper function to check that population remains constant across age groups
@@ -109,8 +119,8 @@ test_that("initial state population sizes don't change after adding age structur
 check_const_pop <- function(res, params){
     ## condense states
     res_pops <- (condense_state(res)
-                 ## convert rows to a single list-col containing the age-specific
-                 ## population distribution at each time step
+                 ## convert rows to a single list-col containing the
+                 ## age-specific population distribution at each time step
                  %>% transmute(dist = transpose(select(.,everything()))))
 
     ## check every row of the sim result data frame against the pop distribution
@@ -129,19 +139,20 @@ test_that("age-specific population doesn't change over the course of a simulatio
     expect_true(check_const_pop(res_uu, params_uu))
 
     ## unif pop, rand pmat
-    expect_true(check_const_pop(res_ur, params_ur))
+    # expect_true(check_const_pop(res_ur, params_ur))
 
     ## rand pop, unif pmat
-    expect_true(check_const_pop(res_ru, params_ru))
+    # expect_true(check_const_pop(res_ru, params_ru))
 
     ## rand pop, rand pmat
-    expect_true(check_const_pop(res_rr, params_rr))
+    # expect_true(check_const_pop(res_rr, params_rr))
 })
 
 ## pmat tests
 test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
     age_cat <- mk_agecats(min = 0, max = 84, da  = 10)
-    expect_equal(dim(mk_mistry_pmat(age_cat = age_cat)),
+    mistry_pmat <- expand_params_mistry(params, age_cat = age_cat)$pmat
+    expect_equal(dim(mistry_pmat),
                  c(length(age_cat), length(age_cat)))
 })
 
@@ -216,4 +227,33 @@ test_that("homogeneous case of age-structured model yields identical epidemics i
 
 test_that("diagonal contacts yield identical epidemics in each age group (with an infectious seed in each age group)",{
     expect_true(all(check_equality_across_ages(res_ud)))
+})
+
+test_that("mistry contact parameters are properly initialized", {
+    ## using original age groups
+    Nvec <- mk_mistry_Nvec(province = "Alberta")
+    params_mistry <- expand_params_mistry(params,
+                                          province = "Alberta")
+    ## check population distribution
+    expect_equal(params_mistry$N, Nvec)
+    ## check that we recover a symmetric contact abundance matrix from
+    ## mistry frequency matrices (as stored)
+    expect_true(isSymmetric(params_mistry$mistry$fmats$community*params_mistry$N))
+    ## check pmat rows sum to 1
+    expect_equal(unname(rowSums(params_mistry$pmat)),
+                 rep(1, length(attr(params_mistry, "age_cat"))))
+
+    ## using aggregated age groups
+    age_cat <- mk_agecats(min = 0, max = 80, da = 10)
+    Nvec <- mk_mistry_Nvec(province = "Quebec", age_cat = age_cat)
+    params_mistry <- expand_params_mistry(params,
+                                          province = "Quebec",
+                                          age_cat = age_cat)
+
+    ## check population distribution
+    expect_equal(params_mistry$N, Nvec)
+    ## check that we recover a symmetric contact abundance matrix from
+    ## mistry frequency matrices (as stored)
+    expect_true(isSymmetric(params_mistry$mistry$fmats$community*params_mistry$N))
+
 })
