@@ -5,14 +5,16 @@ date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
 output: html_document
 ---
 
-```{r setup, message = FALSE}
-library(tidyverse)
+```{r setup, message = FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
 devtools::load_all()
+library(tidyverse)
 library(patchwork)
 ```
 
 ```{r prep_res_for_plotting}
-prep_res_for_plotting <- function(res){
+prep_res_for_plotting <- function(res, drop_states = NULL){
   (res  
     %>% select(-c(foi))
     %>% pivot_longer(-date)
@@ -24,16 +26,22 @@ prep_res_for_plotting <- function(res){
     %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
   ) -> res
   
+  if(!is.null(drop_states)){
+    res <- res %>% filter(!(state %in% drop_states))
+  }
+  
   return(res)
 }
 ```
 
 ```{r plot_res_by_age}
-plot_res_by_age <- function(res){
-  (prep_res_for_plotting(res)
+plot_res_by_age <- function(res, drop_states = NULL){
+  (prep_res_for_plotting(res, drop_states)
     %>% ggplot(aes(x = date, y = value, colour = state))
     + geom_line()
     + facet_wrap(vars(age_cat))
+    + scale_x_date(date_breaks = "1 month",
+                   date_labels = "%b")
   ) -> gg
   
   return(gg)
@@ -41,18 +49,20 @@ plot_res_by_age <- function(res){
 ```
 
 ```{r plot_res_by_state}
-plot_res_by_state <- function(res){
-  (prep_res_for_plotting(res)
+plot_res_by_state <- function(res, drop_states = NULL){
+  (prep_res_for_plotting(res, drop_states)
     %>% ggplot(aes(x = date, y = value, colour = age_cat))
     + geom_line()
     + facet_wrap(vars(state), scales = "free_y")
+    + scale_x_date(date_breaks = "1 month",
+                   date_labels = "%b")
   ) -> gg
   
   return(gg)
 }
 ```
 
-# Simulation demo
+# Synthetic contact structure
 
 ## Homogeneous mixing
 
@@ -62,28 +72,19 @@ To reduce the ageified model to the case of homogenous mixing, we need to set:
 1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups (default in the software if only one $N$ is provided; this is assumed to be the total population size),
 1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups.
 
-Ageify tests include a check to ensure that the homogeneous case of the age-structured model reduces down to the base simulation. The test passes when $\beta_0 = 1$, but fails for other values... Let's try to get to the bottom of this:
+In other words, we need to have a uniform population distribution and uniform contact structure.
+
+(`tests/testthat/test-ageify.R` includes a check to ensure that the homogeneous case of the age-structured model reduces down to the base simulation.)
 
 ```{r sim_setup_basic}
-base_params <- update(read_params("PHAC_testify.csv"),
-                      testing_intensity=0
-                      # , beta0 = 2
+base_params <- update(read_params("PHAC_testify.csv")
+                      , testing_intensity=0
+                      , beta0 = 2
                       )
-base_state <- make_state(params = base_params)
-## make it so that there is one exposed person in each age class, to start (for a completely homogeneous simulation)
-base_state[["S"]] <- sum(base_state) - length(mk_agecats())
-base_state[["E"]] <- length(mk_agecats())
-base_state[!grepl("^S|^E", names(base_state))] <-  rep(0, length(base_state)-2)
-
-end_date <- "2020-07-01"
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = length(mk_agecats()))
+end_date <- "2020-06-01"
 ```
-
-```{r}
-run_sim_ageify(base_params, base_state,
-               condense = FALSE,
-               end_date = end_date)
-```
-
 
 ```{r compare_res_uu_with_homog}
 res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
@@ -105,58 +106,40 @@ p2 <- plot(res_hom %>% select(-foi)) + labs(title = "base model")
 (p1 / p2) + plot_layout(guides = "collect")
 ```
 
-OK, these results are identical now, but `test-ageify.R` is failing... population total check is failing.
+## Uniform population distribution, non-uniform contact pattern
 
-## Other scenarios 
+```{r res_un}
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
 
-Here's a demo of simulations with age-varying transmission:
+beta0 <- c(2, 3, 3/2)
+pmat <- matrix(c(4/10, 4/30, 8/15,
+                 2/10, 23/30, 3/15,
+                 4/10, 1/10, 4/15),
+               nrow = 3,
+               dimnames = list(age_cat, age_cat))
 
-```{r plot_res_uu}
-(plot_res_by_age(res_uu)
-  + labs(
-    title = "uniform population distribution, uniform contacts, constant beta")
-  )
-plot_res_by_state(res_uu)
-```
+Nvec <- rep(10000, 3)
+base_params <- update(base_params,
+                      N = sum(Nvec))
+base_state <- make_state(N = sum(Nvec), E0 = n)
 
-```{r plot_res_ur, eval = FALSE}
-res_ur <- run_sim_ageify(base_params, base_state,
-                         pmat = mk_pmat(dist = "rand"),
+res_un <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         beta0 = beta0,
+                         pmat = pmat,
+                         Nvec = Nvec,
                          condense = FALSE,
                          end_date = end_date)
-
-(plot_res_by_age(res_ur)
-  + labs(
-    title = "uniform population distribution, random contacts, random beta0")
-  ) 
-plot_res_by_state(res_ur)
 ```
 
-```{r plot_res_ru}
-res_ru <- run_sim_ageify(base_params, base_state,
-                         Nvec = mk_Nvec(dist = "rand"),
-                         condense = FALSE,
-                         end_date = end_date)
-
-(plot_res_by_age(res_ru)
+```{r plot_res_un}
+drop_states <- c("S", "R")
+(plot_res_by_age(res_un, drop_states)
   + labs(
-    title = "random population distribution, uniform contacts, constant beta0")
+    title = "uniform population distribution, non-uniform contact pattern")
   ) 
-plot_res_by_state(res_ru)
-```
-
-```{r plot_res_rr, eval = FALSE}
-res_rr <- run_sim_ageify(base_params, base_state,
-                         Nvec = mk_Nvec(dist = "rand"),
-                         pmat = mk_pmat(dist = "rand"),
-                         condense = FALSE,
-                         end_date = end_date)
-
-(plot_res_by_age(res_rr)
-  + labs(
-    title = "random population distribution, random contacts, random beta0")
-  ) 
-plot_res_by_state(res_rr)
+plot_res_by_state(res_un, drop_states)
 ```
 
 ## Using a diagonal contact matrix
