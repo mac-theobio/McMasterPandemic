@@ -345,8 +345,8 @@ forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          time_args,
                          condense_args,
                          sim_args,
-                         stoch,
-                         stoch_start,
+                         # stoch,
+                         # stoch_start,
                          params_timevar),
                       pp)
     r <- do.call(sim_fun, all_sim_args)
