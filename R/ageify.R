@@ -762,20 +762,18 @@ expand_params_mistry <- function(params,
 
   ## attach Mistry-specific components to params list
   params <- c(params,
-              list(mistry = list(
-                   weights = weights,
-                   fmats = fmats,
-                   transmissibility = transmissibility,
-                   contact_rates = contact_rates
-                   )))
+              list(mistry_weights = weights,
+                   mistry_fmats = fmats,
+                   mistry_transmissibility = transmissibility,
+                   mistry_contact_rates = contact_rates
+                   ))
 
   ## attach attributes
   attr(params, "description") <- c(params_desc,
-                                   mistry = "Parameters specific to Mistry et al. 2021, used to derive beta0 and pmat in the McMasterPandemic age-structured model",
-                                   mistry_weights = "Average number of contacts per setting across all age groups (assumed)",
-                                   mitsry_fmats = "Setting-specific contact frequency matrices, where row i gives the contact frequency per susceptible of age group i (assumed)",
-                                   mistry_contact_rates = "Average number of contacts per age group, calculated using the setting-specific weights and contact frequency matrices (calculated using the setting-specific weights and frequency matrices)",
-                                   mistry_transmissibility = "Transmissibility of the infection (unitless); transmissibility*contact_rate = beta0 per age group (assumed)")
+                                   mistry_weights = "Average number of contacts per setting across all age groups (assumed); calculated using Mistry et al. 2021 contact matrices",
+                                   mitsry_fmats = "Setting-specific contact frequency matrices, where row i gives the contact frequency per susceptible of age group i (assumed); from Mistry et al. 2021",
+                                   mistry_contact_rates = "Average number of contacts per age group, calculated using the setting-specific weights and contact frequency matrices from Mistry et al. 2021",
+                                   mistry_transmissibility = "Transmissibility of the infection (unitless); transmissibility*contact_rate = beta0 per age group (assumed); calculated using Mistry et al. 2021 contact matrices")
   attr(params, "age_cat") <- age_cat
   class(params) <- "params_pansim"
 
