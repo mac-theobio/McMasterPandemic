@@ -14,17 +14,33 @@ library(patchwork)
 ```
 
 ```{r prep_res_for_plotting}
-prep_res_for_plotting <- function(res, drop_states = NULL){
+prep_res_for_plotting <- function(res,
+                                  drop_states = NULL,
+                                  condense_I = FALSE){
   (res  
     %>% select(-c(foi))
     %>% pivot_longer(-date)
     %>% separate(name, into = c("state", "age_cat"),
                  sep = "_", extra = "merge")
+   ) -> res
+  
+  ## condense I cats
+  if(condense_I){
+    (res
+     ## convert state column to factor to maintain original order of variables
+     %>% mutate(state = as_factor(str_replace(state, 
+                                              "I[amps]", "I")))
+     %>% group_by(date, state, age_cat)
+     %>% summarise(value = sum(value), .groups = "drop")
+     ) -> res
+  }
+   
+  (res 
     %>% mutate(state = as_factor(state))
    ## fix age labels
     %>% mutate(age_cat = str_replace(age_cat, "\\.$", "\\+"))
     %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
-  ) -> res
+   ) -> res
   
   if(!is.null(drop_states)){
     res <- res %>% filter(!(state %in% drop_states))
@@ -35,8 +51,9 @@ prep_res_for_plotting <- function(res, drop_states = NULL){
 ```
 
 ```{r plot_res_by_age}
-plot_res_by_age <- function(res, drop_states = NULL){
-  (prep_res_for_plotting(res, drop_states)
+plot_res_by_age <- function(res, drop_states = NULL,
+                            condense_I = FALSE){
+  (prep_res_for_plotting(res, drop_states, condense_I)
     %>% ggplot(aes(x = date, y = value, colour = state))
     + geom_line()
     + facet_wrap(vars(age_cat))
@@ -49,8 +66,9 @@ plot_res_by_age <- function(res, drop_states = NULL){
 ```
 
 ```{r plot_res_by_state}
-plot_res_by_state <- function(res, drop_states = NULL){
-  (prep_res_for_plotting(res, drop_states)
+plot_res_by_state <- function(res, drop_states = NULL,
+                              condense_I = FALSE){
+  (prep_res_for_plotting(res, drop_states, condense_I)
     %>% ggplot(aes(x = date, y = value, colour = age_cat))
     + geom_line()
     + facet_wrap(vars(state), scales = "free_y")
@@ -74,20 +92,32 @@ To reduce the ageified model to the case of homogenous mixing, we need to set:
 
 In other words, we need to have a uniform population distribution and uniform contact structure.
 
-(`tests/testthat/test-ageify.R` includes a check to ensure that the homogeneous case of the age-structured model reduces down to the base simulation.)
+There is a test (in `tests/testthat/test-ageify.R`) that includes a check to ensure that the homogeneous case of the age-structured model reduces down to the base simulation.
 
 ```{r sim_setup_basic}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n)
+
+## set up base (non-ageified) params and state
 base_params <- update(read_params("PHAC_testify.csv")
-                      , testing_intensity=0
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
                       , beta0 = 2
                       )
 base_state <- make_state(N = base_params[["N"]],
-                         E0 = length(mk_agecats()))
-end_date <- "2020-06-01"
+                         E0 = length(age_cat))
+end_date <- "2020-08-01"
 ```
 
 ```{r compare_res_uu_with_homog}
-res_uu <- run_sim_ageify(base_params, base_state, condense = FALSE,
+res_uu <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         Nvec = Nvec,
+                         pmat = mk_pmat(age_cat, dist = "unif"),
+                         condense = FALSE,
                          end_date = end_date)
 
 res_hom <- run_sim(base_params, base_state, condense = FALSE,
@@ -106,20 +136,81 @@ p2 <- plot(res_hom %>% select(-foi)) + labs(title = "base model")
 (p1 / p2) + plot_layout(guides = "collect")
 ```
 
+## Diagonal contact matrix
+
+A diagonal contact matrix decouples the age-specific epidemics entirely.
+
+There is a test checking that identical epidemics are generated within each age group with a diagonal contact matrix and a uniform population distribution.
+
+```{r res_ud}
+pmat_d <- mk_pmat(age_cat = age_cat, dist = "diag")
+res_ud <- run_sim_ageify(base_params, base_state, 
+                         age_cat = age_cat,
+                         beta0 = c(0.5, 1, 1.5),
+                         Nvec = Nvec,
+                         pmat = pmat_d, end_date = end_date, condense = FALSE)
+```
+
+```{r plot_res_ud}
+drop_states <- c("S", "R")
+(plot_res_by_age(res_ud, drop_states)
+  + labs(
+    title = "uniform population distribution, diagonal contact pattern")
+  ) 
+plot_res_by_state(res_ud, drop_states)
+```
+
+## Using a "compound" contact matrix
+
+A "compound" contact matrix keeps the majority of contacts within an age-group, and contacts outside of an age group are uniformly distributed across all other age groups. It's essentially the diagonal contact matrix + the uniform contact matrix (row-normalized).
+
+```{r res_comp}
+pmat_comp <- matrix(c(0.8, 0.1, 0.1,
+                      0.1, 0.8, 0.1,
+                      0.1, 0.1, 0.8),
+                    nrow = 3,
+                    dimnames = list(age_cat, age_cat))
+res_comp <- run_sim_ageify(base_params, base_state, 
+                           age_cat = age_cat,
+                           # beta0 = c(0.5, 1, 1.5),
+                           Nvec = Nvec,
+                           pmat = pmat_comp,
+                           end_date = end_date, condense = FALSE)
+```
+
+```{r plot_res_comp}
+(plot_res_by_age(res_comp, drop_states)
+  + labs(
+    title = "uniform population distribution, compound contact pattern")
+  ) 
+plot_res_by_state(res_comp, drop_states)
+```
+
+The epidemics look identical, which is unsurprising given $(beta_0)_i$, $I_i(0)$, and the distribution $p_{ij}$ are identical for all $i$. 
+
 ## Uniform population distribution, non-uniform contact pattern
 
 ```{r res_un}
-age_cat <- mk_agecats(0, 80, da = 30)
-n <- length(age_cat)
-
+## initialize contact structure
 beta0 <- c(2, 3, 3/2)
+Nvec <- rep(5e6, 3)
 pmat <- matrix(c(4/10, 4/30, 8/15,
                  2/10, 23/30, 3/15,
                  4/10, 1/10, 4/15),
                nrow = 3,
                dimnames = list(age_cat, age_cat))
 
-Nvec <- rep(10000, 3)
+print("beta0:")
+print(beta0)
+print("pmat:")
+print(pmat)
+
+print("balance condition implies the following matrix should be symmetric:")
+total_contacts_between_ages <- (beta0*Nvec)*pmat
+print(total_contacts_between_ages)
+print("is symmetric?")
+print(isSymmetric(total_contacts_between_ages))
+
 base_params <- update(base_params,
                       N = sum(Nvec))
 base_state <- make_state(N = sum(Nvec), E0 = n)
@@ -134,7 +225,6 @@ res_un <- run_sim_ageify(base_params, base_state,
 ```
 
 ```{r plot_res_un}
-drop_states <- c("S", "R")
 (plot_res_by_age(res_un, drop_states)
   + labs(
     title = "uniform population distribution, non-uniform contact pattern")
@@ -142,89 +232,96 @@ drop_states <- c("S", "R")
 plot_res_by_state(res_un, drop_states)
 ```
 
-## Using a diagonal contact matrix
+## Non-uniform population distribution, non-uniform contact pattern
 
-(There's also a test written with this contact matrix, checking whether identical epidemics are generated within each age group.)
+```{r res_nn}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
 
-```{r, eval = FALSE}
-pmat_d <- mk_pmat(dist = "diag")
-res_ud <- run_sim_ageify(base_params, base_state, 
-                         pmat = pmat_d, end_date = end_date, condense = FALSE)
+## initialize contact structure
+total_contacts <- beta0*Nvec
+beta0 <- 1:3
+Nvec <- total_contacts/beta0
+
+print("beta0:")
+print(beta0)
+print("pmat:")
+print(pmat)
+
+print("balance condition implies the following matrix should be symmetric:")
+total_contacts_between_ages <- (beta0*Nvec)*pmat
+print(total_contacts_between_ages)
+print("is symmetric?")
+print(isSymmetric(total_contacts_between_ages))
+
+base_params <- update(base_params,
+                      N = sum(Nvec))
+base_state <- make_state(N = sum(Nvec), E0 = n)
+
+res_nn <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         beta0 = beta0,
+                         pmat = pmat,
+                         Nvec = Nvec,
+                         condense = FALSE,
+                         end_date = end_date)
 ```
 
-## Using a "compound" contact matrix
-
-```{r other_cmats, eval = FALSE, echo = FALSE}
-## case 2: diagonal (mixing only within age groups)
-pmat_diag <- diag(n)
-
-## case 3: predominantly mixing within age categories
-pmat_compound <- (pmat_unif + pmat_diag)/rowSums(pmat_unif + pmat_diag)
+```{r plot_res_nn}
+(plot_res_by_age(res_nn, drop_states)
+  + labs(
+    title = "uniform population distribution, non-uniform contact pattern")
+  ) 
+plot_res_by_state(res_nn, drop_states)
 ```
+
+# "Real" contact structure
 
 ## Using a Mistry *et al.* contact matrix
 
 Here's a demo using the Mistry *et al.* contact matrix for Ontario:
 
-```{r sim_setup_mistry, eval = FALSE}
-age_cat <- mk_agecats(0, 84, 10)
-M <- mk_mistry_pmat(age_cat = age_cat)
-M_bar <- rowSums(M)
-pmat <- M/M_bar
-Nvec <- mk_mistry_Nvec(age_cat = age_cat)$pop
+```{r sim_setup_mistry}
+## set up params
+age_cat <- mk_agecats(0, 84, 20)
+mistry_params <- expand_params_mistry(
+  base_params,
+  transmissibility = 0.25,
+  province = "Ontario",
+  weights = list(household = 4.11,
+                 school = 11.41,
+                 work = 8.07,
+                 community = 2.79),
+  age_cat = age_cat)
 
 ## update state so that population size matches to new distribution
-state <- base_state
-state[["S"]] <- sum(Nvec) - length(age_cat)
-state[["E"]] <- length(age_cat)
-state[!grepl("^S|^E", names(state))] <- 0
+mistry_state <- expand_state_age(
+  make_state(N = sum(mistry_params$N),
+  E0 = length(age_cat)),
+  age_cat = age_cat,
+  Nvec = mistry_params$N)
 
-mistry_beta <- 0.5
-beta0vec <- mistry_beta*M_bar
+res_mistry <- run_sim(mistry_params, mistry_state,
+                      condense = FALSE,
+                      end_date = end_date)
+```
 
-res_mistry <- run_sim_ageify(base_params, state,
-                             age_cat = age_cat,
-                             beta0vec = beta0vec,
-                             pmat = pmat,
-                             Nvec = Nvec,
-                             condense = FALSE,
-                             end_date = end_date)
-
-(prep_res_for_plotting(res_mistry)
-  %>% mutate(state = fct_recode(state,
-    I = "Ia",
-    I = "Ip",
-    I = "Im",
-    I = "Is"
-  ))  
-  %>% group_by(date, state, age_cat)
-  %>% summarise(value = sum(value), .groups = "drop")
-  %>% filter(state %in% c("S", "E", "I", "X", "R", "D"))
-) -> res_mistry_cond
-
-(res_mistry_cond
-  %>% ggplot(aes(x = date, y = value, colour = state))
-    + geom_line()
-    + scale_y_continuous(
-      labels = scales::label_number_si()
-      )
-    + facet_wrap(vars(age_cat))
-    + labs(
-        title = "Ontario contact data and population distribution")
-) 
-
-(res_mistry_cond
-    %>% ggplot(aes(x = date, y = value, colour = age_cat))
-    + geom_line()
-    + scale_y_continuous(
-      labels = scales::label_number_si()
-      )
-    + facet_wrap(vars(state), scales = "free_y")
-  )
+```{r plot_res_mistry}
+(plot_res_by_age(res_mistry, drop_states,
+                 condense_I = TRUE)
+  + labs(
+    title = "Ontario population distribution and contact structure")
+  ) 
+plot_res_by_state(res_mistry, drop_states,
+                  condense_I = TRUE)
 ```
 
 # Using $\beta(t)$ calibrated to overall pop in age-specific sims
 
+Take $\beta_0$ in base sim, and split across age groups using $\beta_0 = \tau \langle c \rangle$ and $(\beta_0)_i = \tau c_i$ for $\langle c \rangle = 1/N \sum_i N_i c_i$ (might have to choose $c_i$ ahead of time, which is fine because that's given in the Mistry matrices). 
+
+Do an age-structured sim with these $(\beta_0)_i$ values and then condense, summing across age groups. Compare results to base sim. Demo first with constant $\beta_0$ and simple (synthetic) mixing patterns + unif pop dist to start, then change only pop dist to non-uniform. If this works, try it for the Mistry matrices, then start thinking about $\beta(t)$. May need to think about adjusting $\omega_k$ (e.g. turning off school transmission on the school closure schedule).
 <!----------------------------------------------------------------------------->
 
 ```{r old, eval = FALSE, echo = FALSE}
