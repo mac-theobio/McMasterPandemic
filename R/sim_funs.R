@@ -210,9 +210,12 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ####
     np <- length(params)
     if (is.list(params)) {
-        nps <- lengths(params)
+        ## check param lengths (exclude setting-specific mistry params that will
+        ## be of length 4,the number of settings, and not a multiple of age
+        ## groups)
+        nps <- lengths(params[!grepl("weights|fmats", names(params))])
         if (has_age(params)) {
-            na <- nrow(params[["pmat"]])
+            na <- length(attr(params, "age_cat"))
             bad_len <- which(!nps %in% c(1,na,na^2))
             if (length(bad_len)>0) {
                 stop(sprintf("elements of params must be length 1, %d or %d: %s",
@@ -220,8 +223,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
                              paste(names(params)[bad_len],collapse=", ")))
             }
         } else {
-            ## FIXME: better error message ...
-            stopifnot(all(nps==1))
+            if(!all(nps==1)) stop("parameters should each be of length 1")
         }
     }
     ns <- length(state)
