@@ -525,6 +525,10 @@ has_zeta <- function(params) {
     "zeta" %in% names(params) && params[["zeta"]]!=0
 }
 
+has_vacc <- function(params){
+	"vacc" %in% names(params)
+}
+
 ## test based *either* on state or params
 ## testing based on params fails when we have make_state -> get_evec -> make_state ...
 has_testing <- function(state,params=NULL,ratemat=NULL) {

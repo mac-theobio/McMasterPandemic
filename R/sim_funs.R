@@ -206,6 +206,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     } else {
         afun("S", "E", beta_vec %*% state[colnames(beta_vec)])
     }
+	 if(has_vacc(params)){
+	 afun("S", "R", vacc)
+	 }
     afun("E", "Ia", alpha*sigma)
     afun("E","Ip", (1-alpha)*sigma)
     afun("Ia","R", gamma_a)
@@ -330,6 +333,9 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         }
     }
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+	 if (has_vacc(params)){
+		ratemat[pfun("S","R",ratemat)] <- params[["vacc"]]
+	 }
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
         for (a in aa) {

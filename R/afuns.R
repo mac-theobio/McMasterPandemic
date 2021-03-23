@@ -25,10 +25,10 @@ get_r <- function(p, method=c("expsim","kernel","analytical")) {
 ##' @param p parameters
 ##' @param method computational method
 ##' @export
-get_evec <- function(p, method=c("expsim","analytical")) {
+get_evec <- function(p, method=c("expsim","analytical"),...) {
     method <- match.arg(method)
     res <- switch(method,
-                  expsim=rExp(p,return_val="eigenvector"),
+                  expsim=rExp(p,return_val="eigenvector",...),
                   analytical= {
                       J <- make_jac(params=p)    
                       ee <- eigen(J)

@@ -166,13 +166,24 @@ run_sim_loglin <- function(params,
         timevar <- rbind(timevar,testing_dat)
     }
     if (return_timevar) return(timevar)
+	 state <- statefun(params,sim_args)
+	 sim_args$use_eigvec <- NULL
     sim_args <- c(sim_args
                 , extra_pars
                 , nlist(params,
-                        state=make_state(params=params),
+                        state,
                         params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
+
+statefun <- function(params,sim_args){
+	argList <- nlist(params)
+	if(!is.null(use_eigve <- sim_arg$use_eigvec)){
+		argList <- c(argList, nlist(use_eigvec))
+	}
+	return(do.call(make_state,argList))
+}
+
 
 ##' run with transmission propto relative mobility 
 ##' @inheritParams run_sim_break
@@ -1099,6 +1110,7 @@ calibrate_comb <- function(data,
                      skip.hessian=FALSE,
                      use_DEoptim=TRUE,
                      DE_cores=1,
+							beta_break_dates=NULL,
                      use_mobility=FALSE,
                      use_phenomhet=FALSE,
                      use_spline=FALSE,
