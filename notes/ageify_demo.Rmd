@@ -6,7 +6,8 @@ output: html_document
 ---
 
 ```{r setup, message = FALSE, echo = FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.height = 3)
 
 devtools::load_all()
 library(tidyverse)
@@ -59,6 +60,7 @@ plot_res_by_age <- function(res, drop_states = NULL,
     + facet_wrap(vars(age_cat))
     + scale_x_date(date_breaks = "1 month",
                    date_labels = "%b")
+    + scale_y_continuous(labels = scales::label_number_si())
   ) -> gg
   
   return(gg)
@@ -74,6 +76,7 @@ plot_res_by_state <- function(res, drop_states = NULL,
     + facet_wrap(vars(state), scales = "free_y")
     + scale_x_date(date_breaks = "1 month",
                    date_labels = "%b")
+    + scale_y_continuous(labels = scales::label_number_si())
   ) -> gg
   
   return(gg)
@@ -136,6 +139,17 @@ p2 <- plot(res_hom %>% select(-foi)) + labs(title = "base model")
 (p1 / p2) + plot_layout(guides = "collect")
 ```
 
+Full age-structured results:
+
+```{r plot_res_uu}
+drop_states <- c("S", "R")
+(plot_res_by_age(res_uu, drop_states)
+  + labs(
+    title = "uniform population distribution and contact pattern")
+  ) 
+plot_res_by_state(res_uu, drop_states)
+```
+
 ## Diagonal contact matrix
 
 A diagonal contact matrix decouples the age-specific epidemics entirely.
@@ -152,7 +166,6 @@ res_ud <- run_sim_ageify(base_params, base_state,
 ```
 
 ```{r plot_res_ud}
-drop_states <- c("S", "R")
 (plot_res_by_age(res_ud, drop_states)
   + labs(
     title = "uniform population distribution, diagonal contact pattern")
@@ -186,7 +199,7 @@ res_comp <- run_sim_ageify(base_params, base_state,
 plot_res_by_state(res_comp, drop_states)
 ```
 
-The epidemics look identical, which is unsurprising given $(beta_0)_i$, $I_i(0)$, and the distribution $p_{ij}$ are identical for all $i$. 
+The epidemics look identical, which is unsurprising given $(\beta_0)_i$, $I_i(0)$, and the distribution $p_{ij}$ are identical for all $i$. 
 
 ## Uniform population distribution, non-uniform contact pattern
 
@@ -227,7 +240,7 @@ res_un <- run_sim_ageify(base_params, base_state,
 ```{r plot_res_un}
 (plot_res_by_age(res_un, drop_states)
   + labs(
-    title = "uniform population distribution, non-uniform contact pattern")
+    title = "non-uniform population distribution and contact pattern")
   ) 
 plot_res_by_state(res_un, drop_states)
 ```
@@ -280,16 +293,16 @@ plot_res_by_state(res_nn, drop_states)
 
 ## Using a Mistry *et al.* contact matrix
 
-Here's a demo using the Mistry *et al.* contact matrix for Ontario:
+Here's a demo using the Mistry *et al.* contact matrix for Ontario with default (pre-pandemic) contact structure:
 
 ```{r sim_setup_mistry}
 ## set up params
 age_cat <- mk_agecats(0, 84, 20)
 mistry_params <- expand_params_mistry(
   base_params,
-  transmissibility = 0.25,
+  transmissibility = 0.125,
   province = "Ontario",
-  weights = list(household = 4.11,
+  contact_rate_setting = list(household = 4.11,
                  school = 11.41,
                  work = 8.07,
                  community = 2.79),
@@ -314,6 +327,27 @@ res_mistry <- run_sim(mistry_params, mistry_state,
     title = "Ontario population distribution and contact structure")
   ) 
 plot_res_by_state(res_mistry, drop_states,
+                  condense_I = TRUE)
+```
+
+Assuming work contacts are halved, school and community contacts are turned off:
+
+```{r res_mistry_2}
+mistry_params2 <- update_params_mistry(
+  mistry_params,
+  contact_rate_setting = list(school = 0, work = 0.5*mistry_params$mistry_contact_rate_setting$work, community = 0))
+res_mistry_2 <- run_sim(mistry_params2, mistry_state,
+                       condense = FALSE,
+                       end_date = end_date)
+```
+
+```{r plot_res_mistry_2}
+(plot_res_by_age(res_mistry_2, drop_states,
+                 condense_I = TRUE)
+  + labs(
+    title = "Ontario population distribution and contact structure, schools closed")
+  ) 
+plot_res_by_state(res_mistry_2, drop_states,
                   condense_I = TRUE)
 ```
 
