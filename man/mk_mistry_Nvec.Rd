@@ -9,10 +9,10 @@ mk_mistry_Nvec(province = "Ontario", age_cat = NULL)
 \arguments{
 \item{province}{province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)}
 
-\item{age_cat}{(optional) list of age groups to aggregate ages in; use mk_agecats() to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category}
+\item{age_cat}{(optional) list of age groups to aggregate ages in; use `mk_agecats()` to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category}
 }
 \value{
-a tibble with age groups and population counts
+a vector of population counts (one per age category)
 }
 \description{
 Make population distribution using Mistry et al. data

@@ -213,7 +213,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         ## check param lengths (exclude setting-specific mistry params that will
         ## be of length 4,the number of settings, and not a multiple of age
         ## groups)
-        nps <- lengths(params[!grepl("weights|fmats", names(params))])
+        nps <- lengths(params[!grepl("mistry_contact_rate_setting|mistry_fmats", names(params))])
         if (has_age(params)) {
             na <- length(attr(params, "age_cat"))
             bad_len <- which(!nps %in% c(1,na,na^2))

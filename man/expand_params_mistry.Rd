@@ -2,28 +2,30 @@
 % Please edit documentation in R/ageify.R
 \name{expand_params_mistry}
 \alias{expand_params_mistry}
-\title{Make contact matrix using Mistry et al. approach}
+\title{Expand parameter list to include age structure using Mistry et al. data}
 \usage{
 expand_params_mistry(
   params,
   transmissibility = 1,
   province = "Ontario",
-  weights = list(household = 4.11, school = 11.41, work = 8.07, community = 2.79),
+  contact_rate_setting = mk_contact_rate_setting(),
   age_cat = NULL
 )
 }
 \arguments{
+\item{transmissibility}{probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)}
+
 \item{province}{province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)}
 
-\item{weights}{named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)}
+\item{contact_rate_setting}{named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)}
 
-\item{age_cat}{(optional) list of age groups to aggregate ages in; use mk_agecats() to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category}
+\item{age_cat}{(optional) list of age groups to aggregate ages in; use `mk_agecats()` to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category}
 }
 \value{
-matrix of average contacts between individuals of ages i and j per individual of age i per unit time (day)
+an object of class `params_pansim`
 }
 \description{
-Make contact matrix using Mistry et al. approach
+Expand parameter list to include age structure using Mistry et al. data
 }
 \examples{
 params <- read_params("PHAC_testify.csv")

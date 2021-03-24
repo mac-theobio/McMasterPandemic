@@ -471,7 +471,7 @@ expand_params_desc_age <- function(params_desc){
   return(params_desc)
 }
 
-#' expand parameter list to include age structure
+#' Expand parameter list to include age structure
 #'
 #' @param params parameter list (e.g. read in with `read_params()`)
 #' @param age_cat vector of age categories
@@ -539,7 +539,7 @@ check_age_cat_compatibility <- function(age_cat){
 #'
 #' @inheritParams expand_params_mistry
 #'
-#' @return a tibble with age groups and population counts
+#' @return a vector of population counts (one per age category)
 #' @importFrom readr read_csv cols col_double
 #' @export
 #'
@@ -590,13 +590,14 @@ mk_mistry_Nvec <- function(province = "Ontario",
   return(pop_dist$pop)
 }
 
-#' Make contact matrix using Mistry et al. approach
+#' Expand parameter list to include age structure using Mistry et al. data
 #'
-#' @param weights named list containing setting-specific weights (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
+#' @param transmissibility probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)
 #' @param province province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)
-#' @param age_cat (optional) list of age groups to aggregate ages in; use mk_agecats() to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category
+#' @param contact_rate_setting named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
+#' @param age_cat (optional) list of age groups to aggregate ages in; use `mk_agecats()` to generate (must start with 0 and end with 84); default is single ages starting with 0 and up to 83, then a single 84+ category
 #'
-#' @return matrix of average contacts between individuals of ages i and j per individual of age i per unit time (day)
+#' @return an object of class `params_pansim`
 #' @importFrom dplyr summarise group_by pull
 #' @importFrom tidyr pivot_wider pivot_longer
 #' @export
@@ -608,10 +609,7 @@ mk_mistry_Nvec <- function(province = "Ontario",
 expand_params_mistry <- function(params,
                                  transmissibility = 1,
                                  province = "Ontario",
-                                 weights = list(household = 4.11,
-                                                school = 11.41,
-                                                work = 8.07,
-                                                community = 2.79),
+                                 contact_rate_setting = mk_contact_rate_setting(),
                                  age_cat = NULL){
   ## CHECK AND PREP INPUTS
 
@@ -629,11 +627,8 @@ expand_params_mistry <- function(params,
   ## get number of age categories
   n <- length(age_cat)
 
-  ## check that the weights list is correctly specified
-  if(!isTRUE(all.equal(sort(names(weights)),
-                       c("community", "household", "school", "work")))){
-    stop("weights list must have names 'household', 'school', 'work', 'community'")
-  }
+  ## check setting-specific contact rate list
+  check_contact_rate_setting(contact_rate_setting)
 
   ## BUILD POPULATION DISTRIBUTION(S)
   Nvec <- mk_mistry_Nvec(province = province, age_cat = age_cat)
@@ -653,7 +648,7 @@ expand_params_mistry <- function(params,
   ## BUILD CONTACT PROBABILITY MATRIX
 
   ## combine setting-specific frequency matrices through a
-  ## linear combination with the specified weights (in units
+  ## linear combination with the specified contact_rate_setting (in units
   ## of avg number of setting-specific contacts per
   ## individual of age i per unit time) to generate an
   ## overall contact matrix (in units of avg number of
@@ -728,7 +723,7 @@ expand_params_mistry <- function(params,
     ## convert to matrix if need be
     if(!aggregate) set_mat <- as.matrix(set_mat)
 
-    ## save setting frequency matrices in case we want to fiddle with weights
+    ## save setting frequency matrices in case we want to fiddle with contact_rate_setting
     ## later
     rownames(set_mat) <- age_cat
     colnames(set_mat) <- age_cat
@@ -737,7 +732,7 @@ expand_params_mistry <- function(params,
     ## update overall contact matrix by adding a weighted
     ## version of the current setting-specific frequency
     ## matrix
-    pmat <- pmat + weights[[set]]*set_mat
+    pmat <- pmat + contact_rate_setting[[set]]*set_mat
 
   }
 
@@ -762,23 +757,159 @@ expand_params_mistry <- function(params,
 
   ## attach Mistry-specific components to params list
   params <- c(params,
-              list(mistry_weights = weights,
+              list(mistry_contact_rate_setting = contact_rate_setting,
                    mistry_fmats = fmats,
                    mistry_transmissibility = transmissibility,
-                   mistry_contact_rates = contact_rates
+                   mistry_contact_rate_age = contact_rates
                    ))
 
   ## attach attributes
   attr(params, "description") <- c(params_desc,
-                                   mistry_weights = "Average number of contacts per setting across all age groups (assumed); calculated using Mistry et al. 2021 contact matrices",
+                                   mistry_contact_rate_setting = "Average number of contacts per setting across all age groups (assumed); calculated using Mistry et al. 2021 contact matrices",
                                    mitsry_fmats = "Setting-specific contact frequency matrices, where row i gives the contact frequency per susceptible of age group i (assumed); from Mistry et al. 2021",
-                                   mistry_contact_rates = "Average number of contacts per age group, calculated using the setting-specific weights and contact frequency matrices from Mistry et al. 2021",
+                                   mistry_contact_rate_age = "Average number of contacts per age group, calculated using the setting-specific contact_rate_setting and contact frequency matrices from Mistry et al. 2021",
                                    mistry_transmissibility = "Transmissibility of the infection (unitless); transmissibility*contact_rate = beta0 per age group (assumed); calculated using Mistry et al. 2021 contact matrices")
   attr(params, "age_cat") <- age_cat
   class(params) <- "params_pansim"
 
   return(params)
 
+}
+
+#' Helper function to generate a vector of setting-specific contact rates
+#'
+#' @param values_to_update named list of values to update in default list of setting-specific contact rates
+#'
+#' @return named list of setting-specific contact rates
+#' @export
+#'
+#' @examples
+#' mk_contact_rate_setting()
+#' mk_contact_rate_setting(list(school = 0))
+mk_contact_rate_setting <- function(values_to_update = NULL){
+  ## initialize with default setting-specific weights
+  contact_rate_setting <- list(household = 4.11, school = 11.41,
+                               work = 8.07, community = 2.79)
+
+  if(!is.null(values_to_update)){
+    contact_rate_setting <- update_contact_rate_setting(contact_rate_setting,
+                                                        values_to_update)
+  }
+
+  return(contact_rate_setting)
+}
+
+#' Helper function to update setting-specific contact rate list
+#'
+#' @inheritParams expand_params_mistry
+#' @inheritParams mk_contact_rate_setting
+#'
+#' @return named list of setting-specific contact rates
+#' @export
+#'
+#' @examples
+#' update_contact_rate_setting(mk_contact_rate_setting(), list(school = 0))
+update_contact_rate_setting <- function(contact_rate_setting,
+                                        values_to_update){
+  ## check initialization
+  check_contact_rate_setting(contact_rate_setting)
+
+  ## check update values are properly initialized
+  if(!is.list(values_to_update)) stop("update values must be provided as a (named) list")
+  if(!all(names(values_to_update)
+          %in% names(contact_rate_setting))) stop("names in values to update list must be 'household', 'school', 'work', or 'community'")
+
+  ## perform updates
+  for (setting in names(values_to_update)){
+    contact_rate_setting[[setting]] <- values_to_update[[setting]]
+  }
+
+  return(contact_rate_setting)
+}
+
+#' Helper function to check setting-specific contact rate list initialization
+#'
+#' @inheritParams mk_contact_rate_setting
+#'
+#' @export
+#' @examples
+#' check_contact_rate_setting(mk_contact_rate_setting)
+check_contact_rate_setting <- function(contact_rate_setting){
+  ## check that it's a list
+  if(!is.list(contact_rate_setting)) stop("setting-specific contact rate must be specified as a list")
+  ## check that the avg_contact_rate_per_setting list is correctly specified
+  if(!isTRUE(all.equal(sort(names(contact_rate_setting)),
+                       c("community", "household", "school", "work")))){
+    stop("setting-specific contact rate list must have names 'household', 'school', 'work', 'community'")
+  }
+}
+
+#' Update Mistry-based parameters
+#'
+#' Recalculate beta0 and/or pmat if setting-specific contact rates and/or
+#' overall transmissiblity are changed
+#'
+#' @param params parameter list initialized using `expand_params_mistry()`
+#' @inheritParams expand_params_mistry
+#'
+#' @details
+#' For `contact_rate_setting`, a full list (initialized with `mk_contact_rate_setting()`) or a partial list (e.g. `list(community = 0)`) can be provided. If a partial list is provided, default values from Mistry et al. 2021 are assumed for the contact rates that have not been specified (see `mk_contact_rate_setting()` for values).
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' params <- read_params("PHAC_testify.csv")
+#' age_cat <- mk_agecats(min = 0, max = 80, da = 10)
+#' params_mistry <- expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+#' params_mistry <- update_params_mistry(params_mistry,
+#'  contact_rate_setting = list(school = 0))
+update_params_mistry <-function(params,
+                                contact_rate_setting = NULL,
+                                transmissibility = NULL){
+  # perform updates based on new contact_rate_setting
+  if(!is.null(contact_rate_setting)){
+    ## checks
+    if(!("mistry_contact_rate_setting" %in% names(params))) stop("parameters must be initialized by expand_params_mistry()")
+
+    ## update from full or partial list of setting-specific contact rates
+    contact_rate_setting <- update_contact_rate_setting(
+      params[["mistry_contact_rate_setting"]],
+      contact_rate_setting
+      )
+
+    ## get frequency matrices
+    fmats <- params[["mistry_fmats"]]
+
+    ## update pmat
+    age_cat <- attr(params, "age_cat")
+    n <- length(age_cat)
+    pmat <- matrix(rep(0, n*n), nrow = n,
+                   dimnames = list(age_cat, age_cat))
+
+    for (setting in names(contact_rate_setting)){
+    pmat <- pmat + contact_rate_setting[[setting]]*fmats[[setting]]
+    }
+
+    ## get implied age-specific contact rates and row-norm pmat
+    contact_rate_age <- rowSums(pmat)
+    pmat <- pmat/contact_rate_age
+
+    ## update params entries
+    params[["mistry_contact_rate_setting"]] <- contact_rate_setting
+    params[["mistry_contact_rate_age"]] <- contact_rate_age
+    params[["pmat"]] <- pmat
+  }
+
+  ## update transmissibility
+  if(!is.null(transmissibility)){
+    params[["mistry_transmissibility"]] <- transmissibility
+  }
+
+  ## regenerate beta0
+  params[["beta0"]] <- params[["mistry_transmissibility"]]*params[["mistry_contact_rate_age"]]
+
+  return(params)
 }
 
 ## SIMULATION

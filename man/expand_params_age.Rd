@@ -2,7 +2,7 @@
 % Please edit documentation in R/ageify.R
 \name{expand_params_age}
 \alias{expand_params_age}
-\title{expand parameter list to include age structure}
+\title{Expand parameter list to include age structure}
 \usage{
 expand_params_age(
   params,
@@ -24,7 +24,7 @@ expand_params_age(
 \item{Nvec}{population distribution (as counts); default is uniform}
 }
 \description{
-expand parameter list to include age structure
+Expand parameter list to include age structure
 }
 \examples{
 params <- read_params("PHAC_testify.csv")
