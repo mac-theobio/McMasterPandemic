@@ -60,7 +60,7 @@ plot_res_by_age <- function(res, drop_states = NULL,
     + facet_wrap(vars(age_cat))
     + scale_x_date(date_breaks = "1 month",
                    date_labels = "%b")
-    + scale_y_continuous(labels = scales::label_number_si())
+    # + scale_y_continuous(labels = scales::label_number_si())
   ) -> gg
   
   return(gg)
@@ -76,7 +76,7 @@ plot_res_by_state <- function(res, drop_states = NULL,
     + facet_wrap(vars(state), scales = "free_y")
     + scale_x_date(date_breaks = "1 month",
                    date_labels = "%b")
-    + scale_y_continuous(labels = scales::label_number_si())
+    # + scale_y_continuous(labels = scales::label_number_si())
   ) -> gg
   
   return(gg)
@@ -284,7 +284,7 @@ res_nn <- run_sim_ageify(base_params, base_state,
 ```{r plot_res_nn}
 (plot_res_by_age(res_nn, drop_states)
   + labs(
-    title = "uniform population distribution, non-uniform contact pattern")
+    title = "non-uniform population distribution, non-uniform contact pattern")
   ) 
 plot_res_by_state(res_nn, drop_states)
 ```
@@ -345,56 +345,18 @@ res_mistry_2 <- run_sim(mistry_params2, mistry_state,
 (plot_res_by_age(res_mistry_2, drop_states,
                  condense_I = TRUE)
   + labs(
-    title = "Ontario population distribution and contact structure, schools closed")
+    title = "Ontario workplace contacts halved, schools/community contacts shut off")
   ) 
 plot_res_by_state(res_mistry_2, drop_states,
                   condense_I = TRUE)
 ```
+
+<!--
 
 # Using $\beta(t)$ calibrated to overall pop in age-specific sims
 
 Take $\beta_0$ in base sim, and split across age groups using $\beta_0 = \tau \langle c \rangle$ and $(\beta_0)_i = \tau c_i$ for $\langle c \rangle = 1/N \sum_i N_i c_i$ (might have to choose $c_i$ ahead of time, which is fine because that's given in the Mistry matrices). 
 
 Do an age-structured sim with these $(\beta_0)_i$ values and then condense, summing across age groups. Compare results to base sim. Demo first with constant $\beta_0$ and simple (synthetic) mixing patterns + unif pop dist to start, then change only pop dist to non-uniform. If this works, try it for the Mistry matrices, then start thinking about $\beta(t)$. May need to think about adjusting $\omega_k$ (e.g. turning off school transmission on the school closure schedule).
-<!----------------------------------------------------------------------------->
 
-```{r old, eval = FALSE, echo = FALSE}
-## READ INITIAL PARAMETERS (for base sim)
-pp <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
-
-## SET UP STATE (for base sim)
-## make state vector
-ss <- make_state(params=pp)
-
-## AGEIFY
-## expand state to include age categories
-n <- 4 # number of age categories
-ss2 <- expand_stateval_age(ss,
-                           age_cat = mk_agecats(min = 1, max = n, da = 1))
-## pull out age categories
-aa <- attr(ss2, "age_cat")
-
-## construct uniform contact matrix (homogeneous mixing)
-pmat_unif <- matrix(1/n, nrow=n, ncol=n, dimnames=list(aa,aa))
-print("contact matrix:")
-Matrix::image(Matrix(pmat_unif))
-
-## expand parameters to include contact matrix
-ppa_unif <- c(as.list(pp), list(pmat=pmat_unif))
-
-## MAKE AGEIFIED BETA VECTOR
-beta_unif <- make_beta(ss2, ppa_unif, full=FALSE)
-print("betavec:")
-Matrix::image(Matrix(beta_unif))
-
-## MAKE AGEIFIED RATE MATRIX
-M <- make_ratemat(ss2, ppa_unif, sparse=TRUE)
-print("ratemat:")
-show_ratemat(M)
-
-## set end date for simulations
-end_date <- "2021-02-15"
-```
-
-
-
+-->
