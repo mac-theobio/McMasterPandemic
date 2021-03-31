@@ -33,6 +33,9 @@ jaggy.Rout: sandbox/sim.RData sandbox/jaggy.R
 
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
 
+time_varying_mre.Rout: sandbox/time_varying_mre.R
+	$(pipeR)
+
 ######################################################################
 
 tests/moments.Rout:
