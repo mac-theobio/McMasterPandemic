@@ -6,6 +6,9 @@ output: html_document
 ---
 
 ```{r setup}
+knitr::opts_chunk$set(fig.height = 4,
+                      fig.width = 9)
+
 devtools::load_all()
 library(tidyverse)
 ```
@@ -178,6 +181,7 @@ compare_age_to_base(
   contact_rate_age = rep(4, length(age_cat))
 )
 ```
+
 Not shocking; if this wasn't a perfect match, it would be because of a bug.
 
 ## Uniform population, non-uniform contact structure
@@ -205,11 +209,12 @@ compare_age_to_base(
   contact_rate_age = contact_rate_age
 )
 ```
+
 Not a perfect match, but it looks like there's pretty good agreement...
 
 ## Demo with a non-uniform population, non-uniform contact structure
 
-```{r res_nn, eval = FALSE}
+```{r res_nn}
 ## rescale to a non-uniform population while still maintaining balance
 total_contacts <- true_beta0*Nvec
 true_beta0 <- 1:3
@@ -230,8 +235,11 @@ compare_age_to_base(
   contact_rate_age = contact_rate_age
 )
 ```
-Again, not terrible... not sure how sensitive the match is to the population distribution, relative magnitudes of the true $\beta0_i$, and the assumed $pmat$.
 
+Again, not terrible... not sure how sensitive the match is to the population distribution, relative magnitudes of the true $(\beta_0)_i$, and the assumed contact probability matrix.
+
+<!---
 # Simple calibration with time-varying $\beta$
 
 # Simple calibration for Ontario case reports
+--->

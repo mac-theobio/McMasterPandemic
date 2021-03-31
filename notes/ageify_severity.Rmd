@@ -6,7 +6,8 @@ output: html_document
 ---
 
 ```{r setup, message = FALSE, echo = FALSE}
-knitr::opts_chunk$set(fig.height = 3.5)
+knitr::opts_chunk$set(fig.height = 4,
+                      fig.width = 9)
 
 devtools::load_all()
 library(tidyverse)
