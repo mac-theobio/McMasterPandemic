@@ -30,14 +30,29 @@ time_pars <- data.frame(Date=as.Date(startdate:enddate),
 res1_t <- update(res1, params_timevar=time_pars)
 stopifnot(identical(c(res1),c(res1_t))) ## Use c() to drop attributes
 
+## Does just changing mu do anything? Yes
+new_mu_p <- update(params,c(mu=0.8))
+new_mu <- run_sim(new_mu_p, state,start_date=startdate,end_date=enddate)
+stopifnot(!identical(c(res1),c(new_mu)))
+
 ## Does putting a relative value on mu do anything? No.
 tv_mu <- data.frame(Date=as.Date(startdate:enddate),
 	Symbol="mu",
-	Relative_value=rep(c(1,.7),each=length(startdate:enddate)/2),
+	Relative_value=rep(c(0.8,.7),each=length(startdate:enddate)/2),
 	stringsAsFactors=FALSE
 )
-res1_t2 <- update(res1,params_timevar=tv_mu)
-stopifnot(identical(c(res1),c(res1_t2)))
+
+print(tv_mu)
+res1_mu <- update(new_mu,params_timevar=tv_mu)
+stopifnot(identical(c(res1),c(res1_mu)))
+
+## Extra checks
+## print(c(res1_mu))
+## stopifnot(identical(c(new_mu),c(res1_mu)))
+
+## Double-check on whether it's update; apparently not
+## res2_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate)
+## stopifnot(identical(c(res1),c(res2_mu)))
 
 ## Does putting a relative value on beta do anything? Yes.
 tv_beta <- data.frame(Date=as.Date(startdate:enddate),
