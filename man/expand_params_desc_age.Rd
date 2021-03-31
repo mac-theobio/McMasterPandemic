@@ -8,7 +8,7 @@
 expand_params_desc_age(params_desc)
 }
 \arguments{
-\item{params_desc}{parameter descriptions, as initilized in `read_params()`}
+\item{params_desc}{parameter descriptions, as initialized in `read_params()`}
 }
 \value{
 

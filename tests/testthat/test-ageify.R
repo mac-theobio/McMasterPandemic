@@ -12,9 +12,10 @@ context("ageify")
 
 ## base params and state
 age_cat <- mk_agecats()
+beta0 <- 2
 params <- update(read_params("PHAC_testify.csv")
                  , testing_intensity=0
-                 , beta0 = 2
+                 , beta0 = beta0
                  )
 state <- make_state(N = params[["N"]],
                     E0 = length(age_cat))
@@ -84,7 +85,10 @@ res_ud <- run_sim(params_ud, state_u, end_date = end_date, condense = FALSE)
 
 ## TESTS
 
-## population count tests
+## preprocessing steps
+#########################
+
+## population count
 
 test_that("population distributions are properly initialized", {
     ## uniform population
@@ -114,6 +118,50 @@ test_that("initial state population sizes don't change after adding age structur
     #              Nvec_r)
 })
 
+## expand_params_age
+test_that("ageified parameters are correctly initialized",{
+    ## defaults
+    expect_identical(expand_params_age(params, age_cat = age_cat)$beta0, beta0)
+    ## update beta0 manually
+    test_vec <- 1:length(age_cat)
+    names(test_vec) <- age_cat
+    expect_identical(expand_params_age(
+        params, age_cat = age_cat, beta0 = test_vec,
+        balance_warning = FALSE)$beta0,
+        test_vec)
+    ## specify transmissibility and contact_rate_age, calculate beta0
+    expect_identical(expand_params_age(
+        params, age_cat = age_cat,
+        transmissibility = 0.5,
+        contact_rate_age = test_vec,
+        balance_warning = FALSE)$beta0,
+        0.5*test_vec)
+})
+
+## pmat
+test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
+    age_cat <- mk_agecats(min = 0, max = 84, da  = 10)
+    mistry_pmat <- expand_params_mistry(params, age_cat = age_cat)$pmat
+    expect_equal(dim(mistry_pmat),
+                 c(length(age_cat), length(age_cat)))
+})
+
+## beta
+test_that("age-structured beta0 has correct dimensions", {
+    expect_identical(dim(make_beta(state_u, params_uu)),
+                     as.integer(c(1, length(state)))*length(mk_agecats()))
+})
+
+## ratemat
+test_that("age-structure rate matrix has correct dimensions", {
+    M <- make_ratemat(state_u, params_uu, sparse=TRUE)
+    expect_equal(dim(M),
+                 c(length(state), length(state))*length(mk_agecats()))
+})
+
+## simulation tests
+######################
+
 ## helper function to check that population remains constant across age groups
 ## and time steps in a simulation
 check_const_pop <- function(res, params){
@@ -134,44 +182,19 @@ check_const_pop <- function(res, params){
 }
 
 test_that("age-specific population doesn't change over the course of a simulation",
-{
-    ## unif pop, unif pmat
-    expect_true(check_const_pop(res_uu, params_uu))
+          {
+              ## unif pop, unif pmat
+              expect_true(check_const_pop(res_uu, params_uu))
 
-    ## unif pop, rand pmat
-    # expect_true(check_const_pop(res_ur, params_ur))
+              ## unif pop, rand pmat
+              # expect_true(check_const_pop(res_ur, params_ur))
 
-    ## rand pop, unif pmat
-    # expect_true(check_const_pop(res_ru, params_ru))
+              ## rand pop, unif pmat
+              # expect_true(check_const_pop(res_ru, params_ru))
 
-    ## rand pop, rand pmat
-    # expect_true(check_const_pop(res_rr, params_rr))
-})
-
-## pmat tests
-test_that("Mistry et al. contact matrix get aggregated with the correct dims",{
-    age_cat <- mk_agecats(min = 0, max = 84, da  = 10)
-    mistry_pmat <- expand_params_mistry(params, age_cat = age_cat)$pmat
-    expect_equal(dim(mistry_pmat),
-                 c(length(age_cat), length(age_cat)))
-})
-
-## beta tests
-
-test_that("age-structured beta0 has correct dimensions", {
-    expect_identical(dim(make_beta(state_u, params_uu)),
-                     as.integer(c(1, length(state)))*length(mk_agecats()))
-})
-
-## ratemat tests
-
-test_that("age-structure rate matrix has correct dimensions", {
-    M <- make_ratemat(state_u, params_uu, sparse=TRUE)
-    expect_equal(dim(M),
-                 c(length(state), length(state))*length(mk_agecats()))
-})
-
-## simulation tests
+              ## rand pop, rand pmat
+              # expect_true(check_const_pop(res_rr, params_rr))
+          })
 
 test_that("homogeneous case of age-structured model condenses to base (non-ageified) model (comparing simulations)", {
     ## condense homogeneous simulation
@@ -229,7 +252,7 @@ test_that("diagonal contacts yield identical epidemics in each age group (with a
     expect_true(all(check_equality_across_ages(res_ud)))
 })
 
-test_that("mistry contact parameters are properly initialized", {
+test_that("Mistry contact parameters are properly initialized", {
     ## using original age groups
     Nvec <- mk_mistry_Nvec(province = "Alberta")
     params_mistry <- expand_params_mistry(params,
@@ -238,7 +261,7 @@ test_that("mistry contact parameters are properly initialized", {
     expect_equal(params_mistry$N, Nvec)
     ## check that we recover a symmetric contact abundance matrix from
     ## mistry frequency matrices (as stored)
-    expect_true(isSymmetric(params_mistry$mistry$fmats$community*params_mistry$N))
+    expect_true(isSymmetric(params_mistry$mistry_fmats$community*params_mistry$N))
     ## check pmat rows sum to 1
     expect_equal(unname(rowSums(params_mistry$pmat)),
                  rep(1, length(attr(params_mistry, "age_cat"))))
@@ -254,6 +277,6 @@ test_that("mistry contact parameters are properly initialized", {
     expect_equal(params_mistry$N, Nvec)
     ## check that we recover a symmetric contact abundance matrix from
     ## mistry frequency matrices (as stored)
-    expect_true(isSymmetric(params_mistry$mistry$fmats$community*params_mistry$N))
+    expect_true(isSymmetric(params_mistry$mistry_fmats$community*params_mistry$N))
 
 })

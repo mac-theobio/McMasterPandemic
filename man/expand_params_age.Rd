@@ -8,8 +8,11 @@ expand_params_age(
   params,
   age_cat = mk_agecats(),
   beta0 = NULL,
-  pmat = mk_pmat(),
-  Nvec = mk_Nvec()
+  transmissibility = NULL,
+  contact_rate_age = NULL,
+  Nvec = NULL,
+  pmat = NULL,
+  balance_warning = TRUE
 )
 }
 \arguments{
@@ -19,9 +22,15 @@ expand_params_age(
 
 \item{beta0}{vector of age-specific beta0 values (if NULL, assume same beta0 for all age groups as already provided in params)}
 
-\item{pmat}{contact matrix; default is uniform}
+\item{transmissibility}{proportion of contacts between S & I that lead to transmission}
+
+\item{contact_rate_age}{average overall contact rate by age}
 
 \item{Nvec}{population distribution (as counts); default is uniform}
+
+\item{pmat}{contact matrix; default is uniform}
+
+\item{balance_warning}{should a warning about the balance of contacts be provided?}
 }
 \description{
 Expand parameter list to include age structure

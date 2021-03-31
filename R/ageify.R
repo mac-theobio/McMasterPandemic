@@ -453,7 +453,7 @@ mk_pmat <- function(age_cat = mk_agecats(),
 #' Edit parameter description attribute to include age-specific definitions
 #' (helper function for `expand_params_age()`)
 #'
-#' @param params_desc parameter descriptions, as initilized in `read_params()`
+#' @param params_desc parameter descriptions, as initialized in `read_params()`
 #'
 #' @return
 #' @export
@@ -476,8 +476,11 @@ expand_params_desc_age <- function(params_desc){
 #' @param params parameter list (e.g. read in with `read_params()`)
 #' @param age_cat vector of age categories
 #' @param beta0 vector of age-specific beta0 values (if NULL, assume same beta0 for all age groups as already provided in params)
-#' @param pmat contact matrix; default is uniform
+#' @param transmissibility proportion of contacts between S & I that lead to transmission
+#' @param contact_rate_age average overall contact rate by age
 #' @param Nvec population distribution (as counts); default is uniform
+#' @param pmat contact matrix; default is uniform
+#' @param balance_warning should a warning about the balance of contacts be provided?
 #' @examples
 #' params <- read_params("PHAC_testify.csv")
 #' params_age <- expand_params_age(params)
@@ -485,29 +488,94 @@ expand_params_desc_age <- function(params_desc){
 expand_params_age <- function(params,
                               age_cat = mk_agecats(),
                               beta0 = NULL,
-                              pmat = mk_pmat(),
-                              Nvec = mk_Nvec()){
+                              transmissibility = NULL,
+                              contact_rate_age = NULL,
+                              Nvec = NULL,
+                              pmat = NULL,
+                              balance_warning = TRUE){
+  ## check inputs
+  ##################
+
+  ## if all three of beta0, transmissibility, and contact_rate_age are provided
+  if(all(!is.null(beta0), !is.null(transmissibility), !is.null(contact_rate_age))){
+    ## check lengths
+    if(length(beta0) != length(contact_rate_age)) stop("beta0 and contact_age_rate must have same length")
+    ## check that these params are consistently defined
+    if(!isTRUE(all.equal(beta0, transmissibility*contact_rate_age))) stop("beta0, transmissibility, and contact_rate_age do not satisfy beta0 = transmissibility*contact_rate_age as provided")
+  } else if(xor(is.null(transmissibility), is.null(contact_rate_age))){
+    ## if only one of transmissibility or contact_rate_age is provided
+    stop("either both transmissibility and contact_rate_age must be provided, or neither")
+  }
+
+  if (!is.null(beta0)){
+    if(!(length(beta0) %in% c(1, length(age_cat)))) stop("beta0 must be either a scalar or a vector length age_cat")
+  }
+
+  if (!is.null(transmissibility)){
+    if(!(length(transmissibility) %in% c(1, length(age_cat)))) stop("transmissibility must be either a scalar or a vector length age_cat")
+  }
+
+  if(!is.null(contact_rate_age)){
+    if(length(contact_rate_age) != length(age_cat)) stop("contact_rate_age must be a vector length age_cat")
+  }
+
+  ## prep inputs
+  #################
 
   ## grab existing parameter descriptions
   params_desc <- attr(params, "description")
 
   ## convert to list
   params <- as.list(params)
+
+  ## perform updates
+  #####################
+
+  if(is.null(Nvec)){
+    Nvec <- mk_Nvec(age_cat = age_cat, Ntot = params[["N"]])
+  }
+
+  ## set defaults for pmat and Nvec
+  if(is.null(pmat)){
+    pmat <- mk_pmat(age_cat = age_cat, Nvec = Nvec)
+  }
+
   ## update pop
   params[["N"]] <- Nvec
   ## update pmat
   params <- c(params, list(pmat = pmat))
 
-  ## update beta0 if provided
-  if (!is.null(beta0)){
-    if(!(length(beta0) %in% c(1, length(age_cat)))) stop("beta0 must be either a scalar or a vector length age_cat")
+  ## calculate transmission-related params, depending on what is provided
+
+  ## if both transmissibility and contact_rate_age are provided, update beta0
+  if(all(!is.null(transmissibility), !is.null(contact_rate_age))){
+    ## (this is fine to do even if beta0 is provided separately thanks to the
+    ## initial check that, when all three parameters are provided, their
+    ## definition is consistent)
+    names(contact_rate_age) <- age_cat
+    beta0 <- transmissibility*contact_rate_age
+
+  }
+
+  ## prep outputs
+  ##################
+
+  ## attach transmission-based params (may be NULL)
+  if(!is.null(beta0)){
     params[["beta0"]] <- beta0
   }
+  params[["transmissibility"]] <- transmissibility
+  params[["contact_rate_age"]] <- contact_rate_age
+
+  ## check outputs
+  ###################
 
   ## check for balance in contacts (assuming constant transmissibility across
   ## age groups; otherwise, would need to pre-multiply by vector c_i,
   ## age-specific contact rates, instead of beta0_i's)
-  if(!isSymmetric((params[["beta0"]]*params[["N"]])*params[["pmat"]])) warning("implied total contact rate between age groups is not balanced for this choice of beta0s, population distribution, and contact matrix (use at your own risk!)")
+  if(balance_warning){
+    if(!isSymmetric((params[["beta0"]]*params[["N"]])*params[["pmat"]])) warning("implied total contact rate between age groups is not balanced for this choice of beta0s, population distribution, and contact matrix (use at your own risk!)")
+  }
 
   ## add attributes
   attr(params, "description") <- expand_params_desc_age(params_desc)
@@ -738,37 +806,32 @@ expand_params_mistry <- function(params,
 
   ## row-normalize overall contact matrix to make it a probability matrix
   ## capture rowsums contact matrix (avg contact rate by age)
-  contact_rates <- rowSums(pmat)
-  pmat <- pmat/contact_rates
-
-  ## MAKE BETA0
-  beta0 <- transmissibility*contact_rates
+  contact_rate_age <- rowSums(pmat)
+  pmat <- pmat/contact_rate_age
 
   ## PREPARE OUTPUT
 
   ## attach standard components to params list
-  params <- expand_params_age(params,
-                          age_cat = age_cat,
-                          pmat = pmat,
-                          Nvec = Nvec,
-                          beta0 = beta0)
+  params <- expand_params_age(
+    params,
+    age_cat = age_cat,
+    pmat = pmat,
+    Nvec = Nvec,
+    transmissibility = transmissibility,
+    contact_rate_age = contact_rate_age)
   ## save parameter descriptions to append after adding to the params list
   params_desc <- attr(params, "description")
 
-  ## attach Mistry-specific components to params list
+  ## attach age- and Mistry-specific components to params list
   params <- c(params,
               list(mistry_contact_rate_setting = contact_rate_setting,
-                   mistry_fmats = fmats,
-                   mistry_transmissibility = transmissibility,
-                   mistry_contact_rate_age = contact_rates
+                   mistry_fmats = fmats
                    ))
 
   ## attach attributes
   attr(params, "description") <- c(params_desc,
                                    mistry_contact_rate_setting = "Average number of contacts per setting across all age groups (assumed); calculated using Mistry et al. 2021 contact matrices",
-                                   mitsry_fmats = "Setting-specific contact frequency matrices, where row i gives the contact frequency per susceptible of age group i (assumed); from Mistry et al. 2021",
-                                   mistry_contact_rate_age = "Average number of contacts per age group, calculated using the setting-specific contact_rate_setting and contact frequency matrices from Mistry et al. 2021",
-                                   mistry_transmissibility = "Transmissibility of the infection (unitless); transmissibility*contact_rate = beta0 per age group (assumed); calculated using Mistry et al. 2021 contact matrices")
+                                   mitsry_fmats = "Setting-specific contact frequency matrices, where row i gives the contact frequency per susceptible of age group i (assumed); from Mistry et al. 2021")
   attr(params, "age_cat") <- age_cat
   class(params) <- "params_pansim"
 
@@ -870,7 +933,7 @@ update_params_mistry <-function(params,
   # perform updates based on new contact_rate_setting
   if(!is.null(contact_rate_setting)){
     ## checks
-    if(!("mistry_contact_rate_setting" %in% names(params))) stop("parameters must be initialized by expand_params_mistry()")
+    if(!("mistry_contact_rate_setting" %in% names(params))) stop("parameters must first be initialized by expand_params_mistry()")
 
     ## update from full or partial list of setting-specific contact rates
     contact_rate_setting <- update_contact_rate_setting(
@@ -897,17 +960,17 @@ update_params_mistry <-function(params,
 
     ## update params entries
     params[["mistry_contact_rate_setting"]] <- contact_rate_setting
-    params[["mistry_contact_rate_age"]] <- contact_rate_age
+    params[["contact_rate_age"]] <- contact_rate_age
     params[["pmat"]] <- pmat
   }
 
   ## update transmissibility
   if(!is.null(transmissibility)){
-    params[["mistry_transmissibility"]] <- transmissibility
+    params[["transmissibility"]] <- transmissibility
   }
 
   ## regenerate beta0
-  params[["beta0"]] <- params[["mistry_transmissibility"]]*params[["mistry_contact_rate_age"]]
+  params[["beta0"]] <- with(params, transmissibility*contact_rate_age)
 
   return(params)
 }
@@ -953,6 +1016,76 @@ run_sim_ageify <- function(base_params,
 
   return(res)
 }
+
+## plotting
+## FIXME: incorporate the plot code in the plot.pansim method
+## (build in check for presence of "age_cat" attribute)
+
+prep_res_for_plotting <- function(res,
+                                  drop_states = NULL,
+                                  condense_I = FALSE){
+  (res
+   %>% select(-c(foi))
+   %>% pivot_longer(-date)
+   %>% separate(name, into = c("state", "age_cat"),
+                sep = "_", extra = "merge")
+  ) -> res
+
+  ## condense I cats
+  if(condense_I){
+    (res
+     ## convert state column to factor to maintain original order of variables
+     %>% mutate(state = as_factor(str_replace(state,
+                                              "I[amps]", "I")))
+     %>% group_by(date, state, age_cat)
+     %>% summarise(value = sum(value), .groups = "drop")
+    ) -> res
+  }
+
+  (res
+    %>% mutate(state = as_factor(state))
+    ## fix age labels
+    %>% mutate(age_cat = str_replace(age_cat, "\\.$", "\\+"))
+    %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
+  ) -> res
+
+  if(!is.null(drop_states)){
+    res <- res %>% filter(!(state %in% drop_states))
+  }
+
+  return(res)
+}
+
+plot_res_by_age <- function(res, drop_states = NULL,
+                            condense_I = FALSE){
+  (prep_res_for_plotting(res, drop_states, condense_I)
+   %>% ggplot(aes(x = date, y = value, colour = state))
+   + geom_line()
+   + facet_wrap(vars(age_cat))
+   + scale_x_date(date_breaks = "1 month",
+                  date_labels = "%b")
+   # + scale_y_continuous(labels = scales::label_number_si())
+  ) -> gg
+
+  return(gg)
+}
+
+plot_res_by_state <- function(res, drop_states = NULL,
+                              condense_I = FALSE){
+  (prep_res_for_plotting(res, drop_states, condense_I)
+   %>% ggplot(aes(x = date, y = value, colour = age_cat))
+   + geom_line()
+   + facet_wrap(vars(state), scales = "free_y")
+   + scale_x_date(date_breaks = "1 month",
+                  date_labels = "%b")
+   # + scale_y_continuous(labels = scales::label_number_si())
+  ) -> gg
+
+  return(gg)
+}
+
+##############################################3
+## ben's old code
 
 #' @rdname expand_state_age
 #'
