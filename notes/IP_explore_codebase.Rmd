@@ -10,7 +10,8 @@ I'm using this doc to record notes as I explore MacPan's codebase. Here's a [han
 library(McMasterPandemic)
 library(ggplot2); theme_set(theme_bw())
 library(cowplot)
-library(lookup) # devtools::install_github("jimhester/lookup")
+library(lookup)
+# devtools::install_github("jimhester/lookup")
 ```
 
 # Load vignette
@@ -121,7 +122,7 @@ run_sim
 
 Here's a base sim with time-varying $\beta$, taken from the getting started vignette:
 
-```{r base_res_time eval = FALSE}
+```{r base_res_time, eval = FALSE}
 time_pars <- data.frame(Date=c("2020-04-02"),
                       Symbol=c("beta0"),
                       Relative_value=c(0))
