@@ -640,11 +640,15 @@ run_sim <- function(params
         ## add beginning and ending time
         times <- c(1,unique(switch_times),nt+1)
         resList <- list()
+        ## for switch time indices
         for (i in seq(length(times)-1)) {
+            ## if any switch times match current time (by index),
+            ## get index of matching switch time
             for (j in which(switch_times==times[i])) {
                 ## reset all changing params
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
+                ## this should work even if params0[[s]] is a vector
                 params[[s]] <- params0[[s]]*v
                 if (s=="proc_disp") {
                     state <- round(state)

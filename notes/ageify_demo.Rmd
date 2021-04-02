@@ -282,6 +282,213 @@ plot_res_by_state(res_mistry_2, drop_states,
                   condense_I = TRUE)
 ```
 
+# Time-varying $\beta$
+
+Looking at the code for time-varying params (notes in `IP_explore_codebase`), it should just work for ageified transmission. Let's try that here, comparing the base model's results with the equivalent homogeneous case of the ageified model. We'll intervene early in the epidemic by taking 1/4 of the original transmission rate, then bumping it up to 3x the original value a few weeks later:
+
+```{r compare_base_age_time}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n) # uniform population
+
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = length(age_cat))
+start_date <- "2020-03-01"
+end_date <- "2020-07-01"
+
+## set time-varying beta0
+time_pars <- data.frame(Date=c("2020-04-05","2020-05-01"),
+                        Symbol=c("beta0","beta0"),
+                        Relative_value=c(0.25,3)) ## decrease then increase
+
+## run base simulation
+res_base <- run_sim(base_params, base_state,
+                    start_date = start_date,
+                    end_date = end_date,
+                    params_timevar = time_pars,
+                    ndt = 20,
+                    condense = FALSE)
+
+## set up ageified parameters 
+## homogeneous population and contacts
+## (this will use assume beta0 as in the base simulation)
+age_params <- expand_params_age(
+  params = base_params,
+  age_cat = age_cat,
+  Nvec = Nvec
+)
+
+## set up age-structured state
+age_state <- expand_state_age(
+  base_state,
+  age_cat = age_cat,
+  Nvec = age_params[["N"]]
+)
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p)
+
+plot(res_base)
+```
+
+It's a perfect match! The time-dependent update to beta is working in the ageified model. Let's check that this is still true, even if `beta0` varies by age, with all else equal (uniform):
+
+```{r compare_base_age_time2}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n) # uniform population
+
+## update to a vector of beta0s (one for each age group)
+## same value as before!
+age_params[["beta0"]] <- rep(base_params[["beta0"]], length(age_cat))
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p)
+
+plot_res_by_age(res_age, drop_states)
+```
+
+```{r compare_base_age_time3}
+
+## update to a vector of beta0s (one for each age group)
+## different values
+age_params[["beta0"]] <- c(1.25, 1, 0.75)
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p1 <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p1)
+
+plot_res_by_age(res_age, drop_states = c("S", "E", "Ia", "Ip", "Im", "Is", "R"))
+
+p2 <- (pivot_longer((res_age %>% select(-foi)),
+              cols = -date,
+              names_to = "var") 
+  %>% separate(var, into = c("state", "age"), sep = "_") 
+  %>% mutate(state = as_factor(state))
+  %>% ggplot(aes(x = date, y = value, colour = age)) 
+  + geom_line() 
+  + facet_wrap(vars(state), scales = "free_y"))
+
+print(p2)
+```
+Though it's hard to see from the aggregate plots, the last fig shows the subtle differences in all outcomes introduced by taking a different `beta0` by age, and it clearly shows that time-varying `beta0` is having an effect.
+
 <!--
 
 # Using $\beta(t)$ calibrated to overall pop in age-specific sims

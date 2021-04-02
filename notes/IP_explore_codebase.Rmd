@@ -117,3 +117,59 @@ run_sim
           beta_vec = make_betavec
           foi <- beta_vec %*% state
 ```
+# Time-varying parameters
+
+Here's a base sim with time-varying $\beta$, taken from the getting started vignette:
+
+```{r base_res_time eval = FALSE}
+time_pars <- data.frame(Date=c("2020-04-02"),
+                      Symbol=c("beta0"),
+                      Relative_value=c(0))
+base_res_time <- run_sim(update(base_params,
+                                beta0 = 1),
+                         base_state,
+                         params_timevar = time_pars,
+                         start_date = "2020-04-01",
+                         end_date = "2020-06-01",
+                         ndt = 20, 
+                         condense=FALSE)
+
+plot(base_res_time, condense=FALSE)
+```
+
+The new argument `ndt` determines the number of steps to take between each saved time step and ensures a smoother result (no over-step errors leading to negative states).
+
+In the `run_sim` code, we have the following comment:
+
+```
+## FIXME: so far still assuming that params only change foi
+## if we change another parameter we will have to recompute M
+```
+
+At this point in the code, `M` has been computed, and the `params` list has been updated with the the time-varying parameter (if we hit a switch time). `params` is a copy of the original parameter set (stored as `params0`); `params0` never gets updated. The next command that gets executed is:
+
+```
+ resList[[i]] <- drop_last(
+                thin(ndt=ndt,
+                     do.call(run_sim_range,
+                        nlist(params
+                            , state
+                            , nt=(times[i+1]-times[i]+1)*ndt
+                            , dt=dt/ndt
+                            , M
+                            , use_ode
+                            , ratemat_args
+                            , step_args
+                            , ode_args
+                              )))
+```
+
+So the original `M` *and* the updated `params` are fed in to `run_sim_range()`, which then calls `do_step()`, where `update_ratemat()` is called with both `params` and `M` before the step is done. In `update_ratemat()`, we have the following line:
+
+```
+ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
+```
+
+(`M` is labelled as `ratemat` in the scope of `update_ratemat()`). So the FOI will be updated in `ratemat` here since `make_beta()` remakes the `beta` value (or vector) from specs in `params`. Hence the note about non-FOI params not being updated with the `params_timevar` functionality.
+
+However, ageified transmission already works within this framework, so `params_timevar` should just work here...
