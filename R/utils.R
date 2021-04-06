@@ -525,6 +525,10 @@ has_zeta <- function(params) {
     "zeta" %in% names(params) && params[["zeta"]]!=0
 }
 
+has_vacc <- function(params) {
+    "vacc" %in% names(params)
+}
+
 ## test based *either* on state or params
 ## testing based on params fails when we have make_state -> get_evec -> make_state ...
 has_testing <- function(state,params=NULL,ratemat=NULL) {
@@ -561,20 +565,26 @@ smart_round <- function(x) {
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
+##' @param box.size box size for diagram
+##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
-                         aspect="iso", add_blocks=NULL,
+                         aspect="iso",
+                         add_blocks=NULL,
+                         blocksize=NULL,
+                         block_col=2,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
-                         do_symbols=NULL) {
+                         do_symbols=NULL,
+                         box.size=0.02,...) {
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
-        do_symbols <- method=="diagram" && !has_testing(M)
+        do_symbols <- method=="diagram" && !has_testing(ratemat=M)
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
@@ -596,11 +606,12 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            ylab="from",
                            sub="",
                            colorkey = !const_width,
-                           aspect=aspect)
+                           aspect=aspect, ...)
         if (add_blocks) {
             if (requireNamespace("latticeExtra")) {
                 ## FIXME: don't hardcode length (but evaluation within layer() is weird !
-                p <- (p + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
+                p <- (p
+                    + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
                     + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
             }
         }
@@ -609,7 +620,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
            stop("igraph not available")
        } else {
            g <- igraph::graph_from_adjacency_matrix(M)
-           plot(g, layout=igraph::layout_as_tree)
+           plot(g, layout=igraph::layout_as_tree, ...)
        }
     } else if (method=="diagram") {
         xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,D=7,R=7,X=7)
@@ -621,7 +632,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
         } else {
             M3[M3!="0"] <- ""  ## blank out all labels
         }
-        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
+        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=box.size, add=FALSE, ...)
     }
     return(p)
 }
@@ -641,7 +652,7 @@ vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE,
                       ageify=FALSE, method=c("Matrix","diagram","igraph"), ...) {
     method <- match.arg(method)
     ## FIXME: accept method= argument, make const_width = (method=="igraph") ?
-    state <- make_state(N=1e6,E0=1)
+    state <- make_state(N=1e6, E0=1, params=params)
     state[] <- 1  ## all population states occupied
     M <- make_ratemat(state,params,do_ICU=TRUE, symbols=(method=="diagram"))
     if (testify) {
@@ -655,13 +666,14 @@ vis_model <- function(params=read_params("PHAC_testify.csv"), testify=FALSE,
 }
 
 adjust_symbols <- function(M) {
+    ## use [] throughout to avoid losing dimnames ...
     ## subscripts: _ + letter at end of line
-    M <- gsub("_([a-z])$","[\\1]",M)
+    M[] <- gsub("_([a-z])$","[\\1]",M)
     ## subscripts (letter + number at end of word or line)
-    M <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3", M)
+    M[] <- gsub("([a-z])([0-9])(\\W|$)","\\1[\\2]\\3", M)
     ## suppress 'nonhosp_mort'
-    M <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",M)
-    M <- gsub("nonhosp_mort +\\*?","",M)
+    M[] <- gsub("\\(1 +- +nonhosp_mort\\) +\\*?","",M)
+    M[] <- gsub("nonhosp_mort +\\*?","",M)
     ## M -> X == M -> H
     M[grep("^M",M)] <- M["Is","H"]
     M[grep("beta_vec",M)] <- "sum(beta[j]*I[j])"
@@ -683,10 +695,14 @@ pfun <- function(from, to, mat, value=FALSE, recycle=FALSE) {
         from_pos <- rep(from_pos,length.out=max(nt,nf))
         to_pos <- rep(to_pos,length.out=max(nt,nf))
     }
-    ## FIXME: check for both length() == 1 if *not* age structured?
-    stopifnot(length(to_pos) == length(from_pos),
-              length(to_pos)>0, length(from_pos)>0  ## must be positive
-              )
+    if (! (length(to_pos) == length(from_pos) &&
+           length(to_pos)>0 && length(from_pos)>0)) {  ## must be positive
+        stop(sprintf("to_pos, from_pos don't match: from_pos=%s, to_pos=%s",
+                     paste(colnames(mat)[from_pos],collapse=", "),
+                     paste(rownames(mat)[to_pos],collapse=", ")
+                     ))
+    }
+
     return(cbind(from_pos, to_pos))
 }
 

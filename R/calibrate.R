@@ -166,13 +166,29 @@ run_sim_loglin <- function(params,
         timevar <- rbind(timevar,testing_dat)
     }
     if (return_timevar) return(timevar)
+
+    ## DRY: make this into an independent function
+    ## (but do want to modify sim_args as well ...)
+
+    state <- statefun(params, sim_args)
+    sim_args$use_eigvec <- NULL
     sim_args <- c(sim_args
                 , extra_pars
                 , nlist(params,
-                        state=make_state(params=params),
+                        state,
                         params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
+
+
+statefun <- function(params,sim_args) {
+    argList <- nlist(params)
+    if (!is.null(use_eigvec <- sim_args$use_eigvec)) {
+        argList <- c(argList, nlist(use_eigvec))
+    }
+    return(do.call(make_state, argList))
+}
+
 
 ##' run with transmission propto relative mobility 
 ##' @inheritParams run_sim_break

@@ -1,142 +1,23 @@
-## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
+## it takes existing ratemat from make_ratemat and transform it into the vaccify version rate mat
 
 ## FIXME: document these for real!
-##' global variables for testify expansion
+##' global variables for vaccify expansion
 #' @export
-non_expanded_states <- c("D","X")
+non_expanded_states <- c()
 
 ##' @rdname non_expanded_states
 ##' @export
-test_extensions <- c("u","p","n","t")
+vacc_extensions <- c("unvacc","1dose","2dose")
 
 ##' @rdname non_expanded_states
 ##' @export
-test_accumulators <- c("N","P")
-
-##' @rdname non_expanded_states
-##' @export
-asymp_cat <- c("S","E","Ia","Ip","R")
-
-##' @rdname non_expanded_states
-severe_cat <- c("Is","H","H2","ICUs","ICUd")
-
-##' @rdname non_expanded_states
-## these are 'asymptomatic' (= pre- or asymptomatic)
-##' @export
-cryptic_cat <- c("Ia","Ip")
-
-mk_zero_vec <- function(n) {
-    setNames(numeric(length(n)),n)
-}
-
-check_var_names <- function(var_names) {
-    extra_states <- exclude_states(var_names, c("Im",asymp_cat,severe_cat))
-    if (length(extra_states)>0) {
-        stop("states neither 'asymptomatic' nor 'severe' nor 'Im' :",paste(extra_states,collapse=", "))
-    }
-}
-
-##' make weights vector for tests
-##'
-##' @param params parameter vector
-##' @param var_names variables names, \emph{in matching order to state vector/rate matrix}
-##' @examples
-##' pp <- read_params("PHAC_testify.csv")
-##' state1 <- state0 <- make_state(params=pp, testify=FALSE)   ## unexpanded
-##' 
-##' state1[] <- 1  ## occupy all states
-##' state <- expand_stateval_testing(state0, params=pp)
-##' vn <- setdiff(names(state0),non_expanded_states)
-##' wtsvec <- make_test_wtsvec(pp, vn)
-##' posvec <- make_test_posvec(pp, vn)
-##' ## need to make_ratemat() with *unexpanded* state, then expand it
-##' ratemat <- testify(make_ratemat(state1,pp), pp)
-##' betavec <- make_betavec(state,pp)
-##' tt2 <- ratemat
-##' tt2[tt2>0] <- 1 ## make all edges == 1
-##' show_ratemat(tt2)
-##' show_ratemat(ratemat,aspect="fill")
-##' if (require(igraph)) {
-##'    g <- igraph::graph_from_adjacency_matrix(tt2)
-##'    plot(g, layout=igraph::layout_nicely)
-##' }
-##' @export
-make_test_wtsvec <- function(params,var_names=NULL) {
-    if (!is.null(var_names)) {
-        check_var_names(var_names)
-    }
-    ## test whether a specific set of W-parameters are the *only*
-    ##  W-parameters in the parameter vector
-    match_pars <- function(pars) {
-        Wpars <- grep("^W_",names(params),value=TRUE)
-        return(identical(pars,sort(Wpars)))
-    }
-    if (match_pars("W_asymp")) {  ## W_asymp is the only weighting parameter
-        ## one-parameter model: weights specified as (asymp=W_asymp, symp=1)
-        symp_cat <- exclude_states(var_names,asymp_cat)
-        ## all (extended) asymptomatic categories (possibly age-struc etc.)
-        asymp_catx <- setdiff(var_names, symp_cat)
-        wts_vec <- rep(c(params[["W_asymp"]],1),
-                       c(length(asymp_catx),length(symp_cat)))
-        names(wts_vec) <- c(asymp_catx,symp_cat)
-    } else if (match_pars(c("W_asymp","W_severe"))) {
-        ## asymp= W_asymp (<1),  I_m=1, severe = W_severe (>1)
-        mild_cat <- exclude_states(var_names, c(asymp_cat, severe_cat))
-        if (has_age(params)) stop("this case not developed for age structure yet")
-        wts_vec <- rep(c(params[["W_asymp"]],1,params[["W_severe"]]),
-                       c(length(asymp_cat),length(mild_cat),length(severe_cat)))
-        names(wts_vec) <- c(asymp_cat,mild_cat,severe_cat)
-    } else if (match_pars(c("W_cryptic","W_S","W_severe"))) {
-        ## I_m=1, {I_a, I_p} = W_cryptic (<1),  I_h = W_severe (>1)
-        stop("not implemented yet!")
-        ##
-    } else {
-        ## general
-        wts_vec <- params[grepl("^W",names(params))]
-        names(wts_vec) <- gsub("^W","",names(wts_vec))
-    }
-    if (!all(sort(names(wts_vec))==sort(var_names))) {
-        stop("weights vector names should match var names")
-    }
-    wts_vec <- wts_vec[var_names] ## reorder
-    return(wts_vec)
-}
-
-##' make vector of test positivity
-##'
-##' @rdname make_test_wtsvec
-##'
-##' @param params parameter vector
-##' @export
-make_test_posvec <- function(params,var_names=NULL) {
-    vec <- params[grepl("^P",names(params))]
-    names(vec) <- gsub("^P_?","",names(vec))
-    if (!is.null(var_names)) {
-        ## FIXME: check more specifically? don't have full params for has_age() ...
-        ## has_age() clause for testing states?
-        if (length(vec)<length(var_names) && any(grepl("_[0-9]",var_names))) {
-            newvec <- rep(NA,length(var_names))
-            names(newvec) <- var_names
-            for (i in names(vec)) {
-                pos <- grep(sprintf("^%s_",i),var_names)
-                newvec[pos] <- vec[[i]]
-            }
-            vec <- newvec
-        } else {
-            if (!all(sort(names(vec))==sort(var_names))) {
-                stop("pos vector names should match var names")
-            }
-        }
-        vec <- vec[var_names] ## reorder
-    }
-    return(vec)
-}
+vacc_accumulators <- c("1dose","2dose")
 
 ##' expand states and values to include
 ##'
 ##' @param x state vector
 ##' @param method method for distributing values across new (expanded) states
-##' @param add_accum add N and P (neg/pos test) accumulator categories?
+##' @param add_accum add 1dose and 2dose accumulator categories?
 ##' @param params parameters
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
@@ -145,7 +26,7 @@ make_test_posvec <- function(params,var_names=NULL) {
 ##' expand_stateval_testing(s, method="untested")
 ##' @export
 
-expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
+expand_stateval_vacc <- function(x, method=c("eigvec","untested","spread"),
                             params=NULL,
                             add_accum=TRUE)
 {
@@ -203,7 +84,7 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
 ##' M <- make_ratemat(state,params)
 ##' image(M)
 ##' @export
-testify <- function(ratemat,params,debug=FALSE,
+vaccify <- function(ratemat,params,debug=FALSE,
                     testing_time=NULL) {
     ## wtsvec is a named vector of testing weights which is the per capita rate at which ind in untested -> n/p
     ## truevec is a named vector of probability of true positive for (positive states), true negative for (negative states)

@@ -7,7 +7,7 @@ transKernel <- function(par, steps=100, do_hazard=TRUE,
                         ndt=1){
         if (ndt>1) warning("ndt not fully implemented")
         par[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E0=1)
+	state <- make_state(N=1, E0=1, use_eigvec=FALSE)
 	return(run_sim_range(par, state
 		, nt=steps*ndt
 		, step_args = list(do_hazard=do_hazard)
@@ -79,14 +79,18 @@ rmult <- function(k, r){
 ##' @export
 rExp <- function(params, steps=100, ndt=1,
                  do_hazard=FALSE,
-                 testify=FALSE,
+                 testify=has_testing(params=params),
                  return_val=c("r0","eigenvector","sim"))
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         params[["N"]] <- 1   ## ? redundant ?
-	state <- make_state(N=1, E0=1e-5, type="ICU1")  ## FIXME: don't assume ICU1?
-        M <- do.call(make_ratemat,c(list(state=state, params=params)))
+        ## potential recursion here: have to make sure
+	state <- make_state(N=1, E0=1e-5, type="ICU1",
+                            use_eigvec=FALSE,
+                            params=params,
+                            testify=FALSE)  ## FIXME: don't assume ICU1?
+        M <- make_ratemat(state=state, params=params)
     	if (testify) {
             M <- testify(M,params)
             state <- expand_stateval_testing(state,method="untested")

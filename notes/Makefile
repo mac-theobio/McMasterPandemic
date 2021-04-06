@@ -32,6 +32,11 @@ cachestuff:
 	$(rmdh_r)
 
 ######################################################################
+## Playing with vacc
+
+vacc_test.Rout: vacc_test.R
+	$(pipeR)
+
 
 ## Playing with spline shapes
 
@@ -136,6 +141,10 @@ impmakeR += sims
 ## Not working 2020 Nov 30 (Mon)
 # testwt_N.sims.Rout: testify_sim.R testwt_N.R
 %.sims.Rout: testify_sim.R %.rda testify_funs.rda
+	$(makeR)
+
+
+testwt_N.Rout: testwt_N.R
 	$(makeR)
 
 impmakeR += random_sims
@@ -312,7 +321,7 @@ makestuff/Makefile:
 -include makestuff/cacheflow.mk
 -include makestuff/cacherepo.mk
 
--include makestuff/makeR.mk
+-include makestuff/pipeR.mk
 -include makestuff/rmd.mk
 -include makestuff/yushan.mk
 -include makestuff/nodes.mk
