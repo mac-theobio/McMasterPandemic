@@ -10,9 +10,9 @@ sub_vars <- function(x,kv=keep_vars) { if (identical(kv,"all")) x else x[x$var %
 nlist <- function (...) {
     L <- list(...)
     snm <- vapply(substitute(list(...)), deparse, character(1))[-1]
-    if (is.null(nm <- names(L))) 
+    if (is.null(nm <- names(L)))
         nm <- snm
-    if (any(nonames <- nm == "")) 
+    if (any(nonames <- nm == ""))
         nm[nonames] <- snm[nonames]
     setNames(L, nm)
 }
@@ -107,7 +107,7 @@ trans_state_vars <- function(x) {
         }
     }
     return(x)
-}        
+}
 
 ##' read simulation parameters
 ##' @param fn file name (CSV file containing at least value and symbol columns);  file should either be findable from current working directory or available in the built-in \code{params} directory
@@ -167,7 +167,7 @@ write_params <- function(params, fn, label) {
 ##' tst2 <- list(params=c(log_E0=1,log_beta0=1),log_nb_disp=c(H=0,report=0,death=0))
 ##' invlink_trans(tst2)
 ##' invlink_trans(list(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
-##' invlink_trans(list(time_beta=c(2,3),log_time_beta=c(a=0,b=0)))  ## 
+##' invlink_trans(list(time_beta=c(2,3),log_time_beta=c(a=0,b=0)))  ##
 ##' @export
 invlink_trans <- function(p, unknown_link="ignore", links=c("log","log10","logit")) {
     r <- vector("list",length(p))
@@ -274,7 +274,7 @@ check_dots <- function(..., action="stop") {
 #' @examples
 #' texify("R0 = beta/gamma")
 #' texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
-#' 
+#'
 #' @seealso \code{\link[Hmisc:latex]{latexTranslate}}
 #' @export
 texify <- function( x, dollars=TRUE, force=dev_is_tikz() ) {
@@ -492,7 +492,7 @@ add_d_log <- function(x) {
 ##         r_agg <- full_join(r_agg, x3, by="date")
 
 ## }
-    
+
 
 ## replace values before first non-NA value with first non-NA value; na.locf everything else
 fill_edge_values <- function(x) {
@@ -541,11 +541,9 @@ has_testing <- function(state,params=NULL,ratemat=NULL) {
     return(any(grepl("_t$",names(state))))
 }
 
-has_age <- function(params, state=NULL) {
-    if (!is.null(state)) {
-        ## FIXME
-    }
-    return("Cmat" %in% names(params))
+has_age <- function(x) {
+  ## look for presence of the "age_cat" attribute
+    return("age_cat" %in% names(attributes(x)))
 }
 
 
@@ -708,9 +706,12 @@ pfun <- function(from, to, mat, value=FALSE, recycle=FALSE) {
     return(cbind(from_pos, to_pos))
 }
 
-## exclude states by regex 
+## exclude states by regex
 exclude_states <- function(nm,exclude_states) {
     x_regex <- sprintf("^(%s)_?",paste(exclude_states,collapse="|"))
     xx <- grep(x_regex,nm,invert=TRUE,value=TRUE)
     return(xx)
 }
+
+## wrapper for update() to work on lists (using purrr::update_list)
+update.list <- function(list, ...) purrr::update_list(list, ...)

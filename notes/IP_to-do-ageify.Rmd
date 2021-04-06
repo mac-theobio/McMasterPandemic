@@ -1,0 +1,48 @@
+---
+title: "To do to 'ageify'"
+output: html_notebook
+---
+
+# Goal
+
+Simulate an age-structured version of the MacPan model with vaccination to explore various (age-structured) vaccine roll-out strategies.
+
+# What we have
+
+* contact matricies to adjust $\beta_0$ for each pair of age groups
+
+# What we need 
+
+* to verify scaling/normalization of contact matricies (more testing)
+* to be able to specify age-specific parameters for hospitalization, ICU admission, death
+* age-specific vaccination
+
+# Required updates
+
+## Methods
+
+* `summary.params_pansim`?
+  * update `get_r`, `get_R0`, `get_Gbar` to perform the relevant calculations for the age-specific model
+* `make_state`
+* `run_sim_range` to actually run the simulation (and `nlist`?)
+* `summary.pansim` that is age-specific?
+* `plot.pansim`
+
+## Other
+
+* Demo param file with age-specific params
+* Stochastic simulations
+
+---
+
+# General to do
+- what are the implied parameter units on the entires of the contact matrix?
+- read refactor.Rmd
+- read Mistry et al to figure out how others are modelling age structure/scaling their matrices
+- make param table with units
+- add FOI to ageified sim result
+- figure out scaling of contact matrix
+- try running ageify with non-homogenous parameters across age classes (e.g. delta
+- try running ageify with non-homogenous initial state of susceptibles
+
+*make sure to run devtools::check() on the package before pushing changes*

@@ -1,0 +1,176 @@
+---
+title: "Getting to know MacPan"
+author: "Irena Papst"
+output: bookdown::html_notebook2
+---
+
+I'm using this doc to record notes as I explore MacPan's codebase. Here's a [handy link](https://jozef.io/r916-exploring-r-code-interactively/) with tools for inspecting code in R (really for debugging). I've since discovered the `lookup` package, which contains the aptly-named function `lookup()` that enables one inspect the source code of a specified function, without entering the dubugging workflow (e.g using `debug()` or `debugonce()`). More info on using `lookup` [here](https://blog.r-hub.io/2019/05/14/read-the-source/).
+
+```{r load-libraries, echo = FALSE, message = FALSE}
+library(McMasterPandemic)
+library(ggplot2); theme_set(theme_bw())
+library(cowplot)
+library(lookup)
+# devtools::install_github("jimhester/lookup")
+```
+
+# Load vignette
+
+```{r}
+vignette("getting_started", package = "McMasterPandemic")
+```
+
+# Model setup
+
+## Load params
+
+```{r}
+lookup(read_params)
+params1 <- read_params("ICU1.csv")
+print(class(params1))
+print(head(params1))
+```
+
+Params are loaded in as a named vector, where elements can be accessed as follows:
+
+```{r}
+print(params1["alpha"])
+```
+
+If a description column (`desc_col`) was provided in the original param file (describing the parameter symbols), it will be stored as the `"description"` attribute (a named list where the parameter symbols are the column names):
+
+```{r}
+print(head(attr(params1, "description")))
+```
+
+There is also a `describe_params()` method that takes `params_pansim` objects and nice table with both parameter values and meanings aggregated:
+
+```{r}
+describe_params(params1)
+```
+
+Not sure why each column is of type factor (or if this may cause problems down the road...)
+
+## Summarise params
+
+The `summary` method will take the raw parameters and calculate some derived model quantities:
+
+```{r}
+lookup(summary)
+params1_summary <- summary(params1)
+print(params1_summary)
+```
+
+In adding age structure, we need to make sure the methods that calculate these derived quantities (`get_r`, `get_R0`, `get_Gbar`) are updated.
+
+```{r}
+lookup(get_R0)
+get_R0(params1, components=TRUE)
+```
+
+There are two methods for `get_R0`: "analytical" and "kernel". The kernel  approach seems flexible (though may require changes to `get_kernel_moments`), while "analytical" is hard-coded. 
+
+## Initial conditions
+
+```{r}
+lookup(make_state)
+state1 <- make_state(params=params1)
+```
+
+Will need to update `make_state` by adding a new model type that has the correct list of compartment names for the initial conditions.
+
+# Simulate a model 
+
+```{r}
+sdate <- "2020-Feb-10"
+edate <- "2020-Jun-1"
+
+lookup(run_sim)
+res1 <- run_sim(params=params1, state=state1, start_date=sdate, end_date=edate)
+summary(res1)
+```
+
+Key step seems to be use of `thin()`, for which I cannot find any documentation...
+In `thin()` we see a `do.call` on `run_sim_range` with parameters/states declared using an object constructed with `nlist`.
+
+```{r}
+#lookup(summary)
+summary(res1)
+```
+
+```{r}
+plot_grid(plot(res1, log=TRUE), ## logarithmic 
+          plot(res1)) ## linear
+```
+
+## Abbreviated call list
+
+When `run_sim` gets called when `has_age(params) == TRUE`, here are roughly the major functions that get run (in order):
+
+```
+run_sim
+  make_ratemat
+    make_betavec
+  run_sim_range
+    do_step
+      update_ratemat
+        update_foi
+          beta_vec = make_betavec
+          foi <- beta_vec %*% state
+```
+# Time-varying parameters
+
+Here's a base sim with time-varying $\beta$, taken from the getting started vignette:
+
+```{r base_res_time, eval = FALSE}
+time_pars <- data.frame(Date=c("2020-04-02"),
+                      Symbol=c("beta0"),
+                      Relative_value=c(0))
+base_res_time <- run_sim(update(base_params,
+                                beta0 = 1),
+                         base_state,
+                         params_timevar = time_pars,
+                         start_date = "2020-04-01",
+                         end_date = "2020-06-01",
+                         ndt = 20, 
+                         condense=FALSE)
+
+plot(base_res_time, condense=FALSE)
+```
+
+The new argument `ndt` determines the number of steps to take between each saved time step and ensures a smoother result (no over-step errors leading to negative states).
+
+In the `run_sim` code, we have the following comment:
+
+```
+## FIXME: so far still assuming that params only change foi
+## if we change another parameter we will have to recompute M
+```
+
+At this point in the code, `M` has been computed, and the `params` list has been updated with the the time-varying parameter (if we hit a switch time). `params` is a copy of the original parameter set (stored as `params0`); `params0` never gets updated. The next command that gets executed is:
+
+```
+ resList[[i]] <- drop_last(
+                thin(ndt=ndt,
+                     do.call(run_sim_range,
+                        nlist(params
+                            , state
+                            , nt=(times[i+1]-times[i]+1)*ndt
+                            , dt=dt/ndt
+                            , M
+                            , use_ode
+                            , ratemat_args
+                            , step_args
+                            , ode_args
+                              )))
+```
+
+So the original `M` *and* the updated `params` are fed in to `run_sim_range()`, which then calls `do_step()`, where `update_ratemat()` is called with both `params` and `M` before the step is done. In `update_ratemat()`, we have the following line:
+
+```
+ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
+```
+
+(`M` is labelled as `ratemat` in the scope of `update_ratemat()`). So the FOI will be updated in `ratemat` here since `make_beta()` remakes the `beta` value (or vector) from specs in `params`. Hence the note about non-FOI params not being updated with the `params_timevar` functionality.
+
+However, ageified transmission already works within this framework, so `params_timevar` should just work here...

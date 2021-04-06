@@ -1,0 +1,263 @@
+---
+title: "Incorporating age-based disease severity"
+author: "Irena Papst"
+date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
+output: html_document
+---
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::opts_chunk$set(fig.height = 4,
+                      fig.width = 9)
+
+devtools::load_all()
+library(tidyverse)
+library(patchwork)
+```
+
+# Age-based differences in outcomes
+
+## Is the code vectorized already?
+
+What if we just update the scalar params involved in disease severity with a vector? Will the code run as expected?
+
+Provide a vectorized parameter with a manual update and see what make_ratemat does. Put the entire population the state where the vectorized parameter is in the outflow, and shut off the next outflow(s). Compare to base sim with the same setup. Do we get what we expect? 
+
+Try vectorizing $\mu$, the fraction of symptomatic cases that are mild:
+
+```{r}
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n)
+end_date <- "2020-08-01"
+
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      , beta0 = 2
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = 0)
+## put everyone in the presymptomatic compartment (testing tweak to mu =
+## proportion of symptomatic cases that are severe a.k.a. require acute care)
+base_state[["Ip"]] <- base_state[["S"]]
+base_state[["S"]] <- 0 
+
+## tweak base params to make it easier to check things are working well 
+## set recovery rate from presymptomatic state to 1, so overall rate will just
+## be mu or 1-mu, and recovery from mild and severe infection to 0, to stop
+## outflow from Ip compartment
+base_params <- update(base_params,
+                      gamma_p = 1,
+                      gamma_m = 0,
+                      gamma_s = 0)
+
+age_params <- expand_params_age(base_params, age_cat = age_cat)
+age_state <- expand_state_age(base_state, age_cat = age_cat)
+
+## update mu in age_params as a vector (one for each age)
+age_params[["mu"]] <- c(0.2, 0.5, 0.7)
+
+## make rate matrix
+age_ratemat <- make_ratemat(state = age_state, params = age_params)
+
+age_ratemat[grepl("Ip", rownames(age_ratemat)), grepl("I[ms]", colnames(age_ratemat))]
+```
+
+So the ratemat looks ageifed, but let's see what happens in simulations:
+
+```{r}
+age_res <- run_sim(params = age_params,
+                   state = age_state,
+                   condense = FALSE)
+
+plot_res_by_state(age_res)
+```
+
+Compared to base sim with a single $\mu$ value: 
+
+```{r}
+base_params[["mu"]] <- 0.75
+
+base_res <- run_sim(base_params, base_state, condense = FALSE)
+
+plot(base_res)
+```
+
+Looks good! That was just for $\mu$, the fraction of a symptomatic cases that are mild, which is equal to $1-\mathbb{P}(\rm{hosp} | \rm{KI})$ from the first COVID age paper. The machinery under the hood is the same for all other non-FOI-related parameters in `make_ratemat()`, so we really shouldn't have to do any further checks, but just to be absolutely sure, let's see whether the parameters related to $\mathbb{P}(\rm{death} | \rm{hosp})$ are just as easily vectorized:
+
+* $\phi_1$, which controls split from $I_s$ to either $H$ (fraction $\phi_1$) and $ICU_{s|d}$ (combined fraction $1-\phi_1$);
+* $\phi_2$, which controls the split from $I_s$ to either $ICU_s$ (fraction $1-\phi_2$) and $ICU_d$ (fraction $\phi_2$).
+
+For $\phi_1$:
+
+```{r}
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      , beta0 = 2
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = 0)
+
+## adjust state to isolate compartment for which we're vectorizing outflow 
+## parameters
+base_state[["Is"]] <- base_state[["S"]]
+base_state[["S"]] <- 0 
+
+## check update
+# base_state
+
+## adjust base parameters to isolate action of vectorization
+base_params <- update(base_params,
+                      phi1 = 0.75,
+                      phi2 = 0,  ## to isolate phi_1
+                      gamma_a = 0,
+                      gamma_p = 0,
+                      gamma_m = 0,
+                      gamma_s = 1,
+                      psi1 = 0,
+                      psi2 = 0,
+                      psi3 = 0,
+                      rho = 0)
+
+## check update
+# base_params[grepl("phi|gamma|psi", names(base_params))]
+
+age_params <- expand_params_age(base_params, age_cat = age_cat)
+age_state <- expand_state_age(base_state, age_cat = age_cat)
+
+## update mu in age_params as a vector (one for each age)
+age_params[["phi1"]] <- c(0.1, 0.4, 0.8)
+
+## make rate matrix
+age_ratemat <- make_ratemat(state = age_state, params = age_params)
+
+age_ratemat[grepl("Is", rownames(age_ratemat)), grepl("H_|ICU[sd]", colnames(age_ratemat))]
+
+## age sim
+age_res <- run_sim(params = age_params,
+                   state = age_state,
+                   condense = FALSE)
+
+plot_res_by_state(age_res)
+
+base_res <- run_sim(base_params, base_state, condense = FALSE)
+
+plot(base_res)
+```
+
+For $\phi_2$:
+
+```{r}
+## adjust base parameters to isolate action of vectorization
+base_params <- update(base_params,
+                      phi1 = 0, ## to isolate phi_2
+                      phi2 = 0.5)
+
+## check update
+# base_params[grepl("phi|gamma|psi", names(base_params))]
+
+age_params <- expand_params_age(base_params, age_cat = age_cat)
+age_state <- expand_state_age(base_state, age_cat = age_cat)
+
+## update mu in age_params as a vector (one for each age)
+age_params[["phi2"]] <- c(0.25, 0.55, 0.65)
+
+## make rate matrix
+age_ratemat <- make_ratemat(state = age_state, params = age_params)
+
+age_ratemat[grepl("Is", rownames(age_ratemat)), grepl("ICU[sd]", colnames(age_ratemat))]
+
+## age sim
+age_res <- run_sim(params = age_params,
+                   state = age_state,
+                   condense = FALSE)
+
+plot_res_by_state(age_res)
+
+base_res <- run_sim(base_params, base_state, condense = FALSE)
+
+plot(base_res)
+```
+
+OK, everything looks good! Let's try a full sim for fun:
+
+```{r}
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      )
+base_state <- make_state(params = base_params)
+
+age_params <- expand_params_age(
+  base_params,
+  age_cat
+)
+
+age_state <- expand_state_age(base_state, age_cat)
+
+## losely based on covid age paper
+age_params[["mu"]] <- c(0.99, 0.95, 0.75)
+
+age_res <- run_sim(age_params, age_state, condense = FALSE)
+
+plot_res_by_state(age_res)
+```
+
+Looks good! Let's try the same thing but turning on age-based differences in transmission (via heterogeneity in contacts and population size):
+
+```{r}
+## set up age categories
+n <- length(age_cat)
+
+## uniform pop, non-unif contacts
+beta0 <- c(2, 3, 3/2)
+Nvec <- rep(5e6, 3)
+pmat <- matrix(c(4/10, 4/30, 8/15,
+                 2/10, 23/30, 3/15,
+                 4/10, 1/10, 4/15),
+               nrow = 3,
+               dimnames = list(age_cat, age_cat))
+
+## rescale pop to be non-unif without breaking balance
+total_contacts <- beta0*Nvec
+beta0 <- c(1, 2, 0.5)
+Nvec <- total_contacts/beta0
+
+# print("balance condition implies the following matrix should be symmetric:")
+# total_contacts_between_ages <- (beta0*Nvec)*pmat
+# print(total_contacts_between_ages)
+# print("is symmetric?")
+# print(isSymmetric(total_contacts_between_ages))
+
+age_params[["beta0"]] <- beta0
+age_params[["N"]] <- Nvec
+age_params[["pmat"]] <- pmat
+
+## update state based on new population size
+age_state <- expand_state_age(
+  make_state(N = sum(age_params[["N"]]), E0 = 0),
+  age_cat = age_cat
+)
+
+## tweak age state
+E0 <- c(0,5,0)
+age_state[grep("S", names(age_state))] <- Nvec-E0
+age_state[grep("E", names(age_state))] <- E0
+
+## losely based on covid age paper
+age_params[["mu"]] <- c(0.99, 0.95, 0.75)
+
+age_res <- run_sim(age_params, age_state, 
+                   end_date = "2020-09-01",
+                   condense = FALSE)
+
+plot_res_by_state(age_res)
+plot_res_by_age(age_res)
+```
+Great!
+
+## Data from Papst *et al.*

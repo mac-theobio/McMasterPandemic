@@ -1,6 +1,6 @@
 ##' construct Jacobian matrix for ICU model
 ##' (not quite complete: doesn't include flows to R)
-## FIXME: derive from make_ratemat 
+## FIXME: derive from make_ratemat
 ##' @param state state vector (named)
 ##' @param params parameter vector
 ##' @export
@@ -73,21 +73,65 @@ make_jac <- function(params, state=NULL) {
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
-make_betavec <- function(state, params, full=TRUE) {
+make_beta <- function(state, params, full=TRUE) {
     Icats <- c("Ia","Ip","Im","Is")
     testcats <- c("_u","_p","_n","_t")
     ## NB meaning of iso_* has switched from Stanford model
-    ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
-    beta_vec0 <- with(as.list(params),
-                      beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
-    names(beta_vec0) <- Icats
+    ## beta_vec0 is the vector of transmission parameters
+    ## that apply to infectious categories only
+    ##
+    ## (delaying normalization by population size here in
+    ## case the age-structured model is being used, where we
+    ## normalize by the size of the age-specific susceptible
+    ## population involved instead)
+    Icat_prop_vec <- with(as.list(params),
+                          c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
+    names(Icat_prop_vec) <- Icats
+
+    ## deal with age structure
     if (has_age(params)) {
-        Cmat <- params$Cmat
-        a_names <- rownames(Cmat)
+
+        ## check that all components for ageified transmission multipliers are
+        ## present in params and in the right format
+        if (!is.list(params)) stop("must expand parameters to include age componets first (use expand_params_age())")
+
+        ## pmat checks
+        if (is.null(params$pmat)) stop("must specify params$pmat component")
+        ## check that pmat rows sum to 1
+        if (!isTRUE(all.equal(unname(rowSums(params$pmat)), rep(1, nrow(params$pmat))))) stop("each pmat row must sum to 1 (it should be a probability distribution)")
+
+        ## Nvec check
+        if (length(params$N) != nrow(params$pmat)) stop("N must be a vector of the same length as the number of age groups specified via pmat.")
+
+        ## beta0 check
+        if (!(length(params$beta0 %in% c(1, nrow(params$pmat))))) stop("beta0 must either be a scalar (same beta0 for all ages) or a vector of the same length as the number of age groups specified via pmat.")
+
+        ## incorporate contact matrix and /N_j in beta term, and attach age cats
+
+        ## grab contact matrix (with susceptibles as rows and infectives as
+        ## columns) and scale each row by beta0 corresponding to that
+        ## susceptible age group (if beta0 is a scalar, scale the whole matrix
+        ## with it)
+        pmat <- params$beta0*params$pmat
+        ## transpose newly-scaled pmat to enable calculations below
+        ##
+        ## calculate c_{ij}/N_j to incorporate 1/N_j from
+        ## I_j/N_j in force of infection (for mat/vec, R will
+        ## divide the entire first row of mat by the first
+        ## element of vec, etc.)
+        pmat <- t(pmat)/params$N
+        a_names <- rownames(pmat)
         new_names <- expand_names(Icats, a_names)
-        beta_vec0 <- t(kronecker(Cmat,matrix(beta_vec0)))
-        dimnames(beta_vec0) <- list(a_names,new_names)
-        beta_vec0 <- Matrix(beta_vec0)
+        ## transpose back so rows represent susceptibles and
+        ## columns represent infectives again
+        beta_0 <- t(kronecker(pmat,matrix(Icat_prop_vec)))
+        dimnames(beta_0) <- list(a_names,new_names)
+        beta_0 <- Matrix(beta_0)
+
+    } else {
+        ## without age structure, multiply by single beta0 and
+        ## normalize by total population N for I/N term in force of infection
+        beta_0 <- with(as.list(params), beta0*Icat_prop_vec/N)
     }
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
@@ -95,24 +139,24 @@ make_betavec <- function(state, params, full=TRUE) {
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
     if (has_testing(state=state)) {  ## testified!
         if (has_age(params)) stop("can't combine age and testing yet")
-        beta_vec0 <- rep(beta_vec0,each=length(testcats))
-        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
+        beta_0 <- rep(beta_0,each=length(testcats))
+        names(beta_0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
         ## FIXME: also adjust _n, _p components?
-        pos_vals <- grep("_t$",names(beta_vec0))
-        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
+        pos_vals <- grep("_t$",names(beta_0))
+        beta_0[pos_vals] <- beta_0[pos_vals]*(1-params[["iso_t"]])
     }
-    if (!full) return(beta_vec0)
+    if (!full) return(beta_0)
     ## By default, make a vector of zeroes for all the states,
     ## then fill in infectious ones
     if (!has_age(params)) {
-        beta_vec <- setNames(numeric(length(state)),names(state))
-        beta_vec[names(beta_vec0)] <- beta_vec0
+        beta <- setNames(numeric(length(state)),names(state))
+        beta[names(beta_0)] <- beta_0
     } else {
-        beta_vec <- matrix(0, nrow=nrow(beta_vec0), ncol=length(state),
-                           dimnames=list(rownames(beta_vec0), names(state)))
-        beta_vec[rownames(beta_vec0),colnames(beta_vec0)] <- matrix(beta_vec0)
+        beta <- matrix(0, nrow=nrow(beta_0), ncol=length(state),
+                           dimnames=list(rownames(beta_0), names(state)))
+        beta[rownames(beta_0),colnames(beta_0)] <- matrix(beta_0)
     }
-    return(beta_vec)
+    return(beta)
 }
 
 ## make_ratemat()
@@ -123,14 +167,14 @@ make_betavec <- function(state, params, full=TRUE) {
 ##'
 ##' @details
 ##' The rates are as follows:
-##' 
+##'
 ##' \eqn{ S to E:  - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) }
 ##' \eqn{ E to I_a: }
 ##' \eqn{ E to I_p: }
 ##' \eqn{ ... }
 ##'
 ##' See \code{\link{read_params}} for parameter definitions.
-##' 
+##'
 ##' @note
 ##' Base version matches structure of Stanford/Georgia models
 ##' \itemize{
@@ -138,14 +182,14 @@ make_betavec <- function(state, params, full=TRUE) {
 ##'         or \code{../pix/model_schematic.png}
 ##'   \item parameter definitions: see \code{params_CI_base.csv}, \code{params_ICU_diffs.csv}
 ##' }
-##' 
+##'
 ##' @param state named vector of states
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
 ##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
 ##' @return matrix of (daily) transition rates
-##  *need* Matrix version of rowSums imported to handle sparse stuff below!! 
+##  *need* Matrix version of rowSums imported to handle sparse stuff below!!
 ##' @importFrom Matrix Matrix rowSums colSums
 ##' @examples
 ##' params <- read_params("ICU1.csv")
@@ -167,9 +211,12 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ####
     np <- length(params)
     if (is.list(params)) {
-        nps <- lengths(params)
+        ## check param lengths (exclude setting-specific mistry params that will
+        ## be of length 4,the number of settings, and not a multiple of age
+        ## groups)
+        nps <- lengths(params[!grepl("mistry_contact_rate_setting|mistry_fmats", names(params))])
         if (has_age(params)) {
-            na <- nrow(params[["Cmat"]])
+            na <- length(attr(params, "age_cat"))
             bad_len <- which(!nps %in% c(1,na,na^2))
             if (length(bad_len)>0) {
                 stop(sprintf("elements of params must be length 1, %d or %d: %s",
@@ -177,8 +224,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
                              paste(names(params)[bad_len],collapse=", ")))
             }
         } else {
-            ## FIXME: better error message ...
-            stopifnot(all(nps==1))
+            if(!all(nps==1)) stop("parameters should each be of length 1")
         }
     }
     state_names <- untestify_statenames(names(state))
@@ -199,12 +245,12 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         if (!symbols) {
             M[pfun(from, to, M)] <<- val
         } else {
-            M[pfun(from,to, M)] <<- deparse(substitute(val))            
+            M[pfun(from,to, M)] <<- deparse(substitute(val))
         }
     }
-    
+
     ## fill entries
-    beta_vec <- make_betavec(state,params)
+    beta_vec <- make_beta(state,params)
     ## FIXME: call update_foi() here?
     if (!has_age(params)) {
         afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
@@ -333,7 +379,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
                          tau <- testing_tau
                          tau*N0/(tau*W + rho*N0)
 			 ## NOTE 'smoothing' doc has numerator rho*tau*N0,
-                         ## but testing intensity (rho) is included in ratemat 
+                         ## but testing intensity (rho) is included in ratemat
                          ## calculation below ...
                      })
         ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
@@ -345,7 +391,8 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
-    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+
+    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
     if (has_vacc(params)) {
         ratemat[pfun("S","R",ratemat)]  <- params[["vacc"]]
     }
@@ -378,7 +425,7 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch_proc=FALSE,
                     do_exponential=FALSE,
                     testwt_scale="N") {
-    
+
     x_states <- c("X","N","P")                  ## weird parallel accumulators
     p_states <- exclude_states(names(state), x_states)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
@@ -419,7 +466,7 @@ do_step <- function(state, params, ratemat, dt=1,
                                  size=state[[i]],
                                  rate=ratemat[i,-i],
                                  dt=dW)
-            
+
         }
     }
 
@@ -449,8 +496,8 @@ do_step <- function(state, params, ratemat, dt=1,
         && !stoch_proc)    ## temporary: adjust reulermultinom to allow for x_states ...
     {
         calc_N <- sum(state[p_states])
-        if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=MP_badsum_tol))) {
-            msg <- sprintf("sum(states) != original N (delta=%1.2g)",params[["N"]]-calc_N)
+        if (!isTRUE(all.equal(calc_N,sum(params[["N"]]), tolerance=MP_badsum_tol))) {
+            msg <- sprintf("sum(states) != original N (delta=%1.2g)",sum(params[["N"]])-calc_N)
             get(MP_badsum_action)(msg)
         }
     } ## not exponential run or stoch proc or ignore-sum
@@ -517,8 +564,9 @@ run_sim <- function(params
         , verbose = FALSE
 ) {
     call <- match.call()
-    
-    if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
+  
+    if (is.na(sum(params[["N"]]))) stop("no population size specified; set params[['N']]")
+
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
@@ -533,9 +581,15 @@ run_sim <- function(params
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
-    if (is.null(state)) state <- make_state(params=params, testify=FALSE)
-    M <- make_ratemat(state=state, params=params)
-    if (has_testing(params=params)) {
+
+  if (is.null(state)) state <- make_state(params=params, testify=FALSE)
+
+  M <- do.call(make_ratemat,c(list(state=state, params=params)))
+    if(has_age(params)){
+        ## warning that checks for balance in contacts
+    }
+
+  if (has_testing(params=params)) {
         if (!is.null(ratemat_args$testify)) {
             warning("'testify' no longer needs to be passed in ratemat_args")
         }
@@ -606,25 +660,29 @@ run_sim <- function(params
                             )))
     } else {
         t_cur <- 1
-        ## want to *include* end date 
+        ## want to *include* end date
         switch_times <- switch_times + 1
         ## add beginning and ending time
         times <- c(1,unique(switch_times),nt+1)
         resList <- list()
+        ## for switch time indices
         for (i in seq(length(times)-1)) {
+            ## if any switch times match current time (by index),
+            ## get index of matching switch time
             for (j in which(switch_times==times[i])) {
                 ## reset all changing params
                 s <- params_timevar[j,"Symbol"]
                 v <- params_timevar[j,"Relative_value"]
+                ## this should work even if params0[[s]] is a vector
                 params[[s]] <- params0[[s]]*v
                 if (s=="proc_disp") {
                     state <- round(state)
                 }
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                                          s,params0[[s]],params[[s]],i))
-                
+
                 ## FIXME: so far still assuming that params only change foi
-                ## if we change another parameter we will have to recompute M 
+                ## if we change another parameter we will have to recompute M
             }
 
             resList[[i]] <- drop_last(
@@ -706,15 +764,15 @@ run_sim <- function(params
 ##' The parameters that must be set are:
 ##'
 ##' \eqn{   N:  }  population size
-##' 
+##'
 ##' \eqn{   \beta_0:  }  transmission rate
-##' 
+##'
 ##' \eqn{   1/\sigma:  }  mean \emph{latent} period
-##' 
+##'
 ##' \eqn{   1/\gamma_a:  }  mean \emph{infectious} period for asymptomatic individuals
-##' 
+##'
 ##' \eqn{   ... }
-##' 
+##'
 
 ##' generate initial state vector
 ##' @param N population size
@@ -778,6 +836,7 @@ make_state <- function(N=params[["N"]],
         }
         ## make sure to conserve N by subtracting starting number infected
         ## *after* rounding etc.
+
         ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
         ##  class; (2) distribute (N-istart) across the S classes, then round
         if (!testify) {
@@ -812,8 +871,8 @@ make_state <- function(N=params[["N"]],
 ##' @param M rate matrix
 gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
-    foi <- update_foi(y, parms, make_betavec(state=y, parms))
-    ## compute 
+    foi <- update_foi(y, parms, make_beta(state=y, parms))
+    ## compute
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
@@ -875,7 +934,7 @@ run_sim_range <- function(params
         res[1,names(state)] <- state
         if (!has_age(params)) {
             ## FIXME: coherent strategy for accumulating incidence, etc etc
-            foi[[1]] <- update_foi(state,params, make_betavec(state, params))
+            foi[[1]] <- update_foi(state,params, make_beta(state, params))
         }
         ## loop
         if (nt>1) {
@@ -887,7 +946,7 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_betavec(state, params))
+                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_beta(state, params))
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }
@@ -912,7 +971,7 @@ run_sim_range <- function(params
 ## s = mean/cv^2
 ## a = 1/cv^2
 make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=ceiling(tail_val), tail_crit=0.95) {
-    
+
     gamma_shape <- 1/delay_cv^2
     gamma_scale <- delay_mean/gamma_shape
     tail_val <- qgamma(tail_crit, shape=gamma_shape, scale=gamma_scale)

@@ -1,0 +1,500 @@
+---
+title: "Ageify demo"
+author: "Irena Papst"
+date: "Last updated: `r format(Sys.time(), '%d %b %Y at %H:%M')`"
+output: html_document
+---
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.height = 3)
+
+devtools::load_all()
+library(tidyverse)
+library(patchwork)
+```
+
+# Synthetic contact structure
+
+## Homogeneous mixing
+
+To reduce the ageified model to the case of homogenous mixing, we need to set:
+
+1. $\beta_i = \beta$ for all $i$: constant contact rate (and transmission probability) across age groups (default in the software if only one $\beta_i$ is provided),
+1. $N_i = \frac{N}{n}$ for all $i$: uniform population distribution across age groups (default in the software if only one $N$ is provided; this is assumed to be the total population size),
+1. $P_{ij} = \frac{1}{n}$ for all $i,j$: uniform distribution of contacts across age groups.
+
+In other words, we need to have a uniform population distribution and uniform contact structure.
+
+There is a test (in `tests/testthat/test-ageify.R`) that includes a check to ensure that the homogeneous case of the age-structured model reduces down to the base simulation.
+
+```{r sim_setup_basic}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n)
+
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      , beta0 = 2
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = length(age_cat))
+end_date <- "2020-08-01"
+```
+
+```{r compare_res_uu_with_homog}
+res_uu <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         Nvec = Nvec,
+                         pmat = mk_pmat(age_cat, dist = "unif"),
+                         condense = FALSE,
+                         end_date = end_date)
+
+res_hom <- run_sim(base_params, base_state, condense = FALSE,
+                   end_date = end_date)
+
+res_uu_cond <- condense_age(res_uu %>% select(-foi))
+
+attr(res_uu_cond, "row.names") <- as.character(attr(res_uu_cond, "row.names"))
+
+expect_equal(res_uu_cond,
+             res_hom %>% select(-foi))
+
+p1 <- plot(condense_age(res_uu %>% select(-foi))) + labs(title = "age-structured model")
+p2 <- plot(res_hom %>% select(-foi)) + labs(title = "base model")
+
+(p1 / p2) + plot_layout(guides = "collect")
+```
+
+Full age-structured results:
+
+```{r plot_res_uu}
+drop_states <- c("S", "R")
+(plot_res_by_age(res_uu, drop_states)
+  + labs(
+    title = "uniform population distribution and contact pattern")
+  ) 
+plot_res_by_state(res_uu, drop_states)
+```
+
+## Diagonal contact matrix
+
+A diagonal contact matrix decouples the age-specific epidemics entirely.
+
+There is a test checking that identical epidemics are generated within each age group with a diagonal contact matrix and a uniform population distribution.
+
+```{r res_ud}
+pmat_d <- mk_pmat(age_cat = age_cat, dist = "diag")
+res_ud <- run_sim_ageify(base_params, base_state, 
+                         age_cat = age_cat,
+                         beta0 = c(0.5, 1, 1.5),
+                         Nvec = Nvec,
+                         pmat = pmat_d, end_date = end_date, condense = FALSE)
+```
+
+```{r plot_res_ud}
+(plot_res_by_age(res_ud, drop_states)
+  + labs(
+    title = "uniform population distribution, diagonal contact pattern")
+  ) 
+plot_res_by_state(res_ud, drop_states)
+```
+
+## Using a "compound" contact matrix
+
+A "compound" contact matrix keeps the majority of contacts within an age-group, and contacts outside of an age group are uniformly distributed across all other age groups. It's essentially the diagonal contact matrix + the uniform contact matrix (row-normalized).
+
+```{r res_comp}
+pmat_comp <- matrix(c(0.8, 0.1, 0.1,
+                      0.1, 0.8, 0.1,
+                      0.1, 0.1, 0.8),
+                    nrow = 3,
+                    dimnames = list(age_cat, age_cat))
+res_comp <- run_sim_ageify(base_params, base_state, 
+                           age_cat = age_cat,
+                           # beta0 = c(0.5, 1, 1.5),
+                           Nvec = Nvec,
+                           pmat = pmat_comp,
+                           end_date = end_date, condense = FALSE)
+```
+
+```{r plot_res_comp}
+(plot_res_by_age(res_comp, drop_states)
+  + labs(
+    title = "uniform population distribution, compound contact pattern")
+  ) 
+plot_res_by_state(res_comp, drop_states)
+```
+
+The epidemics look identical, which is unsurprising given $(\beta_0)_i$, $I_i(0)$, and the distribution $p_{ij}$ are identical for all $i$. 
+
+## Uniform population distribution, non-uniform contact pattern
+
+```{r res_un}
+## initialize contact structure
+beta0 <- c(2, 3, 3/2)
+Nvec <- rep(5e6, 3)
+pmat <- matrix(c(4/10, 4/30, 8/15,
+                 2/10, 23/30, 3/15,
+                 4/10, 1/10, 4/15),
+               nrow = 3,
+               dimnames = list(age_cat, age_cat))
+
+print("beta0:")
+print(beta0)
+print("pmat:")
+print(pmat)
+
+print("balance condition implies the following matrix should be symmetric:")
+total_contacts_between_ages <- (beta0*Nvec)*pmat
+print(total_contacts_between_ages)
+print("is symmetric?")
+print(isSymmetric(total_contacts_between_ages))
+
+base_params <- update(base_params,
+                      N = sum(Nvec))
+base_state <- make_state(N = sum(Nvec), E0 = n)
+
+res_un <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         beta0 = beta0,
+                         pmat = pmat,
+                         Nvec = Nvec,
+                         condense = FALSE,
+                         end_date = end_date)
+```
+
+```{r plot_res_un}
+(plot_res_by_age(res_un, drop_states)
+  + labs(
+    title = "non-uniform population distribution and contact pattern")
+  ) 
+plot_res_by_state(res_un, drop_states)
+```
+
+## Non-uniform population distribution, non-uniform contact pattern
+
+```{r res_nn}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+
+## initialize contact structure
+total_contacts <- beta0*Nvec
+beta0 <- 1:3
+Nvec <- total_contacts/beta0
+
+print("beta0:")
+print(beta0)
+print("pmat:")
+print(pmat)
+
+print("balance condition implies the following matrix should be symmetric:")
+total_contacts_between_ages <- (beta0*Nvec)*pmat
+print(total_contacts_between_ages)
+print("is symmetric?")
+print(isSymmetric(total_contacts_between_ages))
+
+base_params <- update(base_params,
+                      N = sum(Nvec))
+base_state <- make_state(N = sum(Nvec), E0 = n)
+
+res_nn <- run_sim_ageify(base_params, base_state,
+                         age_cat = age_cat,
+                         beta0 = beta0,
+                         pmat = pmat,
+                         Nvec = Nvec,
+                         condense = FALSE,
+                         end_date = end_date)
+```
+
+```{r plot_res_nn}
+(plot_res_by_age(res_nn, drop_states)
+  + labs(
+    title = "non-uniform population distribution, non-uniform contact pattern")
+  ) 
+plot_res_by_state(res_nn, drop_states)
+```
+
+# "Real" contact structure
+
+## Using a Mistry *et al.* contact matrix
+
+Here's a demo using the Mistry *et al.* contact matrix for Ontario with default (pre-pandemic) contact structure:
+
+```{r sim_setup_mistry}
+## set up params
+age_cat <- mk_agecats(0, 84, 20)
+mistry_params <- expand_params_mistry(
+  base_params,
+  transmissibility = 0.125,
+  province = "Ontario",
+  contact_rate_setting = list(household = 4.11,
+                 school = 11.41,
+                 work = 8.07,
+                 community = 2.79),
+  age_cat = age_cat)
+
+## update state so that population size matches to new distribution
+mistry_state <- expand_state_age(
+  make_state(N = sum(mistry_params$N),
+  E0 = length(age_cat)),
+  age_cat = age_cat,
+  Nvec = mistry_params$N)
+
+res_mistry <- run_sim(mistry_params, mistry_state,
+                      condense = FALSE,
+                      end_date = end_date)
+```
+
+```{r plot_res_mistry}
+(plot_res_by_age(res_mistry, drop_states,
+                 condense_I = TRUE)
+  + labs(
+    title = "Ontario population distribution and contact structure")
+  ) 
+plot_res_by_state(res_mistry, drop_states,
+                  condense_I = TRUE)
+```
+
+Assuming work contacts are halved, school and community contacts are turned off:
+
+```{r res_mistry_2}
+mistry_params2 <- update_params_mistry(
+  mistry_params,
+  contact_rate_setting = list(school = 0, work = 0.5*mistry_params$mistry_contact_rate_setting$work, community = 0))
+res_mistry_2 <- run_sim(mistry_params2, mistry_state,
+                       condense = FALSE,
+                       end_date = end_date)
+```
+
+```{r plot_res_mistry_2}
+(plot_res_by_age(res_mistry_2, drop_states,
+                 condense_I = TRUE)
+  + labs(
+    title = "Ontario workplace contacts halved, schools/community contacts shut off")
+  ) 
+plot_res_by_state(res_mistry_2, drop_states,
+                  condense_I = TRUE)
+```
+
+# Time-varying $\beta$
+
+Looking at the code for time-varying params (notes in `IP_explore_codebase`), it should just work for ageified transmission. Let's try that here, comparing the base model's results with the equivalent homogeneous case of the ageified model. We'll intervene early in the epidemic by taking 1/4 of the original transmission rate, then bumping it up to 3x the original value a few weeks later:
+
+```{r compare_base_age_time}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n) # uniform population
+
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = length(age_cat))
+start_date <- "2020-03-01"
+end_date <- "2020-07-01"
+
+## set time-varying beta0
+time_pars <- data.frame(Date=c("2020-04-05","2020-05-01"),
+                        Symbol=c("beta0","beta0"),
+                        Relative_value=c(0.25,3)) ## decrease then increase
+
+## run base simulation
+res_base <- run_sim(base_params, base_state,
+                    start_date = start_date,
+                    end_date = end_date,
+                    params_timevar = time_pars,
+                    ndt = 20,
+                    condense = FALSE)
+
+## set up ageified parameters 
+## homogeneous population and contacts
+## (this will use assume beta0 as in the base simulation)
+age_params <- expand_params_age(
+  params = base_params,
+  age_cat = age_cat,
+  Nvec = Nvec
+)
+
+## set up age-structured state
+age_state <- expand_state_age(
+  base_state,
+  age_cat = age_cat,
+  Nvec = age_params[["N"]]
+)
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p)
+
+plot(res_base)
+```
+
+It's a perfect match! The time-dependent update to beta is working in the ageified model. Let's check that this is still true, even if `beta0` varies by age, with all else equal (uniform):
+
+```{r compare_base_age_time2}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n) # uniform population
+
+## update to a vector of beta0s (one for each age group)
+## same value as before!
+age_params[["beta0"]] <- rep(base_params[["beta0"]], length(age_cat))
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p)
+
+plot_res_by_age(res_age, drop_states)
+```
+
+```{r compare_base_age_time3}
+
+## update to a vector of beta0s (one for each age group)
+## different values
+age_params[["beta0"]] <- c(1.25, 1, 0.75)
+
+## age-structured sim with beta0 vec and transmissibility
+## "inferred" from base sim
+res_age <- run_sim(age_params, age_state,
+                   start_date = start_date,
+                   end_date = end_date,
+                   params_timevar = time_pars,
+                   ndt = 20,
+                   condense = FALSE)
+
+## aggregate over ages
+res_age_cond <- condense_age(res_age %>% select(-foi))
+
+## check sim results are equal
+print("comparing base and ageified simulation results... equal?")
+print(all.equal(res_age_cond,
+                 res_base %>% select(-foi),
+                check.attributes = FALSE))
+
+## plot sim results
+p1 <- (bind_rows(
+  pivot_longer((res_base 
+    %>% select(-foi) 
+    %>% mutate(model = "base")),
+  cols = -c(date, model),
+  names_to = "var"),
+  pivot_longer((condense_age(res_age %>% select(-foi))
+    %>% mutate(model = "age-structured")),
+  cols = -c(date, model),
+  names_to = "var"))
+  %>% mutate(var = as_factor(var))
+  %>% ggplot(aes(x = date, y = value, color = model))
+  + geom_line()
+  + facet_wrap(vars(var), scales = "free_y")
+  + scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")
+) 
+
+print(p1)
+
+plot_res_by_age(res_age, drop_states = c("S", "E", "Ia", "Ip", "Im", "Is", "R"))
+
+p2 <- (pivot_longer((res_age %>% select(-foi)),
+              cols = -date,
+              names_to = "var") 
+  %>% separate(var, into = c("state", "age"), sep = "_") 
+  %>% mutate(state = as_factor(state))
+  %>% ggplot(aes(x = date, y = value, colour = age)) 
+  + geom_line() 
+  + facet_wrap(vars(state), scales = "free_y"))
+
+print(p2)
+```
+Though it's hard to see from the aggregate plots, the last fig shows the subtle differences in all outcomes introduced by taking a different `beta0` by age, and it clearly shows that time-varying `beta0` is having an effect.
+
+<!--
+
+# Using $\beta(t)$ calibrated to overall pop in age-specific sims
+
+Take $\beta_0$ in base sim, and split across age groups using $\beta_0 = \tau \langle c \rangle$ and $(\beta_0)_i = \tau c_i$ for $\langle c \rangle = 1/N \sum_i N_i c_i$ (might have to choose $c_i$ ahead of time, which is fine because that's given in the Mistry matrices). 
+
+Do an age-structured sim with these $(\beta_0)_i$ values and then condense, summing across age groups. Compare results to base sim. Demo first with constant $\beta_0$ and simple (synthetic) mixing patterns + unif pop dist to start, then change only pop dist to non-uniform. If this works, try it for the Mistry matrices, then start thinking about $\beta(t)$. May need to think about adjusting $\omega_k$ (e.g. turning off school transmission on the school closure schedule).
+
+-->
