@@ -33,4 +33,15 @@ tv_mu <- data.frame(Date=as.Date(startdate:enddate),
 	stringsAsFactors=FALSE
 )
 ts_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate, verbose=TRUE)
-stopifnot(identical(c(base),c(ts_mu)))
+# stopifnot(identical(c(base),c(ts_mu)))
+
+## mu is the Fraction of symptomatic cases that are mild (or moderate)
+## if relative value is < 1, then more people to I_s and hospital
+## this looks correct!
+
+gg <- (ggplot()
+       + geom_point(data=base,aes(x=date,y=H),color="black")
+       + geom_point(data=ts_mu,aes(x=date,y=H),color="red")
+)
+
+print(gg)
