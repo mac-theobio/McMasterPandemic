@@ -68,7 +68,7 @@ lookup(get_R0)
 get_R0(params1, components=TRUE)
 ```
 
-There are two methods for `get_R0`: "analytical" and "kernel". The kernel  approach seems flexible (though may require changes to `get_kernel_moments`), while "analytical" is hard-coded. 
+There are two methods for `get_R0`: "analytical" and "kernel". The kernel  approach seems flexible (though may require changes to `get_kernel_moments`), while "analytical" is hard-coded.
 
 ## Initial conditions
 
@@ -79,7 +79,7 @@ state1 <- make_state(params=params1)
 
 Will need to update `make_state` by adding a new model type that has the correct list of compartment names for the initial conditions.
 
-# Simulate a model 
+# Simulate a model
 
 ```{r}
 sdate <- "2020-Feb-10"
@@ -99,7 +99,7 @@ summary(res1)
 ```
 
 ```{r}
-plot_grid(plot(res1, log=TRUE), ## logarithmic 
+plot_grid(plot(res1, log=TRUE), ## logarithmic
           plot(res1)) ## linear
 ```
 
@@ -132,7 +132,7 @@ base_res_time <- run_sim(update(base_params,
                          params_timevar = time_pars,
                          start_date = "2020-04-01",
                          end_date = "2020-06-01",
-                         ndt = 20, 
+                         ndt = 20,
                          condense=FALSE)
 
 plot(base_res_time, condense=FALSE)
@@ -174,3 +174,16 @@ ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,param
 (`M` is labelled as `ratemat` in the scope of `update_ratemat()`). So the FOI will be updated in `ratemat` here since `make_beta()` remakes the `beta` value (or vector) from specs in `params`. Hence the note about non-FOI params not being updated with the `params_timevar` functionality.
 
 However, ageified transmission already works within this framework, so `params_timevar` should just work here...
+
+# Calibrate
+
+Looking at `macpan_base/code/breaks_calibrate_vac.R` to better understand the calibration process as it's currently being done. Here's an abbreviated stack:
+
+1. Set up inputs, including province name, population, whether or not to use DE optim, how many cores to use for parallelization, start date, variables (to fit over?), and break dates.
+1. Use `fix_pars()` to adjust given parameters based on target values for epidemic moments (e.g. `R0` and mean generation interval length, `Gbar`)
+1. Set up `opt_pars` (parameters we want to fit optimally given the observed data): in this script, the three `opt_pars` are `log_beta0`, `rel_beta0`, and `rel_vacc`.
+1. Initialize priors (seems to be just `rel_vac`... are there internal defaults for `log_beta0` and `rel_beta0`?)
+1. Set up df to store fits depending on start and end date
+1. Some setup for Nelder-Mead optimization
+1. Run the calibration with `calibrate()`
+1. Save results
