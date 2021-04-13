@@ -14,21 +14,29 @@ vim_session:
 
 ######################################################################
 
-Sources += $(wildcard sandbox/*.R)
 Sources += $(wildcard tests/*.R)
-
 Sources += $(wildcard man/*.Rd) NAMESPACE
-
-Sources += dottarget.mk
 
 ######################################################################
 
-Sources += $(wildcard sandbox/*.R) sandbox/sim.RData
+## The pipeR transition!
+
+Sources += $(wildcard sandbox/*.R)
+
+run_sim_mre.Rout: sandbox/run_sim_mre.R sandbox/ON.short.breaks.RDS
+	$(run-R)
+
+Sources += sandbox/sim.RData
 
 jaggy.Rout: sandbox/sim.RData sandbox/jaggy.R
 	$(run-R)
 
 sandbox/kernel_test.Rout: sandbox/kernel_test.R
+
+time_varying_mre.Rout: sandbox/time_varying_mre.R
+	$(pipeR)
+
+######################################################################
 
 tests/moments.Rout:
 
@@ -44,6 +52,9 @@ tests/test_calibrate.Rout: tests/test_calibrate.R
 ######################################################################
 
 Sources += $(wildcard R/*.R)
+
+Sources += dottarget.mk
+
 
 ######################################################################
 
@@ -184,7 +195,7 @@ localstuff:
 
 -include makestuff/os.mk
 
--include makestuff/wrapR.mk
+-include makestuff/pipeR.mk
 -include makestuff/rmd.mk
 
 -include makestuff/git.mk

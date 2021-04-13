@@ -584,26 +584,33 @@ run_sim <- function(params
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
     drop_last <- function(x) { x[seq(nrow(x)-1),] }
-
-  if (is.null(state)) state <- make_state(params=params, testify=FALSE)
-
-  M <- do.call(make_ratemat,c(list(state=state, params=params)))
-    if(has_age(params)){
-        ## FIXME: warning that checks for balance in contacts
-    }
-
-  if (has_testing(params=params)) {
-        if (!is.null(ratemat_args$testify)) {
-            warning("'testify' no longer needs to be passed in ratemat_args")
-        }
-        testing_time <- ratemat_args$testing_time
-        if (is.null(testing_time)) {
-            warning("setting testing time to 'sample'")
-            testing_time <- 'sample'
-        }
-        M <- testify(M,params,testing_time=testing_time)
+    if (is.null(state)) state <- make_state(params=params, testify=FALSE)
+    if (has_testing(params=params)) {
         state <- expand_stateval_testing(state, params=params)
     }
+
+    ## thin wrapper: we may have to recompute this later and don't want to
+    ##  repeat both make_ratemat() and all of the testify stuff ...
+    ## (1) is all of this idempotent, i.e. will re-running expand_stateval_testing break anything if unnecessary?
+    ## (2) does this imply that testify/testing stuff should be refactored/go elsewhere?
+    ## (3) this is reminiscent of the expand/don't-expand hoops that we go through in the eigenvector/state calculation
+    make_M <- function() {
+        M <- make_ratemat(state=state, params=params)
+        if (has_testing(params=params)) {
+            if (!is.null(ratemat_args$testify)) {
+                warning("'testify' no longer needs to be passed in ratemat_args")
+            }
+            testing_time <- ratemat_args$testing_time
+            if (is.null(testing_time)) {
+                warning("setting testing time to 'sample'")
+                testing_time <- 'sample'
+            }
+            M <- testify(M,params,testing_time=testing_time)
+        }
+        return(M)
+    }
+    M <- make_M()
+
     state0 <- state
     params0 <- params ## save baseline (time-0) values
     ## no explicit switches, and (no process error) or (process error for full time);
@@ -670,8 +677,7 @@ run_sim <- function(params
         resList <- list()
         ## for switch time indices
         for (i in seq(length(times)-1)) {
-            ## if any switch times match current time (by index),
-            ## get index of matching switch time
+            recompute_M <- FALSE
             for (j in which(switch_times==times[i])) {
                 ## reset all changing params
                 s <- params_timevar[j,"Symbol"]
@@ -684,8 +690,14 @@ run_sim <- function(params
                 if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
                                          s,params0[[s]],params[[s]],i))
 
+                if (!s %in% "beta0") { ## also testing rates?
+                    recompute_M <- TRUE
+                }
                 ## FIXME: so far still assuming that params only change foi
                 ## if we change another parameter we will have to recompute M
+            }
+            if (recompute_M) {
+                M <- make_M()
             }
 
             resList[[i]] <- drop_last(
@@ -716,10 +728,13 @@ run_sim <- function(params
     res <- res[,!names(res) %in% "t"]  ## we never want the internal time vector
     ## condense here
     if (condense) {
-        res <- do.call(condense.pansim,c(list(res,params=params0,
-                                              cum_reports=FALSE,
-                                              het_S=has_zeta(params0)),
-                                         condense_args))
+        ## FIXME: will it break anything if we call condense with 'params'
+        ## (modified by time-varying stuff) instead of params0? Let's find out!
+        res <- do.call(condense.pansim,c(list(res
+                                            , params=params0
+                                            , cum_reports=FALSE
+                                            , het_S=has_zeta(params0))
+                                         , condense_args))
     }
     if (stoch[["obs"]]) {
         if (has_zeta(params)) params[["obs_disp_hetS"]] <- NA  ## hard-code skipping obs noise
@@ -839,7 +854,6 @@ make_state <- function(N=params[["N"]],
         }
         ## make sure to conserve N by subtracting starting number infected
         ## *after* rounding etc.
-
         ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
         ##  class; (2) distribute (N-istart) across the S classes, then round
         if (!testify) {

@@ -14,7 +14,7 @@
 "gamma_p",2,1/time in pre-symptomatic class
 "rho",1/10,1/time in hospital (acute care)
 "delta",0,Fraction of acute-care cases that are fatal
-"mu",0.956,Fraction of symptomatic cases that are mild
+"mu",0.956,Fraction of symptomatic cases that are mild (or moderate)
 "N",1e6,Population size
 "E0",5,Initial number exposed
 "nonhosp_mort",0,probability of mortality without hospitalization

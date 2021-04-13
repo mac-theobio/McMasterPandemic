@@ -112,7 +112,8 @@ test_that("condensation is OK", {
 test_that("time-varying test intensity", {
      pt <- data.frame(Date=as.Date(c("2020-04-01","2020-04-15")),
                       Symbol=rep("testing_intensity",2),
-                      Relative_value=c(0,4))
+                      Relative_value=c(0.1,4))
+     ## don't reduce testing to 0 - it will break things!
      pp[["testing_intensity"]] <- 0.002
      sim0_testified_timevar <- run_sim(params = pp,
                                        ratemat_args = list(testing_time="sample"),
