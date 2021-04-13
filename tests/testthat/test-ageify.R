@@ -225,7 +225,7 @@ check_equality_across_ages <- function(df){
     (df
         ## pivot to be able to easily group observations using substrings in column
         ## name
-        %>% select(-foi)
+        %>% select(!starts_with("foi"))
         %>% pivot_longer(-date)
         %>% separate(name, into = c("state", "age_cat"),
                      sep = "_", extra = "merge")

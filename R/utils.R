@@ -546,6 +546,12 @@ has_age <- function(x) {
     return("age_cat" %in% names(attributes(x)))
 }
 
+get_age <- function(x) {
+  ## get age categories out of params list
+  if (!has_age(x)) stop("these parameters are not age-specific")
+  return(attr(x, "age_cat"))
+}
+
 
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum

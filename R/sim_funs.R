@@ -233,7 +233,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ## DON'T unpack states, we don't need them
     ## (the only state-dependent per capita rates are testing
     ## and infection, those get handled elsewhere)
-    P <- as.list(params) 
+    P <- as.list(params)
     unpack(P)
     ## blank matrix
     M <- matrix(0,
@@ -305,21 +305,24 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
 ##' at present, this is the only state-dependent \emph{per capita} rate
 ##' maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
-##' @param beta_vec vector of transmission rates (matching state vector)
+##' @param beta vector or matrix of transmission rates, where (length(beta) | ncol(beta)) == length(state)
 ##' @export
 ## FIXME DRY from make_ratemat
-update_foi <- function(state, params, beta_vec) {
+update_foi <- function(state, params, beta) {
+
     ## update infection rate
-    if (is.matrix(beta_vec)) {
-        ## FIXME, check dimensions etc.
-        foi <- beta_vec %*% state
+    if (is.matrix(beta)) {
+      ## e.g. beta is a matrix when the transmission parameters are age-structured
+        if(length(state) != ncol(beta)) stop("number of columns of beta must match length of state vector")
+        foi <- beta %*% state
     } else {
-        if(length(state) != length(beta_vec)){
-            stop("length of state and beta_vec are not the same")
+        if(length(state) != length(beta)){
+            stop("length of state and beta are not the same")
         }
-        foi <- sum(state*beta_vec)
+        foi <- sum(state*beta)
     }
     if (has_zeta(params)) {
+      if(has_age(params)) stop("phenomenological heterogeneity (zeta != 0) untested with age-structed params")
         ## suppose zeta is a vector zeta1, zeta2, zeta3, ...
         ##  we also need parameters   zeta_break1, zeta_break2 (0<zbi<1)
         ##  one *fewer* break parameter than zeta_i value
@@ -564,7 +567,7 @@ run_sim <- function(params
         , verbose = FALSE
 ) {
     call <- match.call()
-  
+
     if (is.na(sum(params[["N"]]))) stop("no population size specified; set params[['N']]")
 
     ## FIXME: *_args approach (specifying arguments to pass through to
@@ -586,7 +589,7 @@ run_sim <- function(params
 
   M <- do.call(make_ratemat,c(list(state=state, params=params)))
     if(has_age(params)){
-        ## warning that checks for balance in contacts
+        ## FIXME: warning that checks for balance in contacts
     }
 
   if (has_testing(params=params)) {
@@ -828,7 +831,7 @@ make_state <- function(N=params[["N"]],
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
                 if (testify) stop("this case isn't handled for testify")
-                ee[["E"]] <- 1  
+                ee[["E"]] <- 1
                 warning('initial values too small for rounding')
             }
             istart <- sum(ee)
@@ -926,7 +929,13 @@ run_sim_range <- function(params
         names(res)[1] <- "t" ## ode() uses "time"
     } else {
         ## set up output
-        foi <- rep(NA,nt)
+       foi <- if(!has_age(params)){
+              rep(NA,nt)
+          } else{
+              matrix(NA, nrow = nt, ncol = length(get_age(params)),
+                     dimnames = list(NULL,
+                                     paste("foi", get_age(params), sep = "_")))
+          }
         res <- matrix(NA, nrow=nt, ncol=length(colnames(M)),
                       dimnames=list(time=seq(nt),
                                     state=colnames(M)))
@@ -934,7 +943,9 @@ run_sim_range <- function(params
         res[1,names(state)] <- state
         if (!has_age(params)) {
             ## FIXME: coherent strategy for accumulating incidence, etc etc
-            foi[[1]] <- update_foi(state,params, make_beta(state, params))
+            foi[[1]] <- update_foi(state, params, make_beta(state, params))
+        } else {
+            foi[1, ] <- update_foi(state, params, make_beta(state, params))
         }
         ## loop
         if (nt>1) {
@@ -946,7 +957,11 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_beta(state, params))
+                if (!has_age(params)){
+                  foi[[i]] <- update_foi(state, params, make_beta(state, params))
+                } else {
+                  foi[i, ] <- update_foi(state, params, make_beta(state, params))
+                }
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }
