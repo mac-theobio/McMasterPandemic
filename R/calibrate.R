@@ -275,6 +275,43 @@ run_sim_break <- function(params,
     do.call(run_sim,sim_args)
 }
 
+
+run_sim_break2 <- function(params,
+                          extra_pars=NULL,
+                          time_args=NULL,
+                          break_dates=NULL,
+                          symbols=NULL,
+                          sim_args=list(),
+                          return_timevar=FALSE,
+                          ...) {
+    if (!is.null(break_dates)) {
+        stop("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
+        time_args <- list(break_dates=break_dates)
+    }
+    sim_args <- c(sim_args,
+                  nlist(params,
+                        state=make_state(params=params)))
+    if (length(time_args)==1 && is.null(names(time_args))) {
+        ## HACK:: namedrop() problems in mle2????
+        names(time_args) <- "break_dates"
+    }
+    if (is.null(time_args$break_dates)) stop("missing break_dates?")
+    time_args$break_dates <- try(as.Date(time_args$break_dates), silent=TRUE)
+    if (inherits(time_args$break_dates, "try-error")) stop ("time_args$break_dates must be (convertible to) a Date")
+    time_args$break_dates <- sort(time_args$break_dates) ## just in case
+    ## construct model matrix by hand (easier than fighting with formula/reformulate
+    browser()
+    Xcols <- vapply(time_args$break_dates,
+                    function(x) as.numeric(x>=time_args$break_dates),
+                    FUN.VALUE=numeric(length(time_args$break_dates)))
+    
+    ## form <- reformulate(c("0",sprintf("I(break_dates>I(%s))", time_args$break_dates)))
+    ## if (is.null(start_date <- sim_args$start_date)) start_date <- time_args$break_dates-1
+    ## if (is.null(end_date <- sim_args$end_date)) end_date <- time_args$break_dates-1
+    res <- run_sim_loglin()
+    return(res)
+}
+
 ## keep rel_beta0 as time-varying params argument (now misnamed)
 ## PRIORS final = 0.2 - 0.5  plogis norm(mean=-0.75,sd=0.75/2)
 ## initial = 1
