@@ -11,6 +11,7 @@ knitr::opts_chunk$set(fig.height = 4,
 
 devtools::load_all()
 library(tidyverse)
+library(cowplot)
 ```
 
 We want to be able to calibrate $\beta$ in the age-structured model, but trying to fit a $\beta$ value for each age group may be too difficult (or impossible). Let's see how far we can get with $\beta$ calibrated to the whole population.
@@ -78,6 +79,7 @@ Here's a function that computes both the base sim, as well as the ageified sim (
 #' @param Nvec population distribution
 #' @param pmat contact probability matrix
 #' @param contact_rate_age age-specific contact rates
+#' @inheritParams run_sim
 #'
 #' @return
 #' @export
@@ -85,7 +87,10 @@ compare_age_to_base <- function(age_cat,
                                 base_beta0,
                                 Nvec,
                                 pmat = NULL,
-                                contact_rate_age){
+                                contact_rate_age,
+                                start_date = "2020-03-01",
+                                end_date = "2020-08-01",
+                                params_timevar = NULL){
   
   ## set up base (non-ageified) params and state
   base_params <- update(read_params("PHAC_testify.csv")
@@ -95,11 +100,13 @@ compare_age_to_base <- function(age_cat,
                         )
   base_state <- make_state(N = base_params[["N"]],
                            E0 = length(age_cat))
-  end_date <- "2020-08-01"
   
   ## run base simulation
-  res_base <- run_sim(base_params, base_state, condense = FALSE,
-                      end_date = end_date)
+  res_base <- run_sim(base_params, base_state,
+                      start_date = start_date,
+                      end_date = end_date,
+                      params_timevar = params_timevar,
+                      condense = FALSE)
   
   ## set up ageified parameters 
   ## (this will use assume beta0 as in the base simulation)
@@ -126,11 +133,13 @@ compare_age_to_base <- function(age_cat,
   ## age-structured sim with beta0 vec and transmissibility
   ## "inferred" from base sim
   res_age <- run_sim(age_params, age_state,
-                    condense = FALSE,
-                    end_date = end_date)
+                     start_date = start_date,
+                     end_date = end_date,
+                     params_timevar = params_timevar,
+                     condense = FALSE)
   
   ## aggregate over ages
-  res_age_cond <- condense_age(res_age %>% select(-foi))
+  res_age_cond <- condense_age(res_age %>% select(!starts_with("foi")))
   attr(res_age_cond, "row.names") <- as.character(attr(res_age_cond, "row.names"))
   
   ## check sim results are equal
@@ -145,7 +154,7 @@ compare_age_to_base <- function(age_cat,
       %>% mutate(model = "base")),
     cols = -c(date, model),
     names_to = "var"),
-    pivot_longer((condense_age(res_age %>% select(-foi))
+    pivot_longer((condense_age(res_age %>% select(!starts_with("foi")))
       %>% mutate(model = "age-structured")),
     cols = -c(date, model),
     names_to = "var"))
@@ -238,8 +247,354 @@ compare_age_to_base(
 
 Again, not terrible... not sure how sensitive the match is to the population distribution, relative magnitudes of the true $(\beta_0)_i$, and the assumed contact probability matrix.
 
-<!---
 # Simple calibration with time-varying $\beta$
 
+Let's just go all-in with age-based heterogeneity in $\beta_0$, contact probabilities between ages, and the population distribution, plus a time-varying $\beta$:
+
+```{r res_time}
+time_pars <- data.frame(Date=c("2020-04-02", "2020-05-01"),
+                      Symbol=c("beta0", "beta0"),
+                      Relative_value=c(0.1, 1))
+
+compare_age_to_base(
+  age_cat = age_cat,
+  base_beta0 = base_beta0,
+  Nvec = Nvec,
+  pmat = pmat,
+  contact_rate_age = contact_rate_age,
+  params_timevar = time_pars
+)
+```
+
+Nice! It's working.
+
+<!--
 # Simple calibration for Ontario case reports
---->
+
+Let's see how closely we can fit to age-stratified case reports in Ontario using the calibration from actual data:
+
+(IP: the next code block is incomplete; moving on to using the `calibrate()` functionality since that's higher priority)
+-->
+
+```{r calibrate_ON, eval = FALSE, echo = FALSE}
+## read forecast data
+forecast <- (read_csv("../../MacOMT_report/forecast/2021-03-29_VOC.csv")
+  %>% filter(VoC_effect != "Vaccination")
+  # recode variable values for clear plot legends
+  %>% mutate(scenario = case_when(
+    VoC_effect == "Lock Down for 2 weeks" ~ "two-week lockdown on 5 April, then reopen",
+    VoC_effect == "Lock Down for 4 weeks" ~ "four-week lockdown on 5 April, then reopen",
+    VoC_effect == "Replacement" ~ "baseline",
+    # VoC_effect == "Vaccination" ~ "Explicit replacement by VoC + some Vac"
+  ))
+  %>% filter(var == "report", scenario == "baseline")
+  %>% select(date, Symbol, Relative_value, final_bt, obs)
+  # %>% mutate(scenario = as_factor(scenario))
+)
+
+## set up simulation
+start_date <- min(forecast$date)
+end_date <- max(forecast$date)
+
+age_params <- expand_params_age(
+  base_params,
+  age_cat = age_cat
+)
+
+mistry_params <- expand_params_mistry(
+  age_params,
+  age_cat = age_cat
+)
+
+## update pop in base simulation
+base_params[["N"]] <- mistry_params[["N"]]
+
+## set up timepars
+## FIXME: getting way more than just the break dates
+time_pars <- (forecast 
+    %>% group_by(Symbol, Relative_value) 
+    %>% filter(date == min(date))
+    %>% ungroup()
+    %>% select(date, Symbol, Relative_value)
+    %>% rename(Date = date)
+    %>% as.data.frame()
+)
+  
+  
+# data.frame(Date=c("2020-04-02"),
+#            Symbol=c("beta0"),
+#            Relative_value=c(0))
+
+base_state = make_state(params = base_params)
+
+```
+
+# Calibration using `calibrate()`
+
+Let's see if we can feed in simulated age-structured observations with constant `beta0` across age groups (+ uniform population size + contact rate) and recover `beta0` via `calibrate()`. We'll start with the calibration from the getting started vignette:
+
+```{r calibrate_base}
+params1 <- read_params("PHAC_testify.csv")
+params1 <- update(params1,
+                  testing_intensity = 0,
+                  N = 3e6)
+state1 <- make_state(params=params1)
+sdate <- "2020-Feb-10"
+edate <- "2020-Jun-1"
+
+## add observational noise
+set.seed(101)
+params1obs <- update(params1, obs_disp=200)
+res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
+                   stoch=c(obs=FALSE, proc=FALSE),
+                   condense_args = c(add_report = TRUE))
+
+## set up simulated report data
+report_data <- (res1obs
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit() ## removing first 15 values, which are NA!
+)
+
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0 = 0.1)) ## fit beta0 based on the report data: 
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1obs
+  , opt_pars = opt_pars
+##, debug_plot = TRUE # instructive plotting during optimization
+)
+
+## plot the resulting fit
+plot(fitted.mod, data=report_data)
+
+## compare original beta0 to fit value
+print("preset beta0:")
+print(params1[["beta0"]])
+print("fitted beta0:")
+print(coef(fitted.mod$mle2)[[1]])
+```
+
+Cool, so this base example is working. Let's do the smallest ageify expansion upon this working example by implementing uniform age-structure (both in transmission, contacts rate, and population distribution):
+
+```{r calibrate_age_uu, eval = FALSE}
+## ageify the parameters
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+
+params1_age <- expand_params_age(params1, age_cat = age_cat)
+state1_age <- expand_state_age(state1, age_cat = age_cat)
+sdate <- "2020-Feb-10"
+edate <- "2020-Jun-1"
+
+## add observational noise
+set.seed(101)
+params1obs_age <- update(params1_age, obs_disp=200)
+res1obs <- run_sim(params1obs_age, state1_age, start_date=sdate, end_date=edate,
+                   stoch=c(obs=FALSE, proc=FALSE),
+                   condense = TRUE, ## this is the default, but specifying it here because i just realized i need it to generate the reports col
+                   condense_args = list(keep_all = TRUE,
+                                        add_report = TRUE) ## this will also keep the original variables in the df, which i need for later to stratify by age
+                   )
+# res1obs <- run_sim(params1obs_age, state1_age, start_date=sdate, end_date=edate,
+#                    stoch=c(obs=FALSE, proc=FALSE),
+#                    condense = FALSE)
+
+## set up simulated report data
+## FIXME: FIX THIS NEXT SOMETHING IS BROKEN HERE WITH AGE-SPECIFIC REPORTS
+report_data <- (res1obs
+    %>% mutate(across(starts_with("report"), ~ round(.x), .names = {.col}))
+    %>% select(date, starts_with("report"), var)
+    %>% na.omit() ## removing first 15 values, which are NA!
+)
+
+## beta0 is the only parameter we're going to optimize:
+opt_pars <- list(params = c(beta0 = 0.1)) ## fit beta0 based on the report data: 
+fitted.mod <- calibrate(
+    data = report_data
+  , start_date = sdate
+    ## skip breaks that are present by default:
+  , time_args = list(break_dates = NULL)
+  , base_params = params1obs
+  , opt_pars = opt_pars
+##, debug_plot = TRUE # instructive plotting during optimization
+)
+
+## plot the resulting fit
+plot(fitted.mod, data=report_data)
+
+## compare original beta0 to fit value
+print("preset beta0:")
+print(params1[["beta0"]])
+print("fitted beta0:")
+print(coef(fitted.mod$mle2)[[1]])
+```
+
+<!-- Great, fitted $\beta_0$ is very close to the true value. Let's go to non-uniform contact probabilities and population distributions (one at a time, then both), and see if the fitting still works well: -->
+
+```{r eval = FALSE}
+Nvec <- rep(5e6, 3)
+true_beta0 <- c(2, 3, 3/2)
+
+base_beta0 <- sum(Nvec*true_beta0)/sum(Nvec)
+true_transmissibility <- 0.5
+contact_rate_age <- true_beta0/true_transmissibility
+
+## initialize contact structure
+pmat <- matrix(c(4/10, 4/30, 8/15,
+                 2/10, 23/30, 3/15,
+                 4/10, 1/10, 4/15),
+               nrow = 3,
+               dimnames = list(age_cat, age_cat))
+
+compare_age_to_base(
+  age_cat = age_cat,
+  base_beta0 = base_beta0,
+  Nvec = Nvec,
+  pmat = pmat,
+  contact_rate_age = contact_rate_age
+)
+```
+
+
+<!--
+Below is a calibration attempt based on following the example in macpan_base/code/breaks_calibrate_vac.R. It's not working... Abandoned in favour of using the calibrate example from the getting started vignette
+-->
+
+```{r calibrate_attempt, eval= FALSE, echo = FALSE}
+## set up age categories
+age_cat <- mk_agecats(0, 80, da = 30)
+n <- length(age_cat)
+Ni <- 1e6
+Nvec <- rep(Ni, n)
+base_beta0 <- 2
+
+## dates
+start_date <- as.Date("2020-03-01")
+end_date <- as.Date("2020-11-01")
+
+## set up base (non-ageified) params and state
+base_params <- update(read_params("PHAC_testify.csv")
+                      , N = sum(Nvec)
+                      , testing_intensity = 0
+                      , beta0 = base_beta0
+                      )
+base_state <- make_state(N = base_params[["N"]],
+                         E0 = length(age_cat))
+
+## run base simulation
+res_base <- run_sim(base_params, base_state,
+                    start_date = start_date,
+                    end_date = end_date)
+
+## set up ageified parameters 
+## (this will use assume beta0 as in the base simulation)
+# age_params <- expand_params_age(
+#   params = base_params,
+#   age_cat = age_cat,
+#   Nvec = Nvec,
+#   pmat = pmat,
+#   transmissibility = 1, ## dummy value, will get updated
+#   contact_rate_age = contact_rate_age
+# )
+
+## perform lazy calibration (update transmissibility based on base_beta0
+## and contact_rate_age)
+# age_params <- calibrate_transmission(age_params, base_beta0)
+
+## set up age-structured state
+# age_state <- expand_state_age(
+#   base_state,
+#   age_cat = age_cat,
+#   Nvec = age_params[["N"]]
+# )
+
+## Need to set up opt_pars because you need this for forecast_sim
+opt_pars <- list(params=c(beta0=base_params[["beta0"]])) 
+# simdat <- forecast_sim(p = unlist(opt_pars)
+# 	, opt_pars = opt_pars
+# 	, base_params = params
+# 	, start_date = "2020-01-01"
+# 	, end_date = "2020-11-01"
+# )
+
+res <- res_base
+
+# Subset the data to the requested 
+	# province and variables:
+obs <- tibble(
+  date = res$date,
+  var = "report",
+  province = "ON",
+  value = round(res$report)
+)
+
+# Define time window
+start_date_offset <- 0
+
+## ==== Model calibration ====
+	
+fitdat <- obs
+
+res_calib <- calibrate(
+    base_params  = base_params
+  , start_date = start_date
+  , start_date_offset = 15 ## matches the fact that in res_base, the first 15 days have a report value od NA
+	, debug_plot = FALSE
+	, debug      = FALSE
+	, data       = obs
+	, opt_pars   = opt_pars
+	, sim_args   = list(ndt = 2)
+	, time_args  = NULL
+	# , mle2_control = list(maxit  = 1e4,   # default = 1e4
+	#                       reltol = 1e-6,  # default ~ 1e-8
+	#                       beta   = NM.beta,
+	#                       gamma  = NM.gamma
+	#                       )   
+	# , priors     = priors
+	
+	, use_DEoptim = FALSE
+	# , DE_cores = 4
+	# , extra_pars = list(rel_beta0=1)
+	)
+
+fit_params <- base_params
+fit_params[["beta0"]] <- coef(res_calib$mle2)[[1]]
+
+print("preset beta0:")
+print(base_params[["beta0"]])
+print("fitted beta0:")
+print(coef(res_calib$mle2)[[1]])
+
+res_fit <- run_sim(fit_params, base_state,
+                   start_date = start_date,
+                   end_date = end_date)
+
+res_plot <- bind_rows((obs
+   %>% mutate(type = "obs") 
+   %>% select(date, type, value)),
+  (res_fit 
+   %>% select(date, report) 
+   %>% pivot_longer(-date,
+                    names_to = "type")
+   %>% mutate(type = "fit"))
+)
+
+p <- (ggplot(res_plot,
+       aes(x = date, y = value, shape = type, colour = type))
+  + geom_line()
+  + geom_point()
+)
+
+(p) / (p %+% filter(res_plot, value != 0) + coord_trans(y = "log10"))
+
+```
+
+<!---
+Fit seems sensitive to `start_date_offset` and is not as good as I would expect...
+-->
+
+
