@@ -1,5 +1,5 @@
 library(McMasterPandemic)
-## devtools::load_all()
+# devtools::load_all()
 library(testthat)
 library(purrr) ## for transpose()
 
@@ -71,11 +71,13 @@ end_date <- "2021-02-15"
 
 ## sims with unif pop
 ## + unif pmat
-res_uu <- run_sim(params_uu, state_u, end_date = end_date, condense = FALSE)
+res_uu <- run_sim(params_uu, state_u, end_date = end_date,
+                  condense_args = c(keep_all = TRUE)) ## don't condense age groups
 ## + rand pmat
 # res_ur <- run_sim(params_ur, state_u, end_date = end_date, condense = FALSE)
 ## + diag pmat
-res_ud <- run_sim(params_ud, state_u, end_date = end_date, condense = FALSE)
+res_ud <- run_sim(params_ud, state_u, end_date = end_date,
+                  condense_args = c(keep_all = TRUE))
 
 ## sims with random pop
 ## + unif pmat
@@ -197,14 +199,15 @@ test_that("age-specific population doesn't change over the course of a simulatio
           })
 
 test_that("homogeneous case of age-structured model condenses to base (non-ageified) model (comparing simulations)", {
-    ## condense homogeneous simulation
-    res_uu_cond <- condense.pansim(res_uu)
+    ## condense homogeneous simulation, get rid of any cols that still have age
+    ## groups post condense
+    res_uu_cond <- condense(res_uu)
     ## base sim (no age-structure, same params)
     res_hom <- run_sim(params, state, end_date = end_date)
     ## check subset of state variables (some special cols in sim not set up for
     ## ageify case, like foi)
-    expect_equal((res_uu_cond %>% select(S:D)),
-                 (res_hom %>% select(S:D)))
+    expect_equal((res_uu_cond %>% select(-starts_with("foi"))),
+                 (res_hom %>% select(-foi)))
 })
 
 ## utility function to check that all elements of a vector are equal
@@ -235,6 +238,8 @@ check_equality_across_ages <- function(df){
         ## "zero range"
         %>% pivot_wider(names_from = "age_cat")
         %>% mutate(values = transpose(select(.,matches("\\d+"))))
+        ## remove observations where all age-specific values are NA
+        %>% filter(map(map(values, is.na), sum)==0)
         ## check for equality across age groups
         %>% mutate(values_all_equal = map_lgl(values, zero_range))
         ## pull check vector to use in an expectation
@@ -244,12 +249,20 @@ check_equality_across_ages <- function(df){
     return(values_all_equal)
 }
 
+drop_agg_reports <- function(df){
+    df <- (df
+        %>% select(!c(incidence, report, cumRep)))
+
+    return(df)
+}
+
 test_that("homogeneous case of age-structured model yields identical epidemics in age classes that did not seed the epidemic",{
-    expect_true(all(check_equality_across_ages(res_uu)))
+    ## remove aggregate reporting columns
+    expect_true(all(check_equality_across_ages(drop_agg_reports(res_uu))))
 })
 
 test_that("diagonal contacts yield identical epidemics in each age group (with an infectious seed in each age group)",{
-    expect_true(all(check_equality_across_ages(res_ud)))
+    expect_true(all(check_equality_across_ages(drop_agg_reports(res_ud))))
 })
 
 test_that("Mistry contact parameters are properly initialized", {
