@@ -298,7 +298,7 @@ condense_age <- function(x) {
 #' collapse (non-accumulator) states into subcategories (ages)
 #' @param x a state vector or data frame (each row is a different time point)
 #' @export
-## TODO: rewrite this as a generic funtion with custom methods for state_pansim
+## TODO: rewrite this as a generic function with custom methods for state_pansim
 ## and pansim objects
 condense_state <- function(x){
 
