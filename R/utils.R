@@ -543,7 +543,12 @@ has_testing <- function(state,params=NULL,ratemat=NULL) {
 
 has_age <- function(x) {
   ## look for presence of the "age_cat" attribute
-    return("age_cat" %in% names(attributes(x)))
+  if("pansim" %in% class(x)){
+    ## for pansim objects, check if its params attribute has age cats
+    return("age_cat" %in% names(attributes(attr(x, "params"))))
+  }
+  ## otherwise, check the object directly for an age cat attribute
+  return("age_cat" %in% names(attributes(x)))
 }
 
 get_age <- function(x) {

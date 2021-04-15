@@ -144,6 +144,7 @@ pivot.pansim <- function(object, ...) {
 
 ## test whether variables have already been condensed
 is_condensed <- function(x) "I" %in% names(x)
+has_report <- function(x) "report" %in% names(x)
 
 ##' Condense columns (infected, ICU, hospitalized) in a pansim output
 ##' @param object a pansim object
@@ -183,10 +184,12 @@ condense.pansim <-  function(object, add_reports=TRUE,
     }
 
     ## should incidence be added for age-structured sims?
+    ## (need foi columns, if so)
     add_incidence_age <- (add_reports
-                          && any(grepl("^foi", names(object)))
-                          && !("foi" %in% names(object)))
+                          && has_age(object)
+                          && any(grepl("^foi", names(object))))
 
+    ## check first if condensed
     ## FIXME: rearrange logic?
     if (is_condensed(object)) {
         dd <- object
@@ -236,36 +239,41 @@ condense.pansim <-  function(object, add_reports=TRUE,
 
         }  ## not keep_all
     } ## already condensed
-    if (add_reports
-        ) {
-        ## make reports if they're not already in the original object
-        if(!("report" %in% names(object))){
-            if (!"c_delay_mean" %in% names(params)) {
-                warning("add_reports requested but delay parameters missing")
+
+    ## no check if we should add reports
+    if (add_reports) {
+        ## if reports aren't already in the output object
+        if(!has_report(dd)){
+            ## and they're not already in the input object
+            if(!has_report(object)){
+                if (!"c_delay_mean" %in% names(params)) {
+                    warning("add_reports requested but delay parameters missing")
+                } else {
+                    if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
+                    ## FIXME: update this check after updating calc_reports to work with age structure
+                    ## if we don't either have condensed S or age-specific S, can't generate reports
+                    if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
+                        stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
+                    }
+                    cr <- calc_reports(dd, params, add_cumrep=cum_reports)
+                    ## remove age_specific reports if keep_all = FALSE
+                    if(!keep_all){
+                        cr <- cr[!grepl(regex_age_suffix, names(cr))]
+                    }
+                    dd <- data.frame(dd, cr)
+                }
             } else {
-                if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-                ## FIXME: update this check after updating calc_reports to work with age structure
-                ## if we don't either have condensed S or age-specific S, can't generate reports
-                if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
-                    stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
-                }
-                cr <- calc_reports(dd, params, add_cumrep=cum_reports)
-                ## remove age_specific reports if keep_all = FALSE
-                if(!keep_all){
-                    cr <- cr[!grepl(regex_age_suffix, names(cr))]
-                }
-                dd <- data.frame(dd, cr)
+                ## the reports are in the input object, so just copy them over
+                dd <- dfs(dd, object[grepl("^(incidence|report|cumRep)",
+                                           names(object))])
             }
-        } else {
-        ## don't remake existing reports, just copy from object
-            dd <- dfs(dd, object[grepl("^(incidence|report|cumRep)",
-                                       names(object))])
-            ## drop age-specific reports from output if not keep_all
-            if(!keep_all){
-                dd <- dd[!grepl(paste0("^(incidence|report)", regex_age_suffix),
-                                    names(dd))]
-            }
-        } ## report not in object
+        }
+        ## but if not keep_all, drop any age-specific reports (if they've been
+        ## added to the output object)
+        if(!keep_all){
+            dd <- dd[!grepl(paste0("^(incidence|report)", regex_age_suffix),
+                            names(dd))]
+        }
     } ## add_reports
 
         if (het_S) {
