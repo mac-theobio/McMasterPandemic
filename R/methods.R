@@ -19,16 +19,44 @@ calc_conv <- function(i,params) {
                                    c_delay_mean,
                                    c_delay_cv)
                  )
-    ret <- as.numeric(stats::filter(i,kern,sides=1))
+    ret <- as.data.frame(stats::filter(i,kern,sides=1))
+    ## if parameters are ageified, keep age-stratified reports in output too
+    if(has_age(params)){
+        state_suffixes <- sub("^incidence", "",
+                              grep("^incidence_", names(i), value = TRUE))
+        names(ret) <- paste0("report", state_suffixes)
+        ## add total reports
+        ret$report <- rowSums(ret)
+    } else{
+        names(ret) <- c("report")
+    }
     return(ret)
 }
 
 ## compute incidence and reports (as convolution of incidence)
-calc_reports <- function(x,params, add_cumrep=FALSE) {
+calc_reports <- function(x, params, add_cumrep=FALSE) {
     ## FIXME: dt==1 !
-    incidence <- x$foi*x$S
+    ## calculate incidence (for each age group, if it exists)
+    if(length(grep("^S_", names(x), value = TRUE)) > 0){
+        state_suffixes <- sub("^S", "", grep("^S_", names(x), value = TRUE))
+        incidence <- lapply(state_suffixes,
+                            function(suff) x[[paste0("foi", suff)]]*x[[paste0("S", suff)]])
+        ## convert to df
+        incidence <- as.data.frame(do.call(cbind, incidence))
+        names(incidence) <- paste0("incidence", state_suffixes)
+    } else {
+        ## otherwise, just do total incidence
+        incidence <- data.frame(incidence = x$foi*x$S)
+    }
+    ## FIXME: only calculates total reports right now, not age-stratified see
+    ## what happens if, within calc_conv, we do a convolution for eacha age
+    ## group and then sum up vs one convolution over total incidence
     report <- calc_conv(incidence,params)
-    ret <- data.frame(incidence, report)
+
+    ## add total incidence to output
+    incidence$incidence <- rowSums(incidence)
+
+    ret <- dfs(incidence, report)
     ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
     ## it's generally happening *before* the addition of obs error
     if (add_cumrep) {
@@ -137,14 +165,28 @@ condense.pansim <-  function(object, add_reports=TRUE,
 {
     check_dots(...)
     aa <- get_attr(object)
+
+    regex_age_suffix <- "_[0-9]+\\.[0-9]?[0-9]?$"
+
     ## condense columns and add, if present
-    add_col <- function(dd,name,regex) {
+    add_col <- function(dd,name,regex, collapse = TRUE) {
         vars <- grep(regex, names(object), value=TRUE)
         if (length(vars)>0) {
-            dd[[name]] <- rowSums(object[vars])
+            if (collapse){
+                dd[[name]] <- rowSums(object[vars])
+            } else {
+                dd <- dfs(dd, object[vars])
+            }
+
         }
         return(dd)
     }
+
+    ## should incidence be added for age-structured sims?
+    add_incidence_age <- (add_reports
+                          && any(grepl("^foi", names(object)))
+                          && !("foi" %in% names(object)))
+
     ## FIXME: rearrange logic?
     if (is_condensed(object)) {
         dd <- object
@@ -152,8 +194,17 @@ condense.pansim <-  function(object, add_reports=TRUE,
         if (keep_all) {
             dd <- object
         } else {
-            ## keep susc and exposed classes
+            ## start by keeping date
             dd <- object["date"]
+
+            ## if foi is in results, keep unaggregated S categories for now
+            ## (need them to calculate incidence)
+            ## FIXME: change to check with has_age(params) instead?
+            if (add_incidence_age){
+                dd <- add_col(dd,"S","^S", collapse = FALSE)
+            }
+
+            ## keep susc and exposed classes
             for (n in c("S","E")) {
                 dd <- add_col(dd,n,paste0("^",n))
             }
@@ -161,7 +212,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
             for (n in c("H", "ICU","R")) {
                 dd <- add_col(dd,n,paste0("^",n))
             }
-            
+
             diff_vars <- c(X="hosp",D="death",N="negtest",P="postest")
             for (i in seq_along(diff_vars)) {
                 nm <- names(diff_vars)[i]
@@ -172,27 +223,59 @@ condense.pansim <-  function(object, add_reports=TRUE,
                     dd <- add_col(dd,nm,re)
                 }
             }
-            ## keep foi ... might need it for future add_reports ...
-            if ("foi" %in% names(object))
-            dd <- data.frame(dd,foi=object[["foi"]])
+            ## keep foi (if it exists) as a single column
+            if ("foi" %in% names(object)){
+                dd <- data.frame(dd, foi = object[["foi"]])
+            } else {
+                ## if foi is age-structured keep without condensing
+                ## in case we want to calculate incidence later
+                if (any(grepl("^foi", names(object)))){
+                    dd <- add_col(dd,"foi","^foi", collapse = FALSE)
+                }
+            }
+
         }  ## not keep_all
     } ## already condensed
-    if (add_reports &&
-        !("report" %in% names(object))  ## don't add reports if already there ...
+    if (add_reports
         ) {
+        ## make reports if they're not already in the original object
+        if(!("report" %in% names(object))){
             if (!"c_delay_mean" %in% names(params)) {
                 warning("add_reports requested but delay parameters missing")
             } else {
                 if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-                if (!"S" %in% names(dd)) {
-                    stop("can't currently compute reports without condensing S first")
+                ## FIXME: update this check after updating calc_reports to work with age structure
+                ## if we don't either have condensed S or age-specific S, can't generate reports
+                if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
+                    stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
                 }
-                cr <- calc_reports(dd,params, add_cumrep=cum_reports)
+                cr <- calc_reports(dd, params, add_cumrep=cum_reports)
+                ## remove age_specific reports if keep_all = FALSE
+                if(!keep_all){
+                    cr <- cr[!grepl(regex_age_suffix, names(cr))]
+                }
                 dd <- data.frame(dd, cr)
             }
-        } ## add_reports
+        } else {
+        ## don't remake existing reports, just copy from object
+            dd <- dfs(dd, object[grepl("^(incidence|report|cumRep)",
+                                       names(object))])
+            ## drop age-specific reports from output if not keep_all
+            if(!keep_all){
+                dd <- dd[!grepl(paste0("^(incidence|report)", regex_age_suffix),
+                                    names(dd))]
+            }
+        } ## report not in object
+    } ## add_reports
+
         if (het_S) {
             dd$hetS <- (dd$S/params[["N"]])^(1+params[["zeta"]])
+        }
+
+        ## drop age-specific S classes
+        ## (if they still exist from the incidence calc)
+        if(add_incidence_age && !keep_all){
+            dd <- dd[!grepl("^S_", names(dd))]
         }
         dd <- put_attr(dd,aa)
         return(dd)
@@ -228,7 +311,7 @@ aggregate.pansim <- function(x,
     check_dots(...)
     aa <- get_attr(x)
     dd <- x
-    ## start <- agg_list[["t_agg_start"]] 
+    ## start <- agg_list[["t_agg_start"]]
     ## period <- agg_list[["t_agg_period"]]
     ## FUN <- agg_list$t_agg_fun
     agg_datevec <- seq.Date(anydate(start),max(dd$date)+extend,
@@ -276,7 +359,7 @@ aggregate.pansim <- function(x,
 ##'
 ##' FIXME: add descriptions of what the components are
 ##' FIXME: add CFR, IFR, etc.
-##' 
+##'
 ##' @param object a params vector
 ##' @param ... unused
 ##' @export
@@ -482,7 +565,7 @@ summary.fit_pansim <- function(object, ...) {
     f_args <- legacy_time_args(f_args, update=TRUE)
     pp <- coef(object,"fitted")
     extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
-    ## FIXME: get 
+    ## FIXME: get
     time_tab <- with(f_args,sim_fun(params,
                                     extra_pars=extra_pars,
                                     time_args=time_args,
@@ -585,7 +668,7 @@ predict.fit_pansim <- function(object
                              , ... ) {
 
     var <- . <- NULL
-    
+
     f_args <- object$forecast_args
     if ("break_dates" %in% names(f_args)) {
         warning("using old object; switch to time_args(break_dates=...)")
