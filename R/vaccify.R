@@ -1,18 +1,5 @@
 ## it takes existing ratemat from make_ratemat and transform it into the vaccify version rate mat
 
-## FIXME: document these for real!
-##' global variables for vaccify expansion
-#' @export
-non_expanded_states <- c()
-
-##' @rdname non_expanded_states
-##' @export
-vacc_extensions <- c("unvacc","1dose","2dose")
-
-##' @rdname non_expanded_states
-##' @export
-vacc_accumulators <- c("1dose","2dose")
-
 ##' expand states and values to include
 ##'
 ##' @param x state vector
