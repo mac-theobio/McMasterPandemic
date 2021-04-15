@@ -43,7 +43,7 @@ check_var_names <- function(var_names) {
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' state1 <- state0 <- make_state(params=pp, testify=FALSE)   ## unexpanded
-##' 
+##'
 ##' state1[] <- 1  ## occupy all states
 ##' state <- expand_stateval_testing(state0, params=pp)
 ##' vn <- setdiff(names(state0),non_expanded_states)
@@ -184,7 +184,7 @@ expand_stateval_testing <- function(x, method=c("eigvec","untested","spread"),
         accum_vec <- mk_zero_vec(test_accumulators)
         if (has_age(params)) {
             ## FIXME: non-default age categories???
-            accum_vec <- expand_stateval_age(accum_vec)
+            accum_vec <- expand_state_age(accum_vec)
         }
         new_states <- c(new_states,non_expanded_vec, accum_vec)
     }
@@ -227,15 +227,15 @@ testify <- function(ratemat,params,debug=FALSE,
     posvec <- make_test_posvec(params, var_names=vn)
     omega <- params[["omega"]]
     testing_intensity <- params[["testing_intensity"]]
-    
+
     M <- ratemat  ## FIXME: why two names (M and ratemat)
     states <- rownames(ratemat)
     ## testifiable vars will get expanded
     expand_set <- exclude_states(states, non_expanded_states)
-    
+
     dummy_states <- mk_zero_vec(expand_set)
     new_states <- names(expand_stateval_testing(dummy_states, method="untested", params=params))
-    
+
     ns <- length(new_states)
     new_M <- matrix(0,nrow=ns, ncol=ns
                   , dimnames=list(from=new_states,to=new_states)
@@ -244,10 +244,10 @@ testify <- function(ratemat,params,debug=FALSE,
     ## FIXME: vectorize??
     for(i in rownames(ratemat)){
         sn <- function(state, compartment=i) paste0(compartment, "_", state)
-        
+
         ## Between states: epidemiological transitions are the same as X -> Y
         for (j in colnames(ratemat)){
-            if (debug) { 
+            if (debug) {
       		cat(i,j,"\n")
             }
 
@@ -304,12 +304,12 @@ testify <- function(ratemat,params,debug=FALSE,
         }
         if (testing_time=="report") {
             ## N, P are recorded at {n->u, p->t} transition (when tests are reported)
-            new_M[pfun2("n","N")] <- new_M[pfun2("n",test_state2="u")] 
-            new_M[pfun2("p","P")] <- new_M[pfun2("p",test_state2="t")] 
+            new_M[pfun2("n","N")] <- new_M[pfun2("n",test_state2="u")]
+            new_M[pfun2("p","P")] <- new_M[pfun2("p",test_state2="t")]
         } else {
             ## N, P are recorded at {u->n, u->p} transition (when samples are taken)
             new_M[pfun2("u","N")] <- new_M[pfun2("u",test_state2="n")]
-            new_M[pfun2("u","P")] <- new_M[pfun2("u",test_state2="p")] 
+            new_M[pfun2("u","P")] <- new_M[pfun2("u",test_state2="p")]
         }
     }
 
