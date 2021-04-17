@@ -256,10 +256,6 @@ condense.pansim <-  function(object, add_reports=TRUE,
                         stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
                     }
                     cr <- calc_reports(dd, params, add_cumrep=cum_reports)
-                    ## remove age_specific reports if keep_all = FALSE
-                    if(!keep_all){
-                        cr <- cr[!grepl(regex_age_suffix, names(cr))]
-                    }
                     dd <- data.frame(dd, cr)
                 }
             } else {
