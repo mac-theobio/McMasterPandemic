@@ -219,7 +219,7 @@ compare_age_to_base(
 )
 ```
 
-Not a perfect match, but it looks like there's pretty good agreement...
+Not a perfect match, which makes sense because the age-structured model doesn't just collapse to the homogeneous case here, but it looks like there's pretty good agreement with this calibration trick...
 
 ## Demo with a non-uniform population, non-uniform contact structure
 
@@ -404,10 +404,10 @@ res1obs <- run_sim(params1obs_age, state1_age, start_date=sdate, end_date=edate,
 #                    condense = FALSE)
 
 ## set up simulated report data
-## FIXME: FIX THIS NEXT SOMETHING IS BROKEN HERE WITH AGE-SPECIFIC REPORTS
 report_data <- (res1obs
-    %>% mutate(across(starts_with("report"), ~ round(.x), .names = {.col}))
-    %>% select(date, starts_with("report"), var)
+    # %>% mutate(across(starts_with("report"), ~ round(.x), .names = "{.col}"))
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
     %>% na.omit() ## removing first 15 values, which are NA!
 )
 
@@ -418,7 +418,7 @@ fitted.mod <- calibrate(
   , start_date = sdate
     ## skip breaks that are present by default:
   , time_args = list(break_dates = NULL)
-  , base_params = params1obs
+  , base_params = params1obs_age
   , opt_pars = opt_pars
 ##, debug_plot = TRUE # instructive plotting during optimization
 )
