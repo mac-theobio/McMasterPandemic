@@ -26,14 +26,13 @@ tv_beta <- data.frame(Date=as.Date(startdate:enddate),
 ts_beta <- run_sim(params, params_timevar=tv_beta,state,start_date=startdate,end_date=enddate, verbose=TRUE)
 stopifnot(!identical(c(base),c(ts_beta)))
 
-## A tv substitution that does not work (identical to base)
 tv_mu <- data.frame(Date=as.Date(startdate:enddate),
 	Symbol="mu",
 	Relative_value=rep(c(0.8,.7),each=length(startdate:enddate)/2),
 	stringsAsFactors=FALSE
 )
 ts_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate, verbose=TRUE)
-# stopifnot(identical(c(base),c(ts_mu)))
+stopifnot(!identical(c(base),c(ts_mu)))
 
 ## mu is the Fraction of symptomatic cases that are mild (or moderate)
 ## if relative value is < 1, then more people to I_s and hospital
@@ -45,3 +44,16 @@ gg <- (ggplot()
 )
 
 print(gg)
+=======
+stopifnot(!identical(c(base),c(ts_mu)))
+
+params_timevar2
+
+ts_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate, verbose=TRUE)
+## what if e.g. mu ends up >1 during calibration?
+## mu=min(mu) ?
+## extend time_pars to specify the scale
+
+
+## calibration?
+>>>>>>> Stashed changes
