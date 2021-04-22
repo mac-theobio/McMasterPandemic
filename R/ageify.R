@@ -380,10 +380,11 @@ condense_state <- function(x){
 #' @export
 mk_Nvec <- function(age_cat = mk_agecats(),
                     Ntot = 1e6,
-                    dist = "unif",
+                    dist = c("unif", "rand"),
                     names = FALSE){
 
-  if(!(dist %in% c("unif", "rand"))) stop("dist must be either 'unif' or 'rand'")
+  dist <- match.arg(dist)
+  if(is.null(dist)) dist <- "unif"
 
   n <- length(age_cat)
 
@@ -398,9 +399,15 @@ mk_Nvec <- function(age_cat = mk_agecats(),
     Ndist <- Ndraw/sum(Ndraw) ## normalize
   }
 
-  ## distribute scale up population distribution to match total population count
-  ## in ss
-  Nvec <- distribute_counts(total = Ntot, dist = Ndist)
+  ## if total population size is 1 (normalized pop)
+  if (Ntot == 1){
+    ## just return the distribution
+    Nvec <- Ndist
+  } else {
+    ## otherwise, distribute counts carefully, avoiding changes in pop size due
+    ## to rounding
+    Nvec <- distribute_counts(total = Ntot, dist = Ndist)
+  }
 
   ## add names?
   if (names){
@@ -565,8 +572,9 @@ expand_params_age <- function(params,
     pmat <- mk_pmat(age_cat = age_cat, Nvec = Nvec)
   }
 
-  ## update pop
+  ## update pop (counts and distribution)
   params[["N"]] <- Nvec
+  params[["Ndist"]] <- Nvec/sum(Nvec)
   ## update pmat
   params <- c(params, list(pmat = pmat))
 
