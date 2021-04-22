@@ -818,7 +818,9 @@ make_state <- function(N=params[["N"]],
                        use_eigvec=NULL,
                        params=NULL,
                        x=NULL,
+                       ageify=NULL,
                        testify=NULL) {
+    if(is.null(ageify)) ageify <- !is.null(params) && has_age(params)
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
     ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
     if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
@@ -832,33 +834,47 @@ make_state <- function(N=params[["N"]],
                           stop("unknown type")
                           )
     state <- setNames(numeric(length(state_names)),state_names)
+    if (ageify) state <- expand_state_age(state, attr(params, "age_cat"))
     if (testify) state <- expand_stateval_testing(state,method="untested")
     if (is.null(x)) {
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
-            ## set **first** E compartment
-            state[[grep("E",names(state))[1]]] <- E0
-            istart <- E0
-        } else {
-            ## distribute 'E0' value based on dominant eigenvector
-            ## here E0 is effectively "number NOT susceptible"
-            ee <- round(get_evec(params, testify=testify)*E0)
-            if (any(is.na(ee))) {  state[] <- NA; return(state) }
-            if (all(ee==0)) {
-                if (testify) stop("this case isn't handled for testify")
-                ee[["E"]] <- 1
-                warning('initial values too small for rounding')
+            if(ageify){
+              ## distribute counts across ageified E compartments based on
+              ## population distribution
+              state[grepl("^E", names(state))] <- smart_round(E0*params[["Ndist"]])
+            } else {
+              ## set **first** E compartment
+              state[[grep("E",names(state))[1]]] <- E0
             }
-            istart <- sum(ee)
-            state[names(ee)] <- ee
-        }
+              istart <- E0
+            } else {
+              ## distribute 'E0' value based on dominant eigenvector
+              ## here E0 is effectively "number NOT susceptible"
+              ee <- repair_age_names(
+                smart_round(get_evec(params, testify=testify)*E0)
+                )
+              if (any(is.na(ee))) {  state[] <- NA; return(state) }
+              if (all(ee==0)) {
+                  if (testify) stop("this case isn't handled for testify")
+                  ee[["E"]] <- 1
+                  warning('initial values too small for rounding')
+              }
+              state[names(ee)] <- ee
+              istart <- ee
+            }
+        ## update S classes
         ## make sure to conserve N by subtracting starting number infected
         ## *after* rounding etc.
-        ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
-        ##  class; (2) distribute (N-istart) across the S classes, then round
-        if (!testify) {
-            state[["S"]] <- N-istart
+        if (ageify){
+          ## weight by population distribution
+          istart <- condense_state(istart, values_only = TRUE)
+          if(length(params[["N"]]) != length(istart)) stop("length of population size vector in params list (params[['N']]) doesn't match number of age categories")
+          state[grepl("^S", names(state))] <- params[["N"]] - istart
         } else {
+          ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
+          ##  class; (2) distribute (N-istart) across the S classes, then round
+          if(testify){
             ## if A = testing rate and B = test-return rate then
             ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
             ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
@@ -866,6 +882,10 @@ make_state <- function(N=params[["N"]],
             ## FIXME: get_evec() should work for S!
             ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
             state[c("S_u","S_n")] <- round((N-istart)*c(ufrac,1-ufrac))
+          } else {
+            ## neither ageify nor testify
+            state[["S"]] <- N-sum(istart)
+          }
         }
     } else {
         if (length(names(x))==0) {
