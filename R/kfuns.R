@@ -84,13 +84,25 @@ rExp <- function(params, steps=100, ndt=1,
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
-        params[["N"]] <- 1   ## ? redundant ?
+        ## need to set total population size to 1
+        if(has_age(params)){
+          params[["N"]] <- mk_Nvec(attr(params, "age_cat"), Ntot = 1)
+        } else {
+          params[["N"]] <- 1
+        }
         ## potential recursion here: have to make sure
-	state <- make_state(N=1, E0=1e-5, type="ICU1",
-                            use_eigvec=FALSE,
-                            params=params,
-                            testify=FALSE)  ## FIXME: don't assume ICU1?
-        M <- make_ratemat(state=state, params=params)
+      	state <- make_state(N=1, E0=1e-5, type="ICU1",
+                                  use_eigvec=FALSE,
+                                  params=params,
+      	                          ageify=FALSE,
+                                  testify=FALSE)  ## FIXME: don't assume ICU1?
+        if(has_age(params)){
+          state <- expand_state_age(state,
+                                    age_cat = attr(params, "age_cat"),
+                                    Nvec = params[["N"]])
+        }
+
+      	M <- make_ratemat(state=state, params=params)
     	if (testify) {
             M <- testify(M,params)
             state <- expand_stateval_testing(state,method="untested")
