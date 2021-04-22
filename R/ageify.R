@@ -197,48 +197,69 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
       Nvec <- mk_Nvec(age_cat, Ntot = sum(x))
     }
 
-    ## check that number of age groups matches
-    if(length(age_cat) != length(Nvec)){
-      stop("population distribution must have same length as the number of age categories")
-    }
-
-    ## check that state vector and population distribution
-    ## sum to the same value
-    if(sum(x) != sum(Nvec)){
-      stop("state and population distributions must have same sum")
-    }
-
-    ## make population distribution
-    Ndist <- Nvec/sum(Nvec)
-
     ## expand state labels with ages
     new_names <- expand_names(names(x), age_cat)
 
-    ## distribute total state counts over subcategories in a way that respects
-    ## the overall population distribution
-    x <- (
-      ## get all states but S
-      x[!grepl("^S", names(x))]
-      ## distribute counts across all states but S
-      ## guided by population distribution
-        %>% map_dfr(distribute_counts, dist = Ndist)
-      ## get total counts by age over all states but S
-        %>% mutate(total = rowSums(across(everything())))
-      ## calculate S by age as the age-specific population - count over all
-      ## other states
-        %>% mutate(S = Nvec - total)
-      ## drop total col and move S to far left of the table (so state columns
-      ## are ordered as we usually order them)
-        %>% select(-total)
-        %>% relocate(S)
-      )
+    if (sum(Nvec)>1) {
+      ## if we have population vector with counts, go through the
+      ## process of distributing counts carefully across subcategories
 
-    ## flatten to vector, AND ensure counts
-    ## are first sorted by age category, then by state category
-    x <- as.vector(t(x))
+      ## check that number of age groups matches
+      if(length(age_cat) != length(Nvec)){
+        stop("population distribution must have same length as the number of age categories")
+      }
+
+      ## check that state vector and population distribution
+      ## sum to the same value
+      if(sum(x) != sum(Nvec)){
+        stop("state and population distributions must have same sum")
+      }
+
+      ## make population distribution
+      Ndist <- Nvec/sum(Nvec)
+
+      ## distribute total state counts over subcategories in a way that respects
+      ## the overall population distribution
+      x <- (
+        ## get all states but S
+        x[!grepl("^S", names(x))]
+        ## distribute counts across all states but S
+        ## guided by population distribution
+          %>% map_dfr(distribute_counts, dist = Ndist)
+        ## get total counts by age over all states but S
+          %>% mutate(total = rowSums(across(everything())))
+        ## calculate S by age as the age-specific population - count over all
+        ## other states
+          %>% mutate(S = Nvec - total)
+        ## drop total col and move S to far left of the table (so state columns
+        ## are ordered as we usually order them)
+          %>% select(-total)
+          %>% relocate(S)
+        )
+
+      ## flatten to vector, AND ensure counts
+      ## are first sorted by age category, then by state category
+      x <- as.vector(t(x))
+
+      ## add expanded names
+      names(x) <- new_names
+    } else {
+      x_base <- x ## save old (unexpanded) states before converting x to output
+      ## initialize zero state vec (and return this unless we're dealing with a
+      ## normalized pop where the total population is 1)
+      x <- rep(0, length(new_names))
+      ## add expanded names
+      names(x) <- new_names
+      if(sum(Nvec)==1){
+        ## if we have a population vector normalized to 1, distribute state
+        ## among subcategories according to population distribution
+        for(state in names(x_base)){
+          vals <- x_base[[state]]*Nvec
+          x[grepl(paste0("^", state), names(x))] <- vals
+        }}
+      }
 
     ## add sensible names and age cat attribute to output
-    names(x) <- new_names
     attr(x, "age_cat") <- age_cat
 
     ## add class
