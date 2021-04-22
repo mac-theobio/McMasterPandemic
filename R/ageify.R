@@ -343,10 +343,11 @@ condense_age <- function(x) {
 
 #' collapse (non-accumulator) states into subcategories (ages)
 #' @param x a state vector or data frame (each row is a different time point)
+#' @param values_only just return values (unlisted and unnamed?)
 #' @export
 ## TODO: rewrite this as a generic function with custom methods for state_pansim
 ## and pansim objects
-condense_state <- function(x){
+condense_state <- function(x, values_only = FALSE){
 
   ## define non-accumulator state names
   states <- c("S", "E",
@@ -387,6 +388,11 @@ condense_state <- function(x){
     ## drop observation number
     %>% select(-obs_number)
   )  -> x
+
+  ## repair names
+  x <- repair_age_names(x)
+
+  if(values_only) x <- unname(unlist(x))
 
   return(x)
 }
