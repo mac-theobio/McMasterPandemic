@@ -20,6 +20,31 @@ mk_agecats <- function(min=0,max=90,da=10) {
   return(out)
 }
 
+#' Repair ageified names
+#'
+#' sometimes age categories get changed from 0-10 to 0.10 and 60+ to 60.
+#' replace each substituted period with the correct character
+#'
+#' @param x a named list or data.frame
+#'
+#' @return a named list or data.frame
+#' @export
+#'
+#' @examples
+#' state <- c(S_0.10 = 100, E_60. = 1)
+#' repair_age_names(state)
+repair_age_names <- function(x){
+  ## if x doesn't have age groups associated, just return x
+  if(!all(grepl("_\\d+", names(x)))) return(x)
+
+  ## first replace periods at the end of the name with a +
+  names(x) <- sub("\\.$", "\\+", names(x))
+  ## then replace remaining periods with a hyphen
+  names(x) <- sub("\\.", "-", names(x))
+
+  return(x)
+}
+
 #' Aggregate age categories into larger age categories
 #'
 #' A function that takes a vector of ages or age groups (either numeric or
