@@ -413,188 +413,40 @@ report_data <- (res1obs
 
 ## beta0 is the only parameter we're going to optimize:
 opt_pars <- list(params = c(beta0 = 0.1)) ## fit beta0 based on the report data: 
-fitted.mod <- calibrate(
-    data = report_data
-  , start_date = sdate
-    ## skip breaks that are present by default:
-  , time_args = list(break_dates = NULL)
-  , base_params = params1obs_age
-  , opt_pars = opt_pars
-##, debug_plot = TRUE # instructive plotting during optimization
-)
+
+## EVERYTHING BELOW IS NOT WORKING
+# debug(condense.pansim)
+## and then execute following
+# fitted.mod <- calibrate(
+#     data = report_data
+#   , start_date = sdate
+#     ## skip breaks that are present by default:
+#   , time_args = list(break_dates = NULL)
+#   , base_params = params1obs_age
+#   , opt_pars = opt_pars
+# ##, debug_plot = TRUE # instructive plotting during optimization
+# )
 
 ## plot the resulting fit
-plot(fitted.mod, data=report_data)
+# plot(fitted.mod, data=report_data)
 
 ## compare original beta0 to fit value
-print("preset beta0:")
-print(params1[["beta0"]])
-print("fitted beta0:")
-print(coef(fitted.mod$mle2)[[1]])
+# print("preset beta0:")
+# print(params1[["beta0"]])
+# print("fitted beta0:")
+# print(coef(fitted.mod$mle2)[[1]])
 ```
 
-<!-- Great, fitted $\beta_0$ is very close to the true value. Let's go to non-uniform contact probabilities and population distributions (one at a time, then both), and see if the fitting still works well: -->
+TO DO: figure out what's breaking calibrate?
 
-```{r eval = FALSE}
-Nvec <- rep(5e6, 3)
-true_beta0 <- c(2, 3, 3/2)
-
-base_beta0 <- sum(Nvec*true_beta0)/sum(Nvec)
-true_transmissibility <- 0.5
-contact_rate_age <- true_beta0/true_transmissibility
-
-## initialize contact structure
-pmat <- matrix(c(4/10, 4/30, 8/15,
-                 2/10, 23/30, 3/15,
-                 4/10, 1/10, 4/15),
-               nrow = 3,
-               dimnames = list(age_cat, age_cat))
-
-compare_age_to_base(
-  age_cat = age_cat,
-  base_beta0 = base_beta0,
-  Nvec = Nvec,
-  pmat = pmat,
-  contact_rate_age = contact_rate_age
-)
+The abbreviated stack looks like:
 ```
-
-
-<!--
-Below is a calibration attempt based on following the example in macpan_base/code/breaks_calibrate_vac.R. It's not working... Abandoned in favour of using the calibrate example from the getting started vignette
--->
-
-```{r calibrate_attempt, eval= FALSE, echo = FALSE}
-## set up age categories
-age_cat <- mk_agecats(0, 80, da = 30)
-n <- length(age_cat)
-Ni <- 1e6
-Nvec <- rep(Ni, n)
-base_beta0 <- 2
-
-## dates
-start_date <- as.Date("2020-03-01")
-end_date <- as.Date("2020-11-01")
-
-## set up base (non-ageified) params and state
-base_params <- update(read_params("PHAC_testify.csv")
-                      , N = sum(Nvec)
-                      , testing_intensity = 0
-                      , beta0 = base_beta0
-                      )
-base_state <- make_state(N = base_params[["N"]],
-                         E0 = length(age_cat))
-
-## run base simulation
-res_base <- run_sim(base_params, base_state,
-                    start_date = start_date,
-                    end_date = end_date)
-
-## set up ageified parameters 
-## (this will use assume beta0 as in the base simulation)
-# age_params <- expand_params_age(
-#   params = base_params,
-#   age_cat = age_cat,
-#   Nvec = Nvec,
-#   pmat = pmat,
-#   transmissibility = 1, ## dummy value, will get updated
-#   contact_rate_age = contact_rate_age
-# )
-
-## perform lazy calibration (update transmissibility based on base_beta0
-## and contact_rate_age)
-# age_params <- calibrate_transmission(age_params, base_beta0)
-
-## set up age-structured state
-# age_state <- expand_state_age(
-#   base_state,
-#   age_cat = age_cat,
-#   Nvec = age_params[["N"]]
-# )
-
-## Need to set up opt_pars because you need this for forecast_sim
-opt_pars <- list(params=c(beta0=base_params[["beta0"]])) 
-# simdat <- forecast_sim(p = unlist(opt_pars)
-# 	, opt_pars = opt_pars
-# 	, base_params = params
-# 	, start_date = "2020-01-01"
-# 	, end_date = "2020-11-01"
-# )
-
-res <- res_base
-
-# Subset the data to the requested 
-	# province and variables:
-obs <- tibble(
-  date = res$date,
-  var = "report",
-  province = "ON",
-  value = round(res$report)
-)
-
-# Define time window
-start_date_offset <- 0
-
-## ==== Model calibration ====
-	
-fitdat <- obs
-
-res_calib <- calibrate(
-    base_params  = base_params
-  , start_date = start_date
-  , start_date_offset = 15 ## matches the fact that in res_base, the first 15 days have a report value od NA
-	, debug_plot = FALSE
-	, debug      = FALSE
-	, data       = obs
-	, opt_pars   = opt_pars
-	, sim_args   = list(ndt = 2)
-	, time_args  = NULL
-	# , mle2_control = list(maxit  = 1e4,   # default = 1e4
-	#                       reltol = 1e-6,  # default ~ 1e-8
-	#                       beta   = NM.beta,
-	#                       gamma  = NM.gamma
-	#                       )   
-	# , priors     = priors
-	
-	, use_DEoptim = FALSE
-	# , DE_cores = 4
-	# , extra_pars = list(rel_beta0=1)
-	)
-
-fit_params <- base_params
-fit_params[["beta0"]] <- coef(res_calib$mle2)[[1]]
-
-print("preset beta0:")
-print(base_params[["beta0"]])
-print("fitted beta0:")
-print(coef(res_calib$mle2)[[1]])
-
-res_fit <- run_sim(fit_params, base_state,
-                   start_date = start_date,
-                   end_date = end_date)
-
-res_plot <- bind_rows((obs
-   %>% mutate(type = "obs") 
-   %>% select(date, type, value)),
-  (res_fit 
-   %>% select(date, report) 
-   %>% pivot_longer(-date,
-                    names_to = "type")
-   %>% mutate(type = "fit"))
-)
-
-p <- (ggplot(res_plot,
-       aes(x = date, y = value, shape = type, colour = type))
-  + geom_line()
-  + geom_point()
-)
-
-(p) / (p %+% filter(res_plot, value != 0) + coord_trans(y = "log10"))
-
+calibrate
+  mle_fun
+    forecast_sim
+      run_sim_break
+        run_sim
+          make_state(params=params)
 ```
-
-<!---
-Fit seems sensitive to `start_date_offset` and is not as good as I would expect...
--->
 
 
