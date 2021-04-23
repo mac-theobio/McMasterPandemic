@@ -66,6 +66,94 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
     return(ret)
 }
 
+#' Prepare age-structured simulation results data frame for plotting
+#'
+#' @param res age-structured simulation result
+#' @inheritParams plot.pansim
+#' @importFrom forcats as_factor
+#' @importFrom stringr str_replace
+#'
+#' @return
+#' @export
+prep_res_for_plotting <- function(res,
+                                  drop_states = NULL,
+                                  condense_I = FALSE){
+    (res
+     %>% select(-starts_with("foi"))
+     %>% pivot_longer(-date)
+     %>% separate(name, into = c("state", "age_cat"),
+                  sep = "_", extra = "merge")
+    ) -> res
+
+    ## condense I cats
+    if(condense_I){
+        (res
+         ## convert state column to factor to maintain original order of variables
+         %>% mutate(state = as_factor(str_replace(state,
+                                                           "I[amps]", "I")))
+         %>% group_by(date, state, age_cat)
+         %>% summarise(value = sum(value), .groups = "drop")
+        ) -> res
+    }
+
+    (res
+        %>% mutate(state = as_factor(state))
+        ## fix age labels
+        %>% mutate(age_cat = str_replace(age_cat, "\\.$", "\\+"))
+        %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
+    ) -> res
+
+    if(!is.null(drop_states)){
+        res <- res %>% filter(!(state %in% drop_states))
+    }
+
+    return(res)
+}
+
+#' Plot age-structured simulation result faceted by age categories
+#'
+#' @param res age-structured simulation result
+#' @inheritParams plot.pansim
+#' @importFrom dplyr vars
+#' @importFrom ggplot2 scale_x_date
+#'
+#' @return
+#' @export
+plot_res_by_age <- function(res, drop_states = NULL,
+                            condense_I = FALSE){
+    (prep_res_for_plotting(res, drop_states, condense_I)
+     %>% ggplot(aes(x = date, y = value, colour = state))
+     + geom_line()
+     + facet_wrap(vars(age_cat))
+     + scale_x_date(date_breaks = "1 month",
+                    date_labels = "%b")
+     # + scale_y_continuous(labels = scales::label_number_si())
+    ) -> gg
+
+    return(gg)
+}
+
+#' Plot age-structured simulation result faceted by state
+#'
+#' @param res age-structured simulation result
+#' @inheritParams plot.pansim
+#'
+#' @return
+#' @export
+plot_res_by_state <- function(res, drop_states = NULL,
+                              condense_I = FALSE){
+    (prep_res_for_plotting(res, drop_states, condense_I)
+     %>% ggplot(aes(x = date, y = value, colour = age_cat))
+     + geom_line()
+     + facet_wrap(vars(state), scales = "free_y")
+     + scale_x_date(date_breaks = "1 month",
+                    date_labels = "%b")
+     # + scale_y_continuous(labels = scales::label_number_si())
+    ) -> gg
+
+    return(gg)
+}
+
 ## FIXME: allow faceting automatically? (each var alone or by groups?)
 ## don't compare prevalences and incidences?
 ##' plot method for simulations
@@ -73,6 +161,7 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
 ##' @param drop_states states to \emph{exclude} from plot
 ##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
 ##' @param condense condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}
+##' @param facet_by_age if this is an age-structured simulation, do we want to facet by age? if FALSE, facet by state (default)
 ##' @param log plot y-axis on log scale?
 ##' @param log_lwr lower bound for log scale
 ##' @param show_times indicate times when parameters changed?
@@ -83,11 +172,24 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
 ##' @export
 plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
                         keep_states=NULL, condense=FALSE,
+                        facet_by_age = FALSE,
                         log=FALSE,
                         log_lwr=1,
                         show_times=TRUE, ...) {
     ## global variables
     var <- value <- NULL
+
+    ## if age-structured, use a different plotting method
+    if(has_age(x)){
+        if(facet_by_age){
+            return(plot_res_by_age(x, drop_states = drop_states,
+                                   condense_I = condense))
+        } else{
+            return(plot_res_by_state(x, drop_states = drop_states,
+                                     condense_I = condense))
+        }
+    }
+
     ## attributes get lost somewhere below ...
     ptv <- attr(x,"params_timevar")
     if (!is.null(keep_states)) {
@@ -186,7 +288,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
     ## should incidence be added for age-structured sims?
     ## (need foi columns, if so)
     add_incidence_age <- (add_reports
-                          && has_age(object)
+                          && has_age(params)
                           && any(grepl("^foi", names(object))))
 
     ## check first if condensed
