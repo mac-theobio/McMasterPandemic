@@ -12,6 +12,7 @@ make_state(
   use_eigvec = NULL,
   params = NULL,
   x = NULL,
+  ageify = NULL,
   testify = NULL
 )
 }

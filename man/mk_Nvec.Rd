@@ -4,7 +4,12 @@
 \alias{mk_Nvec}
 \title{generate a population distribution (as a vector of counts)}
 \usage{
-mk_Nvec(age_cat = mk_agecats(), Ntot = 1e+06, dist = "unif", names = FALSE)
+mk_Nvec(
+  age_cat = mk_agecats(),
+  Ntot = 1e+06,
+  dist = c("unif", "rand"),
+  names = FALSE
+)
 }
 \arguments{
 \item{age_cat}{age categories (made with `mk_agecats()`)}

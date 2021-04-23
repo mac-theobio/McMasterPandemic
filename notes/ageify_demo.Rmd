@@ -304,9 +304,9 @@ start_date <- "2020-03-01"
 end_date <- "2020-07-01"
 
 ## set time-varying beta0
-time_pars <- data.frame(Date=c("2020-04-05","2020-05-01"),
-                        Symbol=c("beta0","beta0"),
-                        Relative_value=c(0.25,3)) ## decrease then increase
+# time_pars <- data.frame(Date=c("2020-04-05","2020-05-01"),
+#                         Symbol=c("beta0","beta0"),
+#                         Relative_value=c(0.25,3)) ## decrease then increase
 
 ## run base simulation
 res_base <- run_sim(base_params, base_state,

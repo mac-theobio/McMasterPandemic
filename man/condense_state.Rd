@@ -4,10 +4,12 @@
 \alias{condense_state}
 \title{collapse (non-accumulator) states into subcategories (ages)}
 \usage{
-condense_state(x)
+condense_state(x, values_only = FALSE)
 }
 \arguments{
 \item{x}{a state vector or data frame (each row is a different time point)}
+
+\item{values_only}{just return values (unlisted and unnamed?)}
 }
 \description{
 collapse (non-accumulator) states into subcategories (ages)
