@@ -762,6 +762,10 @@ run_sim <- function(params
     ## add cum reports *after* adding obs error
     if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(res$report), res$report, 0))
     if ("death" %in% names(res)) res$D <- cumsum(ifelse(!is.na(res$death), res$death, 0))
+
+    ## repair age groups in result names (if present)
+    res <- repair_names_age(res)
+
     ## store everything as attributes
     attr(res,"params") <- params0
     attr(res,"state0") <- state0
