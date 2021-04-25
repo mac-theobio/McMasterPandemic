@@ -557,6 +557,15 @@ get_age <- function(x) {
   return(attr(x, "age_cat"))
 }
 
+has_vax <- function(x) {
+  ## look for presence of the "vax_cat" attribute
+  if("pansim" %in% class(x)){
+    ## for pansim objects, check if its params attribute has age cats
+    return("vax_cat" %in% names(attributes(attr(x, "params"))))
+  }
+  ## otherwise, check the object directly for an age cat attribute
+  return("vax_cat" %in% names(attributes(x)))
+}
 
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
