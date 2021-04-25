@@ -823,13 +823,16 @@ make_state <- function(N=params[["N"]],
                        params=NULL,
                        x=NULL,
                        ageify=NULL,
+                       vaxify=NULL,
                        testify=NULL) {
     if(is.null(ageify)) ageify <- !is.null(params) && has_age(params)
+    if(is.null(vaxify)) vaxify <- !is.null(params) && has_vax(params)
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
     ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
     if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
     if (is.null(use_eigvec)) use_eigvec <- !is.null(params)
-    ## select vector of state names
+
+    ## select vector of epi state names
     state_names <- switch(type,
                           ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
                           ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X"),
@@ -837,60 +840,97 @@ make_state <- function(N=params[["N"]],
                           CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
                           stop("unknown type")
                           )
+
+    ## set up output state vector, depending on what strata are requested
     state <- setNames(numeric(length(state_names)),state_names)
     if (ageify) state <- expand_state_age(state, attr(params, "age_cat"))
+    if (vaxify) state <- expand_state_vax(state, attr(params, "vax_cat"))
     if (testify) state <- expand_stateval_testing(state,method="untested")
+
+    ## if state vector, x, is not provided, either use given N & E0, or
+    ## use eigenvector approach
     if (is.null(x)) {
-        ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
-            if(ageify){
-              ## distribute counts across ageified E compartments based on
-              ## population distribution
-              state[grepl("^E", names(state))] <- smart_round(E0*params[["Ndist"]])
-            } else {
-              ## set **first** E compartment
-              state[[grep("E",names(state))[1]]] <- E0
+          ## just use N & E0
+
+          ## get indexing vector to pull out E states, depending on strata
+          E_regex <- case_when(
+            vaxify ~ "^E*?_unvax*?", ## works for vaxify, whether or not ageify
+            testify ~ "^E_u", ## first testify compartment only
+            TRUE ~ "^E" ## works for base, ageify
+          )
+
+          ## make boolean subsetting vector based on regex over state names
+          E_index <- grepl(E_regex, names(state))
+
+          ## get values to assign to E states, depending on strata
+          if(ageify){
+            ## one E value per age group, weighted by age-specific pop-size
+            E_values <- smart_round(E0*params[["Ndist"]])
+          } else {
+            ## otherwise, just one value, as given
+            E_values <- E0
+          }
+
+          ## assign E values to E indices in state vector
+          state[E_index] <- E_values
+          } else {
+            ## distribute 'E0' value based on dominant eigenvector
+            ## here E0 is effectively "number NOT susceptible"
+            ## (repair_names_age does nothing to a non-ageified vector)
+            E_values <- repair_names_age(
+              smart_round(get_evec(params, testify=testify)*E0)
+              )
+            if (any(is.na(E_values))) {  state[] <- NA; return(state) }
+            if (all(E_values==0)) {
+                if (testify) stop("this case isn't handled for testify")
+                E_values[["E"]] <- 1
+                warning('initial values too small for rounding')
             }
-              istart <- E0
-            } else {
-              ## distribute 'E0' value based on dominant eigenvector
-              ## here E0 is effectively "number NOT susceptible"
-              ee <- repair_age_names(
-                smart_round(get_evec(params, testify=testify)*E0)
-                )
-              if (any(is.na(ee))) {  state[] <- NA; return(state) }
-              if (all(ee==0)) {
-                  if (testify) stop("this case isn't handled for testify")
-                  ee[["E"]] <- 1
-                  warning('initial values too small for rounding')
-              }
-              state[names(ee)] <- ee
-              istart <- ee
-            }
+            state[names(E_values)] <- unname(E_values)
+          }
         ## update S classes
         ## make sure to conserve N by subtracting starting number infected
-        ## *after* rounding etc.
-        if (ageify){
-          ## weight by population distribution
-          istart <- condense_state(istart, values_only = TRUE)
-          if(length(params[["N"]]) != length(istart)) stop("length of population size vector in params list (params[['N']]) doesn't match number of age categories")
-          state[grepl("^S", names(state))] <- params[["N"]] - istart
-        } else {
+
+        ## get indexing vector to pull out S states, depending on strata
+        S_regex <- case_when(
+          vaxify ~ "^S*?_unvax*?", ## works for vaxify, whether or not ageify
+          testify ~ "^S_[un]",
+          TRUE ~ "^S" ## works for base, ageify
+        )
+
+        ## make boolean subsetting vector based on regex over state names
+        S_index <- grepl(S_regex, names(state))
+
+        ## get S values, depending on case
+        if(testify){
+          if(ageify || vaxify) stop("ageify and/or vaxify don't yet work with testify")
           ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
           ##  class; (2) distribute (N-istart) across the S classes, then round
-          if(testify){
-            ## if A = testing rate and B = test-return rate then
-            ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
-            ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
-            ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
-            ## FIXME: get_evec() should work for S!
-            ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
-            state[c("S_u","S_n")] <- round((N-istart)*c(ufrac,1-ufrac))
-          } else {
-            ## neither ageify nor testify
-            state[["S"]] <- N-sum(istart)
+          ## if A = testing rate and B = test-return rate then
+          ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
+          ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
+          ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
+          ## FIXME: get_evec() should work for S!
+          ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
+          S_values <- round((N-sum(E_values))*c(ufrac,1-ufrac))
+        } else if(ageify || vaxify){
+          ## aggregate over states
+          istart <- condense_state(E_values)
+          if(vaxify){
+            ## aggregate over vax strata
+            istart <- condense_vax(istart)
           }
+          ## just get bare values
+          istart <- unname(unlist(istart))
+          if(length(params[["N"]]) != length(istart)) stop("length of population size vector in params list (params[['N']]) must either be 1 or number of age categories")
+          S_values <- params[["N"]] - istart
+        } else {
+          S_values <- N - sum(E_values)
         }
+
+        state[S_index] <- S_values
+
     } else {
         if (length(names(x))==0) {
             stop("provided state vector must be named")
