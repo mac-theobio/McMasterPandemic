@@ -157,8 +157,7 @@ aggregate_agecats <- function(age,
 
 ## STATE UTILITIES
 
-
-#' expand state vector and rate matrix by age classes and population distribution
+#' expand state vector by age classes and population distribution
 #'
 #' epidemiological state varies fast, age category varies slowly
 #' @param x state vector
@@ -174,6 +173,9 @@ aggregate_agecats <- function(age,
 #' @export
 expand_state_age <- function(x, age_cat=mk_agecats(),
                              Nvec = NULL) {
+
+    ## save original attributes
+    original_attributes <- attributes(x)
 
     ## if no population is provided, assume a uniform distribution
     if(is.null(Nvec)){
@@ -240,13 +242,16 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
           vals <- x_base[[state]]*Nvec
           x[grepl(paste0("^", state), names(x))] <- vals
         }}
-      }
+    }
+
+    ## update names in original attributes to new names
+    original_attributes$names <- names(x)
+
+    ## restore original attributes
+    attributes(x) <- original_attributes
 
     ## add sensible names and age cat attribute to output
     attr(x, "age_cat") <- age_cat
-
-    ## add class
-    class(x) <- "state_pansim"
 
     return(x)
 }
