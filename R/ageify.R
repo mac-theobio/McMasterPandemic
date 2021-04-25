@@ -33,12 +33,12 @@ mk_agecats <- function(min=0,max=90,da=10) {
 #' @examples
 #' state <- c(S_0.10 = 100, E_60. = 1)
 #' repair_age_names(state)
-repair_age_names <- function(x){
+repair_names_age <- function(x){
   the_names <- names(x)
   ## remove "date" from the names since this isn't a state variable
   the_names <- the_names[!grepl("date", the_names)]
-  ## if states in x don't all have age groups associated, just return x
-  if(!all(grepl("_\\d+", the_names))) return(x)
+  ## if there aren't any x names that have an age groups, just return x
+  if(!any(grepl("_\\d+", the_names))) return(x)
 
   ## first replace periods at the end of the name with a +
   names(x) <- sub("\\.$", "\\+", names(x))
