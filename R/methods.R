@@ -120,7 +120,11 @@ prep_res_for_plotting <- function(res,
 #' @return
 #' @export
 plot_res_by_age <- function(res, drop_states = NULL,
-                            condense_I = FALSE){
+                            condense_I = FALSE,
+                            show_times = TRUE){
+    ## get time-varying params attribute, if it exists
+    ptv <- attr(res,"params_timevar")
+
     (prep_res_for_plotting(res, drop_states, condense_I)
      %>% ggplot(aes(x = date, y = value, colour = state))
      + geom_line()
@@ -129,6 +133,10 @@ plot_res_by_age <- function(res, drop_states = NULL,
                     date_labels = "%b")
      # + scale_y_continuous(labels = scales::label_number_si())
     ) -> gg
+
+    if (show_times && !is.null(ptv)) {
+        gg <- gg + geom_vline(xintercept=ptv$Date,lty=2)
+    }
 
     return(gg)
 }
@@ -141,7 +149,11 @@ plot_res_by_age <- function(res, drop_states = NULL,
 #' @return
 #' @export
 plot_res_by_state <- function(res, drop_states = NULL,
-                              condense_I = FALSE){
+                              condense_I = FALSE,
+                              show_times = TRUE){
+    ## get time-varying params attribute, if it exists
+    ptv <- attr(res,"params_timevar")
+
     (prep_res_for_plotting(res, drop_states, condense_I)
      %>% ggplot(aes(x = date, y = value, colour = age_cat))
      + geom_line()
@@ -151,11 +163,19 @@ plot_res_by_state <- function(res, drop_states = NULL,
      # + scale_y_continuous(labels = scales::label_number_si())
     ) -> gg
 
+    if (show_times && !is.null(ptv)) {
+        gg <- gg + geom_vline(xintercept=ptv$Date,lty=2)
+    }
+
     return(gg)
 }
 
-## FIXME: allow faceting automatically? (each var alone or by groups?)
-## don't compare prevalences and incidences?
+## FIXME: allow faceting automatically? (each var alone or by groups?) don't
+## compare prevalences and incidences?
+## FIXME: incorporate age-specific plotting in setup of base plot,
+## then add stuff (like vlines for timepars) overtop,
+## just in this plotting function (not separately in each plot style) currently,
+## this is done in a redundant way currently
 ##' plot method for simulations
 ##' @param x fitted \code{pansim} object
 ##' @param drop_states states to \emph{exclude} from plot
@@ -181,17 +201,20 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
 
     ## if age-structured, use a different plotting method
     if(has_age(x)){
+        plot_args <- list(res = x,
+                          drop_states = drop_states,
+                          condense_I = condense,
+                          show_times = show_times)
         if(facet_by_age){
-            return(plot_res_by_age(x, drop_states = drop_states,
-                                   condense_I = condense))
+            return(do.call(plot_res_by_age, plot_args))
         } else{
-            return(plot_res_by_state(x, drop_states = drop_states,
-                                     condense_I = condense))
+            return(do.call(plot_res_by_state, plot_args))
         }
     }
 
     ## attributes get lost somewhere below ...
     ptv <- attr(x,"params_timevar")
+
     if (!is.null(keep_states)) {
         drop_states <- setdiff(names(x), c(keep_states,"date"))
     }
