@@ -4,12 +4,14 @@
 \alias{plot_res_by_age}
 \title{Plot age-structured simulation result faceted by age categories}
 \usage{
-plot_res_by_age(res, drop_states = NULL, condense_I = FALSE)
+plot_res_by_age(res, drop_states = NULL, condense_I = FALSE, show_times = TRUE)
 }
 \arguments{
 \item{res}{age-structured simulation result}
 
 \item{drop_states}{states to \emph{exclude} from plot}
+
+\item{show_times}{indicate times when parameters changed?}
 }
 \value{
 

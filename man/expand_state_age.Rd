@@ -3,7 +3,7 @@
 \name{expand_state_age}
 \alias{expand_state_age}
 \alias{ageify}
-\title{expand state vector and rate matrix by age classes and population distribution}
+\title{expand state vector by age classes and population distribution}
 \usage{
 expand_state_age(x, age_cat = mk_agecats(), Nvec = NULL)
 

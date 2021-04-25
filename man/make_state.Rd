@@ -13,6 +13,7 @@ make_state(
   params = NULL,
   x = NULL,
   ageify = NULL,
+  vaxify = NULL,
   testify = NULL
 )
 }
