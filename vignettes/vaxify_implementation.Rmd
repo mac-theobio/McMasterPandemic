@@ -1,0 +1,25 @@
+---
+title: "Implementing vaxify structure"
+author: "Irena Papst"
+output: html_notebook
+---
+
+A place to keep notes on vaxify implementation assumptions and future work (instead of dumping everything into FIXMEs).
+
+## Assumptions
+
+* Everyone starts in the unvaccinated compartment, regardless of epi status or point in the epidemic.
+
+## To fix
+
+## Questions (for Ben)
+
+1. I have a choice between handling the calculation of per capita daily vaccination rates as a pre-processing step or in the sim... does it matter for `timepars` or `calibrate` when these rates are calculated?
+
+* set up fully expanded state vec
+* use given state vec `x`, or don't
+* allocate `E0`:
+  * use eigenvector, or don't 
+* update S classes
+  * deal with testify separately
+
