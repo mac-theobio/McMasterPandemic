@@ -69,3 +69,4 @@ wget-*
 ## stop ignoring my html files in git_push
 !git_push/*.html
 !notes/*.html
+notes/debugging.R
