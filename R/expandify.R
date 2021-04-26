@@ -92,7 +92,7 @@ condense_state <- function(x, values_only = FALSE){
 #' @export
 mk_vaxcats <- function(use_doses = FALSE) {
   if (use_doses) return(c("unvax", "onevax", "twovax"))
-  return(c("unvax", "vax"))
+  return(c("unvax", "vaxwait1", "vaxdose1"))
 }
 
 #' expand state vector by vaccination status
@@ -255,8 +255,9 @@ mk_vaxrates <- function(params,
 #' @export
 expand_params_desc_vax <- function(params_desc){
 
-  params_desc[["vax_rate"]] <- "Per capita daily vaccination rate, by vaccination category"
-  params_desc[["avg_time_to_vax_immunity"]] <- "Average number of days to vaccine-derived immunity, after dose"
+  params_desc[["vax_doses_per_day"]] <- "Total number of doses administered per day in the entire population"
+  params_desc[["vax_efficacy"]] <- "Infection-blocking efficacy of the vaccine"
+  params_desc[["vax_response_rate"]] <- "Average number of days to vaccine-derived immunity, after dose"
 
   return(params_desc)
 }
@@ -265,13 +266,17 @@ expand_params_desc_vax <- function(params_desc){
 #'
 #' @param params parameter list (e.g. read in with `read_params()`)
 #' @param vax_cat vector of vaccination categories
+#' @param doses_per_date total number of doses administered per day
+#' @param vax_efficacy efficacy of first (only) dose (currently)
 #' @examples
 #' params <- read_params("PHAC_testify.csv")
 #' params_age <- expand_params_age(params)
 #' @export
 expand_params_vax <- function(params,
                               vax_cat = mk_vaxcats(),
-                              doses_per_day = NULL){
+                              vax_doses_per_day = 1e5,
+                              vax_efficacy = 0.7,
+                              vax_avg_response_time  = 14){
   ## prep inputs
   #################
 
@@ -281,20 +286,15 @@ expand_params_vax <- function(params,
   ## convert to list
   params <- as.list(params)
 
-  ## make vaxrates
-  vaxrates_args <- list(params = params)
-
-  if(!is.null(doses_per_day)) vaxrates_args[["doses_per_day"]] <- doses_per_day
-
-  vax_rates <- do.call(mk_vaxrates, vaxrates_args)
-
   ## perform updates
   #####################
 
-  ## update vax rates (S_unvax -> S_vax)
-  params[["vax_rates"]] <- vax_rates
-  ## update time to immunity
-  params[["avg_time_to_vax_immunity"]] <- 1/14
+  ## add doses per day
+  params[["vax_doses_per_day"]] <- vax_doses_per_day
+  ## add efficacy
+  params[["vax_efficacy"]] <- vax_efficacy
+  ## update average immune response rate
+  params[["vax_response_rate"]] <- 1/vax_avg_response_time
 
   ## prep output
   ################
