@@ -389,10 +389,6 @@ mk_pmat <- function(age_cat = mk_agecats(),
                     ){
 
   if(!(dist %in% c("unif", "diag"))) stop("dist must be either 'unif' or 'diag'")
-  # if(!(dist %in% c("unif", "rand", "diag"))) stop("dist must be either 'unif', 'rand', or 'diag'")
-
-  # if(dist == "rand" & is.null(Nvec)) stop("Nvec must be provided for dist = 'rand'")
-
   ## get nrow and ncol for pmat
   n <- length(age_cat)
 
@@ -406,32 +402,6 @@ mk_pmat <- function(age_cat = mk_agecats(),
     pmat <- diag(1, nrow = n, ncol = n, names = TRUE)
     dimnames(pmat) <- list(age_cat, age_cat)
   }
-
-  ## FIXME: get this example working... want to generate a random contact matrix
-  ## that doesn't break the balance condition
-  ## for balance to be maintained,
-  ## before row-normalizing, rowSums must be equal to beta0_i*N_i
-
-  # if(dist == "rand"){
-  #   ## preallocate memory
-  #   pmat <- matrix(nrow = n, ncol = n, dimnames = list(age_cat, age_cat))
-  #
-  #   ## fill matrix with a random distribution in each row)
-  #   for (i in 1:n){
-  #     dist <- runif(n)
-  #     dist <- dist/sum(dist)
-  #     ## distribute age-specific population
-  #     pmat[i,] <- distribute_counts(Nvec[i], dist)
-  #   }
-  #
-  #   ## normalize rows
-  #   pmat <- pmat/Nvec
-  #   }
-
-  ## rescale by age-specific population (if provided)
-  # if(!is.null(Nvec)){
-  #   pmat <- pmat/Nvec
-  # }
 
   ## row normalize to finish
   pmat <- pmat/rowSums(pmat)
