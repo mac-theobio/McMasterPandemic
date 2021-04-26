@@ -88,7 +88,11 @@ make_beta <- function(state, params, full=TRUE) {
                           c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
     names(Icat_prop_vec) <- Icats
 
-    ## deal with age structure
+    ## initialize beta_0, which includes combines all parameters for FOI term
+    ## (except for state values(
+    ## without age, this is beta0*Icat_prop_vec/N
+    ## with age, we additionally have contact probabilities stored in pmat
+    ## (and the fact that N and maybe beta0 are age-specific)
     if (has_age(params)) {
 
         ## check that all components for ageified transmission multipliers are
@@ -124,21 +128,79 @@ make_beta <- function(state, params, full=TRUE) {
         new_names <- expand_names(Icats, a_names)
         ## transpose back so rows represent susceptibles and
         ## columns represent infectives again
-        beta_0 <- t(kronecker(pmat,matrix(Icat_prop_vec)))
+        beta_0 <- Matrix::t(kronecker(pmat,Matrix::Matrix(Icat_prop_vec)))
         dimnames(beta_0) <- list(a_names,new_names)
-        beta_0 <- Matrix(beta_0)
 
     } else {
         ## without age structure, multiply by single beta0 and
         ## normalize by total population N for I/N term in force of infection
         beta_0 <- with(as.list(params), beta0*Icat_prop_vec/N)
     }
+
+    ## handle vaccination, if present
+    if(has_vax(params)){
+      if(!has_vax(state)) stop("if params are vaxified, state also needs to be vaxified")
+      ## get vax categories
+      vax_cat <- attr(params, "vax_cat")
+
+      ## save original beta_0 names
+      ## of beta_0 is just a vector (base case), just get colnames
+      if(is.null(dimnames(beta_0))){
+        original_row_names <- NULL
+        original_col_names <- names(beta_0)
+      } else {
+        ## otherwise, get both row and colnames
+        original_row_names <- rownames(beta_0)
+        original_col_names <- colnames(beta_0)
+      }
+
+      ## initialize vaccine trasmission reduction matrix
+      ## for unvax and vaxwait categories, assume no changes to transmission
+      ## for vaxdose categories, assume reduction to transmission equivalent to vaccine efficacy
+      vax_trans_red <- matrix(rep(1, length(vax_cat)^2),
+                              nrow = length(vax_cat))
+      rownames(vax_trans_red) <- vax_cat
+
+      vax_trans_red[grepl("dose", rownames(vax_trans_red)),] <- rep(params[["vax_efficacy"]], length(vax_cat))
+
+      ## apply vaccine transmission reduction over beta_0 (as computed above,
+      ## either with or without age) using the kronecker product trick
+      if(class(beta_0)=="numeric"){
+        ## need to take the transpose of the kronecker result since
+        ## Matrix::Matrix(beta_0) in the kronecker product takes a row vector
+        ## and converts it to a column vector
+        beta_0 <- kronecker(Matrix::Matrix(vax_trans_red),
+                            Matrix::t(Matrix::Matrix(beta_0)))
+      } else {
+        ## otherwise, beta_0 will already be a Matrix::Matrix (class dgeMatrix) and we don't need any transposes
+        beta_0 <- kronecker(Matrix::Matrix(vax_trans_red), Matrix::Matrix(beta_0))
+      }
+
+
+      ## expand names for beta_0 do colnames the same way in either case
+      ## (whether beta_0 is a vector or matrix)
+      col_names <- expand_names(original_col_names, vax_cat)
+      ## prepare row names for vax-expanded beta_0 and update both rownames and
+      ## colnames, depending on if beta_0
+      ## vaxcats
+      if(!is.null(original_row_names)){
+        row_names <- expand_names(original_row_names, vax_cat)
+      } else {
+        ## just update colnames (names) for vector
+        row_names <- vax_cat
+      }
+      ## update dimnames for output
+      dimnames(beta_0) <- list(row_names, col_names)
+
+    }
+
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
     if (has_testing(state=state)) {  ## testified!
         if (has_age(params)) stop("can't combine age and testing yet")
+        if (has_vax(params)) stop("can't combine vax and testing yet")
         beta_0 <- rep(beta_0,each=length(testcats))
         names(beta_0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
         ## FIXME: also adjust _n, _p components?
@@ -146,12 +208,15 @@ make_beta <- function(state, params, full=TRUE) {
         beta_0[pos_vals] <- beta_0[pos_vals]*(1-params[["iso_t"]])
     }
     if (!full) return(beta_0)
+
     ## By default, make a vector of zeroes for all the states,
     ## then fill in infectious ones
-    if (!has_age(params)) {
+    ## without age and vax, just return vector
+    if (!has_age(params) & !has_vax(params)) {
         beta <- setNames(numeric(length(state)),names(state))
         beta[names(beta_0)] <- beta_0
     } else {
+      ## with age and vax, return a matrix
         beta <- matrix(0, nrow=nrow(beta_0), ncol=length(state),
                            dimnames=list(rownames(beta_0), names(state)))
         beta[rownames(beta_0),colnames(beta_0)] <- matrix(beta_0)
