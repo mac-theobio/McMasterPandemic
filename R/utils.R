@@ -586,6 +586,7 @@ smart_round <- function(x) {
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param method visualization method
+##' @param subset list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
 ##' @param add_blocks add lines showing blocks for testified matrices?
 ##' @param const_width set flows to constant value of 1?
@@ -600,6 +601,7 @@ smart_round <- function(x) {
 ##' @importFrom diagram plotmat
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
+                         subset = NULL,
                          aspect="iso",
                          add_blocks=NULL,
                          blocksize=NULL,
@@ -616,6 +618,10 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
+        if(!is.null(subset)){
+          M <- M[grepl(subset[1], dimnames(M)$from),
+                 grepl(subset[2], dimnames(M)$to)]
+        }
         if (is.null(add_blocks)) {
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
                                                      rownames(M)))
