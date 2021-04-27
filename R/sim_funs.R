@@ -471,6 +471,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
         }
     }
 
+    ## update FOIs
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
 
     ## update vaccine allocation rates
@@ -1085,28 +1086,39 @@ run_sim_range <- function(params
         }
         names(res)[1] <- "t" ## ode() uses "time"
     } else {
-        ## set up output
-       foi <- if(!has_age(params)){
-              rep(NA,nt)
-          } else{
-              matrix(NA, nrow = nt, ncol = length(get_age(params)),
-                     dimnames = list(NULL,
-                                     paste("foi", get_age(params), sep = "_")))
-          }
+        ## set up outputs
+
+        ## FOIs
+        col_suffix <- if(has_age(params) && has_vax(params)){
+           ## both age and vax
+           paste0("_", expand_names(get_age(params), get_vax(params)))
+         } else if (has_age(params)){
+           ## just age
+           paste0("_", get_age(params))
+         } else if (has_vax(params)){
+           ## just vax
+           paste0("_", get_vax(params))
+         } else {
+           ""
+         }
+
+        colnames <- paste0("foi", col_suffix)
+        ncol <- length(col_suffix)
+        foi <- matrix(NA, nrow = nt, ncol = ncol,
+                      dimnames = list(NULL, colnames))
+
+        ## RESULTS ARRAY
         res <- matrix(NA, nrow=nt, ncol=length(colnames(M)),
                       dimnames=list(time=seq(nt),
                                     state=colnames(M)))
         ## initialization
         res[1,names(state)] <- state
-        if (!has_age(params)) {
-            ## FIXME: coherent strategy for accumulating incidence, etc etc
-            foi[[1]] <- update_foi(state, params, make_beta(state, params))
-        } else {
-            foi[1, ] <- update_foi(state, params, make_beta(state, params))
-        }
-        ## loop
+        foi[1, ] <- update_foi(state, params, make_beta(state, params))
+
+        ## loop over time steps
         if (nt>1) {
             for (i in 2:nt) {
+                ## update state
                 state <- do.call(do_step,
                                  c(nlist(state
                                        , params
@@ -1114,11 +1126,9 @@ run_sim_range <- function(params
                                        , dt
                                          )
                                  , step_args))
-                if (!has_age(params)){
-                  foi[[i]] <- update_foi(state, params, make_beta(state, params))
-                } else {
-                  foi[i, ] <- update_foi(state, params, make_beta(state, params))
-                }
+                ## update foi
+                foi[i, ] <- update_foi(state, params, make_beta(state, params))
+
                 if (!identical(colnames(res),names(state))) browser()
                 res[i,] <- state
             }
