@@ -372,6 +372,20 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
       afun(paste0("S_.*", vax_cat[2]),
            paste0("S_.*", vax_cat[3]),
            vax_response_rate)
+
+      ## modify epidemiological parameters for vaccinated individuals who have
+      ## had their immune response
+      afun(paste0("E_.*", vax_cat[3]),
+           paste0("Ia_.*", vax_cat[3]), vax_alpha*sigma)
+      afun(paste0("E_.*", vax_cat[3]),
+           paste0("Ip_.*", vax_cat[3]),
+           (1-vax_alpha)*sigma)
+      afun(paste0("Ip_.*", vax_cat[3]),
+           paste0("Im_.*", vax_cat[3]),
+           vax_mu*gamma_p)
+      afun(paste0("Ip_.*", vax_cat[3]),
+           paste0("Is_.*", vax_cat[3]),
+           (1-vax_mu)*gamma_p)
     }
 
     if (sparse) {
