@@ -8,8 +8,6 @@
 \alias{asymp_cat}
 \alias{severe_cat}
 \alias{cryptic_cat}
-\alias{vacc_extensions}
-\alias{vacc_accumulators}
 \title{global variables for testify expansion}
 \format{
 An object of class \code{character} of length 2.
@@ -21,10 +19,6 @@ An object of class \code{character} of length 2.
 An object of class \code{character} of length 5.
 
 An object of class \code{character} of length 5.
-
-An object of class \code{character} of length 2.
-
-An object of class \code{character} of length 3.
 
 An object of class \code{character} of length 2.
 }
@@ -40,17 +34,8 @@ asymp_cat
 severe_cat
 
 cryptic_cat
-
-vacc_extensions
-
-vacc_accumulators
 }
 \description{
 global variables for testify expansion
-
-## FIXME: document these for real!
-##' global variables for vaccify expansion
-#' @export
-non_expanded_states <- c()
 }
 \keyword{datasets}

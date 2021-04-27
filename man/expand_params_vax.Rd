@@ -4,12 +4,22 @@
 \alias{expand_params_vax}
 \title{Expand parameter list to include vaccination}
 \usage{
-expand_params_vax(params, vax_cat = mk_vaxcats(), doses_per_day = NULL)
+expand_params_vax(
+  params,
+  vax_cat = mk_vaxcats(),
+  vax_doses_per_day = 1e+05,
+  vax_efficacy = 0.7,
+  vax_avg_response_time = 14
+)
 }
 \arguments{
 \item{params}{parameter list (e.g. read in with `read_params()`)}
 
 \item{vax_cat}{vector of vaccination categories}
+
+\item{vax_efficacy}{efficacy of first (only) dose (currently)}
+
+\item{doses_per_date}{total number of doses administered per day}
 }
 \description{
 Expand parameter list to include vaccination
