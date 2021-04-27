@@ -9,7 +9,9 @@ expand_params_vax(
   vax_cat = mk_vaxcats(),
   vax_doses_per_day = 1e+05,
   vax_efficacy = 0.7,
-  vax_avg_response_time = 14
+  vax_avg_response_time = 14,
+  vax_alpha = 0.5,
+  vax_mu = 1
 )
 }
 \arguments{
@@ -18,6 +20,10 @@ expand_params_vax(
 \item{vax_cat}{vector of vaccination categories}
 
 \item{vax_efficacy}{efficacy of first (only) dose (currently)}
+
+\item{vax_alpha}{alpha (proportion of infections that are asymptomatic) for individuals who are vaccinated and have had their immune response}
+
+\item{vax_mu}{mu (proportion of symptomatic infections that are mild) for individuals who are vaccinated and have had their immune response}
 
 \item{doses_per_date}{total number of doses administered per day}
 }

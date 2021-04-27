@@ -13,6 +13,7 @@ show_ratemat(
   block_col = 2,
   axlabs = TRUE,
   const_width = (method == "igraph"),
+  colour_palette = viridis::magma(n = 50, direction = -1),
   do_symbols = NULL,
   box.size = 0.02,
   ...
@@ -30,6 +31,8 @@ show_ratemat(
 \item{axlabs}{for flow matrices, show axis tick labels?}
 
 \item{const_width}{set flows to constant value of 1?}
+
+\item{colour_palette}{vector of colours for rate matrix heatmap}
 
 \item{do_symbols}{plot symbolic values for flows?}
 
