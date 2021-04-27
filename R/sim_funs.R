@@ -315,29 +315,28 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         }
     }
 
-    ## fill entries
-    beta_vec <- make_beta(state,params)
+    ## fill entries in ratemat
+
+    ## calculate FOI
+    beta_array <- make_beta(state,params)
     ## FIXME: call update_foi() here?
-    if (!has_age(params)) {
-        afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
+    if ("numeric" %in% class(beta_array)) {
+      ## dot product of beta_array (vec) with states (I classes) to get FOI
+        afun("S", "E", sum(beta_array*state[names(beta_array)]))
     } else {
-        afun("S", "E", beta_vec %*% state[colnames(beta_vec)])
+      ## dot product of each row of beta_array (corresponding to a different S subcategory) with states (I classes) to get FOIs (plural, one per susceptible class)
+        afun("S", "E", beta_array %*% state[colnames(beta_array)])
     }
-    if (has_vacc(params)) {
-        ## FIXME: do we need transitions from *all* categories to R?
-        ## FIXME: 'waiting' period?
-        ## FIXME: need to deal with time-varying vacc rates
-        ##       (part of the general fix to allow time-variation in
-        ##        parameters other than beta0, i.e. updating full transition matrix
-        ##       rather than just update_foi()
-        afun("S", "R", vacc)
-    }
+
+    ## fill other parameters
     afun("E", "Ia", alpha*sigma)
     afun("E","Ip", (1-alpha)*sigma)
     afun("Ia","R", gamma_a)
     afun("Ip","Im", mu*gamma_p)
     afun("Ip","Is", (1-mu)*gamma_p)
     afun("Im","R", gamma_m)
+
+    ## fill hospital-related parameters, depending on ICU model selected
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
         afun("Is","H", gamma_s)
