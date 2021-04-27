@@ -360,8 +360,61 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
             afun("Is","X", M[pfun("Is","H",M)]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
+
+    ## FIXME: adjust epi parameters for vaxdose strata here (e.g. increase asymptomatic proportion, alpha, and set proportion of symptomatic infections that are mild, mu, to 1, as well as non-hosp mortality to 0)
+
+    ## add vaccine allocation rates (from unvax to vaxwait)
+    if(has_vax(params)){
+      ## convert to a Matrix::Matrix object, so we can assign to subsets within the matrix
+      M <- Matrix::Matrix(M)
+
+      ## calculate per capita rate of doses per day
+      ## (per capita = per non-symptomatic individuals here, because that's
+      ## who's getting vaccinated)
+      vax_rate <- make_vaxrate(state, params)
+
+      ## set up block diagonal matrix for vaccine allocation step within each age group
+      epi_states <- names(condense_age(condense_vax(state)))
+      vax_block <- matrix(0,
+                          nrow = length(epi_states),
+                          ncol = length(epi_states),
+                          dimnames = list(epi_states, epi_states))
+
+      ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states,
+      for(state_cat in asymp_cat){
+        index <- pfun(paste0(state_cat),
+                      paste0(state_cat),
+                      vax_block)
+        vax_block[index] <- vax_rate
+      }
+
+      ## convert vax_block to Matrix::Matrix object for subset assignement
+      vax_block <- Matrix::Matrix(vax_block)
+
+      ## update unvax -> vaxwait block
+      if(!has_age(params)){
+        ## just once, without ages
+        from_regex <- vax_cat[1]
+        to_regex <- vax_cat[2]
+        M[grepl(from_regex, dimnames(M)$from),
+          grepl(to_regex, dimnames(M)$to)] <- vax_block
+      } else {
+        ## for each age
+        for(age in attr(params, "age_cat")){
+          from_regex <- sub("\\+", "\\\\+",
+                            paste0(age, "_", vax_cat[1]))
+          to_regex <- sub("\\+", "\\\\+",
+                          paste0(age, "_", vax_cat[2]))
+          M[grepl(from_regex, dimnames(M)$from),
+            grepl(to_regex, dimnames(M)$to)] <- vax_block
+        }
+      }
+    }
+
     if (sparse) {
         M <- Matrix::Matrix(M)
+    } else {
+        M <- as.matrix(M)
     }
     return(M)
 }
