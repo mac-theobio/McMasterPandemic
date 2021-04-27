@@ -70,3 +70,4 @@ wget-*
 !git_push/*.html
 !notes/*.html
 notes/debugging.R
+notes/expandify_implementation.nb.html
