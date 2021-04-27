@@ -363,9 +363,15 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
 
     ## FIXME: adjust epi parameters for vaxdose strata here (e.g. increase asymptomatic proportion, alpha, and set proportion of symptomatic infections that are mild, mu, to 1, as well as non-hosp mortality to 0)
 
-    ## add vaccine allocation rates (from unvax to vaxwait)
+    ## vaccination-related rates
     if(has_vax(params)){
+      ## add vaccine allocation rates (from unvax to vaxwait)
       M <- add_updated_vaxrate(state, params, M)
+
+      ## add vaccine immune response rate
+      afun(paste0("S_.*", vax_cat[2]),
+           paste0("S_.*", vax_cat[3]),
+           vax_response_rate)
     }
 
     if (sparse) {
