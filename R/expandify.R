@@ -348,6 +348,9 @@ expand_params_desc_vax <- function(params_desc){
 #' @param vax_cat vector of vaccination categories
 #' @param doses_per_date total number of doses administered per day
 #' @param vax_efficacy efficacy of first (only) dose (currently)
+#' @param vax_alpha alpha (proportion of infections that are asymptomatic) for individuals who are vaccinated and have had their immune response
+#' @param vax_mu mu (proportion of symptomatic infections that are mild) for individuals who are vaccinated and have had their immune response
+#'
 #' @examples
 #' params <- read_params("PHAC_testify.csv")
 #' params_age <- expand_params_age(params)
@@ -356,7 +359,9 @@ expand_params_vax <- function(params,
                               vax_cat = mk_vaxcats(),
                               vax_doses_per_day = 1e5,
                               vax_efficacy = 0.7,
-                              vax_avg_response_time  = 14){
+                              vax_avg_response_time  = 14,
+                              vax_alpha = 0.5,
+                              vax_mu = 1){
   ## prep inputs
   #################
 
@@ -375,6 +380,8 @@ expand_params_vax <- function(params,
   params[["vax_efficacy"]] <- vax_efficacy
   ## update average immune response rate
   params[["vax_response_rate"]] <- 1/vax_avg_response_time
+  params[["vax_alpha"]] <- vax_alpha
+  params[["vax_mu"]] <- vax_mu
 
   ## prep output
   ################
