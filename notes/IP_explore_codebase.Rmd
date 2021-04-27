@@ -109,13 +109,13 @@ When `run_sim` gets called when `has_age(params) == TRUE`, here are roughly the 
 
 ```
 run_sim
-  make_ratemat
-    make_betavec
+  make_ratemat*
+    make_beta*
   run_sim_range
     do_step
-      update_ratemat
-        update_foi
-          beta_vec = make_betavec
+      update_ratemat*
+        update_foi*
+          beta_vec = make_beta*
           foi <- beta_vec %*% state
 ```
 # Time-varying parameters
