@@ -567,6 +567,12 @@ has_vax <- function(x) {
   return("vax_cat" %in% names(attributes(x)))
 }
 
+get_vax <- function(x) {
+  ## get age categories out of params list
+  if (!has_vax(x)) stop("these parameters are not vaxified")
+  return(attr(x, "vax_cat"))
+}
+
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
 smart_round <- function(x) {
