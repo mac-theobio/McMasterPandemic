@@ -264,6 +264,8 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
 ## TODO: rewrite this as a generic funtion with custom methods for state_pansim
 ## and pansim objects
 condense_age <- function(x) {
+  ## check if there are even age categories in the object, and if not, return x
+  if(!has_age(x)) return(x)
 
   ## get input type
   input_class <- class(x)
