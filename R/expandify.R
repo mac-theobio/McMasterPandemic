@@ -225,7 +225,7 @@ make_vaxrate <- function(state, params){
   if(!has_vax(state) | !has_vax(params)) stop("need vaxified state and params to make vaccination rates")
 
   ## pull out non-symptomatic *and* unvaccinated states
-  asymp_unvax_regex <- sprintf("^[%s]_.*unvax",
+  asymp_unvax_regex <- sprintf("^(%s)_.*unvax",
                                paste(asymp_cat, collapse="|"))
 
   ## FIXME: get this working for age-specific vax_doses_per_day
