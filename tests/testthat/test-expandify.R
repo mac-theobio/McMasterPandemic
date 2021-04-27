@@ -25,3 +25,7 @@ test_that("states are properly expanded with vaccination", {
 #
 #   make_state(params = age_vax_params)
 # })
+
+## TEST IDEAS
+
+## make ratemat for just vax case, and check that on the 3 diagonal blocks (corresponding to the three vax statuses), where the top two blocks are exactly equal and the bottom one differs only in vaccine efficacy and whatever changes we make to the epidemiological parameters for vaccinated individuals
