@@ -240,6 +240,92 @@ make_vaxrate <- function(state, params){
   return(vax_rate)
 }
 
+#' compute and add vaxrates to ratemat
+#' (returns whole ratemat because the update part is non-trivial)
+#' @param state state vector (an object of class `state_pansim`)
+#' @param params model parameters (an object of class `params_pansim`)
+#' @param ratemat model rate matrix
+#' @export
+add_updated_vaxrate <- function(state, params, ratemat){
+
+  ## capture initial state of ratemat
+  if (inherits(ratemat,"Matrix")) {
+    sparse <- TRUE
+    saved_attrs <- setNames(lapply(aa,attr,x=ratemat),aa)
+  } else {
+    sparse <- FALSE
+  }
+
+  ## convert to a Matrix::Matrix object, so we can assign to subsets within the matrix
+  ratemat <- Matrix::Matrix(ratemat)
+
+  ## calculate per capita rate of doses per day
+  ## (per capita = per non-symptomatic individuals here, because that's
+  ## who's getting vaccinated)
+  vax_rate <- make_vaxrate(state, params)
+
+  ## set up block diagonal matrix for vaccine allocation step within each age group
+  epi_states <- names(condense_age(condense_vax(state)))
+  vax_block <- matrix(0,
+                      nrow = length(epi_states),
+                      ncol = length(epi_states),
+                      dimnames = list(epi_states, epi_states))
+
+  ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states,
+  for(state_cat in asymp_cat){
+    index <- pfun(paste0(state_cat),
+                  paste0(state_cat),
+                  vax_block)
+    vax_block[index] <- vax_rate
+  }
+
+  ## convert vax_block to Matrix::Matrix object for subset assignement
+  vax_block <- Matrix::Matrix(vax_block)
+
+  ## update unvax -> vaxwait block
+  if(!has_age(params)){
+    ## just once, without ages
+    from_regex <- vax_cat[1]
+    to_regex <- vax_cat[2]
+    ratemat[grepl(from_regex, dimnames(ratemat)$from),
+      grepl(to_regex, dimnames(ratemat)$to)] <- vax_block
+  } else {
+    ## for each age
+    for(age in attr(params, "age_cat")){
+      from_regex <- sub("\\+", "\\\\+",
+                        paste0(age, "_", vax_cat[1]))
+      to_regex <- sub("\\+", "\\\\+",
+                      paste0(age, "_", vax_cat[2]))
+      ratemat[grepl(from_regex, dimnames(ratemat)$from),
+        grepl(to_regex, dimnames(ratemat)$to)] <- vax_block
+    }
+  }
+
+  ## check that calculated per capita vax rate per day squares with total number of daily doses specified in params
+  ratemat_vax_subset <- ratemat[
+    grepl("unvax", dimnames(ratemat)$from),
+    grepl("vaxwait", dimnames(ratemat)$to)]
+  state_vax_subset <- state[grepl("unvax", names(state))]
+  ratemat_doses <- sum(ratemat_vax_subset %*% state_vax_subset)
+  total_doses_match <- all.equal(ratemat_doses, params[["vax_doses_per_day"]])
+  ## if total doses allocated via rate matrix does not match match total doses specified in params
+  if(!total_doses_match){
+    ## *and* it's not because we've depleted the population eligible for vaccination
+    if(sum(state_vax_subset)>=params[["vax_doses_per_day"]]) stop("calculated daily vax rate exceeds size of remaining population eligible for vaccination")
+  }
+
+  ## make updated ratemat have the same type and attributes as original ratemat
+  if (sparse){
+    for (a in aa) {
+      attr(ratemat,a) <- saved_attrs[[a]]
+    }
+  } else {
+    ratemat <- as.matrix(ratemat)
+  }
+
+  return(ratemat)
+}
+
 #' Edit parameter description attribute to include vax-specific definitions
 #' (helper function for `expand_params_vax()`)
 #'
