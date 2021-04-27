@@ -145,7 +145,7 @@ condense_vax <- function(x) {
   input_class <- class(x)
 
   ## figure out how many types of subcategories there are
-  n_subcats <- str_count(names(x)[1], "_")
+  n_subcats <- str_count(names(x)[2], "_")
   subcat_labels <- paste0("subcat", 1:n_subcats)
 
   ## if x is a vector (e.g. a state vec), convert it to a (wide) df
