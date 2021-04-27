@@ -472,9 +472,12 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
     }
 
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_beta(state,params))
-    if (has_vacc(params)) {
-        ratemat[pfun("S","R",ratemat)]  <- params[["vacc"]]
+
+    ## update vaccine allocation rates
+    if (has_vax(params)) {
+      ratemat <- add_updated_vaxrate(state, params, ratemat)
     }
+
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
         for (a in aa) {
