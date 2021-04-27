@@ -589,6 +589,7 @@ smart_round <- function(x) {
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
 ##' @param add_blocks add lines showing blocks for testified matrices?
 ##' @param const_width set flows to constant value of 1?
+##' @param colour_palette vector of colours for rate matrix heatmap
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
@@ -605,6 +606,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          block_col=2,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
+                         colour_palette=viridis::magma(n=50, direction = -1),
                          do_symbols=NULL,
                          box.size=0.02,...) {
     method <- match.arg(method)
@@ -632,6 +634,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            ylab="from",
                            sub="",
                            colorkey = !const_width,
+                           col.regions = colour_palette,
                            aspect=aspect, ...)
         if (add_blocks) {
             if (requireNamespace("latticeExtra")) {
