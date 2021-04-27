@@ -621,15 +621,15 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                                                      rownames(M)))
         }
         if (axlabs) {
-            rlabs <- rownames(M)
-            clabs <- colnames(M)
+            rlabs <- colnames(M)
+            clabs <- rownames(M)
         } else {
             rlabs <- clabs <- rep("",nrow(M))
         }
         p <- Matrix::image(Matrix(M),
-                           scales=list(x=list(at=seq(nrow(M)),labels=rlabs,
+                           scales=list(x=list(at=seq(ncol(M)),labels=rlabs,
                                               rot=90),
-                                       y=list(at=seq(ncol(M)),labels=clabs)),
+                                       y=list(at=seq(nrow(M)),labels=clabs)),
                            xlab="to",
                            ylab="from",
                            sub="",
