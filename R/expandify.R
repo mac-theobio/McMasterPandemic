@@ -217,31 +217,25 @@ condense_vax <- function(x) {
 
 
 #' generate per capita daily vaccination rates
+#' @param state state vector (an object of class `state_pansim`)
 #' @param params model parameters (an object of class `params_pansim`)
-#' @param doses_per_day named list of doses per day in the region by vax category and any other subcat (e.g. age)
 #' @export
-mk_vaxrates <- function(params,
-                        doses_per_day = list(vax = 10000)
-){
+make_vaxrate <- function(state, params){
 
-  ## make rate names, depending on whether or not we have age-structured params
-  if(has_age(params)){
-    rate_names <- expand_names(attr(params, "age_cat"), names(doses_per_day))
-  } else {
-    rate_names <- names(doses_per_day)
-  }
+  if(!has_vax(state) | !has_vax(params)) stop("need vaxified state and params to make vaccination rates")
 
-  ## set up vax_rate vector
-  vax_rate <- rep(0, length(rate_names))
-  names(vax_rate) <- rate_names
+  ## pull out non-symptomatic *and* unvaccinated states
+  asymp_unvax_regex <- sprintf("^[%s]_.*unvax",
+                               paste(asymp_cat, collapse="|"))
 
-  ## updated rates for compartments where there is actually vaccination
-  ## FIXME: check if this works properly for ageified parameters
-  for(this_name in names(doses_per_day)){
-    vax_rate[grepl(paste0("^?_?", this_name),
-                   names(vax_rate))] <- doses_per_day[[grepl(paste0("^?_?", this_name),
-                                                            names(doses_per_day))]]/params[["N"]]
-  }
+  ## FIXME: get this working for age-specific vax_doses_per_day
+  ## don't sum over all ages, keep pop-size separate for each age
+  asymp_unvax_N <- rowSums(condense_state(
+    state[grepl(asymp_unvax_regex, names(state))]
+    ))
+
+  ## should be a scalar if we're not doing age-specific stuff
+  vax_rate <- params[["vax_doses_per_day"]]/asymp_unvax_N
 
   return(vax_rate)
 }
