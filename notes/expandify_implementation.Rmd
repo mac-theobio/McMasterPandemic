@@ -14,8 +14,8 @@ A place to keep notes on expandify implementation (ageify, vaxify) assumptions a
 
 ### Vaxify
 
-* Everyone starts in the unvaccinated compartment, regardless of epi status or point in the epidemic.
-  * Can we actually already get around this by specifying `make_state(x = vec)`?
+* By default, everyone starts in the unvaccinated compartment, regardless of epi status or point in the epidemic.
+  * I think we can get around this by specifying `make_state(x = vec)` manually?
 * We know the number of doses per day administered to each subgroup (e.g. age category) of the population.
 * Currently assuming there is only one dose, but could expand to two doses
   * would need to update how vax efficacy gets handled in `make_beta()`
