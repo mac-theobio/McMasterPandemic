@@ -4,10 +4,7 @@
 \alias{mk_vaxcats}
 \title{Construct vector of vaccine category labels}
 \usage{
-mk_vaxcats(use_doses = FALSE)
-}
-\arguments{
-\item{use_doses}{(logical) should we make separate categories for two doses?}
+mk_vaxcats()
 }
 \description{
 Construct vector of vaccine category labels

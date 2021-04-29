@@ -7,6 +7,11 @@
 show_ratemat(
   M,
   method = c("Matrix", "diagram", "igraph"),
+  subset = NULL,
+  xlab = "to",
+  ylab = "from",
+  sub = "",
+  zlim = c(0, 1),
   aspect = "iso",
   add_blocks = NULL,
   blocksize = NULL,
@@ -23,6 +28,8 @@ show_ratemat(
 \item{M}{rate matrix}
 
 \item{method}{visualization method}
+
+\item{subset}{list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)}
 
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 

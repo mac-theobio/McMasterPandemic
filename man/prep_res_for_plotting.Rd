@@ -4,12 +4,19 @@
 \alias{prep_res_for_plotting}
 \title{Prepare age-structured simulation results data frame for plotting}
 \usage{
-prep_res_for_plotting(res, drop_states = NULL, condense_I = FALSE)
+prep_res_for_plotting(
+  res,
+  drop_states = NULL,
+  condense_I = FALSE,
+  split_age_vax = FALSE
+)
 }
 \arguments{
 \item{res}{age-structured simulation result}
 
 \item{drop_states}{states to \emph{exclude} from plot}
+
+\item{split_age_vax}{should the age and vaccination category be split into different columns?}
 }
 \value{
 
