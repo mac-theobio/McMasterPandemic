@@ -602,6 +602,10 @@ smart_round <- function(x) {
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          subset = NULL,
+                         xlab = "to",
+                         ylab = "from",
+                         sub = "",
+                         zlim = c(0,1),
                          aspect="iso",
                          add_blocks=NULL,
                          blocksize=NULL,
@@ -612,16 +616,18 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          do_symbols=NULL,
                          box.size=0.02,...) {
     method <- match.arg(method)
+    ## subset ratemat, if desired
+    if(!is.null(subset)){
+      M <- M[grepl(subset[1], dimnames(M)$from),
+             grepl(subset[2], dimnames(M)$to)]
+    }
+
     p <- NULL
     if (is.null(do_symbols)) {
         do_symbols <- method=="diagram" && !has_testing(ratemat=M)
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
-        if(!is.null(subset)){
-          M <- M[grepl(subset[1], dimnames(M)$from),
-                 grepl(subset[2], dimnames(M)$to)]
-        }
         if (is.null(add_blocks)) {
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
                                                      rownames(M)))
@@ -636,9 +642,9 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            scales=list(x=list(at=seq(ncol(M)),labels=rlabs,
                                               rot=90),
                                        y=list(at=seq(nrow(M)),labels=clabs)),
-                           xlab="to",
-                           ylab="from",
-                           sub="",
+                           xlab=xlab,
+                           ylab=ylab,
+                           sub=sub,
                            colorkey = !const_width,
                            col.regions = colour_palette,
                            aspect=aspect, ...)
