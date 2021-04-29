@@ -27,6 +27,6 @@ A place to keep notes on expandify implementation (ageify, vaxify) assumptions a
 ## To fix/do
 
 * Make `condense_vax()` work for ageified case (without losing age groups).
-* Check that `mk_vaxrates()` works for ageified parameters (specifically the `doses_per_day/params[["N"]]` calculation, since this is a vector divided by a vector).
+* Age-specific doses per day: check that `mk_vaxrates()` works for ageified parameters (specifically the `doses_per_day/params[["N"]]` calculation, since this is a vector divided by a vector).
 * `make_ratemat()`: update epi rates in vaxdose strata to reflect reduced disease severity of breakthrough infections (increase asymptomatic proportion and turn off flows to severe illness, i.e. hospitalization, and death)
 * `make_vaxrates()`: use an age-specific vector of `vax_doses_per_day` in computing age-specific vaccination rates (rates from `state_age_unvax` to `state_age_vaxwait`)
