@@ -69,6 +69,7 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
 #' Prepare age-structured simulation results data frame for plotting
 #'
 #' @param res age-structured simulation result
+#' @param split_age_vax should the age and vaccination category be split into different columns?
 #' @inheritParams plot.pansim
 #' @importFrom forcats as_factor
 #' @importFrom stringr str_replace
@@ -77,11 +78,19 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
 #' @export
 prep_res_for_plotting <- function(res,
                                   drop_states = NULL,
-                                  condense_I = FALSE){
+                                  condense_I = FALSE,
+                                  split_age_vax = FALSE){
+
+    if(has_vax(res) && split_age_vax){
+        into <- c("state", "age", "vaccination")
+    } else {
+        into <- c("state", "age")
+    }
+
     (res
      %>% select(-starts_with("foi"))
      %>% pivot_longer(-date)
-     %>% separate(name, into = c("state", "age_cat"),
+     %>% separate(name, into = into,
                   sep = "_", extra = "merge")
     ) -> res
 
@@ -91,16 +100,17 @@ prep_res_for_plotting <- function(res,
          ## convert state column to factor to maintain original order of variables
          %>% mutate(state = as_factor(str_replace(state,
                                                            "I[amps]", "I")))
-         %>% group_by(date, state, age_cat)
+         %>% group_by(across(c(-value)))
          %>% summarise(value = sum(value), .groups = "drop")
         ) -> res
     }
 
     (res
-        %>% mutate(state = as_factor(state))
         ## fix age labels
-        %>% mutate(age_cat = str_replace(age_cat, "\\.$", "\\+"))
-        %>% mutate(age_cat = str_replace(age_cat, "\\.", "-"))
+        %>% mutate(age = str_replace(age, "\\.$", "\\+"))
+        %>% mutate(age = str_replace(age, "\\.", "-"))
+        ## convert categories to factors to maintain ordering
+        %>% mutate(across(where(is.character), ~ as_factor(.)))
     ) -> res
 
     if(!is.null(drop_states)){
@@ -128,7 +138,7 @@ plot_res_by_age <- function(res, drop_states = NULL,
     (prep_res_for_plotting(res, drop_states, condense_I)
      %>% ggplot(aes(x = date, y = value, colour = state))
      + geom_line()
-     + facet_wrap(vars(age_cat))
+     + facet_wrap(vars(age))
      + scale_x_date(date_breaks = "1 month",
                     date_labels = "%b")
      # + scale_y_continuous(labels = scales::label_number_si())
@@ -154,8 +164,15 @@ plot_res_by_state <- function(res, drop_states = NULL,
     ## get time-varying params attribute, if it exists
     ptv <- attr(res,"params_timevar")
 
-    (prep_res_for_plotting(res, drop_states, condense_I)
-     %>% ggplot(aes(x = date, y = value, colour = age_cat))
+    if(has_vax(res)){
+      plot_setup <- (prep_res_for_plotting(res, drop_states, condense_I, split_age_vax = TRUE) %>%
+      ggplot(aes(x = date, y = value, colour = age, linetype = vaccination)))
+    } else {
+      plot_setup <- (prep_res_for_plotting(res, drop_states, condense_I) %>%
+                       ggplot(aes(x = date, y = value, colour = age)))
+    }
+
+    (plot_setup
      + geom_line()
      + facet_wrap(vars(state), scales = "free_y")
      + scale_x_date(date_breaks = "1 month",
