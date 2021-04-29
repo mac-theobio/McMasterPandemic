@@ -267,6 +267,9 @@ condense_age <- function(x) {
   ## check if there are even age categories in the object, and if not, return x
   if(!has_age(x)) return(x)
 
+  ## save original attributes
+  original_attributes <- attributes(x)
+
   ## get input type
   input_class <- class(x)
 
@@ -326,7 +329,10 @@ condense_age <- function(x) {
     x <- as.data.frame(x)
   }
 
-  class(x) <- input_class
+  ## add back original attributes
+  new_names <- names(x)
+  original_attributes$names <- new_names
+  attributes(x) <- original_attributes
 
   return(x)
 }

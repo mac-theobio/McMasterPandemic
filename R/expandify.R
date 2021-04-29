@@ -135,9 +135,15 @@ expand_state_vax <- function(x, vax_cat = mk_vaxcats()) {
 #' collapse vaccination categories (only; don't do other condensation)
 #' @param x a state vector or simulation result df (an object of class `state_pansim` or `pansim`)
 #' @importFrom stringr str_count
+#' @importFrom tidyr unite
 #' @export
 ## wrap into condense() ?
 condense_vax <- function(x) {
+  ## save original attributes
+  original_attributes <- attributes(x)
+
+  ## x has age?
+  age <- has_age(x)
 
   ## get input type
   input_class <- class(x)
@@ -205,7 +211,12 @@ condense_vax <- function(x) {
     x <- as.data.frame(x)
   }
 
-  class(x) <- input_class
+  x <- repair_names_age(x)
+
+  ## add back original attributes
+  new_names <- names(x)
+  original_attributes$names <- new_names
+  attributes(x) <- original_attributes
 
   return(x)
 }
