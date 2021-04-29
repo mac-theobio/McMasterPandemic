@@ -183,20 +183,35 @@ condense_vax <- function(x) {
 
   ## FIXME: figure out which subcategory includes vaccination
   ## and then group by all but that column (also except values, of course)
+  ## currently, this is hacky
 
   ## aggregate value by state (and timestep, if it exists)
   if("pansim" %in% input_class){
-    (x
-     %>% group_by(date, state)
-    ) -> x
+    if(age){
+      (x
+       %>% group_by(date, state, subcat1)
+      ) -> x
+    } else {
+      (x
+       %>% group_by(date, state)
+      ) -> x
+    }
   } else {
-    (x
-     %>% group_by(state)
-    ) -> x
+    if(age){
+      (x
+       %>% group_by(state, subcat1)
+      ) -> x
+    } else {
+      (x
+       %>% group_by(state)
+      ) -> x
+    }
   }
 
   (x
     %>% summarise(value = sum(value), .groups = "drop")
+    %>% {if(age){unite(., "state",
+                        state, subcat1)} else {.}}
     ## put data back into wide format
     %>% pivot_wider(names_from = "state",
                     values_from = "value")
