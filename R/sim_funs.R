@@ -155,14 +155,14 @@ make_beta <- function(state, params, full=TRUE) {
       }
 
       ## initialize vaccine trasmission reduction matrix
-      ## for unvax and vaxwait categories, assume no changes to transmission
-      ## for vaxdose categories, assume reduction to transmission equivalent to vaccine efficacy
+      ## for unvax and vaxdose categories, assume no changes to transmission
+      ## for vaxprotect categories, assume reduction to transmission equivalent to vaccine efficacy
       vax_trans_red <- matrix(1,
                               nrow = length(vax_cat),
                               ncol = length(vax_cat))
       rownames(vax_trans_red) <- vax_cat
 
-      vax_trans_red[grepl("dose", rownames(vax_trans_red)),] <- rep(params[["vax_efficacy"]], length(vax_cat))
+      vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(params[["vax_efficacy"]], length(vax_cat))
 
       ## apply vaccine transmission reduction over beta_0 (as computed above,
       ## either with or without age) using the kronecker product trick

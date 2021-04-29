@@ -88,11 +88,9 @@ condense_state <- function(x, values_only = FALSE){
 
 #' Construct vector of vaccine category labels
 #'
-#' @param use_doses (logical) should we make separate categories for two doses?
 #' @export
-mk_vaxcats <- function(use_doses = FALSE) {
-  if (use_doses) return(c("unvax", "onevax", "twovax"))
-  return(c("unvax", "vaxwait1", "vaxdose1"))
+mk_vaxcats <- function() {
+  return(c("unvax", "vaxdose1", "vaxprotect1"))
 }
 
 #' expand state vector by vaccination status
@@ -247,6 +245,7 @@ make_vaxrate <- function(state, params){
 #' @param ratemat model rate matrix
 #' @export
 add_updated_vaxrate <- function(state, params, ratemat){
+  vax_cat <- get_vax(params)
 
   ## capture initial state of ratemat
   if (inherits(ratemat,"Matrix")) {
@@ -282,7 +281,7 @@ add_updated_vaxrate <- function(state, params, ratemat){
   ## convert vax_block to Matrix::Matrix object for subset assignement
   vax_block <- Matrix::Matrix(vax_block)
 
-  ## update unvax -> vaxwait block
+  ## update unvax -> vaxdose block
   if(!has_age(params)){
     ## just once, without ages
     from_regex <- vax_cat[1]
@@ -303,9 +302,9 @@ add_updated_vaxrate <- function(state, params, ratemat){
 
   ## check that calculated per capita vax rate per day squares with total number of daily doses specified in params
   ratemat_vax_subset <- ratemat[
-    grepl("unvax", dimnames(ratemat)$from),
-    grepl("vaxwait", dimnames(ratemat)$to)]
-  state_vax_subset <- state[grepl("unvax", names(state))]
+    grepl(vax_cat[1], dimnames(ratemat)$from),
+    grepl(vax_cat[2], dimnames(ratemat)$to)]
+  state_vax_subset <- state[grepl(vax_cat[1], names(state))]
   ratemat_doses <- sum(ratemat_vax_subset %*% state_vax_subset)
   total_doses_match <- all.equal(ratemat_doses, params[["vax_doses_per_day"]])
   ## if total doses allocated via rate matrix does not match match total doses specified in params
@@ -380,6 +379,7 @@ expand_params_vax <- function(params,
   params[["vax_efficacy"]] <- vax_efficacy
   ## update average immune response rate
   params[["vax_response_rate"]] <- 1/vax_avg_response_time
+  ## add updates to epi parameters for vaxprotect layer
   params[["vax_alpha"]] <- vax_alpha
   params[["vax_mu"]] <- vax_mu
 
