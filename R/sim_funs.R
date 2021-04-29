@@ -361,12 +361,16 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         }
     }
 
-    ## FIXME: adjust epi parameters for vaxdose strata here (e.g. increase asymptomatic proportion, alpha, and set proportion of symptomatic infections that are mild, mu, to 1, as well as non-hosp mortality to 0)
+    ## FIXME: adjust epi parameters for vaxprotect strata here (e.g. increase asymptomatic proportion, alpha, and set proportion of symptomatic infections that are mild, mu, to 1, as well as non-hosp mortality to 0)
 
     ## vaccination-related rates
     if(has_vax(params)){
-      ## add vaccine allocation rates (from unvax to vaxwait)
+      ## get vax categories
+      vax_cat <- get_vax(params)
+
+      ## add vaccine allocation rates (from unvax to vaxdose)
       M <- add_updated_vaxrate(state, params, M)
+
 
       ## add vaccine immune response rate
       afun(paste0("S_.*", vax_cat[2]),
@@ -386,6 +390,32 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
       afun(paste0("Ip_.*", vax_cat[3]),
            paste0("Is_.*", vax_cat[3]),
            (1-vax_mu)*gamma_p)
+
+      ## TEMPORARY FIX: TURN OFF ALL HOSPITALDEATH FLOWS FOR VAXPROTECT BECAUSE WE ASSUME MU = 1
+      afun(paste0("Is_.*", vax_cat[3]),
+           paste0("H_.*", vax_cat[3]),
+           0)
+      afun(paste0("Is_.*", vax_cat[3]),
+           paste0("ICUs_.*", vax_cat[3]),
+           0)
+      afun(paste0("Is_.*", vax_cat[3]),
+           paste0("ICUd_.*", vax_cat[3]),
+           0)
+      afun(paste0("Is_.*", vax_cat[3]),
+           paste0("X_.*", vax_cat[3]),
+           0)
+      afun(paste0("H_.*", vax_cat[3]),
+           paste0("R_.*", vax_cat[3]),
+           0)
+      afun(paste0("H2_.*", vax_cat[3]),
+           paste0("R_.*", vax_cat[3]),
+           0)
+      afun(paste0("ICUs_.*", vax_cat[3]),
+           paste0("H2_.*", vax_cat[3]),
+           0)
+      afun(paste0("ICUd_.*", vax_cat[3]),
+           paste0("D_.*", vax_cat[3]),
+           0)
     }
 
     if (sparse) {
