@@ -554,7 +554,6 @@ smart_round <- function(x) {
   y
 }
 
-## ?Matrix::image-methods
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param method visualization method
@@ -569,6 +568,14 @@ smart_round <- function(x) {
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
+##' See \code{help("Matrix::image-methods")} for more.
+##' @examples
+##' params <- read_params("ICU1.csv")
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
+##' M <- make_ratemat(state, params)
+##' show_ratemat(M)
+##' ## silly but shows we can do multiple block types in different colours
+##' show_ratemat(M, add_blocks=TRUE, blocksize=c(3,5), block_col=c(2,4))
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          aspect="iso",
@@ -606,11 +613,17 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            colorkey = !const_width,
                            aspect=aspect, ...)
         if (add_blocks) {
+            if (is.null(blocksize)) stop("must specify blocksize")
             if (requireNamespace("latticeExtra")) {
-                ## FIXME: don't hardcode length (but evaluation within layer() is weird !
+              block_col <- rep(block_col, length.out=length(blocksize))
+              for (i in seq_along(blocksize)) {
+                ## offset by 0.5 so we are illustrating state values
+                dd <- list(col=block_col[i],pos=seq(nrow(M)+0.5,0,by=-blocksize[i]))
                 p <- (p
-                    + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
-                    + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
+                  + latticeExtra::layer(lattice::panel.abline(h=pos,col=col), data=dd)
+                  + latticeExtra::layer(lattice::panel.abline(v=pos,col=col), data=dd)
+                )
+              }
             }
         }
     } else if (method=="igraph") {
