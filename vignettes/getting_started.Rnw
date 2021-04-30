@@ -16,7 +16,7 @@
 \newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
 \renewcommand{\code}[1]{\inlinecode{R}{#1}}
 
-<<setup,include=FALSE>>=
+<<setup,include=FALSE,echo=FALSE>>=
 knitr::opts_chunk$set(
   collapse = TRUE,
   fig.height = 4,
@@ -434,10 +434,9 @@ plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
 If you find that the fitted model trajectory is peculiarly jagged, the
 likely culprit is the time step.  In this case, increase the number of
 internal time steps per time step (\code{ndt}), via adding
-\code{sim_args} to your \code{calibrate()} call as follows:
-<<troubleshooting_ndt, eval=FALSE>>=
-    , sim_args = list(ndt = 2)
-@ 
+\code{sim_args} to your \code{calibrate()} call, e.g.
+\code{sim\_args = list(ndt=2)}.
+
 \noindent
 You may need to experiment with \code{ndt} to get a smooth result.
 
@@ -487,7 +486,7 @@ time_pars <- data.frame(Date=as.Date(startdate:enddate)
 @ 
 \noindent
 This fits a \code{timevar} dataframe where \code{beta0=1}:
-<<>>=
+<<timevar>>=
 sim0_t <- update(sim0, params_timevar=time_pars)
 print(gg0
 	+ geom_point(data=sim0_t, aes(x=date,y=incidence), color="red")
@@ -496,7 +495,7 @@ print(gg0
 \noindent
 Now, as an example, we set relative $\beta$ to drop by a factor of 2
 (linearly) between 1 July 2020 and 1 Oct 2020.
-<<>>=
+<<lockdown>>=
 lockdown <- as.Date("2020-07-01")
 time_pars2 <- 
     data.frame(Date=as.Date(startdate:enddate)
@@ -510,7 +509,7 @@ time_pars2 <-
 head(time_pars2)
 @ 
 
-<<>>=
+<<lastplot>>=
 sim0_t_reduce <- update(sim0, params_timevar=time_pars2)
 gg_rel_beta <- (ggplot(time_pars, aes(x=Date))
 	+ geom_point(aes(y=Relative_value))
@@ -519,7 +518,7 @@ gg_rel_beta <- (ggplot(time_pars, aes(x=Date))
 @ 
 \noindent
 We can now look at the relative value of $\beta$ in each scenario, and the corresponding forecasted epidemic curves.
-<<>>=
+<<plot_rel_beta>>=
 print(gg_rel_beta)
 print(gg0
 		+ geom_point(data=sim0_t_reduce, aes(x=date,y=incidence), color="red")
