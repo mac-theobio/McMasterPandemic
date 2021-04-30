@@ -40,10 +40,11 @@ repair_names_age <- function(x){
   ## if there aren't any x names that have an age groups, just return x
   if(!any(grepl("_\\d+", the_names))) return(x)
 
-  ## first replace periods at the end of the name with a +
-  names(x) <- sub("\\.$", "\\+", names(x))
-  ## then replace remaining periods with a hyphen
+  ## first replace all periods with a hyphen
   names(x) <- sub("\\.", "-", names(x))
+  ## then replace hyphens at the end of the name or before an underscore with a +
+  names(x) <- sub("-$", "\\+", names(x))
+  names(x) <- sub("-_", "\\+_", names(x))
 
   return(x)
 }
