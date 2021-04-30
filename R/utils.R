@@ -613,8 +613,14 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            colorkey = !const_width,
                            aspect=aspect, ...)
         if (add_blocks) {
-            if (is.null(blocksize)) stop("must specify blocksize")
-            if (requireNamespace("latticeExtra")) {
+          if (is.null(blocksize)) {
+            warning("guessing blocksize from dimnames")
+            ## FIXME: could also try to look for number of repetitions?
+            epi_vars <- unique(gsub("_.*$","",colnames(M)))
+            epi_vars <- setdiff(epi_vars, c(test_accumulators, non_expanded_states))
+            blocksize <- length(epi_vars)
+          }
+          if (requireNamespace("latticeExtra")) {
               block_col <- rep(block_col, length.out=length(blocksize))
               for (i in seq_along(blocksize)) {
                 ## offset by 0.5 so we are illustrating state values
