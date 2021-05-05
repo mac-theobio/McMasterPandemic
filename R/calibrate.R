@@ -228,9 +228,11 @@ run_sim_mobility <- function(params,
 ## FIXME: generalize
 ##' @param ... additional arguments to \code{run_sim}
 ##' @param params parameters
-##' @param time_args list containing \code{break_dates}
+##' @param time_args list containing \code{break_dates}, **FIXME and Symbol!
 ##' @param sim_args parameters to pass to \code{\link{run_sim}}
-##' @param extra_pars parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}
+##' @param extra_pars parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}:
+##' **FIXME** should contain rel_<parname> values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
+##' is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)
 ##' @param break_dates obsolete
 ##' @param return_timevar return data frame of beta by time?
 ##' @examples
@@ -251,8 +253,7 @@ run_sim_break <- function(params,
                           return_timevar=FALSE,
                           ...) {
     if (!is.null(break_dates)) {
-        warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
-        time_args <- list(break_dates=break_dates)
+        stop("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
     }
     ## FIXME:: HACK for now
     ## other_args <- other_args[!grepl("nb_disp",names(other_args))]
@@ -265,9 +266,10 @@ run_sim_break <- function(params,
     }
     if (!is.null(time_args$break_dates)) {
         ## construct time-varying frame, parameters
+        ######  FIXME: generalized here
         timevar <- data.frame(Date=anydate(time_args$break_dates),
-                              Symbol="beta0",
-                              Relative_value=extra_pars$rel_beta0)
+                              Symbol=time_args$Symbol %||% "beta0",
+                              Relative_value=extra_pars$value %||% extra_pars$rel_beta0)
         if (return_timevar) return(timevar)
         sim_args <- c(sim_args,
                       list(params_timevar=timevar))
@@ -497,10 +499,10 @@ mle_fun <- function(p, data,
                     aggregate_args=NULL,
                     priors=NULL,
                     na_penalty=1e6,
-                    ...) {
-
+                    ...     ## ... is to drop any extra crap that gets in there
+                    ) {
     ## browser()
-    ## ... is to drop any extra crap that gets in there
+
     if (debug) cat("mle_fun: ",p,"\n")
     var <- pred <- value <- NULL    ## defeat global-variable checkers
     ## pass ALL of opt_pars and p to forecaster

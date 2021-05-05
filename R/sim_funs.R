@@ -334,6 +334,16 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
+    if (has_vax) {
+        ## states:  [epid_class]_age(_*)?
+        nonsymp_states <- c("S","E","Ia","Ip","R")
+        nonsymp_regex <- sprintf("^%s_",paste(nonsymp_states,collapse="|"))
+        ## sum over ages ...  collapse_states ...
+        total_nonsymp <- sum(states[nonsymp_states])
+        ## modify rates between vax statuses
+        ## modify *_v1 -> *_v2 transitions
+        afun("*_v1","*_v2") <- doses_per_day/popsize
+    }
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
