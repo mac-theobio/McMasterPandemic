@@ -64,3 +64,14 @@ I_before_jump <- (day_before_jump
 So at this point we have `r I_before_jump %>% format(scientific = FALSE, big.mark = ",")` infectives, around `r round(I_before_jump/base_params[["N"]]*100)`% of the total population (`r format(base_params[["N"]], scientific = FALSE, big.mark = ",")` people), and each of these infectives is supposed to transmit to `r beta0` susceptibles the next day. This is what causes the (massive) jump into negative susceptibles at the next time step.
 
 The negative jump issue shouldn't be a difficult problem to solve, but we should be smart about how and when a check gets performed to avoid significant slow-downs in the sims. I should also say that this hasn't been a concern for simulations of realistic COVID-19 parameters, but I've come up against it in simulating vaccination for what I thought was a reasonable number of total doses per day (based on Ontario's population size and the actual number of doses per day being administered there currently).
+
+
+## Plotting
+
+```{r echo = FALSE}
+print(ggplot(res_long,aes(x=date,y=value)) 
+	+ geom_line() 
+	+ facet_wrap(~name,scale="free") 
+	+ xlim(c(as.Date("2020-02-01"),as.Date("2020-04-01")))
+)
+```
