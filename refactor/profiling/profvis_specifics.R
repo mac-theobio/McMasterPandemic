@@ -1,3 +1,4 @@
+library(styler)
 library(profvis)
 library(McMasterPandemic)
 library(anytime)

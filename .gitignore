@@ -67,4 +67,3 @@ cache
 wget-*
 refactor/*/*.csv
 refactor/*/*.txt
-refactor/experimental/test.R
