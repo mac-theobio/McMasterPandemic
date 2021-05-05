@@ -1,3 +1,14 @@
+##' Compute elementwise multiplication of a vector by each column in a matrix
+##' @param M matrix
+##' @param v vector
+##' @export
+col_multiply <- function(M, v){
+    new <- t(t(M) * rep(v, rep.int(nrow(M), length(v))))
+#    old <- sweep(M, v, MARGIN=1, FUN="*")
+#    print(all(new==old))
+    return (new)
+}
+
 ##' construct Jacobian matrix for ICU model
 ##' (not quite complete: doesn't include flows to R)
 ## FIXME: derive from make_ratemat 
@@ -373,7 +384,7 @@ do_step <- function(state, params, ratemat, dt=1,
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
-            flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
+            flows <- col_multiply(ratemat, state)*dt #sweep(ratemat, state, MARGIN=1, FUN="*")*dt
         } else {
             ## FIXME: change var names? {S,E} is a little confusing (sum, exp not susc/exposed)
             ## use hazard function: assumes exponential change
@@ -388,7 +399,7 @@ do_step <- function(state, params, ratemat, dt=1,
             E <- exp(-S*dt)
             ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
             norm_sum <- ifelse(S==0, 0, state/S)
-            flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
+            flows <- (1-E)*col_multiply(ratemat, norm_sum)#sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
             diag(flows) <- 0  ## no flow
         }
     } else {
@@ -823,7 +834,7 @@ gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
     ## compute 
-    flows <- sweep(M, y, MARGIN=1, FUN="*")
+    flows <- col_multiply(M, y) # sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
 }

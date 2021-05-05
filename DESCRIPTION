@@ -31,7 +31,6 @@ Imports:
 	deSolve, 
 	splines, 
 	diagram,
-	Rfast
 Suggests: 
 	knitr, 
 	testthat, 
@@ -43,7 +42,6 @@ Suggests:
 	directlabels, 
 	rmarkdown, 
 	tidyverse
-Additional_repositories: https://github.com/ropenscilabs/autotest
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL
