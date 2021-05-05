@@ -9,9 +9,13 @@ show_ratemat(
   method = c("Matrix", "diagram", "igraph"),
   aspect = "iso",
   add_blocks = NULL,
+  blocksize = NULL,
+  block_col = 2,
   axlabs = TRUE,
   const_width = (method == "igraph"),
-  do_symbols = NULL
+  do_symbols = NULL,
+  box.size = 0.02,
+  ...
 )
 }
 \arguments{
@@ -28,7 +32,19 @@ show_ratemat(
 \item{const_width}{set flows to constant value of 1?}
 
 \item{do_symbols}{plot symbolic values for flows?}
+
+\item{box.size}{box size for diagram}
+
+\item{...}{arguments to pass to lower level functions (plotmat::diagram/image/igraph)}
 }
 \description{
 visualize rate (per-capita flow) matrix
+}
+\examples{
+params <- read_params("ICU1.csv")
+state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
+M <- make_ratemat(state, params)
+show_ratemat(M)
+## silly but shows we can do multiple block types in different colours
+show_ratemat(M, add_blocks=TRUE, blocksize=c(3,5), block_col=c(2,4))
 }

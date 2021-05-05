@@ -568,7 +568,7 @@ smart_round <- function(x) {
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
-##' See \code{help("Matrix::image-methods")} for more.
+## See \code{help("Matrix::image-methods")} for more.
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
