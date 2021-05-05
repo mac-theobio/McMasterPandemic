@@ -13,9 +13,9 @@ state <- make_state(params=params,type="ICU1")
 
 test_that("basic examples_snapshot", {
     s0 <- run_sim_range(params,state, nt=100)
-    expect_snapshot(s0)
+    expect_snapshot(tail(s0, 10))
     s1 <- run_sim(params,state,start_date="01-Mar-2020",end_date="01-Jun-2020")
-    expect_snapshot(s1)
+    expect_snapshot(tail(s1, 10))
 })
 
 test_that("params methods_snapshot", {
@@ -33,7 +33,7 @@ test_that("time-varying snapshot", {
                         end_date="01-Jun-2020",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE))
-    expect_snapshot(resICU_t)
+    expect_snapshot(tail(resICU_t,10))
     suppressWarnings(print(plot(resICU_t)))
     ## not showing foi because of log / <= 1 filter
     suppressWarnings(print(plot(resICU_t,condense=FALSE,log=TRUE,drop_states=c("t","S","R","E"))))
@@ -48,7 +48,7 @@ test_that("time-varying with ndt>1", {
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE),
                         ndt=10)
-    expect_snapshot(resICU_t2)
+    expect_snapshot(tail(resICU_t2, 10))
 })
 
 test_that("ndt>1", {
@@ -60,8 +60,8 @@ test_that("ndt>1", {
     s3B <- run_sim(params,state,
                   start_date="1-Mar-2020",
                   end_date="20-Mar-2020")
-    expect_snapshot(s3)
-    expect_snapshot(s3B)
+    expect_snapshot(tail(s3,10))
+    expect_snapshot(tail(s3B,10))
 })
 
 
@@ -72,9 +72,9 @@ test_that("var-specific obsdisp", {
     ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
     s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss)
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
-    expect_snapshot(s0)
+    expect_snapshot(tail(s0, 10))
     s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
-    expect_snapshot(s1)
+    expect_snapshot(tail(s1, 10))
 })
 
 
