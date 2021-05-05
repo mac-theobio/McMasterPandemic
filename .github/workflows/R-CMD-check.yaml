@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - master
+      - ip_devel
   pull_request:
     branches:
       - main
