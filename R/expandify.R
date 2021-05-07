@@ -233,6 +233,9 @@ condense_vax <- function(x) {
   original_attributes$names <- new_names
   attributes(x) <- original_attributes
 
+  ## remove vax categories attribute
+  attr(x, "vax_cat") <- NULL
+
   return(x)
 }
 
