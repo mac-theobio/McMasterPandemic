@@ -1022,7 +1022,13 @@ make_state <- function(N=params[["N"]],
           istart <- condense_state(E_values)
           if(vaxify){
             ## aggregate over vax strata
+            if(ageify){
+            ## by age
             istart <- condense_vax(istart)
+            } else
+            {
+              istart <- rowSums(istart)
+            }
           }
           ## just get bare values
           istart <- unname(unlist(istart))
