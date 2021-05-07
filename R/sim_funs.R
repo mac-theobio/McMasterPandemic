@@ -543,7 +543,6 @@ do_step <- function(state, params, ratemat, dt=1,
             ## from per capita rates to absolute changes
             flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
         } else {
-            ## FIXME: change var names? {S,E} is a little confusing (sum, exp not susc/exposed)
             ## use hazard function: assumes exponential change
             ## (constant per capita flows) rather than linear change
             ## (constant absolute flows) within time steps
@@ -552,11 +551,11 @@ do_step <- function(state, params, ratemat, dt=1,
             ##    S = sum(r_i)   ## total rate
             ##    p_{ij}=(1-exp(-S*dt))*r_j/S
             ##    p_{ii}= exp(-S*dt)
-            S <- rowSums(ratemat)
-            E <- exp(-S*dt)
+            total_rate <- rowSums(ratemat)
+            exp_total_rate <- exp(-total_rate*dt)
             ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
-            norm_sum <- ifelse(S==0, 0, state/S)
-            flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
+            norm_sum <- ifelse(total_rate==0, 0, state/total_rate)
+            flows <- (1-exp_total_rate)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
             diag(flows) <- 0  ## no flow
         }
     } else {
