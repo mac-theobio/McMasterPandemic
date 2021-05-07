@@ -449,7 +449,7 @@ update_foi <- function(state, params, beta) {
 ## update the entire rate matrix; we need this when we are doing testify models
 ##  because we expect testing rates to change daily ...
 update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
-    if (inherits(ratemat,"Matrix")) {
+    if (inherits(ratemat,"Matrix") && has_testing(params)) {
         aa <- c("wtsvec","posvec","testing_time")
         saved_attrs <- setNames(lapply(aa,attr,x=ratemat),aa)
     }
@@ -504,7 +504,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
     }
 
     ## ugh, restore attributes if necessary
-    if (inherits(ratemat,"Matrix")) {
+    if (inherits(ratemat,"Matrix") && has_testing(params)) {
         for (a in aa) {
             attr(ratemat,a) <- saved_attrs[[a]]
         }
