@@ -390,32 +390,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=TRUE,
       afun(paste0("Ip_.*", vax_cat[3]),
            paste0("Is_.*", vax_cat[3]),
            (1-vax_mu)*gamma_p)
-
-      ## TEMPORARY FIX: TURN OFF ALL HOSPITALDEATH FLOWS FOR VAXPROTECT BECAUSE WE ASSUME MU = 1
-      afun(paste0("Is_.*", vax_cat[3]),
-           paste0("H_.*", vax_cat[3]),
-           0)
-      afun(paste0("Is_.*", vax_cat[3]),
-           paste0("ICUs_.*", vax_cat[3]),
-           0)
-      afun(paste0("Is_.*", vax_cat[3]),
-           paste0("ICUd_.*", vax_cat[3]),
-           0)
-      afun(paste0("Is_.*", vax_cat[3]),
-           paste0("X_.*", vax_cat[3]),
-           0)
-      afun(paste0("H_.*", vax_cat[3]),
-           paste0("R_.*", vax_cat[3]),
-           0)
-      afun(paste0("H2_.*", vax_cat[3]),
-           paste0("R_.*", vax_cat[3]),
-           0)
-      afun(paste0("ICUs_.*", vax_cat[3]),
-           paste0("H2_.*", vax_cat[3]),
-           0)
-      afun(paste0("ICUd_.*", vax_cat[3]),
-           paste0("D_.*", vax_cat[3]),
-           0)
     }
 
     if (sparse) {
