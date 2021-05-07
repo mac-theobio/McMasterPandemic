@@ -452,6 +452,14 @@ do_step <- function(state, params, ratemat, dt=1,
         }
     } ## not exponential run or stoch proc or ignore-sum
     return(state)
+    # Why is this throwing warnings in make_state?   
+#    if(any(state < -sqrt(.Machine$double.eps))){
+#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+#    }
+#    else if(any(state < 0)){
+#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+#    }
+
 }
 
 ## run_sim()
@@ -715,6 +723,18 @@ run_sim <- function(params
     attr(res,"params_timevar") <- params_timevar
 	 ## attr(res,"final_state") <- state
     class(res) <- c("pansim","data.frame")
+    
+    # check requires capital letters for state variables? Fix?
+    state_names <- names(res)
+    state_names_indices <- sapply(state_names, function(x) {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)})
+    state_names <- state_names[state_names_indices]
+    
+    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
+        warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps)')
+    }
+    else if(any(res[state_names] < 0)){
+        warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0.')
+    }
     return(res)
 }
 
@@ -822,6 +842,7 @@ make_state <- function(N=params[["N"]],
     }
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
+    
     return(state)
 }
 
@@ -916,6 +937,14 @@ run_sim_range <- function(params
     }
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
+
+    
+    if(any(state < -sqrt(.Machine$double.eps))){
+        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+    }
+    else if(any(state < 0)){
+        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+    }
     return(res)
 }
 
