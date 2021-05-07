@@ -310,10 +310,14 @@ condense.pansim <-  function(object, add_reports=TRUE,
     check_dots(...)
     aa <- get_attr(object)
 
-    regex_age_suffix <- "_[0-9]+\\.[0-9]?[0-9]?$"
+    regex_expanded_suffix <- case_when(
+      has_age(params) & has_vax(params) ~ "_[0-9]+\\.[0-9]?[0-9]?_",
+      has_age(params) ~ "_[0-9]+\\.[0-9]?[0-9]?$",
+      has_vax(params) ~ "vax",
+      T ~ "")
 
     ## condense columns and add, if present
-    add_col <- function(dd,name,regex, collapse = TRUE) {
+    add_col <- function(dd, name, regex, collapse = TRUE) {
         vars <- grep(regex, names(object), value=TRUE)
         if (length(vars)>0) {
             if (collapse){
@@ -326,11 +330,11 @@ condense.pansim <-  function(object, add_reports=TRUE,
         return(dd)
     }
 
-    ## should incidence be added for age-structured sims?
+    ## should incidence be added for expanded sims?
     ## (need foi columns, if so)
-    add_incidence_age <- (add_reports
-                          && has_age(params)
-                          && any(grepl("^foi", names(object))))
+    add_expanded_reports <- (add_reports
+                              && (has_age(params) || has_vax(params))
+                              && any(grepl("^foi", names(object))))
 
     ## check first if condensed
     ## FIXME: rearrange logic?
@@ -343,17 +347,18 @@ condense.pansim <-  function(object, add_reports=TRUE,
             ## start by keeping date
             dd <- object["date"]
 
-            ## if foi is in results, keep unaggregated S categories for now
-            ## (need them to calculate incidence)
-            ## FIXME: change to check with has_age(params) instead?
-            if (add_incidence_age){
+            ## if foi by subcategory is in results,
+            ## keep unaggregated S categories for now
+            ## (so that we can calculate incidence)
+            if (add_expanded_reports){
                 dd <- add_col(dd,"S","^S", collapse = FALSE)
             }
 
             ## keep susc and exposed classes
             for (n in c("S","E")) {
-                dd <- add_col(dd,n,paste0("^",n))
+                dd <- add_col(dd, n, paste0("^",n))
             }
+
             dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
             for (n in c("H", "ICU","R")) {
                 dd <- add_col(dd,n,paste0("^",n))
@@ -373,7 +378,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
             if ("foi" %in% names(object)){
                 dd <- data.frame(dd, foi = object[["foi"]])
             } else {
-                ## if foi is age-structured keep without condensing
+                ## if foi is expanded, keep without condensing
                 ## in case we want to calculate incidence later
                 if (any(grepl("^foi", names(object)))){
                     dd <- add_col(dd,"foi","^foi", collapse = FALSE)
@@ -393,11 +398,10 @@ condense.pansim <-  function(object, add_reports=TRUE,
                     warning("add_reports requested but delay parameters missing")
                 } else {
                     if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-                    ## FIXME: update this check after updating calc_reports to work with age structure
                     ## if we don't either have condensed S or age-specific S, can't generate reports
-                    if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
-                        stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
-                    }
+                    # if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
+                    #     stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
+                    # }
                     cr <- calc_reports(dd, params, add_cumrep=cum_reports)
                     dd <- data.frame(dd, cr)
                 }
@@ -407,10 +411,10 @@ condense.pansim <-  function(object, add_reports=TRUE,
                                            names(object))])
             }
         }
-        ## but if not keep_all, drop any age-specific reports (if they've been
+        ## but if not keep_all, drop any expanded reports (if they've been
         ## added to the output object)
-        if(!keep_all){
-            dd <- dd[!grepl(paste0("^(incidence|report)", regex_age_suffix),
+        if(!keep_all && (has_age(params) || has_vax(params))){
+            dd <- dd[!grepl(paste0("^(incidence|report)", regex_expanded_suffix),
                             names(dd))]
         }
     } ## add_reports
@@ -421,7 +425,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
 
         ## drop age-specific S classes
         ## (if they still exist from the incidence calc)
-        if(add_incidence_age && !keep_all){
+        if(add_expanded_reports && !keep_all){
             dd <- dd[!grepl("^S_", names(dd))]
         }
         dd <- put_attr(dd,aa)
