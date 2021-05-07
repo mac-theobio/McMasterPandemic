@@ -48,13 +48,14 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
         ## otherwise, just do total incidence
         incidence <- data.frame(incidence = x$foi*x$S)
     }
-    ## FIXME: only calculates total reports right now, not age-stratified see
-    ## what happens if, within calc_conv, we do a convolution for eacha age
-    ## group and then sum up vs one convolution over total incidence
-    report <- calc_conv(incidence,params)
 
     ## add total incidence to output
     incidence$incidence <- rowSums(incidence)
+
+    ## FIXME: only calculates total reports right now, not age-stratified see
+    ## what happens if, within calc_conv, we do a convolution for eacha age
+    ## group and then sum up vs one convolution over total incidence
+    report <- calc_conv(incidence$incidence,params)
 
     ret <- dfs(incidence, report)
     ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
