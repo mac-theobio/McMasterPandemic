@@ -266,7 +266,7 @@ make_beta <- function(state, params, full=TRUE) {
 ##' }
 ##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
+make_ratemat <- function(state, params, do_ICU=TRUE, sparse=TRUE,
                          symbols=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
@@ -302,9 +302,9 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     P <- as.list(params)
     unpack(P)
     ## blank matrix
-    M <- matrix(0,
-                nrow=ns, ncol=ns,
-                dimnames=list(from=state_names, to=state_names))
+    M <- Matrix::Matrix(0,
+                        nrow=ns, ncol=ns,
+                        dimnames=list(from=state_names, to=state_names))
 
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
