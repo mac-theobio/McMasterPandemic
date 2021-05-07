@@ -290,7 +290,7 @@ add_updated_vaxrate <- function(state, params, ratemat){
   vax_rate <- make_vaxrate(state, params)
 
   ## set up block diagonal matrix for vaccine allocation step within each age group
-  epi_states <- names(condense_age(condense_vax(state)))
+  epi_states <- attr(state, "epi_cat")
   vax_block <- matrix(0,
                       nrow = length(epi_states),
                       ncol = length(epi_states),

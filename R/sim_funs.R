@@ -1050,6 +1050,7 @@ make_state <- function(N=params[["N"]],
         state[names(x)] <- x
     }
     untestify_state <- state ## FIXME: what is this for??
+    attr(state, "epi_cat") <- state_names
     class(state) <- "state_pansim"
     return(state)
 }
