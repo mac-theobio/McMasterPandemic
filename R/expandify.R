@@ -276,16 +276,11 @@ make_vaxrate <- function(state, params){
 add_updated_vaxrate <- function(state, params, ratemat){
   vax_cat <- get_vax(params)
 
-  ## capture initial state of ratemat
-  if (inherits(ratemat,"Matrix")) {
-    sparse <- TRUE
-    saved_attrs <- setNames(lapply(aa,attr,x=ratemat),aa)
-  } else {
-    sparse <- FALSE
+  ## if original matrix isn't sparse, make it sparse for this bit
+  original_sparse <- inherits(ratemat, "Matrix")
+  if (!original_sparse){
+    ratemat <- Matrix::Matrix(ratemat)
   }
-
-  ## convert to a Matrix::Matrix object, so we can assign to subsets within the matrix
-  ratemat <- Matrix::Matrix(ratemat)
 
   ## calculate per capita rate of doses per day
   ## (per capita = per non-symptomatic individuals here, because that's
@@ -343,11 +338,7 @@ add_updated_vaxrate <- function(state, params, ratemat){
   }
 
   ## make updated ratemat have the same type and attributes as original ratemat
-  if (sparse){
-    for (a in aa) {
-      attr(ratemat,a) <- saved_attrs[[a]]
-    }
-  } else {
+  if (!original_sparse){
     ratemat <- as.matrix(ratemat)
   }
 
