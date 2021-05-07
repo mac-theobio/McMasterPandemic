@@ -335,6 +335,9 @@ condense_age <- function(x) {
   original_attributes$names <- new_names
   attributes(x) <- original_attributes
 
+  ## remove age attribute
+  attr(x, "age_cat") <- NULL
+
   return(x)
 }
 
