@@ -85,22 +85,35 @@ rExp <- function(params, steps=100, ndt=1,
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         ## need to set total population size to 1
+        N_orig <- params[["N"]]
         if(has_age(params)){
+          N_orig <- params[["N"]]
           params[["N"]] <- mk_Nvec(attr(params, "age_cat"), Ntot = 1)
         } else {
           params[["N"]] <- 1
+        }
+        ## if vaxify, have to update total number of doses per day to doses per day per capita (so the rate is a reasonable order of magnitude)
+        if(has_vax(params)){
+          params[["vax_doses_per_day"]] <- params[["vax_doses_per_day"]]/sum(N_orig)
         }
         ## potential recursion here: have to make sure
       	state <- make_state(N=1, E0=1e-5, type="ICU1",
                                   use_eigvec=FALSE,
                                   params=params,
       	                          ageify=FALSE,
+      	                          vaxify=FALSE,
                                   testify=FALSE)  ## FIXME: don't assume ICU1?
         if(has_age(params)){
           state <- expand_state_age(state,
                                     age_cat = attr(params, "age_cat"),
                                     Nvec = params[["N"]])
         }
+
+      	if(has_vax(params)){
+      	  ## update doses per day in params to a per capita rat
+      	  state <- expand_state_vax(state,
+      	                            vax_cat = attr(params, "vax_cat"))
+      	}
 
       	M <- make_ratemat(state=state, params=params)
     	if (testify) {
