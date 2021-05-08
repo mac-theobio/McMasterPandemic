@@ -1,4 +1,4 @@
-library(autotest)
+setlibrary(autotest)
 library(testthat)
 library(dplyr)
 
@@ -11,11 +11,11 @@ broken_tests <- c('make_test_wtsvec', 'mle_fun', 'vis_model', 'write_params', 'r
 
 oldw <- getOption("warn")
 options(warn = -1)
-x <- autotest_package('package:McMasterPandemic', test = TRUE,exclude = broken_tests) 
+x <- autotest_package('package:McMasterPandemic', test = TRUE,exclude = broken_tests)
 options(warn = oldw)
 
-grouped_tests = x %>% 
-  dplyr::group_by(fn_name) %>% 
+grouped_tests = x %>%
+  dplyr::group_by(fn_name) %>%
   dplyr::summarise(all(test))
 
 for(row in 1:nrow(grouped_tests)){
@@ -23,7 +23,7 @@ for(row in 1:nrow(grouped_tests)){
 }
 #expect(all(x$test==TRUE), paste(toString(sum(x$test)),'automatic tests failed.'))
 # Really not sure what is going on with expect_autotest_no_errors
-# expect_autotest_no_err(x) 
+# expect_autotest_no_err(x)
 })
 
 
