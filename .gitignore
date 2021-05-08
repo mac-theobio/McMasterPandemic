@@ -71,3 +71,6 @@ wget-*
 !notes/*.html
 notes/debugging.R
 notes/expandify_implementation.nb.html
+
+## ignore still unpublished contact matrices from Brankston et al.
+inst/params/brankston-cmats/*.csv
