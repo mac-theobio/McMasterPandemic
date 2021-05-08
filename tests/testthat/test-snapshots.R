@@ -14,7 +14,7 @@ state <- make_state(params=params,type="ICU1")
 test_that("basic examples_snapshot", {
     s0 <- run_sim_range(params,state, nt=100)
     expect_snapshot(tail(s0, 10))
-    s1 <- run_sim(params,state,start_date="01-Mar-2020",end_date="01-Jun-2020")
+    s1 <- run_sim(params,state,start_date="2020-03-01",end_date="2020-06-01")
     expect_snapshot(tail(s1, 10))
 })
 
@@ -23,14 +23,14 @@ test_that("params methods_snapshot", {
 })
 
 
-time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
+time_pars <- data.frame(Date=c("2020-03-10","2020-03-25"),
                         Symbol=c("beta0","beta0"),
                         Relative_value=c(0.5,0.1))
 
 test_that("time-varying snapshot", {
     resICU_t <- run_sim(params,state,
-                        start_date="01-Mar-2020",
-                        end_date="01-Jun-2020",
+                        start_date="2020-03-01",
+                        end_date="2020-06-01",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE))
     expect_snapshot(tail(resICU_t,10))
@@ -43,8 +43,8 @@ test_that("time-varying snapshot", {
 
 test_that("time-varying with ndt>1", {
     resICU_t2 <- run_sim(params,state,
-                        start_date="1-Mar-2020",
-                        end_date="1-June-2020",
+                        start_date="2020-03-01",
+                        end_date="2020-06-01",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE),
                         ndt=10)
@@ -55,11 +55,11 @@ test_that("ndt>1", {
     s2 <- run_sim_range(params,state, nt=100, dt=0.2)
     expect_snapshot(tail(s2, 10))
     s3 <- run_sim(params,state, ndt=20,
-                  start_date="1-Mar-2020",
-                  end_date="20-Mar-2020")
+                  start_date="2020-03-01",
+                  end_date="2020-03-20")
     s3B <- run_sim(params,state,
-                  start_date="1-Mar-2020",
-                  end_date="20-Mar-2020")
+                  start_date="2020-03-01",
+                  end_date="2020-03-20")
     expect_snapshot(tail(s3,10))
     expect_snapshot(tail(s3B,10))
 })

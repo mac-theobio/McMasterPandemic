@@ -18,8 +18,8 @@ expect(identical(col_multiply(M, v), baseline), 'col_multiply not working as exp
 
 params1 <- read_params("ICU1.csv")
 state1 <- make_state(params = params1)
-sdate <- "2020-Feb-10"
-edate <- "2020-Jun-1"
+sdate <- "2020-02-10"
+edate <- "2020-06-01"
 
 test_that("State variable <0 warning doesn't throw in the typical case", {
   expect_warning(run_sim(params = params1, state = state1, start_date = sdate, end_date = edate), regexp=NA)

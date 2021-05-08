@@ -5,9 +5,9 @@ library(dplyr)
 params <- read_params("ICU1.csv")
 paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 state <- make_state(params=params)
-sdate <- "10-Feb-2020" ## arbitrary!
+sdate <- "2020-02-10" ## arbitrary!
 set.seed(101)
-res1 <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
+res1 <- run_sim(params,state,start_date=sdate,end_date="2020-06-01")
 res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 
 cdat <- (res1_S

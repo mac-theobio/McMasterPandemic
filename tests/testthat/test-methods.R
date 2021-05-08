@@ -3,7 +3,7 @@ library(McMasterPandemic)
 library(ggplot2)
 
 params <- read_params("ICU1.csv")
-s <- run_sim(params, start_date="1-Mar-2020", end_date="1-May-2020")
+s <- run_sim(params, start_date="2020-03-01", end_date="2020-05-01")
 
 context("aggregation")
 
@@ -27,7 +27,7 @@ test_that("basic aggregation", {
                  c("date", "S", "E", "I", "H", "ICU", "R", "hosp", "X",
                    "death", "D", "foi", "incidence", "report", "cumRep"))
     expect_error(aggregate(s,junk=TRUE), "unknown arguments")
-    a1 <- aggregate(condense(s), start="12-Feb-2020", period="7 days",
+    a1 <- aggregate(condense(s), start="2020-02-12", period="7 days",
                     FUN=list(mean=c("H","ICU","I"),
                              sum=c("report","death")))
     expect_equal(dim(a1), c(10,6))

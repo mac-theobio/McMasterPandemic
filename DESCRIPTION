@@ -19,7 +19,6 @@ Imports:
 	tidyr, 
 	plyr, 
 	purrr, 
-	anytime, 
 	pomp, 
 	scales, 
 	bbmle (>= 1.0.23.5), 

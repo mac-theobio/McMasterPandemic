@@ -483,22 +483,21 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 ##' paramsSz <- update(paramsS, zeta=5)
 ##' state <- make_state(params=params)
-##' time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
+##' time_pars <- data.frame(Date=c("2020-03-20","2020-03-25"),
 ##'                        Symbol=c("beta0","beta0"),
 ##'                        Relative_value=c(0.7,0.1),
 ##'                        stringsAsFactors=FALSE)
-##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
-##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",
+##' res1 <- run_sim(params,state,start_date="2020-02-01",end_date="2020-06-01")
+##' res1X <- run_sim(params,state,start_date="2020-02-01",end_date="2020-06-01",
 ##'                  condense_args=list(keep_all=TRUE))
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
 ##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
-##' res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
+##' res3_S_t <- update(res2_S_t,stoch_start="2020-04-01")
 ##' res3_Sz <- update(res1_S, params=paramsSz)
 ##' plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 ##' @importFrom stats rnbinom na.exclude napredict
-##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
 ## FIXME: params_timevar
@@ -506,8 +505,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ## FIXME: automate state construction better
 run_sim <- function(params
         , state=NULL
-        , start_date="2020-Mar-20"
-        , end_date="2020-May-1"
+        , start_date="2020-03-20"
+        , end_date="2020-05-1"
         , params_timevar=NULL
         , dt=1
         , ndt=1  ## FIXME: change default after testing?
@@ -528,10 +527,9 @@ run_sim <- function(params
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
-    start_date <- anydate(start_date); end_date <- anydate(end_date)
+    start_date <- as.Date(start_date); end_date <- as.Date(end_date)
     if (!is.null(stoch_start)) {
-        ## anydate() strips names ...
-        stoch_start <- setNames(anydate(stoch_start),names(stoch_start))
+        stoch_start <- setNames(as.Date(stoch_start),names(stoch_start))
     }
     if (length(stoch_start)==1) stoch_start <- c(obs=stoch_start, proc=stoch_start)
     date_vec <- seq(start_date,end_date,by=dt)
@@ -583,7 +581,7 @@ run_sim <- function(params
             if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
                 stop("bad names in params_timevar: ",paste(npt,collapse=","))
             }
-            params_timevar$Date <- anydate(params_timevar$Date)
+            params_timevar$Date <- as.Date(params_timevar$Date)
             ## tryCatch(
             ##     params_timevar$Date <- as.Date(params_timevar$Date),
             ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))

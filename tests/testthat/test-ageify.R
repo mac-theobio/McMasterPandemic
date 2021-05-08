@@ -42,6 +42,6 @@ test_that("generic age stuff", {
     rr <- run_sim_range(ppa, ss2, nt=1000)
     ## suppress warnings about values <0 (??)
     suppressWarnings(matplot(rr[,1],rr[,-1],lty=1,type="l",log="y"))
-    rr2 <- run_sim(ppa, ss2,end_date="2022-Nov-1",condense=FALSE)
+    rr2 <- run_sim(ppa, ss2,end_date="2022-11-01",condense=FALSE)
     plot(rr2,log=TRUE)+theme(legend.position="none")
 })
