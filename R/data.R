@@ -7,13 +7,13 @@
 "ont_all"
 
 #' Fitted models to Ontario data
-#' @rdname ont_cal1 #ontario_fits
+#' @rdname ontario_fits
 #' @name ont_cal1
 #' @format a calibrated object ...
 #' Sample COVID19 calibration
 "ont_cal1"
 
-#' @rdname ont_cal_2brks #ontario_fits
+#' @rdname ontario_fits
 #' @name ont_cal_2brks
 #' @format a calibrated object ...
 #' Sample COVID19 calibration - only two breakpoints
@@ -23,10 +23,10 @@
 #' @name comb_sub
 #' @format a data frame containing date rel_activity
 #' Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces; Google data up to 22 May)
-"comb_sub"
+"comb_sub" 
 
 #' @rdname ontario_fits
 #' @name ont_cal_mob1
 #' @format a calibrated object ...
 #' Calibration to mobility data
-"ont_cal_mob1"
+"ont_cal_mob1" 

@@ -348,6 +348,7 @@ run_sim_decay <- function(params,
 ##' @param calc_Rt calculate and include R(t) in prediction/forecast?
 ##' @param ... extra args (ignored)
 ##' @examples
+##' load(system.file("testdata","ONcalib_2021May07.rda",package="McMasterPandemic"))
 ##' ff <- ont_cal1$forecast_args
 ##' op <- ff$opt_pars
 ##' p <- unlist(op)
