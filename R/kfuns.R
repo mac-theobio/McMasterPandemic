@@ -84,18 +84,24 @@ rExp <- function(params, steps=100, ndt=1,
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
+
         ## need to set total population size to 1
         N_orig <- params[["N"]]
         if(has_age(params)){
-          N_orig <- params[["N"]]
+          ## with age, use a population distribution
           params[["N"]] <- mk_Nvec(attr(params, "age_cat"), Ntot = 1)
         } else {
+          ## without age, just set total population size
           params[["N"]] <- 1
         }
+
         ## if vaxify, have to update total number of doses per day to doses per day per capita (so the rate is a reasonable order of magnitude)
         if(has_vax(params)){
           params[["vax_doses_per_day"]] <- params[["vax_doses_per_day"]]/sum(N_orig)
         }
+
+        ## set up base state
+
         ## potential recursion here: have to make sure
       	state <- make_state(N=1, E0=1e-5, type="ICU1",
                                   use_eigvec=FALSE,
@@ -103,30 +109,37 @@ rExp <- function(params, steps=100, ndt=1,
       	                          ageify=FALSE,
       	                          vaxify=FALSE,
                                   testify=FALSE)  ## FIXME: don't assume ICU1?
+
+      	## ageify and then vaxify state, as indicated by params
         if(has_age(params)){
           state <- expand_state_age(state,
                                     age_cat = attr(params, "age_cat"),
                                     Nvec = params[["N"]])
         }
-
       	if(has_vax(params)){
-      	  ## update doses per day in params to a per capita rat
       	  state <- expand_state_vax(state,
       	                            vax_cat = attr(params, "vax_cat"))
       	}
 
+      	## make initial ratemat
       	M <- make_ratemat(state=state, params=params)
-    	if (testify) {
-            M <- testify(M,params)
-            state <- expand_stateval_testing(state,method="untested")
-    	}
-	r <- run_sim_range(params
-                         , state
-                         , nt=steps*ndt
-                         , M = M
-                         , step_args = list(do_hazard=do_hazard,
-                                            do_exponential=TRUE,
-                                            testwt_scale="none"))
+
+      	## add testify, as indicated by params
+      	if (testify) {
+              M <- testify(M,params)
+              state <- expand_stateval_testing(state,method="untested")
+      	}
+      	## run exponential simulation
+      	r <- run_sim_range(
+      	   params
+         , state
+         , nt=steps*ndt
+         , M = M
+         , step_args = list(do_hazard=do_hazard,
+                            do_exponential=TRUE,
+                            testwt_scale="none"))
+
+      	## return whatever is being requested
         if (return_val=="sim") return(r)
         nn <- ndt*steps
         ## DRY: get_evec()
