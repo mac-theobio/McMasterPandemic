@@ -6,8 +6,6 @@ params <- read_params("ICU1.csv")
 s <- run_sim(params, start_date="2020-03-01", end_date="2020-05-01")
 
 context("aggregation")
-load(system.file("testdata","ONcalib_2021May07.rda",package="McMasterPandemic"))
-load(system.file("testdata","ONcalib_2brks_2021May07.rda",package="McMasterPandemic"))
 test_that("Jacobian/r/etc", {
     J <- make_jac(params)
     expect_equal(unname(colSums(J)), rep(0,nrow(J)))
