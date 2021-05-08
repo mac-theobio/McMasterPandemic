@@ -170,7 +170,7 @@ test_that("var-specific obsdisp", {
 # Need to update the .rda file to remove anytime dependencies
 test_that("mle prediction", {
   #Ontario_basic.rda
-#    load(system.file("testdata","ONcalib_2021May07.rda",package="McMasterPandemic"))
+    load(system.file("testdata","ONcalib_2021May07.rda",package="McMasterPandemic"))
     ## suppress "dropped switch times on final day" warning
     suppressWarnings(test_mle_pred <- predict(ont_cal1)) #Ontario_fit
     ## hack around test comparison
