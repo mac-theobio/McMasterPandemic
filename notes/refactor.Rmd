@@ -163,3 +163,31 @@ show_args(do_step)
 
 cumRep: what we want to do is have obs error on individual reporting, then cumsum() the "report" variable
 what we need to do is cumulate *after* applying obs error etc.
+
+# MacPan advantages/features
+
+- formulation in terms of per capita flows (easy conversion among linear-step, hazard, ODE, etc.)
+- linear subsystem
+    - quick calc of current R etc.
+    - simple parameter calibration to specified r, R, generation interval
+	- eigenvector calculation for initialization
+- calibration to any specified input stream (e.g. H, D, ICU)
+- strata: cf Friston generative-model approach
+   - testing
+   - vaccination
+   - age
+- flexible time-varying parameters, with calibratable parameters
+- capability for both 
+
+# MacPan disadvantages
+
+- complexity, interrelatedness
+- too many options
+- especially difficult/weird: when/how is condensation applied? When is expansion of states/rate matrices done?
+    - possibility for automatic construction of states/rate matrices at many different levels
+
+# Refactoring goals
+
+- core in RcppEigen/odin/TMB (speed, ability to have shrinkage/latent variables)
+   - need to construct all structure as exterior, including a (sparse) rate matrix and an appropriate set of information for constructing time-varying parameters.
+   - also need some kind of parameter indexing to know how the entries in the rate matrix are indexed.  Sparse matrix with index into non-zero positions (similar to lme4 lambda/flexlambda structure?)

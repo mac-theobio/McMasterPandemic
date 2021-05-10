@@ -8,6 +8,7 @@ on:
       - main
       - master
       - matt_commit
+      - ip_devel
   pull_request:
     branches:
       - main
