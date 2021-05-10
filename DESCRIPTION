@@ -1,7 +1,7 @@
 Package: McMasterPandemic
 Title: Pandemic Model 
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.17
+Version: 0.0.18
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
