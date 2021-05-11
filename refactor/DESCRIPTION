@@ -1,7 +1,7 @@
 Package: McMasterPandemic
 Title: Pandemic Model 
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.18
+Version: 0.0.17
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
@@ -19,6 +19,7 @@ Imports:
 	tidyr, 
 	plyr, 
 	purrr, 
+	anytime, 
 	pomp, 
 	scales, 
 	bbmle (>= 1.0.23.5), 
@@ -31,6 +32,8 @@ Imports:
 	splines, 
 	diagram,
 Suggests: 
+	autotest,
+	diagram,
 	knitr, 
 	testthat, 
 	cowplot, 
@@ -42,6 +45,8 @@ Suggests:
 	rmarkdown, 
 	tidyverse
 RoxygenNote: 7.1.1
+Remotes:
+	ropenscilabs/autotest
 Encoding: UTF-8
 License: GPL
 LazyData: yes

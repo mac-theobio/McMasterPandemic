@@ -29,7 +29,7 @@ D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names 
     expect_equal(tail(s0,1), ss,
                  tolerance=1e-8)
     expect_is(state,"state_pansim")
-    s1 <- run_sim(params,state,start_date="01-Mar-2020",end_date="01-Jun-2020")
+    s1 <- run_sim(params,state,start_date="2020-03-01",end_date="2020-06-01")
     expect_is(s1,"pansim")
 })
 
@@ -41,14 +41,14 @@ test_that("params methods", {
 })
 
 
-time_pars <- data.frame(Date=c("10-Mar-2020","25-Mar-2020"),
+time_pars <- data.frame(Date=c("2020-03-10","2020-03-25"),
                         Symbol=c("beta0","beta0"),
                         Relative_value=c(0.5,0.1))
 
 test_that("time-varying example", {
     resICU_t <- run_sim(params,state,
-                        start_date="01-Mar-2020",
-                        end_date="01-Jun-2020",
+                        start_date="2020-03-01",
+                        end_date="2020-06-01",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE))
     expect_is(resICU_t,"pansim")
@@ -58,15 +58,15 @@ test_that("time-varying example", {
     ## FIXME: test values!
 })
 
-## TO DO: switch dates from anydate()
+
 ## test for 'bad date' error
 ## test multiple param switch
 
 
 test_that("time-varying with ndt>1", {
     resICU_t2 <- run_sim(params,state,
-                        start_date="1-Mar-2020",
-                        end_date="1-June-2020",
+                        start_date="2020-03-01",
+                        end_date="2020-06-01",
                         params_timevar=time_pars,
                         step_args=list(do_hazard=TRUE),
                         ndt=10)
@@ -89,19 +89,19 @@ test_that("ndt>1", {
                                                                                                        D = 0.139442448949961, R = 114.198320079343), class = "state_pansim"), row.names = "100", class = "data.frame"))
 
     s3 <- run_sim(params,state, ndt=20,
-                  start_date="1-Mar-2020",
-                  end_date="20-Mar-2020")
+                  start_date="2020-03-01",
+                  end_date="2020-03-20")
     s3B <- run_sim(params,state,
-                  start_date="1-Mar-2020",
-                  end_date="20-Mar-2020")
+                  start_date="2020-03-01",
+                  end_date="2020-03-20")
     ## s3C <- run_sim(params,state=unlist(tail(s3B,1)),
-    ## start_date="1-Mar-2020",
-    ## end_date="20-Mar-2020")
+    ## start_date="2020-03-01",
+    ## end_date="2020-03-20")
 
-    S3comb <- dplyr::bind_rows(n5=pivot(condense(s3)),
-                     n1=pivot(condense(s3B)),
-                     .id="model")
-    ggplot(S3comb,aes(date,value,colour=var,lty=model))+geom_line() +
+    S3comb <- dplyr::bind_rows(n5 = pivot(condense(s3)),
+                     n1 = pivot(condense(s3B)),
+                     .id = "model")
+    ggplot(S3comb,aes(date,value,colour = var,lty = model))+geom_line() +
         scale_y_log10()
 })
 
@@ -167,13 +167,14 @@ test_that("var-specific obsdisp", {
     expect_equal(tail(s1$E,1),44563)
 })
 
+# Need to update the .rda file to remove anytime dependencies
 test_that("mle prediction", {
-    load(system.file("testdata","Ontario_basic.rda",package="McMasterPandemic"))
-    ## suppress "dropped switch times on final day" warning
-    suppressWarnings(test_mle_pred <- predict(Ontario_fit))
-    ## hack around test comparison
-    test_mle_pred$var <- unname(test_mle_pred$var)
-    ## FIXME: recalculate and save Ontario_basic after conservation fixes
-    ## expect_equal(test_mle_pred,mle_prediction)
+  ## Ontario_basic.rda
+  ## suppress "dropped switch times on final day" warning
+  suppressWarnings(test_mle_pred <- predict(ont_cal1))
+  ## hack around test comparison
+  test_mle_pred$var <- unname(test_mle_pred$var)
+  ## FIXME: recalculate and save Ontario_basic after conservation fixes
+  ## expect_equal(test_mle_pred,mle_prediction)
 })
 

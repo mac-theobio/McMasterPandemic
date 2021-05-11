@@ -44,7 +44,7 @@ badness <- function(delta, params, target, pars_adj) {
 ## badness(c(0,0), params=p1,target=c(r=get_r(p1,state), R0=get_R0(p1)),
 ##        state=state)
 
-## 
+##
 ## badness(c(0,0), params=p1,target=c(r=0.23,R0=3), state=state)
 
 ##' adjust pars to match targets
@@ -121,15 +121,14 @@ run_sim_loglin <- function(params,
     unpack(time_args)
     ## X: model matrix
     ## X_date: dates corresponding to rows of model matrix
-    ## 
-    ## strip 
+    ##
+    ## strip
     time_beta <- extra_pars$time_beta
     extra_pars$time_beta <- NULL
     timevar <- NULL
     if (length(time_beta)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
-        ## FIXME:: get rid of anydate() ?
-        timevar <- dfs(Date=anydate(X_date),
+        timevar <- dfs(Date=as.Date(X_date),
                        Symbol="beta0",
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     }
@@ -152,8 +151,8 @@ run_sim_loglin <- function(params,
         }
     }
     ## This is a temp fix. Need to look inside run_sim time switches at these discontinuities rather than stitching bt
-    
-    
+
+
     if ("testing_data" %in% names(time_args)) {
         freeze_testing <- data.frame()
         if (sim_args$end_date > max(time_args$testing_data$Date)){
@@ -190,7 +189,7 @@ statefun <- function(params,sim_args) {
 }
 
 
-##' run with transmission propto relative mobility 
+##' run with transmission propto relative mobility
 ##' @inheritParams run_sim_break
 ##' @export
 run_sim_mobility <- function(params,
@@ -204,7 +203,7 @@ run_sim_mobility <- function(params,
     unpack(time_args)
     ## mob_value: numeric vector of relative mobility per day (starting at 1 and decreasing)
     ## mob_startdate: starting date for the relative mobility sequence (anything before this == 1 rel mobility)
-    ## strip 
+    ## strip
     mob_power <- extra_pars$mob_power
     extra_pars$mob_power <- NULL
     ## construct time-varying frame, parameters
@@ -221,7 +220,7 @@ run_sim_mobility <- function(params,
                         params_timevar=timevar))
     do.call(run_sim,sim_args)
 }
-    
+
 ##' run simulation with one or more breakpoints
 ## FIXME: make rel_beta0 part of params???
 ## FIXME: roll into run_sim?
@@ -265,16 +264,15 @@ run_sim_break <- function(params,
         names(time_args) <- "break_dates"
     }
     if (!is.null(time_args$break_dates)) {
-        ## construct time-varying frame, parameters
-        ######  FIXME: generalized here
-        timevar <- data.frame(Date=anydate(time_args$break_dates),
-                              Symbol=time_args$Symbol %||% "beta0",
-                              Relative_value=extra_pars$value %||% extra_pars$rel_beta0)
+      ## construct time-varying frame, parameters
+      timevar <- data.frame(Date = as.Date(time_args$break_dates),
+                            Symbol = time_args$Symbol %||% "beta0",
+                            Relative_value = extra_pars$value %||% extra_pars$rel_beta0)
         if (return_timevar) return(timevar)
         sim_args <- c(sim_args,
-                      list(params_timevar=timevar))
+                      list(params_timevar = timevar))
     }
-    do.call(run_sim,sim_args)
+    do.call("run_sim", sim_args)
 }
 
 
@@ -306,7 +304,7 @@ run_sim_break2 <- function(params,
     Xcols <- vapply(time_args$break_dates,
                     function(x) as.numeric(x>=time_args$break_dates),
                     FUN.VALUE=numeric(length(time_args$break_dates)))
-    
+
     ## form <- reformulate(c("0",sprintf("I(break_dates>I(%s))", time_args$break_dates)))
     ## if (is.null(start_date <- sim_args$start_date)) start_date <- time_args$break_dates-1
     ## if (is.null(end_date <- sim_args$end_date)) end_date <- time_args$break_dates-1
@@ -338,7 +336,7 @@ run_sim_decay <- function(params,
 }
 
 ##' simulate/forecast a single trajectory
-##' 
+##'
 ##' simulate based on a vector of parameters (including both time-varying change parameters, initial conditions, and other dynamical parameters), for fitting or forecasting
 ##'
 ##' @importFrom stats update
@@ -609,7 +607,7 @@ update_debug_hist <- function(params, NLL) {
 ##' is used to estimate parameters by trajectory matching.
 ##' Differential evolution optimization is conducted
 ##' via \code{\link[DEoptim]{DEoptim}}.
-##' 
+##'
 ##' @param start_date starting date for sims (far enough back to allow
 ##'     states to sort themselves out)
 ##' @param start_date_offset days to go back before first data value
@@ -661,7 +659,7 @@ update_debug_hist <- function(params, NLL) {
 ##'     (e.g. \code{\link{run_sim_break}},
 ##'     \code{\link{run_sim_mobility}})
 ##' @importFrom graphics lines
-##' @importFrom bbmle parnames<- mle2 
+##' @importFrom bbmle parnames<- mle2
 # DON'T import stats::coef !
 ##' @examples
 ##' library(dplyr)
@@ -686,7 +684,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
                       time_args=list(
-                          break_dates=c("2020-Mar-23","2020-Mar-30")),
+                          break_dates=c("2020-03-23","2020-03-30")),
                       break_dates=NULL,
                       base_params,
                       data,
@@ -769,8 +767,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                                               dimnames=list(NULL,c(names(opt_inputs),"NLL")))
             debug_ctr <- 1
         }) ## with()
-    }        
-    
+    }
+
     de_cal1 <- de_time <- NULL
     if (use_DEoptim) {
         DE_lims <- get_DE_lims(opt_pars)
@@ -896,7 +894,7 @@ forecast_ensemble <- function(fit,
 
     var <- NULL
     ## FIXME: include baseline forecast as well?
-    
+
     ## parameter ensemble
     if (!is.null(seed)) set.seed(seed)
         ## HACK: for aggregated data, NB fit is unhappy because there is severe underdispersion (because of
@@ -987,14 +985,14 @@ forecast_ensemble <- function(fit,
             e_res3 <- apply(e_res2,1,FUN=wq,weights=wts,probs=qvec) ## na.rm is handled internally (automatically)
         } else {
             e_res3 <- apply(e_res2,1,stats::quantile,probs=qvec, na.rm=TRUE)
-        }        
-        e_res4 <- (e_res3 
+        }
+        e_res4 <- (e_res3
             %>% t()
             %>% as.data.frame() ## create names (without messages); avoid need for .name_repair
             %>% dplyr::as_tibble()
             %>% setNames(qnames)
         )
-    
+
         ## date/var values
         e0 <- (dplyr::select(r,date,var)
             %>% dplyr::as_tibble()
@@ -1042,7 +1040,7 @@ date_logist <- function(date_vec, date_prev, date_next=NA,
 ##' each basis function.  For mobility, it sets up the slope and
 ##' intercept parameters (since mobility is treated as a log-linear
 ##' function between break points).
-##' 
+##'
 ##' @param params parameters
 ##' @param maxit maximum iterations for Nelder-Mead/optimization step
 ##' @param skip.hessian skip Hessian calculation?
@@ -1198,7 +1196,7 @@ calibrate_comb <- function(data,
                     ## create dummy variables, skip the intercept
                     tmpX <- model.matrix(~mob_breaks,data=X_dat)[,-1,drop=FALSE]
                     colnames(tmpX) <- paste0("mob_breaks",seq(ncol(tmpX)))
-                    ## don't use cbind(), will coerce! 
+                    ## don't use cbind(), will coerce!
                     X_dat <- data.frame(X_dat,tmpX)
                     loglin_terms <- c(loglin_terms,colnames(tmpX))
                 }
@@ -1251,7 +1249,7 @@ calibrate_comb <- function(data,
             ##
             ## strategy: take the generated model matrix and, for the columns corresponding to the spline basis,
             ## replace the last (spline_setback-1) rows with row (nt-spline_setback)
-            ## 
+            ##
             ## This has a slightly bad interaction with the specification of the number/placement of knots
             ## (i.e. we should probably allocate and place knots on the basis of the shortened time series as well),
             ##  but too horrible to think about for right now ... so we will end up with slightly fewer knots
@@ -1340,7 +1338,7 @@ calibrate_comb <- function(data,
                , list(...))
 
     if (return_val=="args") return(argList)
-    
+
     res <- do.call(calibrate, argList)
 
     ## FIXME: figure out descriptive string?

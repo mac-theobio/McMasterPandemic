@@ -1,4 +1,4 @@
-#' Sample data and fit from Ontario (up to 18 April 2020)
+#' Sample data and fit from Ontario (up to 2020-04-18)
 #' @rdname ontario_data
 #' @name ont_all
 #' @docType data

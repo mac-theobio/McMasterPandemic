@@ -68,6 +68,6 @@ t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
       )
       ) ## system.time
 
-save("ont_cal1", file=sprintf("ONcalib_%s.rda",
+save("ont_cal1", "bd", "ont_all_sub", file=sprintf("ONcalib_%s.rda",
                               format(Sys.time(),"%Y%b%d")))
 # rdsave("t_ont_cal1","opt_pars","ont_cal1", "bd","ont_recent_sub","params","keep_vars", "ont_all_sub")
