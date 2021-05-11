@@ -8,7 +8,7 @@ calibrate(
   start_date = min(data$date) - start_date_offset,
   start_date_offset = 15,
   end_date = max(data$date),
-  time_args = list(break_dates = c("2020-Mar-23", "2020-Mar-30")),
+  time_args = list(break_dates = c("2020-03-23", "2020-03-30")),
   break_dates = NULL,
   base_params,
   data,

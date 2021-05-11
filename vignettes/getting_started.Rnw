@@ -153,8 +153,8 @@ there are no observations that you are aiming to match, then these
 dates are arbitrary and only the length of time matters.
 
 <<dates>>=
-sdate <- "2020-Feb-10"
-edate <- "2020-Jun-1"
+sdate <- "2020-02-10"
+edate <- "2020-06-01"
 @
 
 \section{Running a simulation}\label{sec:run_sim}
@@ -262,7 +262,7 @@ Setting \code{condense=FALSE} retains all variables in the output,
 rather than collapsing into a single $I$ class \emph{etc.}
 
 <<run_sim_time-dependent_beta0,fig.width=8>>=
-time_pars <- data.frame(Date=c("2020-Mar-10","2020-Mar-25"),
+time_pars <- data.frame(Date=c("2020-03-10","2020-03-25"),
                       Symbol=c("beta0","beta0"),
                       Relative_value=c(0.5,0.1))
 restimedep <- run_sim(params1,state1,start_date=sdate,end_date=edate,

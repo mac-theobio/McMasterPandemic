@@ -4,7 +4,7 @@
 \name{ont_all}
 \alias{ont_all}
 \alias{comb_sub}
-\title{Sample data and fit from Ontario (up to 18 April 2020)}
+\title{Sample data and fit from Ontario (up to 2020-04-18)}
 \format{
 a data frame ...
 
@@ -20,6 +20,6 @@ ont_all
 comb_sub
 }
 \description{
-Sample data and fit from Ontario (up to 18 April 2020)
+Sample data and fit from Ontario (up to 2020-04-18)
 }
 \keyword{datasets}

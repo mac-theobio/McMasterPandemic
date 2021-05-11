@@ -14,8 +14,8 @@ cparams[["obs_disp"]] <- 20
 
 ## FIXME: thinning interacts with ndt?
 set.seed(101)
-sim1S <- run_sim(cparams, cstate, start_date="1-Mar-2020",
-                 end_date="31-Mar-2020",
+sim1S <- run_sim(cparams, cstate, start_date="2020-03-01",
+                 end_date="2020-03-31",
                  ndt=10,
                  stoch=c(obs = TRUE, proc = FALSE))
 

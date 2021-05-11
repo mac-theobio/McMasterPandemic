@@ -62,7 +62,6 @@ cache
 *.png
 */*.RData
 .DS_Store
-*/*.rda
 *.rtmp
 wget-*
 refactor/*/*.csv

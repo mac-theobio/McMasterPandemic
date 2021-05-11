@@ -128,8 +128,7 @@ run_sim_loglin <- function(params,
     timevar <- NULL
     if (length(time_beta)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
-        ## FIXME:: get rid of anydate() ?
-        timevar <- dfs(Date=anydate(X_date),
+        timevar <- dfs(Date=as.Date(X_date),
                        Symbol="beta0",
                        Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
     }
@@ -265,7 +264,7 @@ run_sim_break <- function(params,
     }
     if (!is.null(time_args$break_dates)) {
         ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=anydate(time_args$break_dates),
+        timevar <- data.frame(Date=as.Date(time_args$break_dates),
                               Symbol="beta0",
                               Relative_value=extra_pars$rel_beta0)
         if (return_timevar) return(timevar)
@@ -684,7 +683,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
                       time_args=list(
-                          break_dates=c("2020-Mar-23","2020-Mar-30")),
+                          break_dates=c("2020-03-23","2020-03-30")),
                       break_dates=NULL,
                       base_params,
                       data,

@@ -1,3 +1,14 @@
+##' Compute elementwise multiplication of a vector by each column in a matrix
+##' @param M matrix
+##' @param v vector
+##' @export
+col_multiply <- function(M, v){
+    new <- t(t(M) * rep(v, rep.int(nrow(M), length(v))))
+#    old <- sweep(M, v, MARGIN=1, FUN="*")
+#    print(all(new==old))
+    return (new)
+}
+
 ##' construct Jacobian matrix for ICU model
 ##' (not quite complete: doesn't include flows to R)
 ## FIXME: derive from make_ratemat 
@@ -373,7 +384,7 @@ do_step <- function(state, params, ratemat, dt=1,
     if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
-            flows <- sweep(ratemat, state, MARGIN=1, FUN="*")*dt
+            flows <- col_multiply(ratemat, state)*dt #sweep(ratemat, state, MARGIN=1, FUN="*")*dt
         } else {
             ## FIXME: change var names? {S,E} is a little confusing (sum, exp not susc/exposed)
             ## use hazard function: assumes exponential change
@@ -388,7 +399,7 @@ do_step <- function(state, params, ratemat, dt=1,
             E <- exp(-S*dt)
             ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
             norm_sum <- ifelse(S==0, 0, state/S)
-            flows <- (1-E)*sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
+            flows <- (1-E)*col_multiply(ratemat, norm_sum)#sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
             diag(flows) <- 0  ## no flow
         }
     } else {
@@ -441,6 +452,14 @@ do_step <- function(state, params, ratemat, dt=1,
         }
     } ## not exponential run or stoch proc or ignore-sum
     return(state)
+    # Why is this throwing warnings in make_state?   
+#    if(any(state < -sqrt(.Machine$double.eps))){
+#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+#    }
+#    else if(any(state < 0)){
+#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+#    }
+
 }
 
 ## run_sim()
@@ -464,22 +483,21 @@ do_step <- function(state, params, ratemat, dt=1,
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
 ##' paramsSz <- update(paramsS, zeta=5)
 ##' state <- make_state(params=params)
-##' time_pars <- data.frame(Date=c("2020-Mar-20","2020-Mar-25"),
+##' time_pars <- data.frame(Date=c("2020-03-20","2020-03-25"),
 ##'                        Symbol=c("beta0","beta0"),
 ##'                        Relative_value=c(0.7,0.1),
 ##'                        stringsAsFactors=FALSE)
-##' res1 <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1")
-##' res1X <- run_sim(params,state,start_date="2020-Feb-1",end_date="2020-Jun-1",
+##' res1 <- run_sim(params,state,start_date="2020-02-01",end_date="2020-06-01")
+##' res1X <- run_sim(params,state,start_date="2020-02-01",end_date="2020-06-01",
 ##'                  condense_args=list(keep_all=TRUE))
 ##' res1_S <- update(res1, params=paramsS, stoch=c(obs=TRUE, proc=TRUE))
 ##' res1_t <- update(res1, params_timevar=time_pars)
 ##' res1_S_t <- update(res1_S, params_timevar=time_pars)
 ##' res2_S_t <- update(res1_S_t,params=update(paramsS, proc_disp=0.5))
-##' res3_S_t <- update(res2_S_t,stoch_start="2020-Apr-1")
+##' res3_S_t <- update(res2_S_t,stoch_start="2020-04-01")
 ##' res3_Sz <- update(res1_S, params=paramsSz)
 ##' plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 ##' @importFrom stats rnbinom na.exclude napredict
-##' @importFrom anytime anydate
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
 ## FIXME: params_timevar
@@ -487,8 +505,8 @@ do_step <- function(state, params, ratemat, dt=1,
 ## FIXME: automate state construction better
 run_sim <- function(params
         , state=NULL
-        , start_date="2020-Mar-20"
-        , end_date="2020-May-1"
+        , start_date="2020-03-20"
+        , end_date="2020-05-1"
         , params_timevar=NULL
         , dt=1
         , ndt=1  ## FIXME: change default after testing?
@@ -509,10 +527,9 @@ run_sim <- function(params
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
     if (dt!=1) warning("nothing has been tested with dt!=1")
-    start_date <- anydate(start_date); end_date <- anydate(end_date)
+    start_date <- as.Date(start_date); end_date <- as.Date(end_date)
     if (!is.null(stoch_start)) {
-        ## anydate() strips names ...
-        stoch_start <- setNames(anydate(stoch_start),names(stoch_start))
+        stoch_start <- setNames(as.Date(stoch_start),names(stoch_start))
     }
     if (length(stoch_start)==1) stoch_start <- c(obs=stoch_start, proc=stoch_start)
     date_vec <- seq(start_date,end_date,by=dt)
@@ -564,7 +581,7 @@ run_sim <- function(params
             if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
                 stop("bad names in params_timevar: ",paste(npt,collapse=","))
             }
-            params_timevar$Date <- anydate(params_timevar$Date)
+            params_timevar$Date <- as.Date(params_timevar$Date)
             ## tryCatch(
             ##     params_timevar$Date <- as.Date(params_timevar$Date),
             ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
@@ -704,6 +721,18 @@ run_sim <- function(params
     attr(res,"params_timevar") <- params_timevar
 	 ## attr(res,"final_state") <- state
     class(res) <- c("pansim","data.frame")
+    
+    # check requires capital letters for state variables? Fix?
+    state_names <- names(res)
+    state_names_indices <- sapply(state_names, function(x) {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)})
+    state_names <- state_names[state_names_indices]
+    
+    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
+        warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps)')
+    }
+    else if(any(res[state_names] < 0)){
+        warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0.')
+    }
     return(res)
 }
 
@@ -811,6 +840,7 @@ make_state <- function(N=params[["N"]],
     }
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
+    
     return(state)
 }
 
@@ -823,7 +853,7 @@ gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
     ## compute 
-    flows <- sweep(M, y, MARGIN=1, FUN="*")
+    flows <- col_multiply(M, y) # sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
 }
@@ -905,6 +935,14 @@ run_sim_range <- function(params
     }
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
+
+    
+    if(any(state < -sqrt(.Machine$double.eps))){
+        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+    }
+    else if(any(state < 0)){
+        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+    }
     return(res)
 }
 
