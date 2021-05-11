@@ -16,9 +16,11 @@ run_sim_mobility(
 \arguments{
 \item{params}{parameters}
 
-\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}}
+\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}:
+**FIXME** should contain rel_<parname> values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
+is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)}
 
-\item{time_args}{list containing \code{break_dates}}
+\item{time_args}{list containing \code{break_dates}, **FIXME and Symbol!}
 
 \item{sim_args}{parameters to pass to \code{\link{run_sim}}}
 

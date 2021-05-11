@@ -16,15 +16,15 @@ test_that("basic examples", {
     s0 <- run_sim_range(params,state, nt=100)
     expect_is(s0,"data.frame")
     ## original value
-    ss <- structure(list(t = 100L, S = 710.7304620948, E = 132.983797059479, 
-    Ia = 1280.06036138841, Ip = 9.45207161097982, Im = 2626.01147876609, 
-    Is = 47.3684384214429, H = 873.671213383553, H2 = 202.916185137484, 
-    ICUs = 626.537390949812, ICUd = 72.4089826500752, D = 3438.87998360902, 
+    ss <- structure(list(t = 100L, S = 710.7304620948, E = 132.983797059479,
+    Ia = 1280.06036138841, Ip = 9.45207161097982, Im = 2626.01147876609,
+    Is = 47.3684384214429, H = 873.671213383553, H2 = 202.916185137484,
+    ICUs = 626.537390949812, ICUd = 72.4089826500752, D = 3438.87998360902,
     R = 989978.979634929, foi = 0.00353620556305745),
-    state = structure(c(S = 710.7304620948, 
-E = 132.983797059479, Ia = 1280.06036138841, Ip = 9.45207161097982, 
-Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553, 
-H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752, 
+    state = structure(c(S = 710.7304620948,
+E = 132.983797059479, Ia = 1280.06036138841, Ip = 9.45207161097982,
+Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553,
+H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752,
 D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame")
     expect_equal(tail(s0,1), ss,
                  tolerance=1e-8)
@@ -35,7 +35,7 @@ D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names 
 
 test_that("params methods", {
     expect_equal(summary(params),
-                 c(r0 = 0.227816539595061, R0 = 6.51800888888889, Gbar = 12.1897401796868, 
+                 c(r0 = 0.227816539595061, R0 = 6.51800888888889, Gbar = 12.1897401796868,
                    CFR_gen = 0.0352, dbl_time = 3.0425674175896),
                  tolerance=2e-3)
 })
@@ -78,14 +78,14 @@ test_that("ndt>1", {
     s2 <- run_sim_range(params,state, nt=100, dt=0.2)
     expect_equal(tail(s2,1),
                  tolerance=1e-6,
-                 structure(list(t = 100L, S = 999175.599366463, E = 470.938645829701, 
-                                Ia = 75.7624206309387, Ip = 26.7668000907004, Im = 128.383139203259, 
-                                Is = 5.46913724380533, H = 2.03123004779139, H2 = 0.0400421128254433, 
-                                ICUs = 0.371377275540251, ICUd = 0.300078574043836, D = 0.139442448949961, 
-                                R = 114.198320079343, foi = 0.000211127356958391), state = structure(c(S = 999175.599366463, 
-                                                                                                       E = 470.938645829701, Ia = 75.7624206309387, Ip = 26.7668000907004, 
-                                                                                                       Im = 128.383139203259, Is = 5.46913724380533, H = 2.03123004779139, 
-                                                                                                       H2 = 0.0400421128254433, ICUs = 0.371377275540251, ICUd = 0.300078574043836, 
+                 structure(list(t = 100L, S = 999175.599366463, E = 470.938645829701,
+                                Ia = 75.7624206309387, Ip = 26.7668000907004, Im = 128.383139203259,
+                                Is = 5.46913724380533, H = 2.03123004779139, H2 = 0.0400421128254433,
+                                ICUs = 0.371377275540251, ICUd = 0.300078574043836, D = 0.139442448949961,
+                                R = 114.198320079343, foi = 0.000211127356958391), state = structure(c(S = 999175.599366463,
+                                                                                                       E = 470.938645829701, Ia = 75.7624206309387, Ip = 26.7668000907004,
+                                                                                                       Im = 128.383139203259, Is = 5.46913724380533, H = 2.03123004779139,
+                                                                                                       H2 = 0.0400421128254433, ICUs = 0.371377275540251, ICUd = 0.300078574043836,
                                                                                                        D = 0.139442448949961, R = 114.198320079343), class = "state_pansim"), row.names = "100", class = "data.frame"))
 
     s3 <- run_sim(params,state, ndt=20,
@@ -97,7 +97,7 @@ test_that("ndt>1", {
     ## s3C <- run_sim(params,state=unlist(tail(s3B,1)),
     ## start_date="1-Mar-2020",
     ## end_date="20-Mar-2020")
-                   
+
     S3comb <- dplyr::bind_rows(n5=pivot(condense(s3)),
                      n1=pivot(condense(s3B)),
                      .id="model")
@@ -110,7 +110,7 @@ test_that("state methods", {
     expect_equal(make_state(N=1,E0=1, use_eigvec=FALSE),
                  structure(c(S = 0, E = 1, Ia = 0, Ip = 0,
                              Im = 0, Is = 0, H = 0,
-                             H2 = 0, 
+                             H2 = 0,
                              ICUs = 0, ICUd = 0,
                              D = 0, R = 0, X=0), class = "state_pansim"))
     expect_error(make_state(x=1:5, use_eigvec=FALSE),regexp="must be named")
@@ -171,7 +171,7 @@ test_that("mle prediction", {
     load(system.file("testdata","Ontario_basic.rda",package="McMasterPandemic"))
     ## suppress "dropped switch times on final day" warning
     suppressWarnings(test_mle_pred <- predict(Ontario_fit))
-    ## hack around test comparison 
+    ## hack around test comparison
     test_mle_pred$var <- unname(test_mle_pred$var)
     ## FIXME: recalculate and save Ontario_basic after conservation fixes
     ## expect_equal(test_mle_pred,mle_prediction)

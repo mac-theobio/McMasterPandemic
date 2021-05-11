@@ -1,6 +1,6 @@
 ##' construct Jacobian matrix for ICU model
 ##' (not quite complete: doesn't include flows to R)
-## FIXME: derive from make_ratemat 
+## FIXME: derive from make_ratemat
 ##' @param state state vector (named)
 ##' @param params parameter vector
 ##' @export
@@ -123,14 +123,14 @@ make_betavec <- function(state, params, full=TRUE) {
 ##'
 ##' @details
 ##' The rates are as follows:
-##' 
+##'
 ##' \eqn{ S to E:  - (\beta_0 / N) S (C_a I_a + C_p I_p + (1-iso_m)C_m I_m + (1-iso_s)C_s I_s) }
 ##' \eqn{ E to I_a: }
 ##' \eqn{ E to I_p: }
 ##' \eqn{ ... }
 ##'
 ##' See \code{\link{read_params}} for parameter definitions.
-##' 
+##'
 ##' @note
 ##' Base version matches structure of Stanford/Georgia models
 ##' \itemize{
@@ -138,14 +138,14 @@ make_betavec <- function(state, params, full=TRUE) {
 ##'         or \code{../pix/model_schematic.png}
 ##'   \item parameter definitions: see \code{params_CI_base.csv}, \code{params_ICU_diffs.csv}
 ##' }
-##' 
+##'
 ##' @param state named vector of states
 ##' @param params named vector of parameters
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
 ##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
 ##' @return matrix of (daily) transition rates
-##  *need* Matrix version of rowSums imported to handle sparse stuff below!! 
+##  *need* Matrix version of rowSums imported to handle sparse stuff below!!
 ##' @importFrom Matrix Matrix rowSums colSums
 ##' @examples
 ##' params <- read_params("ICU1.csv")
@@ -187,7 +187,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     ## DON'T unpack states, we don't need them
     ## (the only state-dependent per capita rates are testing
     ## and infection, those get handled elsewhere)
-    P <- as.list(params) 
+    P <- as.list(params)
     unpack(P)
     ## blank matrix
     M <- matrix(0,
@@ -199,10 +199,10 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
         if (!symbols) {
             M[pfun(from, to, M)] <<- val
         } else {
-            M[pfun(from,to, M)] <<- deparse(substitute(val))            
+            M[pfun(from,to, M)] <<- deparse(substitute(val))
         }
     }
-    
+
     ## fill entries
     beta_vec <- make_betavec(state,params)
     ## FIXME: call update_foi() here?
@@ -322,7 +322,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
                          tau <- testing_tau
                          tau*N0/(tau*W + rho*N0)
 			 ## NOTE 'smoothing' doc has numerator rho*tau*N0,
-                         ## but testing intensity (rho) is included in ratemat 
+                         ## but testing intensity (rho) is included in ratemat
                          ## calculation below ...
                      })
         ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
@@ -334,16 +334,17 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
             ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
         }
     }
-    if (has_vax) {
-        ## states:  [epid_class]_age(_*)?
-        nonsymp_states <- c("S","E","Ia","Ip","R")
-        nonsymp_regex <- sprintf("^%s_",paste(nonsymp_states,collapse="|"))
-        ## sum over ages ...  collapse_states ...
-        total_nonsymp <- sum(states[nonsymp_states])
-        ## modify rates between vax statuses
-        ## modify *_v1 -> *_v2 transitions
-        afun("*_v1","*_v2") <- doses_per_day/popsize
-    }
+    ## comment out for now: incomplete?
+    ## if (has_vax) {
+    ##     ## states:  [epid_class]_age(_*)?
+    ##     nonsymp_states <- c("S","E","Ia","Ip","R")
+    ##     nonsymp_regex <- sprintf("^%s_",paste(nonsymp_states,collapse="|"))
+    ##     ## sum over ages ...  collapse_states ...
+    ##     total_nonsymp <- sum(states[nonsymp_states])
+    ##     ## modify rates between vax statuses
+    ##     ## modify *_v1 -> *_v2 transitions
+    ##     afun("*_v1","*_v2") <- doses_per_day/popsize
+    ## }
     ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat,"Matrix")) {
@@ -374,7 +375,7 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=FALSE, stoch_proc=FALSE,
                     do_exponential=FALSE,
                     testwt_scale="N") {
-    
+
     x_states <- c("X","N","P")                  ## weird parallel accumulators
     p_states <- exclude_states(names(state), x_states)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
@@ -415,7 +416,7 @@ do_step <- function(state, params, ratemat, dt=1,
                                  size=state[[i]],
                                  rate=ratemat[i,-i],
                                  dt=dW)
-            
+
         }
     }
 
@@ -513,7 +514,7 @@ run_sim <- function(params
         , verbose = FALSE
 ) {
     call <- match.call()
-    
+
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
@@ -555,7 +556,7 @@ run_sim <- function(params
         return(M)
     }
     M <- make_M()
-        
+
     state0 <- state
     params0 <- params ## save baseline (time-0) values
     ## no explicit switches, and (no process error) or (process error for full time);
@@ -615,7 +616,7 @@ run_sim <- function(params
                             )))
     } else {
         t_cur <- 1
-        ## want to *include* end date 
+        ## want to *include* end date
         switch_times <- switch_times + 1
         ## add beginning and ending time
         times <- c(1,unique(switch_times),nt+1)
@@ -637,7 +638,7 @@ run_sim <- function(params
                     recompute_M <- TRUE
                 }
                 ## FIXME: so far still assuming that params only change foi
-                ## if we change another parameter we will have to recompute M 
+                ## if we change another parameter we will have to recompute M
             }
             if (recompute_M) {
                 M <- make_M()
@@ -725,15 +726,15 @@ run_sim <- function(params
 ##' The parameters that must be set are:
 ##'
 ##' \eqn{   N:  }  population size
-##' 
+##'
 ##' \eqn{   \beta_0:  }  transmission rate
-##' 
+##'
 ##' \eqn{   1/\sigma:  }  mean \emph{latent} period
-##' 
+##'
 ##' \eqn{   1/\gamma_a:  }  mean \emph{infectious} period for asymptomatic individuals
-##' 
+##'
 ##' \eqn{   ... }
-##' 
+##'
 
 ##' generate initial state vector
 ##' @param N population size
@@ -789,7 +790,7 @@ make_state <- function(N=params[["N"]],
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
                 if (testify) stop("this case isn't handled for testify")
-                ee[["E"]] <- 1  
+                ee[["E"]] <- 1
                 warning('initial values too small for rounding')
             }
             istart <- sum(ee)
@@ -832,7 +833,7 @@ make_state <- function(N=params[["N"]],
 gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
-    ## compute 
+    ## compute
     flows <- sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
@@ -931,7 +932,7 @@ run_sim_range <- function(params
 ## s = mean/cv^2
 ## a = 1/cv^2
 make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=ceiling(tail_val), tail_crit=0.95) {
-    
+
     gamma_shape <- 1/delay_cv^2
     gamma_scale <- delay_mean/gamma_shape
     tail_val <- qgamma(tail_crit, shape=gamma_shape, scale=gamma_scale)

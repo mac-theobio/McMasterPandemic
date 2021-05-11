@@ -47,3 +47,7 @@ if (do_slow) {
                       mle2_control=list(maxit=5),
                       use_DEoptim=FALSE))
 }
+
+test_that("calibrate parameters other than beta0", {
+
+})
