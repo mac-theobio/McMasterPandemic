@@ -1,29 +1,12 @@
-##
-## possible params to set/command-line arguments:
-##  Gbar = 6
-##  which vars to fit?
+
 library(McMasterPandemic)
 library(tidyverse)
 
-## clean Ontario data are automatically loaded
-## load("ontario_clean.RData")
-## translate variable names to internally used values
-## drop unused variables
-keep_vars <- c("H","ICU","death","report")
-## data since 15 March
-ont_recent_sub <- (ont_recent
-    %>% mutate_at("var",trans_state_vars)
-    %>% filter(var %in% keep_vars)
-)
+load("../../inst/testdata/ONcalib_2020Jun01.rda")
+old_ont_cal1 <- ont_cal1
 
-
-ont_all_sub <- (ont_all
-    %>% mutate_at("var",trans_state_vars)
-    %>% filter(var %in% keep_vars)
-)
-
-## unique(ont_recent_sub$var)
-
+#-----------------------------------------------------------------------------------------
+# None of this actually matters, we copy over the $mle2 object from the old ont_cal_1
 ## adjust mean GI
 params <- fix_pars(read_params("ICU1.csv")
     , target=c(Gbar=6)
@@ -60,14 +43,26 @@ opt_pars <- list(
 
 print(comb_sub)
 
+
 ## do the calibration
-t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=ont_all_sub
-    , base_params=params
-    , opt_pars = opt_pars
+t_ont_cal1 <- system.time(ont_cal1 <- calibrate(data=old_ont_cal1$mle2@data$data#ont_all_sub
+    , base_params= old_ont_cal1$mle2@data$base_params
+    , opt_pars =  old_ont_cal1$mle2@data$opt_pars
     , time_args=list(break_dates = bd)
       )
       ) ## system.time
 
+print(ont_cal1)
+#---------------------------------------------------------------------------------------
+ont_cal1$mle2@fullcoef <- old_ont_cal1$mle2@fullcoef
+ont_cal1$mle2@coef <- old_ont_cal1$mle2@coef
+ont_cal1$mle2@vcov <- old_ont_cal1$mle2@vcov
+ont_cal1$mle2@min <- old_ont_cal1$mle2@min
+ont_cal1$mle2@details <- old_ont_cal1$mle2@details
+ont_cal1$mle2@minuslogl <- old_ont_cal1$mle2@minuslogl
+
+
 save("ont_cal1", "bd", "ont_all_sub", file=sprintf("ONcalib_%s.rda",
                               format(Sys.time(),"%Y%b%d")))
-# rdsave("t_ont_cal1","opt_pars","ont_cal1", "bd","ont_recent_sub","params","keep_vars", "ont_all_sub")
+print(ont_cal1)
+print(old_ont_cal1)

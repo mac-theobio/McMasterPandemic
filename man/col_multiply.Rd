@@ -2,7 +2,8 @@
 % Please edit documentation in R/sim_funs.R
 \name{col_multiply}
 \alias{col_multiply}
-\title{Compute elementwise multiplication of a vector by each column in a matrix}
+\title{Compute elementwise multiplication of a vector by each column in a matrix
+This is implemented for performance reasons, as it is much faster than sweep.}
 \usage{
 col_multiply(M, v)
 }
@@ -13,4 +14,5 @@ col_multiply(M, v)
 }
 \description{
 Compute elementwise multiplication of a vector by each column in a matrix
+This is implemented for performance reasons, as it is much faster than sweep.
 }
