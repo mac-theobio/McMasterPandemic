@@ -4,12 +4,15 @@
 \name{ont_all}
 \alias{ont_all}
 \alias{comb_sub}
+\alias{ont_all_sub}
 \title{Sample data and fit from Ontario (up to 2020-04-18)}
 \format{
 a data frame ...
 
 a data frame containing date rel_activity
 Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces; Google data up to 22 May)
+
+A subset of ont_all containing fewer columns.
 }
 \source{
 mike's repo
@@ -18,6 +21,8 @@ mike's repo
 ont_all
 
 comb_sub
+
+ont_all_sub
 }
 \description{
 Sample data and fit from Ontario (up to 2020-04-18)

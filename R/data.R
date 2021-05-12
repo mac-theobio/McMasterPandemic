@@ -36,7 +36,7 @@
 #' @format A subset of ont_all containing fewer columns.
 "ont_all_sub"
 
-#' @rdname bd
+#' @rdname ontario_fits
 #' @name bd
 #' @format vector of date (character) strings
 #' Breakdates used in calibration.
