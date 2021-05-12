@@ -34,6 +34,14 @@ test_that('State variable <0 warning works correctly', {
 })
 
 
+test_that(" No warnings throw if state variables are all capital letters", {
+  expect_warning(state1 <- make_state(params = params1), regexp=NA, label="Inappropriate warning for non-capitalized state when state variables are capitalized correctly")
+})
+
+test_that("Warnings throw if state variables are not all capital letters", {
+  expect_warning(state1 <- make_state(params = params1, type="test_warning_throw"), regexp="Not all state variables are capital letters", label="Non-capitalized state warning not being thrown")
+})
+
 
 #microbenchmark(baseline = sweep(M, v, MARGIN=1, FUN="*"))
 #microbenchmark({new =t(t(M) %*% diag(v));
