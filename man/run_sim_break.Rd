@@ -29,7 +29,7 @@ is relative to baseline *or* is absolute? (will require corresponding change in 
 
 \item{return_timevar}{return data frame of beta by time?}
 
-\item{...}{additional arguments to \code{run_sim}}
+\item{...}{extra args (why??)}
 }
 \description{
 run simulation with one or more breakpoints
