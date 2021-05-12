@@ -225,7 +225,6 @@ run_sim_mobility <- function(params,
 ## FIXME: make rel_beta0 part of params???
 ## FIXME: roll into run_sim?
 ## FIXME: generalize
-##' @param ... additional arguments to \code{run_sim}
 ##' @param params parameters
 ##' @param time_args list containing \code{break_dates}, **FIXME and Symbol!
 ##' @param sim_args parameters to pass to \code{\link{run_sim}}
@@ -233,6 +232,7 @@ run_sim_mobility <- function(params,
 ##' **FIXME** should contain rel_<parname> values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
 ##' is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)
 ##' @param break_dates obsolete
+##' @param ... extra args (why??)
 ##' @param return_timevar return data frame of beta by time?
 ##' @examples
 ##' params <- read_params("ICU1.csv")
@@ -251,7 +251,8 @@ run_sim_break <- function(params,
                           sim_args=list(),
                           return_timevar=FALSE,
                           ...) {
-    if (!is.null(break_dates)) {
+  ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
+  if (!is.null(break_dates)) {
         stop("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
     }
     ## FIXME:: HACK for now
