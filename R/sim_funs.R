@@ -732,22 +732,17 @@ run_sim <- function(params
 
       state_vars <- (res %>% select(state_names))
       below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
-      if (require('utils')){
-        warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ',
-                paste(capture.output(print(res[below_zero_lines,])), collapse = "\n"))}
-      else{
-        warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps).')
-      }
+
+      warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ',
+              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
+
     }
     else if(any(res[state_names] < 0)){
       state_vars <- (res %>% select(state_names))
       below_zero_lines <- (rowSums(state_vars < 0) > 0)
-      if (require('utils')){
-        warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ',
-                paste(capture.output(print(res[below_zero_lines,])), collapse = "\n"))}
-      else{
-        warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0.')
-      }
+
+      warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ',
+              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
     }
     return(res)
 }
@@ -962,20 +957,13 @@ run_sim_range <- function(params
 
 
     if(any(state < -sqrt(.Machine$double.eps))){
-      if (require('utils')){
         warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) \n Check following message for details \n ',
-                paste(capture.output(print(state)), collapse = "\n"))}
-      else{
-        warning('End of run_sim_range check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps).')
-      }
+                paste(utils::capture.output(print(state)), collapse = "\n"))
+
     }
     else if(any(state < 0)){
-      if (require('utils')){
         warning('End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
-                paste(capture.output(print(state)), collapse = "\n"))}
-      else{
-        warning('End of run_sim_range check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0.')
-      }
+                paste(utils::capture.output(print(state)), collapse = "\n"))
     }
     return(res)
 }
