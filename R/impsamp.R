@@ -1,7 +1,7 @@
 # generate population prediction sample from parameters
-# 
-# This [EXPERIMENTAL] function combines several sampling tricks to compute a version of an importance sample (based on flat priors) for the parameters. 
-#' 
+#
+# This [EXPERIMENTAL] function combines several sampling tricks to compute a version of an importance sample (based on flat priors) for the parameters.
+#'
 # @param object a fitted \code{mle2} object
 # @param n number of samples to return
 # @param n_imp number of total samples from which to draw, if doing importance sampling
@@ -35,7 +35,7 @@ pop_pred_samp <- function(object,
                      ...) {
 
     rmvnorm_method <- match.arg(rmvnorm_method)
-    
+
     min_eval <- function(x) {
         ev <- eigen(x,only.values=TRUE)$values
         if (is.complex(ev)) {
@@ -52,7 +52,7 @@ pop_pred_samp <- function(object,
     keep_params <- !names(cc) %in% fix_params
 
     cc <- cc[keep_params]
-    Sigma <- Sigma[keep_params,keep_params]
+    Sigma <- as.matrix(Sigma[keep_params,keep_params])
 
     fixed_pars <- setdiff(names(object@fullcoef),names(cc))
     res <- matrix(NA,nrow=n,ncol=length(cc_full),
@@ -76,7 +76,7 @@ pop_pred_samp <- function(object,
         ## (better than e.g. Matrix::nearPD)
         hh <- object@details$hessian[keep_params,keep_params]
         if (any(is.na(hh))) {
-            warning("NA values in Hessian set to zero: check results *very* carefully!") 
+            warning("NA values in Hessian set to zero: check results *very* carefully!")
             hh[is.na(hh)] <- 0 # !! questionable
         }
         if ((is.null(PDmethod) && bad_vcov) ||
@@ -96,7 +96,7 @@ pop_pred_samp <- function(object,
     }
 
     Sigma <- Sigma*scale_Sigma
-    
+
     mv_n <- if (impsamp) n_imp else n  ## take more samples if actually sampling
 
     ## draw MVN samples
@@ -110,7 +110,7 @@ pop_pred_samp <- function(object,
         }
     }
     if (!(impsamp || return_wts)) return(res)  ## done
-    
+
     ## compute MV sampling probabilities
     mv_wts <- mvtnorm::dmvnorm(mv_vals,mean=cc,sigma=Sigma,log=TRUE)
     if (all(is.na(mv_wts)) && length(mv_wts)==1) {
@@ -142,4 +142,4 @@ pop_pred_samp <- function(object,
                               replace=TRUE),]
     return(res)
 }
-    
+
