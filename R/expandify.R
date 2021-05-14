@@ -330,11 +330,11 @@ add_updated_vaxrate <- function(state, params, ratemat){
     grepl(vax_cat[2], dimnames(ratemat)$to)]
   state_vax_subset <- state[grepl(vax_cat[1], names(state))]
   ratemat_doses <- sum(ratemat_vax_subset %*% state_vax_subset)
-  total_doses_match <- all.equal(ratemat_doses, params[["vax_doses_per_day"]])
+  total_doses_match <- isTRUE(all.equal(ratemat_doses, params[["vax_doses_per_day"]]))
   ## if total doses allocated via rate matrix does not match match total doses specified in params
   if(!total_doses_match){
     ## *and* it's not because we've depleted the population eligible for vaccination
-    if(sum(state_vax_subset)>=params[["vax_doses_per_day"]]) stop("calculated daily vax rate exceeds size of remaining population eligible for vaccination")
+    if(sum(state_vax_subset)>=params[["vax_doses_per_day"]]) warning("calculated daily vax rate exceeds size of remaining population eligible for vaccination; make sure you're using do_hazard = TRUE to avoid jumps into negative state variables")
   }
 
   ## make updated ratemat have the same type and attributes as original ratemat
