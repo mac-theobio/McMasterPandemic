@@ -1,10 +1,10 @@
 ##' @export
-print.pansim <- function(x,all=FALSE,...) {
+print.pansim <- function(x, all = FALSE, ...) {
     ## FIXME: is this the best way?
     ## use tibbles or not?
     class(x) <- "data.frame"
-   if (all) print(x)
-    attr(x,"params") <- NULL
+    if (all) print(x)
+    attr(x, "params") <- NULL
     print(x)
 }
 
@@ -12,22 +12,25 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param i an incidence time series
 ##' @param params a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}
 ##' @export
-calc_conv <- function(i,params) {
+calc_conv <- function(i, params) {
     c_prop <- c_delay_mean <- c_delay_cv <- NULL
-    kern <- with(as.list(params),
-                 make_delay_kernel(c_prop,
-                                   c_delay_mean,
-                                   c_delay_cv)
-                 )
-    ret <- as.numeric(stats::filter(i,kern,sides=1))
+    kern <- with(
+        as.list(params),
+        make_delay_kernel(
+            c_prop,
+            c_delay_mean,
+            c_delay_cv
+        )
+    )
+    ret <- as.numeric(stats::filter(i, kern, sides = 1))
     return(ret)
 }
 
 ## compute incidence and reports (as convolution of incidence)
-calc_reports <- function(x,params, add_cumrep=FALSE) {
+calc_reports <- function(x, params, add_cumrep = FALSE) {
     ## FIXME: dt==1 !
-    incidence <- x$foi*x$S
-    report <- calc_conv(incidence,params)
+    incidence <- x$foi * x$S
+    report <- calc_conv(incidence, params)
     ret <- data.frame(incidence, report)
     ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
     ## it's generally happening *before* the addition of obs error
@@ -53,34 +56,35 @@ calc_reports <- function(x,params, add_cumrep=FALSE) {
 ##' @importFrom dplyr one_of
 ##' @return a \code{\link[ggplot2]{ggplot}} object
 ##' @export
-plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
-                        keep_states=NULL, condense=FALSE,
-                        log=FALSE,
-                        log_lwr=1,
-                        show_times=TRUE, ...) {
+plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incidence"),
+                        keep_states = NULL, condense = FALSE,
+                        log = FALSE,
+                        log_lwr = 1,
+                        show_times = TRUE, ...) {
     ## global variables
     var <- value <- NULL
     ## attributes get lost somewhere below ...
-    ptv <- attr(x,"params_timevar")
+    ptv <- attr(x, "params_timevar")
     if (!is.null(keep_states)) {
-        drop_states <- setdiff(names(x), c(keep_states,"date"))
+        drop_states <- setdiff(names(x), c(keep_states, "date"))
     }
     ## don't try to drop columns that aren't there
     ## FIXME: use condense.pansim method?
-    drop_states <- intersect(drop_states,names(x))
+    drop_states <- intersect(drop_states, names(x))
     ## FIXME: don't pivot if already pivoted
     xL <- (pivot(x)
         %>% dplyr::filter(!var %in% drop_states)
-        %>% dplyr::mutate(var=factor(var,levels=unique(var)))
-        ## FIXME: order factor in pivot?
+        %>% dplyr::mutate(var = factor(var, levels = unique(var)))
+    ## FIXME: order factor in pivot?
     )
-    if (log) xL <- dplyr::filter(xL,value>=log_lwr)
-    gg0 <- (ggplot(xL,aes(date,value,colour=var))
-        + geom_line()
+    if (log) xL <- dplyr::filter(xL, value >= log_lwr)
+    gg0 <- (ggplot(xL, aes(date, value, colour = var))
+    +
+        geom_line()
     )
     if (log) gg0 <- gg0 + scale_y_log10()
     if (show_times && !is.null(ptv)) {
-        gg0 <- gg0 + geom_vline(xintercept=ptv$Date,lty=2)
+        gg0 <- gg0 + geom_vline(xintercept = ptv$Date, lty = 2)
     }
     return(gg0)
 }
@@ -91,7 +95,7 @@ plot.pansim <- function(x, drop_states=c("t","S","R","E","I","X","incidence"),
 ##' @param object an object to condense
 ##' @param ... additional arguments
 ##' @export
-condense <- function (object, ...)  {
+condense <- function(object, ...) {
     UseMethod("condense")
 }
 
@@ -99,7 +103,7 @@ condense <- function (object, ...)  {
 ##' @param object an object to pivot
 ##' @param ... additional arguments
 ##' @export
-pivot <- function (object, ...)  {
+pivot <- function(object, ...) {
     UseMethod("pivot")
 }
 
@@ -109,7 +113,7 @@ pivot.pansim <- function(object, ...) {
     check_dots(...)
     dd <- (object
         %>% dplyr::as_tibble()
-        %>% tidyr::pivot_longer(names_to="var",-date)
+        %>% tidyr::pivot_longer(names_to = "var", -date)
     )
     return(dd)
 }
@@ -127,20 +131,19 @@ is_condensed <- function(x) "I" %in% names(x)
 ##' @param het_S compute hetS = (S/N)^(1+zeta) ?
 ##' @param ... additional args
 ##' @export
-condense.pansim <-  function(object, add_reports=TRUE,
-                             diff_deaths=TRUE,
-                             cum_reports=FALSE,
-                             het_S=FALSE,
-                             keep_all=FALSE,
-                             params = attr(object,"params"),
-                             ...)
-{
+condense.pansim <- function(object, add_reports = TRUE,
+                            diff_deaths = TRUE,
+                            cum_reports = FALSE,
+                            het_S = FALSE,
+                            keep_all = FALSE,
+                            params = attr(object, "params"),
+                            ...) {
     check_dots(...)
     aa <- get_attr(object)
     ## condense columns and add, if present
-    add_col <- function(dd,name,regex) {
-        vars <- grep(regex, names(object), value=TRUE)
-        if (length(vars)>0) {
+    add_col <- function(dd, name, regex) {
+        vars <- grep(regex, names(object), value = TRUE)
+        if (length(vars) > 0) {
             dd[[name]] <- rowSums(object[vars])
         }
         return(dd)
@@ -154,48 +157,49 @@ condense.pansim <-  function(object, add_reports=TRUE,
         } else {
             ## keep susc and exposed classes
             dd <- object["date"]
-            for (n in c("S","E")) {
-                dd <- add_col(dd,n,paste0("^",n))
+            for (n in c("S", "E")) {
+                dd <- add_col(dd, n, paste0("^", n))
             }
-            dd <- add_col(dd,"I","^I[^C]") ## collapse all I* variables that aren't ICU
-            for (n in c("H", "ICU","R")) {
-                dd <- add_col(dd,n,paste0("^",n))
+            dd <- add_col(dd, "I", "^I[^C]") ## collapse all I* variables that aren't ICU
+            for (n in c("H", "ICU", "R")) {
+                dd <- add_col(dd, n, paste0("^", n))
             }
-            
-            diff_vars <- c(X="hosp",D="death",N="negtest",P="postest")
+
+            diff_vars <- c(X = "hosp", D = "death", N = "negtest", P = "postest")
             for (i in seq_along(diff_vars)) {
                 nm <- names(diff_vars)[i]
-                re <- paste0("^",nm)
-                if (any(grepl(re,names(object)))) {
-                    tot <- rowSums(object[grepl(re,names(object))])
-                    dd[[diff_vars[i]]] <- c(NA,diff(tot))
-                    dd <- add_col(dd,nm,re)
+                re <- paste0("^", nm)
+                if (any(grepl(re, names(object)))) {
+                    tot <- rowSums(object[grepl(re, names(object))])
+                    dd[[diff_vars[i]]] <- c(NA, diff(tot))
+                    dd <- add_col(dd, nm, re)
                 }
             }
             ## keep foi ... might need it for future add_reports ...
-            if ("foi" %in% names(object))
-            dd <- data.frame(dd,foi=object[["foi"]])
-        }  ## not keep_all
+            if ("foi" %in% names(object)) {
+                dd <- data.frame(dd, foi = object[["foi"]])
+            }
+        } ## not keep_all
     } ## already condensed
     if (add_reports &&
-        !("report" %in% names(object))  ## don't add reports if already there ...
-        ) {
-            if (!"c_delay_mean" %in% names(params)) {
-                warning("add_reports requested but delay parameters missing")
-            } else {
-                if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-                if (!"S" %in% names(dd)) {
-                    stop("can't currently compute reports without condensing S first")
-                }
-                cr <- calc_reports(dd,params, add_cumrep=cum_reports)
-                dd <- data.frame(dd, cr)
+        !("report" %in% names(object)) ## don't add reports if already there ...
+    ) {
+        if (!"c_delay_mean" %in% names(params)) {
+            warning("add_reports requested but delay parameters missing")
+        } else {
+            if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
+            if (!"S" %in% names(dd)) {
+                stop("can't currently compute reports without condensing S first")
             }
-        } ## add_reports
-        if (het_S) {
-            dd$hetS <- (dd$S/params[["N"]])^(1+params[["zeta"]])
+            cr <- calc_reports(dd, params, add_cumrep = cum_reports)
+            dd <- data.frame(dd, cr)
         }
-        dd <- put_attr(dd,aa)
-        return(dd)
+    } ## add_reports
+    if (het_S) {
+        dd$hetS <- (dd$S / params[["N"]])^(1 + params[["zeta"]])
+    }
+    dd <- put_attr(dd, aa)
+    return(dd)
 }
 
 ##' Temporal aggregation of pansim objects
@@ -219,29 +223,31 @@ condense.pansim <-  function(object, add_reports=TRUE,
 ##' a2 <- aggregate(condense(res), start="2020-02-12",period="7 days", FUN=agg_funs)
 ##' @export
 aggregate.pansim <- function(x,
-                             start=NULL,
-                             period=NULL,
-                             FUN=mean,
-                             fixed_vars=TRUE,
-                             extend=30,
+                             start = NULL,
+                             period = NULL,
+                             FUN = mean,
+                             fixed_vars = TRUE,
+                             extend = 30,
                              ...) {
     check_dots(...)
     aa <- get_attr(x)
     dd <- x
-    ## start <- agg_list[["t_agg_start"]] 
+    ## start <- agg_list[["t_agg_start"]]
     ## period <- agg_list[["t_agg_period"]]
     ## FUN <- agg_list$t_agg_fun
-    agg_datevec <- seq.Date(as.Date(start),max(dd$date)+extend,
-                            by=period)
-    agg_period <- cut.Date(dd$date,agg_datevec)
+    agg_datevec <- seq.Date(as.Date(start), max(dd$date) + extend,
+        by = period
+    )
+    agg_period <- cut.Date(dd$date, agg_datevec)
     ## set to *last* day of period
     ap <- as.Date(levels(agg_period))
     dt <- as.numeric(diff(ap))[1]
-    levels(agg_period) <- as.character(ap+dt-1)
+    levels(agg_period) <- as.character(ap + dt - 1)
     if (is.function(FUN)) {
-        dd <- stats::aggregate.data.frame(dplyr::select(dd,-date),
-                                          by=list(date=agg_period),
-                                          FUN=FUN)
+        dd <- stats::aggregate.data.frame(dplyr::select(dd, -date),
+            by = list(date = agg_period),
+            FUN = FUN
+        )
     } else {
         if (!is.list(FUN)) {
             stop("FUN should be either a single function or a list of the form list(FUN1=c('var1','var2'), FUN2=c('var3', 'var4'))")
@@ -252,23 +258,28 @@ aggregate.pansim <- function(x,
             for (j in seq_along(FUN[[i]])) {
                 pat <- FUN[[i]][[j]]
                 if (!fixed_vars) {
-                    var <- grep(pattern=pat,names(dd), value=TRUE)
-                } else var <- pat
-                if (length(var)==0 || any(!var %in% names(dd))) {
-                    warning("no variables matching ",sQuote(pat))
+                    var <- grep(pattern = pat, names(dd), value = TRUE)
                 } else {
-                    dd_tmp <- c(dd_tmp,
-                                setNames(list(stats::aggregate.data.frame(dd[var],
-                                                           by=list(date=agg_period),
-                                                           FUN=cur_FUN)[,-1]),var))
+                    var <- pat
+                }
+                if (length(var) == 0 || any(!var %in% names(dd))) {
+                    warning("no variables matching ", sQuote(pat))
+                } else {
+                    dd_tmp <- c(
+                        dd_tmp,
+                        setNames(list(stats::aggregate.data.frame(dd[var],
+                            by = list(date = agg_period),
+                            FUN = cur_FUN
+                        )[, -1]), var)
+                    )
                 }
             }
             ## FIXME: fix order of columns?
         } ## loop over agg_fun elements
-        dd <- do.call(data.frame,c(list(date=unique(na.omit(agg_period))),dd_tmp))
+        dd <- do.call(data.frame, c(list(date = unique(na.omit(agg_period))), dd_tmp))
     } ## agg_fun is a list
     dd$date <- as.Date(dd$date)
-    dd <- put_attr(dd,aa)
+    dd <- put_attr(dd, aa)
     return(dd)
 }
 
@@ -276,7 +287,7 @@ aggregate.pansim <- function(x,
 ##'
 ##' FIXME: add descriptions of what the components are
 ##' FIXME: add CFR, IFR, etc.
-##' 
+##'
 ##' @param object a params vector
 ##' @param ... unused
 ##' @export
@@ -287,12 +298,14 @@ summary.params_pansim <- function(object, ...) {
     if (!"c_prop" %in% names(object)) {
         CFR_gen <- NA
     } else {
-        CFR_gen <- with(as.list(object), ((1-alpha)*(1-mu)*(1-phi1)*phi2)/c_prop)
+        CFR_gen <- with(as.list(object), ((1 - alpha) * (1 - mu) * (1 - phi1) * phi2) / c_prop)
     }
-    res <- c(r0=get_r(object),R0=get_R0(object),Gbar=get_Gbar(object),
-             CFR_gen=CFR_gen)
+    res <- c(
+        r0 = get_r(object), R0 = get_R0(object), Gbar = get_Gbar(object),
+        CFR_gen = CFR_gen
+    )
     ## FIXME: add IFR, CFR_hosp, CFR_ICU ?
-    res["dbl_time"] <- log(2)/res["r0"]
+    res["dbl_time"] <- log(2) / res["r0"]
     return(res)
 }
 
@@ -303,21 +316,23 @@ summary.pansim <- function(object, ...) {
     ICU <- H <- NULL
     ## FIXME: get ventilators by multiplying ICU by 0.86?
     ## FIXME: prettier?
-    p <- attr(object,"params") ## extract params before condensing
+    p <- attr(object, "params") ## extract params before condensing
     ## test for previous condensation (FIXME)
     if (!"I" %in% names(object)) {
         object <- condense(object)
     }
     unpack(object)
-    res <- data.frame(peak_ICU_date=date[which.max(ICU)],
-             peak_ICU_val=round(max(ICU)),
-             peak_H_date=date[which.max(H)],
-             peak_H_val=round(max(H)))
+    res <- data.frame(
+        peak_ICU_date = date[which.max(ICU)],
+        peak_ICU_val = round(max(ICU)),
+        peak_H_date = date[which.max(H)],
+        peak_H_val = round(max(H))
+    )
     ## FIXME: report time-varying R0
     if (!is.null(p)) {
-        res <- data.frame(res,R0=get_R0(p))
+        res <- data.frame(res, R0 = get_R0(p))
     }
-    class(res) <- c("summary.pansim","data.frame")
+    class(res) <- c("summary.pansim", "data.frame")
     res
 }
 
@@ -370,23 +385,27 @@ param_meanings <- c(
 ##' @param x a \code{params_pansim} object
 ##' @param stop_missing_names stop if names are missing descriptions? (warn by default)
 ##' @export
-describe_params <- function(x, stop_missing_names=FALSE) {
-    if (!is.null(attr(x,"description"))) {
-        x_meanings <- attr(x,"description")[names(x)]
-    } else {  ## backup/built-in
-        m <- match(names(x),names(param_meanings))
+describe_params <- function(x, stop_missing_names = FALSE) {
+    if (!is.null(attr(x, "description"))) {
+        x_meanings <- attr(x, "description")[names(x)]
+    } else { ## backup/built-in
+        m <- match(names(x), names(param_meanings))
         if (any(is.na(m))) {
-            wstr <- paste("parameters without description: ",
-                          paste(names(x)[is.na(m)],collapse=","))
+            wstr <- paste(
+                "parameters without description: ",
+                paste(names(x)[is.na(m)], collapse = ",")
+            )
             if (stop_missing_names) stop(wstr) else warning(wstr)
         }
         x <- x[!is.na(m)]
         x_meanings <- param_meanings[na.omit(m)]
     }
-    xout <- data.frame(symbol=names(x),
-                       ##value=round(as.numeric(x),3),
-                       value=sprintf("%.3g", as.numeric(x)),
-                       meaning=x_meanings)
+    xout <- data.frame(
+        symbol = names(x),
+        ## value=round(as.numeric(x),3),
+        value = sprintf("%.3g", as.numeric(x)),
+        meaning = x_meanings
+    )
     rownames(xout) <- NULL ## redundant
     return(xout)
 }
@@ -403,10 +422,10 @@ describe_params <- function(x, stop_missing_names=FALSE) {
 ##' print(params,describe=TRUE)
 ##' @export
 ## FIXME: prettier printing, e.g. detect "1/" or "proportion"
-print.params_pansim <- function( x, describe=FALSE, ... ) {
+print.params_pansim <- function(x, describe = FALSE, ...) {
     check_dots(...)
     if (!describe) {
-        attr(x,"description") <- NULL
+        attr(x, "description") <- NULL
         print(unclass(x))
     } else {
         print(describe_params(x))
@@ -430,10 +449,10 @@ print.params_pansim <- function( x, describe=FALSE, ... ) {
 ##' update(object, a=2, b=1)
 ##' update(object, cc1=2, cc2=3)
 ##' update(object, delete_regex="cc")
-update.params_pansim <- function(object, ..., delete_regex=NULL, .list=FALSE) {
+update.params_pansim <- function(object, ..., delete_regex = NULL, .list = FALSE) {
     L <- list(...)
     if (.list) {
-        if (length(L)>1) stop(".list specified with >1 args")
+        if (length(L) > 1) stop(".list specified with >1 args")
         L <- L[[1]]
     }
     nm <- names(L)
@@ -451,7 +470,7 @@ update.params_pansim <- function(object, ..., delete_regex=NULL, .list=FALSE) {
     if (!is.null(delete_regex)) {
         nm <- names(object)
         for (d in delete_regex) {
-            object <- object[!grepl(d,nm)]
+            object <- object[!grepl(d, nm)]
         }
     }
     return(object)
@@ -461,15 +480,19 @@ update.params_pansim <- function(object, ..., delete_regex=NULL, .list=FALSE) {
 ##' @method coef fit_pansim
 ##' @export
 coef.fit_pansim <- function(object,
-                            method=c("all","fitted"),
+                            method = c("all", "fitted"),
                             ...) {
     method <- match.arg(method)
     check_dots(...)
     f_args <- object$forecast_args
-    opt_pars <- invlink_trans(restore(coef(object$mle2),
-                                      f_args$opt_pars,
-                                      f_args$fixed_pars))
-    if (method=="fitted") return(opt_pars)
+    opt_pars <- invlink_trans(restore(
+        coef(object$mle2),
+        f_args$opt_pars,
+        f_args$fixed_pars
+    ))
+    if (method == "fitted") {
+        return(opt_pars)
+    }
     params <- update(f_args$base_params, opt_pars$params)
     return(params)
 }
@@ -478,28 +501,31 @@ coef.fit_pansim <- function(object,
 summary.fit_pansim <- function(object, ...) {
     check_dots(...)
     f_args <- object$forecast_args
-    f_args <- legacy_sim_fun(f_args, update=TRUE)
-    f_args <- legacy_time_args(f_args, update=TRUE)
-    pp <- coef(object,"fitted")
-    extra_pars <- pp[!grepl("^params$|nb_disp",names(pp))]
-    ## FIXME: get 
-    time_tab <- with(f_args,sim_fun(params,
-                                    extra_pars=extra_pars,
-                                    time_args=time_args,
-                                    return_timevar=TRUE))
+    f_args <- legacy_sim_fun(f_args, update = TRUE)
+    f_args <- legacy_time_args(f_args, update = TRUE)
+    pp <- coef(object, "fitted")
+    extra_pars <- pp[!grepl("^params$|nb_disp", names(pp))]
+    ## FIXME: get
+    time_tab <- with(f_args, sim_fun(params,
+        extra_pars = extra_pars,
+        time_args = time_args,
+        return_timevar = TRUE
+    ))
     if ("zeta" %in% names(pp$param)) {
-        S_vec <- with(f_args,sim_fun(params,
-                                     extra_pars=extra_pars,
-                                     time_args=time_args))
+        S_vec <- with(f_args, sim_fun(params,
+            extra_pars = extra_pars,
+            time_args = time_args
+        ))
     }
     pp_list <- list(coef(object))
     beta0 <- coef(object)[["beta0"]]
     for (i in seq(nrow(time_tab))) {
-        pp_list[[i+1]] <- update(pp_list[[1]],
-                                 beta0=beta0*time_tab[i,"Relative_value"])
+        pp_list[[i + 1]] <- update(pp_list[[1]],
+            beta0 = beta0 * time_tab[i, "Relative_value"]
+        )
     }
-    names(pp_list) <- format(c(f_args$start_date,time_tab$Date))
-    ret <- purrr::map_dfr(pp_list,~as.data.frame(rbind(summary(.))),.id="start_date")
+    names(pp_list) <- format(c(f_args$start_date, time_tab$Date))
+    ret <- purrr::map_dfr(pp_list, ~ as.data.frame(rbind(summary(.))), .id = "start_date")
     ##  ADD phenom_het stuff here if necessary
     ## browser()
     return(ret)
@@ -520,7 +546,7 @@ update.fit_pansim <- function(object, ...) {
 ## FIXME: DRY?
 ##' @export
 update.pansim <- function(object, ...) {
-    cc <- attr(object,"call")
+    cc <- attr(object, "call")
     L <- list(...)
     for (i in seq_along(L)) {
         cc[[names(L)[i]]] <- L[[i]]
@@ -572,29 +598,30 @@ print.fit_pansim <- function(x, ...) {
 ##' ## non-pos-def vcov ... ???
 ##' predict(ont_cal_2brks,ensemble=TRUE)
 ##' }
-predict.fit_pansim <- function(object
-                             , end_date=NULL
-                             , stoch=NULL
-                             , stoch_start = NULL
-                             , keep_vars=c("H","ICU","death", "hosp",
-                                           "incidence","report", "cumRep", "newTests/1000")
-                             , ensemble = FALSE
-                             , new_params=NULL
-                             , Sigma=NULL
-                             , scale_Sigma=1
-                             , ... ) {
-
+predict.fit_pansim <- function(object,
+                               end_date = NULL,
+                               stoch = NULL,
+                               stoch_start = NULL,
+                               keep_vars = c(
+                                   "H", "ICU", "death", "hosp",
+                                   "incidence", "report", "cumRep", "newTests/1000"
+                               ),
+                               ensemble = FALSE,
+                               new_params = NULL,
+                               Sigma = NULL,
+                               scale_Sigma = 1,
+                               ...) {
     var <- . <- NULL
-    
+
     f_args <- object$forecast_args
     if ("break_dates" %in% names(f_args)) {
         warning("using old object; switch to time_args(break_dates=...)")
-        f_args$time_args <- list(break_dates=f_args$break_dates)
+        f_args$time_args <- list(break_dates = f_args$break_dates)
         f_args$break_dates <- NULL
     }
     new_args <- list(...)
     ## FIXME:: dangerous
-    for (n in intersect(names(new_args),names(f_args))) {
+    for (n in intersect(names(new_args), names(f_args))) {
         f_args[[n]] <- new_args[[n]]
         new_args[[n]] <- NULL
     }
@@ -606,50 +633,62 @@ predict.fit_pansim <- function(object
         f_args$stoch_start <- stoch_start
     }
     if (!is.null(new_params)) {
-        f_args$base_params <- do.call(update.params_pansim,
-            c(list(f_args$base_params), new_params))
+        f_args$base_params <- do.call(
+            update.params_pansim,
+            c(list(f_args$base_params), new_params)
+        )
     }
     calc_Rt <- "Rt" %in% keep_vars
     if (!ensemble) {
-        fc <- do.call(forecast_sim,
-                      c(nlist(p=coef(object$mle2),
-                              calc_Rt), f_args, new_args))
+        fc <- do.call(
+            forecast_sim,
+            c(nlist(
+                p = coef(object$mle2),
+                calc_Rt
+            ), f_args, new_args)
+        )
     } else {
         ## ensemble
-        argList <- c(nlist(fit=object, forecast_args=f_args, scale_Sigma, calc_Rt), new_args)
+        argList <- c(nlist(fit = object, forecast_args = f_args, scale_Sigma, calc_Rt), new_args)
         ## FIXME: how hard should we work on Sigma?
         if (is.null(Sigma)) {
-            if (!is.null(de <- attr(object,"de"))) {
+            if (!is.null(de <- attr(object, "de"))) {
                 Sigma <- de$member$Sigma
             } else {
                 Sigma <- bbmle::vcov(object$mle2)
             }
-            argList <- c(argList,list(Sigma=Sigma))
+            argList <- c(argList, list(Sigma = Sigma))
         }
         fc <- do.call(forecast_ensemble, argList)
     }
-    if (inherits(fc,"array")) return(fc)
+    if (inherits(fc, "array")) {
+        return(fc)
+    }
     fc <- (fc
         %>% sub_vars(keep_vars)
         %>% get_type()
     )
-    attr(fc,"forecast_args") <- object$forecast_args
+    attr(fc, "forecast_args") <- object$forecast_args
     class(fc) <- c("predict_pansim", class(fc))
     return(fc)
 }
 
 ## FIXME: don't hard-code!
 ## data frame for labeling new tests
-newtest_lab <-data.frame(date=as.Date("2020-04-10"),
-                         value=10,
-                         var="newTests/1000",
-                         lab="newTests/1000")
+newtest_lab <- data.frame(
+    date = as.Date("2020-04-10"),
+    value = 10,
+    var = "newTests/1000",
+    lab = "newTests/1000"
+)
 
 ## data frame for labeling ICU capacities
-capac_info <- data.frame(value=c(630,1300),
-                         vtype="prev",
-                         var="ICU",
-                         lab=c("current","expanded"))
+capac_info <- data.frame(
+    value = c(630, 1300),
+    vtype = "prev",
+    var = "ICU",
+    lab = c("current", "expanded")
+)
 
 ## FIXME: fix upstream/consistently
 ##  (trans_state_vars?)
@@ -683,64 +722,74 @@ capac_info <- data.frame(value=c(630,1300),
 ##' @importFrom stats predict
 ##' @export
 plot.predict_pansim <- function(x,
-                    data=NULL,
-                    break_dates=NULL,
-                    dlspace=1,
-                    limspace=10,
-                    add_tests=FALSE,
-                    add_ICU_cap=FALSE,
-                    mult_var=NULL,
-                    directlabels=TRUE,
-                    log=TRUE,
-                    log_lwr=1,
-                    ...) {
+                                data = NULL,
+                                break_dates = NULL,
+                                dlspace = 1,
+                                limspace = 10,
+                                add_tests = FALSE,
+                                add_ICU_cap = FALSE,
+                                mult_var = NULL,
+                                directlabels = TRUE,
+                                log = TRUE,
+                                log_lwr = 1,
+                                ...) {
     check_dots(...)
     lwr <- upr <- lab <- var <- . <- NULL
-    f_args <- attr(x,"forecast_args")
+    f_args <- attr(x, "forecast_args")
     if (is.null(break_dates)) break_dates <- legacy_break_dates(f_args)
     var <- date <- value <- mult_var <- NULL
 
-    p <- (ggplot(x,aes(date,value,colour=var))
-        + facet_wrap(~vtype,ncol=1,scales="free_y")
-        + labs(y="")
-        + theme(legend.position="none",
-                ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
-                strip.background = element_blank(),
-                strip.text = element_blank())
+    p <- (ggplot(x, aes(date, value, colour = var))
+    +
+        facet_wrap(~vtype, ncol = 1, scales = "free_y")
+        +
+        labs(y = "")
+        +
+        theme(
+            legend.position = "none",
+            ## https://stackoverflow.com/questions/10547487/remove-facet-wrap-labels-completely
+            strip.background = element_blank(),
+            strip.text = element_blank()
+        )
     )
     if (log) {
-        p <- p + scale_y_log10(limits=c(log_lwr,NA),oob=scales::squish)
+        p <- p + scale_y_log10(limits = c(log_lwr, NA), oob = scales::squish)
     }
     if (!is.null(break_dates)) {
-        p <- p + geom_vline(xintercept=as.Date(break_dates),lty=2)
+        p <- p + geom_vline(xintercept = as.Date(break_dates), lty = 2)
     }
     if (is.null(mult_var)) {
         p <- p + geom_line()
     } else {
-        p <- p + geom_line(aes_string(lty=mult_var))
+        p <- p + geom_line(aes_string(lty = mult_var))
     }
-    if (all(c("lwr","upr") %in% names(x))) {
+    if (all(c("lwr", "upr") %in% names(x))) {
         p <- (p
-            + geom_ribbon(aes(ymin=lwr,ymax=upr,fill=var),
-                          colour=NA, alpha=0.2)
+        + geom_ribbon(aes(ymin = lwr, ymax = upr, fill = var),
+                colour = NA, alpha = 0.2
+            )
         )
     }
     if (!is.null(data)) {
         if (add_tests) data <- scale_newtests(data)
         data <- get_type(sub_vars(data))
-        p <- (p + geom_point(data=data)
-            + geom_line(data=data,alpha=0.2)
+        p <- (p + geom_point(data = data)
+            + geom_line(data = data, alpha = 0.2)
         )
         if (add_tests) {
-            p <- p + geom_text(data=newtest_lab %>% get_type(),aes(label=lab))
+            p <- p + geom_text(data = newtest_lab %>% get_type(), aes(label = lab))
         }
     }
     if (add_ICU_cap) {
         p <- (p
-            + geom_hline(data=capac_info,aes(yintercept=value,
-                                             colour=var),lty=3)
-            + geom_text(data=capac_info,aes(y=value,x=min(data$date),
-                                            label=lab),vjust="middle")
+        + geom_hline(data = capac_info, aes(
+                yintercept = value,
+                colour = var
+            ), lty = 3)
+            + geom_text(data = capac_info, aes(
+                y = value, x = min(data$date),
+                label = lab
+            ), vjust = "middle")
         )
     }
     ## trying to fix spacing on the fly: kluge!
@@ -751,9 +800,11 @@ plot.predict_pansim <- function(x,
             stop("please install directlabels package")
         }
         p <- (p
-            + directlabels::geom_dl(method=list(directlabels::dl.trans(x=x+1),cex=1,'last.bumpup'),
-                      aes(label=var))
-            + expand_limits(x=max(x$date)+limspace)
+        + directlabels::geom_dl(
+                method = list(directlabels::dl.trans(x = x + 1), cex = 1, "last.bumpup"),
+                aes(label = var)
+            )
+            + expand_limits(x = max(x$date) + limspace)
         )
     }
     return(p)
@@ -761,12 +812,12 @@ plot.predict_pansim <- function(x,
 
 scale_newtests <- function(x) {
     newTests <- NULL
-    xx  <- (x
-        %>% dplyr::mutate_at("var",trans_state_vars)
-        %>% tidyr::pivot_wider(names_from="var",values_from="value",id_cols="date")
-        %>% dplyr::mutate(`newTests/1000`=newTests/1000)
+    xx <- (x
+        %>% dplyr::mutate_at("var", trans_state_vars)
+        %>% tidyr::pivot_wider(names_from = "var", values_from = "value", id_cols = "date")
+        %>% dplyr::mutate(`newTests/1000` = newTests / 1000)
         %>% dplyr::select(-newTests)
-        %>% tidyr::pivot_longer(names_to="var",-date)
+        %>% tidyr::pivot_longer(names_to = "var", -date)
     )
     return(xx)
 }
@@ -780,9 +831,9 @@ scale_newtests <- function(x) {
 ##' @inheritParams plot.predict_pansim
 ##' @param predict_args additional arguments to pass to predict
 ##' @export
-plot.fit_pansim <- function(x,predict_args=NULL) {
+plot.fit_pansim <- function(x, predict_args = NULL) {
     mc <- match.call()
-    forecast <- do.call(predict,c(list(x),predict_args))
+    forecast <- do.call(predict, c(list(x), predict_args))
     mc[[1]] <- quote(plot)
     mc$x <- forecast
     mc$predict_args <- NULL
@@ -793,7 +844,7 @@ fm0 <- formals(plot.fit_pansim)
 fm1 <- formals(plot.predict_pansim)
 formals(plot.fit_pansim) <- c(fm0, fm1[-1])
 
-#' @export
+##' @export
 vcov.fit_pansim <- function(object, ...) {
     v <- try(solve(object$hessian))
     return(v)
