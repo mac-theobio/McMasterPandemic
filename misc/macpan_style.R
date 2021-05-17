@@ -33,4 +33,5 @@ macpan_style$token$set_double_comments <- set_double_comments
 ## WORKAROUND: this allows the indentation of newline pipes to be automatically corrected.
 macpan_style$token$new_pipes <- new_pipes
 style_pkg(".", transformers = macpan_style)
-## style_file("misc/macpan_style.R", transformers = macpan_style)
+style_dir("inst", transformers = macpan_style)
+style_dir("misc", transformers = macpan_style)

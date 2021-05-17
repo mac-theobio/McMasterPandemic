@@ -160,8 +160,11 @@ install: $(TARBALL)
 	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
 	@touch $@
 
-style: misc/macpan_style.R
-	Rscript $<
+style: misc/macpan_style.R misc/macpan_lint.R
+	Rscript misc/macpan_style.R
+	Rscript misc/macpan_lint.R
+
+
 ######################################################################
 
 ## Looks cool; clashes with current Bolker rules.
