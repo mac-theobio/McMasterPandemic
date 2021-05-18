@@ -257,12 +257,19 @@ make_vaxrate <- function(state, params){
 
   ## FIXME: get this working for age-specific vax_doses_per_day
   ## don't sum over all ages, keep pop-size separate for each age
+  ## using rowSums in prep for age-structure
   asymp_unvax_N <- rowSums(condense_state(
     state[grepl(asymp_unvax_regex, names(state))]
     ))
 
   ## should be a scalar if we're not doing age-specific stuff
   vax_rate <- params[["vax_doses_per_day"]]/asymp_unvax_N
+
+  for(i in 1:length(vax_rate)){
+    if(is.nan(vax_rate[i]) || is.infinite(vax_rate[i])){
+      vax_rate[i] <- 0
+    }
+  }
 
   return(vax_rate)
 }
