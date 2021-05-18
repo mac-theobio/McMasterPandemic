@@ -982,8 +982,14 @@ make_state <- function(N=params[["N"]],
             ## distribute 'E0' value based on dominant eigenvector
             ## here E0 is effectively "number NOT susceptible"
             ## (repair_names_age does nothing to a non-ageified vector)
+            if(vaxify){
+              evec <- get_evec(params, testify=testify,
+                               do_hazard = TRUE)
+            } else {
+              evec <- get_evec(params, testify=testify)
+            }
             E_values <- repair_names_age(
-              smart_round(get_evec(params, testify=testify)*E0)
+              smart_round(evec*E0)
               )
             if (any(is.na(E_values))) {  state[] <- NA; return(state) }
             if (all(E_values==0)) {
