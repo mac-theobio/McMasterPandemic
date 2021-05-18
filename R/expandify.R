@@ -301,12 +301,21 @@ add_updated_vaxrate <- function(state, params, ratemat){
                       ncol = length(epi_states),
                       dimnames = list(epi_states, epi_states))
 
-  ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states,
+  ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
   for(state_cat in asymp_cat){
+    ## unvax to vax
     index <- pfun(paste0(state_cat),
                   paste0(state_cat),
                   vax_block)
     vax_block[index] <- vax_rate
+
+    ## accumulator (not present e.g. when we do rExp in make_state)
+    if("V" %in% epi_states){
+      index <- pfun(paste0(state_cat),
+                    paste0("V"),
+                    vax_block)
+      vax_block[index] <- vax_rate
+    }
   }
 
   ## convert vax_block to Matrix::Matrix object for subset assignement

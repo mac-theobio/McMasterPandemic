@@ -371,6 +371,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=TRUE,
       ## add vaccine allocation rates (from unvax to vaxdose)
       M <- add_updated_vaxrate(state, params, M)
 
+      ## add acc
 
       ## add vaccine immune response rate
       afun(paste0("S_.*", vax_cat[2]),
@@ -939,7 +940,8 @@ make_state <- function(N=params[["N"]],
     ## select vector of epi state names
     state_names <- switch(type,
                           ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
-                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X"),
+                          ## "V" is the vaccination accumulator compartment
+                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X", "V"),
                           ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
                           CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
                           stop("unknown type")
