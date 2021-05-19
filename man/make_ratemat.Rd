@@ -4,7 +4,7 @@
 \alias{make_ratemat}
 \title{Create transition matrix}
 \usage{
-make_ratemat(state, params, do_ICU = TRUE, sparse = FALSE, symbols = FALSE)
+make_ratemat(state, params, do_ICU = TRUE, sparse = TRUE, symbols = FALSE)
 }
 \arguments{
 \item{state}{named vector of states}
