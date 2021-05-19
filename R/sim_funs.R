@@ -731,7 +731,7 @@ run_sim <- function(params
             ## check column names
             ## FIXME:: use case-insensitive matching (apply tolower() throughout) to allow some slop?
             npt <- names(params_timevar)
-            if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
+            if (!all(c("Date","Symbol","Adjustment_type", "Adjustment_value") %in% npt)) {
                 stop("bad names in params_timevar: ",paste(npt,collapse=","))
             }
             params_timevar$Date <- anydate(params_timevar$Date)
@@ -786,9 +786,16 @@ run_sim <- function(params
             for (j in which(switch_times==times[i])) {
                 ## reset all changing params
                 s <- params_timevar[j,"Symbol"]
-                v <- params_timevar[j,"Relative_value"]
-                ## this should work even if params0[[s]] is a vector
-                params[[s]] <- params0[[s]]*v
+                t <- params_timevar[j, "Adjustment_type"]
+                v <- params_timevar[j, "Adjustment_value"]
+                if(t == "relative"){
+                  ## this should work even if params0[[s]] is a vector
+                  params[[s]] <- params0[[s]]*v
+                } else if (t == "absolute"){
+                  params[[s]] <- v
+                } else {
+                  stop("adjustment type must be either 'relative' or 'absolute'")
+                }
                 if (s=="proc_disp") {
                     state <- round(state)
                 }
@@ -882,8 +889,6 @@ run_sim <- function(params
     class(res) <- c("pansim","data.frame")
     return(res)
 }
-
-
 
 ##' retrieve parameters from a CSV file
 ##'
