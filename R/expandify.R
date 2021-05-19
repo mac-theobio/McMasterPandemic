@@ -361,6 +361,31 @@ add_updated_vaxrate <- function(state, params, ratemat){
   return(ratemat)
 }
 
+#' Compute total number of vaccine doses actually administered per day in a simulation
+#'
+#' @param res simulation result from model with vaccination (generated using `run_sim`)
+#'
+#' @return `tibble` with columns for date and total vaccine doses actually administered each day (as captured in the simulation)
+#' @export
+get_doses_per_day <- function(res){
+  if(!has_vax(res)){
+    stop("simulation result must be from model with vaccination")
+  }
+
+  vax_cat <- attr(attr(res, "params"), "vax_cat")[2]
+
+  print(paste0("computing vax rate based on timeseries for V_", vax_cat, " accumulator compartment"))
+  difference <- diff(res[,paste0("V_", vax_cat)])
+  date <- res$date[2:nrow(res)]
+
+  out <- tibble(
+    date = date,
+    total_doses_per_day = difference
+  )
+
+  return(out)
+}
+
 #' Edit parameter description attribute to include vax-specific definitions
 #' (helper function for `expand_params_vax()`)
 #'
