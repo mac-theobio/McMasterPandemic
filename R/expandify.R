@@ -376,9 +376,9 @@ get_doses_per_day <- function(res){
 
   print(paste0("computing vax rate based on timeseries for V_", vax_cat, " accumulator compartment"))
   difference <- diff(res[,paste0("V_", vax_cat)])
-  date <- res$date[2:nrow(res)]
+  date <- res$date[1:(nrow(res)-1)]
 
-  out <- tibble(
+  out <- data.frame(
     date = date,
     total_doses_per_day = difference
   )
