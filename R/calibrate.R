@@ -265,9 +265,9 @@ run_sim_break <- function(params,
     }
     if (!is.null(time_args$break_dates)) {
         ## construct time-varying frame, parameters
-        timevar <- data.frame(Date=anydate(time_args$break_dates),
-                              Symbol="beta0",
-                              Relative_value=extra_pars$rel_beta0)
+        timevar <- data.frame(Date=rep(anydate(time_args$break_dates),2),
+                              Symbol=rep(c("beta0","vacc"),each=length(time_args$break_dates)),
+                              Relative_value=c(extra_pars$rel_beta0,extra_pars$rel_vacc))
         if (return_timevar) return(timevar)
         sim_args <- c(sim_args,
                       list(params_timevar=timevar))
