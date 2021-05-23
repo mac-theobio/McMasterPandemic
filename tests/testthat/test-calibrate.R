@@ -62,14 +62,15 @@ test_that("calibrate parameters other than beta0", {
   plot(SS, log=TRUE, condense=TRUE, log_lwr=-Inf,keep_states=c("I","death"))
   ## FIXME: would like to be able to pass type="ICU1" through ... ?
   ## (run_sim_break uses make.state(params) without optional args
+  pt <- time_pars
+  pt$Relative_value <- NA
   SS2 <- run_sim_break(params,
                        sim_args=list(
                                      start_date = sd,
                                      end_date = ed,
                                      step_args=list(do_hazard=TRUE)),
                        extra_pars=list(value=c(1e-3,1e-3)),
-                       time_args=list(break_dates=time_pars$Date,
-                                      Symbol=c("phi2","beta0"))
+                       time_args=list(params_timevar=pt)
                        )
   ##
   expect_equal(c(SS),c(SS2))
