@@ -269,6 +269,7 @@ run_sim_break <- function(params,
                                Relative_value[rvals] <- extra_pars$value
                              })
   }
+  if (return_timevar) return(params_timevar)
   sim_args <- c(sim_args,
                 list(params_timevar = params_timevar))
   do.call("run_sim", sim_args)
