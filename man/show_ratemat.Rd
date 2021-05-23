@@ -28,6 +28,10 @@ show_ratemat(
 
 \item{block_col}{(numeric vector, of length 1 or length(blocksize)}
 
+\item{blocksize}{for each element n in blocksize, an additional n x n grid is overlaid on the diagram}
+
+\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)}
+
 \item{axlabs}{for flow matrices, show axis tick labels?}
 
 \item{const_width}{set flows to constant value of 1?}

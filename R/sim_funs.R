@@ -1,4 +1,5 @@
 ##' Compute elementwise multiplication of a vector by each column in a matrix
+##' This is implemented for performance reasons, as it is much faster than sweep.
 ##' @param M matrix
 ##' @param v vector
 ##' @export
@@ -214,6 +215,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
       M[pfun(from,to, M)] <<- deparse(substitute(val))
     }
   }
+
 
     ## fill entries
     beta_vec <- make_betavec(state,params)
@@ -735,21 +737,27 @@ run_sim <- function(params
 	 ## attr(res,"final_state") <- state
     class(res) <- c("pansim","data.frame")
 
-    ## check requires capital letters for state variables? Fix?
-    first_cap <- function(x) {
-      x1 <- substr(x,1,1)
-      return(toupper(x)==x)
-    }
     state_names <- names(res)
     state_names_indices <- first_cap(state_names)
     state_names <- state_names[state_names_indices]
 
     ## FIXME: why do we need to restrict to res[state_names] ?
+
     if(any(res[state_names] < -sqrt(.Machine$double.eps))){
-        warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps)')
+
+      state_vars <- (res %>% select(state_names))
+      below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
+
+      warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ',
+              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
+
     }
     else if(any(res[state_names] < 0)){
-        warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0.')
+      state_vars <- (res %>% select(state_names))
+      below_zero_lines <- (rowSums(state_vars < 0) > 0)
+
+      warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ',
+              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
     }
     return(res)
 }
@@ -809,6 +817,8 @@ make_state <- function(N=params[["N"]],
                           ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X"),
                           ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
                           CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
+                          ## Add a test case which should result in a thrown warning
+                          test_warning_throw = c("s","e","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "d","R","X"),
                           stop("unknown type")
                           )
     state <- setNames(numeric(length(state_names)),state_names)
@@ -859,6 +869,13 @@ make_state <- function(N=params[["N"]],
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
 
+## Give a warning if not all state variables are capital letters
+    if(!all(sapply(names(state), function(x)
+      {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)}))){
+      warning('Not all state variables are capital letters,
+              this can result in failure to correctly check if a state variable is negative.')
+    }
+
     return(state)
 }
 
@@ -871,6 +888,7 @@ gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
     flows <- col_multiply(M, y) # faster than sweep(M, y, MARGIN=1, FUN="*")
+
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
 }
@@ -955,10 +973,13 @@ run_sim_range <- function(params
 
 
     if(any(state < -sqrt(.Machine$double.eps))){
-        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) \n Check following message for details \n ',
+                paste(utils::capture.output(print(state)), collapse = "\n"))
+
     }
     else if(any(state < 0)){
-        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+        warning('End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
+                paste(utils::capture.output(print(state)), collapse = "\n"))
     }
     return(res)
 }

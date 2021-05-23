@@ -1,5 +1,6 @@
 ---
-title: refactoring
+title: "refactoring"
+output: pdf_document
 ---
 
 How do we go about modifying/refactoring the code to allow it to more flexibly/generally handle different models of time-varying parameters? 

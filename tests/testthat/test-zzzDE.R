@@ -2,6 +2,15 @@ library(McMasterPandemic)
 library(testthat)
 library(parallel)
 
+test_that("onLoad options", {
+  # expect no errors while loading
+  expect(!is.null(options()$MP_badsum_action), 'MP_badsum_action not set!')
+  expect(!is.null(options()$MP_badsum_tol), 'MP_badsum_tol not set!')
+  # expect error for random variable
+  expect(is.null(options()$random_var_for_testing_please_do_not_name_a_variable_this),
+         'This should never happen, random_var_for_testing_please_do_not_name_a_variable_this is not NULL')
+})
+
 context("DEoptim")
 
 test_level <- if(nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL")) &&
@@ -29,7 +38,7 @@ if (Sys.getenv("TRAVIS") != "true"  ## not on Travis
                                           DE_cores=1,
                                           DE_args=list(control=list(itermax=5,trace=FALSE)))
                      )
-    
+
     de <- attr(cal1_DE,"de")
 
     test_that("DE components are present", {

@@ -564,6 +564,8 @@ smart_round <- function(x) {
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
+##' @param blocksize for each element n in blocksize, an additional n x n grid is overlaid on the diagram
+##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix

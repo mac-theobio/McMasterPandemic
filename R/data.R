@@ -31,14 +31,14 @@
 #' Calibration to mobility data
 "ont_cal_mob1"
 
-#' @rdname ontario_fits
-#' @name bd
-#' break dates
-"bd"
 
 #' @rdname ontario_data
 #' @name ont_all_sub
-#' Another version of the Ontario data ... ?
+#' @format A subset of ont_all containing fewer columns.
 "ont_all_sub"
 
-
+#' @rdname ontario_fits
+#' @name bd
+#' @format vector of date (character) strings
+#' Breakdates used in calibration.
+"bd"
