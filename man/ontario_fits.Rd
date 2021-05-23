@@ -5,6 +5,9 @@
 \alias{ont_cal1}
 \alias{ont_cal_2brks}
 \alias{ont_cal_mob1}
+\alias{bd
+break dates}
+\alias{bd}
 \title{Fitted models to Ontario data}
 \format{
 a calibrated object ...
@@ -15,6 +18,8 @@ Sample COVID19 calibration - only two breakpoints
 
 a calibrated object ...
 Calibration to mobility data
+
+An object of class \code{character} of length 3.
 }
 \usage{
 ont_cal1
@@ -22,6 +27,8 @@ ont_cal1
 ont_cal_2brks
 
 ont_cal_mob1
+
+bd
 }
 \description{
 Fitted models to Ontario data

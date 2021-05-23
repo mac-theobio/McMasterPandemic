@@ -35,7 +35,7 @@ run simulation with one or more breakpoints
 params <- read_params("ICU1.csv")
 pt <- data.frame(Date = "2020-03-01", Symbol = "beta0", Relative_value = NA)
 r1 <- run_sim_break(params,
-          time_args=list(params_timevar = pt,
+          time_args=list(params_timevar = pt),
                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
                    extra_pars=list(value = 0.5))
 plot(r1,log=TRUE)

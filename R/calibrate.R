@@ -237,7 +237,7 @@ run_sim_mobility <- function(params,
 ##' params <- read_params("ICU1.csv")
 ##' pt <- data.frame(Date = "2020-03-01", Symbol = "beta0", Relative_value = NA)
 ##' r1 <- run_sim_break(params,
-##'           time_args=list(params_timevar = pt,
+##'           time_args=list(params_timevar = pt),
 ##'                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
 ##'                    extra_pars=list(value = 0.5))
 ##' plot(r1,log=TRUE)
@@ -690,7 +690,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       data,
                       opt_pars=list(params=c(log_E0=4,
                                              log_beta0=-1),
-                                    logit_rel_beta0=c(-1,-1),
+                                    logit_value=c(-1,-1),
                                     log_nb_disp=NULL),
                       fixed_pars=NULL,
                       sim_fun=run_sim_break,

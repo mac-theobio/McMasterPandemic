@@ -23,10 +23,22 @@
 #' @name comb_sub
 #' @format a data frame containing date rel_activity
 #' Averaged mobility data (Apple: Toronto driving, Google: Ontario retail_and_recreation, workplaces; Google data up to 22 May)
-"comb_sub" 
+"comb_sub"
 
 #' @rdname ontario_fits
 #' @name ont_cal_mob1
 #' @format a calibrated object ...
 #' Calibration to mobility data
-"ont_cal_mob1" 
+"ont_cal_mob1"
+
+#' @rdname ontario_fits
+#' @name bd
+#' break dates
+"bd"
+
+#' @rdname ontario_data
+#' @name ont_all_sub
+#' Another version of the Ontario data ... ?
+"ont_all_sub"
+
+

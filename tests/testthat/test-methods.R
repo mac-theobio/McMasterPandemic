@@ -5,8 +5,6 @@ library(ggplot2)
 params <- read_params("ICU1.csv")
 s <- run_sim(params, start_date="2020-03-01", end_date="2020-05-01")
 
-
-context("aggregation")
 test_that("Jacobian/r/etc", {
     J <- make_jac(params)
     expect_equal(unname(colSums(J)), rep(0,nrow(J)))

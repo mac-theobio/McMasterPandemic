@@ -735,11 +735,16 @@ run_sim <- function(params
 	 ## attr(res,"final_state") <- state
     class(res) <- c("pansim","data.frame")
 
-    # check requires capital letters for state variables? Fix?
+    ## check requires capital letters for state variables? Fix?
+    first_cap <- function(x) {
+      x1 <- substr(x,1,1)
+      return(toupper(x)==x)
+    }
     state_names <- names(res)
-    state_names_indices <- sapply(state_names, function(x) {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)})
+    state_names_indices <- first_cap(state_names)
     state_names <- state_names[state_names_indices]
 
+    ## FIXME: why do we need to restrict to res[state_names] ?
     if(any(res[state_names] < -sqrt(.Machine$double.eps))){
         warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps)')
     }

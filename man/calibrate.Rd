@@ -12,7 +12,7 @@ calibrate(
     Symbol = rep("beta0", 2), Relative_value = rep(NA, 2))),
   base_params,
   data,
-  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_rel_beta0 = c(-1, -1),
+  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_value = c(-1, -1),
     log_nb_disp = NULL),
   fixed_pars = NULL,
   sim_fun = run_sim_break,
