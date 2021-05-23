@@ -26,11 +26,7 @@ show_ratemat(
 
 \item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}
 
-\item{block_col}{(numeric vector, of length 1 or length(blocksize)}
-
-\item{blocksize}{for each element n in blocksize, an additional n x n grid is overlaid on the diagram}
-
-\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)}
+\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)}
 
 \item{axlabs}{for flow matrices, show axis tick labels?}
 

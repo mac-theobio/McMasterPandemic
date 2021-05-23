@@ -71,6 +71,7 @@ rmult <- function(k, r){
 ##' @param do_hazard run with hazard
 ##' @param testify testing compartments
 ##' @param return_val return growth rate or eigenvector?
+##' @param type model type (passed to \code{\link{make_state}})
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' rExp(pp)
@@ -80,16 +81,18 @@ rmult <- function(k, r){
 rExp <- function(params, steps=100, ndt=1,
                  do_hazard=FALSE,
                  testify=has_testing(params=params),
-                 return_val=c("r0","eigenvector","sim"))
+                 return_val=c("r0","eigenvector","sim"),
+                 type="ICU1")
 {
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
         params[["N"]] <- 1   ## ? redundant ?
         ## potential recursion here: have to make sure
-	state <- make_state(N=1, E0=1e-5, type="ICU1",
+	state <- make_state(N=1, E0=1e-5,
                             use_eigvec=FALSE,
                             params=params,
-                            testify=FALSE)  ## FIXME: don't assume ICU1?
+                            testify=FALSE,
+                            type = type)
         M <- make_ratemat(state=state, params=params)
     	if (testify) {
             M <- testify(M,params)

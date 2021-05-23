@@ -738,7 +738,7 @@ run_sim <- function(params
     class(res) <- c("pansim","data.frame")
 
     state_names <- names(res)
-    state_names_indices <- first_cap(state_names)
+    state_names_indices <- first_letter_cap(state_names)
     state_names <- state_names[state_names_indices]
 
     ## FIXME: why do we need to restrict to res[state_names] ?
@@ -827,12 +827,12 @@ make_state <- function(N=params[["N"]],
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
             ## set **first** E compartment
-            state[[grep("E",names(state))[1]]] <- E0
+            state[[grep("^E",toupper(names(state)))[1]]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ## here E0 is effectively "number NOT susceptible"
-            ee <- round(get_evec(params, testify=testify)*E0)
+            ee <- round(get_evec(params, testify=testify, type=type)*E0)
             if (any(is.na(ee))) {  state[] <- NA; return(state) }
             if (all(ee==0)) {
                 if (testify) stop("this case isn't handled for testify")
@@ -869,11 +869,11 @@ make_state <- function(N=params[["N"]],
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
 
-## Give a warning if not all state variables are capital letters
-    if(!all(sapply(names(state), function(x)
-      {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)}))){
-      warning('Not all state variables are capital letters,
-              this can result in failure to correctly check if a state variable is negative.')
+    ## Give a warning if not all state variables are capital letters
+    if (!all(first_letter_cap(names(state)))) {
+      warning('Not all state variables are capital letters; ',
+              'this can result in failure to correctly check ',
+              'if a state variable is negative.')
     }
 
     return(state)

@@ -29,7 +29,7 @@ Imports:
 	zoo, 
 	deSolve, 
 	splines, 
-	diagram,
+	diagram
 Suggests: 
 	knitr, 
 	testthat, 
@@ -40,7 +40,8 @@ Suggests:
 	latticeExtra,
 	directlabels, 
 	rmarkdown, 
-	tidyverse
+	tidyverse,
+	anytime
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL

@@ -12,8 +12,8 @@ names(v) = names
 
 
 test_that('New sweep works correctly', {
-baseline = sweep(M, v, MARGIN=1, FUN="*")
-expect(identical(col_multiply(M, v), baseline), 'col_multiply not working as expected!')
+  baseline = sweep(M, v, MARGIN=1, FUN="*")
+  expect(identical(col_multiply(M, v), baseline), 'col_multiply not working as expected!')
 })
 
 params1 <- read_params("ICU1.csv")
@@ -36,12 +36,14 @@ test_that('State variable <0 warning works correctly', {
 })
 
 
-test_that(" No warnings throw if state variables are all capital letters", {
-  expect_warning(state1 <- make_state(params = params1), regexp=NA, label="Inappropriate warning for non-capitalized state when state variables are capitalized correctly")
+test_that(" No warnings thrown if state variables are all capital letters", {
+  expect_warning(make_state(params = params1), regexp=NA, label="Inappropriate warning for non-capitalized state when state variables are capitalized correctly")
 })
 
-test_that("Warnings throw if state variables are not all capital letters", {
-  expect_warning(state1 <- make_state(params = params1, type="test_warning_throw"), regexp="Not all state variables are capital letters", label="Non-capitalized state warning not being thrown")
+test_that("Warnings thrown if state variables are not all capital letters", {
+  expect_warning(make_state(params = params1, type="test_warning_throw",
+                            use_eigvec=FALSE),
+                 regexp="Not all state variables are capital letters", label="Non-capitalized state warning not being thrown")
 })
 
 

@@ -559,13 +559,12 @@ smart_round <- function(x) {
 ##' @param method visualization method
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
 ##' @param block_size numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments
-##' @param block_col (numeric vector, of length 1 or length(blocksize)
+##' @param block_col (numeric vector, of length 1 or length(block_size)
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
-##' @param blocksize for each element n in blocksize, an additional n x n grid is overlaid on the diagram
-##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)
+##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
@@ -734,4 +733,10 @@ exclude_states <- function(nm,exclude_states) {
 ## inspired by purrr, infix pkgs
 `%||%` <- function (a, b) {
     if (is.null(a)) b else a
+}
+
+## logical vector indicating whether first letters of strings are capitalized
+first_letter_cap <- function(x) {
+  f <- substr(x,1,1)
+  return(toupper(f) == f)
 }
