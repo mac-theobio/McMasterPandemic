@@ -1291,7 +1291,7 @@ calibrate_comb <- function(data,
     if (return_val=="X") return(X)
     if(is.null(opt_pars$time_pars)){
         ## matplot(X_dat$t_vec,X,type="l",lwd=2)
-        opt_pars$value <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+        opt_pars$time_pars <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
         names(opt_pars$time_pars) <- colnames(X)
     }
     if (use_spline || use_mobility) {

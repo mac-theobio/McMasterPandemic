@@ -129,7 +129,7 @@ c_r2 <- calibrate_comb(params=p3,
 get_last_rpt <- function(x) {
     predict(x) %>% filter(var=="report") %>% tail(1) %>% dplyr::pull(value)
 }
-plot(c_r2, data=dd_r) + ggtitle("old (use_eigvec=FALSE)")
+plot(c_r2, data=dd_r) + ggplot2::ggtitle("old (use_eigvec=FALSE)")
 
 c_r2e <- calibrate_comb(params=p3,
                        use_phenomhet=FALSE,
@@ -140,7 +140,7 @@ c_r2e <- calibrate_comb(params=p3,
                        sim_args=list(step_args=list(do_hazard=FALSE))
                        )
 
-plot(c_r2e, data=dd_r) + ggtitle("use_eigvec")
+plot(c_r2e, data=dd_r) + ggplot2::ggtitle("use_eigvec")
 
 ## list(params = c(E0 = 0.969447127312371,
 ##                 beta0 = 0.999559822048325
@@ -174,7 +174,7 @@ plot(c_r2e, data=dd_r) + ggtitle("use_eigvec")
 ##   previous values ... ???
 
 ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531
-), nb_disp = c(report = 1.10114796707075), time_beta = numeric(0))
+), nb_disp = c(report = 1.10114796707075), time_pars = numeric(0))
 
 print(coef(c_r2e, "fitted"))
 stopifnot(all.equal(coef(c_r2e,"fitted"),
