@@ -17,9 +17,9 @@ cdat <- (res1_S
                date<as.Date("2020-04-15"))
 )
 
-priors <- list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))
+priors <- list(~dlnorm(value[1],meanlog=-1,sd=0.5))
 c0 <- calibrate(data=cdat,base_params=params) ## ,debug_plot=TRUE,debug=TRUE)
 c1 <- calibrate(data=cdat,base_params=params,priors=priors) ## debug_plot=TRUE)
 summary(c0)
 summary(c1)
-                
+
