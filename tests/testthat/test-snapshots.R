@@ -52,7 +52,7 @@ test_that("time-varying with ndt>1", {
 })
 
 test_that("ndt>1", {
-    s2 <- run_sim_range(params,state, nt=100, dt=0.2)
+    s2 <- run_sim_range(params,state, nt=100, dt=0.2, step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s2, 10))
     s3 <- run_sim(params,state, ndt=20,
                   start_date="2020-03-01",
