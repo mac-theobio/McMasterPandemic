@@ -155,6 +155,7 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
 ##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
+##' @param indices return indices for lower-level stuff?
 ##' @return matrix of (daily) transition rates
 ##  *need* Matrix version of rowSums imported to handle sparse stuff below!!
 ##' @importFrom Matrix Matrix rowSums colSums
@@ -168,7 +169,7 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
 make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
-                         symbols=FALSE) {
+                         symbols=FALSE, indices=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
@@ -205,14 +206,14 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
                 nrow=ns, ncol=ns,
                 dimnames=list(from=state_names, to=state_names))
 
-    ## generic assignment function, indexes by regexp rather than string
-    afun <- function(from, to, val) {
-        if (!symbols) {
-            M[pfun(from, to, M)] <<- val
-        } else {
-            M[pfun(from,to, M)] <<- deparse(substitute(val))
-        }
+  ## generic assignment function, indexes by regexp rather than string
+  afun <- function(from, to, val) {
+    if (!symbols) {
+      M[pfun(from, to, M)] <<- val
+    } else {
+      M[pfun(from,to, M)] <<- deparse(substitute(val))
     }
+  }
 
     ## fill entries
     beta_vec <- make_betavec(state,params)

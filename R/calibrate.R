@@ -231,14 +231,15 @@ run_sim_mobility <- function(params,
 ##' @param extra_pars parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}:
 ##' **FIXME** should contain rel_<parname> values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
 ##' is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)
-##' @param break_dates obsolete
 ##' @param ... extra args (why??)
-##' @param return_timevar return data frame of beta by time?
+##' @param return_timevar return data frame of params by time?
 ##' @examples
 ##' params <- read_params("ICU1.csv")
-##' r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
+##' pt <- data.frame(Date = "2020-03-01", Symbol = "beta0", Relative_value = NA)
+##' r1 <- run_sim_break(params,
+##'           time_args=list(params_timevar = pt,
 ##'                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
-##'                    extra_pars=list(rel_beta0 = 0.5))
+##'                    extra_pars=list(value = 0.5))
 ##' plot(r1,log=TRUE)
 ##' ## can also use it to run without breaks ...
 ##' r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))
@@ -247,36 +248,33 @@ run_sim_mobility <- function(params,
 run_sim_break <- function(params,
                           extra_pars=NULL,
                           time_args=NULL,
-                          break_dates=NULL,
-                          sim_args=list(),
                           return_timevar=FALSE,
+                          sim_args=list(),
                           ...) {
+  if (any(c("time_break_dates","Symbol") %in% names(time_args))) {
+    stop("probably using outdated time_args() specification")
+  }
   ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
-  if (!is.null(break_dates)) {
-        stop("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
-    }
-    ## FIXME:: HACK for now
-    ## other_args <- other_args[!grepl("nb_disp",names(other_args))]
-    sim_args <- c(sim_args,
-                  nlist(params,
-                        state=make_state(params=params)))
-    if (length(time_args)==1 && is.null(names(time_args))) {
-        ## HACK:: namedrop() problems in mle2????
-        names(time_args) <- "break_dates"
-    }
-    if (!is.null(time_args$break_dates)) {
-      ## construct time-varying frame, parameters
-      timevar <- data.frame(Date = as.Date(time_args$break_dates),
-                            Symbol = time_args$Symbol %||% "beta0",
-                            Relative_value = extra_pars$value %||% extra_pars$rel_beta0)
-        if (return_timevar) return(timevar)
-        sim_args <- c(sim_args,
-                      list(params_timevar = timevar))
-    }
-    do.call("run_sim", sim_args)
+  sim_args <- c(sim_args,
+                nlist(params,
+                      state=make_state(params=params)))
+  if (length(time_args)==1 && is.null(names(time_args))) {
+    ## HACK:: namedrop() problems in mle2????
+    names(time_args) <- "break_dates"
+  }
+  params_timevar <- time_args$params_timevar
+  if (!is.null(params_timevar)) {
+    params_timevar <- within(time_args$params_timevar,
+                             if (any(rvals <- is.na(Relative_value))) {
+                               Relative_value[rvals] <- extra_pars$value
+                             })
+  }
+  sim_args <- c(sim_args,
+                list(params_timevar = params_timevar))
+  do.call("run_sim", sim_args)
 }
 
-
+## DEVELOPMENT: trying to use linear modeling framework?
 run_sim_break2 <- function(params,
                           extra_pars=NULL,
                           time_args=NULL,
@@ -633,7 +631,6 @@ update_debug_hist <- function(params, NLL) {
 ##' @param aggregate_args arguments passed to
 ##'     \code{\link{aggregate.pansim}}
 ##' @param time_args arguments passed to \code{sim_fun}
-##' @param break_dates legacy
 ##' @param mle2_control control args for mle2
 ##' @param mle2_method method arg for mle2
 ##' @param mle2_args additional arguments for mle2
@@ -685,8 +682,10 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       start_date_offset=15,
                       end_date=max(data$date),
                       time_args=list(
-                          break_dates=c("2020-03-23","2020-03-30")),
-                      break_dates=NULL,
+                          params_timevar=data.frame(
+                              Date = c("2020-03-23","2020-03-30"),
+                              Symbol = rep("beta0", 2),
+                              Relative_value = rep(NA,2))),
                       base_params,
                       data,
                       opt_pars=list(params=c(log_E0=4,
@@ -711,13 +710,8 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       DE_args=list(),
                       DE_lwr=NULL,
                       DE_upr=NULL,
-                      DE_cores=getOption("mc.cores",2))
-{
+                      DE_cores=getOption("mc.cores",2)) {
     start_time <- proc.time()
-    if (!is.null(break_dates)) {
-        warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
-        time_args <- list(break_dates=break_dates)
-    }
     v <- na.omit(data$value)
     if (any(abs(v-round(v))>1e-9)) {
         stop("need integer values in reported data (to match dnbinom)")
