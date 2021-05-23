@@ -383,7 +383,8 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
 ##' M <- make_ratemat(params=params1, state=state1)
 ##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
 do_step <- function(state, params, ratemat, dt=1,
-                    do_hazard=FALSE, stoch_proc=FALSE,
+                    do_hazard=TRUE,
+                    stoch_proc=FALSE,
                     do_exponential=FALSE,
                     testwt_scale="N") {
 
