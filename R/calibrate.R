@@ -123,14 +123,14 @@ run_sim_loglin <- function(params,
     ## X_date: dates corresponding to rows of model matrix
     ##
     ## strip
-    time_beta <- extra_pars$time_beta
-    extra_pars$time_beta <- NULL
+    time_pars <- extra_pars$time_pars
+    extra_pars$time_pars <- NULL
     timevar <- NULL
-    if (length(time_beta)>0) {  ## non-trivial model
+    if (length(time_pars)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
         timevar <- dfs(Date=as.Date(X_date),
                        Symbol="beta0",
-                       Relative_value=exp(X %*% time_beta))  ## log-linear model for beta
+                       Relative_value=exp(X %*% time_pars))  ## log-linear model for beta
     }
 
     if (!is.null(timevar) && length(sim_args)>0) {
@@ -1288,10 +1288,10 @@ calibrate_comb <- function(data,
                                                      byrow=TRUE)
     }
     if (return_val=="X") return(X)
-    if(is.null(opt_pars$time_beta)){
+    if(is.null(opt_pars$time_pars)){
         ## matplot(X_dat$t_vec,X,type="l",lwd=2)
-        opt_pars$time_beta <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
-        names(opt_pars$time_beta) <- colnames(X)
+        opt_pars$value <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+        names(opt_pars$time_pars) <- colnames(X)
     }
     if (use_spline || use_mobility) {
         time_args <- nlist(X,X_date=X_dat$date)
@@ -1305,10 +1305,10 @@ calibrate_comb <- function(data,
 	      if(return_val == "time_args") return(time_args)
     }
     if (use_spline && spline_pen>0) {
-        spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_beta))
+        spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_pars))
         spline_beg <- spline_pars[1]
         spline_end <- spline_pars[length(spline_pars)]
-        priors <- c(priors,list(bquote(~sum(dnorm(time_beta[.(spline_beg):.(spline_end)],mean=0,sd=.(1/spline_pen))))))
+        priors <- c(priors,list(bquote(~sum(dnorm(time_pars[.(spline_beg):.(spline_end)],mean=0,sd=.(1/spline_pen))))))
     }
     ## do the calibration
     ## debug <- use_DEoptim
