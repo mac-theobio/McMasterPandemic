@@ -582,23 +582,32 @@ smart_round <- function(x) {
   y
 }
 
-## ?Matrix::image-methods
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param method visualization method
 ##' @param subset list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
-##' @param add_blocks add lines showing blocks for testified matrices?
+##' @param block_size numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments
+##' @param block_col (numeric vector, of length 1 or length(block_size)
 ##' @param const_width set flows to constant value of 1?
 ##' @param colour_palette vector of colours for rate matrix heatmap
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
+##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
 ##' @importFrom diagram plotmat
+## See \code{help("Matrix::image-methods")} for more.
+##' @examples
+##' params <- read_params("ICU1.csv")
+##' state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
+##' M <- make_ratemat(state, params)
+##' show_ratemat(M)
+##' ## silly but shows we can do multiple block types in different colours
+##' show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          subset = NULL,
@@ -607,8 +616,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          sub = "",
                          zlim = c(0,1),
                          aspect="iso",
-                         add_blocks=NULL,
-                         blocksize=NULL,
+                         block_size=NULL,
                          block_col=2,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
@@ -648,14 +656,27 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                            colorkey = !const_width,
                            col.regions = colour_palette,
                            aspect=aspect, ...)
-        if (add_blocks) {
-            if (requireNamespace("latticeExtra")) {
-                ## FIXME: don't hardcode length (but evaluation within layer() is weird !
-                p <- (p
-                    + latticeExtra::layer(lattice::panel.abline(h=4.5+seq(0,58,by=4),col=2))
-                    + latticeExtra::layer(lattice::panel.abline(v=4.5+seq(0,58,by=4),col=2)))
-            }
-        }
+         if (add_blocks) {
+             if (all(is.na(block_size))) {
+               ## FIXME: test more. Works suboptimally for a *single* block, but ???
+                 epi_vars <- unique(gsub("_.*$","",colnames(M)))
+                 epi_vars <- setdiff(epi_vars, c(test_accumulators, non_expanded_states))
+                 block_size <- length(epi_vars)
+               }
+             if (!requireNamespace("latticeExtra")) {
+               stop("can't add block lines: please install latticeExtra package")
+             }
+               block_col <- rep(block_col, length.out=length(block_size))
+               for (i in seq_along(block_size)) {
+                 ## offset by 0.5 so we are illustrating state values
+                 block_pos <- seq(nrow(M)+0.5,0,by=-block_size[i])
+                 dd <- list(col=block_col[i],pos=block_pos)
+                 p <- (p
+                   + latticeExtra::layer(lattice::panel.abline(h=pos,col=col), data=dd)
+                   + latticeExtra::layer(lattice::panel.abline(v=pos,col=col), data=dd)
+                 )
+             } ## loop over block_size
+         } ## add_blocks
     } else if (method=="igraph") {
        if (!requireNamespace("igraph")) {
            stop("igraph not available")
@@ -669,7 +690,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
         pos <- cbind(xpos,ypos)/8
         M3 <- M[names(xpos),names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
-            M3 <- adjust_symbols(M3)
+          M3 <- adjust_symbols(M3)
         } else {
             M3[M3!="0"] <- ""  ## blank out all labels
         }
@@ -756,3 +777,14 @@ exclude_states <- function(nm,exclude_states) {
 
 ## wrapper for update() to work on lists (using purrr::update_list)
 update.list <- function(list, ...) purrr::update_list(list, ...)
+
+## inspired by purrr, infix pkgs
+`%||%` <- function (a, b) {
+    if (is.null(a)) b else a
+}
+
+## logical vector indicating whether first letters of strings are capitalized
+first_letter_cap <- function(x) {
+  f <- substr(x,1,1)
+  return(toupper(f) == f)
+}

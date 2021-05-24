@@ -20,7 +20,9 @@ install
 ChangeLog.md
 git_push
 ontario/
+refactor/
 Rplots.pdf
 make_pkglist.sh
 utils/
 ^\.github$
+refactor/

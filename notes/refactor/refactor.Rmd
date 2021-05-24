@@ -1,5 +1,6 @@
 ---
-title: refactoring
+title: "refactoring"
+output: pdf_document
 ---
 
 How do we go about modifying/refactoring the code to allow it to more flexibly/generally handle different models of time-varying parameters? 
@@ -163,3 +164,69 @@ show_args(do_step)
 
 cumRep: what we want to do is have obs error on individual reporting, then cumsum() the "report" variable
 what we need to do is cumulate *after* applying obs error etc.
+
+# MacPan advantages/features
+
+- formulation in terms of per capita flows (easy conversion among linear-step, hazard, ODE, etc.)
+- linear subsystem
+    - quick calc of current R etc.
+    - simple parameter calibration to specified r, R, generation interval
+	- eigenvector calculation for initialization
+- calibration to any specified input stream (e.g. H, D, ICU)
+- strata: cf Friston generative-model approach
+   - testing
+   - vaccination
+   - age
+- flexible time-varying parameters, with calibratable parameters
+- capability for both 
+
+# MacPan disadvantages
+
+- complexity, interrelatedness
+- too many options
+- especially difficult/weird: when/how is condensation applied? When is expansion of states/rate matrices done?
+    - possibility for automatic construction of states/rate matrices at many different levels
+
+# Refactoring goals
+
+- core in RcppEigen/odin/TMB (speed, ability to have shrinkage/latent variables)
+   - need to construct all structure as exterior, including a (sparse) rate matrix and an appropriate set of information for constructing time-varying parameters.
+   - also need some kind of parameter indexing to know how the entries in the rate matrix are indexed.  Sparse matrix with index into non-zero positions (similar to lme4 lambda/flexlambda structure?)
+
+
+## Goal
+
+Refactor in Template Model Builder [@kristensen_tmb_2016]
+
+## Why refactor in TMB
+
+Speed. It currently takes at least 1 hour to run a calibration of the model, sometimes longer. While this is feasible within a daily workflow, it can be problematic at crunch times (e.g., we have a PHAC request for a small change in the model to be recalibrated and returned on a short time scale); it also limits. We are in the process of adding structure (vaccination, age structure) to the model that greatly increases the size of the state space and will exacerbate our computational limitations.
+
+If the TMB component of the model can be expanded to include the full likelihood model, we will be able to take advantage of TMB's native *automatic differentiation* capability (TMB's main design goal) to greatly improve the speed and stability of calibration.
+
+In addition to raw speed, refactoring in TMB will allow the use of *latent variables*, i.e. vectors of parameters that are estimated with a penalization/integration step that allows them to be treated as random variables, i.e. estimated as being drawn from a distribution. This is a standard tool in statistical modeling of dynamical systems, but is only practical in Bayesian models and certain frameworks that allow estimation involving integration via the *Laplace approximation* and related approaches. One of `TMB`'s features is a built-in Laplace approximation engine, which allows any specified parameter vector to be modeled as a Gaussian latent variable. In particular it will allow us to model the transmission rate as evolving according to an autocorrelated process, which is a key element of realism. (Similar approaches are used, for example, in @asher_forecasting_2018 [which was the most accurate model in the 2018 RAPIDD Ebola forecasting challenge] and in @davies_estimated_2021 [estimating relative spread rates of COVID variants of concern].)
+
+(**Fixme**: how close could we get to what we want with penalization,  *without* implementing Laplace?)
+
+Finally, using TMB will in principle allow an extension to estimating the model using *Hamiltonian Monte Carlo* with the `tmbstan` R package [@monnahan_no-u-turn_2018] as an interface to the Stan language [@li_fitting_2018; @chatzilena_contemporary_2019].
+   
+### Why not rewrite the model entirely in C++?
+
+- This might have some minor computational advantages, and would avoid the friction of writing a project in two different programming languages. However: (1) it is important to maintain the flexibility and accessibility of the projects to epidemiological users, who will have a much easier time modifying and customizing the functionality of the package if most of the user interface is written in R, with only the computational core implemented in TMB.
+
+### Why not use a different R/C++ interface?
+
+The `Rcpp` interface is more widely used than `TMB`, more mature, and allows use of a broader set of C++ standard library tools. However, it does not provide easy access to the Laplace approximation or Stan HMC engine.
+
+## Basic design
+
+(Include flow diagram/call graph here.)
+
+Goal is to expand TMB component as far up the chain as possible, but leaving complex matching steps (rate matrix construction; construction of indices for condensing multiple state variables into single observed values; construction of data vectors for comparison with simulated dynamics; construction of date-breakpoint models or model matrices for general time variation (see below) in R, to be passed as data elements to TMB.
+
+Basic design of MacPan works by constructing a *per capita* flow rate matrix: at each step, 
+
+- Implement `do_step`/`run_sim_range` in TMB: simplest (pass fixed rate matrix) will speed up all operations, but not allow leveraging latent variables or automatic differentation tools
+- Implementing `run_sim`: will require construction of an *indexed* sparse matrix (i.e. a way to map changes in rate variables to changes in specific elements of the rate matrix). Again, the goal is to keep as much of the complexity in model parameterization and setup *outside* of the TMB component.
+- As a next step, build a general log-linear model for parameters inside the TMB component. This will allow flexible specification of time-varying parameters (e.g. via breakpoints, splines, or smooth [logistic] transitions centered at specified breakpoints) in the calibrated model. A list of *model matrices* describing the time variation of specified parameters would be constructed in R (using the flexible R formula syntax), then passed to TMB where the model matrices could be multiplied by specified parameter vectors to determine the time variation in epidemiological parameters.
+

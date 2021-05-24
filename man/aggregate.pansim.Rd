@@ -35,11 +35,11 @@ Temporal aggregation of pansim objects
 \examples{
 params <- read_params("ICU1.csv")
 state <- make_state(params=params)
-sdate <- "10-Feb-2020" ## arbitrary!
-res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
-a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
+sdate <- "2020-02-10" ## arbitrary!
+res <- run_sim(params,state,start_date=sdate,end_date="2020-06-01")
+a1 <- aggregate(res, start="2020-02-12",period="7 days", FUN=sum)
 ## column-specific aggregation
 first <- dplyr::first
 agg_funs <- list(mean=c("H","ICU","I"), sum=c("report","death"))
-a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days", FUN=agg_funs)
+a2 <- aggregate(condense(res), start="2020-02-12",period="7 days", FUN=agg_funs)
 }

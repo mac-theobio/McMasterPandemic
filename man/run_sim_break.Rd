@@ -8,35 +8,36 @@ run_sim_break(
   params,
   extra_pars = NULL,
   time_args = NULL,
-  break_dates = NULL,
-  sim_args = list(),
   return_timevar = FALSE,
+  sim_args = list(),
   ...
 )
 }
 \arguments{
 \item{params}{parameters}
 
-\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}}
+\item{extra_pars}{parameters that are used to set up time-varying parameters, etc., but \emph{not} used by \code{run_sim}:
+**FIXME** should contain rel_<parname> values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
+is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)}
 
-\item{time_args}{list containing \code{break_dates}}
+\item{time_args}{list containing \code{break_dates}, **FIXME and Symbol!}
 
-\item{break_dates}{obsolete}
+\item{return_timevar}{return data frame of params by time?}
 
 \item{sim_args}{parameters to pass to \code{\link{run_sim}}}
 
-\item{return_timevar}{return data frame of beta by time?}
-
-\item{...}{additional arguments to \code{run_sim}}
+\item{...}{extra args (why??)}
 }
 \description{
 run simulation with one or more breakpoints
 }
 \examples{
 params <- read_params("ICU1.csv")
-r1 <- run_sim_break(params, time_args=list(break_dates="2020-03-01"),
+pt <- data.frame(Date = "2020-03-01", Symbol = "beta0", Relative_value = NA)
+r1 <- run_sim_break(params,
+          time_args=list(params_timevar = pt),
                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
-                   extra_pars=list(rel_beta0 = 0.5))
+                   extra_pars=list(value = 0.5))
 plot(r1,log=TRUE)
 ## can also use it to run without breaks ...
 r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))

@@ -4,7 +4,7 @@
 [![R-CMD-check](https://github.com/bbolker/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/bbolker/McMasterPandemic/actions)
 <!-- badges: end -->
 
-Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/bbolker/McMasterPandemic/issues), or e-mail us.
+Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li, Irena Papst (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/bbolker/McMasterPandemic/issues), or e-mail us.
 
 ### Installation
 
@@ -15,6 +15,7 @@ The repository contains an R package and various workflows/analyses. You can for
 * to re-install the package, including re-building and incorporating vignettes, use `make build`
 * If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
 * **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/bbolker/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Please don't make a habit of pushing without testing.
+* Code that is used in the refactoring process should go in the top-level refactor folder. 
 
 ### Documentation 
 

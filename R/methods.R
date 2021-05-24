@@ -444,13 +444,13 @@ condense.pansim <-  function(object, add_reports=TRUE,
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' state <- make_state(params=params)
-##' sdate <- "10-Feb-2020" ## arbitrary!
-##' res <- run_sim(params,state,start_date=sdate,end_date="1-Jun-2020")
-##' a1 <- aggregate(res, start="12-Feb-2020",period="7 days", FUN=sum)
+##' sdate <- "2020-02-10" ## arbitrary!
+##' res <- run_sim(params,state,start_date=sdate,end_date="2020-06-01")
+##' a1 <- aggregate(res, start="2020-02-12",period="7 days", FUN=sum)
 ##' ## column-specific aggregation
 ##' first <- dplyr::first
 ##' agg_funs <- list(mean=c("H","ICU","I"), sum=c("report","death"))
-##' a2 <- aggregate(condense(res), start="12-Feb-2020",period="7 days", FUN=agg_funs)
+##' a2 <- aggregate(condense(res), start="2020-02-12",period="7 days", FUN=agg_funs)
 ##' @export
 aggregate.pansim <- function(x,
                              start=NULL,
@@ -465,7 +465,7 @@ aggregate.pansim <- function(x,
     ## start <- agg_list[["t_agg_start"]]
     ## period <- agg_list[["t_agg_period"]]
     ## FUN <- agg_list$t_agg_fun
-    agg_datevec <- seq.Date(anydate(start),max(dd$date)+extend,
+    agg_datevec <- seq.Date(as.Date(start),max(dd$date)+extend,
                             by=period)
     agg_period <- cut.Date(dd$date,agg_datevec)
     ## set to *last* day of period
@@ -946,7 +946,7 @@ plot.predict_pansim <- function(x,
         p <- p + scale_y_log10(limits=c(log_lwr,NA),oob=scales::squish)
     }
     if (!is.null(break_dates)) {
-        p <- p + geom_vline(xintercept=anydate(break_dates),lty=2)
+        p <- p + geom_vline(xintercept=as.Date(break_dates),lty=2)
     }
     if (is.null(mult_var)) {
         p <- p + geom_line()

@@ -33,7 +33,9 @@ show_ratemat(
 
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
-\item{add_blocks}{add lines showing blocks for testified matrices?}
+\item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}
+
+\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)}
 
 \item{axlabs}{for flow matrices, show axis tick labels?}
 
@@ -49,4 +51,12 @@ show_ratemat(
 }
 \description{
 visualize rate (per-capita flow) matrix
+}
+\examples{
+params <- read_params("ICU1.csv")
+state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
+M <- make_ratemat(state, params)
+show_ratemat(M)
+## silly but shows we can do multiple block types in different colours
+show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 }

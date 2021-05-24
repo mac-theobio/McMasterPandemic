@@ -1,0 +1,77 @@
+---
+title: "Minimal reproducible example: negative jumps"
+author: "Irena Papst"
+date: "`r format(Sys.time(), '%d %b %Y at %H:%M')`"
+output: 
+  html_document:
+    df_print: "paged"
+---
+
+```{r setup, echo = FALSE, message = FALSE}
+devtools::load_all()
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+Here's a minimal example showing that sometimes state variables go negative in a `McMasterPandemic` simulation. This example is reproducible on the `master` branch, so it isn't because of something silly I've done on my `ip_devel` branch.
+
+```{r}
+## params
+beta0 <- 3
+base_params <- update(read_params("PHAC.csv")
+                      , beta0 = beta0
+                      )
+## state
+base_state <- make_state(N = 1e6, E0 = 5)
+
+## sim
+start_date <- "2020-02-01"
+end_date <- "2020-09-01"
+res <- run_sim(params = base_params, state = base_state, 
+               start_date = start_date, end_date = end_date)
+
+## results
+res_long <- (res 
+  %>% select(-incidence)
+  %>% pivot_longer(-date)
+)
+
+neg_states <- (res_long %>% filter(value < 0))
+
+neg_states
+```
+
+I'm taking quite a large transmission rate (per capita, per day) of `r beta0`, but it's not an immediate (one time step into the sim) nosedive into a negative state: the sim starts on `r start_date` and the first time step with a negative state variable ($S$) is `r min(neg_states$date)`. 
+
+The time step before the negative jump, the state variables are as follows:
+
+```{r}
+day_before_jump <- (res_long
+  %>% filter(date == min(neg_states$date)-1) 
+)
+
+day_before_jump
+```
+
+```{r echo = FALSE}
+I_before_jump <- (day_before_jump 
+  %>% filter(name == "I") 
+  %>% pull(value)
+)
+```
+
+So at this point we have `r I_before_jump %>% format(scientific = FALSE, big.mark = ",")` infectives, around `r round(I_before_jump/base_params[["N"]]*100)`% of the total population (`r format(base_params[["N"]], scientific = FALSE, big.mark = ",")` people), and each of these infectives is supposed to transmit to `r beta0` susceptibles the next day. This is what causes the (massive) jump into negative susceptibles at the next time step.
+
+The negative jump issue shouldn't be a difficult problem to solve, but we should be smart about how and when a check gets performed to avoid significant slow-downs in the sims. I should also say that this hasn't been a concern for simulations of realistic COVID-19 parameters, but I've come up against it in simulating vaccination for what I thought was a reasonable number of total doses per day (based on Ontario's population size and the actual number of doses per day being administered there currently).
+
+
+## Plotting
+
+```{r echo = FALSE}
+print(ggplot(res_long,aes(x=date,y=value)) 
+	+ geom_line() 
+	+ facet_wrap(~name,scale="free") 
+	+ xlim(c(as.Date("2020-02-01"),as.Date("2020-04-01")))
+)
+```

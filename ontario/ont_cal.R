@@ -32,9 +32,9 @@ params <- fix_pars(read_params("ICU1.csv")
 params[["N"]] <- 14.57e6  ## reset pop to Ontario
 
 ## breakpoints
-schoolClose <- "2020-Mar-17"
-countryClose <- "2020-Mar-23"
-socialClose <- "2020-Mar-28"
+schoolClose <- "2020-03-17"
+countryClose <- "2020-03-23"
+socialClose <- "2020-03-28"
 
 bd <- c(schoolClose,countryClose,socialClose)
 ## print(bd)
