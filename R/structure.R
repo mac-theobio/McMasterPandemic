@@ -4,7 +4,7 @@
 ## FIXME: document these for real!
 ##' global variables for testify expansion
 #' @export
-non_expanded_states <- c("D","X")
+non_expanded_states <- c("D","X","V")
 
 ##' @rdname non_expanded_states
 ##' @export

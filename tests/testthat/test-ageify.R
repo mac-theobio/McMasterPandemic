@@ -207,7 +207,8 @@ test_that("homogeneous case of age-structured model condenses to base (non-ageif
     ## check subset of state variables (some special cols in sim not set up for
     ## ageify case, like foi)
     expect_equal((res_uu_cond %>% select(-starts_with("foi"))),
-                 (res_hom %>% select(-foi)))
+                 (res_hom %>% select(-foi)),
+                 ignore_attr = TRUE)
 })
 
 ## utility function to check that all elements of a vector are equal

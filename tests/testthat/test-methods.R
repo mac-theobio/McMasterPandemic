@@ -53,7 +53,7 @@ test_that("predict", {
                  c("H","ICU","hosp","death","incidence","report","cumRep"))
     pp0 <- predict(ont_cal1,keep_vars="all",sim_args=list(condense=FALSE))
     pp0_v <- unique(pp0$var)
-    expect_equal(length(pp0_v),14L)
+    expect_equal(length(pp0_v),15L)
     pp1 <- predict(ont_cal1,keep_vars="all")
     pp1_v <- unique(pp1$var)
     expect_equal(length(pp1_v),14L)

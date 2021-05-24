@@ -31,12 +31,12 @@ get_evec <- function(p, method=c("expsim","analytical"), ...) {
     res <- switch(method,
                   expsim=rExp(p,return_val="eigenvector", ...),
                   analytical= {
-                      J <- make_jac(params=p)    
+                      J <- make_jac(params=p)
                       ee <- eigen(J)
                       v <- ee$vectors
                       rownames(v) <- rownames(J)
                       dom_vec <- v[,which.max(ee$values)]
-                      drop_vars <- c("date","t","S","R","D","foi","hosp","X")
+                      drop_vars <- c("date","t","S","R","D","foi","hosp","X","V")
                       dd <- abs(dom_vec[!names(dom_vec) %in% drop_vars])
                       dd/sum(dd)
                   })
@@ -81,7 +81,7 @@ get_GI_moments <- function(params) {
 	Rv <- c(0, get_R0(params, components=TRUE))
         R <- sum(Rv)
         ## FIXME: get rates, use names rather than numeric indices below
-	boxtimes <- with(as.list(params), 
+	boxtimes <- with(as.list(params),
 	 	1/c(sigma, gamma_a, gamma_p, gamma_m, gamma_s)
 	)
 	boxvars <- boxtimes^2
@@ -114,7 +114,7 @@ get_R0 <- function(params, components=FALSE,
                    method=c("analytical","kernel")) {
     method <- match.arg(method)
     res <- switch(method,
-                  
+
 	## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
 	##  (will have to rethink this once we have a structured model)
                   analytical = with(as.list(params), {

@@ -636,6 +636,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
+        add_blocks <- !is.null(block_size)
         if (is.null(add_blocks)) {
             add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
                                                      rownames(M)))

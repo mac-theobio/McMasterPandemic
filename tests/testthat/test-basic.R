@@ -25,7 +25,8 @@ test_that("basic examples", {
 E = 132.983797059479, Ia = 1280.06036138841, Ip = 9.45207161097982,
 Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553,
 H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752,
-D = 3438.87998360902, R = 989978.979634929), class = "state_pansim"), row.names = "100", class = "data.frame")
+D = 3438.87998360902, R = 989978.979634929), class = "state_pansim",
+epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R")), row.names = "100", class = "data.frame")
     expect_equal(tail(s0,1), ss,
                  tolerance=1e-8)
     expect_is(state,"state_pansim")
@@ -86,7 +87,8 @@ test_that("ndt>1", {
                                                                                                        E = 470.938645829701, Ia = 75.7624206309387, Ip = 26.7668000907004,
                                                                                                        Im = 128.383139203259, Is = 5.46913724380533, H = 2.03123004779139,
                                                                                                        H2 = 0.0400421128254433, ICUs = 0.371377275540251, ICUd = 0.300078574043836,
-                                                                                                       D = 0.139442448949961, R = 114.198320079343), class = "state_pansim"), row.names = "100", class = "data.frame"))
+                                                                                                       D = 0.139442448949961, R = 114.198320079343), class = "state_pansim",
+                                                                                                     epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R")), row.names = "100", class = "data.frame"))
 
     s3 <- run_sim(params,state, ndt=20,
                   start_date="2020-03-01",
@@ -112,7 +114,9 @@ test_that("state methods", {
                              Im = 0, Is = 0, H = 0,
                              H2 = 0,
                              ICUs = 0, ICUd = 0,
-                             D = 0, R = 0, X=0), class = "state_pansim"))
+                             D = 0, R = 0, X=0, V=0),
+                           class = "state_pansim",
+                           epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X", "V")))
     expect_error(make_state(x=1:5, use_eigvec=FALSE),regexp="must be named")
     expect_warning(make_state(x=c(N=1,E0=1,K=5),
                               use_eigvec=FALSE),"extra state variables")

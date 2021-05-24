@@ -24,7 +24,7 @@ r2[nrow(r2),6:41]
 r2L <- (r2
     %>% as_tibble()
     %>% rename(date="t")
-    %>% select(-c(D,X,N,P,foi))
+    %>% select(-c(D,X,N,P,V,foi))
     %>% McMasterPandemic:::pivot.pansim()
     %>% separate(var, into=c("pref","test"), sep="_")
 )

@@ -10,7 +10,7 @@
 \alias{cryptic_cat}
 \title{global variables for testify expansion}
 \format{
-An object of class \code{character} of length 2.
+An object of class \code{character} of length 3.
 
 An object of class \code{character} of length 4.
 

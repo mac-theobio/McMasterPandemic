@@ -145,7 +145,7 @@ rExp <- function(params, steps=100, ndt=1,
         if (return_val=="sim") return(r)
         nn <- ndt*steps
         ## DRY: get_evec()
-        drop_vars <- c("date","t","D","foi","R","X","N","P")
+        drop_vars <- c("date","t","D","foi","R","X","N","P","V")
         if (!testify) drop_vars <- c("S", drop_vars)
         drop_re <- paste0("^(",paste(drop_vars,collapse="|"),")")
         ## FIXME: safer version of this:

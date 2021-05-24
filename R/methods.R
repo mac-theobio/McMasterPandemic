@@ -19,7 +19,7 @@ calc_conv <- function(i,params) {
                                    c_delay_mean,
                                    c_delay_cv)
                  )
-    ret <- as.data.frame(stats::filter(i,kern,sides=1))
+    ret <- as.data.frame(as.numeric(stats::filter(i,kern,sides=1)))
     ## if parameters are ageified, keep age-stratified reports in output too
     if(has_age(params)){
         state_suffixes <- sub("^incidence", "",
