@@ -9,7 +9,7 @@ end_date <- "2020-06-01"
 
 time_pars <- data.frame(Date=c(start_date, "2020-03-01"),
                         Symbol="vax_doses_per_day",
-                        Relative_value = c(0, 1e5))
+                        Relative_value = c(0, 1.5e5))
 
 ## params
 ## set up vax params
