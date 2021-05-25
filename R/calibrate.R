@@ -126,11 +126,11 @@ run_sim_loglin <- function(params,
     time_params <- extra_pars$time_params
     extra_pars$time_params <- NULL
     timevar <- NULL
-    if (length(time_pars)>0) {  ## non-trivial model
+    if (length(time_params)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
         timevar <- dfs(Date=as.Date(X_date),
                        Symbol="beta0",
-                       Relative_value=exp(X %*% time_pars))  ## log-linear model for beta
+                       Relative_value=exp(X %*% time_params))  ## log-linear model for beta
     }
 
     if (!is.null(timevar) && length(sim_args)>0) {
@@ -239,7 +239,7 @@ run_sim_mobility <- function(params,
 ##' r1 <- run_sim_break(params,
 ##'           time_args=list(params_timevar = pt),
 ##'                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
-##'                    extra_pars=list(value = 0.5))
+##'                    extra_pars=list(time_params = 0.5))
 ##' plot(r1,log=TRUE)
 ##' ## can also use it to run without breaks ...
 ##' r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))
@@ -732,7 +732,7 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
         nvar <- length(var_names <- unique(data$var))
         opt_pars$log_nb_disp <- setNames(rep(0,nvar),var_names)
     }
-    value <- pred <- NULL ## global var check
+    time_param <- pred <- NULL ## global var check
     ## FIXME: check order of dates?
     ## FIXME: allow for aggregation of reports etc.
     ## MLE
@@ -1290,10 +1290,10 @@ calibrate_comb <- function(data,
                                                      byrow=TRUE)
     }
     if (return_val=="X") return(X)
-    if(is.null(opt_pars$time_pars)){
+    if (is.null(opt_pars$time_params)){
         ## matplot(X_dat$t_vec,X,type="l",lwd=2)
-        opt_pars$time_pars <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
-        names(opt_pars$time_pars) <- colnames(X)
+        opt_pars$time_params <- rep(0,ncol(X))  ## mob-power is incorporated (param 1)
+        names(opt_pars$time_params) <- colnames(X)
     }
     if (use_spline || use_mobility) {
         time_args <- nlist(X,X_date=X_dat$date)
@@ -1307,10 +1307,10 @@ calibrate_comb <- function(data,
 	      if(return_val == "time_args") return(time_args)
     }
     if (use_spline && spline_pen>0) {
-        spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_pars))
+        spline_pars <- grep("^[bn]s\\(",names(opt_pars$time_params))
         spline_beg <- spline_pars[1]
         spline_end <- spline_pars[length(spline_pars)]
-        priors <- c(priors,list(bquote(~sum(dnorm(time_pars[.(spline_beg):.(spline_end)],mean=0,sd=.(1/spline_pen))))))
+        priors <- c(priors,list(bquote(~sum(dnorm(time_params[.(spline_beg):.(spline_end)],mean=0,sd=.(1/spline_pen))))))
     }
     ## do the calibration
     ## debug <- use_DEoptim
