@@ -2,6 +2,8 @@ library("McMasterPandemic")
 library(dplyr)
 library(tidyr)
 library(ggplot2); theme_set(theme_bw())
+## check environment variable
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 
 L <- load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
 summary(cparams)
@@ -45,7 +47,7 @@ regdatS <- (simdat
 g1S <- MASS::glm.nb(value~t0,data=regdatS)
 
 ## too slow for now ...
-if (FALSE) {
+if (testLevel>1) {
     schoolClose <- "2020-03-17"
     countryClose <- "2020-03-23"
     socialClose <- "2020-03-28"
@@ -65,7 +67,7 @@ if (FALSE) {
                  ## logit_phi2=qlogis(params[["phi2"]])
                  ),
         ## changes in beta at breakpoints
-        log_value = rep(-1, length(bd)),
+        log_time_params = rep(-1, length(bd)),
         ## NB dispersion
         log_nb_disp=0)
 
@@ -81,17 +83,19 @@ if (FALSE) {
                        )
     params[["N"]] <- 14.57e6  ## reset pop to Ontario
 
+    pt <- data.frame(Date=bd, Symbol="beta0", Relative_value=NA)
+
     system.time(cc1 <- calibrate(data=ont_all_sub
                                , base_params=params
                                , opt_pars = opt_pars
-                               , time_args=list(break_dates = bd)
+                               , time_args=list(params_timevar=pt)
                                  )
                 )
 
     system.time(cc2 <- calibrate(data=ont_all_sub
                                , base_params=params
                                , opt_pars = opt_pars
-                               , time_args=list(break_dates = bd)
+                               , time_args=list(params_timevar=pt)
                                , sim_args=list(use_ode=TRUE)
                                  )
                 )
@@ -174,7 +178,7 @@ plot(c_r2e, data=dd_r) + ggplot2::ggtitle("use_eigvec")
 ##   previous values ... ???
 
 ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531
-), nb_disp = c(report = 1.10114796707075), time_pars = numeric(0))
+), nb_disp = c(report = 1.10114796707075), time_params = numeric(0))
 
 print(coef(c_r2e, "fitted"))
 stopifnot(all.equal(coef(c_r2e,"fitted"),

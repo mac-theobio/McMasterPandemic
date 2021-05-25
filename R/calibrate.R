@@ -123,8 +123,8 @@ run_sim_loglin <- function(params,
     ## X_date: dates corresponding to rows of model matrix
     ##
     ## strip
-    time_pars <- extra_pars$time_pars
-    extra_pars$time_pars <- NULL
+    time_params <- extra_pars$time_params
+    extra_pars$time_params <- NULL
     timevar <- NULL
     if (length(time_pars)>0) {  ## non-trivial model
         ## construct time-varying frame, parameters
@@ -266,7 +266,7 @@ run_sim_break <- function(params,
   if (!is.null(params_timevar)) {
     params_timevar <- within(time_args$params_timevar,
                              if (any(rvals <- is.na(Relative_value))) {
-                               Relative_value[rvals] <- extra_pars$value
+                               Relative_value[rvals] <- extra_pars$time_params
                              })
   }
   if (return_timevar) return(params_timevar)
@@ -563,11 +563,12 @@ mle_fun <- function(p, data,
     dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)])+na_penalty
     ret <- sum(dvals)
     if (!is.null(priors)) {
-        for (pr in priors) {
-            pr <- pr[[2]] ## drop tilde
-            pr <- add_d_log(pr)
-            ret <- ret - eval(pr,list2env(pp))
-        }
+      for (pr in priors) {
+        ## browser()
+        pr <- pr[[2]] ## drop tilde
+        pr <- add_d_log(pr)
+        ret <- ret - eval(pr,list2env(pp))
+      }
     }
     ## FIXME: add evaluation number?
     if (debug) {
@@ -684,14 +685,14 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
                       end_date=max(data$date),
                       time_args=list(
                           params_timevar=data.frame(
-                              Date = c("2020-03-23","2020-03-30"),
-                              Symbol = rep("beta0", 2),
-                              Relative_value = rep(NA,2))),
+                              Date = c("2020-03-23","2020-03-30", "2020-04-01"),
+                              Symbol = rep("beta0", 3),
+                              Relative_value = c(-1, NA, NA))),
                       base_params,
                       data,
                       opt_pars=list(params=c(log_E0=4,
                                              log_beta0=-1),
-                                    logit_value=c(-1,-1),
+                                    logit_time_params=c(-1,-1),
                                     log_nb_disp=NULL),
                       fixed_pars=NULL,
                       sim_fun=run_sim_break,
