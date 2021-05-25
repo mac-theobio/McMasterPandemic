@@ -37,7 +37,7 @@ pt <- data.frame(Date = "2020-03-01", Symbol = "beta0", Relative_value = NA)
 r1 <- run_sim_break(params,
           time_args=list(params_timevar = pt),
                    sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
-                   extra_pars=list(value = 0.5))
+                   extra_pars=list(time_params = 0.5))
 plot(r1,log=TRUE)
 ## can also use it to run without breaks ...
 r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))

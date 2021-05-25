@@ -1230,17 +1230,20 @@ run_sim_range <- function(params
     ## need to know true state - for cases with obs error
     attr(res,"state") <- state
 
-
-    if(any(state < -sqrt(.Machine$double.eps))){
-        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) \n Check following message for details \n ',
-                paste(utils::capture.output(print(state)), collapse = "\n"))
-
+  if (any(!is.finite(state))) {
+    warning("non-finite values in state, in run_sim_range")
+  } else {
+    bad_states <- state[state < -sqrt(.Machine$double.eps)]
+    if (length(bad_states)>0) {
+      warning('negative state variables (below tolerance) in run_sim_range:',
+              paste(sprintf("%s=%1.3g",names(bad_states), bad_states), collapse="; "))
+    } else if(any(state < 0)) {
+      warning('End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
+              paste(utils::capture.output(print(state)), collapse = "\n"))
     }
-    else if(any(state < 0)){
-        warning('End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
-                paste(utils::capture.output(print(state)), collapse = "\n"))
-    }
-    return(res)
+  }
+
+  return(res)
 }
 
 ##' construct a Gamma-distributed delay kernel

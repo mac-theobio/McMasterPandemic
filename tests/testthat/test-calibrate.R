@@ -69,7 +69,7 @@ test_that("calibrate parameters other than beta0", {
                                      start_date = sd,
                                      end_date = ed,
                                      step_args=list(do_hazard=TRUE)),
-                       extra_pars=list(value=c(1e-3,1e-3)),
+                       extra_pars=list(time_params=c(1e-3,1e-3)),
                        time_args=list(params_timevar=pt)
                        )
   ##
