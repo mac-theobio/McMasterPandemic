@@ -906,8 +906,8 @@ run_sim <- function(params
     state_names <- state_names[state_names_indices]
 
     ## FIXME: why do we need to restrict to res[state_names] ?
-
-    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
+    ## because e.g. report can be NaN for the first part of the sim (by default, the first 15 days, set in start_date_offset)
+    if(isTRUE(any(res[state_names] < -sqrt(.Machine$double.eps)))){
 
       state_vars <- (res %>% select(state_names))
       below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
@@ -916,7 +916,7 @@ run_sim <- function(params
               paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
 
     }
-    else if(any(res[state_names] < 0)){
+    else if(isTRUE(any(res[state_names] < 0))){
       state_vars <- (res %>% select(state_names))
       below_zero_lines <- (rowSums(state_vars < 0) > 0)
 
