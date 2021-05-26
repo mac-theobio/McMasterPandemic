@@ -1,7 +1,7 @@
 Package: McMasterPandemic
 Title: Pandemic Model 
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.18
+Version: 0.0.19.002
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
@@ -29,7 +29,7 @@ Imports:
 	zoo, 
 	deSolve, 
 	splines, 
-	diagram,
+	diagram
 Suggests: 
 	knitr, 
 	testthat, 
@@ -40,7 +40,8 @@ Suggests:
 	latticeExtra,
 	directlabels, 
 	rmarkdown, 
-	tidyverse
+	tidyverse,
+	anytime
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL

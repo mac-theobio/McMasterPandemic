@@ -165,6 +165,7 @@ make_betavec <- function(state, params, full = TRUE) {
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
 ##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
+##' @param indices return indices for lower-level stuff?
 ##' @return matrix of (daily) transition rates
 ##  *need* Matrix version of rowSums imported to handle sparse stuff below!!
 ##' @importFrom Matrix Matrix rowSums colSums
@@ -177,8 +178,9 @@ make_betavec <- function(state, params, full = TRUE) {
 ##' }
 ##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
-make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
-                         symbols = FALSE) {
+
+make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
+                         symbols=FALSE, indices=FALSE) {
     ## circumvent test code analyzers ... problematic ...
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
@@ -226,6 +228,8 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
             M[pfun(from, to, M)] <<- deparse(substitute(val))
         }
     }
+  }
+
 
     ## fill entries
     beta_vec <- make_betavec(state, params)
@@ -362,6 +366,18 @@ update_ratemat <- function(ratemat, state, params, testwt_scale = "N") {
         }
     }
     ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_betavec(state, params))
+    ## comment out for now: incomplete?
+    ## if (has_vax) {
+    ##     ## states:  [epid_class]_age(_*)?
+    ##     nonsymp_states <- c("S","E","Ia","Ip","R")
+    ##     nonsymp_regex <- sprintf("^%s_",paste(nonsymp_states,collapse="|"))
+    ##     ## sum over ages ...  collapse_states ...
+    ##     total_nonsymp <- sum(states[nonsymp_states])
+    ##     ## modify rates between vax statuses
+    ##     ## modify *_v1 -> *_v2 transitions
+    ##     afun("*_v1","*_v2") <- doses_per_day/popsize
+    ## }
+    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat, "Matrix")) {
         for (a in aa) {
@@ -760,19 +776,16 @@ run_sim <- function(params,
     ## attr(res,"final_state") <- state
     class(res) <- c("pansim", "data.frame")
 
-
     state_names <- names(res)
-    state_names_indices <- sapply(state_names, function(x) {
-        first_letter <- substr(x, 1, 1)
-        return(toupper(first_letter) == first_letter)
-    })
+    state_names_indices <- first_letter_cap(state_names)
     state_names <- state_names[state_names_indices]
 
-    if (any(res[state_names] < -sqrt(.Machine$double.eps))) {
-        state_vars <- (res %>% select(state_names))
-        below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
+    ## FIXME: why do we need to restrict to res[state_names] ?
 
-        warning(
+    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
+      state_vars <- (res %>% select(state_names))
+      below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
+      warning(
             "End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ",
             paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
         )
@@ -854,12 +867,13 @@ make_state <- function(N = params[["N"]],
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
             ## set **first** E compartment
-            state[[grep("E", names(state))[1]]] <- E0
+
+            state[[grep("^E", toupper(names(state)))[1]]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ## here E0 is effectively "number NOT susceptible"
-            ee <- round(get_evec(params, testify = testify) * E0)
+            ee <- round(get_evec(params, testify = testify, type = type) * E0)
             if (any(is.na(ee))) {
                 state[] <- NA
                 return(state)
@@ -898,13 +912,12 @@ make_state <- function(N = params[["N"]],
     }
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
+
     ## Give a warning if not all state variables are capital letters
-    if (!all(sapply(names(state), function(x) {
-        first_letter <- substr(x, 1, 1)
-        return(toupper(first_letter) == first_letter)
-    }))) {
-        warning("Not all state variables are capital letters,
-              this can result in failure to correctly check if a state variable is negative.")
+    if (!all(first_letter_cap(names(state)))) {
+      warning('Not all state variables are capital letters; ',
+              'this can result in failure to correctly check ',
+              'if a state variable is negative.')
     }
 
     return(state)
@@ -919,7 +932,7 @@ gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state = y, parms))
     ## compute
-    flows <- col_multiply(M, y) ## sweep(M, y, MARGIN=1, FUN="*")
+    flows <- col_multiply(M, y) ## faster than sweep(M, y, MARGIN=1, FUN="*")
     g <- colSums(flows) - rowSums(flows)
     return(list(g, foi = foi))
 }
@@ -1014,20 +1027,21 @@ run_sim_range <- function(params,
     ## need to know true state - for cases with obs error
     attr(res, "state") <- state
 
+    if (any(!is.finite(state))) {
+        warning("non-finite values in state, in run_sim_range")
+  } else {
+        bad_states <- state[state < -sqrt(.Machine$double.eps)]
+        if (length(bad_states) > 0) {
+            warning('negative state variables (below tolerance) in run_sim_range:',
+              paste(sprintf("%s=%1.3g",names(bad_states), bad_states), collapse="; "))
+        } else if(any(state < 0)) {
+             warning('End of run_sim_range check: One or more state variables is negative, ',
+                     'between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
+              paste(utils::capture.output(print(state)), collapse = "\n"))
+        }
+  }
 
-    if (any(state < -sqrt(.Machine$double.eps))) {
-        warning(
-            "End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) \n Check following message for details \n ",
-            paste(utils::capture.output(print(state)), collapse = "\n")
-        )
-    }
-    else if (any(state < 0)) {
-        warning(
-            "End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ",
-            paste(utils::capture.output(print(state)), collapse = "\n")
-        )
-    }
-    return(res)
+  return(res)
 }
 
 ##' construct a Gamma-distributed delay kernel

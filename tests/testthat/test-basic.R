@@ -13,7 +13,7 @@ state <- make_state(params = params, type = "ICU1")
 
 test_that("basic examples", {
     expect_is(params, "params_pansim")
-    s0 <- run_sim_range(params, state, nt = 100)
+    s0 <- run_sim_range(params, state, nt = 100, step_args = list(do_hazard = FALSE))
     expect_is(s0, "data.frame")
     ## original value
     ss <- structure(list(
@@ -88,7 +88,7 @@ test_that("time-varying with ndt>1", {
 })
 
 test_that("ndt>1", {
-    s2 <- run_sim_range(params, state, nt = 100, dt = 0.2)
+    s2 <- run_sim_range(params, state, nt = 100, dt = 0.2, step_args = list(do_hazard = FALSE))
     expect_equal(tail(s2, 1),
         tolerance = 1e-6,
         structure(list(
@@ -115,6 +115,7 @@ test_that("ndt>1", {
         start_date = "2020-03-01",
         end_date = "2020-03-20"
     )
+
     ## s3C <- run_sim(params,state=unlist(tail(s3B,1)),
     ## start_date="2020-03-01",
     ## end_date="2020-03-20")
@@ -189,14 +190,14 @@ test_that("var-specific obsdisp", {
     params <- update(params, obs_disp = 1, obs_disp_I = NA, obs_disp_E = 1000)
     set.seed(101)
     ## initial state *without* using eigvec, to match previous reference results
-    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec = FALSE)
-    s0 <- run_sim(params, stoch = c(obs = TRUE, proc = FALSE), state = ss)
-    plot(s0, keep_states = c("I", "E", "report"), log = TRUE)
-    expect_equal(tail(s0$I, 1), 16385.5)
-    expect_equal(tail(s0$E, 1), 31791)
-    s1 <- run_sim(params, stoch = c(obs = TRUE, proc = FALSE))
-    expect_equal(tail(s1$I, 1), 23251.568)
-    expect_equal(tail(s1$E, 1), 44563)
+    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss, step_args=list(do_hazard=FALSE))
+    plot(s0,keep_states=c("I","E","report"),log=TRUE)
+    expect_equal(tail(s0$I,1),16385.5)
+    expect_equal(tail(s0$E,1),31791)
+    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), step_args=list(do_hazard=FALSE))
+    expect_equal(tail(s1$I,1),23251.568)
+    expect_equal(tail(s1$E,1),44563)
 })
 
 ## Need to update the .rda file to remove anytime dependencies

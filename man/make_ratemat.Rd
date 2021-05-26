@@ -4,7 +4,14 @@
 \alias{make_ratemat}
 \title{Create transition matrix}
 \usage{
-make_ratemat(state, params, do_ICU = TRUE, sparse = FALSE, symbols = FALSE)
+make_ratemat(
+  state,
+  params,
+  do_ICU = TRUE,
+  sparse = FALSE,
+  symbols = FALSE,
+  indices = FALSE
+)
 }
 \arguments{
 \item{state}{named vector of states}
@@ -16,6 +23,8 @@ make_ratemat(state, params, do_ICU = TRUE, sparse = FALSE, symbols = FALSE)
 \item{sparse}{return sparse matrix?}
 
 \item{symbols}{return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)}
+
+\item{indices}{return indices for lower-level stuff?}
 }
 \value{
 matrix of (daily) transition rates

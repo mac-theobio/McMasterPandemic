@@ -5,10 +5,10 @@ library(ggplot2)
 params <- read_params("ICU1.csv")
 s <- run_sim(params, start_date = "2020-03-01", end_date = "2020-05-01")
 
-context("aggregation")
 test_that("Jacobian/r/etc", {
     J <- make_jac(params)
     expect_equal(unname(colSums(J)), rep(0, nrow(J)))
+    skip("hard-to-replicate negative state problem, see issue #38")
     expect_equal(get_r(params, "kernel"), get_r(params, "expsim"), tolerance = 2e-3) ## FIXME: should be closer?
     if (FALSE) {
         expect_equal(get_r(params, "expsim"), get_r(params, "analytical"), tolerance = 1e-5)
