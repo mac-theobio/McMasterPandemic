@@ -137,7 +137,7 @@ run_sim_loglin <- function(params,
         ## construct time-varying frame, parameters
         timevar <- dfs(Date=as.Date(X_date),
                        Symbol="beta0",
-                       Relative_value=exp(X %*% time_params)) 
+                       Relative_value=exp(X %*% time_params))
                       ## log-linear model for beta
     }
 
@@ -280,7 +280,7 @@ run_sim_break <- function(params,
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
     if (any(c("time_break_dates","Symbol") %in% names(time_args))) {
       stop("probably using outdated time_args() specification")
-    } 
+    }
     sim_args <- c(
         sim_args,
         nlist(params,
@@ -299,7 +299,7 @@ run_sim_break <- function(params,
                                Relative_value[rvals] <- extra_pars$time_params
                              })
     }
-    
+
     if (return_timevar) {
             return(params_timevar)
     }
@@ -738,7 +738,7 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                         params_timevar=data.frame(
                               Date = c("2020-03-23", "2020-03-30", "2020-04-01"),
                               Symbol = rep("beta0", 3),
-                              Relative_value = c(-1, NA, NA))),
+                              Relative_value = c(-1, NA, NA)),
                       ),
                       break_dates = NULL,
                       base_params,
@@ -1414,9 +1414,9 @@ calibrate_comb <- function(data,
         spline_pars <- grep("^[bn]s\\(", names(opt_pars$time_params))
         spline_beg <- spline_pars[1]
         spline_end <- spline_pars[length(spline_pars)]
-        priors <- c(priors, 
+        priors <- c(priors,
                     list(bquote(~ sum(dnorm(
-                      time_params[.(spline_beg):.(spline_end)],                                 
+                      time_params[.(spline_beg):.(spline_end)],
                       mean = 0, sd = .(1 / spline_pen))))))
     }
     ## do the calibration

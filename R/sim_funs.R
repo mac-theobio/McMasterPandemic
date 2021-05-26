@@ -228,8 +228,6 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
             M[pfun(from, to, M)] <<- deparse(substitute(val))
         }
     }
-  }
-
 
     ## fill entries
     beta_vec <- make_betavec(state, params)
