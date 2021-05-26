@@ -323,13 +323,11 @@ report_data <- (res1obs
 )
 head(report_data)
 ## beta0 is the only parameter we're going to optimize:
-opt_pars <- list(params = c(beta0=0.1))
+opt_pars <- list(time_params = c(value=0.1))
 ## fit beta0 based on the report data:
 fitted.mod <- calibrate(
     data = report_data
   , start_date = sdate
-    ## skip breaks that are present by default:
-  , time_args = list(break_dates = NULL)
   , base_params = params1obs
   , opt_pars = opt_pars
   ##, debug_plot = TRUE # instructive plotting during optimization
@@ -373,7 +371,6 @@ fitted.mod <- calibrate(
     data = report_death_data
   , start_date = sdate
     ## skip breaks that are present by default:
-  , time_args = list(break_dates = NULL)
   , base_params = params1obs
   , opt_pars = opt_pars
   ##, debug_plot = TRUE # instructive plotting during optimization
@@ -414,8 +411,6 @@ opt_pars <- list(params = c(beta0=0.1))
 fitted.mod <- calibrate(
     data = report_data
   , start_date = sdate
-    ## skip breaks that are present by default:
-  , time_args = list(break_dates = NULL)
   , base_params = params1proc2
   , opt_pars = opt_pars
   ##, debug_plot = TRUE # instructive plotting during optimization
