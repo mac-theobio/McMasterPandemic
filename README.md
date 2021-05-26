@@ -37,7 +37,7 @@ The documentation is a little bit scattered right now, working on cleaning it up
 * `TODO.md`: active to-do list
 * issues list on github
 
-More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`; [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) (corresponding [GitHub repo]()
+More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`; [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) (corresponding [GitHub repo](https://github.com/ZachLevine-11/McMasterPandemicShiny)).
 
 
 
