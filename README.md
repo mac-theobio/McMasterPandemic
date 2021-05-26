@@ -24,7 +24,9 @@ which sets `testLevel` to a default value of 1 unless the environment variable i
 
 ### Documentation 
 
-The documentation is a little bit scattered right now, working on cleaning it up. In addition to the standard short descriptions of the functions (`help(package="McMasterPandemic")`), stuff can be found: 
+The [documentation](https://bbolker.github.io/McMasterPandemic) is a little bit scattered right now, working on cleaning it up and making it easily accessible.
+
+In addition to the standard short descriptions of the functions (`help(package="McMasterPandemic")`), stuff can be found: 
 
 * in the vignettes (look at the source code in the [vignettes] directory or `vignette(<title>, package="McMasterPandemic")`)
     * `getting_started`
