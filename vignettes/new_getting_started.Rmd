@@ -1,27 +1,13 @@
 ---
-title: "Getting Started"
+title: "Getting Started (markdown version)"
 author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 ---
 
-%\VignetteIndexEntry{getting started}
+%\VignetteIndexEntry{getting started (markdown version)}
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteEncoding{UTF-8}
-\documentclass[12pt]{article}
-\input{nlipreamble}
-
-%% code listing
-\usepackage{listings}
-\usepackage{color}
-\lstset{
-    showstringspaces=false,
-    basicstyle=\ttfamily,
-    commentstyle=\color[grey]{0.6},
-    stringstyle=\color[RGB]{255,150,75}
-}
-\newcommand{\inlinecode}[2]{{\lstinline[language=#1]$#2$}}
-\renewcommand{\code}[1]{\inlinecode{R}{#1}}
 
 ```{r setup,include=FALSE,echo=FALSE}
 knitr::opts_chunk$set(
@@ -60,7 +46,7 @@ options(warn=-1)
 
 ## Installation
 
-Use \code{remotes::install_github("bbolker/McMasterPandemic")} to install the latest version of the package.
+Use `remotes::install_github("bbolker/McMasterPandemic")` to install the latest version of the package.
 
 ```{r loadpkg, message=FALSE}
 library(McMasterPandemic)
@@ -79,19 +65,19 @@ library(cowplot)
 
 To run simulations, a few parameter values must be specified.
 Set these by editing the example params file, which is converted
-to a \code{params_pansim} object by \code{read_params()}.
+to a `params_pansim} object by \code{read_params()`.
 In the example, the time unit is assumed to be days.
 
-The term ``in acute care'' means ``in hospital but not in the
-intensive care unit (ICU)''.
+The term "in acute care" means "in hospital but not in the
+intensive care unit (ICU)".
 
 ```{r set_params}
 params1 <- read_params("ICU1.csv")
 ```
 \noindent
-(by default \code{read_params} looks first in the working directory
-for CSV files, then in the \code{params} directory installed with the
-package (\code{system.file("params", package="McMasterPandemic")}).
+(by default `read_params` looks first in the working directory
+for CSV files, then in the `params` directory installed with the
+package (`system.file("params", package="McMasterPandemic")`).
 All the built-in parameter files can be found as follows:
 
 ```{r params_files}
@@ -106,9 +92,9 @@ for example, use:
 system.file("params/ICU1.csv", package="McMasterPandemic")
 ```
 
-If \code{p} is a parameter set (e.g., the result of
-\code{read_params}), then \code{print(p, describe=TRUE)} or,
-equivalently, \code{describe_params(p)} will return a data frame with
+If `p` is a parameter set (e.g., the result of
+`read_params`), then `print(p, describe=TRUE)` or,
+equivalently, `describe_params(p)` will return a data frame with
 a column giving the meaning of each parameter.
 ```{r params_kable}
 knitr::kable(describe_params(params1))
@@ -116,7 +102,7 @@ knitr::kable(describe_params(params1))
 
 \bigskip
 
-The \code{summary} method for \code{params_pansim} objects returns the
+The `summary` method for `params_pansim` objects returns the
 initial exponential growth rate ($r_0$), the doubling time
 ($\log{2}/r_0$), the mean generation interval ($\overline{G}$), and
 the basic reproduction number
@@ -146,7 +132,7 @@ knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 \paragraph{Initial conditions}
 
 The initial state must also be set, but it is sufficient to specify
-the parameter set (a \code{params_pansim} object), in which case
+the parameter set (a `params_pansim` object), in which case
 the population size and initially exposed population will be taken from the parameters (in this case all non-exposed individuals
 are assumed to be susceptible).
 
@@ -168,7 +154,7 @@ edate <- "2020-06-01"
 ## Running a simulation{#sec:run_sim}
 
 A simple deterministic simulation is run as follows, and returns a
-\code{pansim} object.  The \code{summary} method computes the times
+`pansim` object.  The `summary` method computes the times
 and magnitudes of peak demands on acute care (H) and intenstive care
 (ICU), and the basic reproduction number $\R_0$.
 
@@ -177,8 +163,8 @@ res1 <- run_sim(params=params1, state=state1, start_date=sdate, end_date=edate)
 summary(res1)
 ```
 
-The \code{plot} method for \code{pansim} objects returns a
-\code{ggplot} object, optionally on a log scale.
+The `plot` method for `pansim` objects returns a
+`ggplot` object, optionally on a log scale.
 
 ```{r plot_sim,fig.width=8}
 plot_grid(plot(res1, log=TRUE),  ## logarithmic
@@ -188,8 +174,8 @@ plot_grid(plot(res1, log=TRUE),  ## logarithmic
 ### Stochasticity
 
 The effects of observation error are easy to
-explore with the \code{stoch} argument to \code{run_sim}.
-The \code{obs_disp} parameter is the dispersion parameter for a \href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
+explore with the `stoch` argument to `run_sim`.
+The `obs_disp` parameter is the dispersion parameter for a \href{https://en.wikipedia.org/wiki/Negative_binomial_distribution}{negative
 binomial} (if the mean and variance are $\mu$ and $\sigma^2$,
 respectively, then
 $\sigma^2=\mu + \frac{\mu^2}{\text{obs_disp}}$).
@@ -204,7 +190,7 @@ plot_grid(plot(res1obs, log=TRUE),
           plot(res1obs))
 ```
 
-To simulate with process error, use \code{stoch=c(..., proc=TRUE)}. By default, this simulates only demographic stochasticity, which has little effect in a large epidemic.
+To simulate with process error, use `stoch=c(..., proc=TRUE)`. By default, this simulates only demographic stochasticity, which has little effect in a large epidemic.
 
 ```{r proc1}
 params1proc <- update(params1,E0=200,proc_disp=0)  ## demog stoch only
@@ -212,7 +198,7 @@ res1proc <- run_sim(params1proc, start_date=sdate, end_date=edate,
                     stoch=c(obs=FALSE, proc=TRUE))
 ```
 
-Making \code{proc_disp} positive simulates with additional process noise:
+Making `proc_disp` positive simulates with additional process noise:
 
 ```{r proc2}
 params1proc2 <- update(params1,E0=200, proc_disp=0.5, obs_disp=5)
@@ -228,19 +214,19 @@ rates and then drawing a multinomial sample to determine how many
 individuals move from one compartment to each of the others.  With
 pure demographic noise, the CV is very small with only $\sim1000$
 individuals moving among compartments.  Process dispersion
-(\code{proc_disp}; ``overdispersed demographic stochasticity'') is
-implemented using \code{pomp::reulermultinom}, which adds gamma white
+(`proc_disp`; ``overdispersed demographic stochasticity'') is
+implemented using `pomp::reulermultinom`, which adds gamma white
 noise to the event rates.  For some discussion of this, see p.\,274
 and Appendix~A of the ``plug-and-play'' paper by He *et al.*
 (2010, \emph{J.\ R.\ Soc.\ Interface} {\bfseries7}, 271--283,
 doi:\texttt{10.1098/rsif.2009.0151}.  \david{The intensity of the
-  gamma white noise process (\code{proc_disp}) has units
+  gamma white noise process (`proc_disp`) has units
   (*cf.*~$\sigma_{\rm SE}$ in He *et al.*); it would be
   easier to think about the cofficient of variation (CV) rather than
   standard deviation (sd).}
 
 \david{Notes scribbled from discussion with BB: To get CIs on a
-  forecast, we could hack by adjusting \code{proc_disp} until getting
+  forecast, we could hack by adjusting `proc_disp` until getting
   CIs that are plausibly wide; estimating this number is a can of
   worms.  A slighty more principaled way to decide on that number: fit
   params, then run sims with different combinations of obs and proc
@@ -259,16 +245,16 @@ doi:\texttt{10.1098/rsif.2009.0151}.  \david{The intensity of the
 ### Time-dependent transmission rate
 
 Implementing known changes in transmission rate (e.g., resulting from
-social distancing measures) is straighforward via the \code{time_pars}
+social distancing measures) is straighforward via the `time_pars`
 argument.  The following reduces $\beta_0$ (and hence $\R_0$) to 50\%
 of its original value on 10 March 2020, and to 10\% of its original
 value on 25 March 2020.
 
-Setting \code{ndt=20} forces 20 intermediate time steps to occur
-between each saved step.  (Try it with \code{ndt=1} to see why this is
+Setting `ndt=20` forces 20 intermediate time steps to occur
+between each saved step.  (Try it with `ndt=1` to see why this is
 a good idea.)
 
-Setting \code{condense=FALSE} retains all variables in the output,
+Setting `condense=FALSE` retains all variables in the output,
 rather than collapsing into a single $I$ class *etc.*
 
 ```{r run_sim_time-dependent_beta0,fig.width=8}
@@ -286,8 +272,8 @@ plot_grid(plot(restimedep, log=TRUE, condense=FALSE),
 
 Some parameters you might wish to change are not directly available in
 the parameter file.  Instead, you can adjust them using
-\code{fix_pars()}.  For example, if you would like to change the
-default value of $\R_0$ implied in the parameter list \code{params1}
+`fix_pars()`.  For example, if you would like to change the
+default value of $\R_0$ implied in the parameter list `params1`
 you can do the following.
 
 ```{r changeR0}
@@ -311,13 +297,13 @@ The natural approach is to find a set of parameters that lies within
 the estimated constraints and best fits the observed part of the
 epidemic.  This is referred to as ``calibrating'' the model to the data.
 
-Unsurprisingly, there is a function \code{calibrate()} for doing just this.
+Unsurprisingly, there is a function `calibrate()` for doing just this.
 
-Imagine that the simulated data saved in \code{res1obs} were the
+Imagine that the simulated data saved in `res1obs` were the
 observed data to which want to fit the model.  We can calibrate to
 these data as follows.
 
-Note that \code{calibrate()} requires the data come in ``long form'', which means that for each date on which we have data, there are separate rows for each type of data (report, death, hospitalization, *etc*).  This is in contrast to ``wide form'', for which there is one row for each date, and separate columns for each observed variable.
+Note that `calibrate()` requires the data come in ``long form'', which means that for each date on which we have data, there are separate rows for each type of data (report, death, hospitalization, *etc*).  This is in contrast to ``wide form'', for which there is one row for each date, and separate columns for each observed variable.
 
 \david{I am not supressing warnings so users aren't alarmed when they see these warnings themselves.  We should, of course, consider revisions that either avoid warnings or explain clearly to the user how to resolve them.}
 
@@ -348,10 +334,10 @@ plot(fitted.mod, data=report_data)
 coef(fitted.mod, "fitted")
 ```
 \noindent
-That worked well, given that the value of \code{beta0} used
+That worked well, given that the value of `beta0` used
 for the simulation was 1.
 You might want to try running the above interactive
-without commenting out ``\code{debug_plot = TRUE}''.
+without commenting out ```debug_plot = TRUE`''.
 This will allow you to see the process of fitting the
 model to the data. Note, however, that this instructive
 visualization of the optimization process will slow down
@@ -359,7 +345,7 @@ the optimization by an order of magnitude.
 
 Let's now now try to fit the model to both reports and deaths.
 It is easiest to create the required long-form data frame
-using the \code{pivot_longer} function in the \code{tidyr} package.
+using the `pivot_longer` function in the `tidyr` package.
 
 ```{r make_long_form_reports_and_deaths, message=FALSE}
 library(tidyr)
@@ -402,14 +388,14 @@ coef(fitted.mod, "fitted") # spit out fitted parameters
 summary(coef(fitted.mod))
 ```
 \noindent
-Amazing: our fitted \code{beta0} is exactly the value used
+Amazing: our fitted `beta0` is exactly the value used
 in the simulation that generated the data.
-Note that in the summary at the end, \code{r0} refers to the
+Note that in the summary at the end, `r0` refers to the
 initial exponential growth rate from the fitted model.
-This provides an alternative to the \code{epigrowthfit}
+This provides an alternative to the `epigrowthfit`
 package for fitting epidemic growth rates.
 
-Finally, consider the case where we have both observation and process noise.  Fitting to these data won't do as well, because \code{calibrate()} does not have a way of fitting to process noise.  Consequently, the quality of our fit can be expected to be worse.  Of course, real data always contain process noise\dots
+Finally, consider the case where we have both observation and process noise.  Fitting to these data won't do as well, because `calibrate()` does not have a way of fitting to process noise.  Consequently, the quality of our fit can be expected to be worse.  Of course, real data always contain process noise\dots
 
 ```{r calibrateTOres1proc2}
 report_data <- (res1proc2
@@ -443,12 +429,12 @@ plot(fitted.mod, data=report_data, predict_args=list(keep_vars="report"))
 
 If you find that the fitted model trajectory is peculiarly jagged, the
 likely culprit is the time step.  In this case, increase the number of
-internal time steps per time step (\code{ndt}), via adding
-\code{sim_args} to your \code{calibrate()} call, e.g.
-\code{sim\_args = list(ndt=2)}.
+internal time steps per time step (`ndt`), via adding
+`sim_args` to your `calibrate()` call, e.g.
+`sim\_args = list(ndt=2)`.
 
 \noindent
-You may need to experiment with \code{ndt} to get a smooth result.
+You may need to experiment with `ndt` to get a smooth result.
 
 ## Scenario exploration
 
@@ -464,9 +450,9 @@ library(zoo)
 library(tidyverse)
 ```
 \noindent
-Now we modify the \code{run_sim} example (\cref{sec:run_sim}).  We
-first check that setting \code{Relative_value=1} and using
-non-\code{timevar} \code{run_sim} yield the same results.
+Now we modify the `run_sim` example (\cref{sec:run_sim}).  We
+first check that setting `Relative_value=1` and using
+non-`timevar` `run_sim` yield the same results.
 ```{r modified_example_from_run_sim}
 params <- read_params("ICU1.csv")
 pp <- fix_pars(params, target = c(R0 = 1.3, Gbar=6))
@@ -495,7 +481,7 @@ time_pars <- data.frame(Date=as.Date(startdate:enddate)
 	# , stringsAsFactors=FALSE)
 ```
 \noindent
-This fits a \code{timevar} dataframe where \code{beta0=1}:
+This fits a `timevar` dataframe where `beta0=1`:
 ```{r timevar}
 sim0_t <- update(sim0, params_timevar=time_pars)
 print(gg0
@@ -535,4 +521,3 @@ print(gg0
 )
 ```
 
-\end{document}
