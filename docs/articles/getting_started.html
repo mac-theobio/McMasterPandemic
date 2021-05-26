@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -135,7 +135,7 @@
 <p> If you want to edit one of these files, you need to copy it to your working directory first. To find the full path to , for example, use:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"params/ICU1.csv"</span>, package<span class="op">=</span><span class="st">"McMasterPandemic"</span><span class="op">)</span>
-<span class="co">#&gt; [1] "C:/Users/somat/AppData/Local/Temp/RtmpQFZbMs/temp_libpathd10285647a3/McMasterPandemic/params/ICU1.csv"</span></code></pre></div>
+<span class="co">#&gt; [1] "C:/Users/somat/AppData/Local/Temp/RtmpUZSMtq/temp_libpathd7842892de2/McMasterPandemic/params/ICU1.csv"</span></code></pre></div>
 <p>If  is a parameter set (e.g., the result of ), then  or, equivalently,  will return a data frame with a column giving the meaning of each parameter.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html">kable</a></span><span class="op">(</span><span class="fu"><a href="../reference/describe_params.html">describe_params</a></span><span class="op">(</span><span class="va">params1</span><span class="op">)</span><span class="op">)</span></code></pre></div>
@@ -354,7 +354,7 @@
 <code class="sourceCode R"><span class="va">res1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_sim.html">run_sim</a></span><span class="op">(</span>params<span class="op">=</span><span class="va">params1</span>, state<span class="op">=</span><span class="va">state1</span>, start_date<span class="op">=</span><span class="va">sdate</span>, end_date<span class="op">=</span><span class="va">edate</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">res1</span><span class="op">)</span>
 <span class="co">#&gt;   peak_ICU_date peak_ICU_val peak_H_date peak_H_val       R0</span>
-<span class="co">#&gt; 1    2020-04-19         2787  2020-04-18       8094 6.518009</span></code></pre></div>
+<span class="co">#&gt; 1    2020-04-21         2695  2020-04-20       7846 6.518009</span></code></pre></div>
 <p>The  method for  objects returns a  object, optionally on a log scale.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html">plot_grid</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">res1</span>, log<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span>,  <span class="co">## logarithmic</span>
@@ -371,7 +371,7 @@
                    stoch<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>obs<span class="op">=</span><span class="cn">TRUE</span>, proc<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">res1obs</span><span class="op">)</span>
 <span class="co">#&gt;   peak_ICU_date peak_ICU_val peak_H_date peak_H_val       R0</span>
-<span class="co">#&gt; 1    2020-04-19         2840  2020-04-18       8701 6.518009</span>
+<span class="co">#&gt; 1    2020-04-28         2760  2020-04-21       8345 6.518009</span>
 <span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html">plot_grid</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">res1obs</span>, log<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span>,
           <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">res1obs</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p><img src="getting_started_files/figure-html/run_sim_obs_noise-1.png" width="768"></p>
@@ -403,7 +403,7 @@
                       params_timevar<span class="op">=</span><span class="va">time_pars</span>,ndt<span class="op">=</span><span class="fl">20</span>, condense<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">restimedep</span><span class="op">)</span>
 <span class="co">#&gt;   peak_ICU_date peak_ICU_val peak_H_date peak_H_val       R0</span>
-<span class="co">#&gt; 1    2020-04-10          415  2020-04-08       1175 6.518009</span>
+<span class="co">#&gt; 1    2020-04-11          417  2020-04-09       1181 6.518009</span>
 <span class="fu"><a href="https://wilkelab.org/cowplot/reference/plot_grid.html">plot_grid</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">restimedep</span>, log<span class="op">=</span><span class="cn">TRUE</span>, condense<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span>,
           <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">restimedep</span>, condense<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p><img src="getting_started_files/figure-html/run_sim_time-dependent_beta0-1.png" width="768"></p>
@@ -442,11 +442,11 @@
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">report_data</span><span class="op">)</span>
 <span class="co">#&gt;          date value    var</span>
 <span class="co">#&gt; 16 2020-02-25     1 report</span>
-<span class="co">#&gt; 17 2020-02-26     3 report</span>
-<span class="co">#&gt; 18 2020-02-27     1 report</span>
+<span class="co">#&gt; 17 2020-02-26     1 report</span>
+<span class="co">#&gt; 18 2020-02-27     0 report</span>
 <span class="co">#&gt; 19 2020-02-28     1 report</span>
-<span class="co">#&gt; 20 2020-02-29     2 report</span>
-<span class="co">#&gt; 21 2020-03-01     2 report</span>
+<span class="co">#&gt; 20 2020-02-29     1 report</span>
+<span class="co">#&gt; 21 2020-03-01     6 report</span>
 <span class="co">## beta0 is the only parameter we're going to optimize:</span>
 <span class="va">opt_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span>beta0<span class="op">=</span><span class="fl">0.1</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## fit beta0 based on the report data:</span>
@@ -467,7 +467,7 @@
 <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">fitted.mod</span>, <span class="st">"fitted"</span><span class="op">)</span>
 <span class="co">#&gt; $params</span>
 <span class="co">#&gt;    beta0 </span>
-<span class="co">#&gt; 0.999375</span></code></pre></div>
+<span class="co">#&gt; 1.000625</span></code></pre></div>
 <p> That worked well, given that the value of  used for the simulation was 1. You might want to try running the above interactive without commenting out ``’’. This will allow you to see the process of fitting the model to the data. Note, however, that this instructive visualization of the optimization process will slow down the optimization by an order of magnitude.</p>
 <p>Let’s now now try to fit the model to both reports and deaths. It is easiest to create the required long-form data frame using the  function in the  package.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
@@ -516,11 +516,11 @@
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">fitted.mod</span>, <span class="st">"fitted"</span><span class="op">)</span> <span class="co"># spit out fitted parameters</span>
 <span class="co">#&gt; $params</span>
-<span class="co">#&gt; beta0 </span>
-<span class="co">#&gt;     1</span>
+<span class="co">#&gt;    beta0 </span>
+<span class="co">#&gt; 1.000625</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">fitted.mod</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt;         r0         R0       Gbar    CFR_gen   dbl_time </span>
-<span class="co">#&gt;  0.2278149  6.5180089 12.1897402  0.0352000  3.0425898</span></code></pre></div>
+<span class="co">#&gt;  0.2279195  6.5220826 12.1897402  0.0352000  3.0411926</span></code></pre></div>
 <p> Amazing: our fitted  is exactly the value used in the simulation that generated the data. Note that in the summary at the end,  refers to the initial exponential growth rate from the fitted model. This provides an alternative to the  package for fitting epidemic growth rates.</p>
 <p>Finally, consider the case where we have both observation and process noise. Fitting to these data won’t do as well, because  does not have a way of fitting to process noise. Consequently, the quality of our fit can be expected to be worse. Of course, real data always contain process noise</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
@@ -545,11 +545,11 @@
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">fitted.mod</span>, <span class="st">"fitted"</span><span class="op">)</span> <span class="co"># spit out fitted parameters</span>
 <span class="co">#&gt; $params</span>
-<span class="co">#&gt;   beta0 </span>
-<span class="co">#&gt; 0.90125</span>
+<span class="co">#&gt; beta0 </span>
+<span class="co">#&gt; 0.935</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">fitted.mod</span>,<span class="st">"all"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt;         r0         R0       Gbar    CFR_gen   dbl_time </span>
-<span class="co">#&gt;  0.2106971  5.8743555 12.1897402  0.0352000  3.2897798</span></code></pre></div>
+<span class="co">#&gt;        r0        R0      Gbar   CFR_gen  dbl_time </span>
+<span class="co">#&gt;  0.216682  6.094338 12.189740  0.035200  3.198914</span></code></pre></div>
 <p> As above, you can plot just the data being fitted, and the fitted model, via:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">fitted.mod</span>, data<span class="op">=</span><span class="va">report_data</span>, predict_args<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>keep_vars<span class="op">=</span><span class="st">"report"</span><span class="op">)</span><span class="op">)</span></code></pre></div>

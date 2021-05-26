@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -103,10 +103,57 @@
 
     
     
-<p>Describe model calibration here: by (1) MLE fitting or (2) log-linear regression to exponential-phase data.</p>
-<div id="log-linear-method" class="section level2">
+<p>This document is intended to give a more detailed description (beyond what’s described in the “Getting Started” vignette) of model calibration with MacPan.</p>
+<div id="initial-kernel-based-parameter-calibration" class="section level1">
+<h1 class="hasAnchor">
+<a href="#initial-kernel-based-parameter-calibration" class="anchor"></a>Initial (kernel-based) parameter calibration</h1>
+<p>The <code>fix_pars</code> function takes an initial/baseline set of parameters and user-specified values of summary “moments” of the parameters (one or more of the intrinsic growth rate <span class="math inline">\(r\)</span>, the intrinsic reproductive number <span class="math inline">\(R_0\)</span>, and the generation interval <span class="math inline">\(\bar G\)</span>). For each summary metric, the user also gives a set of parameters that are to be adjusted (all by the same multiplier) to achieve the target. The function returns an adjusted set of parameters that correspond to the requested metrics.</p>
+<p>This step is useful to get the initial values into a reasonable ballpark, <em>or</em> to adjust parameters that will not be tuned in the full calibration step.</p>
+</div>
+<div id="breakpoint-based-calibration" class="section level1">
+<h1 class="hasAnchor">
+<a href="#breakpoint-based-calibration" class="anchor"></a>Breakpoint-based calibration</h1>
+<div id="time-varying-parameters" class="section level2">
 <h2 class="hasAnchor">
-<a href="#log-linear-method" class="anchor"></a>Log-linear method</h2>
+<a href="#time-varying-parameters" class="anchor"></a>Time-varying parameters</h2>
+<p>In general, time-varying parameters are specified by a data frame (<code>params_timevar</code> argument) of the following form:</p>
+<pre><code>        Date Symbol Relative_value
+1 2020-03-23  beta0             0.9
+2 2020-03-30  beta0             NA
+3 2020-04-01  beta0             1.2</code></pre>
+<p>where <code>Date</code> is the date of a breakpoint <code>Symbol</code> refers to the name of a value in the parameter vector. If numeric, <code>Relative_value</code> is the relative value (i.e., relative to the value in the baseline <code>params</code> vector) to switch to at the specified date. If <code>NA</code>, the relative value will be a calibrated parameter.</p>
+<p>The <code>opt_pars</code> list specifies which parameters to calibrate, and their starting value:</p>
+<ul>
+<li>the <code>params</code> element specifies starting calibratation values corresponding to elements of the (unlisted?) <code>params</code> vector</li>
+<li>the <code>time_params</code> (or <code>[link_]time_params</code>) element specifies starting values for the calibrated values in <code>params_timevar</code> (it should be the same length and for now should match the missing elements by position)</li>
+<li>the <code>[link_]nb_disp</code> element specifies calibrated dispersion parameters</li>
+</ul>
+</div>
+<div id="link-functions" class="section level2">
+<h2 class="hasAnchor">
+<a href="#link-functions" class="anchor"></a>Link functions</h2>
+<p>Prepending <code>log_</code> or <code>logit_</code> to a parameter name in <code>opt_pars</code> will automatically specify that it is to be fitted on the corresponding “link” scale (this is the scale on which starting values are specified).</p>
+</div>
+</div>
+<div id="log-linear-calibration" class="section level1">
+<h1 class="hasAnchor">
+<a href="#log-linear-calibration" class="anchor"></a>Log-linear calibration</h1>
+</div>
+<div id="computational-details" class="section level1">
+<h1 class="hasAnchor">
+<a href="#computational-details" class="anchor"></a>Computational details</h1>
+<div id="optim-vs-deoptim" class="section level2">
+<h2 class="hasAnchor">
+<a href="#optim-vs-deoptim" class="anchor"></a>optim vs DEoptim</h2>
+</div>
+</div>
+<div id="obsolete-material" class="section level1">
+<h1 class="hasAnchor">
+<a href="#obsolete-material" class="anchor"></a>Obsolete material</h1>
+<p>Describe model calibration here: by (1) MLE fitting or (2) log-linear regression to exponential-phase data.</p>
+<div id="old-phenomenological-log-linear-method" class="section level2">
+<h2 class="hasAnchor">
+<a href="#old-phenomenological-log-linear-method" class="anchor"></a>OLD (phenomenological) Log-linear method</h2>
 <ul>
 <li>fit an appropriate statistical model to time-series data (e.g. hospitalization, death, or ICU counts), e.g. negative binomial GLM or (for multiple regions) a GLMM</li>
 <li>the log slope is an estimate of <span class="math inline">\(r\)</span>, the log intercept will provide an estimate of initial conditions</li>
@@ -130,6 +177,11 @@
 <li>use the log-slope and log-intercept of the fit in previous step to set initial conditions, seting the <em>relative</em> numbers in compartments according to the dominant eigenvector of the Jacobian. This is where underreporting comes in: e.g. if you’re calibrating from confirmed cases, you need to guess the ratio between cases and true I. If you’re calibrating from reported COVID deaths, you should scale your true initial conditions to take this into account.</li>
 </ul>
 <p>Note that we could fake a testing lag (for now) by simple post-hoc adjustment of case times vs. other times. Don’t yet have a good solution for dependence of case numbers on testing intensity though (see <code>testing_flow.md</code>).</p>
+</div>
+<div id="priors" class="section level2">
+<h2 class="hasAnchor">
+<a href="#priors" class="anchor"></a>priors</h2>
+</div>
 </div>
   </div>
 

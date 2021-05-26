@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -254,103 +254,7 @@ states to sort themselves out)</p></td>
 <span class='va'>params</span> <span class='op'>&lt;-</span> <span class='fu'><a href='fix_pars.html'>fix_pars</a></span><span class='op'>(</span><span class='fu'><a href='read_params.html'>read_params</a></span><span class='op'>(</span><span class='st'>"ICU1.csv"</span><span class='op'>)</span><span class='op'>)</span>
 <span class='fu'>forecast_sim</span><span class='op'>(</span><span class='va'>p</span>, <span class='va'>op</span>, base_params<span class='op'>=</span><span class='va'>params</span>,<span class='va'>ff</span><span class='op'>$</span><span class='va'>start_date</span>, <span class='va'>ff</span><span class='op'>$</span><span class='va'>end_date</span>,
     time_args<span class='op'>=</span><span class='va'>ff</span><span class='op'>$</span><span class='va'>time_args</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='warning'>Warning: End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) </span>
-#&gt; <span class='warning'> Check following message for details </span>
-#&gt; <span class='warning'>             S             E            Ia            Ip            Im </span>
-#&gt; <span class='warning'> 9.985317e+05  3.047984e-02 -1.383099e-03  2.725776e+00 -3.054423e+00 </span>
-#&gt; <span class='warning'>           Is             H            H2          ICUs          ICUd </span>
-#&gt; <span class='warning'>-1.462102e-01  3.585092e-02  3.001242e-02  9.356910e-02  3.854986e-03 </span>
-#&gt; <span class='warning'>            D             R             X </span>
-#&gt; <span class='warning'> 5.194370e+00  1.463400e+03  3.292209e+01 </span>
-#&gt; <span class='warning'>attr(,"class")</span>
-#&gt; <span class='warning'>[1] "state_pansim"</span></div><div class='output co'>#&gt; <span class='warning'>Warning: End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details </span>
-#&gt; <span class='warning'>           date        S           E           I          H        ICU        R</span>
-#&gt; <span class='warning'>313 2020-04-28 998532.0  0.20834838 -0.02740368 0.67424931 0.55406992 1461.434</span>
-#&gt; <span class='warning'>331 2020-04-30 998531.9  0.16217173 -0.15521605 0.57139341 0.49750013 1461.842</span>
-#&gt; <span class='warning'>351 2020-05-02 998531.9  0.12802186 -0.24884597 0.48517554 0.44705117 1462.161</span>
-#&gt; <span class='warning'>371 2020-05-04 998531.8  0.10275442 -0.31723536 0.41293239 0.40202117 1462.412</span>
-#&gt; <span class='warning'>391 2020-05-06 998531.8  0.08404719 -0.36698813 0.35240159 0.36179148 1462.610</span>
-#&gt; <span class='warning'>413 2020-05-08 998531.8  0.07018515 -0.40298144 0.30167051 0.32581768 1462.768</span>
-#&gt; <span class='warning'>431 2020-05-10 998531.7  0.05990170 -0.42881719 0.25912849 0.29362098 1462.894</span>
-#&gt; <span class='warning'>441 2020-05-11 998531.8 -0.00674205  0.57829793 0.19624090 0.26485623 1462.001</span>
-#&gt; <span class='warning'>451 2020-05-12 998531.7  0.05226140 -0.44715548 0.22342357 0.26478025 1462.996</span>
-#&gt; <span class='warning'>461 2020-05-13 998531.8 -0.01297860  0.55718220 0.16376806 0.23763054 1462.098</span>
-#&gt; <span class='warning'>471 2020-05-14 998531.7  0.04657342 -0.45996086 0.19342387 0.23892492 1463.079</span>
-#&gt; <span class='warning'>481 2020-05-15 998531.8 -0.01753923  0.54085163 0.13650486 0.21322142 1462.178</span>
-#&gt; <span class='warning'>49  2020-05-16 998531.7  0.04232754 -0.46868420 0.16818379 0.21572853 1463.146</span>
-#&gt; <span class='warning'>50  2020-05-17 998531.8 -0.02086241  0.52805922 0.11358761 0.19132234 1462.244</span>
-#&gt; <span class='warning'>51  2020-05-18 998531.7  0.03914696 -0.47439696 0.14691469 0.19490316 1463.202</span>
-#&gt; <span class='warning'>52  2020-05-19 998531.7 -0.02327194  0.51788399 0.09429644 0.17166278 1462.300</span>
-#&gt; <span class='warning'>53  2020-05-20 998531.7  0.03675338 -0.47789044 0.12895967 0.17619452 1463.247</span>
-#&gt; <span class='warning'>54  2020-05-21 998531.7 -0.02500696  0.50964575 0.07803207 0.15400360 1462.347</span>
-#&gt; <span class='warning'>55  2020-05-22 998531.7  0.03494128 -0.47974902 0.11377211 0.15937765 1463.285</span>
-#&gt; <span class='warning'>56  2020-05-23 998531.7 -0.02624409  0.50284212 0.06429601 0.13813310 1462.386</span>
-#&gt; <span class='warning'>57  2020-05-24 998531.7  0.03355888 -0.48040426 0.10089744 0.14425324 1463.317</span>
-#&gt; <span class='warning'>58  2020-05-25 998531.7 -0.02711377  0.49710208 0.05267379 0.12386358 1462.420</span>
-#&gt; <span class='warning'>59  2020-05-26 998531.7  0.03249407 -0.48017485 0.08995775 0.13064443 1463.343</span>
-#&gt; <span class='warning'>60  2020-05-27 998531.7 -0.02771231  0.49215157 0.04282088 0.11102834 1462.450</span>
-#&gt; <span class='warning'>61  2020-05-28 998531.7  0.03166406 -0.47929614 0.08063894 0.11839405 1463.366</span>
-#&gt; <span class='warning'>62  2020-05-29 998531.7 -0.02811086  0.48778819 0.03445089 0.09947911 1462.476</span>
-#&gt; <span class='warning'>63  2020-05-30 998531.7  0.03100770 -0.47794190 0.07267986 0.10736217 1463.384</span>
-#&gt; <span class='warning'>64  2020-05-31 998531.7 -0.02836196  0.48386241 0.02732569 0.08908383 1462.498</span>
-#&gt; <span class='warning'>           hosp        X         death        D           foi    incidence</span>
-#&gt; <span class='warning'>313  0.04705009 32.90478  4.415314e-03 5.157155 -7.650335e-09 -0.007639104</span>
-#&gt; <span class='warning'>331  0.04597014 32.90974  3.383593e-03 5.165331 -1.898340e-08 -0.018955526</span>
-#&gt; <span class='warning'>351  0.04510909 32.91337  2.565807e-03 5.171764 -2.727779e-08 -0.027237744</span>
-#&gt; <span class='warning'>371  0.04441004 32.91602  1.919257e-03 5.176819 -3.332847e-08 -0.033279533</span>
-#&gt; <span class='warning'>391  0.04383101 32.91794  1.409304e-03 5.180784 -3.772250e-08 -0.037667117</span>
-#&gt; <span class='warning'>413  0.04334096 32.91933  1.007990e-03 5.183890 -4.089348e-08 -0.040833440</span>
-#&gt; <span class='warning'>431  0.04291699 32.92033  6.928490e-04 5.186321 -4.316162e-08 -0.043098243</span>
-#&gt; <span class='warning'>441 -0.04183712 32.87849  1.453289e-03 5.187774  5.643622e-08  0.056353362</span>
-#&gt; <span class='warning'>451  0.04254216 32.92104  4.458950e-04 5.188220 -4.476339e-08 -0.044697661</span>
-#&gt; <span class='warning'>461 -0.04171392 32.87932  1.229806e-03 5.189450  5.453060e-08  0.054450535</span>
-#&gt; <span class='warning'>471  0.04220398 32.92153  2.527792e-04 5.189702 -4.587344e-08 -0.045806084</span>
-#&gt; <span class='warning'>481 -0.04156175 32.87996  1.054155e-03 5.190757  5.305054e-08  0.052972648</span>
-#&gt; <span class='warning'>49   0.04189321 32.92186  1.020881e-04 5.190859 -4.662076e-08 -0.046552306</span>
-#&gt; <span class='warning'>50  -0.04138852 32.88047  9.161667e-04 5.191775  5.188518e-08  0.051809001</span>
-#&gt; <span class='warning'>51   0.04160302 32.92207 -1.523285e-05 5.191760 -4.710060e-08 -0.047031438</span>
-#&gt; <span class='warning'>52  -0.04120009 32.88087  8.077836e-04 5.192567  5.095265e-08  0.050877840</span>
-#&gt; <span class='warning'>53   0.04132839 32.92220 -1.063491e-04 5.192461 -4.738330e-08 -0.047313725</span>
-#&gt; <span class='warning'>54  -0.04100078 32.88120  7.226365e-04 5.193184  5.019248e-08  0.050118783</span>
-#&gt; <span class='warning'>55   0.04106558 32.92227 -1.769190e-04 5.193007 -4.752081e-08 -0.047451039</span>
-#&gt; <span class='warning'>56  -0.04079377 32.88147  6.557008e-04 5.193662  4.956000e-08  0.049487233</span>
-#&gt; <span class='warning'>57   0.04081185 32.92228 -2.314019e-04 5.193431 -4.755151e-08 -0.047481689</span>
-#&gt; <span class='warning'>58  -0.04058141 32.88170  6.030203e-04 5.194034  4.902223e-08  0.048950254</span>
-#&gt; <span class='warning'>59   0.04056515 32.92227 -2.733061e-04 5.193761 -4.750372e-08 -0.047433965</span>
-#&gt; <span class='warning'>60  -0.04036543 32.88190  5.614851e-04 5.194322  4.855481e-08  0.048483517</span>
-#&gt; <span class='warning'>61   0.04032398 32.92223 -3.053867e-04 5.194017 -4.739835e-08 -0.047328757</span>
-#&gt; <span class='warning'>62  -0.04014712 32.88208  5.286547e-04 5.194546  4.813973e-08  0.048069052</span>
-#&gt; <span class='warning'>63   0.04008723 32.92217 -3.298046e-04 5.194216 -4.725087e-08 -0.047181491</span>
-#&gt; <span class='warning'>64  -0.03992743 32.88224  5.026164e-04 5.194718  4.776372e-08  0.047693588</span>
-#&gt; <span class='warning'>          report   cumRep</span>
-#&gt; <span class='warning'>313 1.962233e-02 135.0123</span>
-#&gt; <span class='warning'>331 1.450289e-02 135.0436</span>
-#&gt; <span class='warning'>351 1.072196e-02 135.0667</span>
-#&gt; <span class='warning'>371 7.929559e-03 135.0837</span>
-#&gt; <span class='warning'>391 5.867221e-03 135.0963</span>
-#&gt; <span class='warning'>413 4.344057e-03 135.1056</span>
-#&gt; <span class='warning'>431 3.219090e-03 135.1125</span>
-#&gt; <span class='warning'>441 2.687996e-03 135.1152</span>
-#&gt; <span class='warning'>451 2.388206e-03 135.1176</span>
-#&gt; <span class='warning'>461 1.974395e-03 135.1196</span>
-#&gt; <span class='warning'>471 1.774510e-03 135.1213</span>
-#&gt; <span class='warning'>481 1.447439e-03 135.1228</span>
-#&gt; <span class='warning'>49  1.321215e-03 135.1241</span>
-#&gt; <span class='warning'>50  1.058326e-03 135.1252</span>
-#&gt; <span class='warning'>51  9.863825e-04 135.1261</span>
-#&gt; <span class='warning'>52  7.710140e-04 135.1269</span>
-#&gt; <span class='warning'>53  7.390379e-04 135.1277</span>
-#&gt; <span class='warning'>54  5.588850e-04 135.1282</span>
-#&gt; <span class='warning'>55  5.563063e-04 135.1288</span>
-#&gt; <span class='warning'>56  4.022806e-04 135.1292</span>
-#&gt; <span class='warning'>57  4.212938e-04 135.1296</span>
-#&gt; <span class='warning'>58  2.866826e-04 135.1299</span>
-#&gt; <span class='warning'>59  3.215237e-04 135.1302</span>
-#&gt; <span class='warning'>60  2.013687e-04 135.1304</span>
-#&gt; <span class='warning'>61  2.477816e-04 135.1307</span>
-#&gt; <span class='warning'>62  1.384203e-04 135.1308</span>
-#&gt; <span class='warning'>63  1.932624e-04 135.1310</span>
-#&gt; <span class='warning'>64  9.198911e-05 135.1311</span></div><div class='output co'>#&gt; <span style='color: #949494;'># A tibble: 1,722 x 3</span><span>
+</div><div class='output co'>#&gt; <span style='color: #949494;'># A tibble: 1,722 x 3</span><span>
 #&gt;    date       var    value
 #&gt;    </span><span style='color: #949494;font-style: italic;'>&lt;date&gt;</span><span>     </span><span style='color: #949494;font-style: italic;'>&lt;chr&gt;</span><span>  </span><span style='color: #949494;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </span><span style='color: #BCBCBC;'> 1</span><span> 2020-01-30 S     </span><span style='text-decoration: underline;'>999</span><span>946

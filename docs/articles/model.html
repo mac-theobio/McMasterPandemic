@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -181,9 +181,6 @@
 <p>Including the testing structure increases the number of compartments substantially, and consequently yields a much larger flow matrix</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/vis_model.html">vis_model</a></span><span class="op">(</span>testify<span class="op">=</span><span class="cn">TRUE</span>,aspect<span class="op">=</span><span class="st">"fill"</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning in show_ratemat(M, method = method, ...): guessing blocksize from
-## dimnames</code></pre>
-<pre><code>## Loading required namespace: latticeExtra</code></pre>
 <p><img src="model_files/figure-html/vis_testify-1.png" width="700"></p>
 <p>Explicit testing structure is enabled if the parameter vector/list contains an element <code>testing_intensity</code> which is set &gt;0. (As a side note, if you are using <code><a href="../reference/read_params.html">read_params("PHAC_testify.csv")</a></code> to capture our most recent set of default parameters, and you <em>don’t</em> want an explicit-testing model, you should use <code><a href="https://rdrr.io/r/stats/update.html">update(., testing_intensity=0)</a></code>.) The argument <code>testing_time</code> to the <code><a href="../reference/make_ratemat.html">make_ratemat()</a></code> function determines when testing is counted (“sample” or “report”); this can be passed to <code><a href="../reference/run_sim.html">run_sim()</a></code> (or from farther upstream) in the <code>ratemat_args</code> (list) argument; the default is to set counting time to “sample”, with a warning.</p>
 </div>

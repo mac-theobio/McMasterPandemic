@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -159,11 +159,13 @@
     </tr>
     <tr>
       <th>extra_pars</th>
-      <td><p>parameters that are used to set up time-varying parameters, etc., but <em>not</em> used by <code>run_sim</code></p></td>
+      <td><p>parameters that are used to set up time-varying parameters, etc., but <em>not</em> used by <code>run_sim</code>:
+**FIXME** should contain rel_&lt;parname&gt; values matching the break dates.  MAYBE rel_ or abs_ determines whether the value
+is relative to baseline *or* is absolute? (will require corresponding change in run_sim to allow this)</p></td>
     </tr>
     <tr>
       <th>time_args</th>
-      <td><p>list containing <code>break_dates</code></p></td>
+      <td><p>list containing <code>break_dates</code>, **FIXME and Symbol!</p></td>
     </tr>
     <tr>
       <th>sim_args</th>
@@ -171,11 +173,11 @@
     </tr>
     <tr>
       <th>return_timevar</th>
-      <td><p>return data frame of beta by time?</p></td>
+      <td><p>return data frame of params by time?</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>additional arguments to <code>run_sim</code></p></td>
+      <td><p>extra args (why??)</p></td>
     </tr>
     </table>
 

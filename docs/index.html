@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -111,7 +111,11 @@
 <li>
 <strong>please test/check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org//reference/check.html">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org//reference/test.html">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/bbolker/McMasterPandemic/actions">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Please don’t make a habit of pushing without testing.</li>
 <li>Code that is used in the refactoring process should go in the top-level refactor folder.</li>
+<li>Slow tests are skipped by default; this process is controlled by the presence of a <code>MACPAN_TEST_LEVEL</code> environment (shell) variable. Many of the test files contain this code:</li>
 </ul>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">testLevel</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html">nzchar</a></span><span class="op">(</span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html">Sys.getenv</a></span><span class="op">(</span><span class="st">"MACPAN_TEST_LEVEL"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></code></pre></div>
+<p>which sets <code>testLevel</code> to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via <code>export MACPAN_TEST_LEVEL=2</code> in a bash shell), or via <code><a href="https://rdrr.io/r/base/Sys.setenv.html">Sys.setenv(MACPAN_TEST_LEVEL=2)</a></code> from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and &gt;1 are distinguished.</p>
 </div>
 <div id="documentation" class="section level3">
 <h3 class="hasAnchor">

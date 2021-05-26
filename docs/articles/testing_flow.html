@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.18</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
       </span>
     </div>
 
@@ -104,7 +104,7 @@
     
     
 <p>We would like to be able to use the positive/negative tests information in a useful way. Here is one possibility:</p>
-<p><img src="../../../../AppData/Local/Temp/RtmpQFZbMs/temp_libpathd10285647a3/McMasterPandemic/pix/testing_flow.png" width="245"></p>
+<p><img src="../../../../AppData/Local/Temp/RtmpUZSMtq/temp_libpathd7842892de2/McMasterPandemic/pix/testing_flow.png" width="245"></p>
 <p>That is, each compartment (except ICU/hospital/dead) has a parallel ‘awaiting testing’ compartment. From there, individuals can move back into their original compartment (on the receipt of a negative test), or directly to the recovered compartment (if we assume that all individuals receiving a positive test will self-isolate), or into the next compartment in the epidemiological flow (e.g., if they progress from Exposed to Pre-symptomatic while awaiting test results). All individuals are testing on transition to H, if not before.</p>
 <p>This should take care of test lags in a sensible way, although there are a bunch of questions/issues to resolve:</p>
 <ul>
