@@ -2,6 +2,8 @@ library("McMasterPandemic")
 library(dplyr)
 library(tidyr)
 library(ggplot2); theme_set(theme_bw())
+## check environment variable
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 
 L <- load(system.file("testdata","calib_test.RData",package="McMasterPandemic"))
 summary(cparams)
@@ -17,7 +19,8 @@ set.seed(101)
 sim1S <- run_sim(cparams, cstate, start_date="2020-03-01",
                  end_date="2020-03-31",
                  ndt=10,
-                 stoch=c(obs = TRUE, proc = FALSE))
+                 stoch=c(obs = TRUE, proc = FALSE),
+                 step_args=list(do_hazard=FALSE))
 
 ## aggregate/subset simulated data to a short time window (15 Mar - 29 Mar)/
 simdat <- (pivot(condense(sim1S))
@@ -44,7 +47,7 @@ regdatS <- (simdat
 g1S <- MASS::glm.nb(value~t0,data=regdatS)
 
 ## too slow for now ...
-if (FALSE) {
+if (testLevel>1) {
     schoolClose <- "2020-03-17"
     countryClose <- "2020-03-23"
     socialClose <- "2020-03-28"
@@ -64,7 +67,7 @@ if (FALSE) {
                  ## logit_phi2=qlogis(params[["phi2"]])
                  ),
         ## changes in beta at breakpoints
-        log_rel_beta0 = rep(-1, length(bd)),
+        log_time_params = rep(-1, length(bd)),
         ## NB dispersion
         log_nb_disp=0)
 
@@ -80,17 +83,19 @@ if (FALSE) {
                        )
     params[["N"]] <- 14.57e6  ## reset pop to Ontario
 
+    pt <- data.frame(Date=bd, Symbol="beta0", Relative_value=NA)
+
     system.time(cc1 <- calibrate(data=ont_all_sub
                                , base_params=params
                                , opt_pars = opt_pars
-                               , time_args=list(break_dates = bd)
+                               , time_args=list(params_timevar=pt)
                                  )
                 )
 
     system.time(cc2 <- calibrate(data=ont_all_sub
                                , base_params=params
                                , opt_pars = opt_pars
-                               , time_args=list(break_dates = bd)
+                               , time_args=list(params_timevar=pt)
                                , sim_args=list(use_ode=TRUE)
                                  )
                 )
@@ -108,7 +113,8 @@ if (FALSE) {
 p1 <- fix_pars(read_params("ICU1.csv"))
 p2 <- update(p1, obs_disp=1, proc_disp=0, zeta=5)
 set.seed(101)
-r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31")
+r1 <- run_sim(p2, stoch=c(obs=TRUE, proc=TRUE), end_date="2020-05-31",
+              step_args=list(do_hazard=FALSE))
 
 dd_r <- r1 %>% select(date,report) %>% pivot() %>% na.omit()
 
@@ -119,22 +125,27 @@ c_r2 <- calibrate_comb(params=p3,
                        data=dd_r,
                        use_DEoptim=FALSE,
                        use_spline=FALSE,
-                       sim_args=list(use_eigvec=FALSE))
+                       sim_args=list(use_eigvec=FALSE,
+                                     step_args=list(do_hazard=FALSE))
+                       )
+
 
 get_last_rpt <- function(x) {
-    predict(x) %>% filter(var=="report") %>% tail(1) %>% pull(value)
+    predict(x) %>% filter(var=="report") %>% tail(1) %>% dplyr::pull(value)
 }
-plot(c_r2, data=dd_r) + ggtitle("old (use_eigvec=FALSE)")
+plot(c_r2, data=dd_r) + ggplot2::ggtitle("old (use_eigvec=FALSE)")
 
 c_r2e <- calibrate_comb(params=p3,
                        use_phenomhet=FALSE,
                        debug_plot=FALSE,
                        data=dd_r,
                        use_DEoptim=FALSE,
-                       use_spline=FALSE)
+                       use_spline=FALSE,
+                       sim_args=list(step_args=list(do_hazard=FALSE))
+                       )
 
-plot(c_r2e, data=dd_r) + ggtitle("use_eigvec")
-                            
+plot(c_r2e, data=dd_r) + ggplot2::ggtitle("use_eigvec")
+
 ## list(params = c(E0 = 0.969447127312371,
 ##                 beta0 = 0.999559822048325
 ##                 ),
@@ -167,11 +178,11 @@ plot(c_r2e, data=dd_r) + ggtitle("use_eigvec")
 ##   previous values ... ???
 
 ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531
-), nb_disp = c(report = 1.10114796707075), time_beta = numeric(0))
+), nb_disp = c(report = 1.10114796707075), time_params = numeric(0))
 
 print(coef(c_r2e, "fitted"))
 stopifnot(all.equal(coef(c_r2e,"fitted"),
-                    ref_val, 
+                    ref_val,
                     tolerance=1e-6))
 
 stopifnot(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance=1e-5))

@@ -12,9 +12,9 @@ params <- read_params("ICU1.csv")
 state <- make_state(params=params,type="ICU1")
 
 test_that("basic examples_snapshot", {
-    s0 <- run_sim_range(params,state, nt=100)
+    s0 <- run_sim_range(params,state, nt=100, step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s0, 10))
-    s1 <- run_sim(params,state,start_date="2020-03-01",end_date="2020-06-01")
+    s1 <- run_sim(params,state,start_date="2020-03-01",end_date="2020-06-01", step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s1, 10))
 })
 
@@ -52,14 +52,16 @@ test_that("time-varying with ndt>1", {
 })
 
 test_that("ndt>1", {
-    s2 <- run_sim_range(params,state, nt=100, dt=0.2)
+    s2 <- run_sim_range(params,state, nt=100, dt=0.2, step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s2, 10))
     s3 <- run_sim(params,state, ndt=20,
                   start_date="2020-03-01",
-                  end_date="2020-03-20")
+                  end_date="2020-03-20",
+                  step_args=list(do_hazard=FALSE))
     s3B <- run_sim(params,state,
                   start_date="2020-03-01",
-                  end_date="2020-03-20")
+                  end_date="2020-03-20",
+                  step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s3,10))
     expect_snapshot(tail(s3B,10))
 })
@@ -70,10 +72,10 @@ test_that("var-specific obsdisp", {
     set.seed(101)
     ## initial state *without* using eigvec, to match previous reference results
     ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
-    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss)
+    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss, step_args=list(do_hazard=FALSE))
     plot(s0,keep_states=c("I","E","report"),log=TRUE)
     expect_snapshot(tail(s0, 10))
-    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE))
+    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), step_args=list(do_hazard=FALSE))
     expect_snapshot(tail(s1, 10))
 })
 

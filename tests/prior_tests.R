@@ -1,5 +1,6 @@
 library(McMasterPandemic)
 library(dplyr)
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 
 ## sim example
 params <- read_params("ICU1.csv")
@@ -17,9 +18,38 @@ cdat <- (res1_S
                date<as.Date("2020-04-15"))
 )
 
-priors <- list(~dlnorm(rel_beta0[1],meanlog=-1,sd=0.5))
-c0 <- calibrate(data=cdat,base_params=params) ## ,debug_plot=TRUE,debug=TRUE)
-c1 <- calibrate(data=cdat,base_params=params,priors=priors) ## debug_plot=TRUE)
-summary(c0)
-summary(c1)
-                
+pt <- data.frame(Date = c("2020-03-23", "2020-03-30", "2020-04-01"),
+                 Symbol = rep("beta0", 3), Relative_value = c(0, NA, 0))
+
+formals(calibrate)$time_args
+formals(calibrate)$opt_pars
+vague_priors <- list(~dlnorm(time_params[1], meanlog=-1,sd=5))
+strong_priors <- list(~dlnorm(time_params[1], meanlog=-1,sd=0.01))
+
+curve(dlnorm(x,meanlog=-1,sd=0.5), from = 0,to = 1.5)
+abline(v=plogis(1))
+
+cfun <- function(priors=NULL, debug_plot=FALSE, debug=FALSE) {
+  calibrate(data=cdat, base_params=params,
+            time_args = list(params_timevar=pt),
+            opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1),
+                            log_time_params = -1,
+                            log_nb_disp = NULL),
+            priors=priors,
+            debug_plot=debug_plot,
+            debug=debug)
+}
+
+if (testLevel>1) {
+  c0 <- cfun()
+  c1 <- cfun(priors=vague_priors)
+  c2 <- cfun(priors=strong_priors)
+
+  cList <- list(no_prior=c0, vague_priors = c1, strong_priors = c2)
+  param_tab <- t(sapply(cList, function(x) unlist(coef(x, "fitted"))))
+
+  print(param_tab)
+}
+
+
+

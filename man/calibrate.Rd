@@ -8,12 +8,12 @@ calibrate(
   start_date = min(data$date) - start_date_offset,
   start_date_offset = 15,
   end_date = max(data$date),
-  time_args = list(break_dates = c("2020-03-23", "2020-03-30")),
-  break_dates = NULL,
+  time_args = list(params_timevar = data.frame(Date = c("2020-03-23", "2020-03-30",
+    "2020-04-01"), Symbol = rep("beta0", 3), Relative_value = c(-1, NA, NA))),
   base_params,
   data,
-  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_rel_beta0 = c(-1, -1),
-    log_nb_disp = NULL),
+  opt_pars = list(params = c(log_E0 = 4, log_beta0 = -1), logit_time_params = c(-1,
+    -1), log_nb_disp = NULL),
   fixed_pars = NULL,
   sim_fun = run_sim_break,
   sim_args = NULL,
@@ -44,8 +44,6 @@ states to sort themselves out)}
 \item{end_date}{ending date}
 
 \item{time_args}{arguments passed to \code{sim_fun}}
-
-\item{break_dates}{legacy}
 
 \item{base_params}{baseline parameters (an object (vector?) of
 type \code{params_pansim} containing all of the parameters
