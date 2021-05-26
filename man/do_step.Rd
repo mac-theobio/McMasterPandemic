@@ -9,7 +9,7 @@ do_step(
   params,
   ratemat,
   dt = 1,
-  do_hazard = TRUE,
+  do_hazard = FALSE,
   stoch_proc = FALSE,
   do_exponential = FALSE,
   testwt_scale = "N"

@@ -68,3 +68,4 @@ refactor/*/*.csv
 refactor/*/*.txt
 !docs/*
 !docs/*/*
+misc/lints.csv
