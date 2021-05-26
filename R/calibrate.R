@@ -133,11 +133,11 @@ run_sim_loglin <- function(params,
     time_params <- extra_pars$time_params
     extra_pars$time_params <- NULL
     timevar <- NULL
-    if (length(time_params)>0) {  ## non-trivial model
+    if (length(time_params) > 0) {  ## non-trivial model
         ## construct time-varying frame, parameters
-        timevar <- dfs(Date=as.Date(X_date),
-                       Symbol="beta0",
-                       Relative_value=exp(X %*% time_params))
+        timevar <- dfs(Date = as.Date(X_date),
+                       Symbol = "beta0",
+                       Relative_value = exp(X %*% time_params))
                       ## log-linear model for beta
     }
 
@@ -304,7 +304,7 @@ run_sim_break <- function(params,
             return(params_timevar)
     }
     sim_args <- c(sim_args,
-            list(params_timevar = timevar)
+            list(params_timevar = params_timevar)
         )
     do.call("run_sim", sim_args)
 }
