@@ -66,6 +66,5 @@ cache
 wget-*
 refactor/*/*.csv
 refactor/*/*.txt
-!docs/*
-!docs/*/*
+!docs/**
 misc/lints.csv
