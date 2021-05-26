@@ -717,7 +717,7 @@ update_debug_hist <- function(params, NLL) {
 ##' params <- fix_pars(read_params("ICU1.csv"))
 ##'  opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
 ##'         log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
-##'                                   logit_rel_beta0=c(-1,-1),
+##'                                   logit_value=c(-1,-1),
 ##'                                    log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
@@ -734,22 +734,10 @@ update_debug_hist <- function(params, NLL) {
 calibrate <- function(start_date = min(data$date) - start_date_offset,
                       start_date_offset = 15,
                       end_date = max(data$date),
-                      time_args = list(
-                        params_timevar=data.frame(
-                              Date = c("2020-03-23", "2020-03-30", "2020-04-01"),
-                              Symbol = rep("beta0", 3),
-                              Relative_value = c(-1, NA, NA))
-                      ),
+                      time_args = NULL,
                       base_params,
                       data,
-                      opt_pars = list(
-                          params = c(
-                              log_E0 = 4,
-                              log_beta0 = -1
-                          ),
-                          logit_time_params = c(-1, -1),
-                          log_nb_disp = NULL
-                      ),
+                      opt_pars,
                       fixed_pars = NULL,
                       sim_fun = run_sim_break,
                       sim_args = NULL,
@@ -770,10 +758,6 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                       DE_upr = NULL,
                       DE_cores = getOption("mc.cores", 2)) {
     start_time <- proc.time()
-    if (!is.null(break_dates)) {
-        warning("use of break_dates as a top-level parameter is deprecated: please use time_args=list(break_dates=...)")
-        time_args <- list(break_dates = break_dates)
-    }
 
     v <- na.omit(data$value)
     if (any(abs(v - round(v)) > 1e-9)) {
