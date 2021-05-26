@@ -738,9 +738,8 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                         params_timevar=data.frame(
                               Date = c("2020-03-23", "2020-03-30", "2020-04-01"),
                               Symbol = rep("beta0", 3),
-                              Relative_value = c(-1, NA, NA)),
+                              Relative_value = c(-1, NA, NA))
                       ),
-                      break_dates = NULL,
                       base_params,
                       data,
                       opt_pars = list(

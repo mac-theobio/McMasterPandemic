@@ -32,7 +32,7 @@ params1["N"] <- sum(state1)
 test_that("State variable <0 warning works correctly", {
     ## Note: if the code is changed to prevent things from going below 0, this test will fail.
     expect_warning(run_sim(params = params1, state = state1, start_date = sdate, end_date = edate,
-                          step_args = list(do_hazard = FALSE))),
+                          step_args = list(do_hazard = FALSE)),
             label = "Note: if the code is changed to prevent things from going below 0, this test will fail. Change the test if this happens.", regexp = "One or more state variables is negative")
 })
 

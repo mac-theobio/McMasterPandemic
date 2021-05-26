@@ -153,7 +153,7 @@ c_r2e <- calibrate_comb(
     debug_plot = FALSE,
     data = dd_r,
     use_DEoptim = FALSE,
-    use_spline = FALSE, 
+    use_spline = FALSE,
     sim_args = list(step_args = list(do_hazard = FALSE))
 )
 
@@ -191,7 +191,8 @@ plot(c_r2e, data = dd_r) + ggtitle("use_eigvec")
 ## FIXME: figure out why c_r2 (use_eigvec=FALSE) parameters do *not* match
 ##   previous values ... ???
 
-ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531), nb_disp = c(report = 1.10114796707075), time_beta = numeric(0))
+ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531), nb_disp = c(report = 1.10114796707075),
+                time_params = numeric(0))
 
 print(coef(c_r2e, "fitted"))
 stopifnot(all.equal(coef(c_r2e, "fitted"),
