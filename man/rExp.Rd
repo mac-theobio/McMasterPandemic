@@ -13,7 +13,8 @@ rExp(
   ndt = 1,
   do_hazard = FALSE,
   testify = has_testing(params = params),
-  return_val = c("r0", "eigenvector", "sim")
+  return_val = c("r0", "eigenvector", "sim"),
+  type = "ICU1"
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ rExp(
 \item{testify}{testing compartments}
 
 \item{return_val}{return growth rate or eigenvector?}
+
+\item{type}{model type (passed to \code{\link{make_state}})}
 }
 \description{
 run a pure-exponential sim;

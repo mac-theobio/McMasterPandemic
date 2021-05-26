@@ -1,4 +1,4 @@
-# devtools::install_github("datastorm-open/DependenciesGraphs")
+# remotes::install_github("datastorm-open/DependenciesGraphs")
 library("DependenciesGraphs")
 library("mvbutils")
 library("McMasterPandemic")
@@ -6,9 +6,14 @@ library("stringr")
 library("tidyverse")
 library("nos")
 
+fun_set <- "core"  ## or "all"
+
 pos <- which(search() == "package:McMasterPandemic")
-## FIXME: include predict methods?
-funs <- grep(".*", ls(pos = pos), value = TRUE) # mle_fun|forecast|calibrate$|run_|do_step
+## FIXME: include methods, generally?
+if (fun_set=="all") {
+  funs <- grep(".*", ls(pos = pos), value = TRUE) # mle_fun|forecast|calibrate$|run_|do_step
+} else {
+
 funs <- c(funs, "predict.fit_pansim")
 ff <- foodweb(
   where = pos,

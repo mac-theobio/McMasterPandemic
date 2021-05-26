@@ -558,13 +558,13 @@ smart_round <- function(x) {
 ##' @param M rate matrix
 ##' @param method visualization method
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
-##' @param add_blocks add lines showing blocks for testified matrices?
+##' @param block_size numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments
+##' @param block_col (numeric vector, of length 1 or length(block_size)
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
-##' @param blocksize for each element n in blocksize, an additional n x n grid is overlaid on the diagram
-##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)
+##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
@@ -577,12 +577,11 @@ smart_round <- function(x) {
 ##' M <- make_ratemat(state, params)
 ##' show_ratemat(M)
 ##' ## silly but shows we can do multiple block types in different colours
-##' show_ratemat(M, add_blocks=TRUE, blocksize=c(3,5), block_col=c(2,4))
+##' show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 ##' @export
 show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          aspect="iso",
-                         add_blocks=NULL,
-                         blocksize=NULL,
+                         block_size=NULL,
                          block_col=2,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
@@ -595,45 +594,43 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
     }
     if (const_width && !do_symbols) { M[M>0] <- 1 }
     if (method=="Matrix") {
-        if (is.null(add_blocks)) {
-            add_blocks <- has_testing(state=setNames(numeric(nrow(M)),
-                                                     rownames(M)))
-        }
-        if (axlabs) {
-            rlabs <- rownames(M)
-            clabs <- colnames(M)
-        } else {
-            rlabs <- clabs <- rep("",nrow(M))
-        }
-        p <- Matrix::image(Matrix(M),
-                           scales=list(x=list(at=seq(nrow(M)),labels=rlabs,
-                                              rot=90),
-                                       y=list(at=seq(ncol(M)),labels=clabs)),
-                           xlab="to",
-                           ylab="from",
-                           sub="",
-                           colorkey = !const_width,
-                           aspect=aspect, ...)
-        if (add_blocks) {
-          if (is.null(blocksize)) {
-            warning("guessing blocksize from dimnames")
-            ## FIXME: could also try to look for number of repetitions?
+      add_blocks <- !is.null(block_size)
+      if (axlabs) {
+        rlabs <- rownames(M)
+        clabs <- colnames(M)
+      } else {
+        rlabs <- clabs <- rep("",nrow(M))
+      }
+      p <- Matrix::image(Matrix(M),
+                         scales=list(x=list(at=seq(nrow(M)),labels=rlabs,
+                                            rot=90),
+                                     y=list(at=seq(ncol(M)),labels=clabs)),
+                         xlab="to",
+                         ylab="from",
+                         sub="",
+                         colorkey = !const_width,
+                         aspect=aspect, ...)
+      if (add_blocks) {
+        if (all(is.na(block_size))) {
+          ## FIXME: test more. Works suboptimally for a *single* block, but ???
             epi_vars <- unique(gsub("_.*$","",colnames(M)))
             epi_vars <- setdiff(epi_vars, c(test_accumulators, non_expanded_states))
-            blocksize <- length(epi_vars)
+            block_size <- length(epi_vars)
           }
-          if (requireNamespace("latticeExtra")) {
-              block_col <- rep(block_col, length.out=length(blocksize))
-              for (i in seq_along(blocksize)) {
-                ## offset by 0.5 so we are illustrating state values
-                dd <- list(col=block_col[i],pos=seq(nrow(M)+0.5,0,by=-blocksize[i]))
-                p <- (p
-                  + latticeExtra::layer(lattice::panel.abline(h=pos,col=col), data=dd)
-                  + latticeExtra::layer(lattice::panel.abline(v=pos,col=col), data=dd)
-                )
-              }
-            }
-        }
+          if (!requireNamespace("latticeExtra")) {
+            stop("can't add block lines: please install latticeExtra package")
+          }
+          block_col <- rep(block_col, length.out=length(block_size))
+          for (i in seq_along(block_size)) {
+            ## offset by 0.5 so we are illustrating state values
+            block_pos <- seq(nrow(M)+0.5,0,by=-block_size[i])
+            dd <- list(col=block_col[i],pos=block_pos)
+            p <- (p
+              + latticeExtra::layer(lattice::panel.abline(h=pos,col=col), data=dd)
+              + latticeExtra::layer(lattice::panel.abline(v=pos,col=col), data=dd)
+            )
+          } ## loop over block_size
+      } ## add_blocks
     } else if (method=="igraph") {
        if (!requireNamespace("igraph")) {
            stop("igraph not available")
@@ -647,7 +644,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
         pos <- cbind(xpos,ypos)/8
         M3 <- M[names(xpos),names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
-            M3 <- adjust_symbols(M3)
+          M3 <- adjust_symbols(M3)
         } else {
             M3[M3!="0"] <- ""  ## blank out all labels
         }
@@ -730,4 +727,16 @@ exclude_states <- function(nm,exclude_states) {
     x_regex <- sprintf("^(%s)_?",paste(exclude_states,collapse="|"))
     xx <- grep(x_regex,nm,invert=TRUE,value=TRUE)
     return(xx)
+}
+
+
+## inspired by purrr, infix pkgs
+`%||%` <- function (a, b) {
+    if (is.null(a)) b else a
+}
+
+## logical vector indicating whether first letters of strings are capitalized
+first_letter_cap <- function(x) {
+  f <- substr(x,1,1)
+  return(toupper(f) == f)
 }
