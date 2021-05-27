@@ -148,6 +148,9 @@ pkgcheck:
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
+site-update-lazy:
+	echo "pkgdown::build_site(lazy=TRUE)" | $(R) --slave
+
 site-update:
 	echo "pkgdown::build_site()" | $(R) --slave
 

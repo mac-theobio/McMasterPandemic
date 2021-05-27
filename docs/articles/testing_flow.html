@@ -57,13 +57,10 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
-      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
-    </li>
-    <li>
       <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="../articles/new_getting_started.html">Getting Started (markdown version)</a>
+      <a href="../articles/new_getting_started.html">Getting started (markdown version)</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -104,7 +101,7 @@
     
     
 <p>We would like to be able to use the positive/negative tests information in a useful way. Here is one possibility:</p>
-<p><img src="../../../../../../tmp/Rtmpy1pvGi/temp_libpathd719d34170138/McMasterPandemic/pix/testing_flow.png" width="245"></p>
+<p><img src="../../../../../../tmp/Rtmpm8ATF4/temp_libpathd756d14090263/McMasterPandemic/pix/testing_flow.png" width="245"></p>
 <p>That is, each compartment (except ICU/hospital/dead) has a parallel ‘awaiting testing’ compartment. From there, individuals can move back into their original compartment (on the receipt of a negative test), or directly to the recovered compartment (if we assume that all individuals receiving a positive test will self-isolate), or into the next compartment in the epidemiological flow (e.g., if they progress from Exposed to Pre-symptomatic while awaiting test results). All individuals are testing on transition to H, if not before.</p>
 <p>This should take care of test lags in a sensible way, although there are a bunch of questions/issues to resolve:</p>
 <ul>

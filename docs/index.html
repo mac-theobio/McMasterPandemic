@@ -57,13 +57,10 @@
       <a href="articles/calibration.html">Model calibration</a>
     </li>
     <li>
-      <a href="articles/farr.html">Cumulative curves, Farr's law, and all that</a>
-    </li>
-    <li>
       <a href="articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="articles/new_getting_started.html">Getting Started (markdown version)</a>
+      <a href="articles/new_getting_started.html">Getting started (markdown version)</a>
     </li>
     <li>
       <a href="articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -95,11 +92,21 @@
 <a href="#mcmasterpandemic" class="anchor"></a>McMasterPandemic</h1></div>
 <!-- badges: start -->
 
-<p>Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li, Irena Papst (in alphabetical order). Feedback is welcome at the <a href="https://github.com/bbolker/McMasterPandemic/issues">issues list</a>, or e-mail us.</p>
+<p>Compartmental epidemic models for forecasting and analysis of infectious disease pandemics. Feedback is welcome at the <a href="https://github.com/bbolker/McMasterPandemic/issues">issues list</a>.</p>
 <div id="installation" class="section level3">
 <h3 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h3>
 <p>The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from <a href="https://github.com/bbolker/McMasterPandemic">here</a>) and install locally or use <code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("bbolker/McMasterPandemic")</a></code> to install the package. You will need to first install the developer version of <code>bbmle</code> (<code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("bbolker/bbmle")</a></code>) before installing <code>McMasterPandemic</code>.</p>
+</div>
+<div id="documentation" class="section level3">
+<h3 class="hasAnchor">
+<a href="#documentation" class="anchor"></a>Documentation</h3>
+<p>See the accompanying <a href="https://bbolker.github.io/McMasterPandemic">pkgdown site</a>.</p>
+<ul>
+<li>Functions are under the <code>Reference</code> tab.</li>
+<li>Vignettes (under construction!) are under <code>Articles</code>
+</li>
+</ul>
 </div>
 <div id="for-developers" class="section level3">
 <h3 class="hasAnchor">
@@ -107,21 +114,22 @@
 <ul>
 <li>to re-install the package, including re-building and incorporating vignettes, use <code>make build</code>
 </li>
-<li>If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use <code>make doc-update</code> to update the <code>.Rd</code> files.</li>
+<li>re-build the <code>pkgdown</code> site with <code>make site-update-lazy</code> (to rebuild just changed files) or <code>make site-update</code> (to be thorough) (or <code><a href="https://pkgdown.r-lib.org/reference/build_site.html">pkgdown::build_site()</a></code>)</li>
+<li>it’s OK to push <em>small</em> changes to the master branch; use your own branch + pull request for anything non-trivial</li>
+<li>If you modify function arguments, please update the roxygen documentation and use <code>make doc-update</code> (or <code><a href="https://devtools.r-lib.org//reference/document.html">devtools::document</a></code>) to update the <code>.Rd</code> files.</li>
 <li>
-<strong>please test/check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org//reference/check.html">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org//reference/test.html">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/bbolker/McMasterPandemic/actions">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Please don’t make a habit of pushing without testing.</li>
-<li>Code that is used in the refactoring process should go in the top-level refactor folder.</li>
+<strong>Check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org//reference/check.html">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org//reference/test.html">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/bbolker/McMasterPandemic/actions">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Don’t push without checking.</li>
+<li>Code that is used in the refactoring process should go in the top-level <code>refactor</code> folder.</li>
 <li>Slow tests are skipped by default; this process is controlled by the presence of a <code>MACPAN_TEST_LEVEL</code> environment (shell) variable. Many of the test files contain this code:</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">testLevel</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html">nzchar</a></span><span class="op">(</span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html">Sys.getenv</a></span><span class="op">(</span><span class="st">"MACPAN_TEST_LEVEL"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></code></pre></div>
 <p>which sets <code>testLevel</code> to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via <code>export MACPAN_TEST_LEVEL=2</code> in a bash shell), or via <code><a href="https://rdrr.io/r/base/Sys.setenv.html">Sys.setenv(MACPAN_TEST_LEVEL=2)</a></code> from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and &gt;1 are distinguished.</p>
 </div>
-<div id="documentation" class="section level3">
-<h3 class="hasAnchor">
-<a href="#documentation" class="anchor"></a>Documentation</h3>
-<p>The <a href="https://bbolker.github.io/McMasterPandemic">documentation</a> is a little bit scattered right now, working on cleaning it up and making it easily accessible.</p>
-<p>In addition to the standard short descriptions of the functions (<code><a href="https://rdrr.io/pkg/McMasterPandemic/man">help(package="McMasterPandemic")</a></code>), stuff can be found:</p>
+<div id="obsolete-documentation" class="section level2">
+<h2 class="hasAnchor">
+<a href="#obsolete-documentation" class="anchor"></a>Obsolete documentation</h2>
+<p>(Keeping links here for now)</p>
 <ul>
 <li>in the vignettes (look at the source code in the [vignettes] directory or <code>vignette(&lt;title&gt;, package="McMasterPandemic")</code>)
 <ul>
@@ -130,8 +138,6 @@
 <code>model</code>: design decisions and information for developers</li>
 <li>
 <code>calibration</code> (<strong>very out of date</strong>)</li>
-<li>
-<code>farr</code>: stuff on Farr’s law and phenomenological curve-fitting (<strong>very incomplete and likely to remain so for now</strong>)</li>
 <li>
 <code>testing_flow</code>: incorporating testing dynamics (<strong>ditto</strong>)</li>
 </ul>
@@ -145,11 +151,11 @@
 <li>issues list on github</li>
 </ul>
 <p>More bits and pieces: <code>notes/refactor.Rmd</code>, <code>testing.md</code>, <code>reimplementation.md</code>; <a href="https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/">Shiny app</a> (corresponding <a href="https://github.com/ZachLevine-11/McMasterPandemicShiny">GitHub repo</a>).</p>
-</div>
 <div id="disclaimer" class="section level3">
 <h3 class="hasAnchor">
 <a href="#disclaimer" class="anchor"></a>DISCLAIMER</h3>
 <p>All use of this package is at your own risk. Quantitative forecasts are only as good as their parameter estimates.</p>
+</div>
 </div>
 </div>
   </div>
