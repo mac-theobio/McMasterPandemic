@@ -16,6 +16,7 @@ See the accompanying [pkgdown site](https://bbolker.github.io/McMasterPandemic).
 
 - Functions are under the `Reference` tab.
 - Vignettes (under construction!) are under `Articles`
+- [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) written by Zach Levine
 
 ### For developers
 
@@ -45,7 +46,7 @@ which sets `testLevel` to a default value of 1 unless the environment variable i
 * `TODO.md`: active to-do list
 * issues list on github
 
-More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`; [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) (corresponding [GitHub repo](https://github.com/ZachLevine-11/McMasterPandemicShiny)).
+More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`;shiny app [GitHub repo](https://github.com/ZachLevine-11/McMasterPandemicShiny).
 
 
 
