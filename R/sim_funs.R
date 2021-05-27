@@ -549,6 +549,10 @@ do_step <- function(state, params, ratemat, dt=1,
                     testwt_scale="N") {
 
     x_states <- c("X","N","P")                  ## weird parallel accumulators
+    ## if vax accumulator is in the state vec, add it to the list of parallel accumulators
+    if("V" %in% attr(state, "epi_cat")){
+      x_states <- c(x_states, "V")
+    }
     p_states <- exclude_states(names(state), x_states)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
