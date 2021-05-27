@@ -101,10 +101,10 @@
       <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
     </li>
     <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
+      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
+      <a href="../articles/new_getting_started.html">Getting Started (markdown version)</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -254,20 +254,20 @@ states to sort themselves out)</p></td>
 <span class='va'>params</span> <span class='op'>&lt;-</span> <span class='fu'><a href='fix_pars.html'>fix_pars</a></span><span class='op'>(</span><span class='fu'><a href='read_params.html'>read_params</a></span><span class='op'>(</span><span class='st'>"ICU1.csv"</span><span class='op'>)</span><span class='op'>)</span>
 <span class='fu'>forecast_sim</span><span class='op'>(</span><span class='va'>p</span>, <span class='va'>op</span>, base_params<span class='op'>=</span><span class='va'>params</span>,<span class='va'>ff</span><span class='op'>$</span><span class='va'>start_date</span>, <span class='va'>ff</span><span class='op'>$</span><span class='va'>end_date</span>,
     time_args<span class='op'>=</span><span class='va'>ff</span><span class='op'>$</span><span class='va'>time_args</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span style='color: #949494;'># A tibble: 1,722 x 3</span><span>
+</div><div class='output co'>#&gt; <span style='color: #949494;'># A tibble: 1,722 x 3</span>
 #&gt;    date       var    value
-#&gt;    </span><span style='color: #949494;font-style: italic;'>&lt;date&gt;</span><span>     </span><span style='color: #949494;font-style: italic;'>&lt;chr&gt;</span><span>  </span><span style='color: #949494;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #BCBCBC;'> 1</span><span> 2020-01-30 S     </span><span style='text-decoration: underline;'>999</span><span>946
-#&gt; </span><span style='color: #BCBCBC;'> 2</span><span> 2020-01-30 E         23
-#&gt; </span><span style='color: #BCBCBC;'> 3</span><span> 2020-01-30 I         30
-#&gt; </span><span style='color: #BCBCBC;'> 4</span><span> 2020-01-30 H          1
-#&gt; </span><span style='color: #BCBCBC;'> 5</span><span> 2020-01-30 ICU        0
-#&gt; </span><span style='color: #BCBCBC;'> 6</span><span> 2020-01-30 R          0
-#&gt; </span><span style='color: #BCBCBC;'> 7</span><span> 2020-01-30 hosp      </span><span style='color: #BB0000;'>NA</span><span>
-#&gt; </span><span style='color: #BCBCBC;'> 8</span><span> 2020-01-30 X          0
-#&gt; </span><span style='color: #BCBCBC;'> 9</span><span> 2020-01-30 death     </span><span style='color: #BB0000;'>NA</span><span>
-#&gt; </span><span style='color: #BCBCBC;'>10</span><span> 2020-01-30 D          0
-#&gt; </span><span style='color: #949494;'># ... with 1,712 more rows</span><span></div></span></pre>
+#&gt;    <span style='color: #949494; font-style: italic;'>&lt;date&gt;</span>     <span style='color: #949494; font-style: italic;'>&lt;chr&gt;</span>  <span style='color: #949494; font-style: italic;'>&lt;dbl&gt;</span>
+#&gt; <span style='color: #BCBCBC;'> 1</span> 2020-01-30 S     <span style='text-decoration: underline;'>999</span>946
+#&gt; <span style='color: #BCBCBC;'> 2</span> 2020-01-30 E         23
+#&gt; <span style='color: #BCBCBC;'> 3</span> 2020-01-30 I         30
+#&gt; <span style='color: #BCBCBC;'> 4</span> 2020-01-30 H          1
+#&gt; <span style='color: #BCBCBC;'> 5</span> 2020-01-30 ICU        0
+#&gt; <span style='color: #BCBCBC;'> 6</span> 2020-01-30 R          0
+#&gt; <span style='color: #BCBCBC;'> 7</span> 2020-01-30 hosp      <span style='color: #BB0000;'>NA</span>
+#&gt; <span style='color: #BCBCBC;'> 8</span> 2020-01-30 X          0
+#&gt; <span style='color: #BCBCBC;'> 9</span> 2020-01-30 death     <span style='color: #BB0000;'>NA</span>
+#&gt; <span style='color: #BCBCBC;'>10</span> 2020-01-30 D          0
+#&gt; <span style='color: #949494;'># … with 1,712 more rows</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

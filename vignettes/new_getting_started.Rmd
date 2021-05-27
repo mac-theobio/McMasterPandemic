@@ -1,11 +1,11 @@
 ---
-title: "Getting Started (markdown version)"
+title: "Getting started (markdown version)"
 author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 ---
 
-%\VignetteIndexEntry{getting started (markdown version)}
+%\VignetteIndexEntry{Getting started (markdown version)}
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteEncoding{UTF-8}
 

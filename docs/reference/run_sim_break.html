@@ -101,10 +101,10 @@
       <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
     </li>
     <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
+      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
+      <a href="../articles/new_getting_started.html">Getting Started (markdown version)</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -145,8 +145,8 @@
   <span class='va'>params</span>,
   extra_pars <span class='op'>=</span> <span class='cn'>NULL</span>,
   time_args <span class='op'>=</span> <span class='cn'>NULL</span>,
-  return_timevar <span class='op'>=</span> <span class='cn'>FALSE</span>,
   sim_args <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
+  return_timevar <span class='op'>=</span> <span class='cn'>FALSE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
@@ -168,12 +168,12 @@ is relative to baseline *or* is absolute? (will require corresponding change in 
       <td><p>list containing <code>break_dates</code>, **FIXME and Symbol!</p></td>
     </tr>
     <tr>
-      <th>return_timevar</th>
-      <td><p>return data frame of params by time?</p></td>
-    </tr>
-    <tr>
       <th>sim_args</th>
       <td><p>parameters to pass to <code><a href='run_sim.html'>run_sim</a></code></p></td>
+    </tr>
+    <tr>
+      <th>return_timevar</th>
+      <td><p>return data frame of params by time?</p></td>
     </tr>
     <tr>
       <th>...</th>

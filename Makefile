@@ -148,6 +148,9 @@ pkgcheck:
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
+site-update:
+	echo "pkgdown::build_site()" | $(R) --slave
+
 CPP_SRC=
 
 ## FIXME: depend on ??

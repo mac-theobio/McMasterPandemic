@@ -60,10 +60,10 @@
       <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
     </li>
     <li>
-      <a href="../articles/getting_started.html">Getting Started</a>
+      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
+      <a href="../articles/new_getting_started.html">Getting Started (markdown version)</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -88,7 +88,7 @@
 
       
 
-      </header><script src="testing_flow_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><script src="testing_flow_files/header-attrs-2.8/header-attrs.js"></script><script src="testing_flow_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Incorporating testing dynamics in the MacPan model</h1>
@@ -104,7 +104,7 @@
     
     
 <p>We would like to be able to use the positive/negative tests information in a useful way. Here is one possibility:</p>
-<p><img src="../../../../AppData/Local/Temp/RtmpUZSMtq/temp_libpathd7842892de2/McMasterPandemic/pix/testing_flow.png" width="245"></p>
+<p><img src="../../../../../../tmp/Rtmpy1pvGi/temp_libpathd719d34170138/McMasterPandemic/pix/testing_flow.png" width="245"></p>
 <p>That is, each compartment (except ICU/hospital/dead) has a parallel ‘awaiting testing’ compartment. From there, individuals can move back into their original compartment (on the receipt of a negative test), or directly to the recovered compartment (if we assume that all individuals receiving a positive test will self-isolate), or into the next compartment in the epidemiological flow (e.g., if they progress from Exposed to Pre-symptomatic while awaiting test results). All individuals are testing on transition to H, if not before.</p>
 <p>This should take care of test lags in a sensible way, although there are a bunch of questions/issues to resolve:</p>
 <ul>
