@@ -2,7 +2,9 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/bbolker/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/bbolker/McMasterPandemic/actions)
+[![DOI](https://zenodo.org/badge/252492971.svg)](https://zenodo.org/badge/latestdoi/252492971)
 <!-- badges: end -->
+
 
 Compartmental epidemic models for forecasting and analysis of infectious disease pandemics. Feedback is welcome at the [issues list](https://github.com/bbolker/McMasterPandemic/issues).
 
