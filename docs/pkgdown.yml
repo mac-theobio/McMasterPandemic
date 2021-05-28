@@ -1,10 +1,10 @@
-pandoc: 2.9.2.1
+pandoc: 2.11.4
 pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   calibration: calibration.html
+  getting_started: getting_started.html
   model: model.html
-  new_getting_started: new_getting_started.html
   testing_flow: testing_flow.html
-last_built: 2021-05-27T18:07Z
+last_built: 2021-05-28T18:44Z
 

@@ -67,6 +67,7 @@ Other contributors:
 \itemize{
   \item Zach Levine [contributor]
   \item Matthew So [contributor]
+  \item Irena Papst [contributor]
 }
 
 }
