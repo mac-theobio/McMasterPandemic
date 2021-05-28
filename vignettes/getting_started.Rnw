@@ -38,7 +38,7 @@ options(warn=-1)
 \author{Ben Bolker and David Earn\\\texttt{earn@math.mcmaster.ca}}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+
 \linenumbers
 
 \maketitle
