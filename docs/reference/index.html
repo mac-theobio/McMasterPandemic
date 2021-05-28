@@ -97,10 +97,10 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
-      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
+      <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
-      <a href="../articles/new_getting_started.html">Getting started (markdown version)</a>
+      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -154,12 +154,6 @@
       <tr>
         
         <td>
-          <p><code><a href="McMasterPandemic-package.html">McMasterPandemic-package</a></code> </p>
-        </td>
-        <td><p><span class="pkg">McMasterPandemic</span></p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="aggregate.pansim.html">aggregate(<i>&lt;pansim&gt;</i>)</a></code> </p>
         </td>
         <td><p>Temporal aggregation of pansim objects</p></td>
@@ -191,15 +185,15 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
-          <p><code><a href="condense.html">condense()</a></code> </p>
-        </td>
-        <td><p>condense an object</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="condense.pansim.html">condense(<i>&lt;pansim&gt;</i>)</a></code> </p>
         </td>
         <td><p>Condense columns (infected, ICU, hospitalized) in a pansim output</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="condense.html">condense()</a></code> </p>
+        </td>
+        <td><p>condense an object</p></td>
       </tr><tr>
         
         <td>
@@ -263,9 +257,9 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
-          <p><code><a href="get_GI_moments.html">get_GI_moments()</a></code> </p>
+          <p><code><a href="get_evec.html">get_evec()</a></code> </p>
         </td>
-        <td><p>compute moments of generation interval (mean and CV^2)</p></td>
+        <td><p>get dominant eigenvector</p></td>
       </tr><tr>
         
         <td>
@@ -275,15 +269,9 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
-          <p><code><a href="get_R0.html">get_R0()</a></code> </p>
+          <p><code><a href="get_GI_moments.html">get_GI_moments()</a></code> </p>
         </td>
-        <td><p>calculate R0 for a given set of parameters</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="get_evec.html">get_evec()</a></code> </p>
-        </td>
-        <td><p>get dominant eigenvector</p></td>
+        <td><p>compute moments of generation interval (mean and CV^2)</p></td>
       </tr><tr>
         
         <td>
@@ -302,6 +290,12 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
           <p><code><a href="get_r.html">get_r()</a></code> </p>
         </td>
         <td><p>return growth rate (from Jacobian)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="get_R0.html">get_R0()</a></code> </p>
+        </td>
+        <td><p>calculate R0 for a given set of parameters</p></td>
       </tr><tr>
         
         <td>
@@ -351,6 +345,12 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
           <p><code><a href="make_test_wtsvec.html">make_test_wtsvec()</a></code> <code><a href="make_test_wtsvec.html">make_test_posvec()</a></code> </p>
         </td>
         <td><p>make weights vector for tests</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="McMasterPandemic-package.html">McMasterPandemic-package</a></code> </p>
+        </td>
+        <td><p><span class="pkg">McMasterPandemic</span></p></td>
       </tr><tr>
         
         <td>
@@ -420,15 +420,6 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
-          <p><code><a href="rExp.html">rExp()</a></code> </p>
-        </td>
-        <td><p>run a pure-exponential sim;
-uses run_sim_range with a population of 1 (proportions) and a very small starting value,
- run for 100 steps (by default)
-used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="read_params.html">read_params()</a></code> </p>
         </td>
         <td><p>read simulation parameters</p></td>
@@ -440,6 +431,15 @@ used to calculate either r (technically r0) or eigenvector (for distributing ini
         <td><p>convert a parameter vector back to a structured list
 Like <code><a href='https://rdrr.io/r/utils/relist.html'>relist</a></code>, but adds the capability to fill in
 parameters from a "fixed-parameter" vector</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="rExp.html">rExp()</a></code> </p>
+        </td>
+        <td><p>run a pure-exponential sim;
+uses run_sim_range with a population of 1 (proportions) and a very small starting value,
+ run for 100 steps (by default)
+used to calculate either r (technically r0) or eigenvector (for distributing initial exposed across states)</p></td>
       </tr><tr>
         
         <td>
@@ -553,7 +553,7 @@ maybe more efficient than modifying &amp; returning the whole matrix</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1 and <a href="https://github.com/HenrikBengtsson/pkgdown.extras/">pkgdown.extras</a> 0.0.0.9002.</p>
 </div>
 
       </footer>
