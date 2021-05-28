@@ -1,5 +1,6 @@
 library(styler)
 library(dplyr)
+library(stringr)
 
 replace_comment_with_dbl <- function(text) {
     ## this looks safe (only replace the first # in a comment?)
@@ -9,13 +10,6 @@ set_double_comments <- function(pd_flat) {
     op <- pd_flat$token %in% "COMMENT"
     pd_flat$text[op] <- sapply(pd_flat$text[op], replace_comment_with_dbl)
     return(pd_flat)
-}
-
-find_tokens_to_update <- function(flattened_pd, target_token) {
-    token_points_to_ref <-
-        flattened_pd$indention_ref_pos_id == flattened_pd$pos_id[target_token]
-    first_token_on_line <- flattened_pd$lag_newlines > 0L
-    which(token_points_to_ref & first_token_on_line)
 }
 
 new_pipes <- function(pd_flat) {

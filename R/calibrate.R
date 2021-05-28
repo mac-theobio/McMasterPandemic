@@ -133,12 +133,14 @@ run_sim_loglin <- function(params,
     time_params <- extra_pars$time_params
     extra_pars$time_params <- NULL
     timevar <- NULL
-    if (length(time_params) > 0) {  ## non-trivial model
+    if (length(time_params) > 0) { ## non-trivial model
         ## construct time-varying frame, parameters
-        timevar <- dfs(Date = as.Date(X_date),
-                       Symbol = "beta0",
-                       Relative_value = exp(X %*% time_params))
-                      ## log-linear model for beta
+        timevar <- dfs(
+            Date = as.Date(X_date),
+            Symbol = "beta0",
+            Relative_value = exp(X %*% time_params)
+        )
+        ## log-linear model for beta
     }
 
     if (!is.null(timevar) && length(sim_args) > 0) {
@@ -278,8 +280,8 @@ run_sim_break <- function(params,
                           return_timevar = FALSE,
                           ...) {
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
-    if (any(c("time_break_dates","Symbol") %in% names(time_args))) {
-      stop("probably using outdated time_args() specification")
+    if (any(c("time_break_dates", "Symbol") %in% names(time_args))) {
+        stop("probably using outdated time_args() specification")
     }
     sim_args <- c(
         sim_args,
@@ -294,18 +296,21 @@ run_sim_break <- function(params,
 
     params_timevar <- time_args$params_timevar
     if (!is.null(params_timevar)) {
-    params_timevar <- within(time_args$params_timevar,
-                             if (any(rvals <- is.na(Relative_value))) {
-                               Relative_value[rvals] <- extra_pars$time_params
-                             })
+        params_timevar <- within(
+            time_args$params_timevar,
+            if (any(rvals <- is.na(Relative_value))) {
+                Relative_value[rvals] <- extra_pars$time_params
+            }
+        )
     }
 
     if (return_timevar) {
-            return(params_timevar)
+        return(params_timevar)
     }
-    sim_args <- c(sim_args,
-            list(params_timevar = params_timevar)
-        )
+    sim_args <- c(
+        sim_args,
+        list(params_timevar = params_timevar)
+    )
     do.call("run_sim", sim_args)
 }
 
@@ -548,9 +553,8 @@ mle_fun <- function(p, data,
                     aggregate_args = NULL,
                     priors = NULL,
                     na_penalty = 1e6,
-                    ...  ## ... is to drop any extra crap that gets in there
-                   ) {
-
+                    ... ## ... is to drop any extra crap that gets in there
+) {
     if (debug) cat("mle_fun: ", p, "\n")
     var <- pred <- value <- NULL ## defeat global-variable checkers
 
@@ -616,7 +620,7 @@ mle_fun <- function(p, data,
     dvals[!is.finite(dvals)] <- max(dvals[is.finite(dvals)]) + na_penalty
     ret <- sum(dvals)
     if (!is.null(priors)) {
-      for (pr in priors) {
+        for (pr in priors) {
             pr <- pr[[2]] ## drop tilde
             pr <- add_d_log(pr)
             ret <- ret - eval(pr, list2env(pp))
@@ -1377,7 +1381,7 @@ calibrate_comb <- function(data,
     }
     if (is.null(opt_pars$time_params)) {
         ## matplot(X_dat$t_vec,X,type="l",lwd=2)
-        opt_pars$time_params <- rep(0, ncol(X))  ## mob-power is incorporated (param 1)
+        opt_pars$time_params <- rep(0, ncol(X)) ## mob-power is incorporated (param 1)
         names(opt_pars$time_params) <- colnames(X)
     }
     if (use_spline || use_mobility) {
@@ -1397,10 +1401,13 @@ calibrate_comb <- function(data,
         spline_pars <- grep("^[bn]s\\(", names(opt_pars$time_params))
         spline_beg <- spline_pars[1]
         spline_end <- spline_pars[length(spline_pars)]
-        priors <- c(priors,
-                    list(bquote(~ sum(dnorm(
-                      time_params[.(spline_beg):.(spline_end)],
-                      mean = 0, sd = .(1 / spline_pen))))))
+        priors <- c(
+            priors,
+            list(bquote(~ sum(dnorm(
+                time_params[.(spline_beg):.(spline_end)],
+                mean = 0, sd = .(1 / spline_pen)
+            ))))
+        )
     }
     ## do the calibration
     ## debug <- use_DEoptim
