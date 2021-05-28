@@ -149,10 +149,10 @@ clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
 site-update-lazy:
-	echo "pkgdown::build_site(lazy=TRUE)" | $(R) --slave
+	echo "pkgdown.extras::build_site(lazy=TRUE)" | $(R) --slave
 
 site-update:
-	echo "pkgdown::build_site()" | $(R) --slave
+	echo "pkgdown.extras::build_site()" | $(R) --slave
 
 CPP_SRC=
 
