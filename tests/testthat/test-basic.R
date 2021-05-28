@@ -190,14 +190,14 @@ test_that("var-specific obsdisp", {
     params <- update(params, obs_disp = 1, obs_disp_I = NA, obs_disp_E = 1000)
     set.seed(101)
     ## initial state *without* using eigvec, to match previous reference results
-    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec=FALSE)
-    s0 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), state=ss, step_args=list(do_hazard=FALSE))
-    plot(s0,keep_states=c("I","E","report"),log=TRUE)
-    expect_equal(tail(s0$I,1),16385.5)
-    expect_equal(tail(s0$E,1),31791)
-    s1 <- run_sim(params, stoch=c(obs=TRUE,proc=FALSE), step_args=list(do_hazard=FALSE))
-    expect_equal(tail(s1$I,1),23251.568)
-    expect_equal(tail(s1$E,1),44563)
+    ss <- make_state(params[["N"]], params[["E0"]], use_eigvec = FALSE)
+    s0 <- run_sim(params, stoch = c(obs = TRUE, proc = FALSE), state = ss, step_args = list(do_hazard = FALSE))
+    plot(s0, keep_states = c("I", "E", "report"), log = TRUE)
+    expect_equal(tail(s0$I, 1), 16385.5)
+    expect_equal(tail(s0$E, 1), 31791)
+    s1 <- run_sim(params, stoch = c(obs = TRUE, proc = FALSE), step_args = list(do_hazard = FALSE))
+    expect_equal(tail(s1$I, 1), 23251.568)
+    expect_equal(tail(s1$E, 1), 44563)
 })
 
 ## Need to update the .rda file to remove anytime dependencies

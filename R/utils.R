@@ -622,7 +622,7 @@ smart_round <- function(x) {
 ##' ## silly but shows we can do multiple block types in different colours
 ##' show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 ##' @export
-show_ratemat <- function(M, 
+show_ratemat <- function(M,
                          method = c("Matrix", "diagram", "igraph"),
                          aspect = "iso",
                          block_size = NULL,
@@ -640,59 +640,66 @@ show_ratemat <- function(M,
         M[M > 0] <- 1
     }
 
-    if (const_width && !do_symbols) { M[M>0] <- 1 }
-    if (method=="Matrix") {
-      add_blocks <- !is.null(block_size)
-      if (axlabs) {
-        rlabs <- rownames(M)
-        clabs <- colnames(M)
-      } else {
-        rlabs <- clabs <- rep("",nrow(M))
-      }
-      p <- Matrix::image(Matrix(M),
-                         scales=list(x=list(at=seq(nrow(M)),labels=rlabs,
-                                            rot=90),
-                                     y=list(at=seq(ncol(M)),labels=clabs)),
-                         xlab="to",
-                         ylab="from",
-                         sub="",
-                         colorkey = !const_width,
-                         aspect=aspect, ...)
-      if (add_blocks) {
-        if (all(is.na(block_size))) {
-          ## FIXME: test more. Works suboptimally for a *single* block, but ???
-            epi_vars <- unique(gsub("_.*$","",colnames(M)))
-            epi_vars <- setdiff(epi_vars, c(test_accumulators, non_expanded_states))
-            block_size <- length(epi_vars)
-          }
-          if (!requireNamespace("latticeExtra")) {
-            stop("can't add block lines: please install latticeExtra package")
-          }
-          block_col <- rep(block_col, length.out=length(block_size))
-          for (i in seq_along(block_size)) {
-            ## offset by 0.5 so we are illustrating state values
-            block_pos <- seq(nrow(M)+0.5,0,by=-block_size[i])
-            dd <- list(col=block_col[i],pos=block_pos)
-            p <- (p
-              + latticeExtra::layer(lattice::panel.abline(h=pos,col=col), data=dd)
-              + latticeExtra::layer(lattice::panel.abline(v=pos,col=col), data=dd)
-            )
-          } ## loop over block_size
-      } ## add_blocks
-    } else if (method=="igraph") {
-       if (!requireNamespace("igraph")) {
-           stop("igraph not available")
-       } else {
-           g <- igraph::graph_from_adjacency_matrix(M)
-           plot(g, layout=igraph::layout_as_tree, ...)
-       }
-    } else if (method=="diagram") {
-        xpos <- c(S=1,E=2,Ia=3,Ip=3,Im=4,Is=4,H=5,ICUs=5,ICUd=5,H2=6,D=7,R=7,X=7)
-        ypos <- c(S=1,E=1,Ia=1,Ip=2,Im=2,Is=3,H=3,ICUs=4,ICUd=5,H2=4,D=5,R=1,X=4)
-        pos <- cbind(xpos,ypos)/8
-        M3 <- M[names(xpos),names(xpos)] ## reorder ... does that matter?
+    if (const_width && !do_symbols) {
+        M[M > 0] <- 1
+    }
+    if (method == "Matrix") {
+        add_blocks <- !is.null(block_size)
+        if (axlabs) {
+            rlabs <- rownames(M)
+            clabs <- colnames(M)
+        } else {
+            rlabs <- clabs <- rep("", nrow(M))
+        }
+        p <- Matrix::image(Matrix(M),
+            scales = list(
+                x = list(
+                    at = seq(nrow(M)), labels = rlabs,
+                    rot = 90
+                ),
+                y = list(at = seq(ncol(M)), labels = clabs)
+            ),
+            xlab = "to",
+            ylab = "from",
+            sub = "",
+            colorkey = !const_width,
+            aspect = aspect, ...
+        )
+        if (add_blocks) {
+            if (all(is.na(block_size))) {
+                ## FIXME: test more. Works suboptimally for a *single* block, but ???
+                epi_vars <- unique(gsub("_.*$", "", colnames(M)))
+                epi_vars <- setdiff(epi_vars, c(test_accumulators, non_expanded_states))
+                block_size <- length(epi_vars)
+            }
+            if (!requireNamespace("latticeExtra")) {
+                stop("can't add block lines: please install latticeExtra package")
+            }
+            block_col <- rep(block_col, length.out = length(block_size))
+            for (i in seq_along(block_size)) {
+                ## offset by 0.5 so we are illustrating state values
+                block_pos <- seq(nrow(M) + 0.5, 0, by = -block_size[i])
+                dd <- list(col = block_col[i], pos = block_pos)
+                p <- (p
+                + latticeExtra::layer(lattice::panel.abline(h = pos, col = col), data = dd)
+                    + latticeExtra::layer(lattice::panel.abline(v = pos, col = col), data = dd)
+                )
+            } ## loop over block_size
+        } ## add_blocks
+    } else if (method == "igraph") {
+        if (!requireNamespace("igraph")) {
+            stop("igraph not available")
+        } else {
+            g <- igraph::graph_from_adjacency_matrix(M)
+            plot(g, layout = igraph::layout_as_tree, ...)
+        }
+    } else if (method == "diagram") {
+        xpos <- c(S = 1, E = 2, Ia = 3, Ip = 3, Im = 4, Is = 4, H = 5, ICUs = 5, ICUd = 5, H2 = 6, D = 7, R = 7, X = 7)
+        ypos <- c(S = 1, E = 1, Ia = 1, Ip = 2, Im = 2, Is = 3, H = 3, ICUs = 4, ICUd = 5, H2 = 4, D = 5, R = 1, X = 4)
+        pos <- cbind(xpos, ypos) / 8
+        M3 <- M[names(xpos), names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
-          M3 <- adjust_symbols(M3)
+            M3 <- adjust_symbols(M3)
         } else {
             M3[M3 != "0"] <- "" ## blank out all labels
         }
@@ -780,12 +787,12 @@ exclude_states <- function(nm, exclude_states) {
 
 
 ## inspired by purrr, infix pkgs
-`%||%` <- function (a, b) {
+`%||%` <- function(a, b) {
     if (is.null(a)) b else a
 }
 
 ## logical vector indicating whether first letters of strings are capitalized
 first_letter_cap <- function(x) {
-  f <- substr(x,1,1)
-  return(toupper(f) == f)
+    f <- substr(x, 1, 1)
+    return(toupper(f) == f)
 }

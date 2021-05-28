@@ -94,7 +94,7 @@ rExp <- function(params, steps = 100, ndt = 1,
     params[["N"]] <- 1 ## ? redundant ?
     ## potential recursion here: have to make sure
     state <- make_state(
-        N = 1, E0 = 1e-5, 
+        N = 1, E0 = 1e-5,
         type = type,
         use_eigvec = FALSE,
         params = params,
@@ -136,5 +136,4 @@ rExp <- function(params, steps = 100, ndt = 1,
         eigenvector = unlist(r_last / sum(r_last))
     )
     return(ret)
-
 }

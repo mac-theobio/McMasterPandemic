@@ -179,8 +179,8 @@ make_betavec <- function(state, params, full = TRUE) {
 ##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
 
-make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
-                         symbols=FALSE, indices=FALSE) {
+make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
+                         symbols = FALSE, indices = FALSE) {
     ## circumvent test code analyzers ... problematic ...
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
@@ -375,7 +375,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale = "N") {
     ##     ## modify *_v1 -> *_v2 transitions
     ##     afun("*_v1","*_v2") <- doses_per_day/popsize
     ## }
-    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+    ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_betavec(state, params))
     ## ugh, restore attributes if necessary
     if (inherits(ratemat, "Matrix")) {
         for (a in aa) {
@@ -780,10 +780,10 @@ run_sim <- function(params,
 
     ## FIXME: why do we need to restrict to res[state_names] ?
 
-    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
-      state_vars <- (res %>% select(state_names))
-      below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
-      warning(
+    if (any(res[state_names] < -sqrt(.Machine$double.eps))) {
+        state_vars <- (res %>% select(state_names))
+        below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
+        warning(
             "End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ",
             paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
         )
@@ -913,9 +913,11 @@ make_state <- function(N = params[["N"]],
 
     ## Give a warning if not all state variables are capital letters
     if (!all(first_letter_cap(names(state)))) {
-      warning('Not all state variables are capital letters; ',
-              'this can result in failure to correctly check ',
-              'if a state variable is negative.')
+        warning(
+            "Not all state variables are capital letters; ",
+            "this can result in failure to correctly check ",
+            "if a state variable is negative."
+        )
     }
 
     return(state)
@@ -1027,19 +1029,23 @@ run_sim_range <- function(params,
 
     if (any(!is.finite(state))) {
         warning("non-finite values in state, in run_sim_range")
-  } else {
+    } else {
         bad_states <- state[state < -sqrt(.Machine$double.eps)]
         if (length(bad_states) > 0) {
-            warning('negative state variables (below tolerance) in run_sim_range:',
-              paste(sprintf("%s=%1.3g",names(bad_states), bad_states), collapse="; "))
-        } else if(any(state < 0)) {
-             warning('End of run_sim_range check: One or more state variables is negative, ',
-                     'between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
-              paste(utils::capture.output(print(state)), collapse = "\n"))
+            warning(
+                "negative state variables (below tolerance) in run_sim_range:",
+                paste(sprintf("%s=%1.3g", names(bad_states), bad_states), collapse = "; ")
+            )
+        } else if (any(state < 0)) {
+            warning(
+                "End of run_sim_range check: One or more state variables is negative, ",
+                "between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ",
+                paste(utils::capture.output(print(state)), collapse = "\n")
+            )
         }
-  }
+    }
 
-  return(res)
+    return(res)
 }
 
 ##' construct a Gamma-distributed delay kernel
