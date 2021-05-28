@@ -24,7 +24,7 @@ See the accompanying [pkgdown site](https://bbolker.github.io/McMasterPandemic).
 
 * to re-install the package, including re-building and incorporating vignettes, use `make build`
 * re-build the `pkgdown` site with `make site-update-lazy` (to rebuild just changed files) or `make site-update` (to be thorough) (or `pkgdown::build_site()`)
-* Automatically style the package with `make style` or run `misc/macpan_style.R`. Additionally, `make style` creates a new file, `misc/lints.csv`, which contains stylistic and other lints that styler cannot automatically fix.
+* Automatically style the package with `make style` or run `misc/macpan_style.R`. Additionally, `make style` (or running `misc/macpan_lint.R` creates a new file, `misc/lints.csv`, which contains stylistic and other lints that styler cannot automatically fix.
 * it's OK to push *small* changes to the master branch; use your own branch + pull request for anything non-trivial
 * If you modify function arguments, please update the roxygen documentation and use `make doc-update` (or `devtools::document`) to update the `.Rd` files.
 * **Check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/bbolker/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Don't push without checking.
