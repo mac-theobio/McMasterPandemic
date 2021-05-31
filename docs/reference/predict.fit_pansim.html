@@ -98,19 +98,10 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
-      <a href="../articles/calibration.html">Model calibration</a>
-    </li>
-    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
       <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
-    </li>
-    <li>
-      <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
-    </li>
-    <li>
-      <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
@@ -286,7 +277,16 @@
 <span class='co'>## estimated in this fit</span>
 <span class='va'>ont_cal3</span><span class='op'>$</span><span class='va'>mle2</span><span class='op'>@</span><span class='va'>fullcoef</span><span class='op'>[</span><span class='st'>"params.log_beta0"</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fl'>0</span>
 <span class='va'>pp3</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>ont_cal3</span>, keep_vars<span class='op'>=</span><span class='st'>"Rt"</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='warning'>Warning: negative state variables (below tolerance) in run_sim_range:Im=-4.28e+03; Is=-222</span></div><div class='input'><span class='va'>pp</span> <span class='op'>&lt;-</span> <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/bind.html'>bind_rows</a></span><span class='op'>(</span>base<span class='op'>=</span><span class='va'>pp1</span>,zeta<span class='op'>=</span><span class='va'>pp2</span>,beta0<span class='op'>=</span><span class='va'>pp3</span>, .id<span class='op'>=</span><span class='st'>"fit"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) </span>
+#&gt; <span class='warning'> Check following message for details </span>
+#&gt; <span class='warning'>            S            E           Ia           Ip           Im           Is </span>
+#&gt; <span class='warning'>4747849.2694    8304.6486    5205.9332   14175.0959   -4279.4955    -221.6197 </span>
+#&gt; <span class='warning'>           H           H2         ICUs         ICUd            D            R </span>
+#&gt; <span class='warning'>   1664.5004    1411.1557    4454.1854     531.9617   48239.9705 9742664.3944 </span>
+#&gt; <span class='warning'>           X </span>
+#&gt; <span class='warning'>  91027.6440 </span>
+#&gt; <span class='warning'>attr(,"class")</span>
+#&gt; <span class='warning'>[1] "state_pansim"</span></div><div class='input'><span class='va'>pp</span> <span class='op'>&lt;-</span> <span class='fu'>dplyr</span><span class='fu'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/bind.html'>bind_rows</a></span><span class='op'>(</span>base<span class='op'>=</span><span class='va'>pp1</span>,zeta<span class='op'>=</span><span class='va'>pp2</span>,beta0<span class='op'>=</span><span class='va'>pp3</span>, .id<span class='op'>=</span><span class='st'>"fit"</span><span class='op'>)</span>
 <span class='kw'>if</span> <span class='op'>(</span><span class='kw'><a href='https://rdrr.io/r/base/library.html'>require</a></span><span class='op'>(</span><span class='st'><a href='https://ggplot2.tidyverse.org'>"ggplot2"</a></span><span class='op'>)</span><span class='op'>)</span> <span class='op'>{</span>
    <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span><span class='va'>pp</span>,<span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span><span class='va'>date</span>,<span class='va'>value</span>,colour<span class='op'>=</span><span class='va'>fit</span><span class='op'>)</span><span class='op'>)</span><span class='op'>+</span><span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_path.html'>geom_line</a></span><span class='op'>(</span><span class='op'>)</span>
 <span class='op'>}</span>
