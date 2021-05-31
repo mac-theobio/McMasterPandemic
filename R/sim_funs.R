@@ -718,6 +718,8 @@ run_sim <- function(params
         state <- expand_stateval_testing(state, params=params)
     }
 
+    if(has_vax(params) && ndt != 1) stop("the model with vaccination only works with ndt = 1")
+
     ## thin wrapper: we may have to recompute this later and don't want to
     ##  repeat both make_ratemat() and all of the testify stuff ...
     ## (1) is all of this idempotent, i.e. will re-running expand_stateval_testing break anything if unnecessary?
