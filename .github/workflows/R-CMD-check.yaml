@@ -8,6 +8,7 @@ on:
       - main
       - master
       - ip_devel
+      - documentation-action
   pull_request:
     branches:
       - main
@@ -17,9 +18,9 @@ name: R-CMD-check
 
 jobs:
   R-CMD-check:
-    if: "! contains(github.event.head_commit.message, '[skip ci]')"
+    if: "(! contains(github.event.head_commit.message, '[skip ci]')) || (contains(github.event.head_commit.message, '[rebuild site]'))"
 
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -50,5 +51,19 @@ jobs:
           tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
         shell: Rscript {0}
       - name: Check
+        if: "! contains(github.event.head_commit.message, '[skip ci]')"
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
+      - name: Rebuild site
+        if: "contains(github.event.head_commit.message, '[rebuild site]')"
+        run: |
+          remotes::install_github("HenrikBengtsson/pkgdown.extras")
+          pkgdown.extras::build_site(preview=FALSE)
+        shell: Rscript{0}
+      - name: Commit site
+        if: "contains(github.event.head_commit.message, '[rebuild site]')"
+        run: |
+          git config --global user.name 'pkgdown-bot'
+          git config --global user.email 'pkgdown-bot@users.noreply.github.com'
+          git commit -am "Site rebuild [skip ci]"
+          git push
