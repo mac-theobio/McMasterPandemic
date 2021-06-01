@@ -872,7 +872,6 @@ calibrate <- function(start_date=min(data$date)-start_date_offset,
 ##' @param .progress progress bar?
 ##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
 ##' @param scale_Sigma multiplier for covariance matrix
-##' @import foreach
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 forecast_ensemble <- function(fit,
@@ -949,11 +948,7 @@ forecast_ensemble <- function(fit,
     t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars)
                                          , .margins=1
                                          , .fun=ff
-                                         , .progress=.progress
-                                         ,.parallel = TRUE
-                                         , .paropts = list(.export=c("ff","calcRt"),
-                                                           .packages="McMasterPandemic"))
-    )
+                                         , .progress=.progress  ))
 
     if (is.null(qvec)) {
         ## return as array
