@@ -56,6 +56,9 @@ jobs:
           tinytex::tlmgr_install("pgf") # tikz
           tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
         shell: Rscript {0}
+      - name: Install McMasterPandemic
+        run: 'devtools::install()'
+        shell: Rscript {0}
       - name: Rebuild site 
         run: |
           pkgdown.extras::build_site(preview=FALSE)
