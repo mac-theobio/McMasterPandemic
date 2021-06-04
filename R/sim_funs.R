@@ -958,6 +958,7 @@ run_sim <- function(params
 ##' @param state_names vector of state names, must include S and E
 ##' @param params parameter vector (looked in for N and E0)
 ##' @param x proposed (named) state vector; missing values will be set
+##' @param normalize (logical) should the state vector be normalized to sum to 1?
 ##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
 ##' to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL
 ##' @param testify expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?
@@ -976,6 +977,7 @@ make_state <- function(N=params[["N"]],
                        use_eigvec=NULL,
                        params=NULL,
                        x=NULL,
+                       normalize = FALSE,
                        ageify=NULL,
                        vaxify=NULL,
                        testify=NULL) {
@@ -1109,6 +1111,9 @@ make_state <- function(N=params[["N"]],
         }
         state[names(x)] <- x
     }
+
+    if(normalize) state <- state/sum(state)
+
     untestify_state <- state ## FIXME: what is this for??
     attr(state, "epi_cat") <- state_names
     class(state) <- "state_pansim"
