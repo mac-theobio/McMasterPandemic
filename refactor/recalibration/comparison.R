@@ -98,3 +98,6 @@ ggplot(ggplot_df) +
   labs(x = "date", y = "incidence", title = "do_hazard prediction discrepancies", col = "")
 ggsave("discrepancies.png", width = 16, height = 10)
 
+
+save("do_hazard", 'no_hazard', file="ONcalib_properbreak.rda")
+
