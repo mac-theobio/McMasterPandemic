@@ -2,71 +2,12 @@
 # https://community.rstudio.com/new-topic?category=Package%20development&tags=github-actions
 # using https://github.com/r-lib/actions/tree/master/setup-pandoc
 # https://github.com/marketplace/actions/ci-skip-action
-on:
-  push:
-    branches:
-      - main
-      - master
-      - ip_devel
-  pull_request:
-    branches:
-      - main
-      - master
+on: workflow_dispatch
 
-name: On-push
+name: pkgdown
 
 jobs:
-  R-CMD-check:
-    if: "! contains(github.event.head_commit.message, '[skip ci]')"
-
-    runs-on: macOS-latest
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '0'
-      - uses: actions/checkout@master
-      - uses: r-lib/actions/setup-pandoc@v1
-        with:
-          pandoc-version: '2.7.3' # The pandoc version to download (if necessary) and use
-      - name: Install pandoc
-        run: echo "# Test" | pandoc -t html
-      - uses: r-lib/actions/setup-r@v1
-      - name: Query dependencies 
-        run: | 
-          install.packages('remotes') 
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2) 
-          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version") 
-        shell: Rscript {0} 
-      - name: Cache core R package dependencies
-        if: runner.os != 'Windows' 
-        uses: actions/cache@v1.0.1 # Caches not supported for dispatch event
-        with: 
-          path: ${{ env.R_LIBS_USER }} 
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }} 
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1- 
-      - name: Install dependencies
-        run: |
-          install.packages(c("remotes", "rcmdcheck"))
-          remotes::install_deps(dependencies = TRUE)
-          remotes::install_github("bbolker/bbmle")
-          install.packages('tinytex')
-          tinytex::install_tinytex()
-          tinytex::tlmgr_install("koma-script") # for scrtime.sty
-          tinytex::tlmgr_install("amscls")      # for amsthm.sty
-          tinytex::tlmgr_install(c("multirow","colortbl","siunitx","setspace"))
-          tinytex::tlmgr_install(c("lineno","fancyhdr","ulem","caption"))
-          tinytex::tlmgr_install("babel-english")
-          tinytex::tlmgr_install("pgf") # tikz
-          tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
-        shell: Rscript {0}
-      - name: Check
-        run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
-        shell: Rscript {0}
   pkgdown:
-    if: "contains(github.event.head_commit.message, '[rebuild site]')"
     runs-on: macOS-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
