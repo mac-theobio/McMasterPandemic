@@ -116,7 +116,7 @@
 <ul>
 <li>to re-install the package, including re-building and incorporating vignettes, use <code>make build</code>
 </li>
-<li>re-build the <code>pkgdown.extras</code> site with <code>make site-update-lazy</code> (to rebuild just changed files) or <code>make site-update</code> (to be thorough) (or <code><a href="https://rdrr.io/pkg/pkgdown.extras/man/build_site.html">pkgdown.extras::build_site()</a></code>). Install <code>pkgdown.extras</code> with <code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("HenrikBengtsson/pkgdown.extras")</a></code>. (Warning: The makerule has not been tested after migration to pkgdown.extras.)</li>
+<li>re-build the <code>pkgdown.extras</code> site by using Actions –&gt; pkgdown –&gt; (This workflow has a workflow_dispatch event trigger.) Run workflow. Will try to fix this to run on push in the near future.</li>
 <li>Automatically style the package with <code>make style</code> or run <code>misc/macpan_style.R</code>. Additionally, <code>make style</code> (or running <code>misc/macpan_lint.R</code> creates a new file, <code>misc/lints.csv</code>, which contains stylistic and other lints that styler cannot automatically fix.</li>
 <li>it’s OK to push <em>small</em> changes to the master branch; use your own branch + pull request for anything non-trivial</li>
 <li>If you modify function arguments, please update the roxygen documentation and use <code>make doc-update</code> (or <code><a href="https://devtools.r-lib.org//reference/document.html">devtools::document</a></code>) to update the <code>.Rd</code> files.</li>
