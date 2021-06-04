@@ -176,11 +176,15 @@ condense_vax <- function(x) {
     x <- as.data.frame(t(unclass(x)))
   }
 
+  ## check if there are columns for time
+  time_vars <- length(intersect(c("t", "date"), names(x))) > 0
+
   ## pivot longer to make state aggregation easier
-  ## take care to preserve date column, if it exists
-  if ("pansim" %in% input_class){
+  ## take care to preserve t and/or date columns, if they exist
+  if (time_vars){
+    time_names <- intersect(c("t", "date"), names(x))
     (x
-     %>% pivot_longer(-date,
+     %>% pivot_longer(-all_of(time_names),
                       names_to = "var")
     ) -> x
   } else {
@@ -205,27 +209,13 @@ condense_vax <- function(x) {
   ## currently, this is hacky
 
   ## aggregate value by state (and timestep, if it exists)
-  if("pansim" %in% input_class){
-    if(age){
-      (x
-       %>% group_by(date, state, subcat1)
-      ) -> x
-    } else {
-      (x
-       %>% group_by(date, state)
-      ) -> x
-    }
-  } else {
-    if(age){
-      (x
-       %>% group_by(state, subcat1)
-      ) -> x
-    } else {
-      (x
-       %>% group_by(state)
-      ) -> x
-    }
-  }
+  group_names <- intersect(c("t", "date", "state"),
+                           names(x))
+  if(age) group_names <- c(group_names, "subcat1")
+
+  (x
+    %>% group_by(across(group_names))
+  ) -> x
 
   (x
     %>% summarise(value = sum(value), .groups = "drop")
