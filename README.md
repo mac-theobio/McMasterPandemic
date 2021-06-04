@@ -23,7 +23,7 @@ See the accompanying [pkgdown site](https://bbolker.github.io/McMasterPandemic).
 ### For developers
 
 * to re-install the package, including re-building and incorporating vignettes, use `make build`
-* re-build the `pkgdown.extras` site with `make site-update-lazy` (to rebuild just changed files) or `make site-update` (to be thorough) (or `pkgdown.extras::build_site()`). Install `pkgdown.extras` with `remotes::install_github("HenrikBengtsson/pkgdown.extras")`. (Warning: The makerule has not been tested after migration to pkgdown.extras.)
+* re-build the `pkgdown.extras` site by tagging a commit pushed to master with `[rebuild site]`.
 * Automatically style the package with `make style` or run `misc/macpan_style.R`. Additionally, `make style` (or running `misc/macpan_lint.R` creates a new file, `misc/lints.csv`, which contains stylistic and other lints that styler cannot automatically fix.
 * it's OK to push *small* changes to the master branch; use your own branch + pull request for anything non-trivial
 * If you modify function arguments, please update the roxygen documentation and use `make doc-update` (or `devtools::document`) to update the `.Rd` files.
