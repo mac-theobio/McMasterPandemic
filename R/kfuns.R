@@ -80,6 +80,7 @@ rmult <- function(k, r){
 ##' @export
 rExp <- function(params, steps=100, ndt=1,
                  do_hazard=FALSE,
+                 state = NULL,
                  testify=has_testing(params=params),
                  return_val=c("r0","eigenvector","sim"),
                  type="ICU1")
@@ -87,8 +88,12 @@ rExp <- function(params, steps=100, ndt=1,
         return_val <- match.arg(return_val)
         if (ndt>1) warning("ndt not fully implemented")
 
+        if(has_vax(params) && return_val == "r0"){
+          if(is.null(state)) stop("must provide current state for accurate estimate of r0 with vaxified model")
+          if(!isTRUE(all.equal(sum(state), 1))) stop("state vector must sum to 1")
+        }
+
         ## need to set total population size to 1
-        N_orig <- params[["N"]]
         if(has_age(params)){
           ## with age, use a population distribution
           params[["N"]] <- mk_Nvec(attr(params, "age_cat"), Ntot = 1)
@@ -97,31 +102,37 @@ rExp <- function(params, steps=100, ndt=1,
           params[["N"]] <- 1
         }
 
-        ## if vaxify, have to update total number of doses per day to doses per day per capita (so the rate is a reasonable order of magnitude)
+        ## if vaxify, turn off flows between strata to keep everything constant in time
         if(has_vax(params)){
-          params[["vax_doses_per_day"]] <- params[["vax_doses_per_day"]]/sum(N_orig)
+          ## turn off flows between strata
+          params[["vax_doses_per_day"]] <- 0
+          params[["vax_response_rate"]] <- 0
+
+          # do_hazard <- TRUE
         }
 
         ## set up base state
 
         ## potential recursion here: have to make sure
-      	state <- make_state(N=1, E0=1e-5, type="ICU1",
-                                  use_eigvec=FALSE,
-                                  params=params,
-      	                          ageify=FALSE,
-      	                          vaxify=FALSE,
-                                  testify=FALSE)  ## FIXME: don't assume ICU1?
+        if(is.null(state)){
+          state <- make_state(N=1, E0=1e-5, type="ICU1",
+                              use_eigvec=FALSE,
+                              params=params,
+                              ageify=FALSE,
+                              vaxify=FALSE,
+                              testify=FALSE)  ## FIXME: don't assume ICU1?
+          ## ageify and then vaxify state, as indicated by params
+          if(has_age(params)){
+            state <- expand_state_age(state,
+                                      age_cat = attr(params, "age_cat"),
+                                      Nvec = params[["N"]])
+          }
 
-      	## ageify and then vaxify state, as indicated by params
-        if(has_age(params)){
-          state <- expand_state_age(state,
-                                    age_cat = attr(params, "age_cat"),
-                                    Nvec = params[["N"]])
+          if(has_vax(params)){
+            state <- expand_state_vax(state,
+                                      vax_cat = attr(params, "vax_cat"))
+          }
         }
-      	if(has_vax(params)){
-      	  state <- expand_state_vax(state,
-      	                            vax_cat = attr(params, "vax_cat"))
-      	}
 
       	## make initial ratemat
       	M <- make_ratemat(state=state, params=params)
@@ -143,6 +154,9 @@ rExp <- function(params, steps=100, ndt=1,
 
       	## return whatever is being requested
         if (return_val=="sim") return(r)
+
+      	if (return_val=="r0" && has_vax(params)) r <- condense_vax(r)
+
         nn <- ndt*steps
         ## DRY: get_evec()
         drop_vars <- c("date","t","D","foi","R","X","N","P","V")
@@ -152,11 +166,18 @@ rExp <- function(params, steps=100, ndt=1,
         ##   keep_vars_regexp <- "^[EIHh]"
         ##   unlist(x[pos, grepl(keep_vars_regexp, names(r))])
         uf <- function(x,pos) unlist(x[pos,!grepl(drop_re,names(r))])
+
         r_last <- uf(r,nn)
         r_nextlast <- uf(r,nn-1)
+        r0_values <- log(r_last/r_nextlast)
+        # print(r0_values)
+        # print(var(r0_values))
+        ## check if we've converged numerically
+        ## (the discrepancy between r0_values for each compartment should be negligible, just due to numerical error)
+        if(return_val =="r0" && var(r0_values)>1e-8) warning("the exponential simulation has not converged: please iterate for more steps.")
         ret <- switch(return_val,
                       ## log mean(x(t+1)/x(t))
-                      r0=mean(log(r_last/r_nextlast)),
+                      r0=mean(r0_values),
                       ## normalized state vector at last time step
                       eigenvector=unlist(r_last/sum(r_last)))
         return(ret)

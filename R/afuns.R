@@ -2,11 +2,18 @@
 
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
+##' @param state state (needed for vaxified model)
 ##' @param method computation method
 ##' @export
-get_r <- function(p, method=c("expsim","kernel","analytical")) {
+get_r <- function(p, state = NULL,
+                  method=c("expsim","kernel","analytical")) {
     ## expsim and kernel match well, analytical is ???
     method <- match.arg(method)
+
+    if(has_vax(p) && is.null(state)) stop("must provide current state for accurate estimate of r0 with vaxified model")
+    # if(method == "expsim"){
+    #   steps <- ifelse(has_vax(p), 200, 100)
+    # }
     res <- switch(method,
                   analytical = {
                       warning("Jacobian-based r may be unreliable!")
@@ -16,7 +23,7 @@ get_r <- function(p, method=c("expsim","kernel","analytical")) {
                       get_kernel_moments(p)[["r0"]]
                   },
                   expsim = {
-                      rExp(p)
+                      rExp(p, state = state)
                   })
     return(res)
 }
