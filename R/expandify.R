@@ -99,13 +99,15 @@ mk_vaxcats <- function() {
 #'
 #' @param x state vector
 #' @param vax_cat vaccine status categories
+#' @param unif should individuals in each epidemic category be distributed evenly among vaccination strata? (if FALSE, put everyone in the first vaccination category)
 #' @examples
 #' params <- read_params("PHAC_testify.csv")
 #' ss <- make_state(params=params)
 #' ss2 <- expand_state_vax(ss)
 #' @export
 ## FIXME: make it so that we can start a simulation part-way, with some vaccination
-expand_state_vax <- function(x, vax_cat = mk_vaxcats()) {
+expand_state_vax <- function(x, vax_cat = mk_vaxcats(),
+                             unif = FALSE) {
 
   ## save attributes
   original_attributes <- attributes(x)
@@ -117,8 +119,25 @@ expand_state_vax <- function(x, vax_cat = mk_vaxcats()) {
   out <- rep(0, length(new_names))
   names(out) <- new_names
 
-  ## put everyone in the unvaccinated class by default (first category)
-  out[grepl(vax_cat[1], names(out))] <- x
+  ## check if original state vector has been normalized to sum to 1
+  normalized <- sum(x) == 1
+
+  if(unif){
+    ## distribute people within each epidemic category uniformly across vax strata
+    for(state in attr(x, "epi_cat")){
+      state_regex <- paste0("^", state)
+      if(normalized){
+        out[grepl(paste0(state_regex, "_"), names(out))] <- rep(x[grepl(paste0(state_regex, "$"), names(x))],
+                                                                length(vax_cat))/length(vax_cat)
+      } else {
+        out[grepl(paste0(state_regex, "_"), names(out))] <- distribute_counts(total = x[grepl(paste0(state_regex, "$"), names(x))],
+                                                                              dist = rep(1, length(vax_cat))/length(vax_cat))
+      }
+    }
+  } else {
+    ## put everyone in the unvaccinated class by default (first category)
+    out[grepl(vax_cat[1], names(out))] <- x
+  }
 
   ## update names in original attributes to new names
   original_attributes$names <- new_names
