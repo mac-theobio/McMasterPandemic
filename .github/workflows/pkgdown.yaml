@@ -29,7 +29,7 @@ jobs:
           remotes::install_github("HenrikBengtsson/pkgdown.extras")
         shell: Rscript {0}
       - name: Query dependencies 
-        run: | 
+        run: |  # I know remotes is duplicated, but takes little time and better if we want to copy-paste workflows..
           install.packages('remotes') 
           saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2) 
           writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version") 
@@ -42,8 +42,8 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }} 
           restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1- 
       - name: Install dependencies
-        run: |
-          install.packages(c("remotes", "rcmdcheck"))
+        run: |  # I know remotes is duplicated, but takes little time and better if we want to copy-paste workflows..
+          install.packages(c("remotes", "devtools"))
           remotes::install_deps(dependencies = TRUE)
           remotes::install_github("bbolker/bbmle")
           install.packages('tinytex')
@@ -57,7 +57,7 @@ jobs:
           tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
         shell: Rscript {0}
       - name: Install McMasterPandemic
-        run: 'devtools::install()'
+        run: devtools::install()
         shell: Rscript {0}
       - name: Rebuild site 
         run: |
