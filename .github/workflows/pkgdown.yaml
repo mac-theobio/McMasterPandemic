@@ -39,7 +39,7 @@ jobs:
         shell: Rscript {0} 
       - name: Cache core R package dependencies
         if: runner.os != 'Windows' 
-        uses: actions/cache@v1 
+        uses: actions/cache@v1.0.1 # Caches not supported for dispatch event
         with: 
           path: ${{ env.R_LIBS_USER }} 
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }} 
@@ -62,7 +62,7 @@ jobs:
       - name: Rebuild site 
         run: |
           pkgdown.extras::build_site(preview=FALSE)
-        shell: Rscript{0}
+        shell: Rscript {0}
       - name: Commit site
         run: |
           git config --global user.name 'pkgdown-bot'
