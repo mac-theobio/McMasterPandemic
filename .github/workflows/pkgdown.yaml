@@ -55,7 +55,7 @@ jobs:
         run: |
           remotes::install_github("HenrikBengtsson/pkgdown.extras")
           pkgdown.extras::build_site(preview=FALSE)
-        shell: Rscript{0}
+        shell: Rscript {0}
       - name: Commit site
         run: |
           git config --global user.name 'pkgdown-bot'
