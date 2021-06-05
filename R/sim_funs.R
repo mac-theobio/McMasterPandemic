@@ -981,8 +981,8 @@ make_state <- function(N=params[["N"]],
                        ageify=NULL,
                        vaxify=NULL,
                        testify=NULL) {
-    if(is.null(ageify)) ageify <- !is.null(params) && has_age(params)
-    if(is.null(vaxify)) vaxify <- !is.null(params) && has_vax(params)
+    if(is.null(ageify)) ageify <- (!is.null(params) && has_age(params)) || (!is.null(x) && any(grepl("\\+$", names(x))))
+    if(is.null(vaxify)) vaxify <- (!is.null(params) && has_vax(params)) || (!is.null(x) && any(grepl("vax", names(test))))
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
     ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
     if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
@@ -999,12 +999,28 @@ make_state <- function(N=params[["N"]],
                           test_warning_throw = c("s","e","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "d","R","X"),
                           stop("unknown type")
                           )
+    epi_cat <- state_names
 
     ## set up output state vector, depending on what strata are requested
     state <- setNames(numeric(length(state_names)),state_names)
-    if (ageify) state <- expand_state_age(state, attr(params, "age_cat"))
-    if (vaxify) state <- expand_state_vax(state, attr(params, "vax_cat"))
+    if (ageify){
+      if(!is.null(params)) state <- expand_state_age(state, attr(params, "age_cat"))
+      if(!is.null(x)){
+        state_names <- names(x) ## update state names based on those provided in x
+        ## FIXME: THIS ASSUMES X CONTAINS ALL STATES (don't have age cats otherwise)
+        state <- setNames(numeric(length(state_names)), state_names)
+      }
+    }
+    if (vaxify){
+      if(!is.null(params)) state <- expand_state_vax(state, attr(params, "vax_cat"))
+      if(!is.null(x)){
+        state_names <- names(x) ## update state names based on those provided in x
+        ## FIXME: THIS ASSUMES X CONTAINS ALL STATES (don't have vax cats otherwise)
+        state <- setNames(numeric(length(state_names)), state_names)
+      }
+    }
     if (testify) state <- expand_stateval_testing(state,method="untested")
+
 
     ## if state vector, x, is not provided, either use given N & E0, or
     ## use eigenvector approach
@@ -1115,7 +1131,7 @@ make_state <- function(N=params[["N"]],
     if(normalize) state <- state/sum(state)
 
     untestify_state <- state ## FIXME: what is this for??
-    attr(state, "epi_cat") <- state_names
+    attr(state, "epi_cat") <- epi_cat
     class(state) <- "state_pansim"
 
     ## Give a warning if not all state variables are capital letters
