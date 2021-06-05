@@ -107,8 +107,6 @@ rExp <- function(params, steps=100, ndt=1,
           ## turn off flows between strata
           params[["vax_doses_per_day"]] <- 0
           params[["vax_response_rate"]] <- 0
-
-          # do_hazard <- TRUE
         }
 
         ## set up base state
