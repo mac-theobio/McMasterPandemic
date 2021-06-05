@@ -887,8 +887,15 @@ forecast_ensemble <- function(fit,
                               calc_Rt=FALSE,
                               fix_pars_re="nb_disp",
                               raw_ensembles = FALSE,
+                              parallel = FALSE,
+                              n_cores = 4,
                               .progress=if (interactive()) "text" else "none"
                               ) {
+
+  if(parallel){
+    ## register parallelization
+    doParallel::registerDoParallel(cores = n_cores)
+  }
 
     var <- NULL
     ## FIXME: include baseline forecast as well?
@@ -950,7 +957,7 @@ forecast_ensemble <- function(fit,
                                          , .margins=1
                                          , .fun=ff
                                          , .progress=.progress
-                                         ,.parallel = TRUE
+                                         ,.parallel = parallel
                                          , .paropts = list(.export=c("ff","calcRt"),
                                                            .packages="McMasterPandemic"))
     )
