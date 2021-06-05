@@ -982,7 +982,7 @@ make_state <- function(N=params[["N"]],
                        vaxify=NULL,
                        testify=NULL) {
     if(is.null(ageify)) ageify <- (!is.null(params) && has_age(params)) || (!is.null(x) && any(grepl("\\+$", names(x))))
-    if(is.null(vaxify)) vaxify <- (!is.null(params) && has_vax(params)) || (!is.null(x) && any(grepl("vax", names(test))))
+    if(is.null(vaxify)) vaxify <- (!is.null(params) && has_vax(params)) || (!is.null(x) && any(grepl("vax", names(x))))
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
     ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
     if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
