@@ -563,6 +563,11 @@ has_vax <- function(x) {
     ## for pansim objects, check if its params attribute has age cats
     return("vax_cat" %in% names(attributes(attr(x, "params"))))
   }
+
+  if("state_pansim" %in% class(x)){
+    return(any(grepl("vax", names(x))))
+  }
+
   ## otherwise, check the object directly for an age cat attribute
   return("vax_cat" %in% names(attributes(x)))
 }
