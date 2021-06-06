@@ -153,7 +153,8 @@ make_beta <- function(state, params, full=TRUE) {
     if(has_vax(params)){
       if(!has_vax(state)) stop("if params are vaxified, state also needs to be vaxified")
       ## get vax categories
-      vax_cat <- attr(params, "vax_cat")
+      vax_cat <- get_vax(params)
+      model_type <- attr(vax_cat, "model_type")
 
       ## save original beta_0 names
       ## of beta_0 is just a vector (base case), just get colnames
@@ -166,15 +167,24 @@ make_beta <- function(state, params, full=TRUE) {
         original_col_names <- colnames(beta_0)
       }
 
-      ## initialize vaccine trasmission reduction matrix
+      ## initialize vaccine transmission reduction matrix
       ## for unvax and vaxdose categories, assume no changes to transmission
-      ## for vaxprotect categories, assume reduction to transmission equivalent to vaccine efficacy
+      ## for vaxprotect categories, assume reduction to transmission equivalent
+      ## to vaccine efficacy (for the specified dose)
       vax_trans_red <- matrix(1,
                               nrow = length(vax_cat),
                               ncol = length(vax_cat))
       rownames(vax_trans_red) <- vax_cat
 
-      vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy"]], length(vax_cat))
+      vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
+
+      if(model_type == "twodose"){
+        ## carry over efficacy from one dose to vaxdose2 (received second dose, but not yet protected)
+        vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
+
+        ## add in efficacy for second dose
+        vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose2"]], length(vax_cat))
+      }
 
       ## apply vaccine transmission reduction over beta_0 (as computed above,
       ## either with or without age) using the kronecker product trick
@@ -380,30 +390,78 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     if(has_vax(params)){
       ## get vax categories
       vax_cat <- get_vax(params)
+      model_type <- attr(vax_cat, "model_type")
 
       ## add vaccine allocation rates (from unvax to vaxdose)
       M <- add_updated_vaxrate(state, params, M)
 
       ## add acc
 
-      ## add vaccine immune response rate
+      ## add vaccine immune response rate for not active infections
+      ## dose1 -> protect1
       afun(paste0("S_.*", vax_cat[2]),
            paste0("S_.*", vax_cat[3]),
            vax_response_rate)
 
-      ## modify epidemiological parameters for vaccinated individuals who have
-      ## had their immune response
+      afun(paste0("R_.*", vax_cat[2]),
+           paste0("R_.*", vax_cat[3]),
+           vax_response_rate_R)
+
+      ## dose2 -> protect2
+      if(model_type == "twodose"){
+        afun(paste0("S_.*", vax_cat[4]),
+             paste0("S_.*", vax_cat[5]),
+             vax_response_rate)
+
+        afun(paste0("R_.*", vax_cat[4]),
+             paste0("R_.*", vax_cat[5]),
+             vax_response_rate_R)
+      }
+
+      ## modify epidemiological parameters for vaxprotect1
+      ## individuals
       afun(paste0("E_.*", vax_cat[3]),
-           paste0("Ia_.*", vax_cat[3]), vax_alpha*sigma)
+           paste0("Ia_.*", vax_cat[3]), vax_alpha_dose1*sigma)
       afun(paste0("E_.*", vax_cat[3]),
            paste0("Ip_.*", vax_cat[3]),
-           (1-vax_alpha)*sigma)
+           (1-vax_alpha_dose1)*sigma)
       afun(paste0("Ip_.*", vax_cat[3]),
            paste0("Im_.*", vax_cat[3]),
-           vax_mu*gamma_p)
+           vax_mu_dose1*gamma_p)
       afun(paste0("Ip_.*", vax_cat[3]),
            paste0("Is_.*", vax_cat[3]),
-           (1-vax_mu)*gamma_p)
+           (1-vax_mu_dose1)*gamma_p)
+
+      if(model_type == "twodose"){
+        ## carry over epi param adjustments from vaxprotect1
+        ## to vaxdose2 layer
+        afun(paste0("E_.*", vax_cat[4]),
+             paste0("Ia_.*", vax_cat[4]), vax_alpha_dose1*sigma)
+        afun(paste0("E_.*", vax_cat[4]),
+             paste0("Ip_.*", vax_cat[4]),
+             (1-vax_alpha_dose1)*sigma)
+        afun(paste0("Ip_.*", vax_cat[4]),
+             paste0("Im_.*", vax_cat[4]),
+             vax_mu_dose1*gamma_p)
+        afun(paste0("Ip_.*", vax_cat[4]),
+             paste0("Is_.*", vax_cat[4]),
+             (1-vax_mu_dose1)*gamma_p)
+
+        ## adjust epi parameters for fully-vaccinated people
+        afun(paste0("E_.*", vax_cat[5]),
+             paste0("Ia_.*", vax_cat[5]), vax_alpha_dose2*sigma)
+        afun(paste0("E_.*", vax_cat[5]),
+             paste0("Ip_.*", vax_cat[5]),
+             (1-vax_alpha_dose2)*sigma)
+        afun(paste0("Ip_.*", vax_cat[5]),
+             paste0("Im_.*", vax_cat[5]),
+             vax_mu_dose2*gamma_p)
+        afun(paste0("Ip_.*", vax_cat[5]),
+             paste0("Is_.*", vax_cat[5]),
+             (1-vax_mu_dose2)*gamma_p)
+      }
+
+
     }
 
     if (sparse) {

@@ -4,7 +4,7 @@
 \alias{get_doses_per_day}
 \title{Compute total number of vaccine doses actually administered per day in a simulation}
 \usage{
-get_doses_per_day(res)
+get_doses_per_day(res, dose = c(1, 2))
 }
 \arguments{
 \item{res}{simulation result from model with vaccination (generated using `run_sim`)}

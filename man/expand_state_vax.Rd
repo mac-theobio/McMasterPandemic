@@ -4,18 +4,20 @@
 \alias{expand_state_vax}
 \title{expand state vector by vaccination status}
 \usage{
-expand_state_vax(x, vax_cat = mk_vaxcats())
+expand_state_vax(x, model_type = c("onedose", "twodose"), unif = FALSE)
 }
 \arguments{
 \item{x}{state vector}
 
-\item{vax_cat}{vaccine status categories}
+\item{model_type}{choose either the one-dose or the two-dose model}
+
+\item{unif}{should individuals in each epidemic category be distributed evenly among vaccination strata? (if FALSE, put everyone in the first vaccination category, i.e., the unvaccinated category)}
 }
 \description{
 by default, everyone starts with an unvaccinated status
 }
 \examples{
-params <- read_params("PHAC_testify.csv")
+params <- read_params("PHAC.csv")
 ss <- make_state(params=params)
 ss2 <- expand_state_vax(ss)
 }

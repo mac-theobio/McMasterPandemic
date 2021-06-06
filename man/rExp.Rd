@@ -12,6 +12,7 @@ rExp(
   steps = 100,
   ndt = 1,
   do_hazard = FALSE,
+  state = NULL,
   testify = has_testing(params = params),
   return_val = c("r0", "eigenvector", "sim"),
   type = "ICU1"

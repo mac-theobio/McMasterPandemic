@@ -5,10 +5,12 @@
 \title{Edit parameter description attribute to include vax-specific definitions
 (helper function for `expand_params_vax()`)}
 \usage{
-expand_params_desc_vax(params_desc)
+expand_params_desc_vax(params_desc, model_type = c("onedose", "twodose"))
 }
 \arguments{
 \item{params_desc}{parameter descriptions, as initialized in `read_params()`}
+
+\item{model_type}{choose either the one-dose or the two-dose model}
 }
 \value{
 

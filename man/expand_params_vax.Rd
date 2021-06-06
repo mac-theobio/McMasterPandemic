@@ -6,31 +6,48 @@
 \usage{
 expand_params_vax(
   params,
-  vax_cat = mk_vaxcats(),
+  model_type = c("onedose", "twodose"),
   vax_doses_per_day = 1e+05,
-  vax_efficacy = 0.7,
+  vax_prop_first_dose = 1,
+  vax_efficacy_dose1 = 0.6,
+  vax_efficacy_dose2 = 0.9,
   vax_avg_response_time = 14,
-  vax_alpha = 0.5,
-  vax_mu = 1
+  vax_avg_response_time_R = 7,
+  vax_alpha_dose1 = 0.5,
+  vax_alpha_dose2 = 0.5,
+  vax_mu_dose1 = 1,
+  vax_mu_dose2 = 1
 )
 }
 \arguments{
 \item{params}{parameter list (e.g. read in with `read_params()`)}
 
-\item{vax_cat}{vector of vaccination categories}
+\item{model_type}{choose either the one-dose or the two-dose model}
 
-\item{vax_efficacy}{efficacy of first (only) dose (currently)}
+\item{vax_doses_per_day}{total number of vaccine doses administered per day}
 
-\item{vax_alpha}{alpha (proportion of infections that are asymptomatic) for individuals who are vaccinated and have had their immune response}
+\item{vax_prop_first_dose}{the proportion of vaccine doses administered per day that are first doses}
 
-\item{vax_mu}{mu (proportion of symptomatic infections that are mild) for individuals who are vaccinated and have had their immune response}
+\item{vax_efficacy_dose1}{infection-blocking vaccine efficacy for dose 1}
 
-\item{doses_per_date}{total number of doses administered per day}
+\item{vax_efficacy_dose2}{infection-blocking vaccine efficacy for dose 2}
+
+\item{vax_avg_response_time}{average number of days it takes for a vaccine dose to confer protection for an individual that has never been infected}
+
+\item{vax_avg_response_time_R}{average number of days it takes for a vaccine dose to confer protection for an individual that has previously been infected (e.g. between being dosed and eliciting the protective immune response)}
+
+\item{vax_alpha_dose1}{proportion of infections that are asymptomatic in individuals that have received one dose of the vaccine}
+
+\item{vax_alpha_dose2}{proportion of infections that are asymptomatic in individuals that have received two doses of the vaccine}
+
+\item{vax_mu_dose1}{proportion of infections that are mild (vs. severe) in individuals that have received one dose of the vaccine}
+
+\item{vax_mu_dose2}{proportion of infections that are mild (vs. severe) in individuals that have received two doses of the vaccine}
 }
 \description{
 Expand parameter list to include vaccination
 }
 \examples{
-params <- read_params("PHAC_testify.csv")
+params <- read_params("PHAC.csv")
 params_age <- expand_params_age(params)
 }
