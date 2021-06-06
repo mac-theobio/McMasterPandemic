@@ -1070,7 +1070,8 @@ make_state <- function(N=params[["N"]],
       }
     }
     if (vaxify){
-      if(!is.null(params)) state <- expand_state_vax(state, attr(params, "vax_cat"))
+      if(!is.null(params)) state <- expand_state_vax(state,
+                                                     attr(get_vax(params), "model_type"))
       if(!is.null(x)){
         state_names <- names(x) ## update state names based on those provided in x
         ## FIXME: THIS ASSUMES X CONTAINS ALL STATES (don't have vax cats otherwise)

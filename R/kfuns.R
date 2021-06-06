@@ -128,7 +128,7 @@ rExp <- function(params, steps=100, ndt=1,
 
           if(has_vax(params)){
             state <- expand_state_vax(state,
-                                      vax_cat = attr(params, "vax_cat"))
+                                      model_type = attr(get_vax(params), "model_type"))
           }
         }
 
