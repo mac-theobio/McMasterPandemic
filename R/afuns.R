@@ -10,7 +10,9 @@ get_r <- function(p, state = NULL,
     ## expsim and kernel match well, analytical is ???
     method <- match.arg(method)
 
-    if(has_vax(p) && is.null(state)) stop("must provide current state for accurate estimate of r0 with vaxified model")
+    if(has_vax(p) && is.null(state)){
+      p <- condense_params_vax(p)
+    }
     # if(method == "expsim"){
     #   steps <- ifelse(has_vax(p), 200, 100)
     # }
