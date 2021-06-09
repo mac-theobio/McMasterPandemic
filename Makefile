@@ -172,6 +172,16 @@ style: misc/macpan_style.R misc/macpan_lint.R
 
 ######################################################################
 
+## refactor/recalibration// from Matthew
+
+rr_%.Rout: refactor/recalibration/%.R
+	$(pipeR)
+
+## Not currently working
+## Rscript refactor/recalibration/comparison.R
+
+######################################################################
+
 ## Looks cool; clashes with current Bolker rules.
 Ignore += maker
 maker:
