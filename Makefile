@@ -170,7 +170,6 @@ style: misc/macpan_style.R misc/macpan_lint.R
 	Rscript misc/macpan_style.R
 	Rscript misc/macpan_lint.R
 
-
 ######################################################################
 
 ## Looks cool; clashes with current Bolker rules.
