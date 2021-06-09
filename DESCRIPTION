@@ -29,7 +29,8 @@ Imports:
 	zoo,
 	deSolve,
 	splines,
-	diagram
+	diagram,
+	doParallel
 Suggests:
 	knitr,
 	testthat,
