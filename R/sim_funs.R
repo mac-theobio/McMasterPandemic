@@ -4,7 +4,7 @@
 ##' @param v vector
 ##' @export
 col_multiply <- function(M, v) {
-    new <- t(t(M) * rep(v, rep.int(nrow(M), length(v))))
+    new <- M*v #t(t(M) * rep(v, rep.int(nrow(M), length(v))))
     ##    old <- sweep(M, v, MARGIN=1, FUN="*")
     ##    print(all(new==old))
     return(new)
