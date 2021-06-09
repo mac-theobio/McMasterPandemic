@@ -420,7 +420,7 @@ condense_vax <- function(x) {
 #' @param state state vector (an object of class `state_pansim`)
 #' @param params model parameters (an object of class `params_pansim`)
 #' @export
-make_vaxrate <- function(state, params){
+make_vaxrate <- function(state, params, debug = FALSE){
 
   ## initialize output vec
   vax_rate <- c()
@@ -442,11 +442,29 @@ make_vaxrate <- function(state, params){
   ## FIXME: get this working for age-specific vax_doses_per_day
   ## don't sum over all ages, keep pop-size separate for each age
   ## using rowSums in prep for age-structure
+  if(debug){
+  print("condense_state(
+    state[grepl(asymp_unvax_regex, names(state))]")
+  print(class(condense_state(
+    state[grepl(asymp_unvax_regex, names(state))]
+  )))
+  print("---")
+  }
+
   asymp_unvax_N <- rowSums(condense_state(
     state[grepl(asymp_unvax_regex, names(state))]
   ))
   ## same as above but for pop that is protected by first dose
   if(model_type == "twodose"){
+    if(debug){
+      print("condense_state(
+        state[grepl(asymp_vaxprotect1_regex, names(state))]
+      )")
+      print(class(condense_state(
+        state[grepl(asymp_vaxprotect1_regex, names(state))]
+      )))
+      print("---")
+    }
     asymp_vaxprotect1_N <- rowSums(condense_state(
       state[grepl(asymp_vaxprotect1_regex, names(state))]
     ))

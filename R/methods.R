@@ -12,7 +12,7 @@ print.pansim <- function(x,all=FALSE,...) {
 ##' @param i an incidence time series
 ##' @param params a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}
 ##' @export
-calc_conv <- function(i,params) {
+calc_conv <- function(i,params,debug = FALSE) {
     c_prop <- c_delay_mean <- c_delay_cv <- NULL
     kern <- with(as.list(params),
                  make_delay_kernel(c_prop,
@@ -26,6 +26,11 @@ calc_conv <- function(i,params) {
                               grep("^incidence_", names(i), value = TRUE))
         names(ret) <- paste0("report", state_suffixes)
         ## add total reports
+        if(debug){
+          print("ret")
+          print(class(ret))
+          print("---")
+        }
         ret$report <- rowSums(ret)
     } else{
         names(ret) <- c("report")
@@ -34,7 +39,7 @@ calc_conv <- function(i,params) {
 }
 
 ## compute incidence and reports (as convolution of incidence)
-calc_reports <- function(x, params, add_cumrep=FALSE) {
+calc_reports <- function(x, params, add_cumrep=FALSE, debug = FALSE) {
     ## FIXME: dt==1 !
     ## calculate incidence (for each age group, if it exists)
     if(length(grep("^S_", names(x), value = TRUE)) > 0){
@@ -50,6 +55,11 @@ calc_reports <- function(x, params, add_cumrep=FALSE) {
     }
 
     ## add total incidence to output
+    if(debug){
+      print("incidence")
+      print(class(incidence))
+      print("---")
+    }
     incidence$incidence <- rowSums(incidence)
 
     ## FIXME: only calculates total reports right now, not age-stratified see
@@ -304,6 +314,7 @@ condense.pansim <-  function(object, add_reports=TRUE,
                              cum_reports=FALSE,
                              het_S=FALSE,
                              keep_all=FALSE,
+                             debug = FALSE,
                              params = attr(object,"params"),
                              ...)
 {
@@ -321,6 +332,11 @@ condense.pansim <-  function(object, add_reports=TRUE,
         vars <- grep(regex, names(object), value=TRUE)
         if (length(vars)>0) {
             if (collapse){
+              if(debug){
+                print("object[vars]")
+                print(class(object[vars]))
+                print("---")
+              }
                 dd[[name]] <- rowSums(object[vars])
             } else {
                 dd <- dfs(dd, object[vars])
@@ -369,6 +385,11 @@ condense.pansim <-  function(object, add_reports=TRUE,
                 nm <- names(diff_vars)[i]
                 re <- paste0("^",nm)
                 if (any(grepl(re,names(object)))) {
+                  if(debug){
+                    print("object[grepl(re,names(object))]")
+                    print(class(object[grepl(re,names(object))]))
+                    print("---")
+                  }
                     tot <- rowSums(object[grepl(re,names(object))])
                     dd[[diff_vars[i]]] <- c(NA,diff(tot))
                     dd <- add_col(dd,nm,re)
