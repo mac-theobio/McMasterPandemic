@@ -85,7 +85,7 @@ make_jac <- function(params, state=NULL) {
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
-make_beta <- function(state, params, full=TRUE, debug = FALSE) {
+make_beta <- function(state, params, full=TRUE) {
     Icats <- c("Ia","Ip","Im","Is")
     testcats <- c("_u","_p","_n","_t")
     ## NB meaning of iso_* has switched from Stanford model
@@ -114,11 +114,6 @@ make_beta <- function(state, params, full=TRUE, debug = FALSE) {
         ## pmat checks
         if (is.null(params$pmat)) stop("must specify params$pmat component")
         ## check that pmat rows sum to 1
-        if(debug){
-          print("params$pmat")
-          print(class(params$pmat))
-          print("---")
-        }
         if (!isTRUE(all.equal(unname(rowSums(params$pmat)), rep(1, nrow(params$pmat))))) stop("each pmat row must sum to 1 (it should be a probability distribution)")
 
         ## Nvec check
@@ -609,8 +604,7 @@ do_step <- function(state, params, ratemat, dt=1,
                     do_hazard=TRUE,
                     stoch_proc=FALSE,
                     do_exponential=FALSE,
-                    testwt_scale="N",
-                    debug = FALSE) {
+                    testwt_scale="N") {
 
     x_states <- c("X","N","P")                  ## weird parallel accumulators
     ## if vax accumulator is in the state vec, add it to the list of parallel accumulators
@@ -635,11 +629,6 @@ do_step <- function(state, params, ratemat, dt=1,
             ##    S = sum(r_i)   ## total rate
             ##    p_{ij}=(1-exp(-S*dt))*r_j/S
             ##    p_{ii}= exp(-S*dt)
-            if(debug){
-              print("ratemat")
-              print(class(ratemat))
-              print("---")
-            }
             S <- rowSums(ratemat)
             E <- exp(-S*dt)
             ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
@@ -666,11 +655,6 @@ do_step <- function(state, params, ratemat, dt=1,
     }
 
     if (!do_exponential) {
-      if(debug){
-        print("flows[,p_states]")
-        print(class(flows[,p_states]))
-        print("---")
-      }
         outflow <- rowSums(flows[,p_states])
     } else {
         ## want to zero out outflows from S to non-S compartments
@@ -681,18 +665,8 @@ do_step <- function(state, params, ratemat, dt=1,
         notS_pos <- setdiff(notS_pos, x_states)
         outflow <- setNames(numeric(ncol(flows)),colnames(flows))
         ## only count outflows from S_pos to other S_pos (e.g. testing flows)
-        if(debug){
-          print("flows[S_pos,S_pos,drop=FALSE]")
-          print(class(flows[S_pos,S_pos,drop=FALSE]))
-          print("---")
-        }
         outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
         ## count flows from infected etc. to p_states (i.e. states that are *not* parallel accumulators)
-        if(debug){
-          print("flows[notS_pos,p_states]")
-          print(class(flows[notS_pos,p_states]))
-          print('---')
-        }
         outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
     }
     inflow <-  colSums(flows)
@@ -779,7 +753,6 @@ run_sim <- function(params
         , condense = TRUE
         , condense_args=NULL
         , verbose = FALSE
-        , debug = FALSE
 ) {
     call <- match.call()
 
@@ -1001,11 +974,6 @@ run_sim <- function(params
     if(isTRUE(any(res[state_names] < -sqrt(.Machine$double.eps)))){
 
       state_vars <- (res %>% select(state_names))
-      if(debug){
-        print("state_vars < -sqrt(.Machine$double.eps)")
-        print(class(state_vars < -sqrt(.Machine$double.eps)))
-        print("---")
-      }
       below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
 
       warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ',
@@ -1014,11 +982,6 @@ run_sim <- function(params
     }
     else if(isTRUE(any(res[state_names] < 0))){
       state_vars <- (res %>% select(state_names))
-      if(debug){
-        print("state_vars < 0")
-        print(class(state_vars < 0))
-        print("---")
-      }
       below_zero_lines <- (rowSums(state_vars < 0) > 0)
 
       warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ',
@@ -1075,8 +1038,7 @@ make_state <- function(N=params[["N"]],
                        normalize = FALSE,
                        ageify=NULL,
                        vaxify=NULL,
-                       testify=NULL,
-                       debug = FALSE) {
+                       testify=NULL) {
     if(is.null(ageify)) ageify <- (!is.null(params) && has_age(params)) || (!is.null(x) && any(grepl("\\+$", names(x))))
     if(is.null(vaxify)) vaxify <- (!is.null(params) && has_vax(params)) || (!is.null(x) && any(grepl("vax", names(x))))
     if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
@@ -1202,11 +1164,6 @@ make_state <- function(N=params[["N"]],
             istart <- condense_vax(istart)
             } else
             {
-              if(debug){
-                print("istart")
-                print(class(istart))
-                print("---")
-              }
               istart <- rowSums(istart)
             }
           }
@@ -1251,15 +1208,11 @@ make_state <- function(N=params[["N"]],
 ##' @param y state vector
 ##' @param parms parameter vector
 ##' @param M rate matrix
-gradfun <- function(t, y, parms, M, debug = FALSE) {
+gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
     foi <- update_foi(y, parms, make_betavec(state=y, parms))
     flows <- col_multiply(M, y) # faster than sweep(M, y, MARGIN=1, FUN="*")
-    if(debug){
-      print("flows")
-      print(class(flows))
-      print("---")
-    }
+
     g <- colSums(flows)-rowSums(flows)
     return(list(g,foi=foi))
 }
