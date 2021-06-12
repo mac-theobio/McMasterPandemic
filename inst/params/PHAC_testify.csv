@@ -21,7 +21,7 @@ E0,5,Initial number exposed,NA?,,
 nonhosp_mort,0,probability of mortality without hospitalization,NA?,,
 iso_m,0,Relative self-isolation/distancing of mild cases,NA?,,
 iso_s,0,Relative self-isolation/distancing of severe cases,NA?,,
-phi1,0.76,Fraction of hospital cases to acute care,NA?,,
+phi1,0.76,Fraction of hospital cases to ICU,NA?,,
 phi2,0.26,Fraction of ICU cases dying,we don't know the % acute care going to ICU ,old=1/2
 psi1,1/20,Rate of ICU back to acute care,NA?,,
 psi2,1/8 ,Rate of ICU to death,NA?,,
