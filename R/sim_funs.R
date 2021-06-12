@@ -3,11 +3,11 @@
 ##' @param M matrix
 ##' @param v vector
 ##' @export
-col_multiply <- function(M, v){
-    new <- t(t(M) * rep(v, rep.int(nrow(M), length(v))))
-#    old <- sweep(M, v, MARGIN=1, FUN="*")
-#    print(all(new==old))
-    return (new)
+col_multiply <- function(M, v) {
+    new <- M*v #t(t(M) * rep(v, rep.int(nrow(M), length(v))))
+    ##    old <- sweep(M, v, MARGIN=1, FUN="*")
+    ##    print(all(new==old))
+    return(new)
 }
 
 ##' construct Jacobian matrix for ICU model
@@ -27,55 +27,58 @@ col_multiply <- function(M, v){
 ##' round(Jr,3)
 ##' eigen(Jr)$values
 ##' make_jac(params)
-make_jac <- function(params, state=NULL) {
+make_jac <- function(params, state = NULL) {
     ## circumvent test code analyzers ... problematic ...
     S <- E <- Ia <- Ip <- Im <- Is <- H <- NULL
-    H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp  <- NULL
-    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
-    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
-    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
-    ####
+    H2 <- ICUs <- ICUd <- D <- R <- beta0 <- Ca <- Cp <- NULL
+    Cm <- Cs <- alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
+    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
+    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV <- NULL
+    ##
     if (is.null(state)) {
-        state <- make_state(N=params[["N"]],E0=1e-3,
-                            use_eigvec=FALSE)
+        state <- make_state(
+            N = params[["N"]], E0 = 1e-3,
+            use_eigvec = FALSE
+        )
     }
     np <- length(params)
     ns <- length(state)
     ## make state and param names locally available (similar to with())
-    P <- c(as.list(state),as.list(params))
+    P <- c(as.list(state), as.list(params))
     unpack(P) ## extract variables
     ## blank matrix
     M <- matrix(0,
-                nrow=ns, ncol=ns,
-                dimnames=list(from=names(state),to=names(state)))
-    Ivec <- c(Ia, Ip, Im,Is)
-    Iwt <- beta0/N*c(Ia=Ca,Ip=Cp,Im=(1-iso_m)*Cm,Is=(1-iso_s)*Cs)
-    Ivars <- c("Ia","Ip","Im","Is")
-    M["S","S"] <- -sum(Ivec*Iwt)
-    M["S",Ivars] <- -S*Iwt[Ivars]
-    M["E",c("S",Ivars)] <- -M["S",c("S",Ivars)]
-    M["E","E"] <- -sigma
-    M["Ia","E"] <- alpha*sigma
-    M["Ia","Ia"] <- -gamma_a
-    M["Ip","E"] <- (1-alpha)*sigma
-    M["Ip","Ip"] <- -gamma_p
-    M["Im","Ip"] <- mu*gamma_p
-    M["Im","Im"] <- -gamma_m
-    M["Is","Ip"] <- (1-mu)*gamma_p
-    M["Is","Is"] <- -gamma_s
-    M["H","Is"]  <- phi1*gamma_s
-    M["H","H"]   <- -rho
-    M["ICUs","Is"] <- (1-phi1)*(1-phi2)*gamma_s
-    M["ICUs","ICUs"] <- -psi1
-    M["H2","ICUs"] <- psi1
-    M["H2","H2"] <- -psi3
-    M["ICUd","Is"] <- (1-phi1)*phi2*gamma_s
-    M["ICUd","ICUd"] <- -psi2
-    M["D","ICUd"] <- psi2
-    M["R","Ia"] <- gamma_a
-    M["R","Im"] <- gamma_m
-    M["R","H"] <- rho
-    M["R","H2"] <- psi3
+        nrow = ns, ncol = ns,
+        dimnames = list(from = names(state), to = names(state))
+    )
+    Ivec <- c(Ia, Ip, Im, Is)
+    Iwt <- beta0 / N * c(Ia = Ca, Ip = Cp, Im = (1 - iso_m) * Cm, Is = (1 - iso_s) * Cs)
+    Ivars <- c("Ia", "Ip", "Im", "Is")
+    M["S", "S"] <- -sum(Ivec * Iwt)
+    M["S", Ivars] <- -S * Iwt[Ivars]
+    M["E", c("S", Ivars)] <- -M["S", c("S", Ivars)]
+    M["E", "E"] <- -sigma
+    M["Ia", "E"] <- alpha * sigma
+    M["Ia", "Ia"] <- -gamma_a
+    M["Ip", "E"] <- (1 - alpha) * sigma
+    M["Ip", "Ip"] <- -gamma_p
+    M["Im", "Ip"] <- mu * gamma_p
+    M["Im", "Im"] <- -gamma_m
+    M["Is", "Ip"] <- (1 - mu) * gamma_p
+    M["Is", "Is"] <- -gamma_s
+    M["H", "Is"] <- phi1 * gamma_s
+    M["H", "H"] <- -rho
+    M["ICUs", "Is"] <- (1 - phi1) * (1 - phi2) * gamma_s
+    M["ICUs", "ICUs"] <- -psi1
+    M["H2", "ICUs"] <- psi1
+    M["H2", "H2"] <- -psi3
+    M["ICUd", "Is"] <- (1 - phi1) * phi2 * gamma_s
+    M["ICUd", "ICUd"] <- -psi2
+    M["D", "ICUd"] <- psi2
+    M["R", "Ia"] <- gamma_a
+    M["R", "Im"] <- gamma_m
+    M["R", "H"] <- rho
+    M["R", "H2"] <- psi3
     return(M)
 }
 
@@ -85,44 +88,50 @@ make_jac <- function(params, state=NULL) {
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
-make_betavec <- function(state, params, full=TRUE) {
-    Icats <- c("Ia","Ip","Im","Is")
-    testcats <- c("_u","_p","_n","_t")
+make_betavec <- function(state, params, full = TRUE) {
+    Icats <- c("Ia", "Ip", "Im", "Is")
+    testcats <- c("_u", "_p", "_n", "_t")
     ## NB meaning of iso_* has switched from Stanford model
     ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
-    beta_vec0 <- with(as.list(params),
-                      beta0/N*c(Ca,Cp,(1-iso_m)*Cm,(1-iso_s)*Cs))
+    beta_vec0 <- with(
+        as.list(params),
+        beta0 / N * c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
+    )
     names(beta_vec0) <- Icats
     if (has_age(params)) {
         Cmat <- params$Cmat
         a_names <- rownames(Cmat)
         new_names <- expand_names(Icats, a_names)
-        beta_vec0 <- t(kronecker(Cmat,matrix(beta_vec0)))
-        dimnames(beta_vec0) <- list(a_names,new_names)
+        beta_vec0 <- t(kronecker(Cmat, matrix(beta_vec0)))
+        dimnames(beta_vec0) <- list(a_names, new_names)
         beta_vec0 <- Matrix(beta_vec0)
     }
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
     ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
     ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
     ##  into exactly 4 subcompartments, in order (but this should work for now??)
-    if (has_testing(state=state)) {  ## testified!
+    if (has_testing(state = state)) { ## testified!
         if (has_age(params)) stop("can't combine age and testing yet")
-        beta_vec0 <- rep(beta_vec0,each=length(testcats))
-        names(beta_vec0) <- unlist(lapply(Icats,function(x) paste0(x,testcats)))
+        beta_vec0 <- rep(beta_vec0, each = length(testcats))
+        names(beta_vec0) <- unlist(lapply(Icats, function(x) paste0(x, testcats)))
         ## FIXME: also adjust _n, _p components?
-        pos_vals <- grep("_t$",names(beta_vec0))
-        beta_vec0[pos_vals] <- beta_vec0[pos_vals]*(1-params[["iso_t"]])
+        pos_vals <- grep("_t$", names(beta_vec0))
+        beta_vec0[pos_vals] <- beta_vec0[pos_vals] * (1 - params[["iso_t"]])
     }
-    if (!full) return(beta_vec0)
+    if (!full) {
+        return(beta_vec0)
+    }
     ## By default, make a vector of zeroes for all the states,
     ## then fill in infectious ones
     if (!has_age(params)) {
-        beta_vec <- setNames(numeric(length(state)),names(state))
+        beta_vec <- setNames(numeric(length(state)), names(state))
         beta_vec[names(beta_vec0)] <- beta_vec0
     } else {
-        beta_vec <- matrix(0, nrow=nrow(beta_vec0), ncol=length(state),
-                           dimnames=list(rownames(beta_vec0), names(state)))
-        beta_vec[rownames(beta_vec0),colnames(beta_vec0)] <- matrix(beta_vec0)
+        beta_vec <- matrix(0,
+            nrow = nrow(beta_vec0), ncol = length(state),
+            dimnames = list(rownames(beta_vec0), names(state))
+        )
+        beta_vec[rownames(beta_vec0), colnames(beta_vec0)] <- matrix(beta_vec0)
     }
     return(beta_vec)
 }
@@ -156,6 +165,7 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' @param do_ICU include additional health utilization compartments
 ##' @param sparse return sparse matrix?
 ##' @param symbols return character (symbol) form? (FIXME: call adjust_symbols here rather than in show_ratemat()?)
+##' @param indices return indices for lower-level stuff?
 ##' @return matrix of (daily) transition rates
 ##  *need* Matrix version of rowSums imported to handle sparse stuff below!!
 ##' @importFrom Matrix Matrix rowSums colSums
@@ -168,29 +178,32 @@ make_betavec <- function(state, params, full=TRUE) {
 ##' }
 ##' make_ratemat(state,params,symbols=TRUE)
 ##' @export
-make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
-                         symbols=FALSE) {
+
+make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
+                         symbols = FALSE, indices = FALSE) {
     ## circumvent test code analyzers ... problematic ...
-    alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p  <- NULL
-    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1  <- NULL
-    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV  <- NULL
+    alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
+    rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
+    phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV <- NULL
     ## default values, will be masked (on purpose) by unpacking params/state
     nonhosp_mort <- 0
-    ####
+    ##
     np <- length(params)
     if (is.list(params)) {
         nps <- lengths(params)
         if (has_age(params)) {
             na <- nrow(params[["Cmat"]])
-            bad_len <- which(!nps %in% c(1,na,na^2))
-            if (length(bad_len)>0) {
-                stop(sprintf("elements of params must be length 1, %d or %d: %s",
-                             na,na^2,
-                             paste(names(params)[bad_len],collapse=", ")))
+            bad_len <- which(!nps %in% c(1, na, na^2))
+            if (length(bad_len) > 0) {
+                stop(sprintf(
+                    "elements of params must be length 1, %d or %d: %s",
+                    na, na^2,
+                    paste(names(params)[bad_len], collapse = ", ")
+                ))
             }
         } else {
             ## FIXME: better error message ...
-            stopifnot(all(nps==1))
+            stopifnot(all(nps == 1))
         }
     }
     state_names <- untestify_statenames(names(state))
@@ -203,53 +216,54 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     unpack(P)
     ## blank matrix
     M <- matrix(0,
-                nrow=ns, ncol=ns,
-                dimnames=list(from=state_names, to=state_names))
+        nrow = ns, ncol = ns,
+        dimnames = list(from = state_names, to = state_names)
+    )
 
     ## generic assignment function, indexes by regexp rather than string
     afun <- function(from, to, val) {
         if (!symbols) {
             M[pfun(from, to, M)] <<- val
         } else {
-            M[pfun(from,to, M)] <<- deparse(substitute(val))
+            M[pfun(from, to, M)] <<- deparse(substitute(val))
         }
     }
 
     ## fill entries
-    beta_vec <- make_betavec(state,params)
+    beta_vec <- make_betavec(state, params)
     ## FIXME: call update_foi() here?
     if (!has_age(params)) {
-        afun("S", "E", sum(beta_vec*state[names(beta_vec)]))
+        afun("S", "E", sum(beta_vec * state[names(beta_vec)]))
     } else {
         afun("S", "E", beta_vec %*% state[colnames(beta_vec)])
     }
-    afun("E", "Ia", alpha*sigma)
-    afun("E","Ip", (1-alpha)*sigma)
-    afun("Ia","R", gamma_a)
-    afun("Ip","Im", mu*gamma_p)
-    afun("Ip","Is", (1-mu)*gamma_p)
-    afun("Im","R", gamma_m)
+    afun("E", "Ia", alpha * sigma)
+    afun("E", "Ip", (1 - alpha) * sigma)
+    afun("Ia", "R", gamma_a)
+    afun("Ip", "Im", mu * gamma_p)
+    afun("Ip", "Is", (1 - mu) * gamma_p)
+    afun("Im", "R", gamma_m)
     if (!do_ICU) {
         ## simple hospital model as in Stanford/CEID
-        afun("Is","H", gamma_s)
-        afun("H","D", delta*rho)
-        afun("H","R", (1-delta)*rho)
+        afun("Is", "H", gamma_s)
+        afun("H", "D", delta * rho)
+        afun("H", "R", (1 - delta) * rho)
     } else {
         ## FIXME: A better term than "acute" to mean the opposite of intensive?
         ## four-way split (direct to D, acute care, ICU/survive, ICUD/die)?
-        afun("Is","H", (1-nonhosp_mort)*phi1*gamma_s)
-        afun("Is","ICUs", (1-nonhosp_mort)*(1-phi1)*(1-phi2)*gamma_s)
-        afun("Is","ICUd", (1-nonhosp_mort)*(1-phi1)*phi2*gamma_s)
-        afun("Is","D", nonhosp_mort*gamma_s)
-        afun("ICUs","H2", psi1) ## ICU to post-ICU acute care
-        afun("ICUd","D", psi2)  ## ICU to death
-        afun("H2","R", psi3)  ## post-ICU to discharge
+        afun("Is", "H", (1 - nonhosp_mort) * phi1 * gamma_s)
+        afun("Is", "ICUs", (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * gamma_s)
+        afun("Is", "ICUd", (1 - nonhosp_mort) * (1 - phi1) * phi2 * gamma_s)
+        afun("Is", "D", nonhosp_mort * gamma_s)
+        afun("ICUs", "H2", psi1) ## ICU to post-ICU acute care
+        afun("ICUd", "D", psi2) ## ICU to death
+        afun("H2", "R", psi3) ## post-ICU to discharge
         ## H now means 'acute care' only; all H survive & are discharged
-        afun("H","D", 0)
-        afun("H","R", rho) ## all acute-care survive
-        if (any(grepl("^X",colnames(M)))) {
+        afun("H", "D", 0)
+        afun("H", "R", rho) ## all acute-care survive
+        if (any(grepl("^X", colnames(M)))) {
             ## FIXME: check for age?
-            afun("Is","X", M[pfun("Is","H",M)]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
+            afun("Is", "X", M[pfun("Is", "H", M)]) ## assuming that hosp admissions mean *all* (acute-care + ICU)
         }
     }
     if (sparse) {
@@ -271,10 +285,10 @@ update_foi <- function(state, params, beta_vec) {
         ## FIXME, check dimensions etc.
         foi <- beta_vec %*% state
     } else {
-        if(length(state) != length(beta_vec)){
+        if (length(state) != length(beta_vec)) {
             stop("length of state and beta_vec are not the same")
         }
-        foi <- sum(state*beta_vec)
+        foi <- sum(state * beta_vec)
     }
     if (has_zeta(params)) {
         ## suppose zeta is a vector zeta1, zeta2, zeta3, ...
@@ -284,10 +298,12 @@ update_foi <- function(state, params, beta_vec) {
         ##  zeta_break1 < S/N < zeta_break2 -> zeta2
         ## ...
         ##  zeta_breakx < S/N < 1  -> zetax
-        Susc_frac <- 1/params[["N"]]*sum(state[grep("^S_?",names(state))])
-        if (any(grepl("zeta[0-9]",names(params)))) {
-            zeta <- with(as.list(params),
-                         if (Susc_frac<zeta_break) zeta1 else zeta2)
+        Susc_frac <- 1 / params[["N"]] * sum(state[grep("^S_?", names(state))])
+        if (any(grepl("zeta[0-9]", names(params)))) {
+            zeta <- with(
+                as.list(params),
+                if (Susc_frac < zeta_break) zeta1 else zeta2
+            )
         }
         ## alternately could just make it a vector
         ## ... but this messes with age-structured stuff
@@ -295,62 +311,75 @@ update_foi <- function(state, params, beta_vec) {
         ## ...
         ## }
         ## ???? het at pop level or sub-category level??
-        foi <- foi*with(as.list(params), Susc_frac^zeta)
+        foi <- foi * with(as.list(params), Susc_frac^zeta)
     }
     return(foi)
 }
 
-update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
-    if (inherits(ratemat,"Matrix")) {
-        aa <- c("wtsvec","posvec","testing_time")
-        saved_attrs <- setNames(lapply(aa,attr,x=ratemat),aa)
+update_ratemat <- function(ratemat, state, params, testwt_scale = "N") {
+    if (inherits(ratemat, "Matrix")) {
+        aa <- c("wtsvec", "posvec", "testing_time")
+        saved_attrs <- setNames(lapply(aa, attr, x = ratemat), aa)
     }
     ## update testing flows. DO THIS FIRST, before updating foi: **** assignment via cbind() to Matrix objects loses attributes???
     if (has_testing(state)) {
-        testing_time <- attr(ratemat,"testing_time")  ## ugh  (see **** above)
+        testing_time <- attr(ratemat, "testing_time") ## ugh  (see **** above)
         ## positions of untested, positive-waiting, negative-waiting compartments
         ## (flows from _n, _p to _t, or back to _u, are always at per capita rate omega, don't need
         ##  to be updated for changes in state)
         ## FIXME: backport to testify?
-        u_pos <- grep("_u$",rownames(ratemat))
-        p_pos <- grep("_p$",rownames(ratemat))
-        n_pos <- grep("_n$",rownames(ratemat))
+        u_pos <- grep("_u$", rownames(ratemat))
+        p_pos <- grep("_p$", rownames(ratemat))
+        n_pos <- grep("_n$", rownames(ratemat))
         ## original/unscaled prob of positive test by compartment, testing weights by compartment
-        posvec <- attr(ratemat,"posvec")
+        posvec <- attr(ratemat, "posvec")
         if (is.null(posvec)) stop("expected ratemat to have a posvec attribute")
-        wtsvec <- attr(ratemat,"wtsvec")
+        wtsvec <- attr(ratemat, "wtsvec")
         if (is.null(wtsvec)) stop("expected ratemat to have a wtsvec attribute")
         ## scaling ...
         testing_intensity <- params[["testing_intensity"]]
         testing_tau <- params[["testing_tau"]]
         N0 <- params[["N"]]
-        W <- sum(wtsvec*state[u_pos])
+        W <- sum(wtsvec * state[u_pos])
         sc <- switch(testwt_scale,
-                     none=1,
-                     N=N0/W,
-                     sum_u=sum(state[u_pos])/W,
-                     sum_smooth={
-                         rho <- testing_intensity
-                         tau <- testing_tau
-                         tau*N0/(tau*W + rho*N0)
-			 ## NOTE 'smoothing' doc has numerator rho*tau*N0,
-                         ## but testing intensity (rho) is included in ratemat
-                         ## calculation below ...
-                     })
-        ratemat[cbind(u_pos,n_pos)] <- testing_intensity*sc*wtsvec*(1-posvec)
-        ratemat[cbind(u_pos,p_pos)] <- testing_intensity*sc*wtsvec*posvec
-        if (testing_time=="sample") {
-            N_pos <- which(rownames(ratemat)=="N")
-            P_pos <- which(rownames(ratemat)=="P")
-            ratemat[cbind(u_pos,N_pos)] <- ratemat[cbind(u_pos,n_pos)]
-            ratemat[cbind(u_pos,P_pos)] <- ratemat[cbind(u_pos,p_pos)]
+            none = 1,
+            N = N0 / W,
+            sum_u = sum(state[u_pos]) / W,
+            sum_smooth = {
+                rho <- testing_intensity
+                tau <- testing_tau
+                tau * N0 / (tau * W + rho * N0)
+                ## NOTE 'smoothing' doc has numerator rho*tau*N0,
+                ## but testing intensity (rho) is included in ratemat
+                ## calculation below ...
+            }
+        )
+        ratemat[cbind(u_pos, n_pos)] <- testing_intensity * sc * wtsvec * (1 - posvec)
+        ratemat[cbind(u_pos, p_pos)] <- testing_intensity * sc * wtsvec * posvec
+        if (testing_time == "sample") {
+            N_pos <- which(rownames(ratemat) == "N")
+            P_pos <- which(rownames(ratemat) == "P")
+            ratemat[cbind(u_pos, N_pos)] <- ratemat[cbind(u_pos, n_pos)]
+            ratemat[cbind(u_pos, P_pos)] <- ratemat[cbind(u_pos, p_pos)]
         }
     }
-    ratemat[pfun("S","E",ratemat)]  <- update_foi(state,params,make_betavec(state,params))
+    ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_betavec(state, params))
+    ## comment out for now: incomplete?
+    ## if (has_vax) {
+    ##     ## states:  [epid_class]_age(_*)?
+    ##     nonsymp_states <- c("S","E","Ia","Ip","R")
+    ##     nonsymp_regex <- sprintf("^%s_",paste(nonsymp_states,collapse="|"))
+    ##     ## sum over ages ...  collapse_states ...
+    ##     total_nonsymp <- sum(states[nonsymp_states])
+    ##     ## modify rates between vax statuses
+    ##     ## modify *_v1 -> *_v2 transitions
+    ##     afun("*_v1","*_v2") <- doses_per_day/popsize
+    ## }
+    ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_betavec(state, params))
     ## ugh, restore attributes if necessary
-    if (inherits(ratemat,"Matrix")) {
+    if (inherits(ratemat, "Matrix")) {
         for (a in aa) {
-            attr(ratemat,a) <- saved_attrs[[a]]
+            attr(ratemat, a) <- saved_attrs[[a]]
         }
     }
     return(ratemat)
@@ -372,20 +401,19 @@ update_ratemat <- function(ratemat, state, params, testwt_scale="N") {
 ##' state1 <- make_state(params=params1)
 ##' M <- make_ratemat(params=params1, state=state1)
 ##' s1A <- do_step(state1,params1, M, stoch_proc=TRUE)
-do_step <- function(state, params, ratemat, dt=1,
-                    do_hazard=FALSE, stoch_proc=FALSE,
-                    do_exponential=FALSE,
-                    testwt_scale="N") {
-
-    x_states <- c("X","N","P")                  ## weird parallel accumulators
+do_step <- function(state, params, ratemat, dt = 1,
+                    do_hazard = FALSE, stoch_proc = FALSE,
+                    do_exponential = FALSE,
+                    testwt_scale = "N") {
+    x_states <- c("X", "N", "P") ## weird parallel accumulators
     p_states <- exclude_states(names(state), x_states)
     ## FIXME: check (here or elsewhere) for non-integer state and process stoch?
     ## cat("do_step beta0",params[["beta0"]],"\n")
-    ratemat <- update_ratemat(ratemat, state, params, testwt_scale=testwt_scale)
-    if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s<0)) {
+    ratemat <- update_ratemat(ratemat, state, params, testwt_scale = testwt_scale)
+    if (!stoch_proc || (!is.null(s <- params[["proc_disp"]]) && s < 0)) {
         if (!do_hazard) {
             ## from per capita rates to absolute changes
-            flows <- col_multiply(ratemat, state)*dt #sweep(ratemat, state, MARGIN=1, FUN="*")*dt
+            flows <- col_multiply(ratemat, state) * dt ## sweep(ratemat, state, MARGIN=1, FUN="*")*dt
         } else {
             ## FIXME: change var names? {S,E} is a little confusing (sum, exp not susc/exposed)
             ## use hazard function: assumes exponential change
@@ -397,11 +425,11 @@ do_step <- function(state, params, ratemat, dt=1,
             ##    p_{ij}=(1-exp(-S*dt))*r_j/S
             ##    p_{ii}= exp(-S*dt)
             S <- rowSums(ratemat)
-            E <- exp(-S*dt)
+            E <- exp(-S * dt)
             ## prevent division-by-0 (boxes with no outflow) problems (FIXME: DOUBLE-CHECK)
-            norm_sum <- ifelse(S==0, 0, state/S)
-            flows <- (1-E)*col_multiply(ratemat, norm_sum)#sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
-            diag(flows) <- 0  ## no flow
+            norm_sum <- ifelse(S == 0, 0, state / S)
+            flows <- (1 - E) * col_multiply(ratemat, norm_sum) ## sweep(ratemat, norm_sum, MARGIN=1, FUN="*")
+            diag(flows) <- 0 ## no flow
         }
     } else {
         flows <- ratemat ## copy structure
@@ -410,57 +438,57 @@ do_step <- function(state, params, ratemat, dt=1,
             ## FIXME: allow Dirichlet-multinomial ?
             dW <- dt
             if (!is.na(proc_disp <- params[["proc_disp"]])) {
-                dW <- pomp::rgammawn(sigma=proc_disp,dt=dt)
+                dW <- pomp::rgammawn(sigma = proc_disp, dt = dt)
             }
             ## FIXME: need to adjust for non-conserving accumulators!
-            flows[i,-i] <- pomp::reulermultinom(n=1,
-                                 size=state[[i]],
-                                 rate=ratemat[i,-i],
-                                 dt=dW)
-
+            flows[i, -i] <- pomp::reulermultinom(
+                n = 1,
+                size = state[[i]],
+                rate = ratemat[i, -i],
+                dt = dW
+            )
         }
     }
 
     if (!do_exponential) {
-        outflow <- rowSums(flows[,p_states])
+        outflow <- rowSums(flows[, p_states])
     } else {
         ## want to zero out outflows from S to non-S compartments
         ##  (but leave the inflows - thus we can't just zero these flows
         ##   out in the rate matrix!)
-        S_pos <- grep("^S",rownames(ratemat), value=TRUE)
-        notS_pos <- grep("^[^S]",colnames(ratemat), value=TRUE)
+        S_pos <- grep("^S", rownames(ratemat), value = TRUE)
+        notS_pos <- grep("^[^S]", colnames(ratemat), value = TRUE)
         notS_pos <- setdiff(notS_pos, x_states)
-        outflow <- setNames(numeric(ncol(flows)),colnames(flows))
+        outflow <- setNames(numeric(ncol(flows)), colnames(flows))
         ## only count outflows from S_pos to other S_pos (e.g. testing flows)
-        outflow[S_pos] <- rowSums(flows[S_pos,S_pos,drop=FALSE])
+        outflow[S_pos] <- rowSums(flows[S_pos, S_pos, drop = FALSE])
         ## count flows from infected etc. to p_states (i.e. states that are *not* parallel accumulators)
-        outflow[notS_pos] <- rowSums(flows[notS_pos,p_states])
+        outflow[notS_pos] <- rowSums(flows[notS_pos, p_states])
     }
-    inflow <-  colSums(flows)
+    inflow <- colSums(flows)
     state <- state - outflow + inflow
     ## check conservation (*don't* check if we are doing an exponential sim, where we
     ##  allow infecteds to increase without depleting S ...)
-    MP_badsum_action <- getOption("MP_badsum_action","warning")
-    MP_badsum_tol <- getOption("MP_badsum_tol",1e-12)
-    if (!do_exponential
-        && !(MP_badsum_action=="ignore")
-        && !stoch_proc)    ## temporary: adjust reulermultinom to allow for x_states ...
-    {
-        calc_N <- sum(state[p_states])
-        if (!isTRUE(all.equal(calc_N,params[["N"]], tolerance=MP_badsum_tol))) {
-            msg <- sprintf("sum(states) != original N (delta=%1.2g)",params[["N"]]-calc_N)
-            get(MP_badsum_action)(msg)
-        }
-    } ## not exponential run or stoch proc or ignore-sum
+    MP_badsum_action <- getOption("MP_badsum_action", "warning")
+    MP_badsum_tol <- getOption("MP_badsum_tol", 1e-12)
+    if (!do_exponential &&
+        !(MP_badsum_action == "ignore") &&
+        !stoch_proc) ## temporary: adjust reulermultinom to allow for x_states ...
+        {
+            calc_N <- sum(state[p_states])
+            if (!isTRUE(all.equal(calc_N, params[["N"]], tolerance = MP_badsum_tol))) {
+                msg <- sprintf("sum(states) != original N (delta=%1.2g)", params[["N"]] - calc_N)
+                get(MP_badsum_action)(msg)
+            }
+        } ## not exponential run or stoch proc or ignore-sum
     return(state)
-    # Why is this throwing warnings in make_state?
-#    if(any(state < -sqrt(.Machine$double.eps))){
-#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
-#    }
-#    else if(any(state < 0)){
-#        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
-#    }
-
+    ## Why is this throwing warnings in make_state?
+    ##    if(any(state < -sqrt(.Machine$double.eps))){
+    ##        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps)')
+    ##    }
+    ##    else if(any(state < 0)){
+    ##        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) and 0.')
+    ##    }
 }
 
 ## run_sim()
@@ -504,42 +532,44 @@ do_step <- function(state, params, ratemat, dt=1,
 ## FIXME: params_timevar
 ##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
-run_sim <- function(params
-        , state=NULL
-        , start_date="2020-03-20"
-        , end_date="2020-05-1"
-        , params_timevar=NULL
-        , dt=1
-        , ndt=1  ## FIXME: change default after testing?
-        , stoch=c(obs=FALSE,proc=FALSE)
-        , stoch_start=NULL
-        , ratemat_args=NULL
-        , step_args=list()
-        , ode_args = list()
-        , use_ode = FALSE
-        , condense = TRUE
-        , condense_args=NULL
-        , verbose = FALSE
-) {
+run_sim <- function(params,
+                    state = NULL,
+                    start_date = "2020-03-20",
+                    end_date = "2020-05-1",
+                    params_timevar = NULL,
+                    dt = 1,
+                    ndt = 1 ## FIXME: change default after testing?
+                    , stoch = c(obs = FALSE, proc = FALSE),
+                    stoch_start = NULL,
+                    ratemat_args = NULL,
+                    step_args = list(),
+                    ode_args = list(),
+                    use_ode = FALSE,
+                    condense = TRUE,
+                    condense_args = NULL,
+                    verbose = FALSE) {
     call <- match.call()
 
     if (is.na(params[["N"]])) stop("no population size specified; set params[['N']]")
     ## FIXME: *_args approach (specifying arguments to pass through to
     ##  make_ratemat() and do_step) avoids cluttering the argument
     ##  list, but may be harder to translate to lower-level code
-    if (dt!=1) warning("nothing has been tested with dt!=1")
-    start_date <- as.Date(start_date); end_date <- as.Date(end_date)
+    if (dt != 1) warning("nothing has been tested with dt!=1")
+    start_date <- as.Date(start_date)
+    end_date <- as.Date(end_date)
     if (!is.null(stoch_start)) {
-        stoch_start <- setNames(as.Date(stoch_start),names(stoch_start))
+        stoch_start <- setNames(as.Date(stoch_start), names(stoch_start))
     }
-    if (length(stoch_start)==1) stoch_start <- c(obs=stoch_start, proc=stoch_start)
-    date_vec <- seq(start_date,end_date,by=dt)
+    if (length(stoch_start) == 1) stoch_start <- c(obs = stoch_start, proc = stoch_start)
+    date_vec <- seq(start_date, end_date, by = dt)
     nt <- length(date_vec)
-    step_args <- c(step_args, list(stoch_proc=stoch[["proc"]]))
-    drop_last <- function(x) { x[seq(nrow(x)-1),] }
-    if (is.null(state)) state <- make_state(params=params, testify=FALSE)
-    if (has_testing(params=params)) {
-        state <- expand_stateval_testing(state, params=params)
+    step_args <- c(step_args, list(stoch_proc = stoch[["proc"]]))
+    drop_last <- function(x) {
+        x[seq(nrow(x) - 1), ]
+    }
+    if (is.null(state)) state <- make_state(params = params, testify = FALSE)
+    if (has_testing(params = params)) {
+        state <- expand_stateval_testing(state, params = params)
     }
 
     ## thin wrapper: we may have to recompute this later and don't want to
@@ -548,17 +578,17 @@ run_sim <- function(params
     ## (2) does this imply that testify/testing stuff should be refactored/go elsewhere?
     ## (3) this is reminiscent of the expand/don't-expand hoops that we go through in the eigenvector/state calculation
     make_M <- function() {
-        M <- make_ratemat(state=state, params=params)
-        if (has_testing(params=params)) {
+        M <- make_ratemat(state = state, params = params)
+        if (has_testing(params = params)) {
             if (!is.null(ratemat_args$testify)) {
                 warning("'testify' no longer needs to be passed in ratemat_args")
             }
             testing_time <- ratemat_args$testing_time
             if (is.null(testing_time)) {
                 warning("setting testing time to 'sample'")
-                testing_time <- 'sample'
+                testing_time <- "sample"
             }
-            M <- testify(M,params,testing_time=testing_time)
+            M <- testify(M, params, testing_time = testing_time)
         }
         return(M)
     }
@@ -574,25 +604,29 @@ run_sim <- function(params
         if (is.null(params_timevar)) {
             ## starting times for process/obs error specified, but no other time-varying parameters;
             ##  we need an empty data frame with the right structure so we can append the process-error switch times
-            params_timevar <- dfs(Date=as.Date(character(0)),Symbol=character(0),Relative_value=numeric(0))
+            params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Relative_value = numeric(0))
         } else {
             ## check column names
             ## FIXME:: use case-insensitive matching (apply tolower() throughout) to allow some slop?
             npt <- names(params_timevar)
-            if (!all(c("Date","Symbol","Relative_value") %in% npt)) {
-                stop("bad names in params_timevar: ",paste(npt,collapse=","))
+            if (!all(c("Date", "Symbol", "Relative_value") %in% npt)) {
+                stop("bad names in params_timevar: ", paste(npt, collapse = ","))
             }
             params_timevar$Date <- as.Date(params_timevar$Date)
             ## tryCatch(
             ##     params_timevar$Date <- as.Date(params_timevar$Date),
             ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
-            params_timevar <- params_timevar[order(params_timevar$Date),]
+            params_timevar <- params_timevar[order(params_timevar$Date), ]
         }
         ## append process-observation switch to timevar
         if (stoch[["proc"]] && !is.null(stoch_start)) {
-            params_timevar <- rbind(params_timevar,
-                                    dfs(Date=stoch_start[["proc"]],
-                                        Symbol="proc_disp",Relative_value=1))
+            params_timevar <- rbind(
+                params_timevar,
+                dfs(
+                    Date = stoch_start[["proc"]],
+                    Symbol = "proc_disp", Relative_value = 1
+                )
+            )
             params[["proc_disp"]] <- -1 ## special value: signal no proc error
         }
         switch_dates <- params_timevar[["Date"]]
@@ -600,46 +634,54 @@ run_sim <- function(params
         switch_times <- match(switch_dates, date_vec)
         if (any(is.na(switch_times))) {
             bad <- which(is.na(switch_times))
-            stop("non-matching dates in params_timevar: ",paste(switch_dates[bad], collapse=","))
+            stop("non-matching dates in params_timevar: ", paste(switch_dates[bad], collapse = ","))
         }
-        if (any(switch_times==length(date_vec))) {
+        if (any(switch_times == length(date_vec))) {
             ## drop switch times on final day
             warning("dropped switch times on final day")
-            switch_times <- switch_times[switch_times<length(date_vec)]
+            switch_times <- switch_times[switch_times < length(date_vec)]
         }
     } ## steps
 
     if (is.null(switch_times)) {
-        res <- thin(ndt=ndt,
-                    do.call(run_sim_range,
-                            nlist(params
-                                , state
-                                , nt=nt*ndt
-                                , dt=dt/ndt
-                                , M
-                                , use_ode
-                                , ratemat_args
-                                , step_args
-                            )))
+        res <- thin(
+            ndt = ndt,
+            do.call(
+                run_sim_range,
+                nlist(params,
+                    state,
+                    nt = nt * ndt,
+                    dt = dt / ndt,
+                    M,
+                    use_ode,
+                    ratemat_args,
+                    step_args
+                )
+            )
+        )
     } else {
         t_cur <- 1
         ## want to *include* end date
         switch_times <- switch_times + 1
         ## add beginning and ending time
-        times <- c(1,unique(switch_times),nt+1)
+        times <- c(1, unique(switch_times), nt + 1)
         resList <- list()
-        for (i in seq(length(times)-1)) {
+        for (i in seq(length(times) - 1)) {
             recompute_M <- FALSE
-            for (j in which(switch_times==times[i])) {
+            for (j in which(switch_times == times[i])) {
                 ## reset all changing params
-                s <- params_timevar[j,"Symbol"]
-                v <- params_timevar[j,"Relative_value"]
-                params[[s]] <- params0[[s]]*v
-                if (s=="proc_disp") {
+                s <- params_timevar[j, "Symbol"]
+                v <- params_timevar[j, "Relative_value"]
+                params[[s]] <- params0[[s]] * v
+                if (s == "proc_disp") {
                     state <- round(state)
                 }
-                if (verbose) cat(sprintf("changing value of %s from original %f to %f at time step %d\n",
-                                         s,params0[[s]],params[[s]],i))
+                if (verbose) {
+                    cat(sprintf(
+                        "changing value of %s from original %f to %f at time step %d\n",
+                        s, params0[[s]], params[[s]], i
+                    ))
+                }
 
                 if (!s %in% "beta0") { ## also testing rates?
                     recompute_M <- TRUE
@@ -652,97 +694,108 @@ run_sim <- function(params
             }
 
             resList[[i]] <- drop_last(
-                thin(ndt=ndt,
-                     do.call(run_sim_range,
-                        nlist(params
-                            , state
-                            , nt=(times[i+1]-times[i]+1)*ndt
-                            , dt=dt/ndt
-                            , M
-                            , use_ode
-                            , ratemat_args
-                            , step_args
-                            , ode_args
-                              )))
+                thin(
+                    ndt = ndt,
+                    do.call(
+                        run_sim_range,
+                        nlist(params,
+                            state,
+                            nt = (times[i + 1] - times[i] + 1) * ndt,
+                            dt = dt / ndt,
+                            M,
+                            use_ode,
+                            ratemat_args,
+                            step_args,
+                            ode_args
+                        )
+                    )
+                )
             )
-            state <- attr(resList[[i]],"state")
+            state <- attr(resList[[i]], "state")
             t_cur <- times[i]
         }
         ## combine
-        res <- do.call(rbind,resList)
+        res <- do.call(rbind, resList)
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
     }
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
-    res <- dfs(date=seq(start_date,end_date,by=dt),res)
-    res <- res[,!names(res) %in% "t"]  ## we never want the internal time vector
+    res <- dfs(date = seq(start_date, end_date, by = dt), res)
+    res <- res[, !names(res) %in% "t"] ## we never want the internal time vector
     ## condense here
     if (condense) {
         ## FIXME: will it break anything if we call condense with 'params'
         ## (modified by time-varying stuff) instead of params0? Let's find out!
-        res <- do.call(condense.pansim,c(list(res
-                                            , params=params0
-                                            , cum_reports=FALSE
-                                            , het_S=has_zeta(params0))
-                                         , condense_args))
+        res <- do.call(condense.pansim, c(
+            list(res,
+                params = params0,
+                cum_reports = FALSE,
+                het_S = has_zeta(params0)
+            ),
+            condense_args
+        ))
     }
     if (stoch[["obs"]]) {
-        if (has_zeta(params)) params[["obs_disp_hetS"]] <- NA  ## hard-code skipping obs noise
+        if (has_zeta(params)) params[["obs_disp_hetS"]] <- NA ## hard-code skipping obs noise
         ## do observation error here
         ## FIXME: warn on mu<0 ? (annoying with ESS machinery)
-        m <- res[,-1]   ## drop time component
+        m <- res[, -1] ## drop time component
         if (!is.null(stoch_start)) {
             ## only add stochastic obs error after specified date
-            m <- m[res$date>stoch_start[["obs"]],]
+            m <- m[res$date > stoch_start[["obs"]], ]
         }
         m_rows <- nrow(m)
         for (i in seq(ncol(m))) {
             nm <- names(m)[i]
-            if ((vn <- paste0("obs_disp_",nm)) %in% names(params)) {
+            if ((vn <- paste0("obs_disp_", nm)) %in% names(params)) {
                 ## variable-specific dispersion specified
                 d <- params[[vn]]
-            } else d <- params[["obs_disp"]]
+            } else {
+                d <- params[["obs_disp"]]
+            }
             if (!is.na(d)) {
                 ## rnbinom, skipping NA values (as below)
-                m[[i]] <- suppressWarnings(rnbinom(m_rows, mu=m[[i]], size=d))
+                m[[i]] <- suppressWarnings(rnbinom(m_rows, mu = m[[i]], size = d))
             }
         }
-        res[seq(nrow(res)-m_rows+1,nrow(res)),-1] <- m
+        res[seq(nrow(res) - m_rows + 1, nrow(res)), -1] <- m
     }
     ## add cum reports *after* adding obs error
     if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(res$report), res$report, 0))
     if ("death" %in% names(res)) res$D <- cumsum(ifelse(!is.na(res$death), res$death, 0))
     ## store everything as attributes
-    attr(res,"params") <- params0
-    attr(res,"state0") <- state0
-    attr(res,"start_date") <- start_date
-    attr(res,"end_date") <- end_date
-    attr(res,"call") <- call
-    attr(res,"params_timevar") <- params_timevar
-	 ## attr(res,"final_state") <- state
-    class(res) <- c("pansim","data.frame")
-
+    attr(res, "params") <- params0
+    attr(res, "state0") <- state0
+    attr(res, "start_date") <- start_date
+    attr(res, "end_date") <- end_date
+    attr(res, "call") <- call
+    attr(res, "params_timevar") <- params_timevar
+    ## attr(res,"final_state") <- state
+    class(res) <- c("pansim", "data.frame")
 
     state_names <- names(res)
-    state_names_indices <- sapply(state_names, function(x) {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)})
+    state_names_indices <- first_letter_cap(state_names)
     state_names <- state_names[state_names_indices]
 
-    if(any(res[state_names] < -sqrt(.Machine$double.eps))){
+    ## FIXME: why do we need to restrict to res[state_names] ?
 
-      state_vars <- (res %>% select(state_names))
-      below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
-
-      warning('End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ',
-              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
-
+    if (any(res[state_names] < -sqrt(.Machine$double.eps))) {
+        state_vars <- (res %>% select(state_names))
+        below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
+        warning(
+            "End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ",
+            paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
+        )
     }
-    else if(any(res[state_names] < 0)){
-      state_vars <- (res %>% select(state_names))
-      below_zero_lines <- (rowSums(state_vars < 0) > 0)
+    else if (any(res[state_names] < 0)) {
+        state_vars <- (res %>% select(state_names))
+        below_zero_lines <- (rowSums(state_vars < 0) > 0)
 
-      warning('End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ',
-              paste(utils::capture.output(print(res[below_zero_lines,])), collapse = "\n"))
+        warning(
+            "End of run_sim check: One or more state variables is negative at some time, between -sqrt(.Machine$double.eps) and 0. Check following message for details \n ",
+            paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
+        )
     }
     return(res)
 }
@@ -784,45 +837,49 @@ run_sim <- function(params
 ##' make_state(N=1e6,E0=1)
 ##' make_state(params=p)
 ##  FIXME: can pass x, have a name check, fill in zero values
-make_state <- function(N=params[["N"]],
-                       E0=params[["E0"]],
-                       type="ICU1h",
-                       state_names=NULL,
-                       use_eigvec=NULL,
-                       params=NULL,
-                       x=NULL,
-                       testify=NULL) {
-    if (is.null(testify)) testify <- !is.null(params) && has_testing(params=params)
+make_state <- function(N = params[["N"]],
+                       E0 = params[["E0"]],
+                       type = "ICU1h",
+                       state_names = NULL,
+                       use_eigvec = NULL,
+                       params = NULL,
+                       x = NULL,
+                       testify = NULL) {
+    if (is.null(testify)) testify <- !is.null(params) && has_testing(params = params)
     ## error if use_eigvec was **explicitly requested** (equiv !missing(use_eigvec)) && no params
     if (isTRUE(use_eigvec) && is.null(params)) stop("must specify params")
     if (is.null(use_eigvec)) use_eigvec <- !is.null(params)
     ## select vector of state names
     state_names <- switch(type,
-                          ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
-                          ICU1h = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R","X"),
-                          ICU1 = c("S","E","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "D","R"),
-                          CI =   c("S","E","Ia","Ip","Im","Is","H","D","R"),
-                          ## Add a test case which should result in a thrown warning
-                          test_warning_throw = c("s","e","Ia","Ip","Im","Is","H","H2","ICUs","ICUd", "d","R","X"),
-                          stop("unknown type")
-                          )
-    state <- setNames(numeric(length(state_names)),state_names)
-    if (testify) state <- expand_stateval_testing(state,method="untested")
+        ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
+        ICU1h = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X"),
+        ICU1 = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R"),
+        CI =   c("S", "E", "Ia", "Ip", "Im", "Is", "H", "D", "R"),
+        ## Add a test case which should result in a thrown warning
+        test_warning_throw = c("s", "e", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "d", "R", "X"),
+        stop("unknown type")
+    )
+    state <- setNames(numeric(length(state_names)), state_names)
+    if (testify) state <- expand_stateval_testing(state, method = "untested")
     if (is.null(x)) {
         ## state[["S"]] <- round(N-E0)
         if (!use_eigvec) {
             ## set **first** E compartment
-            state[[grep("E",names(state))[1]]] <- E0
+
+            state[[grep("^E", toupper(names(state)))[1]]] <- E0
             istart <- E0
         } else {
             ## distribute 'E0' value based on dominant eigenvector
             ## here E0 is effectively "number NOT susceptible"
-            ee <- round(get_evec(params, testify=testify)*E0)
-            if (any(is.na(ee))) {  state[] <- NA; return(state) }
-            if (all(ee==0)) {
+            ee <- round(get_evec(params, testify = testify, type = type) * E0)
+            if (any(is.na(ee))) {
+                state[] <- NA
+                return(state)
+            }
+            if (all(ee == 0)) {
                 if (testify) stop("this case isn't handled for testify")
                 ee[["E"]] <- 1
-                warning('initial values too small for rounding')
+                warning("initial values too small for rounding")
             }
             istart <- sum(ee)
             state[names(ee)] <- ee
@@ -832,32 +889,35 @@ make_state <- function(N=params[["N"]],
         ## FIXME for testify:  (1) make sure get_evec() actually returns appropriate ratios for S
         ##  class; (2) distribute (N-istart) across the S classes, then round
         if (!testify) {
-            state[["S"]] <- N-istart
+            state[["S"]] <- N - istart
         } else {
             ## if A = testing rate and B = test-return rate then
             ##  du/dt = -A*u + B*n  [where u is untested, n is negative-waiting]
             ##        = -A*u + B*(1-u)  [assuming we're working with proportions]
             ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
             ## FIXME: get_evec() should work for S!
-            ufrac <- with(as.list(params),omega/((testing_intensity*W_asymp)+omega))
-            state[c("S_u","S_n")] <- round((N-istart)*c(ufrac,1-ufrac))
+            ufrac <- with(as.list(params), omega / ((testing_intensity * W_asymp) + omega))
+            state[c("S_u", "S_n")] <- round((N - istart) * c(ufrac, 1 - ufrac))
         }
     } else {
-        if (length(names(x))==0) {
+        if (length(names(x)) == 0) {
             stop("provided state vector must be named")
         }
-        if (length(extra_names <- setdiff(names(x),state_names))>0) {
-            warning("extra state variables (ignored): ",paste(extra_names,collapse=", "))
+        if (length(extra_names <- setdiff(names(x), state_names)) > 0) {
+            warning("extra state variables (ignored): ", paste(extra_names, collapse = ", "))
         }
         state[names(x)] <- x
     }
     untestify_state <- state ## FIXME: what is this for??
     class(state) <- "state_pansim"
-## Give a warning if not all state variables are capital letters
-    if(!all(sapply(names(state), function(x)
-      {first_letter <- substr(x, 1, 1); return(toupper(first_letter) == first_letter)}))){
-      warning('Not all state variables are capital letters,
-              this can result in failure to correctly check if a state variable is negative.')
+
+    ## Give a warning if not all state variables are capital letters
+    if (!all(first_letter_cap(names(state)))) {
+        warning(
+            "Not all state variables are capital letters; ",
+            "this can result in failure to correctly check ",
+            "if a state variable is negative."
+        )
     }
 
     return(state)
@@ -870,11 +930,11 @@ make_state <- function(N=params[["N"]],
 ##' @param M rate matrix
 gradfun <- function(t, y, parms, M) {
     M <- update_ratemat(M, y, parms)
-    foi <- update_foi(y, parms, make_betavec(state=y, parms))
+    foi <- update_foi(y, parms, make_betavec(state = y, parms))
     ## compute
-    flows <- col_multiply(M, y) # sweep(M, y, MARGIN=1, FUN="*")
-    g <- colSums(flows)-rowSums(flows)
-    return(list(g,foi=foi))
+    flows <- col_multiply(M, y) ## faster than sweep(M, y, MARGIN=1, FUN="*")
+    g <- colSums(flows) - rowSums(flows)
+    return(list(g, foi = foi))
 }
 
 ##' Run simulation across a range of times
@@ -894,77 +954,97 @@ gradfun <- function(t, y, parms, M) {
 ##' matlines(r2[,"t"],r2[,-1],lty=2)
 ##' @importFrom dplyr left_join
 ##' @export
-run_sim_range <- function(params
-        , state=make_state(params[["N"]], params[["E0"]])
-	, nt=100
-        , dt=1
-        , M = NULL
-	, ratemat_args=NULL
-        , step_args=NULL
-        , use_ode=FALSE
-        , ode_args = list()
-          ) {
+run_sim_range <- function(params,
+                          state = make_state(params[["N"]], params[["E0"]]),
+                          nt = 100,
+                          dt = 1,
+                          M = NULL,
+                          ratemat_args = NULL,
+                          step_args = NULL,
+                          use_ode = FALSE,
+                          ode_args = list()) {
     ## cat("beta0",params[["beta0"]],"\n")
     if (is.null(M)) {
-        M <- do.call(make_ratemat,c(list(state=state, params=params), ratemat_args))
+        M <- do.call(make_ratemat, c(list(state = state, params = params), ratemat_args))
     }
     if (use_ode) {
-        res <- do.call(deSolve::ode,
-                       c(nlist(y=state
-                             , times=seq(nt)*dt
-                             , func=gradfun
-                             , parms = params
-                             , M
-                               )
-                         , ode_args))
+        res <- do.call(
+            deSolve::ode,
+            c(
+                nlist(
+                    y = state,
+                    times = seq(nt) * dt,
+                    func = gradfun,
+                    parms = params,
+                    M
+                ),
+                ode_args
+            )
+        )
         res <- dfs(res)
-        if(nrow(res) < nt){
+        if (nrow(res) < nt) {
             time_df <- data.frame(time = 1:nt)
-            res <- dplyr::left_join(time_df,res)
+            res <- dplyr::left_join(time_df, res)
         }
         names(res)[1] <- "t" ## ode() uses "time"
     } else {
         ## set up output
-        foi <- rep(NA,nt)
-        res <- matrix(NA, nrow=nt, ncol=length(colnames(M)),
-                      dimnames=list(time=seq(nt),
-                                    state=colnames(M)))
+        foi <- rep(NA, nt)
+        res <- matrix(NA,
+            nrow = nt, ncol = length(colnames(M)),
+            dimnames = list(
+                time = seq(nt),
+                state = colnames(M)
+            )
+        )
         ## initialization
-        res[1,names(state)] <- state
+        res[1, names(state)] <- state
         if (!has_age(params)) {
             ## FIXME: coherent strategy for accumulating incidence, etc etc
-            foi[[1]] <- update_foi(state,params, make_betavec(state, params))
+            foi[[1]] <- update_foi(state, params, make_betavec(state, params))
         }
         ## loop
-        if (nt>1) {
+        if (nt > 1) {
             for (i in 2:nt) {
-                state <- do.call(do_step,
-                                 c(nlist(state
-                                       , params
-                                       , ratemat = M
-                                       , dt
-                                         )
-                                 , step_args))
+                state <- do.call(
+                    do_step,
+                    c(
+                        nlist(state,
+                            params,
+                            ratemat = M,
+                            dt
+                        ),
+                        step_args
+                    )
+                )
                 if (!has_age(params)) foi[[i]] <- update_foi(state, params, make_betavec(state, params))
-                if (!identical(colnames(res),names(state))) browser()
-                res[i,] <- state
+                if (!identical(colnames(res), names(state))) browser()
+                res[i, ] <- state
             }
         }
-        res <- dfs(t=seq(nt),res,foi)
+        res <- dfs(t = seq(nt), res, foi)
     }
     ## need to know true state - for cases with obs error
-    attr(res,"state") <- state
+    attr(res, "state") <- state
 
-
-    if(any(state < -sqrt(.Machine$double.eps))){
-        warning('End of run_sim_range check: One or more state variables is negative, below -sqrt(.Machine$double.eps) \n Check following message for details \n ',
-                paste(utils::capture.output(print(state)), collapse = "\n"))
-
+    if (any(!is.finite(state))) {
+        warning("non-finite values in state, in run_sim_range")
+    } else {
+        bad_states <- state[state < -sqrt(.Machine$double.eps)]
+        if (length(bad_states) > 0) {
+            warning(
+                "negative state variables (below tolerance) in run_sim_range:",
+                paste(sprintf("%s=%1.3g", names(bad_states), bad_states), collapse = "; ")
+            )
+        } else if (any(state < 0)) {
+            warning(
+                "End of run_sim_range check: One or more state variables is negative, ",
+                "between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ",
+                paste(utils::capture.output(print(state)), collapse = "\n")
+            )
+        }
     }
-    else if(any(state < 0)){
-        warning('End of run_sim_range check: One or more state variables is negative, between -sqrt(.Machine$double.eps) and 0 \n Check following message for details \n ',
-                paste(utils::capture.output(print(state)), collapse = "\n"))
-    }
+
     return(res)
 }
 
@@ -980,17 +1060,18 @@ run_sim_range <- function(params
 ## cv = 1/sqrt(a)
 ## s = mean/cv^2
 ## a = 1/cv^2
-make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len=ceiling(tail_val), tail_crit=0.95) {
-
-    gamma_shape <- 1/delay_cv^2
-    gamma_scale <- delay_mean/gamma_shape
-    tail_val <- qgamma(tail_crit, shape=gamma_shape, scale=gamma_scale)
+make_delay_kernel <- function(prop, delay_mean, delay_cv, max_len = ceiling(tail_val), tail_crit = 0.95) {
+    gamma_shape <- 1 / delay_cv^2
+    gamma_scale <- delay_mean / gamma_shape
+    tail_val <- qgamma(tail_crit, shape = gamma_shape, scale = gamma_scale)
     if (max_len < tail_val) {
-        warning(sprintf("max_len (%d) is less than qgamma(%f, %1.1f, %1.1f)=%1.1f",
-                        max_len, tail_crit, gamma_shape, gamma_scale, tail_val))
+        warning(sprintf(
+            "max_len (%d) is less than qgamma(%f, %1.1f, %1.1f)=%1.1f",
+            max_len, tail_crit, gamma_shape, gamma_scale, tail_val
+        ))
     }
-    pp <- diff(pgamma(seq(max_len+1),shape=gamma_shape, scale=gamma_scale))
-    pp <- pp/sum(pp) ## normalize to 1
-    v <- prop*pp
+    pp <- diff(pgamma(seq(max_len + 1), shape = gamma_shape, scale = gamma_scale))
+    pp <- pp / sum(pp) ## normalize to 1
+    v <- prop * pp
     return(v)
 }

@@ -8,8 +8,7 @@ show_ratemat(
   M,
   method = c("Matrix", "diagram", "igraph"),
   aspect = "iso",
-  add_blocks = NULL,
-  blocksize = NULL,
+  block_size = NULL,
   block_col = 2,
   axlabs = TRUE,
   const_width = (method == "igraph"),
@@ -25,11 +24,9 @@ show_ratemat(
 
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
-\item{add_blocks}{add lines showing blocks for testified matrices?}
+\item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}
 
-\item{blocksize}{for each element n in blocksize, an additional n x n grid is overlaid on the diagram}
-
-\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by blocksize (if add_blocks==TRUE)}
+\item{block_col}{each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)}
 
 \item{axlabs}{for flow matrices, show axis tick labels?}
 
@@ -50,5 +47,5 @@ state <- make_state(params[["N"]],E0=params[["E0"]], use_eigvec=FALSE)
 M <- make_ratemat(state, params)
 show_ratemat(M)
 ## silly but shows we can do multiple block types in different colours
-show_ratemat(M, add_blocks=TRUE, blocksize=c(3,5), block_col=c(2,4))
+show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 }

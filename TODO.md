@@ -1,5 +1,17 @@
 ## to do
 
+### very short term
+
+Naming conventions for value vector?
+troubleshoot test_calibrate
+more docs for new params_timevar structure
+issue/document testLevel stuff in README
+
+update method for calibrations
+
+names?  Symbol.Date
+values -> time_params
+
 ### short term
 
 * **REAL CONFIDENCE INTERVALS!!**
