@@ -757,16 +757,41 @@ make_flowchart <- vis_model ## back-compatibility
 ## identify locations within matrix
 ## ##' @param value return character (TRUE) or numeric (FALSE) position?
 pfun <- function(from, to, mat, value = FALSE, recycle = FALSE) {
-    ## <start> + label + (_ or <end>)
-    from_pos <- grep(sprintf("^%s(_|$)", from), rownames(mat), value = value)
-    to_pos <- grep(sprintf("^%s(_|$)", to), colnames(mat), value = value)
-    nf <- length(from_pos)
-    nt <- length(to_pos)
-    if (recycle && (nt == 1 || nf == 1)) {
-        from_pos <- rep(from_pos, length.out = max(nt, nf))
-        to_pos <- rep(to_pos, length.out = max(nt, nf))
-    }
-    if (!(length(to_pos) == length(from_pos) &&
+  pfun_method <- getOption("macpan_pfun_method", "startsWith")
+  find_pos_grep <- function(tag, x) {
+    grep(sprintf("^%s(_|$)", tag), x, value = value)
+  }
+  find_pos_startsWith <- function(tag, x) {
+    nt <- nchar(tag)
+    r <- which(startsWith(x, tag)) ## subset quickly
+    ## test remainder for _ or $
+    r <- r[(substr(x[r], nt+1, nt+1) == "_") |
+           nchar(x[r]) == nt]
+    if (!value) return(r)
+    return(x[r])
+  }
+
+  if (pfun_method == "both") {
+      from_pos <- find_pos_grep(from, rownames(mat))
+      to_pos <- find_pos_grep(to, colnames(mat))
+      from_pos_sw <- find_pos_startsWith(from, rownames(mat))
+      to_pos_sw <- find_pos_startsWith(to, colnames(mat))
+      stopifnot(all(from_pos==from_pos_sw) && all(to_pos==to_pos_sw))
+  } else {
+    find_pos <- switch(pfun_method,
+                       startsWith = find_pos_startsWith,
+                       grep = find_pos_grep)
+    from_pos <- find_pos(from, rownames(mat))
+    to_pos <- find_pos(to, colnames(mat))
+  }
+
+  nf <- length(from_pos)
+  nt <- length(to_pos)
+  if (recycle && (nt == 1 || nf == 1)) {
+    from_pos <- rep(from_pos, length.out = max(nt, nf))
+    to_pos <- rep(to_pos, length.out = max(nt, nf))
+  }
+  if (!(length(to_pos) == length(from_pos) &&
         length(to_pos) > 0 && length(from_pos) > 0)) { ## must be positive
         stop(sprintf(
             "to_pos, from_pos don't match: from_pos=%s, to_pos=%s",
