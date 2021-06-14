@@ -286,11 +286,15 @@ expand_state_vax <- function(x,
 
   if(unif){
     ## distribute people within each epidemic category uniformly across vax strata
-    for(state in attr(x, "epi_cat")){
-      state_regex <- paste0("^", state)
+    state_regex_list <- paste0("^", attr(x, "epi_cat"))
+    ## append age if it exists
+    if(has_age(x)){
+      state_regex_list <- expand_names(state_regex_list, sub("\\+", "\\\\+", attr(x, "age_cat")))
+    }
+
+    for(state_regex in state_regex_list){
       if(normalized){
-        out[grepl(paste0(state_regex, "_"), names(out))] <- rep(x[grepl(paste0(state_regex, "$"), names(x))],
-                                                                length(vax_cat))/length(vax_cat)
+        out[grepl(paste0(state_regex, "_"), names(out))] <- rep(x[grepl(paste0(state_regex, "$"), names(x))],                                                          length(vax_cat))/length(vax_cat)
       } else {
         out[grepl(paste0(state_regex, "_"), names(out))] <- distribute_counts(total = x[grepl(paste0(state_regex, "$"), names(x))],
                                                                               dist = rep(1, length(vax_cat))/length(vax_cat))
