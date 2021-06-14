@@ -754,8 +754,14 @@ adjust_symbols <- function(M) {
 make_flowchart <- vis_model ## back-compatibility
 
 
-## identify locations within matrix
-## ##' @param value return character (TRUE) or numeric (FALSE) position?
+##' identify locations within matrix
+##' checks global option "macpan_pfun_method" for method: "startsWith" (use efficient method, "grep" (use grep/regex), "both" (testing only! try both and compare)
+##' @param from string identifying 'from' compartment(s) for flows
+##' @param to string identifying 'to' compartment(s) for flows
+##' @param mat flow matrix with appropriate dimnames
+##' @param value (logical) return character (TRUE) or index (FALSE) ?
+##' @param recycle (logical) if necessary, recycle vectors (only if length-1) as necessary
+##' @export
 pfun <- function(from, to, mat, value = FALSE, recycle = FALSE) {
   pfun_method <- getOption("macpan_pfun_method", "startsWith")
   find_pos_grep <- function(tag, x) {
