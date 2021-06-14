@@ -755,6 +755,7 @@ make_flowchart <- vis_model ## back-compatibility
 
 
 ##' identify locations within matrix
+##'
 ##' checks global option "macpan_pfun_method" for method: "startsWith" (use efficient method, "grep" (use grep/regex), "both" (testing only! try both and compare)
 ##' @param from string identifying 'from' compartment(s) for flows
 ##' @param to string identifying 'to' compartment(s) for flows
