@@ -1,3 +1,16 @@
+library(profvis)
+library(McMasterPandemic)
+library(anytime)
+library(ggplot2)
+theme_set(theme_bw())
+library(cowplot)
+library(tidyverse)
+library(zoo)
+
+for(file in list.files(path='../R')){
+  source(paste('../R/', file, sep=''))
+}
+
 ## get base params
 params <- read_params("PHAC.csv")
 
@@ -20,5 +33,18 @@ params <- expand_params_vax(
 ## make state (will be vaxified because input params are vaxified)
 state <- make_state(params = params)
 
-## run sim
-run_sim(params, state)
+vaxify <- profvis(
+  {
+    for (i in c(1:10)){
+    ## run sim
+      run_sim(params, state)
+    }
+  },
+  prof_output = "vaxify.out"
+)
+vaxify_summary <- summaryRprof("vaxify.out")
+
+# Note: in afuns, expsim is being used by default
+write.csv(vaxify_summary$`by.self`, 'vaxify.csv')
+htmlwidgets::saveWidget(vaxify, "vaxify_profile.html")
+

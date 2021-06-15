@@ -78,3 +78,4 @@ inst/params/brankston-cmats/*.csv
 
 refactor/*/*.csv
 refactor/*/*.txt
+sandbox/vaxify.csv
