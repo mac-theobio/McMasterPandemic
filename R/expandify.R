@@ -433,7 +433,7 @@ make_vaxrate <- function(state, params){
 
   if(!has_vax(state) | !has_vax(params)) stop("need vaxified state and params to make vaccination rates")
 
-  model_type <- attr(get_vax(params), "model_type")
+  model_type <- get_vax_model_type(get_vax(params))
 
   ## pull out non-symptomatic *and* unvaccinated states
   asymp_unvax_regex <- sprintf("^(%s)_.*unvax",
@@ -480,7 +480,7 @@ make_vaxrate <- function(state, params){
 add_updated_vaxrate <- function(state, params, ratemat){
 
   vax_cat <- get_vax(params)
-  model_type <- attr(vax_cat, "model_type")
+  model_type <- get_vax_model_type(vax_cat)
 
   ## if original matrix isn't sparse, make it sparse for this bit
   original_sparse <- inherits(ratemat, "Matrix")

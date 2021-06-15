@@ -578,6 +578,11 @@ get_vax <- function(x) {
   return(attr(x, "vax_cat"))
 }
 
+get_vax_model_type <- function(x){
+  if(!is.null(attr(x, "model_type"))) return(attr(x, "model_type"))
+  return(ifelse(any(grepl("2", x)), "twodose", "onedose"))
+}
+
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
 smart_round <- function(x) {

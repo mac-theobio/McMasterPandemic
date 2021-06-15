@@ -172,7 +172,7 @@ make_beta <- function(state, params, full=TRUE) {
       if(!has_vax(state)) stop("if params are vaxified, state also needs to be vaxified")
       ## get vax categories
       vax_cat <- get_vax(params)
-      model_type <- attr(vax_cat, "model_type")
+      model_type <- get_vax_model_type(vax_cat)
 
       ## save original beta_0 names
       ## of beta_0 is just a vector (base case), just get colnames
@@ -429,7 +429,7 @@ make_ratemat <- function(state, params, do_ICU=TRUE, sparse=FALSE,
     if(has_vax(params)){
       ## get vax categories
       vax_cat <- get_vax(params)
-      model_type <- attr(vax_cat, "model_type")
+      model_type <- get_vax_model_type(vax_cat)
 
       ## add vaccine allocation rates (from unvax to vaxdose)
       M <- add_updated_vaxrate(state, params, M)
@@ -1110,7 +1110,7 @@ make_state <- function(N=params[["N"]],
     }
     if (vaxify){
       if(!is.null(params)) state <- expand_state_vax(state,
-                                                     attr(get_vax(params), "model_type"))
+                                                     get_vax_model_type(get_vax(params)))
       if(!is.null(x)){
         state_names <- names(x) ## update state names based on those provided in x
         ## FIXME: THIS ASSUMES X CONTAINS ALL STATES (don't have vax cats otherwise)
