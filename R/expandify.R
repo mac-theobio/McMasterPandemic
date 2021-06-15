@@ -85,7 +85,9 @@ condense_state <- function(x, values_only = FALSE){
   return(x)
 }
 
-## VAXIFY
+############
+## VAXIFY ##
+############
 
 #' Construct vector of vaccine category labels
 #'
@@ -157,7 +159,7 @@ expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodo
 #'
 #' @examples
 #' params <- read_params("PHAC.csv")
-#' params_age <- expand_params_age(params)
+#' params_vax <- expand_params_vax(params)
 #' @export
 expand_params_vax <- function(params,
                               model_type = c("onedose", "twodose"),
@@ -638,4 +640,76 @@ get_doses_per_day <- function(res, dose = c(1, 2)){
   )
 
   return(out)
+}
+
+################
+## VARIANTIFY ##
+################
+
+## PARAM TOOLS
+
+#' Edit parameter description attribute to include variant-specific definitions
+#' (helper function for `expand_params_variant()`)
+#'
+#' @param params_desc parameter descriptions, as initialized in `read_params()`
+#'
+#' @return
+#' @export
+expand_params_desc_variant <- function(params_desc){
+
+  params_desc[["variant_prop"]] <- "Current proportion of infections caused by the variant"
+  params_desc[["variant_advantage"]] <- "Transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5."
+  params_desc[["variant_vax_efficacy_dose1"]] <- "One-dose vaccine efficacy against variant (only used in vaxified model)"
+  params_desc[["variant_vax_efficacy_dose2"]] <- "Two-dose vaccine efficacy against variant (only used in vaxified model)"
+
+  return(params_desc)
+}
+
+#' Expand parameter list to include variant strain
+#'
+#' @param params parameter list (e.g. read in with `read_params()`)
+#' @param variant_prop current proportion of infections caused by the variant
+#' @param variant_advantage transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5.
+#' @param variant_vax_efficacy_dose1 one-dose vaccine efficacy against variant (only used in vaxified model)
+#' @param variant_vax_efficacy_dose2 two-dose vaccine efficacy against variant (only used in vaxified model)
+#'
+#' @examples
+#' params <- read_params("PHAC.csv")
+#' params_variant <- expand_params_variant(params)
+#' @export
+expand_params_variant <- function(
+  params,
+  variant_prop = 0.01,
+  variant_advantage = 1.5,
+  variant_vax_efficacy_dose1 = 0.3,
+  variant_vax_efficacy_dose2 = 0.8){
+
+  ## grab existing parameter descriptions
+  params_desc <- attr(params, "description")
+
+  ## convert to list
+  params <- as.list(params)
+
+  ## perform updates
+  #####################
+  par_list <- c("variant_prop",
+                "variant_advantage",
+                "variant_vax_efficacy_dose1",
+                "variant_vax_efficacy_dose2")
+
+  for(par in par_list){
+    params[[par]] <- get(par)
+  }
+
+  ## prep output
+  ################
+
+  ## add attributes
+  attr(params, "description") <- expand_params_desc_variant(params_desc)
+  attr(params, "do_variant") <- TRUE
+
+  ## add class
+  class(params) <- "params_pansim"
+
+  return(params)
 }

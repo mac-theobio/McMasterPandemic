@@ -79,6 +79,24 @@ make_jac <- function(params, state=NULL) {
     return(M)
 }
 
+calc_variant_adjustment <- function(params,
+                                    stratum = c("unvax", "dose1", "dose2")){
+  ## used for the vaxified model
+  stratum <- match.arg(stratum)
+
+  ## calculate adjustments to beta0 based on increased transmissibility and/or vaccine efficacy
+  if(stratum == "unvax"){
+    dominant_efficacy <- variant_efficacy <- 0
+  } else {
+    dominant_efficacy <- params[[paste0("vax_efficacy_", stratum)]]
+    variant_efficacy <- params[[paste0("variant_vax_efficacy_", stratum)]]
+  }
+
+  adjustment <- (1-dominant_efficacy)*(1-params[["variant_prop"]]) + (1-variant_efficacy)*params[["variant_advantage"]]*params[["variant_prop"]]
+
+  return(adjustment)
+}
+
 ##' construct vector of transmission multipliers
 ##' @param state state vector
 ##' @param params parameter vector
@@ -176,14 +194,29 @@ make_beta <- function(state, params, full=TRUE) {
                               ncol = length(vax_cat))
       rownames(vax_trans_red) <- vax_cat
 
-      vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
+      ## incorporate vaccine efficacy in different ways, depending on whether or not there is a variant
+      if(!do_variant(params)){
+        vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
 
-      if(model_type == "twodose"){
-        ## carry over efficacy from one dose to vaxdose2 (received second dose, but not yet protected)
-        vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
+        if(model_type == "twodose"){
+          ## carry over efficacy from one dose to vaxdose2 (received second dose, but not yet protected)
+          vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose1"]], length(vax_cat))
 
-        ## add in efficacy for second dose
-        vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose2"]], length(vax_cat))
+          ## add in efficacy for second dose
+          vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)),] <- rep(1-params[["vax_efficacy_dose2"]], length(vax_cat))
+        }
+      } else {
+        ## if we're including a variant, we also need to take care to do the increased transmissibility adjustment here (for non-vaxified models, that's taken care of below)
+        vax_trans_red[grepl(vax_cat[1], rownames(vax_trans_red)),] <- rep(calc_variant_adjustment(params, "unvax"))
+        vax_trans_red[grepl(vax_cat[2], rownames(vax_trans_red)),] <- rep(calc_variant_adjustment(params, "unvax"))
+
+        vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)),] <- rep(calc_variant_adjustment(params, "dose1"))
+
+        if(model_type == "twodose"){
+          vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)),] <- rep(calc_variant_adjustment(params, "dose1"))
+
+          vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)),] <- rep(calc_variant_adjustment(params, "dose2"))
+        }
       }
 
       ## apply vaccine transmission reduction over beta_0 (as computed above,
@@ -215,6 +248,12 @@ make_beta <- function(state, params, full=TRUE) {
       ## update dimnames for output
       dimnames(beta_0) <- list(row_names, col_names)
 
+    } else {
+      ## without vax
+      if(do_variant(params)){
+        ## if we're doing variant with vax, we're just adjusting based on changes in transmissibility
+        beta0 <- beta0*calc_variant_adjustment(params, "unvax")
+      }
     }
 
     ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
