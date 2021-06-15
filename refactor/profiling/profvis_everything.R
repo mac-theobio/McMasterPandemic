@@ -19,8 +19,6 @@ knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 
 
 state1 <- make_state(params=params1)
-sdate <- "2020-Feb-10"
-edate <- "2020-Jun-1"
 
 ########################################
 ## Profiling the base run_sim function
