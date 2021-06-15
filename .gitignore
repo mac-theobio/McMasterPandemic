@@ -78,5 +78,3 @@ inst/params/brankston-cmats/*.csv
 
 refactor/*/*.csv
 refactor/*/*.txt
-!docs/**
-misc/lints.csv

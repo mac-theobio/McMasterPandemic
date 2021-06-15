@@ -28,9 +28,6 @@ knitr::opts_chunk$set(
   ##warning=FALSE,
   comment = "#>"
 )
-## Matt: Careful! Warnings are now suppressed, as the getting_started vignette
-## causes a LOT of negative state value warnings.
-options(warn=-1)
 @
 
 \title{\texttt{McMasterPandemic}: getting started}
@@ -38,7 +35,6 @@ options(warn=-1)
 \author{Ben Bolker and David Earn\\\texttt{earn@math.mcmaster.ca}}
 
 \begin{document}
-
 \linenumbers
 
 \maketitle
@@ -191,7 +187,6 @@ respectively, then
 $\sigma^2=\mu + \frac{\mu^2}{\text{\code{obs_disp}}}$).
 
 <<run_sim_obs_noise,fig.width=8>>=
-
 set.seed(101)
 params1obs <- update(params1, obs_disp=200)
 res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
@@ -199,7 +194,6 @@ res1obs <- run_sim(params1obs, state1, start_date=sdate, end_date=edate,
 summary(res1obs)
 plot_grid(plot(res1obs, log=TRUE),
           plot(res1obs))
-
 @
 
 To simulate with process error, use \code{stoch=c(..., proc=TRUE)}. By default, this simulates only demographic stochasticity, which has little effect in a large epidemic.
@@ -329,11 +323,12 @@ report_data <- (res1obs
 )
 head(report_data)
 ## beta0 is the only parameter we're going to optimize:
-opt_pars <- list(time_params = c(value=0.1))
+opt_pars <- list(params = c(beta0=0.1))
 ## fit beta0 based on the report data:
 fitted.mod <- calibrate(
     data = report_data
   , start_date = sdate
+    ## skip breaks that are present by default:
   , time_args = list(break_dates = NULL)
   , base_params = params1obs
   , opt_pars = opt_pars
@@ -419,6 +414,7 @@ opt_pars <- list(params = c(beta0=0.1))
 fitted.mod <- calibrate(
     data = report_data
   , start_date = sdate
+    ## skip breaks that are present by default:
   , time_args = list(break_dates = NULL)
   , base_params = params1proc2
   , opt_pars = opt_pars

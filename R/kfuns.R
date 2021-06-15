@@ -3,15 +3,15 @@
 
 ## FIXME: how to aggregate/thin/adjust time scale?
 ## compute kernel by brute force
-transKernel <- function(par, steps = 100, do_hazard = TRUE,
-                        ndt = 1) {
-    if (ndt > 1) warning("ndt not fully implemented")
-    par[["N"]] <- 1 ## ? redundant ?
-    state <- make_state(N = 1, E0 = 1, use_eigvec = FALSE)
-    return(run_sim_range(par, state,
-        nt = steps * ndt,
-        step_args = list(do_hazard = do_hazard)
-    ))
+transKernel <- function(par, steps=100, do_hazard=TRUE,
+                        ndt=1){
+        if (ndt>1) warning("ndt not fully implemented")
+        par[["N"]] <- 1   ## ? redundant ?
+	state <- make_state(N=1, E0=1, use_eigvec=FALSE)
+	return(run_sim_range(par, state
+		, nt=steps*ndt
+		, step_args = list(do_hazard=do_hazard)
+	))
 }
 ## allow caching of results
 if (requireNamespace("memoise")) {
@@ -20,50 +20,44 @@ if (requireNamespace("memoise")) {
 
 ## FIXME: kernel should ideally be an object with k and lag
 ## (a class with methods)
-## Building with r instead of <U+03BB> for this reason
+## Building with r instead of λ for this reason
 
 ## Investigate r (combine with uniroot to get Euler's r)
-discountGap <- function(r, k) {
-    lag <- 1:length(k)
-    discountR <- sum(k * exp(-lag * r))
-    return(discountR - 1)
+discountGap <- function(r, k){
+	lag <- 1:length(k)
+	discountR <- sum(k*exp(-lag*r))
+	return(discountR-1)
 }
 
-## Investigate <U+03BA> (combine with uniroot to get <U+03BA>_eff)
-kappaGap <- function(kappa, rho, R) {
-    R_est <- (1 + rho * kappa)^(1 / kappa)
-    return(R - R_est)
+## Investigate κ (combine with uniroot to get κ_eff)
+kappaGap <- function(kappa, rho, R){
+	R_est <- (1+rho*kappa)^(1/kappa)
+	return(R-R_est)
 }
 
 ## moments of a kernel with parameters/convolution vector k
 ## FIXME: principled way to deal with lower-bound issues
-kernelMoments <- function(k, lwr = 0.01) {
-    lag <- seq(length(k))
-    R0 <- sum(k)
-    Gbar <- sum(k * lag) / R0
-    Gvar <- sum(k * lag^2) / R0 - Gbar^2
-    r0 <- (uniroot(discountGap, k = k, lower = lwr, upper = 2))$root
-    kappa_eff <- (uniroot(kappaGap,
-        rho = r0 * Gbar,
-        R = R0, lower = lwr, upper = 2
-    ))$root
+kernelMoments <- function(k,lwr=0.01){
+	lag <- seq(length(k))
+	R0 <- sum(k)
+	Gbar <- sum(k*lag)/R0
+	Gvar <- sum(k*lag^2)/R0 - Gbar^2
+	r0 <- (uniroot(discountGap, k=k, lower=lwr, upper=2))$root
+	kappa_eff <- (uniroot(kappaGap, rho=r0*Gbar,
+                              R=R0, lower=lwr, upper=2))$root
 
-    return(c(
-        R0 = R0, Gbar = Gbar, r0 = r0,
-        kappa = Gvar / Gbar^2,
-        kappa_eff = kappa_eff
-    ))
+	return(c(R0=R0, Gbar=Gbar, r0=r0
+		, kappa=Gvar/Gbar^2
+		, kappa_eff=kappa_eff
+	))
 }
 
-## What to multiply beta by to get a desired r
+### What to multiply beta by to get a desired r
 ##' @importFrom stats uniroot
-rmult <- function(k, r) {
-    uniroot(
-        f = function(m) {
-            discountGap(r, m * k)
-        },
-        lower = 1 / 10, upper = 10
-    )$root
+rmult <- function(k, r){
+	uniroot(f=function(m) {discountGap(r, m*k)}
+		, lower=1/10, upper=10
+	)$root
 }
 
 ##

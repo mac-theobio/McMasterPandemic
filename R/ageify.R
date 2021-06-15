@@ -1010,7 +1010,7 @@ run_sim_ageify <- function(base_params,
 #' @export
 ageify <- function(ratemat, params, age_cat=mk_agecats()) {
     m <- Matrix::kronecker(diag(length(age_cat)), ratemat)
-    new_names <- unlist(lapply(rownames(m), paste, age_cat, sep = "_"))
+    new_names <- unlist(lapply(rownames(m), paste, age_cat, sep="_"))
     dimnames(m) <- list(new_names, new_names)
     return(m)
 }
@@ -1025,7 +1025,7 @@ if (FALSE) {
     ## hack so we have an infective
     ss2["Im_11-20"] <- 1
     ss2["E_91+"] <- 0
-    tot_I <- function(x) sum(x[grep("^I[a-z]", names(x))])
+    tot_I <- function(x) sum(x[grep("^I[a-z]",names(x))])
     tot_I(ss)
     sum(ss2)
     tot_I(ss2)
@@ -1037,10 +1037,8 @@ if (FALSE) {
     pmat <- matrix(0.1, nrow=length(aa), ncol=length(aa), dimnames=list(aa,aa))
     diag(pmat) <- 1
     ifun <- function(M) {
-        Matrix::image(Matrix(M), scales = list(
-            y = list(at = seq(nrow(M)), labels = rownames(M)),
-            x = list(at = seq(ncol(M)), labels = colnames(M), rot = 90)
-        ))
+        Matrix::image(Matrix(M),scales=list(y=list(at=seq(nrow(M)),labels=rownames(M)),
+                                            x=list(at=seq(ncol(M)),labels=colnames(M), rot=90)))
     }
     params_age <- c(as.list(params),list(pmat=pmat))
     b1 <- make_beta(ss2, params_age, full=FALSE)

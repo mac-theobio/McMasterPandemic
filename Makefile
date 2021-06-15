@@ -107,7 +107,7 @@ dtest:
 lpackage:
 	R CMD INSTALL .
 
-package:
+package: 
 	sudo R CMD INSTALL .
 
 newpackage: pull package
@@ -119,7 +119,7 @@ newpackage: pull package
 R=R
 # -> you can do    R=R-devel  make ....
 PACKAGE=McMasterPandemic
-# get VERSION from glmmTMB/DESCRIPTION
+# get VERSION from glmmTMB/DESCRIPTION  
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
 VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 
@@ -148,12 +148,6 @@ pkgcheck:
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
-site-update-lazy:
-	echo "pkgdown.extras::build_site(lazy=TRUE)" | $(R) --slave
-
-site-update:
-	echo "pkgdown.extras::build_site()" | $(R) --slave
-
 CPP_SRC=
 
 ## FIXME: depend on ??
@@ -166,25 +160,11 @@ install: $(TARBALL)
 	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
 	@touch $@
 
-style: misc/macpan_style.R misc/macpan_lint.R
-	Rscript misc/macpan_style.R
-	Rscript misc/macpan_lint.R
-
-######################################################################
-
-## refactor/recalibration// from Matthew
-
-rr_%.Rout: refactor/recalibration/%.R
-	$(pipeR)
-
-## Not currently working
-## Rscript refactor/recalibration/comparison.R
-
 ######################################################################
 
 ## Looks cool; clashes with current Bolker rules.
 Ignore += maker
-maker:
+maker: 
 	git clone https://github.com/ComputationalProteomicsUnit/maker.git
 ## -include maker/Makefile
 
@@ -209,7 +189,7 @@ makestuff/Makefile:
 	git clone $(msrepo)/makestuff
 	ls $@
 
-localstuff:
+localstuff: 
 	ln -s ../makestuff .
 	ls $@
 
