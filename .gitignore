@@ -68,3 +68,4 @@ refactor/*/*.csv
 refactor/*/*.txt
 !docs/**
 misc/lints.csv
+sandbox/vaxify.csv
