@@ -26,42 +26,7 @@ state1 <- make_state(params = params1)
 sdate <- "2020-02-10"
 edate <- "2020-06-01"
 
-#################################################################################################
-# Non-stochastic simulation
-
-classic <- profvis({
-    for (i in c(1:100)) {
-      res1 <- run_sim(params = params1, state = state1, start_date = sdate, end_date = edate)
-    }
-  }, prof_output = "classic.out"
-)
-classic_summary <- summaryRprof("classic.out")
-
-# Note: in afuns, expsim is being used by default
-write.csv(classic_summary$`by.self`, 'classic.csv')
-htmlwidgets::saveWidget(classic, "classic_profile.html")
-
-################################################################################################
-# Demographic stochastic simulation
-params1proc2 <- update(params1, E0 = 200, proc_disp = 0.5, obs_disp = 5)
-
-demographic_stochastic <- profvis(
-  {
-    for (i in c(1:100)) {
-      res1proc2 <- run_sim(params1proc2,
-        start_date = sdate, end_date = edate,
-        stoch = c(obs = FALSE, proc = TRUE)
-      )
-    }
-  },
-  prof_output = "demographic_stochastic.out"
-)
-
-
-summary = summaryRprof("demographic_stochastic.out")
-write.csv(summary$`by.self`, 'demographic_stochastic.csv')
-htmlwidgets::saveWidget(demographic_stochastic, "demographic_stochastic_profile.html")
-
+options(macpan_pfun_method = "both")
 #########################################################
 # Profile calibrate
 
@@ -91,7 +56,7 @@ opt_pars <- list(params = c(beta0 = 0.1))
 
 calibrated <- profvis(
   {
-    for (i in c(1:10)) {
+    for (i in c(1:20)) {
       fitted.mod <- calibrate(
         data = report_death_data,
         start_date = sdate
