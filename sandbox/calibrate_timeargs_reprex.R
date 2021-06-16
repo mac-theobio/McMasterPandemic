@@ -36,7 +36,7 @@ report_data <- (res1obs
 ## initial conditions for calibrating the single change in beta0
 opt_pars <- list(time_params = c(0.1))
 
-## calibration
+## calibration, setting value in *both* opt_pars and time_args$params_timevar
 fitted.mod <- calibrate(
   data = report_data
   , start_date = sdate
@@ -45,6 +45,20 @@ fitted.mod <- calibrate(
   ## "oops" accidentally trying to fix the value we're also trying to calibrate
   ## who will win??
   , time_args = list(params_timevar = params_timevar)
+)
+
+print(paste0("true relative beta0: ", params_timevar$Relative_value))
+
+print(paste0("initial calibration value for relative beta0: ", opt_pars$time_params))
+
+print(paste0("estimated beta0 from calibrate: ", coef(fitted.mod, "fitted")))
+
+## calibration, forgetting to pass time_args$params_timevar
+fitted.mod <- calibrate(
+  data = report_data
+  , start_date = sdate
+  , base_params = params1obs
+  , opt_pars = opt_pars
 )
 
 print(paste0("true relative beta0: ", params_timevar$Relative_value))
