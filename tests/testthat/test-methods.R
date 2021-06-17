@@ -1,6 +1,10 @@
 library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
+source("utils.R") ## fix_stored()
+
+ont_cal_2brks <- fix_stored(ont_cal_2brks)
+ont_cal1 <- fix_stored(ont_cal1)
 
 params <- read_params("ICU1.csv")
 s <- run_sim(params, start_date = "2020-03-01", end_date = "2020-05-01")
@@ -54,7 +58,8 @@ test_that("fit methods", {
     expect_is(suppressWarnings(plot(ont_cal1)), "ggplot")
     expect_is(suppressWarnings(plot(ont_cal1, data = trans_state_vars(ont_all))), "ggplot")
     predict(ont_cal_2brks)
-    expect_is(suppressWarnings(plot(ont_cal_2brks, data = trans_state_vars(ont_all))), "ggplot")
+    expect_is(suppressWarnings(plot(ont_cal_2brks,
+                                    data = trans_state_vars(ont_all))), "ggplot")
 })
 
 test_that("predict", {

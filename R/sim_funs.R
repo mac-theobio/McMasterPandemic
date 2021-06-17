@@ -686,14 +686,10 @@ run_sim <- function(params,
               t <- params_timevar[j, "Type"]
               old_param <- switch(t,
                                   rel_orig = params0[[s]],
-                                  rel_prev = params[[s]]
+                                  rel_prev = params[[s]],
+                                  stop("unknown time_params type ",t)
                                   )
               params[[s]] <- old_param * v
-              params[[s]] <- switch(t,
-                                    rel_orig = old_param * v,
-                                    rel_prev = params[[s]] * v,
-                                    stop("unknown timevar type ",t)
-                                    )
               if (s == "proc_disp") {
                 state <- round(state)
               }

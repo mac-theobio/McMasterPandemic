@@ -50,11 +50,26 @@ test_that("params methods", {
 })
 
 
-time_pars <- data.frame(
+time_pars_old <- data.frame(
     Date = c("2020-03-10", "2020-03-25"),
     Symbol = c("beta0", "beta0"),
     Relative_value = c(0.5, 0.1)
 )
+
+time_pars <- data.frame(
+    Date = c("2020-03-10", "2020-03-25"),
+    Symbol = c("beta0", "beta0"),
+    Value = c(0.5, 0.1),
+    Type = "rel_orig"
+)
+
+time_pars_bad <- data.frame(
+    Date = c("2020-03-10", "2020-03-25"),
+    Symbol = c("beta0", "beta0"),
+    Value = c(0.5, 0.1),
+    Type = "weird"
+)
+
 
 test_that("time-varying example", {
     resICU_t <- run_sim(params, state,
@@ -70,6 +85,24 @@ test_that("time-varying example", {
     ## FIXME: test values!
 })
 
+test_that("bad time-varying examples", {
+  expect_warning(run_sim(params, state,
+        start_date = "2020-03-01",
+        end_date = "2020-06-01",
+        params_timevar = time_pars_old,
+        step_args = list(do_hazard = TRUE)
+        ),
+        "specifying params_timevar with Relative_value is deprecated"
+        )
+  expect_error(
+      run_sim(params, state,
+              start_date = "2020-03-01",
+              end_date = "2020-06-01",
+              params_timevar = time_pars_bad,
+              step_args = list(do_hazard = TRUE)
+              ),
+      "unknown time_params type weird")
+})
 
 ## test for 'bad date' error
 ## test multiple param switch

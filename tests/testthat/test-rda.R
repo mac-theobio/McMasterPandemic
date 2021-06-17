@@ -1,10 +1,14 @@
 library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
+source("utils.R") ## fix_stored()
 
 test_that("identical_predict", {
     skip_if_not_installed("anytime")
     require(anytime)
+
+    ont_cal_2brks <- fix_stored(ont_cal_2brks)
+    ont_cal1 <- fix_stored(ont_cal1)
 
     new_pred_1 <- predict(ont_cal1)
     new_pred_2brks <- predict(ont_cal_2brks)
@@ -12,12 +16,19 @@ test_that("identical_predict", {
     load(system.file("testdata", "ONcalib_2020Jun01.rda", package = "McMasterPandemic"))
     load(system.file("testdata", "ONcalib_2brks_2020Jun01.rda", package = "McMasterPandemic"))
 
+    ## re-hack after loading old stuff ...
+    ont_cal_2brks <- fix_stored(ont_cal_2brks)
+    ont_cal1 <- fix_stored(ont_cal1)
+
     old_pred_1 <- predict(ont_cal1)
     old_pred_2brks <- predict(ont_cal_2brks)
 
-    pred_1_comparison <- (new_pred_1 == old_pred_1)
-    expect(all(pred_1_comparison[!is.na(pred_1_comparison)]), "New ont_cal1 predictions are not equal to old ont_cal1 predictions!")
+    ## hack new_pred a little bit to match old ...
+    ff <- attr(new_pred_1, "forecast_args")
+    ff$debug_hist <- NULL
+    attr(new_pred_1, "forecast_args") <- ff
+    ## waldo::compare(old_pred_1, new_pred_1)
+    expect_equal(new_pred_1, old_pred_1)
 
-    pred_2_comparison <- (new_pred_2brks == old_pred_2brks)
-    expect(all(pred_2_comparison[!is.na(pred_2_comparison)]), "New ont_cal_2brks predictions are not equal to old ont_cal_2brks!")
+    expect_equal(new_pred_2brks, old_pred_2brks)
 })
