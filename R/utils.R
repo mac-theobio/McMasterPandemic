@@ -512,7 +512,8 @@ add_d_log <- function(x) {
 ##                 %>% as_tibble()
 ##                 %>% dplyr::filter(Symbol=="beta0")
 ##                 %>% dplyr::select(-Symbol)
-##                 %>% rename(rel_beta0="Relative_value",date="Date")
+##   FIXME may not be up to date with time_params restructuring?
+##                 %>% rename(rel_beta0="Value",date="Date")
 ##             )
 ##             vars <- c("date","S")
 ##             if (has_zeta(params)) vars <- c(vars,"hetS")
@@ -827,4 +828,9 @@ exclude_states <- function(nm, exclude_states) {
 first_letter_cap <- function(x) {
     f <- substr(x, 1, 1)
     return(toupper(f) == f)
+}
+
+## from ?tolower
+capitalize <- function(x) {
+  paste0(toupper(substring(x, 1, 1)), substring(x, 2))
 }

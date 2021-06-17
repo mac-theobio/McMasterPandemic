@@ -295,23 +295,22 @@ run_sim_break <- function(params,
     }
 
     params_timevar <- time_args$params_timevar
-    if (!is.null(params_timevar)) {
-        params_timevar <- within(
-            time_args$params_timevar,
-            if (any(rvals <- is.na(Relative_value))) {
-                Relative_value[rvals] <- extra_pars$time_params
-            }
-        )
+  if (!is.null(params_timevar)) {
+    val_column <- grep("[Vv]alue", names(params_timevar)) ## back-compatible
+    rvals <- is.na(params_timevar[[val_column]])
+    if (any(rvals)) {
+      params_timevar[[val_column]] <- extra_pars$time_params
     }
+  }
 
-    if (return_timevar) {
-        return(params_timevar)
-    }
-    sim_args <- c(
-        sim_args,
-        list(params_timevar = params_timevar)
-    )
-    do.call("run_sim", sim_args)
+  if (return_timevar) {
+    return(params_timevar)
+  }
+  sim_args <- c(
+      sim_args,
+      list(params_timevar = params_timevar)
+  )
+  do.call("run_sim", sim_args)
 }
 
 ## DEVELOPMENT: trying to use linear modeling framework?
