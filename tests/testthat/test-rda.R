@@ -23,10 +23,17 @@ test_that("identical_predict", {
     old_pred_1 <- predict(ont_cal1)
     old_pred_2brks <- predict(ont_cal_2brks)
 
-    ## hack new_pred a little bit to match old ...
-    ff <- attr(new_pred_1, "forecast_args")
-    ff$debug_hist <- NULL
-    attr(new_pred_1, "forecast_args") <- ff
+    ## hack new_preds a little bit to match old ...
+    fix_pred <- function(x) {
+      ff <- attr(x, "forecast_args")
+      ff$debug_hist <- NULL
+      attr(x, "forecast_args") <- ff
+      return(x)
+    }
+
+    new_pred_1 <- fix_pred(new_pred_1)
+    new_pred_2brks <- fix_pred(new_pred_2brks)
+
     ## waldo::compare(old_pred_1, new_pred_1)
     expect_equal(new_pred_1, old_pred_1)
 
