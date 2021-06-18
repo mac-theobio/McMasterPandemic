@@ -560,7 +560,7 @@ get_age <- function(x) {
 has_vax <- function(x) {
   ## look for presence of the "vax_cat" attribute
   if("pansim" %in% class(x)){
-    ## for pansim objects, check if its params attribute has age cats
+    ## for pansim objects, check if its params attribute has vax cats
     return("vax_cat" %in% names(attributes(attr(x, "params"))))
   }
 
@@ -568,14 +568,19 @@ has_vax <- function(x) {
     return(any(grepl("vax", names(x))))
   }
 
-  ## otherwise, check the object directly for an age cat attribute
+  ## otherwise, check the object directly for an vax cat attribute
   return("vax_cat" %in% names(attributes(x)))
 }
 
 get_vax <- function(x) {
-  ## get age categories out of params list
+  ## get vax categories out of params list
   if (!has_vax(x)) stop("these parameters are not vaxified")
   return(attr(x, "vax_cat"))
+}
+
+get_vax_model_type <- function(x){
+  if(!is.null(attr(x, "model_type"))) return(attr(x, "model_type"))
+  return(ifelse(any(grepl("2", x)), "twodose", "onedose"))
 }
 
 ## round, preserving sum
@@ -585,6 +590,12 @@ smart_round <- function(x) {
   indices <- utils::tail(order(x-y), round(sum(x)) - sum(y))
   y[indices] <- y[indices] + 1
   y
+}
+
+do_variant <- function(x) {
+  ## should be a pars list
+  check <- attr(x, "do_variant")
+  return(!is.null(check) && check)
 }
 
 ##' visualize rate (per-capita flow) matrix

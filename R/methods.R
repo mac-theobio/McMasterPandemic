@@ -704,7 +704,8 @@ coef.fit_pansim <- function(object,
                                       f_args$opt_pars,
                                       f_args$fixed_pars))
     if (method=="fitted") return(opt_pars)
-    params <- update(f_args$base_params, opt_pars$params)
+    params <- f_args$base_params
+    if (!is.null(opt_pars$params)) params <- update(f_args$base_params, opt_pars$params)
     return(params)
 }
 

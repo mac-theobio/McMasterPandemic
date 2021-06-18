@@ -49,5 +49,5 @@ Expand parameter list to include vaccination
 }
 \examples{
 params <- read_params("PHAC.csv")
-params_age <- expand_params_age(params)
+params_vax <- expand_params_vax(params)
 }
