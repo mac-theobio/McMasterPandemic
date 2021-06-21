@@ -2,6 +2,10 @@
 title: "Expandify implementation notes"
 author: "Irena Papst"
 output: html_notebook
+vignette: >
+  %\VignetteIndexEntry{Vaxify Implementation}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 A place to keep notes on expandify implementation (ageify, vaxify) assumptions and future work (instead of relying on disparate FIXMEs).
