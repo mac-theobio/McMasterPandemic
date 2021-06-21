@@ -298,9 +298,14 @@ run_sim_break <- function(params,
   if (!is.null(params_timevar)) {
     val_column <- grep("[Vv]alue", names(params_timevar)) ## back-compatible
     rvals <- is.na(params_timevar[[val_column]])
+    ## MLI: HACK
+    
     if (any(rvals)) {
-      params_timevar[[val_column]] <- extra_pars$time_params
+    	params_timevar[[val_column]][rvals] <- extra_pars$time_params
     }
+    # if (any(rvals)) {
+    #   params_timevar[[val_column]] <- extra_pars$time_params
+    # }
   }
 
   if (return_timevar) {
