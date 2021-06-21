@@ -17,6 +17,8 @@ forecast_ensemble(
   calc_Rt = FALSE,
   fix_pars_re = "nb_disp",
   raw_ensembles = FALSE,
+  parallel = FALSE,
+  n_cores = 4,
   .progress = if (interactive()) "text" else "none"
 )
 }

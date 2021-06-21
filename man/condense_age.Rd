@@ -4,12 +4,10 @@
 \alias{condense_age}
 \title{collapse age/testing/etc. categories (only; don't do other condensation)}
 \usage{
-condense_age(x, levels = unique(epi_cat))
+condense_age(x)
 }
 \arguments{
-\item{x}{a state vector}
-
-\item{levels}{levels/sort order}
+\item{x}{a state vector or simulation result df (an object of class `state_pansim` or `pansim`)}
 }
 \description{
 collapse age/testing/etc. categories (only; don't do other condensation)

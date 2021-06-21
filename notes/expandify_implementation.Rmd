@@ -1,0 +1,32 @@
+---
+title: "Expandify implementation notes"
+author: "Irena Papst"
+output: html_notebook
+---
+
+A place to keep notes on expandify implementation (ageify, vaxify) assumptions and future work (instead of relying on disparate FIXMEs).
+
+## Assumptions
+
+### General
+
+* Wherever `distribute_counts` or `smart_round` is used, it fills preferentially from right to left (e.g. in `expand_state_age`, counts from a specified state will be preferentially distributed from older age groups to younger)
+
+### Vaxify
+
+* By default, everyone starts in the unvaccinated compartment, regardless of epi status or point in the epidemic.
+  * I think we can get around this by specifying `make_state(x = vec)` manually?
+* We know the number of doses per day administered to each subgroup (e.g. age category) of the population.
+* Currently assuming there is only one dose, but could expand to two doses
+  * would need to update how vax efficacy gets handled in `make_beta()`
+  * would need to update how rates get assigned for movement between vax strata (currently only have people move (from non-symptomatic states) `vax_cat[1] -> vax_cat[2]` (vaccine allocation step) and susceptibles from `vax_cat[2] -> vax_cat[3]` (vaccine response step))
+* Currently assuming there is no difference in the disease course for vaccinated individuals that get infected (this happens since we're not assuming 100% vaccine efficacy).
+* We only vaccinate non-symptomatic classes ($S$, $E$, $I_a$, $I_p$, $R$) because of symptom screening at vax sites & the fact that hospitalized individuals aren't being vaccinated while they're receiving treatment.
+* Currently, we split the number of doses per day evenly over the population, regardless of age.
+
+## To fix/do
+
+* Make `condense_vax()` work for ageified case (without losing age groups).
+* Age-specific doses per day: check that `mk_vaxrates()` works for ageified parameters (specifically the `doses_per_day/params[["N"]]` calculation, since this is a vector divided by a vector).
+* `make_ratemat()`: update epi rates in vaxdose strata to reflect reduced disease severity of breakthrough infections (increase asymptomatic proportion and turn off flows to severe illness, i.e. hospitalization, and death)
+* `make_vaxrates()`: use an age-specific vector of `vax_doses_per_day` in computing age-specific vaccination rates (rates from `state_age_unvax` to `state_age_vaxwait`)

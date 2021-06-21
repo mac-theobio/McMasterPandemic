@@ -1,0 +1,29 @@
+---
+title: "Expandify implementation notes"
+author: "Irena Papst"
+output: html_notebook
+---
+
+A place to keep notes on expandify implementation (ageify, vaxify) assumptions and future work (instead of relying on disparate FIXMEs).
+
+## Assumptions
+
+### General
+
+* `distribute_counts()` (via `smart_round()`: preferentially fills counts from right to left (e.g. in `expand_state_age`, counts from a specified state will be distributed from older age groups to younger)
+
+### Vaxify
+
+* `expand_state_vax()`: everyone starts in the unvaccinated compartment, regardless of epi status or point in the epidemic.
+  * Can we actually already get around this by specifying `make_state(x = vec)`?
+* `mk_vaxrates()`: we need to know (or be able to calculate the number of doses per day administered to each subgroup (e.g. age category) of the population.
+
+## To fix/do
+
+* `condense_vax()`: make it work for ageified case (don't condense over age groups)
+* `mk_vaxrates()`: check that it works for ageified parameters (specifically the `doses_per_day/params[["N"]]` calculation, since this is a vector divided by a vector)
+
+## Questions (for Ben)
+
+1. I have a choice between handling the calculation of per capita daily vaccination rates as a pre-processing step or in the sim... does it matter for `timepars` or `calibrate` when these rates are calculated?
+
