@@ -30,7 +30,8 @@ Imports:
 	deSolve,
 	splines,
 	diagram,
-	doParallel
+	doParallel,
+	fastmatrix
 Suggests:
 	knitr,
 	testthat,

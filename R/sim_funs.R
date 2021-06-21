@@ -225,13 +225,26 @@ make_beta <- function(state, params, full=TRUE) {
         ## need to take the transpose of the kronecker result since
         ## Matrix::Matrix(beta_0) in the kronecker product takes a row vector
         ## and converts it to a column vector
-        beta_0 <- kronecker(Matrix::Matrix(vax_trans_red),
-                            Matrix::t(Matrix::Matrix(beta_0)))
+    #    beta_0_old <- kronecker(Matrix::Matrix(vax_trans_red),
+    #                        Matrix::t(Matrix::Matrix(beta_0)))
+        beta_0_fastmatrix <- Matrix::Matrix(fastmatrix::kronecker.prod(vax_trans_red, t(beta_0)))
+    #    beta_0_base <- Matrix::Matrix(vax_trans_red %x% t(beta_0))
+    #    beta_0_rtensor <- Matrix::Matrix(rTensor::kronecker_list(list(vax_trans_red, t(beta_0))))
+
       } else {
         ## otherwise, beta_0 will already be a Matrix::Matrix (class dgeMatrix) and we don't need any transposes
-        beta_0 <- kronecker(Matrix::Matrix(vax_trans_red), Matrix::Matrix(beta_0))
+  #      beta_0_old <- kronecker(Matrix::Matrix(vax_trans_red), Matrix::Matrix(beta_0))
+
+        beta_0_fastmatrix <- Matrix::Matrix(fastmatrix::kronecker.prod(vax_trans_red, beta_0))
+  #      beta_0_base <- Matrix::Matrix(vax_trans_red %x% beta_0)
+  #      beta_0_rtensor <- Matrix::Matrix(rTensor::kronecker_list(list(vax_trans_red, beta_0)))
       }
 
+      beta_0 <- beta_0_fastmatrix #beta_0_old
+
+   #   stopifnot(identical(beta_0_fastmatrix, beta_0_old))
+  #    stopifnot(identical(beta_0_base, beta_0_old))
+  #    stopifnot(identical(beta_0_rtensor, beta_0_old))
 
       ## expand names for beta_0 do colnames the same way in either case
       ## (whether beta_0 is a vector or matrix)

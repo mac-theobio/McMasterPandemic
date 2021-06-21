@@ -46,9 +46,9 @@ test_that("Warnings thrown if state variables are not all capital letters", {
                  regexp="Not all state variables are capital letters", label="Non-capitalized state warning not being thrown")
 })
 
-
-#microbenchmark(baseline = sweep(M, v, MARGIN=1, FUN="*"))
-#microbenchmark({new =t(t(M) %*% diag(v));
-#n = names(v);
-#rownames(new) = n})
-#microbenchmark(new= t(t(M) * rep(v, rep.int(nrow(M), length(v)))))
+test_that("New Kronecker product is the same as the old one", {
+  old <- kronecker(Matrix::Matrix(M),
+                      Matrix::t(Matrix::Matrix(v)))
+  new <- Matrix::Matrix(fastmatrix::kronecker.prod(M, t(v)))
+  expect_identical(old, new)
+})
