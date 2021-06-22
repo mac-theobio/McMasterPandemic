@@ -1,6 +1,8 @@
 library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
+
+## FIXME: move to main R/utils.R or setup_utils.R (automatic when testing)
 source("utils.R") ## fix_stored()
 
 ont_cal_2brks <- fix_stored(ont_cal_2brks)
@@ -100,3 +102,5 @@ test_that("predict", {
     expect_equal(dim(pp3), c(14, 123, 10))
     expect_equal(length(attr(pp3, "imp_wts")), 10)
 })
+
+## FIXME:

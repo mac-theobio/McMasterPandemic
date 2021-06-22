@@ -35,7 +35,12 @@ test_that("identical_predict", {
     new_pred_2brks <- fix_pred(new_pred_2brks)
 
     ## waldo::compare(old_pred_1, new_pred_1)
-    expect_equal(new_pred_1, old_pred_1)
+    expect_equal(old_pred_1, new_pred_1)
 
+    ## waldo::compare(old_pred_2brks, new_pred_2brks)
+    ## tweak
+    attr(attr(old_pred_2brks, 'forecast_args')$base_params, 'description')[14] <-
+      attr(attr(new_pred_2brks, 'forecast_args')$base_params, 'description')[14]
     expect_equal(new_pred_2brks, old_pred_2brks)
+
 })

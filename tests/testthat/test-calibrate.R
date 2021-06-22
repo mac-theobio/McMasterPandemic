@@ -128,5 +128,4 @@ test_that("calibrate parameters other than beta0", {
                 log_nb_disp = NULL
             )
         )
-    }
-})
+    }})
