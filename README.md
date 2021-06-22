@@ -15,7 +15,8 @@ The repository contains an R package and various workflows/analyses. You can for
 * to re-install the package, including re-building and incorporating vignettes, use `make build`
 * If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
 * **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/bbolker/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Please don't make a habit of pushing without testing.
-* Code that is used in the refactoring process should go in the top-level refactor folder. 
+* To avoid whitespace diffs between versions/branches, automatically style the package with `make style` or run `misc/macpan_style.R`. `make style` (or running `misc/macpan_lint.R`) also creates a new file, `misc/lints.csv`, which contains stylistic and other lints that `styler` cannot automatically fix.
+* Code that is used in the refactoring process should go in the top-level `refactor` folder. 
 * Slow tests are skipped by default; this process is controlled by the presence of a `MACPAN_TEST_LEVEL` environment (shell) variable. Many of the test files contain this code:
 ```r
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1

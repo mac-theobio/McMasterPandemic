@@ -915,17 +915,18 @@ update_contact_rate_setting <- function(contact_rate_setting,
 ##' @inheritParams mk_contact_rate_setting
 ##'
 ##' @export
-##' @examples
-##' check_contact_rate_setting(mk_contact_rate_setting)
 check_contact_rate_setting <- function(contact_rate_setting) {
     ## check that it's a list
-    if (!is.list(contact_rate_setting)) stop("setting-specific contact rate must be specified as a list")
+    if (!is.list(contact_rate_setting)) {
+        stop("setting-specific contact rate must be specified as a list")
+    }
     ## check that the avg_contact_rate_per_setting list is correctly specified
-    if (!isTRUE(all.equal(
-        sort(names(contact_rate_setting)),
-        c("community", "household", "school", "work")
-    ))) {
-        stop("setting-specific contact rate list must have names 'household', 'school', 'work', 'community'")
+    cnms <- c("community", "household", "school", "work")
+    if (!identical(sort(names(contact_rate_setting)), cnms)) {
+        stop(
+            "setting-specific contact rate list must have names ",
+            paste(sprintf("'%s'", cnms), collapse = ", ")
+        )
     }
 }
 

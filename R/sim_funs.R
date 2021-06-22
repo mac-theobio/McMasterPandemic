@@ -987,13 +987,12 @@ run_sim <- function(params,
         for (i in seq(length(times) - 1)) {
             recompute_M <- FALSE
             for (j in which(switch_times == times[i])) {
-                 ## reset all changing params
-                 s <- params_timevar[j, "Symbol"]
-                 v <- params_timevar[j, "Value"]
-                 t <- params_timevar[j, "Type"]
-                 old_param <- switch(t,
-                 ## this should work even if params0[[s]] is a vector
-
+                ## reset all changing params
+                s <- params_timevar[j, "Symbol"]
+                v <- params_timevar[j, "Value"]
+                t <- params_timevar[j, "Type"]
+                old_param <- switch(t,
+                    ## this should work even if params0[[s]] is a vector
                     rel_orig = params0[[s]],
                     rel_prev = params[[s]],
                     stop("unknown time_params type ", t)
