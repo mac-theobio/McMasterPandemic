@@ -93,6 +93,8 @@ rExp <- function(params, steps = 100, ndt = 1,
     return_val <- match.arg(return_val)
     if (ndt > 1) warning("ndt not fully implemented")
 
+    if (testify) warning("CHECK: may not be working properly for testify?")
+
     if (has_vax(params) && return_val == "r0") {
         if (is.null(state)) stop("must provide current state for accurate estimate of r0 with vaxified model")
         if (!isTRUE(all.equal(sum(state), 1))) stop("state vector must sum to 1")
@@ -178,10 +180,10 @@ rExp <- function(params, steps = 100, ndt = 1,
     ##   keep_vars_regexp <- "^[EIHh]"
     ##   unlist(x[pos, grepl(keep_vars_regexp, names(r))])
     uf <- function(x, pos) unlist(x[pos, !grepl(drop_re, names(r))])
-
     r_last <- uf(r, nn)
     r_nextlast <- uf(r, nn - 1)
-    r0_values <- log(r_last / r_nextlast)
+    nonzeros <- (r_nextlast > 0)
+    r0_values <- log(r_last[nonzeros] / r_nextlast[nonzeros])
     ## print(r0_values)
     ## print(var(r0_values))
     ## check if we've converged numerically
