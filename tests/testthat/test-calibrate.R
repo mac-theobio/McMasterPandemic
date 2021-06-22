@@ -64,7 +64,8 @@ test_that("calibrate parameters other than beta0", {
     time_pars <- data.frame(
         Date = c("2020-05-01", "2020-07-01"),
         Symbol = c("phi2", "beta0"),
-        Relative_value = c(1e-3, 1e-3)
+        Value = c(1e-3, 1e-3),
+        Type = "rel_orig"
     )
     sd <- "2020-03-01"
     ed <- "2020-10-02"
@@ -79,7 +80,7 @@ test_that("calibrate parameters other than beta0", {
     ## FIXME: would like to be able to pass type="ICU1" through ... ?
     ## (run_sim_break uses make.state(params) without optional args
     pt <- time_pars
-    pt$Relative_value <- NA
+    pt$Value <- NA
     SS2 <- run_sim_break(params,
         sim_args = list(
             start_date = sd,

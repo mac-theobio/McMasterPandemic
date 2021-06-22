@@ -133,7 +133,8 @@ test_that("time-varying test intensity", {
     pt <- data.frame(
         Date = as.Date(c("2020-04-01", "2020-04-15")),
         Symbol = rep("testing_intensity", 2),
-        Relative_value = c(0.1, 4)
+        Value = c(0.1, 4),
+        Type = "rel_orig"
     )
     ## don't reduce testing to 0 - it will break things!
     pp[["testing_intensity"]] <- 0.002

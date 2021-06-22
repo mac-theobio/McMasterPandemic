@@ -790,12 +790,15 @@ do_step <- function(state, params, ratemat, dt = 1,
     ##    }
 }
 
+## global flag
+deprecate_timepars_warning <- FALSE
+
 ## run_sim()
 ##' Run pandemic simulation
 ##' @inheritParams do_step
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
-##' @param params_timevar three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})
+##' @param params_timevar four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero), \code{rel_prev} (relative to previous value), possibly others to be determined. If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.
 ##' @param dt time step for \code{\link{do_step}}
 ##' @param ratemat_args additional arguments to pass to \code{\link{make_ratemat}}
 ##' @param step_args additional arguments to pass to \code{\link{do_step}}
@@ -828,8 +831,6 @@ do_step <- function(state, params, ratemat, dt = 1,
 ##' @importFrom stats rnbinom na.exclude napredict
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
-## FIXME: params_timevar
-##   change param name to something less clunky? case-insensitive/partial-match columns? allow Value and Relative_value? (translate to one or the other at R code level, for future low-level code?)
 ## FIXME: automate state construction better
 run_sim <- function(params,
                     state = NULL,
@@ -906,13 +907,27 @@ run_sim <- function(params,
         if (is.null(params_timevar)) {
             ## starting times for process/obs error specified, but no other time-varying parameters;
             ##  we need an empty data frame with the right structure so we can append the process-error switch times
-            params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Relative_value = numeric(0))
+            params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Value = numeric(0), Type = character(0))
         } else {
             ## check column names
-            ## FIXME:: use case-insensitive matching (apply tolower() throughout) to allow some slop?
+            names(params_timevar) <- capitalize(names(params_timevar))
+            if (identical(
+                names(params_timevar),
+                c("Date", "Symbol", "Relative_value")
+            )) {
+                if (!deprecate_timepars_warning) {
+                    warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
+                    deprecate_timepars_warning <- TRUE
+                }
+                names(params_timevar)[3] <- "Value"
+                params_timevar <- data.frame(params_timevar, Type = "rel_orig")
+            }
             npt <- names(params_timevar)
-            if (!all(c("Date", "Symbol", "Relative_value") %in% npt)) {
-                stop("bad names in params_timevar: ", paste(npt, collapse = ","))
+            if (!identical(
+                npt,
+                c("Date", "Symbol", "Value", "Type")
+            )) {
+                stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
             }
             params_timevar$Date <- as.Date(params_timevar$Date)
             ## tryCatch(
@@ -926,7 +941,7 @@ run_sim <- function(params,
                 params_timevar,
                 dfs(
                     Date = stoch_start[["proc"]],
-                    Symbol = "proc_disp", Relative_value = 1
+                    Symbol = "proc_disp", Value = 1, Type = "rel_orig"
                 )
             )
             params[["proc_disp"]] <- -1 ## special value: signal no proc error
@@ -972,11 +987,18 @@ run_sim <- function(params,
         for (i in seq(length(times) - 1)) {
             recompute_M <- FALSE
             for (j in which(switch_times == times[i])) {
-                ## reset all changing params
-                s <- params_timevar[j, "Symbol"]
-                v <- params_timevar[j, "Relative_value"]
-                ## this should work even if params0[[s]] is a vector
-                params[[s]] <- params0[[s]] * v
+                 ## reset all changing params
+                 s <- params_timevar[j, "Symbol"]
+                 v <- params_timevar[j, "Value"]
+                 t <- params_timevar[j, "Type"]
+                 old_param <- switch(t,
+                 ## this should work even if params0[[s]] is a vector
+
+                    rel_orig = params0[[s]],
+                    rel_prev = params[[s]],
+                    stop("unknown time_params type ", t)
+                )
+                params[[s]] <- old_param * v
                 if (s == "proc_disp") {
                     state <- round(state)
                 }

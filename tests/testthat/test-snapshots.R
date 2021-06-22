@@ -26,7 +26,8 @@ test_that("params methods_snapshot", {
 time_pars <- data.frame(
     Date = c("2020-03-10", "2020-03-25"),
     Symbol = c("beta0", "beta0"),
-    Relative_value = c(0.5, 0.1)
+    Value = c(0.5, 0.1),
+    Type = "rel_orig"
 )
 
 test_that("time-varying snapshot", {
