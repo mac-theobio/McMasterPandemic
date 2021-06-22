@@ -38,5 +38,5 @@ Wrapper function for `run_sim()` that incorporates existing ageify tools
 \examples{
 params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 state <- make_state(params=params)
-run_sum_ageify(base_params = params, base_state = state)
+run_sim_ageify(base_params = params, base_state = state)
 }

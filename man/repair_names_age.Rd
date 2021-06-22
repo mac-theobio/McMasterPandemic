@@ -18,5 +18,5 @@ replace each substituted period with the correct character
 }
 \examples{
 state <- c(S_0.10 = 100, E_60. = 1)
-repair_age_names(state)
+repair_names_age(state)
 }

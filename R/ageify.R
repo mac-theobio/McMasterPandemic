@@ -32,7 +32,7 @@ mk_agecats <- function(min=0,max=90,da=10) {
 #'
 #' @examples
 #' state <- c(S_0.10 = 100, E_60. = 1)
-#' repair_age_names(state)
+#' repair_names_age(state)
 repair_names_age <- function(x){
   the_names <- names(x)
   ## remove "date" from the names since this isn't a state variable
@@ -167,7 +167,7 @@ aggregate_agecats <- function(age,
 #' @examples
 #' params <- read_params("PHAC_testify.csv")
 #' ss <- make_state(params=params)
-#' ss2 <- expand_state_age(ss)
+#' # ss2 <- expand_state_age(ss)
 #' @importFrom purrr map_dfr
 #' @importFrom dplyr across
 #' @importFrom dplyr relocate
@@ -870,7 +870,7 @@ update_contact_rate_setting <- function(contact_rate_setting,
 #'
 #' @export
 #' @examples
-#' check_contact_rate_setting(mk_contact_rate_setting)
+#' check_contact_rate_setting(mk_contact_rate_setting())
 check_contact_rate_setting <- function(contact_rate_setting){
   ## check that it's a list
   if(!is.list(contact_rate_setting)) stop("setting-specific contact rate must be specified as a list")
@@ -969,7 +969,7 @@ update_params_mistry <-function(params,
 #' @examples
 #' params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
 #' state <- make_state(params=params)
-#' run_sum_ageify(base_params = params, base_state = state)
+#' run_sim_ageify(base_params = params, base_state = state)
 run_sim_ageify <- function(base_params,
                            base_state,
                            age_cat = mk_agecats(),

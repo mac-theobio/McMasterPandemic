@@ -79,6 +79,60 @@ make_jac <- function(params, state=NULL) {
     return(M)
 }
 
+##' construct vector of transmission multipliers
+##' @param state state vector
+##' @param params parameter vector
+##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
+##' @export
+## QUESTION: is the main testify argument to this function used?
+make_betavec <- function(state, params, full = TRUE) {
+  Icats <- c("Ia", "Ip", "Im", "Is")
+  testcats <- c("_u", "_p", "_n", "_t")
+  ## NB meaning of iso_* has switched from Stanford model
+  ## beta_vec0 is the vector of transmission parameters that apply to infectious categories only
+  beta_vec0 <- with(
+    as.list(params),
+    beta0 / N * c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
+  )
+  names(beta_vec0) <- Icats
+  if (has_age(params)) {
+    Cmat <- params$Cmat
+    a_names <- rownames(Cmat)
+    new_names <- expand_names(Icats, a_names)
+    beta_vec0 <- t(kronecker(Cmat, matrix(beta_vec0)))
+    dimnames(beta_vec0) <- list(a_names, new_names)
+    beta_vec0 <- Matrix(beta_vec0)
+  }
+  ## assume that any matching values will be of the form "^%s_" where %s is something in Icats
+  ## lapply(Icats, function(x) grep(sprintf("^%s_"), names(state))
+  ## FIXME: we should be doing this by name, not assuming that all infectious compartments are expanded
+  ##  into exactly 4 subcompartments, in order (but this should work for now??)
+  if (has_testing(state = state)) { ## testified!
+    if (has_age(params)) stop("can't combine age and testing yet")
+    beta_vec0 <- rep(beta_vec0, each = length(testcats))
+    names(beta_vec0) <- unlist(lapply(Icats, function(x) paste0(x, testcats)))
+    ## FIXME: also adjust _n, _p components?
+    pos_vals <- grep("_t$", names(beta_vec0))
+    beta_vec0[pos_vals] <- beta_vec0[pos_vals] * (1 - params[["iso_t"]])
+  }
+  if (!full) {
+    return(beta_vec0)
+  }
+  ## By default, make a vector of zeroes for all the states,
+  ## then fill in infectious ones
+  if (!has_age(params)) {
+    beta_vec <- setNames(numeric(length(state)), names(state))
+    beta_vec[names(beta_vec0)] <- beta_vec0
+  } else {
+    beta_vec <- matrix(0,
+                       nrow = nrow(beta_vec0), ncol = length(state),
+                       dimnames = list(rownames(beta_vec0), names(state))
+    )
+    beta_vec[rownames(beta_vec0), colnames(beta_vec0)] <- matrix(beta_vec0)
+  }
+  return(beta_vec)
+}
+
 calc_variant_adjustment <- function(params,
                                     stratum = c("unvax", "dose1", "dose2")){
   ## used for the vaxified model

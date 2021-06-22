@@ -26,7 +26,7 @@ epidemiological state varies fast, age category varies slowly
 \examples{
 params <- read_params("PHAC_testify.csv")
 ss <- make_state(params=params)
-ss2 <- expand_state_age(ss)
+# ss2 <- expand_state_age(ss)
 params <- read_params("PHAC_testify.csv")
 state <- make_state(params=params)
 M <- make_ratemat(state,params, sparse=TRUE)

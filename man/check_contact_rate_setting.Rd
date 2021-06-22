@@ -10,5 +10,5 @@ check_contact_rate_setting(contact_rate_setting)
 Helper function to check setting-specific contact rate list initialization
 }
 \examples{
-check_contact_rate_setting(mk_contact_rate_setting)
+check_contact_rate_setting(mk_contact_rate_setting())
 }
