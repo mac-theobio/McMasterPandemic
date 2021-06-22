@@ -53,15 +53,6 @@ repair_names_age <- function(x){
   return(x)
 }
 
-    ## first replace all periods with a hyphen
-    names(x) <- sub("\\.", "-", names(x))
-    ## then replace hyphens at the end of the name or before an underscore with a +
-    names(x) <- sub("-$", "\\+", names(x))
-    names(x) <- sub("-_", "\\+_", names(x))
-
-    return(x)
-}
-
 ##' Aggregate age categories into larger age categories
 ##'
 ##' A function that takes a vector of ages or age groups (either numeric or
