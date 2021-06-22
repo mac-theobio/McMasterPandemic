@@ -31,7 +31,11 @@ Imports:
 	splines,
 	diagram,
 	doParallel,
-	fastmatrix
+	fastmatrix,
+	forcats, 
+	foreach, 
+	readr, 
+	stringr
 Suggests:
 	knitr,
 	testthat,

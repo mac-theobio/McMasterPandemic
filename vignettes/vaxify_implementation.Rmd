@@ -1,9 +1,9 @@
 ---
 title: "Expandify implementation notes"
 author: "Irena Papst"
-output: html_notebook
+output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vaxify Implementation}
+  %\VignetteIndexEntry{Expandify Implementation Notes}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
