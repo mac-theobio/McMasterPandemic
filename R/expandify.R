@@ -723,9 +723,9 @@ expand_params_desc_variant <- function(params_desc) {
 
 ##' Expand parameter list to include variant strain
 ##'
-##' @param params parameter list (e.g. read in with `read_params()`)
+##' @param params parameter list (e.g. read in with \code{read_params()})
 ##' @param variant_prop current proportion of infections caused by the variant
-##' @param variant_advantage transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5.
+##' @param variant_advantage transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50\% more transmissible variant would have \code{variant_advantage = 1.5}.
 ##' @param variant_vax_efficacy_dose1 one-dose vaccine efficacy against variant (only used in vaxified model)
 ##' @param variant_vax_efficacy_dose2 two-dose vaccine efficacy against variant (only used in vaxified model)
 ##'

@@ -13,11 +13,11 @@ expand_params_variant(
 )
 }
 \arguments{
-\item{params}{parameter list (e.g. read in with `read_params()`)}
+\item{params}{parameter list (e.g. read in with \code{read_params()})}
 
 \item{variant_prop}{current proportion of infections caused by the variant}
 
-\item{variant_advantage}{transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5.}
+\item{variant_advantage}{transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50\% more transmissible variant would have \code{variant_advantage = 1.5}.}
 
 \item{variant_vax_efficacy_dose1}{one-dose vaccine efficacy against variant (only used in vaxified model)}
 
