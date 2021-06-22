@@ -25,10 +25,10 @@ test_that("identical_predict", {
 
     ## hack new_preds a little bit to match old ...
     fix_pred <- function(x) {
-      ff <- attr(x, "forecast_args")
-      ff$debug_hist <- NULL
-      attr(x, "forecast_args") <- ff
-      return(x)
+        ff <- attr(x, "forecast_args")
+        ff$debug_hist <- NULL
+        attr(x, "forecast_args") <- ff
+        return(x)
     }
 
     new_pred_1 <- fix_pred(new_pred_1)
@@ -39,8 +39,7 @@ test_that("identical_predict", {
 
     ## waldo::compare(old_pred_2brks, new_pred_2brks)
     ## tweak
-    attr(attr(old_pred_2brks, 'forecast_args')$base_params, 'description')[14] <-
-      attr(attr(new_pred_2brks, 'forecast_args')$base_params, 'description')[14]
+    attr(attr(old_pred_2brks, "forecast_args")$base_params, "description")[14] <-
+        attr(attr(new_pred_2brks, "forecast_args")$base_params, "description")[14]
     expect_equal(new_pred_2brks, old_pred_2brks)
-
 })

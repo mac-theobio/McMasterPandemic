@@ -4,7 +4,7 @@
 ##' @param v vector
 ##' @export
 col_multiply <- function(M, v) {
-    new <-  M*v #t(t(M) * rep(v, rep.int(nrow(M), length(v))))
+    new <- M * v ## t(t(M) * rep(v, rep.int(nrow(M), length(v))))
     ##    old <- sweep(M, v, MARGIN=1, FUN="*")
     ##    print(all(new==old))
     return(new)
@@ -607,27 +607,31 @@ run_sim <- function(params,
             ##  we need an empty data frame with the right structure so we can append the process-error switch times
             params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Value = numeric(0), Type = character(0))
         } else {
-          ## check column names
-          names(params_timevar) <- capitalize(names(params_timevar))
-          if (identical(names(params_timevar),
-                        c("Date", "Symbol", "Relative_value"))) {
-            if (!deprecate_timepars_warning) {
-              warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
-              deprecate_timepars_warning <- TRUE
+            ## check column names
+            names(params_timevar) <- capitalize(names(params_timevar))
+            if (identical(
+                names(params_timevar),
+                c("Date", "Symbol", "Relative_value")
+            )) {
+                if (!deprecate_timepars_warning) {
+                    warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
+                    deprecate_timepars_warning <- TRUE
+                }
+                names(params_timevar)[3] <- "Value"
+                params_timevar <- data.frame(params_timevar, Type = "rel_orig")
             }
-            names(params_timevar)[3] <- "Value"
-            params_timevar <- data.frame(params_timevar, Type = "rel_orig")
-          }
-          npt <- names(params_timevar)
-          if (!identical(npt,
-                         c("Date", "Symbol", "Value", "Type"))) {
-            stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
-          }
-          params_timevar$Date <- as.Date(params_timevar$Date)
-          ## tryCatch(
-          ##     params_timevar$Date <- as.Date(params_timevar$Date),
-          ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
-          params_timevar <- params_timevar[order(params_timevar$Date), ]
+            npt <- names(params_timevar)
+            if (!identical(
+                npt,
+                c("Date", "Symbol", "Value", "Type")
+            )) {
+                stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
+            }
+            params_timevar$Date <- as.Date(params_timevar$Date)
+            ## tryCatch(
+            ##     params_timevar$Date <- as.Date(params_timevar$Date),
+            ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
+            params_timevar <- params_timevar[order(params_timevar$Date), ]
         }
         ## append process-observation switch to timevar
         if (stoch[["proc"]] && !is.null(stoch_start)) {
@@ -680,25 +684,25 @@ run_sim <- function(params,
         for (i in seq(length(times) - 1)) {
             recompute_M <- FALSE
             for (j in which(switch_times == times[i])) {
-              ## reset all changing params
-              s <- params_timevar[j, "Symbol"]
-              v <- params_timevar[j, "Value"]
-              t <- params_timevar[j, "Type"]
-              old_param <- switch(t,
-                                  rel_orig = params0[[s]],
-                                  rel_prev = params[[s]],
-                                  stop("unknown time_params type ",t)
-                                  )
-              params[[s]] <- old_param * v
-              if (s == "proc_disp") {
-                state <- round(state)
-              }
-              if (verbose) {
-                cat(sprintf(
-                    "changing value of %s from original %f to %f at time step %d\n",
-                    s, params0[[s]], params[[s]], i
-                ))
-              }
+                ## reset all changing params
+                s <- params_timevar[j, "Symbol"]
+                v <- params_timevar[j, "Value"]
+                t <- params_timevar[j, "Type"]
+                old_param <- switch(t,
+                    rel_orig = params0[[s]],
+                    rel_prev = params[[s]],
+                    stop("unknown time_params type ", t)
+                )
+                params[[s]] <- old_param * v
+                if (s == "proc_disp") {
+                    state <- round(state)
+                }
+                if (verbose) {
+                    cat(sprintf(
+                        "changing value of %s from original %f to %f at time step %d\n",
+                        s, params0[[s]], params[[s]], i
+                    ))
+                }
 
                 if (!s %in% "beta0") { ## also testing rates?
                     recompute_M <- TRUE

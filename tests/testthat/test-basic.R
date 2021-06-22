@@ -86,22 +86,24 @@ test_that("time-varying example", {
 })
 
 test_that("bad time-varying examples", {
-  expect_warning(run_sim(params, state,
-        start_date = "2020-03-01",
-        end_date = "2020-06-01",
-        params_timevar = time_pars_old,
-        step_args = list(do_hazard = TRUE)
+    expect_warning(
+        run_sim(params, state,
+            start_date = "2020-03-01",
+            end_date = "2020-06-01",
+            params_timevar = time_pars_old,
+            step_args = list(do_hazard = TRUE)
         ),
         "specifying params_timevar with Relative_value is deprecated"
-        )
-  expect_error(
-      run_sim(params, state,
-              start_date = "2020-03-01",
-              end_date = "2020-06-01",
-              params_timevar = time_pars_bad,
-              step_args = list(do_hazard = TRUE)
-              ),
-      "unknown time_params type weird")
+    )
+    expect_error(
+        run_sim(params, state,
+            start_date = "2020-03-01",
+            end_date = "2020-06-01",
+            params_timevar = time_pars_bad,
+            step_args = list(do_hazard = TRUE)
+        ),
+        "unknown time_params type weird"
+    )
 })
 
 ## test for 'bad date' error
