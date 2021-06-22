@@ -3,25 +3,25 @@
 
 ## FIXME: document these for real!
 ##' global variables for testify expansion
-#' @export
-non_expanded_states <- c("D","X","V")
+##' @export
+non_expanded_states <- c("D", "X", "V")
 
 ##' @rdname non_expanded_states
 ##' @export
-test_extensions <- c("u","p","n","t")
+test_extensions <- c("u", "p", "n", "t")
 
 ##' @rdname non_expanded_states
 ##' @export
-test_accumulators <- c("N","P")
+test_accumulators <- c("N", "P")
 
 ##' @rdname non_expanded_states
 ##' @export
-asymp_cat <- c("S","E","Ia","Ip","R")
+asymp_cat <- c("S", "E", "Ia", "Ip", "R")
 
 ##' @rdname non_expanded_states
-severe_cat <- c("Is","H","H2","ICUs","ICUd")
+severe_cat <- c("Is", "H", "H2", "ICUs", "ICUd")
 
 ##' @rdname non_expanded_states
 ## these are 'asymptomatic' (= pre- or asymptomatic)
 ##' @export
-cryptic_cat <- c("Ia","Ip")
+cryptic_cat <- c("Ia", "Ip")
