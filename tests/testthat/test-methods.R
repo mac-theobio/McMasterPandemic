@@ -2,9 +2,6 @@ library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
 
-## FIXME: move to main R/utils.R or setup_utils.R (automatic when testing)
-source("utils.R") ## fix_stored()
-
 ont_cal_2brks <- fix_stored(ont_cal_2brks)
 ont_cal1 <- fix_stored(ont_cal1)
 

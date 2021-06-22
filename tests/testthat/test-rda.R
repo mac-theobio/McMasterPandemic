@@ -1,7 +1,6 @@
 library(testthat)
 library(McMasterPandemic)
 library(ggplot2)
-source("utils.R") ## fix_stored()
 
 test_that("identical_predict", {
     skip_if_not_installed("anytime")

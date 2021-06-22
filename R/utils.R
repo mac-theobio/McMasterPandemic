@@ -896,3 +896,36 @@ first_letter_cap <- function(x) {
 capitalize <- function(x) {
     paste0(toupper(substring(x, 1, 1)), substring(x, 2))
 }
+
+##' convert 'old' forecast args to 'new' format
+##'
+##' This takes care of a few backward incompatibilities
+##' \itemize{
+##' \item converts dates (could previously be in a wide range
+##' of formats, are now required to be in as.Date()-transformable
+##' format so that we don't depend on anytime)
+##' \item inserts the \emph{current} version of \code{run_sim_break}
+##' (or whatever \code{sim_fun} is specified)
+##' \item converts params_timevar to new format
+##' }
+##' @param x fitted model (\code{fit_pansim})
+##' @param sim_fun simulation function
+##' @export
+fix_stored <- function(x, sim_fun = run_sim_break) {
+  if (requireNamespace("anytime")) {
+    x$forecast_args$start_date <- anytime::anydate(x$forecast_args$start_date)
+    x$forecast_args$end_date <- anytime::anydate(x$forecast_args$end_date)
+    if ("break_dates" %in% names(x$forecast_args$time_args)) {
+      x$forecast_args$time_args$break_dates <-
+        anytime::anydate(x$forecast_args$time_args$break_dates)
+    }
+  }
+  x$forecast_args$sim_fun <- sim_fun
+  pt <- x$forecast_args$time_args$params_timevar
+  if (!is.null(pt)) {
+    pt <- with(pt, data.frame(Date, Symbol, Value = Relative_value,
+                              Type = "rel_orig"))
+    x$forecast_args$time_args$params_timevar <- pt
+  }
+  return(x)
+}

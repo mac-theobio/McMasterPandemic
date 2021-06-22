@@ -445,7 +445,6 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
         dimnames = list(from = state_names, to = state_names)
     )
     if (symbols) {
-      browser()
       ## can't use a sparse matrix in this case ...
       dn <- dimnames(M)
       M <- as.matrix(M)
