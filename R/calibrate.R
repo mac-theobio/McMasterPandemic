@@ -952,6 +952,8 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
 ##' @param .progress progress bar?
 ##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
 ##' @param scale_Sigma multiplier for covariance matrix
+##' @param parallel whether to attempt parallel processing
+##' @param n_cores number of cores for parallel forecasting (ignored if not parallel) (??)
 ##' @import foreach
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?

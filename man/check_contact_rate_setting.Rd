@@ -6,6 +6,9 @@
 \usage{
 check_contact_rate_setting(contact_rate_setting)
 }
+\arguments{
+\item{contact_rate_setting}{named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)}
+}
 \description{
 Helper function to check setting-specific contact rate list initialization
 }

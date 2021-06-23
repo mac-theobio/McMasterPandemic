@@ -78,11 +78,11 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
 ##'
 ##' @param res age-structured simulation result
 ##' @param split_age_vax should the age and vaccination category be split into different columns?
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
 ##' @inheritParams plot.pansim
 ##' @importFrom forcats as_factor
 ##' @importFrom stringr str_replace
 ##'
-##' @return
 ##' @export
 prep_res_for_plotting <- function(res,
                                   drop_states = NULL,
@@ -134,11 +134,11 @@ prep_res_for_plotting <- function(res,
 ##' Plot age-structured simulation result faceted by age categories
 ##'
 ##' @param res age-structured simulation result
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
 ##' @inheritParams plot.pansim
 ##' @importFrom dplyr vars
 ##' @importFrom ggplot2 scale_x_date
 ##'
-##' @return
 ##' @export
 plot_res_by_age <- function(res, drop_states = NULL,
                             condense_I = FALSE,
@@ -170,9 +170,9 @@ plot_res_by_age <- function(res, drop_states = NULL,
 ##' Plot age-structured simulation result faceted by state
 ##'
 ##' @param res age-structured simulation result
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
 ##' @inheritParams plot.pansim
 ##'
-##' @return
 ##' @export
 plot_res_by_state <- function(res, drop_states = NULL,
                               condense_I = FALSE,

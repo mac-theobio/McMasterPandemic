@@ -1220,6 +1220,8 @@ run_sim <- function(params,
 ##' @param use_eigvec use dominant eigenvector to distribute non-Susc values
 ##' to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL
 ##' @param testify expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?
+##' @param ageify expand state vector to include different age groups (??)
+##' @param vaxify expand state vector to include groups that have 1-2 vaccine doses (??)
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
 ##' @export

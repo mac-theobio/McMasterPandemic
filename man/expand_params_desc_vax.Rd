@@ -12,9 +12,6 @@ expand_params_desc_vax(params_desc, model_type = c("onedose", "twodose"))
 
 \item{model_type}{choose either the one-dose or the two-dose model}
 }
-\value{
-
-}
 \description{
 Edit parameter description attribute to include vax-specific definitions
 (helper function for `expand_params_vax()`)

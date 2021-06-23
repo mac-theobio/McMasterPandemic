@@ -125,7 +125,6 @@ mk_vaxcats <- function(model_type = c("onedose", "twodose")) {
 ##' @param params_desc parameter descriptions, as initialized in `read_params()`
 ##' @inheritParams mk_vaxcats
 ##'
-##' @return
 ##' @export
 expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodose")) {
     model_type <- match.arg(model_type)
@@ -670,6 +669,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
 ##' Compute total number of vaccine doses actually administered per day in a simulation
 ##'
 ##' @param res simulation result from model with vaccination (generated using `run_sim`)
+##' @param dose the number of doses to consider, vector. (note that Moderna/Pfizer both recommend 2 doses) (??)
 ##'
 ##' @return `tibble` with columns for date and total vaccine doses actually administered each day (as captured in the simulation)
 ##' @export
@@ -710,7 +710,6 @@ get_doses_per_day <- function(res, dose = c(1, 2)) {
 ##'
 ##' @param params_desc parameter descriptions, as initialized in `read_params()`
 ##'
-##' @return
 ##' @export
 expand_params_desc_variant <- function(params_desc) {
     params_desc[["variant_prop"]] <- "Current proportion of infections caused by the variant"

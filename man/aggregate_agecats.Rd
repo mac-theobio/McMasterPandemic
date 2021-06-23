@@ -13,9 +13,6 @@ aggregate_agecats(age, bin_edges_lower)
 age group bins in panel 2. If ages are of type factor, all user-specified
 lower bin edges must match lower bin edges in the age data.}
 }
-\value{
-
-}
 \description{
 A function that takes a vector of ages or age groups (either numeric or
 factor) and returns assigned age categories based on desired lower bin edges

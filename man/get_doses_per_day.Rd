@@ -8,6 +8,8 @@ get_doses_per_day(res, dose = c(1, 2))
 }
 \arguments{
 \item{res}{simulation result from model with vaccination (generated using `run_sim`)}
+
+\item{dose}{the number of doses to consider, vector. (note that Moderna/Pfizer both recommend 2 doses) (??)}
 }
 \value{
 `tibble` with columns for date and total vaccine doses actually administered each day (as captured in the simulation)

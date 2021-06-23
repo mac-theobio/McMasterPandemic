@@ -657,6 +657,10 @@ do_variant <- function(x) {
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
 ##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)
+##' @param xlab label on x axis
+##' @param ylab label on y axis
+##' @param sub subtitle for plot
+##' @param zlim appears to be unused (!!)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix

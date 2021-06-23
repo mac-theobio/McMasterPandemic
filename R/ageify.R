@@ -64,7 +64,6 @@ repair_names_age <- function(x){
 ##'   age group bins in panel 2. If ages are of type factor, all user-specified
 ##'   lower bin edges must match lower bin edges in the age data.
 ##'
-##' @return
 ##' @export
 ##'
 ##' @examples aggregate_agecats(seq(0, 90, by = 1), c(25, 45))
@@ -447,7 +446,6 @@ mk_pmat <- function(age_cat = mk_agecats(),
 ##'
 ##' @param params_desc parameter descriptions, as initialized in `read_params()`
 ##'
-##' @return
 ##' @export
 ##'
 ##' @examples
@@ -659,6 +657,7 @@ mk_mistry_Nvec <- function(province = "Ontario",
 
 ##' Expand parameter list to include age structure using Mistry et al. data
 ##'
+##' @param params baseline parameters loaded from one of the parameter files (??)
 ##' @param transmissibility probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)
 ##' @param province province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)
 ##' @param contact_rate_setting named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
@@ -910,7 +909,7 @@ update_contact_rate_setting <- function(contact_rate_setting,
 
 #' Helper function to check setting-specific contact rate list initialization
 #'
-#' @inheritParams mk_contact_rate_setting
+#' @param contact_rate_setting named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
 #'
 #' @export
 #' @examples
@@ -936,7 +935,7 @@ check_contact_rate_setting <- function(contact_rate_setting){
 ##' @details
 ##' For `contact_rate_setting`, a full list (initialized with `mk_contact_rate_setting()`) or a partial list (e.g. `list(community = 0)`) can be provided. If a partial list is provided, default values from Mistry et al. 2021 are assumed for the contact rates that have not been specified (see `mk_contact_rate_setting()` for values).
 ##'
-##' @return
+##' @return an object of class `params_pansim`
 ##' @export
 ##'
 ##' @examples

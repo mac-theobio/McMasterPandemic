@@ -16,10 +16,9 @@ prep_res_for_plotting(
 
 \item{drop_states}{states to \emph{exclude} from plot}
 
-\item{split_age_vax}{should the age and vaccination category be split into different columns?}
-}
-\value{
+\item{condense_I}{condense all the different I (infectious) states to a single I state? (??)}
 
+\item{split_age_vax}{should the age and vaccination category be split into different columns?}
 }
 \description{
 Prepare age-structured simulation results data frame for plotting

@@ -30,6 +30,14 @@ show_ratemat(
 
 \item{subset}{list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)}
 
+\item{xlab}{label on x axis}
+
+\item{ylab}{label on y axis}
+
+\item{sub}{subtitle for plot}
+
+\item{zlim}{appears to be unused (!!)}
+
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
 \item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}

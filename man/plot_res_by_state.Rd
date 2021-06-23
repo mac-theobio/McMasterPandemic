@@ -16,10 +16,9 @@ plot_res_by_state(
 
 \item{drop_states}{states to \emph{exclude} from plot}
 
-\item{show_times}{indicate times when parameters changed?}
-}
-\value{
+\item{condense_I}{condense all the different I (infectious) states to a single I state? (??)}
 
+\item{show_times}{indicate times when parameters changed?}
 }
 \description{
 Plot age-structured simulation result faceted by state

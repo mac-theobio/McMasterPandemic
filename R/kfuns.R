@@ -78,6 +78,7 @@ rmult <- function(k, r) {
 ##' @param testify testing compartments
 ##' @param return_val return growth rate or eigenvector?
 ##' @param type model type (passed to \code{\link{make_state}})
+##' @param state initial state as created by make_state. Leave as NULL to create state from params (??)
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' rExp(pp)

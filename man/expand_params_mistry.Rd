@@ -13,6 +13,8 @@ expand_params_mistry(
 )
 }
 \arguments{
+\item{params}{baseline parameters loaded from one of the parameter files (??)}
+
 \item{transmissibility}{probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)}
 
 \item{province}{province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)}

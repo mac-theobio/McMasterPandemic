@@ -18,7 +18,7 @@ update_params_mistry(
 \item{transmissibility}{probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)}
 }
 \value{
-
+an object of class `params_pansim`
 }
 \description{
 Recalculate beta0 and/or pmat if setting-specific contact rates and/or
