@@ -408,6 +408,8 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV <- NULL
+    vax_response_rate <- vax_response_rate_R <- vax_alpha_dose1 <- NULL
+    vax_mu_dose1 <- vax_alpha_dose2 <- vax_mu_dose2 <- NULL
     ## default values, will be masked (on purpose) by unpacking params/state
     nonhosp_mort <- 0
     ##

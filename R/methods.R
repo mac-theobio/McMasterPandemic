@@ -82,12 +82,14 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
 ##' @inheritParams plot.pansim
 ##' @importFrom forcats as_factor
 ##' @importFrom stringr str_replace
-##'
+##' @importFrom dplyr starts_with
 ##' @export
 prep_res_for_plotting <- function(res,
                                   drop_states = NULL,
                                   condense_I = FALSE,
                                   split_age_vax = FALSE) {
+    ## skip rcmdcheck on these variables
+    name <- state <- value <- age <- NULL
     if (has_vax(res) && split_age_vax) {
         into <- c("state", "age", "vaccination")
     } else {
@@ -127,7 +129,8 @@ prep_res_for_plotting <- function(res,
     if (!is.null(drop_states)) {
         res <- res %>% filter(!(state %in% drop_states))
     }
-
+    ## r cmd check also doesn't understand this dplyr verb
+    where <- function(x){NULL}
     return(res)
 }
 
@@ -143,6 +146,8 @@ prep_res_for_plotting <- function(res,
 plot_res_by_age <- function(res, drop_states = NULL,
                             condense_I = FALSE,
                             show_times = TRUE) {
+    ## circumvent rcmdcheck
+    value <- state <- age <- NULL
     ## get time-varying params attribute, if it exists
     ptv <- attr(res, "params_timevar")
 
@@ -172,11 +177,12 @@ plot_res_by_age <- function(res, drop_states = NULL,
 ##' @param res age-structured simulation result
 ##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
 ##' @inheritParams plot.pansim
-##'
 ##' @export
 plot_res_by_state <- function(res, drop_states = NULL,
                               condense_I = FALSE,
                               show_times = TRUE) {
+    ## circumvent rcmdcheck
+    age <- vaccination <- state <- value <- NULL
     ## get time-varying params attribute, if it exists
     ptv <- attr(res, "params_timevar")
 

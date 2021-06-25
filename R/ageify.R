@@ -181,10 +181,12 @@ aggregate_agecats <- function(age,
 #' @importFrom purrr map_dfr
 #' @importFrom dplyr across
 #' @importFrom dplyr relocate
+#' @importFrom dplyr everything
 #' @export
 expand_state_age <- function(x, age_cat=mk_agecats(),
                              Nvec = NULL) {
-
+    ## workaround for rcmdcheck
+    total <- S <- NULL
     ## save original attributes
     original_attributes <- attributes(x)
 
@@ -281,6 +283,8 @@ expand_state_age <- function(x, age_cat=mk_agecats(),
 ## TODO: rewrite this as a generic funtion with custom methods for state_pansim
 ## and pansim objects
 condense_age <- function(x) {
+    ## R CMD CHECK doesn't understand dplyr, this is a workaround
+    state <- value <- NULL
     ## check if there are even age categories in the object, and if not, return x
     if (!has_age(x)) {
         return(x)
@@ -371,6 +375,7 @@ condense_age <- function(x) {
 ##' @param Ntot total population size
 ##' @param dist (character) either "unif" for uniform or "rand" for a random population distribution
 ##' @param names (logical) return a named vector? (names are given age categories)
+##' @importFrom stats runif
 ##' @export
 mk_Nvec <- function(age_cat = mk_agecats(),
                     Ntot = 1e6,
@@ -603,7 +608,8 @@ check_age_cat_compatibility <- function(age_cat) {
 ##' @examples mk_mistry_Nvec()
 mk_mistry_Nvec <- function(province = "Ontario",
                            age_cat = NULL) {
-
+    ## workaround for rcmdcheck
+    age <- age_group <- pop <- NULL
     ## flag whether any aggregation needs to be done across ages
     aggregate <- !is.null(age_cat)
 
@@ -677,6 +683,8 @@ expand_params_mistry <- function(params,
                                  province = "Ontario",
                                  contact_rate_setting = mk_contact_rate_setting(),
                                  age_cat = NULL) {
+    ## workaround for rcmdcheck
+    row_age_group <- col_age_group <- value <- NULL
     ## CHECK AND PREP INPUTS
 
     ## flag whether any aggregation needs to be done across ages

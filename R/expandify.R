@@ -26,11 +26,14 @@ distribute_counts <- function(total, dist) {
 ##' collapse (non-accumulator) states into subcategories (ages, vax status)
 ##' @param x a state vector or data frame (each row is a different time point)
 ##' @param values_only just return values (unlisted and unnamed?)
+##' @importFrom dplyr matches
 ##' @export
 ##' @return a tibble of counts aggregated across epidemiological states
 ## TODO: rewrite this as a generic function with custom methods for state_pansim
 ## and pansim objects
 condense_state <- function(x, values_only = FALSE) {
+    ## R CMD CHECK doesn't understand dplyr, this is a workaround
+    obs_number <- subcat <- value <- NULL
 
     ## define non-accumulator state names
     states <- c(
@@ -338,9 +341,13 @@ expand_state_vax <- function(x,
 ##'
 ##' @importFrom stringr str_count
 ##' @importFrom tidyr unite
+##' @importFrom dplyr all_of
+##' @importFrom dplyr everything
 ##' @export
 ## wrap into condense() ?
 condense_vax <- function(x) {
+    ## R CMD CHECK doesn't understand dplyr, this is a workaround
+    state <- value <- subcat1 <- . <- NULL
     ## save original attributes
     original_attributes <- attributes(x)
 
