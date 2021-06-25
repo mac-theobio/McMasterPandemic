@@ -73,5 +73,6 @@ jobs:
         run: |
           git config --global user.name 'pkgdown-bot'
           git config --global user.email 'pkgdown-bot@users.noreply.github.com'
+          git add --all
           git commit -am "Site rebuild [skip ci]"
           git push
