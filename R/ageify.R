@@ -606,7 +606,7 @@ check_age_cat_compatibility <- function(age_cat) {
 ##' @export
 ##'
 ##' @examples mk_mistry_Nvec()
-mk_mistry_Nvec <- function(province = "Ontario",
+mk_mistry_Nvec <- function(province = "ON",
                            age_cat = NULL) {
     ## workaround for rcmdcheck
     age <- age_group <- pop <- NULL
@@ -677,10 +677,10 @@ mk_mistry_Nvec <- function(province = "Ontario",
 ##' @examples
 ##' params <- read_params("PHAC_testify.csv")
 ##' age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-##' expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+##' expand_params_mistry(params = params, province = "ON", age_cat = age_cat)
 expand_params_mistry <- function(params,
                                  transmissibility = 1,
-                                 province = "Ontario",
+                                 province = "ON",
                                  contact_rate_setting = mk_contact_rate_setting(),
                                  age_cat = NULL) {
     ## workaround for rcmdcheck
@@ -949,7 +949,7 @@ check_contact_rate_setting <- function(contact_rate_setting){
 ##' @examples
 ##' params <- read_params("PHAC_testify.csv")
 ##' age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-##' params_mistry <- expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+##' params_mistry <- expand_params_mistry(params = params, province = "ON", age_cat = age_cat)
 ##' params_mistry <- update_params_mistry(params_mistry,
 ##'  contact_rate_setting = list(school = 0))
 update_params_mistry <- function(params,
