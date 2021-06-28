@@ -30,7 +30,7 @@ For `contact_rate_setting`, a full list (initialized with `mk_contact_rate_setti
 \examples{
 params <- read_params("PHAC_testify.csv")
 age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-params_mistry <- expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+params_mistry <- expand_params_mistry(params = params, province = "ON", age_cat = age_cat)
 params_mistry <- update_params_mistry(params_mistry,
  contact_rate_setting = list(school = 0))
 }

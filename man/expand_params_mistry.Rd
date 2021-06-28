@@ -7,7 +7,7 @@
 expand_params_mistry(
   params,
   transmissibility = 1,
-  province = "Ontario",
+  province = "ON",
   contact_rate_setting = mk_contact_rate_setting(),
   age_cat = NULL
 )
@@ -32,5 +32,5 @@ Expand parameter list to include age structure using Mistry et al. data
 \examples{
 params <- read_params("PHAC_testify.csv")
 age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+expand_params_mistry(params = params, province = "ON", age_cat = age_cat)
 }

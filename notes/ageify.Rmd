@@ -372,7 +372,7 @@ get_mistry_cmat_long <- function(filename,
 }
 
 settings <- c("household", "school", "work", "community")
-filename_prefix <- "Canada_subnational_Ontario_F_"
+filename_prefix <- "ON_F_"
 filename_suffix <- "_setting_85.csv"
 for (setting in settings){
     filename <- file.path("..", "inst", "params", "mistry-cmats",
@@ -397,7 +397,7 @@ Here's a quick check that the "scaled up" frequency matrix is symmetric, as expe
 
 ```{r scale_up_freqs}
 ## population distribution
-age_dist <- read_csv("../inst/params/mistry-cmats/Canada_subnational_Ontario_age_distribution_85.csv",
+age_dist <- read_csv("../inst/params/mistry-cmats/ON_age_distribution_85.csv",
                      col_names = FALSE,
                      col_types = cols(.default = col_double()))
 
@@ -453,7 +453,7 @@ Here is the contact matrix from the Mistry *et. al.* repo:
 ```{r mistry-contacts-ON-given}
 ## get overall cmat as computed by mistry et al
 filename <- file.path("..", "inst", "params", "mistry-cmats",
-                      "Canada_subnational_Ontario_M_overall_contact_matrix_85.csv")
+                      "ON_M_overall_contact_matrix_85.csv")
 all_settings_given <- get_mistry_cmat_long(filename)
 
 (all_settings_given
