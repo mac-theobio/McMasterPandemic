@@ -101,7 +101,7 @@ Let's check that we can get recover the symmetric setting-specific $\Gamma$ matr
 
 ```{r, message = FALSE}
 popbyage <- read_csv(
-  system.file("params", "mistry-cmats", "Canada_subnational_ON_age_distribution_85.csv",
+  system.file("params", "mistry-cmats", "ON_age_distribution_85.csv",
               package = "McMasterPandemic"),
   col_names = c("age_group", "mistry_value")
 )
@@ -250,13 +250,13 @@ household_pei <- mk_mistry_pmat(weights = c(household = 1,
                                 province = "Prince_Edward_Island")
 
 pop_ontario <- read_csv(
-  system.file("params", "mistry-cmats", "Canada_subnational_ON_age_distribution_85.csv",
+  system.file("params", "mistry-cmats", "ON_age_distribution_85.csv",
               package = "McMasterPandemic"),
   col_names = c("age", "pop")
 )
 
 pop_pei <- read_csv(
-  system.file("params", "mistry-cmats", "Canada_subnational_PE_age_distribution_85.csv",
+  system.file("params", "mistry-cmats", "PE_age_distribution_85.csv",
               package = "McMasterPandemic"),
   col_names = c("age", "pop")
 )

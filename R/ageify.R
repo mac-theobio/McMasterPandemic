@@ -625,10 +625,10 @@ mk_mistry_Nvec <- function(province = "ON",
     ## set up filename prefix/suffix for each
     ## setting-specific matrix
     if (is.null(province)) {
-        filename_prefix <- paste0("Canada_country_level_")
+        filename_prefix <- paste0("CA_")
     } else {
         filename_prefix <- paste0(
-            "Canada_subnational_", province,
+            province,
             "_"
         )
     }
@@ -733,10 +733,10 @@ expand_params_mistry <- function(params,
     ## set up filename prefix/suffix for each
     ## setting-specific matrix
     if (is.null(province)) {
-        filename_prefix <- paste0("Canada_country_level_")
+        filename_prefix <- paste0("CA_")
     } else {
         filename_prefix <- paste0(
-            "Canada_subnational_", province,
+            province,
             "_"
         )
     }
