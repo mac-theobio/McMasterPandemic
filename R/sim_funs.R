@@ -404,6 +404,8 @@ make_beta <- function(state, params, full = TRUE) {
 ##' @export
 make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
                          symbols = FALSE, indices = FALSE) {
+    if(has_vax(params)) stop('please set `options(macpan_pfun_method = "grep")` at the top of your script')
+
     ## circumvent test code analyzers ... problematic ...
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
