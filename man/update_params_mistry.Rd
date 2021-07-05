@@ -18,7 +18,7 @@ update_params_mistry(
 \item{transmissibility}{probability of transmission upon contact with an infected (beta0 = transmissibility * contact_rate)}
 }
 \value{
-
+an object of class `params_pansim`
 }
 \description{
 Recalculate beta0 and/or pmat if setting-specific contact rates and/or
@@ -30,7 +30,7 @@ For `contact_rate_setting`, a full list (initialized with `mk_contact_rate_setti
 \examples{
 params <- read_params("PHAC_testify.csv")
 age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-params_mistry <- expand_params_mistry(params = params, province = "Ontario", age_cat = age_cat)
+params_mistry <- expand_params_mistry(params = params, province = "ON", age_cat = age_cat)
 params_mistry <- update_params_mistry(params_mistry,
  contact_rate_setting = list(school = 0))
 }

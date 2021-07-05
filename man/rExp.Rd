@@ -27,6 +27,8 @@ rExp(
 
 \item{do_hazard}{run with hazard}
 
+\item{state}{initial state as created by make_state. Leave as NULL to create state from params (??)}
+
 \item{testify}{testing compartments}
 
 \item{return_val}{return growth rate or eigenvector?}

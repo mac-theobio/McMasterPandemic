@@ -4,7 +4,7 @@
 \alias{mk_mistry_Nvec}
 \title{Make population distribution using Mistry et al. data}
 \usage{
-mk_mistry_Nvec(province = "Ontario", age_cat = NULL)
+mk_mistry_Nvec(province = "ON", age_cat = NULL)
 }
 \arguments{
 \item{province}{province for which to construct the matrix (if NULL, make a Canada-wide contact matrix)}

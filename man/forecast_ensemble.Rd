@@ -47,6 +47,10 @@ forecast_ensemble(
 
 \item{raw_ensembles}{(logical) return ensembles (FIXME: should implement return_type=c("array","quantiles","raw") (but not really raw, "dataframe"??))}
 
+\item{parallel}{whether to attempt parallel processing}
+
+\item{n_cores}{number of cores for parallel forecasting (ignored if not parallel) (??)}
+
 \item{.progress}{progress bar?}
 }
 \description{

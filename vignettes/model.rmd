@@ -20,7 +20,8 @@ The "McMasterPandemic" model is a compartmental model built for the purposes of 
 
 ```{r diag1,message=FALSE}
 library(McMasterPandemic)
-vis_model(method="diagram",do_symbols=FALSE)
+
+vis_model(method="igraph",do_symbols=FALSE)
 ```
 
 ## basic operation (simulation)

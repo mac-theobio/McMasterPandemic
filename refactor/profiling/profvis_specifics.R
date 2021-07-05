@@ -23,19 +23,17 @@ library(bbmle)
 
 params1 <- read_params("ICU1.csv")
 state1 <- make_state(params = params1)
-sdate <- "2020-Feb-10"
-edate <- "2020-Jun-1"
+sdate <- "2020-02-10"
+edate <- "2020-06-01"
 
 #################################################################################################
 # Non-stochastic simulation
 
-classic <- profvis(
-  {
+classic <- profvis({
     for (i in c(1:100)) {
       res1 <- run_sim(params = params1, state = state1, start_date = sdate, end_date = edate)
     }
-  },
-  prof_output = "classic.out"
+  }, prof_output = "classic.out"
 )
 classic_summary <- summaryRprof("classic.out")
 

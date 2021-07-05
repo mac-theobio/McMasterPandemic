@@ -37,6 +37,10 @@ to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL}
 
 \item{normalize}{(logical) should the state vector be normalized to sum to 1?}
 
+\item{ageify}{expand state vector to include different age groups (??)}
+
+\item{vaxify}{expand state vector to include groups that have 1-2 vaccine doses (??)}
+
 \item{testify}{expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?}
 }
 \description{

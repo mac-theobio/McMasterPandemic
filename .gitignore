@@ -69,6 +69,7 @@ wget-*
 !git_push/*.html
 !git_push/*.png
 !notes/*.html
+!sandbox/*.RDS
 
 notes/debugging.R
 notes/expandify_implementation.nb.html
@@ -78,4 +79,6 @@ inst/params/brankston-cmats/*.csv
 
 refactor/*/*.csv
 refactor/*/*.txt
+!docs/**
+misc/lints.csv
 sandbox/vaxify.csv
