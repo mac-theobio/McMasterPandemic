@@ -933,3 +933,19 @@ fix_stored <- function(x, sim_fun = run_sim_break) {
   }
   return(x)
 }
+
+#' convert a tibble row (with all entries of the same data type) to a named vector (used in `condense_state()`)
+#' @param x a tibble with at most one row
+#'
+#' @return a named vector
+tibble_row_to_named_vec <- function(x){
+  if(nrow(x) > 1) stop("this function only works on tibbles with one row")
+
+  if(length(unique(sapply(x, "class"))) > 1) stop("this function only works on tibbles where each column has the same data type")
+
+  the_names <- names(x)
+  x <- unname(unlist(x))
+  names(x) <- the_names
+
+  return(x)
+}

@@ -31,7 +31,9 @@ distribute_counts <- function(total, dist) {
 ##' @return a tibble of counts aggregated across epidemiological states
 ## TODO: rewrite this as a generic function with custom methods for state_pansim
 ## and pansim objects
-condense_state <- function(x, values_only = FALSE) {
+condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed_vector")) {
+    return_type <- match.arg(return_type)
+
     ## R CMD CHECK doesn't understand dplyr, this is a workaround
     obs_number <- subcat <- value <- NULL
 
@@ -90,7 +92,11 @@ condense_state <- function(x, values_only = FALSE) {
     ## repair age cats in names
     x <- repair_names_age(x)
 
-    if (values_only) x <- unname(unlist(x))
+    x <- switch(return_type,
+                tibble = x,
+                named_vector = tibble_row_to_named_vec(x),
+                unnamed_vector = unname(unlist(x))
+                )
 
     return(x)
 }
