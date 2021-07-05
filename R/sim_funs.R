@@ -293,7 +293,7 @@ make_beta <- function(state, params, full = TRUE) {
             ## otherwise, beta_0 will already be a Matrix::Matrix (class dgeMatrix) and we don't need any transposes
             ##      beta_0_old <- kronecker(Matrix::Matrix(vax_trans_red), Matrix::Matrix(beta_0))
 
-            beta_0_fastmatrix <- Matrix::Matrix(fastmatrix::kronecker.prod(vax_trans_red, beta_0))
+            beta_0_fastmatrix <- Matrix::Matrix(fastmatrix::kronecker.prod(vax_trans_red, as.matrix(beta_0)))
             ##      beta_0_base <- Matrix::Matrix(vax_trans_red %x% beta_0)
             ##      beta_0_rtensor <- Matrix::Matrix(rTensor::kronecker_list(list(vax_trans_red, beta_0)))
         }
@@ -521,8 +521,6 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
 
         ## add vaccine allocation rates (from unvax to vaxdose)
         M <- add_updated_vaxrate(state, params, M)
-
-        ## add acc
 
         ## add vaccine immune response rate for not active infections
         ## dose1 -> protect1
