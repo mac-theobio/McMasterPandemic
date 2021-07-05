@@ -309,9 +309,9 @@ test_that("diagonal contacts yield identical epidemics in each age group (with a
 
 test_that("Mistry contact parameters are properly initialized", {
     ## using original age groups
-    Nvec <- mk_mistry_Nvec(province = "Alberta")
+    Nvec <- mk_mistry_Nvec(province = "AB")
     params_mistry <- expand_params_mistry(params,
-        province = "Alberta"
+        province = "AB"
     )
     ## check population distribution
     expect_equal(params_mistry$N, Nvec)
@@ -326,9 +326,9 @@ test_that("Mistry contact parameters are properly initialized", {
 
     ## using aggregated age groups
     age_cat <- mk_agecats(min = 0, max = 80, da = 10)
-    Nvec <- mk_mistry_Nvec(province = "Quebec", age_cat = age_cat)
+    Nvec <- mk_mistry_Nvec(province = "QC", age_cat = age_cat)
     params_mistry <- expand_params_mistry(params,
-        province = "Quebec",
+        province = "QC",
         age_cat = age_cat
     )
 
