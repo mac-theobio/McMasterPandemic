@@ -104,7 +104,7 @@ rExp <- function(params, steps = 100, ndt = 1,
     ## need to set total population size to 1
     if (has_age(params)) {
         ## with age, use a population distribution
-        params[["N"]] <- mk_Nvec(attr(params, "age_cat"), Ntot = 1)
+        params[["N"]] <- params[["Ndist"]]
     } else {
         ## without age, just set total population size
         params[["N"]] <- 1
@@ -115,6 +115,7 @@ rExp <- function(params, steps = 100, ndt = 1,
         ## turn off flows between strata
         params[["vax_doses_per_day"]] <- 0
         params[["vax_response_rate"]] <- 0
+        params[["vax_response_rate_R"]] <- 0
     }
 
     ## set up base state
