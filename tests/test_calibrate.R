@@ -207,9 +207,9 @@ if (!isTRUE(all.equal(coef(c_r2e, "fitted"),
   warning('coef_r2e is not within 1e-6 tolerance bounds')
 }
 
-stopifnot(coef(c_r2e, "fitted"),
+stopifnot(!isTRUE(all.equal(coef(c_r2e, "fitted"),
                  ref_val,
                  tolerance = 5e-3
-)
+)))
 
 stopifnot(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance = 1e-5))
