@@ -74,7 +74,7 @@ condense_state <- function(x, values_only = FALSE) {
             extra = "merge"
         )
         ## turn subcat col into factor to preserve original ordering
-        %>% mutate(subcat = as.factor(subcat))
+        %>% mutate(subcat = as_factor(subcat))
         ## group by everything except state
         %>% group_by(obs_number, subcat)
         %>% summarise(value = sum(value), .groups = "drop")
