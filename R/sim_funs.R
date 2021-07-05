@@ -1150,7 +1150,7 @@ run_sim <- function(params,
         res[seq(nrow(res) - m_rows + 1, nrow(res)), -1] <- m
     }
     ## add cum reports *after* adding obs error
-    if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(res$report), res$report, 0))
+    if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(unname(unlist(res$report))), unname(unlist(res$report)), 0))
     if ("death" %in% names(res)) res$D <- cumsum(ifelse(!is.na(res$death), res$death, 0))
 
     ## repair age groups in result names (if present)

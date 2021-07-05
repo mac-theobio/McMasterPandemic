@@ -11,6 +11,7 @@ print.pansim <- function(x, all = FALSE, ...) {
 ##' calculate convolution
 ##' @param i an incidence time series
 ##' @param params a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}
+##' @return a numeric vector with the convolution result
 ##' @export
 calc_conv <- function(i, params) {
     c_prop <- c_delay_mean <- c_delay_cv <- NULL
@@ -22,19 +23,21 @@ calc_conv <- function(i, params) {
             c_delay_cv
         )
     )
-    ret <- as.data.frame(as.numeric(stats::filter(i, kern, sides = 1)))
-    ## if parameters are ageified, keep age-stratified reports in output too
-    if (has_age(params)) {
-        state_suffixes <- sub(
-            "^incidence", "",
-            grep("^incidence_", names(i), value = TRUE)
-        )
-        names(ret) <- paste0("report", state_suffixes)
-        ## add total reports
-        ret$report <- rowSums(ret)
-    } else {
-        names(ret) <- c("report")
-    }
+    ret <- as.numeric(stats::filter(i, kern, sides = 1))
+    # ret <- as.data.frame(as.numeric(stats::filter(i, kern, sides = 1)))
+    # ## if parameters are ageified, keep age-stratified reports in output too
+    # if (has_age(params)) {
+    #     state_suffixes <- sub(
+    #         "^incidence", "",
+    #         grep("^incidence_", names(i), value = TRUE)
+    #     )
+    #     names(ret) <- paste0("report", state_suffixes)
+    #     ## add total reports
+    #     ret$report <- rowSums(ret)
+    # } else {
+    #     names(ret) <- c("report")
+    # }
+
     return(ret)
 }
 
@@ -59,10 +62,10 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
     ## add total incidence to output
     incidence$incidence <- rowSums(incidence)
 
-    ## FIXME: only calculates total reports right now, not age-stratified see
-    ## what happens if, within calc_conv, we do a convolution for eacha age
-    ## group and then sum up vs one convolution over total incidence
-    report <- calc_conv(incidence$incidence, params)
+    ## calculate reports (including across age and vax strata, if present)
+    report <- (incidence
+      %>% mutate(across(everything(), calc_conv, params = params)))
+    names(report) <- sub("incidence", "report", names(incidence))
 
     ret <- dfs(incidence, report)
     ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
