@@ -487,24 +487,30 @@ make_vaxrate <- function(state, params) {
     ## FIXME: get this working for age-specific vax_doses_per_day
     ## don't sum over all ages, keep pop-size separate for each age
     ## using rowSums in prep for age-structure
-    asymp_unvax_N <- rowSums(condense_state(
+    asymp_unvax_N <- condense_state(
         state[grepl(asymp_unvax_regex, names(state))]
-    ))
+    )
     ## same as above but for pop that is protected by first dose
     if (model_type == "twodose") {
-        asymp_vaxprotect1_N <- rowSums(condense_state(
+        asymp_vaxprotect1_N <- condense_state(
             state[grepl(asymp_vaxprotect1_regex, names(state))]
-        ))
+        )
     }
 
     if (model_type == "onedose") {
-        ## should be a scalar if we're not doing age-specific stuff
-        vax_rate$dose1 <- ifelse(asymp_unvax_N == 0, 0, params[["vax_doses_per_day"]] / asymp_unvax_N)
+        x <- params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N
+        x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
+        vax_rate$dose1 <- x
     }
 
     if (model_type == "twodose") {
-        vax_rate$dose1 <- ifelse(asymp_unvax_N == 0, 0, params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N)
-        vax_rate$dose2 <- ifelse(asymp_vaxprotect1_N == 0, 0, (1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]] / asymp_vaxprotect1_N)
+        x <- params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N
+        x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
+        vax_rate$dose1 <- x
+
+        x <- (1-params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]] / asymp_vaxprotect1_N
+        x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
+        vax_rate$dose2 <- x
     }
 
     return(vax_rate)
@@ -531,44 +537,45 @@ add_updated_vaxrate <- function(state, params, ratemat) {
     ## who's getting vaccinated)
     vax_rate <- make_vaxrate(state, params)
 
-    ## set up block diagonal matrix for vaccine allocation step within each age group
     epi_states <- attr(state, "epi_cat")
-    vax_block_dose1 <- matrix(0,
-        nrow = length(epi_states),
-        ncol = length(epi_states),
-        dimnames = list(epi_states, epi_states)
-    )
-    if (model_type == "twodose") vax_block_dose2 <- vax_block_dose1
 
-    ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
-    for (state_cat in asymp_cat) {
+    ## update unvax -> vaxdose1 block (& vaxprotect1 -> vaxdose2 block)
+    if (!has_age(params)) {
+      ## set up block diagonal matrix for vaccine allocation step within each age group
+      vax_block_dose1 <- matrix(0,
+                                nrow = length(epi_states),
+                                ncol = length(epi_states),
+                                dimnames = list(epi_states, epi_states)
+      )
+      if (model_type == "twodose") vax_block_dose2 <- vax_block_dose1
+
+      ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
+      for (state_cat in asymp_cat) {
         ## unvax to vaxdose1
         index <- pfun(
-            paste0(state_cat),
-            paste0(state_cat),
-            vax_block_dose1
+          paste0(state_cat),
+          paste0(state_cat),
+          vax_block_dose1
         )
         vax_block_dose1[index] <- vax_rate$dose1
         if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
 
         ## accumulator (not present e.g. when we do rExp in make_state)
         if ("V" %in% epi_states) {
-            index <- pfun(
-                paste0(state_cat),
-                paste0("V"),
-                vax_block_dose1
-            )
-            vax_block_dose1[index] <- vax_rate$dose1
-            if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+          index <- pfun(
+            paste0(state_cat),
+            paste0("V"),
+            vax_block_dose1
+          )
+          vax_block_dose1[index] <- vax_rate$dose1
+          if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
         }
-    }
+      }
 
-    ## convert vax_block to Matrix::Matrix object for subset assignement
-    vax_block_dose1 <- Matrix::Matrix(vax_block_dose1)
-    if (model_type == "twodose") vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
+      ## convert vax_block to Matrix::Matrix object for subset assignement
+      vax_block_dose1 <- Matrix::Matrix(vax_block_dose1)
+      if (model_type == "twodose") vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
 
-    ## update unvax -> vaxdose1 block (& vaxprotect1 -> vaxdose2 block)
-    if (!has_age(params)) {
         ## just once, without ages
         from_regex <- vax_cat[1] ## unvax
         to_regex <- vax_cat[2]
@@ -596,10 +603,23 @@ add_updated_vaxrate <- function(state, params, ratemat) {
                 "\\+", "\\\\+",
                 paste0(age, "_", vax_cat[2])
             )
+
+            dose1_rate <- vax_rate$dose1[grepl(from_regex, names(vax_rate$dose1))]
+
+            if("V" %in% epi_states){
+              from_regex <- paste0("^(S|E|Ia|Ip|R|V)_", from_regex)
+              to_regex <- paste0("^(S|E|Ia|Ip|R|V)_", to_regex)
+              block_size <- 6
+            } else {
+              from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex)
+              to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex)
+               block_size <- 5
+            }
+
             ratemat[
                 grepl(from_regex, dimnames(ratemat)$from),
                 grepl(to_regex, dimnames(ratemat)$to)
-            ] <- vax_block_dose1
+            ] <- diag(dose1_rate, nrow = block_size, ncol = block_size, names = FALSE)
 
             if (model_type == "twodose") {
                 from_regex <- sub(
@@ -610,10 +630,23 @@ add_updated_vaxrate <- function(state, params, ratemat) {
                     "\\+", "\\\\+",
                     paste0(age, "_", vax_cat[4])
                 )
+
+                dose2_rate <- vax_rate$dose2[grepl(from_regex, names(vax_rate$dose2))]
+
+                if("V" %in% epi_states){
+                  from_regex <- paste0("^(S|E|Ia|Ip|R|V)_", from_regex)
+                  to_regex <- paste0("^(S|E|Ia|Ip|R|V)_", to_regex)
+                  block_size <- 6
+                } else {
+                  from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex)
+                  to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex)
+                  block_size <- 5
+                }
+
                 ratemat[
-                    grepl(from_regex, dimnames(ratemat)$from),
-                    grepl(to_regex, dimnames(ratemat)$to)
-                ] <- vax_block_dose2
+                  grepl(from_regex, dimnames(ratemat)$from),
+                  grepl(to_regex, dimnames(ratemat)$to)
+                ] <- diag(dose2_rate, nrow = block_size, ncol = block_size, names = FALSE)
             }
         }
     }
@@ -642,11 +675,11 @@ add_updated_vaxrate <- function(state, params, ratemat) {
         ]
         state_dose1_subset <- state[grepl(vax_cat[1], names(state))]
         ratemat_dose1 <- sum(ratemat_dose1_subset %*% state_dose1_subset)
-        total_dose1_match <- isTRUE(all.equal(ratemat_dose1, params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]]))
+        total_dose1_match <- isTRUE(all.equal(ratemat_dose1, sum(params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]])))
         ## if total doses allocated via rate matrix does not match match total doses specified in params
         if (!total_dose1_match) {
             ## *and* it's not because we've depleted the population eligible for vaccination
-            if (sum(state_dose1_subset) >= params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]]) warning("calculated daily vax dose 1 rate exceeds size of remaining population eligible for dose 1; make sure you're using do_hazard = TRUE to avoid jumps into negative state variables")
+            if (sum(state_dose1_subset) >= sum(params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]])) warning("calculated daily vax dose 1 rate exceeds size of remaining population eligible for dose 1; make sure you're using do_hazard = TRUE to avoid jumps into negative state variables")
         }
 
         ## check dose 2
@@ -656,11 +689,11 @@ add_updated_vaxrate <- function(state, params, ratemat) {
         ]
         state_dose2_subset <- state[grepl(vax_cat[3], names(state))]
         ratemat_dose2 <- sum(ratemat_dose2_subset %*% state_dose2_subset)
-        total_dose2_match <- isTRUE(all.equal(ratemat_dose2, (1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]]))
+        total_dose2_match <- isTRUE(all.equal(ratemat_dose2, sum((1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]])))
         ## if total doses allocated via rate matrix does not match match total doses specified in params
         if (!total_dose2_match) {
             ## *and* it's not because we've depleted the population eligible for vaccination
-            if (sum(state_dose2_subset) >= (1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]]) warning("calculated daily vax dose 2 rate exceeds size of remaining population eligible for dose 2; make sure you're using do_hazard = TRUE to avoid jumps into negative state variables")
+            if (sum(state_dose2_subset) >= sum((1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]])) warning("calculated daily vax dose 2 rate exceeds size of remaining population eligible for dose 2; make sure you're using do_hazard = TRUE to avoid jumps into negative state variables")
         }
     }
 
