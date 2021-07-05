@@ -200,10 +200,10 @@ plot(c_r2e, data = dd_r) + ggplot2::ggtitle("use_eigvec")
 ref_val <- list(params = c(E0 = 8.58830342701144, beta0 = 0.887318969090531), nb_disp = c(report = 1.10114796707075), time_params = numeric(0))
 
 print(coef(c_r2e, "fitted"))
-if (!all.equal(coef(c_r2e, "fitted"),
+if (!isTRUE(all.equal(coef(c_r2e, "fitted"),
     ref_val,
     tolerance = 1e-6
-)){
+))){
   warning('coef_r2e is not within 1e-6 tolerance bounds')
 }
 
