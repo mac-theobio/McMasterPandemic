@@ -597,6 +597,10 @@ check_age_cat_compatibility <- function(age_cat) {
     if (max(ages) > 84) stop("maximum age can't exceed 84")
 }
 
+## dput(unique(substr(list.files(system.file("params", "mistry-cmats", package="McMasterPandemic")), 1, 2)))
+provterr_abbrevs <- c("AB", "BC", "CA", "MB", "NB", "NL", "NS", "NT", "NU", "ON",
+                  "PE", "QC", "SK", "YT")
+
 ##' Make population distribution using Mistry et al. data
 ##'
 ##' @inheritParams expand_params_mistry
@@ -608,6 +612,15 @@ check_age_cat_compatibility <- function(age_cat) {
 ##' @examples mk_mistry_Nvec()
 mk_mistry_Nvec <- function(province = "ON",
                            age_cat = NULL) {
+
+    if (nchar(province)>2) {
+      stop("please use two-letter abbreviations for provinces and territories")
+    }
+    province <- toupper(province)
+    if (!province %in% provterr_abbrevs) {
+      stop("unknown province territory ", sQuote(province))
+    }
+
     ## workaround for rcmdcheck
     age <- age_group <- pop <- NULL
     ## flag whether any aggregation needs to be done across ages
