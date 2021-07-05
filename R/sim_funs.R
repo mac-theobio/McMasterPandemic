@@ -1348,7 +1348,7 @@ make_state <- function(N = params[["N"]],
 
         ## get indexing vector to pull out S states, depending on strata
         S_regex <- case_when(
-            vaxify ~ "^S*?_unvax*?", ## works for vaxify, whether or not ageify
+            vaxify ~ "^S.*_unvax.*", ## works for vaxify, whether or not ageify
             testify ~ "^S_[un]",
             TRUE ~ "^S" ## works for base, ageify
         )
