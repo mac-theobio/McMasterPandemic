@@ -490,16 +490,15 @@ make_vaxrate <- function(state, params) {
         )
     }
 
-    ## FIXME: get this working for age-specific vax_doses_per_day
-    ## don't sum over all ages, keep pop-size separate for each age
-    ## using rowSums in prep for age-structure
     asymp_unvax_N <- condense_state(
-        state[grepl(asymp_unvax_regex, names(state))]
+        state[grepl(asymp_unvax_regex, names(state))],
+        return_type = "named_vector"
     )
     ## same as above but for pop that is protected by first dose
     if (model_type == "twodose") {
         asymp_vaxprotect1_N <- condense_state(
-            state[grepl(asymp_vaxprotect1_regex, names(state))]
+            state[grepl(asymp_vaxprotect1_regex, names(state))],
+            return_type = "named_vector"
         )
     }
 
