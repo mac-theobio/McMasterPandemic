@@ -1108,3 +1108,7 @@ vcov.fit_pansim <- function(object, ...) {
     v <- try(solve(object$hessian))
     return(v)
 }
+
+##' @export
+is.nan.data.frame <- function(x)
+    do.call(cbind, lapply(x, is.nan))
