@@ -3,6 +3,7 @@
 S3method(aggregate,pansim)
 S3method(coef,fit_pansim)
 S3method(condense,pansim)
+S3method(is.nan,data.frame)
 S3method(pivot,pansim)
 S3method(plot,fit_pansim)
 S3method(plot,pansim)
