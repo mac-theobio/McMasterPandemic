@@ -503,7 +503,7 @@ make_vaxrate <- function(state, params) {
     }
 
     if (model_type == "onedose") {
-        x <- params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N
+        x <- params[["vax_doses_per_day"]] / asymp_unvax_N
         x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
         vax_rate$dose1 <- x
     }
