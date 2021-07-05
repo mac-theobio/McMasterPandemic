@@ -74,7 +74,7 @@ condense_state <- function(x, values_only = FALSE) {
             extra = "merge"
         )
         ## turn subcat col into factor to preserve original ordering
-        %>% mutate(subcat = as.factor(subcat))
+        %>% mutate(subcat = as_factor(subcat))
         ## group by everything except state
         %>% group_by(obs_number, subcat)
         %>% summarise(value = sum(value), .groups = "drop")
@@ -82,7 +82,7 @@ condense_state <- function(x, values_only = FALSE) {
         %>% pivot_wider(
             names_from = "subcat",
             values_from = "value"
-        )
+            )
         ## drop observation number
         %>% select(-obs_number)
     ) -> x
@@ -595,58 +595,61 @@ add_updated_vaxrate <- function(state, params, ratemat) {
     } else {
         ## for each age
         for (age in attr(params, "age_cat")) {
-            from_regex <- sub(
+            from_regex_suffix <- sub(
                 "\\+", "\\\\+",
                 paste0(age, "_", vax_cat[1])
             )
-            to_regex <- sub(
+            to_regex_suffix <- sub(
                 "\\+", "\\\\+",
                 paste0(age, "_", vax_cat[2])
             )
 
-            dose1_rate <- vax_rate$dose1[grepl(from_regex, names(vax_rate$dose1))]
+            dose1_rate <- vax_rate$dose1[grepl(from_regex_suffix, names(vax_rate$dose1))]
 
-            if("V" %in% epi_states){
-              from_regex <- paste0("^(S|E|Ia|Ip|R|V)_", from_regex)
-              to_regex <- paste0("^(S|E|Ia|Ip|R|V)_", to_regex)
-              block_size <- 6
-            } else {
-              from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex)
-              to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex)
-               block_size <- 5
-            }
+            from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex_suffix)
+            to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex_suffix)
+            block_size <- 5
 
             ratemat[
                 grepl(from_regex, dimnames(ratemat)$from),
                 grepl(to_regex, dimnames(ratemat)$to)
             ] <- diag(dose1_rate, nrow = block_size, ncol = block_size, names = FALSE)
 
+            ## add flows into vax accumulator compartment
+            if("V" %in% epi_states){
+              ratemat[
+                grepl(from_regex, dimnames(ratemat)$from),
+                grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
+              ] <- rep(as.numeric(dose1_rate), block_size)
+            }
+
             if (model_type == "twodose") {
-                from_regex <- sub(
+                from_regex_suffix <- sub(
                     "\\+", "\\\\+",
                     paste0(age, "_", vax_cat[3])
                 )
-                to_regex <- sub(
+                to_regex_suffix <- sub(
                     "\\+", "\\\\+",
                     paste0(age, "_", vax_cat[4])
                 )
 
-                dose2_rate <- vax_rate$dose2[grepl(from_regex, names(vax_rate$dose2))]
+                dose2_rate <- vax_rate$dose2[grepl(from_regex_suffix, names(vax_rate$dose2))]
 
-                if("V" %in% epi_states){
-                  from_regex <- paste0("^(S|E|Ia|Ip|R|V)_", from_regex)
-                  to_regex <- paste0("^(S|E|Ia|Ip|R|V)_", to_regex)
-                  block_size <- 6
-                } else {
-                  from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex)
-                  to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex)
-                  block_size <- 5
-                }
+                from_regex <- paste0("^(S|E|Ia|Ip|R)_", from_regex_suffix)
+                to_regex <- paste0("^(S|E|Ia|Ip|R)_", to_regex_suffix)
+                block_size <- 5
 
                 ratemat[
                   grepl(from_regex, dimnames(ratemat)$from),
                   grepl(to_regex, dimnames(ratemat)$to)
                 ] <- diag(dose2_rate, nrow = block_size, ncol = block_size, names = FALSE)
+
+                if("V" %in% epi_states){
+                  ratemat[
+                    grepl(from_regex, dimnames(ratemat)$from),
+                    grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
+                  ] <- rep(as.numeric(dose2_rate), block_size)
+                }
             }
         }
     }
