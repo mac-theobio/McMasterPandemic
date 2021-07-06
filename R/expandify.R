@@ -31,7 +31,9 @@ distribute_counts <- function(total, dist) {
 ##' @return a tibble of counts aggregated across epidemiological states
 ## TODO: rewrite this as a generic function with custom methods for state_pansim
 ## and pansim objects
-condense_state <- function(x, values_only = FALSE) {
+condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed_vector")) {
+    return_type <- match.arg(return_type)
+
     ## R CMD CHECK doesn't understand dplyr, this is a workaround
     obs_number <- subcat <- value <- NULL
 
@@ -90,7 +92,11 @@ condense_state <- function(x, values_only = FALSE) {
     ## repair age cats in names
     x <- repair_names_age(x)
 
-    if (values_only) x <- unname(unlist(x))
+    x <- switch(return_type,
+                tibble = x,
+                named_vector = tibble_row_to_named_vec(x),
+                unnamed_vector = unname(unlist(x))
+                )
 
     return(x)
 }
@@ -484,21 +490,20 @@ make_vaxrate <- function(state, params) {
         )
     }
 
-    ## FIXME: get this working for age-specific vax_doses_per_day
-    ## don't sum over all ages, keep pop-size separate for each age
-    ## using rowSums in prep for age-structure
     asymp_unvax_N <- condense_state(
-        state[grepl(asymp_unvax_regex, names(state))]
+        state[grepl(asymp_unvax_regex, names(state))],
+        return_type = "named_vector"
     )
     ## same as above but for pop that is protected by first dose
     if (model_type == "twodose") {
         asymp_vaxprotect1_N <- condense_state(
-            state[grepl(asymp_vaxprotect1_regex, names(state))]
+            state[grepl(asymp_vaxprotect1_regex, names(state))],
+            return_type = "named_vector"
         )
     }
 
     if (model_type == "onedose") {
-        x <- params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N
+        x <- params[["vax_doses_per_day"]] / asymp_unvax_N
         x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
         vax_rate$dose1 <- x
     }
