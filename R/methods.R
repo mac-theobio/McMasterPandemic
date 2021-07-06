@@ -795,11 +795,16 @@ summary.fit_pansim <- function(object, ...) {
 
 
 ##' @export
-update.fit_pansim <- function(object, newparams = NULL, ...) {
-    if (!is.null(newparams)) {
+update.fit_pansim <- function(object, newcoef = NULL, ...) {
+    if (!is.null(newcoef)) {
       ## substitute named elements of newparams into the parameters/coefficients of the fit
-      ## these are stored in object$mle2@coef [for fitted parameters]
-      ## f_args$base_params
+      oldcoef <- object$mle2@coef
+      to_remove_regex <- paste(names(newcoef), collapse = "|")
+      newcoef <- c(unlist(newcoef), oldcoef[!grepl(to_remove_regex, names(oldcoef))])
+      object$mle2@coef <- newcoef
+      # attr(object$mle2, "coef") <- newcoef
+      if(length(list(...))>0) warning("ignoring all but newcoef in update.fit_pansim")
+      return(object)
     }
     cc <- object$call
     L <- list(...)

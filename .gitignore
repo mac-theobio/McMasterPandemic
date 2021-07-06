@@ -70,6 +70,7 @@ wget-*
 !git_push/*.png
 !notes/*.html
 !sandbox/*.RDS
+!sandbox/*.Rdata
 
 notes/debugging.R
 notes/expandify_implementation.nb.html
