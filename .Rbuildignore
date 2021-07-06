@@ -27,3 +27,4 @@ utils/
 ^\.github$
 refactor/
 docs/
+dockerfile
