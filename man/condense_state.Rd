@@ -4,7 +4,7 @@
 \alias{condense_state}
 \title{collapse (non-accumulator) states into subcategories (ages, vax status)}
 \usage{
-condense_state(x, values_only = FALSE)
+condense_state(x, return_type = c("tibble", "named_vector", "unnamed_vector"))
 }
 \arguments{
 \item{x}{a state vector or data frame (each row is a different time point)}
