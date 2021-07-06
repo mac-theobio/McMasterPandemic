@@ -795,7 +795,12 @@ summary.fit_pansim <- function(object, ...) {
 
 
 ##' @export
-update.fit_pansim <- function(object, ...) {
+update.fit_pansim <- function(object, newparams = NULL, ...) {
+    if (!is.null(newparams)) {
+      ## substitute named elements of newparams into the parameters/coefficients of the fit
+      ## these are stored in object$mle2@coef [for fitted parameters]
+      ## f_args$base_params
+    }
     cc <- object$call
     L <- list(...)
     for (i in seq_along(L)) {
