@@ -2,7 +2,7 @@
 library(McMasterPandemic)
 library(tidyverse)
 
-dir.create(file.path('weekly_calibrations'), showWarnings = FALSE)
+dir.create(file.path('../weekly_calibrations'), showWarnings = FALSE)
 
 keep_vars <- c("H", "ICU", "death", "report")
 ## data since 15 March

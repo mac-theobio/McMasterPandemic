@@ -70,6 +70,7 @@ slurm-*
 !git_push/*.png
 !notes/*.html
 !sandbox/*.RDS
+!weekly_calibrations/*.png
 
 notes/debugging.R
 notes/expandify_implementation.nb.html
