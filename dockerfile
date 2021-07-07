@@ -9,8 +9,6 @@ RUN apt-get update && \
     apt install -y libxml2-dev && \
     apt install -y pandoc
 
-RUN echo "force new docker layers"
-
 RUN cd /home && \
     git clone https://github.com/mac-theobio/McMasterPandemic.git
 

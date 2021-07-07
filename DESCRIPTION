@@ -9,7 +9,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
 		   person("Matthew So", role="ctb"))
-Depends: R (>= 3.5.0)
+Depends: R (>= 4.0.0)
 Imports:
 	lattice,
 	Matrix,
