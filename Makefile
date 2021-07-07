@@ -154,6 +154,9 @@ clean:
 
 CPP_SRC=
 
+dependencies:
+	Rscript misc/dependencies.R
+
 ## FIXME: depend on ??
 build-package: $(TARBALL)
 $(TARBALL): ./NAMESPACE
