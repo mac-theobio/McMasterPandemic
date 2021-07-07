@@ -64,7 +64,7 @@ cache
 .DS_Store
 *.rtmp
 wget-*
-
+slurm-*
 ## stop ignoring some files
 !git_push/*.html
 !git_push/*.png
