@@ -55,7 +55,6 @@ Sources += $(wildcard R/*.R)
 
 Sources += dottarget.mk
 
-
 ######################################################################
 
 subdirs += ontario notes
