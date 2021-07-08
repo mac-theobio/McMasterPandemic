@@ -12,8 +12,10 @@ rExp(
   steps = 100,
   ndt = 1,
   do_hazard = FALSE,
+  state = NULL,
   testify = has_testing(params = params),
-  return_val = c("r0", "eigenvector", "sim")
+  return_val = c("r0", "eigenvector", "sim"),
+  type = "ICU1"
 )
 }
 \arguments{
@@ -25,9 +27,13 @@ rExp(
 
 \item{do_hazard}{run with hazard}
 
+\item{state}{initial state as created by make_state. Leave as NULL to create state from params (??)}
+
 \item{testify}{testing compartments}
 
 \item{return_val}{return growth rate or eigenvector?}
+
+\item{type}{model type (passed to \code{\link{make_state}})}
 }
 \description{
 run a pure-exponential sim;

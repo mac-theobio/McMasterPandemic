@@ -11,6 +11,9 @@ calc_conv(i, params)
 
 \item{params}{a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}}
 }
+\value{
+a numeric vector with the convolution result
+}
 \description{
 calculate convolution
 }

@@ -1,7 +1,7 @@
 Package: McMasterPandemic
-Title: Pandemic Model 
+Title: Pandemic Model
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.18
+Version: 0.0.20
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
@@ -9,38 +9,45 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
 		   person("Matthew So", role="ctb"))
-Depends: R (>= 3.5.0)
-Imports: 
-	lattice, 
-	Matrix, 
-	MASS, 
-	dplyr, 
-	ggplot2, 
-	tidyr, 
-	plyr, 
-	purrr, 
-	pomp, 
-	scales, 
-	bbmle (>= 1.0.23.5), 
-	Hmisc, 
-	DEoptim, 
-	mvtnorm, 
-	bdsmatrix, 
-	zoo, 
-	deSolve, 
-	splines, 
+Depends: R (>= 4.0.0)
+Imports:
+	lattice,
+	Matrix,
+	MASS,
+	dplyr,
+	ggplot2,
+	tidyr,
+	plyr,
+	purrr,
+	pomp,
+	scales,
+	bbmle (>= 1.0.23.5),
+	Hmisc,
+	DEoptim,
+	mvtnorm,
+	bdsmatrix,
+	zoo,
+	deSolve,
+	splines,
 	diagram,
-Suggests: 
-	knitr, 
-	testthat, 
-	cowplot, 
-	tikzDevice, 
-	igraph, 
-	memoise, 
+	doParallel,
+	fastmatrix,
+	forcats, 
+	foreach, 
+	readr, 
+	stringr
+Suggests:
+	knitr,
+	testthat,
+	cowplot,
+	tikzDevice,
+	igraph,
+	memoise,
 	latticeExtra,
-	directlabels, 
-	rmarkdown, 
-	tidyverse
+	directlabels,
+	rmarkdown,
+	tidyverse,
+	anytime
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL

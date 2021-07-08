@@ -25,3 +25,6 @@ Rplots.pdf
 make_pkglist.sh
 utils/
 ^\.github$
+refactor/
+docs/
+dockerfile

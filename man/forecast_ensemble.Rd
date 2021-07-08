@@ -17,6 +17,8 @@ forecast_ensemble(
   calc_Rt = FALSE,
   fix_pars_re = "nb_disp",
   raw_ensembles = FALSE,
+  parallel = FALSE,
+  n_cores = 4,
   .progress = if (interactive()) "text" else "none"
 )
 }
@@ -44,6 +46,10 @@ forecast_ensemble(
 \item{fix_pars_re}{a regular expression specifying the names of parameters that should be treated as fixed when constructing the parameter ensemble}
 
 \item{raw_ensembles}{(logical) return ensembles (FIXME: should implement return_type=c("array","quantiles","raw") (but not really raw, "dataframe"??))}
+
+\item{parallel}{whether to attempt parallel processing}
+
+\item{n_cores}{number of cores for parallel forecasting (ignored if not parallel) (??)}
 
 \item{.progress}{progress bar?}
 }

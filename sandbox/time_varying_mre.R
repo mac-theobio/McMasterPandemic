@@ -26,11 +26,12 @@ tv_beta <- data.frame(Date=as.Date(startdate:enddate),
 ts_beta <- run_sim(params, params_timevar=tv_beta,state,start_date=startdate,end_date=enddate, verbose=TRUE)
 stopifnot(!identical(c(base),c(ts_beta)))
 
+## mu = fraction mild
 tv_mu <- data.frame(Date=as.Date(startdate:enddate),
 	Symbol="mu",
-	Relative_value=rep(c(0.8,.7),each=length(startdate:enddate)/2),
+	Relative_value=rep(c(0.4,.9),each=length(startdate:enddate)/2),
 	stringsAsFactors=FALSE
-)
+        )
 ts_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate, verbose=TRUE)
 stopifnot(!identical(c(base),c(ts_mu)))
 
@@ -38,22 +39,27 @@ stopifnot(!identical(c(base),c(ts_mu)))
 ## if relative value is < 1, then more people to I_s and hospital
 ## this looks correct!
 
-gg <- (ggplot()
-       + geom_point(data=base,aes(x=date,y=H),color="black")
-       + geom_point(data=ts_mu,aes(x=date,y=H),color="red")
+combdat <- dplyr::bind_rows(base=base,ts_mu=ts_mu,
+                            .id="model")
+gg <- (ggplot(combdat)
+    + geom_point(aes(x=date,y=H,colour=model))
+    + scale_colour_manual(values=c("black","red"))
 )
 
 print(gg)
-=======
-stopifnot(!identical(c(base),c(ts_mu)))
 
-params_timevar2
+## Qs/To do:
 
-ts_mu <- run_sim(params, params_timevar=tv_mu,state,start_date=startdate,end_date=enddate, verbose=TRUE)
-## what if e.g. mu ends up >1 during calibration?
-## mu=min(mu) ?
-## extend time_pars to specify the scale
+## 1. FIX run_sim_breaks so that it accepts a "Symbol" vector in time_args (default is "beta0")
+## if Symbol is length-1, replicate to match break_dates
+## otherwise check that length(Symbol)==length(break_dates)
+## update calibrate_comb to allow this to be done conveniently
 
+## 2. add 'absolute' possibility to timevar  (combine with logit link to allow calibration of mu near 1 without going >1)?
+## troubleshoot calibration, ideally by calibrating to the simulation above ...
 
-## calibration?
->>>>>>> Stashed changes
+## 3. if we fix spikes we can change only at 'changepoints' rather than resetting every day ... and we will be happier that
+## the machinery is actually working right!
+
+## 4. what's the best way to document ?
+

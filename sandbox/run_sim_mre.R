@@ -5,8 +5,8 @@ library(tidyverse)
 ## Copying example from run_sim and modifying it
 
 ##1. testing if Relative_value=1 and non-timevar run_sim are the same (done)
-## MLi: This means I can always construct my own timevar for any time-varying simulation 
-## Move this to testhat?!? 
+## MLi: This means I can always construct my own timevar for any time-varying simulation
+## Move this to testhat?!?
 
 params <- read_params("ICU1.csv")
 paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
@@ -25,7 +25,7 @@ res1 <- run_sim(params,state,start_date=startdate,end_date=enddate)
 res2 <- run_sim(params,state,start_date=startdate,end_date=enddate)
 stopifnot(identical(res1,res2))
 
-## This fits a timevar dataframe where beta0 = 1 
+## This fits a timevar dataframe where beta0 = 1
 res1_t <- update(res1, params_timevar=time_pars)
 
 ## keep only numeric values
@@ -91,7 +91,7 @@ pp2 <- (pp2 %>% select(date,hosp,death,report)
 print(gg %+% pp2)
 
 ## compare modlist$fit params_timevar component with rel_betaf
-## No more spikes!! 
+## No more spikes!!
 
 ## 1. Allow MLi hack (construct timepars by hand) to work with ensembles
 ## 2. fix whatever's causing the spikes in the first place
