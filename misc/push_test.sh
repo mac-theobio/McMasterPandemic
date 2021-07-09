@@ -1,5 +1,5 @@
 git pull
-cat "test_file" > test_file.txt
+touch test_file.txt
 git config --global user.name 'calibration-bot'
 git config --global user.email 'calibration-bot@users.noreply.github.com'
 git add --all
