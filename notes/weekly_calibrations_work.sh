@@ -32,5 +32,5 @@ MAILTO=somatthewc@gmail.com
 PATH=/usr/bin
 MAILTO=somatthewc@gmail.com
 
-* * * * * ssh mso@graham.computecanada.ca 'cd /home/mso/projects/def-bolker/mso/McMasterPandemic/misc && bash weekly_calibration.sh'
+0 0 * * 1 ssh mso@graham.computecanada.ca 'cd /home/mso/projects/def-bolker/mso/McMasterPandemic/misc && bash weekly_calibration.sh'
 # ----------------------------------------------------------------------------------------------------------------
