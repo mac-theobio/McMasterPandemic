@@ -20,7 +20,7 @@ if (requireNamespace("memoise")) {
 
 ## FIXME: kernel should ideally be an object with k and lag
 ## (a class with methods)
-## Building with r instead of <U+03BB> for this reason
+## Building with r instead of λ for this reason
 
 ## Investigate r (combine with uniroot to get Euler's r)
 discountGap <- function(r, k) {
@@ -29,7 +29,7 @@ discountGap <- function(r, k) {
     return(discountR - 1)
 }
 
-## Investigate <U+03BA> (combine with uniroot to get <U+03BA>_eff)
+## Investigate κ (combine with uniroot to get κ_eff)
 kappaGap <- function(kappa, rho, R) {
     R_est <- (1 + rho * kappa)^(1 / kappa)
     return(R - R_est)
@@ -78,6 +78,7 @@ rmult <- function(k, r) {
 ##' @param testify testing compartments
 ##' @param return_val return growth rate or eigenvector?
 ##' @param type model type (passed to \code{\link{make_state}})
+##' @param state initial state as created by make_state. Leave as NULL to create state from params (??)
 ##' @examples
 ##' pp <- read_params("PHAC_testify.csv")
 ##' rExp(pp)
@@ -86,26 +87,75 @@ rmult <- function(k, r) {
 ##' @export
 rExp <- function(params, steps = 100, ndt = 1,
                  do_hazard = FALSE,
+                 state = NULL,
                  testify = has_testing(params = params),
                  return_val = c("r0", "eigenvector", "sim"),
                  type = "ICU1") {
     return_val <- match.arg(return_val)
     if (ndt > 1) warning("ndt not fully implemented")
-    params[["N"]] <- 1 ## ? redundant ?
+
+    if (testify) warning("CHECK: may not be working properly for testify?")
+
+    if (has_vax(params) && return_val == "r0") {
+        if (is.null(state)) stop("must provide current state for accurate estimate of r0 with vaxified model")
+        if (!isTRUE(all.equal(sum(state), 1))) stop("state vector must sum to 1")
+    }
+
+    ## need to set total population size to 1
+    if (has_age(params)) {
+        ## with age, use a population distribution
+        params[["N"]] <- params[["Ndist"]]
+    } else {
+        ## without age, just set total population size
+        params[["N"]] <- 1
+    }
+
+    ## if vaxify, turn off flows between strata to keep everything constant in time
+    if (has_vax(params)) {
+        ## turn off flows between strata
+        params[["vax_doses_per_day"]] <- 0
+        params[["vax_response_rate"]] <- 0
+        params[["vax_response_rate_R"]] <- 0
+    }
+
+    ## set up base state
+
     ## potential recursion here: have to make sure
-    state <- make_state(
-        N = 1, E0 = 1e-5,
-        type = type,
-        use_eigvec = FALSE,
-        params = params,
-        testify = FALSE
-    ) ## FIXME: don't assume ICU1?
+    if (is.null(state)) {
+        state <- make_state(
+            N = 1, E0 = 1e-5, type = "ICU1",
+            use_eigvec = FALSE,
+            params = params,
+            ageify = FALSE,
+            vaxify = FALSE,
+            testify = FALSE
+        ) ## FIXME: don't assume ICU1?
+        ## ageify and then vaxify state, as indicated by params
+        if (has_age(params)) {
+            state <- expand_state_age(state,
+                age_cat = attr(params, "age_cat"),
+                Nvec = params[["N"]]
+            )
+        }
+
+        if (has_vax(params)) {
+            state <- expand_state_vax(state,
+                model_type = attr(get_vax(params), "model_type")
+            )
+        }
+    }
+
+    ## make initial ratemat
     M <- make_ratemat(state = state, params = params)
+
+    ## add testify, as indicated by params
     if (testify) {
         M <- testify(M, params)
         state <- expand_stateval_testing(state, method = "untested")
     }
-    r <- run_sim_range(params,
+    ## run exponential simulation
+    r <- run_sim_range(
+        params,
         state,
         nt = steps * ndt,
         M = M,
@@ -115,12 +165,17 @@ rExp <- function(params, steps = 100, ndt = 1,
             testwt_scale = "none"
         )
     )
+
+    ## return whatever is being requested
     if (return_val == "sim") {
         return(r)
     }
+
+    if (return_val == "r0" && has_vax(params)) r <- condense_vax(r)
+
     nn <- ndt * steps
     ## DRY: get_evec()
-    drop_vars <- c("date", "t", "D", "foi", "R", "X", "N", "P")
+    drop_vars <- c("date", "t", "D", "foi", "R", "X", "N", "P", "V")
     if (!testify) drop_vars <- c("S", drop_vars)
     drop_re <- paste0("^(", paste(drop_vars, collapse = "|"), ")")
     ## FIXME: safer version of this:
@@ -129,9 +184,16 @@ rExp <- function(params, steps = 100, ndt = 1,
     uf <- function(x, pos) unlist(x[pos, !grepl(drop_re, names(r))])
     r_last <- uf(r, nn)
     r_nextlast <- uf(r, nn - 1)
+    nonzeros <- (r_nextlast > 0)
+    r0_values <- log(r_last[nonzeros] / r_nextlast[nonzeros])
+    ## print(r0_values)
+    ## print(var(r0_values))
+    ## check if we've converged numerically
+    ## (the discrepancy between r0_values for each compartment should be negligible, just due to numerical error)
+    if (return_val == "r0" && var(r0_values) > 1e-8) warning("the exponential simulation has not converged: please iterate for more steps.")
     ret <- switch(return_val,
         ## log mean(x(t+1)/x(t))
-        r0 = mean(log(r_last / r_nextlast)),
+        r0 = mean(r0_values),
         ## normalized state vector at last time step
         eigenvector = unlist(r_last / sum(r_last))
     )

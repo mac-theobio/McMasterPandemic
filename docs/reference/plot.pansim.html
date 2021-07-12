@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -144,6 +150,7 @@
   drop_states <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"t"</span>, <span class='st'>"S"</span>, <span class='st'>"R"</span>, <span class='st'>"E"</span>, <span class='st'>"I"</span>, <span class='st'>"X"</span>, <span class='st'>"incidence"</span><span class='op'>)</span>,
   keep_states <span class='op'>=</span> <span class='cn'>NULL</span>,
   condense <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  facet_by_age <span class='op'>=</span> <span class='cn'>FALSE</span>,
   log <span class='op'>=</span> <span class='cn'>FALSE</span>,
   log_lwr <span class='op'>=</span> <span class='fl'>1</span>,
   show_times <span class='op'>=</span> <span class='cn'>TRUE</span>,
@@ -168,6 +175,10 @@
     <tr>
       <th>condense</th>
       <td><p>condense states (e.g. all ICU states -&gt; "ICU") before plotting?  See <code><a href='condense.pansim.html'>condense.pansim</a></code></p></td>
+    </tr>
+    <tr>
+      <th>facet_by_age</th>
+      <td><p>if this is an age-structured simulation, do we want to facet by age? if FALSE, facet by state (default)</p></td>
     </tr>
     <tr>
       <th>log</th>

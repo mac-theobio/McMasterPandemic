@@ -4,10 +4,12 @@
 \alias{get_r}
 \title{return growth rate (from Jacobian)}
 \usage{
-get_r(p, method = c("expsim", "kernel", "analytical"))
+get_r(p, state = NULL, method = c("expsim", "kernel", "analytical"))
 }
 \arguments{
 \item{p}{parameters}
+
+\item{state}{state (needed for vaxified model)}
 
 \item{method}{computation method}
 }

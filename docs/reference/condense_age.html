@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -138,18 +144,14 @@
     <p>collapse age/testing/etc. categories (only; don't do other condensation)</p>
     </div>
 
-    <pre class="usage"><span class='fu'>condense_age</span><span class='op'>(</span><span class='va'>x</span>, levels <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='va'>epi_cat</span><span class='op'>)</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>condense_age</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>a state vector</p></td>
-    </tr>
-    <tr>
-      <th>levels</th>
-      <td><p>levels/sort order</p></td>
+      <td><p>a state vector or simulation result df (an object of class `state_pansim` or `pansim`)</p></td>
     </tr>
     </table>
 

@@ -7,11 +7,17 @@
 show_ratemat(
   M,
   method = c("Matrix", "diagram", "igraph"),
+  subset = NULL,
+  xlab = "to",
+  ylab = "from",
+  sub = "",
+  zlim = c(0, 1),
   aspect = "iso",
   block_size = NULL,
   block_col = 2,
   axlabs = TRUE,
   const_width = (method == "igraph"),
+  colour_palette = viridis::magma(n = 50, direction = -1),
   do_symbols = NULL,
   box.size = 0.02,
   ...
@@ -22,6 +28,16 @@ show_ratemat(
 
 \item{method}{visualization method}
 
+\item{subset}{list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)}
+
+\item{xlab}{label on x axis}
+
+\item{ylab}{label on y axis}
+
+\item{sub}{subtitle for plot}
+
+\item{zlim}{appears to be unused (!!)}
+
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
 \item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}
@@ -31,6 +47,8 @@ show_ratemat(
 \item{axlabs}{for flow matrices, show axis tick labels?}
 
 \item{const_width}{set flows to constant value of 1?}
+
+\item{colour_palette}{vector of colours for rate matrix heatmap}
 
 \item{do_symbols}{plot symbolic values for flows?}
 

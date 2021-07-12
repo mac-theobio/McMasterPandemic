@@ -13,11 +13,11 @@ nlist <- function(...) {
     L <- list(...)
     snm <- vapply(substitute(list(...)), deparse, character(1))[-1]
     if (is.null(nm <- names(L))) {
-        nm <- snm
-    }
+          nm <- snm
+      }
     if (any(nonames <- nm == "")) {
-        nm[nonames] <- snm[nonames]
-    }
+          nm[nonames] <- snm[nonames]
+      }
     setNames(L, nm)
 }
 
@@ -512,7 +512,8 @@ add_d_log <- function(x) {
 ##                 %>% as_tibble()
 ##                 %>% dplyr::filter(Symbol=="beta0")
 ##                 %>% dplyr::select(-Symbol)
-##                 %>% rename(rel_beta0="Relative_value",date="Date")
+##   FIXME may not be up to date with time_params restructuring?
+##                 %>% rename(rel_beta0="Value",date="Date")
 ##             )
 ##             vars <- c("date","S")
 ##             if (has_zeta(params)) vars <- c(vars,"hetS")
@@ -568,6 +569,10 @@ has_zeta <- function(params) {
     "zeta" %in% names(params) && params[["zeta"]] != 0
 }
 
+has_vacc <- function(params) {
+    "vacc" %in% names(params)
+}
+
 ## test based *either* on state or params
 ## testing based on params fails when we have make_state -> get_evec -> make_state ...
 has_testing <- function(state, params = NULL, ratemat = NULL) {
@@ -580,13 +585,49 @@ has_testing <- function(state, params = NULL, ratemat = NULL) {
     return(any(grepl("_t$", names(state))))
 }
 
-has_age <- function(params, state = NULL) {
-    if (!is.null(state)) {
-        ## FIXME
+has_age <- function(x) {
+    ## look for presence of the "age_cat" attribute
+    if ("pansim" %in% class(x)) {
+        ## for pansim objects, check if its params attribute has age cats
+        return("age_cat" %in% names(attributes(attr(x, "params"))))
     }
-    return("Cmat" %in% names(params))
+    ## otherwise, check the object directly for an age cat attribute
+    return("age_cat" %in% names(attributes(x)))
 }
 
+get_age <- function(x) {
+    ## get age categories out of params list
+    if (!has_age(x)) stop("these parameters are not age-specific")
+    return(attr(x, "age_cat"))
+}
+
+has_vax <- function(x) {
+    ## look for presence of the "vax_cat" attribute
+    if ("pansim" %in% class(x)) {
+        ## for pansim objects, check if its params attribute has vax cats
+        return("vax_cat" %in% names(attributes(attr(x, "params"))))
+    }
+
+    if ("state_pansim" %in% class(x)) {
+        return(any(grepl("vax", names(x))))
+    }
+
+    ## otherwise, check the object directly for an vax cat attribute
+    return("vax_cat" %in% names(attributes(x)))
+}
+
+get_vax <- function(x) {
+    ## get vax categories out of params list
+    if (!has_vax(x)) stop("these parameters are not vaxified")
+    return(attr(x, "vax_cat"))
+}
+
+get_vax_model_type <- function(x) {
+    if (!is.null(attr(x, "model_type"))) {
+        return(attr(x, "model_type"))
+    }
+    return(ifelse(any(grepl("2", x)), "twodose", "onedose"))
+}
 
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
@@ -597,17 +638,29 @@ smart_round <- function(x) {
     y
 }
 
+do_variant <- function(x) {
+    ## should be a pars list
+    check <- attr(x, "do_variant")
+    return(!is.null(check) && check)
+}
+
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param method visualization method
+##' @param subset list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)
 ##' @param aspect aspect ratio ("iso", "fill" are the sensible options)
 ##' @param block_size numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments
 ##' @param block_col (numeric vector, of length 1 or length(block_size)
 ##' @param const_width set flows to constant value of 1?
+##' @param colour_palette vector of colours for rate matrix heatmap
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
 ##' @param box.size box size for diagram
 ##' @param block_col each element in block_col controls the color of the corresponding grid overlay added by block_size (if add_blocks==TRUE)
+##' @param xlab label on x axis
+##' @param ylab label on y axis
+##' @param sub subtitle for plot
+##' @param zlim appears to be unused (!!)
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
@@ -622,16 +675,29 @@ smart_round <- function(x) {
 ##' ## silly but shows we can do multiple block types in different colours
 ##' show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
 ##' @export
-show_ratemat <- function(M,
-                         method = c("Matrix", "diagram", "igraph"),
+show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
+                         subset = NULL,
+                         xlab = "to",
+                         ylab = "from",
+                         sub = "",
+                         zlim = c(0, 1),
                          aspect = "iso",
                          block_size = NULL,
                          block_col = 2,
                          axlabs = TRUE,
                          const_width = (method == "igraph"),
+                         colour_palette = viridis::magma(n = 50, direction = -1),
                          do_symbols = NULL,
                          box.size = 0.02, ...) {
     method <- match.arg(method)
+    ## subset ratemat, if desired
+    if (!is.null(subset)) {
+        M <- M[
+            grepl(subset[1], dimnames(M)$from),
+            grepl(subset[2], dimnames(M)$to)
+        ]
+    }
+
     p <- NULL
     if (is.null(do_symbols)) {
         do_symbols <- method == "diagram" && !has_testing(ratemat = M)
@@ -639,30 +705,33 @@ show_ratemat <- function(M,
     if (const_width && !do_symbols) {
         M[M > 0] <- 1
     }
-
-    if (const_width && !do_symbols) {
-        M[M > 0] <- 1
-    }
     if (method == "Matrix") {
         add_blocks <- !is.null(block_size)
+        if (is.null(add_blocks)) {
+            add_blocks <- has_testing(state = setNames(
+                numeric(nrow(M)),
+                rownames(M)
+            ))
+        }
         if (axlabs) {
-            rlabs <- rownames(M)
-            clabs <- colnames(M)
+            rlabs <- colnames(M)
+            clabs <- rownames(M)
         } else {
             rlabs <- clabs <- rep("", nrow(M))
         }
         p <- Matrix::image(Matrix(M),
             scales = list(
                 x = list(
-                    at = seq(nrow(M)), labels = rlabs,
+                    at = seq(ncol(M)), labels = rlabs,
                     rot = 90
                 ),
-                y = list(at = seq(ncol(M)), labels = clabs)
+                y = list(at = seq(nrow(M)), labels = clabs)
             ),
-            xlab = "to",
-            ylab = "from",
-            sub = "",
+            xlab = xlab,
+            ylab = ylab,
+            sub = sub,
             colorkey = !const_width,
+            col.regions = colour_palette,
             aspect = aspect, ...
         )
         if (add_blocks) {
@@ -754,51 +823,47 @@ adjust_symbols <- function(M) {
 make_flowchart <- vis_model ## back-compatibility
 
 
-##' identify locations within matrix
-##'
-##' checks global option "macpan_pfun_method" for method: "startsWith" (use efficient method, "grep" (use grep/regex), "both" (testing only! try both and compare)
-##' @param from string identifying 'from' compartment(s) for flows
-##' @param to string identifying 'to' compartment(s) for flows
-##' @param mat flow matrix with appropriate dimnames
-##' @param value (logical) return character (TRUE) or index (FALSE) ?
-##' @param recycle (logical) if necessary, recycle vectors (only if length-1) as necessary
-##' @export
+## identify locations within matrix
+## ##' @param value return character (TRUE) or numeric (FALSE) position?
 pfun <- function(from, to, mat, value = FALSE, recycle = FALSE) {
-  pfun_method <- getOption("macpan_pfun_method", "startsWith")
-  find_pos_grep <- function(tag, x) {
-    grep(sprintf("^%s(_|$)", tag), x, value = value)
-  }
-  find_pos_startsWith <- function(tag, x) {
-    nt <- nchar(tag)
-    r <- which(startsWith(x, tag)) ## subset quickly
-    ## test remainder for _ or $
-    r <- r[(substr(x[r], nt+1, nt+1) == "_") |
-           nchar(x[r]) == nt]
-    if (!value) return(r)
-    return(x[r])
-  }
+    pfun_method <- getOption("macpan_pfun_method", "startsWith")
+    find_pos_grep <- function(tag, x) {
+        grep(sprintf("^%s(_|$)", tag), x, value = value)
+    }
+    find_pos_startsWith <- function(tag, x) {
+        nt <- nchar(tag)
+        r <- which(startsWith(x, tag)) ## subset quickly
+        ## test remainder for _ or $
+        r <- r[(substr(x[r], nt + 1, nt + 1) == "_") |
+            nchar(x[r]) == nt]
+        if (!value) {
+            return(r)
+        }
+        return(x[r])
+    }
 
-  if (pfun_method == "both") {
-      from_pos <- find_pos_grep(from, rownames(mat))
-      to_pos <- find_pos_grep(to, colnames(mat))
-      from_pos_sw <- find_pos_startsWith(from, rownames(mat))
-      to_pos_sw <- find_pos_startsWith(to, colnames(mat))
-      stopifnot(all(from_pos==from_pos_sw) && all(to_pos==to_pos_sw))
-  } else {
-    find_pos <- switch(pfun_method,
-                       startsWith = find_pos_startsWith,
-                       grep = find_pos_grep)
-    from_pos <- find_pos(from, rownames(mat))
-    to_pos <- find_pos(to, colnames(mat))
-  }
+    if (pfun_method == "both") {
+        from_pos <- find_pos_grep(from, rownames(mat))
+        to_pos <- find_pos_grep(to, colnames(mat))
+        from_pos_sw <- find_pos_startsWith(from, rownames(mat))
+        to_pos_sw <- find_pos_startsWith(to, colnames(mat))
+        stopifnot(all(from_pos == from_pos_sw) && all(to_pos == to_pos_sw))
+    } else {
+        find_pos <- switch(pfun_method,
+            startsWith = find_pos_startsWith,
+            grep = find_pos_grep
+        )
+        from_pos <- find_pos(from, rownames(mat))
+        to_pos <- find_pos(to, colnames(mat))
+    }
 
-  nf <- length(from_pos)
-  nt <- length(to_pos)
-  if (recycle && (nt == 1 || nf == 1)) {
-    from_pos <- rep(from_pos, length.out = max(nt, nf))
-    to_pos <- rep(to_pos, length.out = max(nt, nf))
-  }
-  if (!(length(to_pos) == length(from_pos) &&
+    nf <- length(from_pos)
+    nt <- length(to_pos)
+    if (recycle && (nt == 1 || nf == 1)) {
+        from_pos <- rep(from_pos, length.out = max(nt, nf))
+        to_pos <- rep(to_pos, length.out = max(nt, nf))
+    }
+    if (!(length(to_pos) == length(from_pos) &&
         length(to_pos) > 0 && length(from_pos) > 0)) { ## must be positive
         stop(sprintf(
             "to_pos, from_pos don't match: from_pos=%s, to_pos=%s",
@@ -817,6 +882,8 @@ exclude_states <- function(nm, exclude_states) {
     return(xx)
 }
 
+## wrapper for update() to work on lists (using purrr::update_list)
+update.list <- function(list, ...) purrr::update_list(list, ...)
 
 ## inspired by purrr, infix pkgs
 `%||%` <- function(a, b) {
@@ -827,4 +894,58 @@ exclude_states <- function(nm, exclude_states) {
 first_letter_cap <- function(x) {
     f <- substr(x, 1, 1)
     return(toupper(f) == f)
+}
+
+## from ?tolower
+capitalize <- function(x) {
+    paste0(toupper(substring(x, 1, 1)), substring(x, 2))
+}
+
+##' convert 'old' forecast args to 'new' format
+##'
+##' This takes care of a few backward incompatibilities
+##' \itemize{
+##' \item converts dates (could previously be in a wide range
+##' of formats, are now required to be in as.Date()-transformable
+##' format so that we don't depend on anytime)
+##' \item inserts the \emph{current} version of \code{run_sim_break}
+##' (or whatever \code{sim_fun} is specified)
+##' \item converts params_timevar to new format
+##' }
+##' @param x fitted model (\code{fit_pansim})
+##' @param sim_fun simulation function
+##' @export
+fix_stored <- function(x, sim_fun = run_sim_break) {
+  if (requireNamespace("anytime")) {
+    x$forecast_args$start_date <- anytime::anydate(x$forecast_args$start_date)
+    x$forecast_args$end_date <- anytime::anydate(x$forecast_args$end_date)
+    if ("break_dates" %in% names(x$forecast_args$time_args)) {
+      x$forecast_args$time_args$break_dates <-
+        anytime::anydate(x$forecast_args$time_args$break_dates)
+    }
+  }
+  x$forecast_args$sim_fun <- sim_fun
+  pt <- x$forecast_args$time_args$params_timevar
+  if (!is.null(pt)) {
+    pt <- with(pt, data.frame(Date, Symbol, Value = Relative_value,
+                              Type = "rel_orig"))
+    x$forecast_args$time_args$params_timevar <- pt
+  }
+  return(x)
+}
+
+#' convert a tibble row (with all entries of the same data type) to a named vector (used in `condense_state()`)
+#' @param x a tibble with at most one row
+#'
+#' @return a named vector
+tibble_row_to_named_vec <- function(x){
+  if(nrow(x) > 1) stop("this function only works on tibbles with one row")
+
+  if(length(unique(sapply(x, "class"))) > 1) stop("this function only works on tibbles where each column has the same data type")
+
+  the_names <- names(x)
+  x <- unname(unlist(x))
+  names(x) <- the_names
+
+  return(x)
 }

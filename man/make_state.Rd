@@ -12,6 +12,9 @@ make_state(
   use_eigvec = NULL,
   params = NULL,
   x = NULL,
+  normalize = FALSE,
+  ageify = NULL,
+  vaxify = NULL,
   testify = NULL
 )
 }
@@ -31,6 +34,12 @@ to zero: default is to set this to \code{TRUE} if \code{params} is non-NULL}
 \item{params}{parameter vector (looked in for N and E0)}
 
 \item{x}{proposed (named) state vector; missing values will be set}
+
+\item{normalize}{(logical) should the state vector be normalized to sum to 1?}
+
+\item{ageify}{expand state vector to include different age groups (??)}
+
+\item{vaxify}{expand state vector to include groups that have 1-2 vaccine doses (??)}
 
 \item{testify}{expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?}
 }

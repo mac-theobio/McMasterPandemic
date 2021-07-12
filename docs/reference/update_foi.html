@@ -78,7 +78,7 @@ maybe more efficient than modifying &amp;amp; returning the whole matrix" />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -104,6 +104,9 @@ maybe more efficient than modifying &amp;amp; returning the whole matrix" />
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -111,6 +114,9 @@ maybe more efficient than modifying &amp;amp; returning the whole matrix" />
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -148,7 +154,7 @@ at present, this is the only state-dependent <em>per capita</em> rate
 maybe more efficient than modifying &amp; returning the whole matrix</p>
     </div>
 
-    <pre class="usage"><span class='fu'>update_foi</span><span class='op'>(</span><span class='va'>state</span>, <span class='va'>params</span>, <span class='va'>beta_vec</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>update_foi</span><span class='op'>(</span><span class='va'>state</span>, <span class='va'>params</span>, <span class='va'>beta</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -162,8 +168,8 @@ maybe more efficient than modifying &amp; returning the whole matrix</p>
       <td><p>named vector of parameters</p></td>
     </tr>
     <tr>
-      <th>beta_vec</th>
-      <td><p>vector of transmission rates (matching state vector)</p></td>
+      <th>beta</th>
+      <td><p>vector or matrix of transmission rates, where (length(beta) | ncol(beta)) == length(state)</p></td>
     </tr>
     </table>
 

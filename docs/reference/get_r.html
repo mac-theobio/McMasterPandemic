@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -138,7 +144,7 @@
     <p>return growth rate (from Jacobian)</p>
     </div>
 
-    <pre class="usage"><span class='fu'>get_r</span><span class='op'>(</span><span class='va'>p</span>, method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"expsim"</span>, <span class='st'>"kernel"</span>, <span class='st'>"analytical"</span><span class='op'>)</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>get_r</span><span class='op'>(</span><span class='va'>p</span>, state <span class='op'>=</span> <span class='cn'>NULL</span>, method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"expsim"</span>, <span class='st'>"kernel"</span>, <span class='st'>"analytical"</span><span class='op'>)</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -146,6 +152,10 @@
     <tr>
       <th>p</th>
       <td><p>parameters</p></td>
+    </tr>
+    <tr>
+      <th>state</th>
+      <td><p>state (needed for vaxified model)</p></td>
     </tr>
     <tr>
       <th>method</th>

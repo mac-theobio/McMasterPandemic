@@ -11,6 +11,7 @@ print.pansim <- function(x, all = FALSE, ...) {
 ##' calculate convolution
 ##' @param i an incidence time series
 ##' @param params a list or vector containing elements \code{c_prop}, \code{c_delay_mean}, \code{c_delay_cv}
+##' @return a numeric vector with the convolution result
 ##' @export
 calc_conv <- function(i, params) {
     c_prop <- c_delay_mean <- c_delay_cv <- NULL
@@ -23,15 +24,50 @@ calc_conv <- function(i, params) {
         )
     )
     ret <- as.numeric(stats::filter(i, kern, sides = 1))
+    # ret <- as.data.frame(as.numeric(stats::filter(i, kern, sides = 1)))
+    # ## if parameters are ageified, keep age-stratified reports in output too
+    # if (has_age(params)) {
+    #     state_suffixes <- sub(
+    #         "^incidence", "",
+    #         grep("^incidence_", names(i), value = TRUE)
+    #     )
+    #     names(ret) <- paste0("report", state_suffixes)
+    #     ## add total reports
+    #     ret$report <- rowSums(ret)
+    # } else {
+    #     names(ret) <- c("report")
+    # }
+
     return(ret)
 }
 
 ## compute incidence and reports (as convolution of incidence)
 calc_reports <- function(x, params, add_cumrep = FALSE) {
     ## FIXME: dt==1 !
-    incidence <- x$foi * x$S
-    report <- calc_conv(incidence, params)
-    ret <- data.frame(incidence, report)
+    ## calculate incidence (for each age group, if it exists)
+    if (length(grep("^S_", names(x), value = TRUE)) > 0) {
+        state_suffixes <- sub("^S", "", grep("^S_", names(x), value = TRUE))
+        incidence <- lapply(
+            state_suffixes,
+            function(suff) x[[paste0("foi", suff)]] * x[[paste0("S", suff)]]
+        )
+        ## convert to df
+        incidence <- as.data.frame(do.call(cbind, incidence))
+        names(incidence) <- paste0("incidence", state_suffixes)
+    } else {
+        ## otherwise, just do total incidence
+        incidence <- data.frame(incidence = x$foi * x$S)
+    }
+
+    ## add total incidence to output
+    incidence$incidence <- rowSums(incidence)
+
+    ## calculate reports (including across age and vax strata, if present)
+    report <- (incidence
+      %>% mutate(across(everything(), calc_conv, params = params)))
+    names(report) <- sub("incidence", "report", names(incidence))
+
+    ret <- dfs(incidence, report)
     ## FIXME: take out the cum rep stuff?  this is the wrong place for it,
     ## it's generally happening *before* the addition of obs error
     if (add_cumrep) {
@@ -41,13 +77,155 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
     return(ret)
 }
 
-## FIXME: allow faceting automatically? (each var alone or by groups?)
-## don't compare prevalences and incidences?
+##' Prepare age-structured simulation results data frame for plotting
+##'
+##' @param res age-structured simulation result
+##' @param split_age_vax should the age and vaccination category be split into different columns?
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
+##' @inheritParams plot.pansim
+##' @importFrom forcats as_factor
+##' @importFrom stringr str_replace
+##' @importFrom dplyr starts_with
+##' @export
+prep_res_for_plotting <- function(res,
+                                  drop_states = NULL,
+                                  condense_I = FALSE,
+                                  split_age_vax = FALSE) {
+    ## skip rcmdcheck on these variables
+    name <- state <- value <- age <- NULL
+    if (has_vax(res) && split_age_vax) {
+        into <- c("state", "age", "vaccination")
+    } else {
+        into <- c("state", "age")
+    }
+
+    (res
+        %>% select(-starts_with("foi"))
+        %>% pivot_longer(-date)
+        %>% separate(name,
+            into = into,
+            sep = "_", extra = "merge"
+        )
+    ) -> res
+
+    ## condense I cats
+    if (condense_I) {
+        (res
+        ## convert state column to factor to maintain original order of variables
+            %>% mutate(state = as_factor(str_replace(
+                state,
+                "I[amps]", "I"
+            )))
+            %>% group_by(across(c(-value)))
+            %>% summarise(value = sum(value), .groups = "drop")
+        ) -> res
+    }
+
+    (res
+    ## fix age labels
+        %>% mutate(age = str_replace(age, "\\.$", "\\+"))
+        %>% mutate(age = str_replace(age, "\\.", "-"))
+        ## convert categories to factors to maintain ordering
+        %>% mutate(across(where(is.character), ~ as_factor(.)))
+    ) -> res
+
+    if (!is.null(drop_states)) {
+        res <- res %>% filter(!(state %in% drop_states))
+    }
+    ## r cmd check also doesn't understand this dplyr verb
+    where <- function(x){NULL}
+    return(res)
+}
+
+##' Plot age-structured simulation result faceted by age categories
+##'
+##' @param res age-structured simulation result
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
+##' @inheritParams plot.pansim
+##' @importFrom dplyr vars
+##' @importFrom ggplot2 scale_x_date
+##'
+##' @export
+plot_res_by_age <- function(res, drop_states = NULL,
+                            condense_I = FALSE,
+                            show_times = TRUE) {
+    ## circumvent rcmdcheck
+    value <- state <- age <- NULL
+    ## get time-varying params attribute, if it exists
+    ptv <- attr(res, "params_timevar")
+
+    (prep_res_for_plotting(res, drop_states, condense_I)
+        %>% ggplot(aes(x = date, y = value, colour = state))
+        +
+        geom_line()
+        +
+        facet_wrap(vars(age))
+        +
+        scale_x_date(
+            date_breaks = "1 month",
+            date_labels = "%b"
+        )
+    ## + scale_y_continuous(labels = scales::label_number_si())
+    ) -> gg
+
+    if (show_times && !is.null(ptv)) {
+        gg <- gg + geom_vline(xintercept = ptv$Date, lty = 2)
+    }
+
+    return(gg)
+}
+
+##' Plot age-structured simulation result faceted by state
+##'
+##' @param res age-structured simulation result
+##' @param condense_I condense all the different I (infectious) states to a single I state? (??)
+##' @inheritParams plot.pansim
+##' @export
+plot_res_by_state <- function(res, drop_states = NULL,
+                              condense_I = FALSE,
+                              show_times = TRUE) {
+    ## circumvent rcmdcheck
+    age <- vaccination <- state <- value <- NULL
+    ## get time-varying params attribute, if it exists
+    ptv <- attr(res, "params_timevar")
+
+    if (has_vax(res)) {
+        plot_setup <- (prep_res_for_plotting(res, drop_states, condense_I, split_age_vax = TRUE) %>%
+            ggplot(aes(x = date, y = value, colour = age, linetype = vaccination)))
+    } else {
+        plot_setup <- (prep_res_for_plotting(res, drop_states, condense_I) %>%
+            ggplot(aes(x = date, y = value, colour = age)))
+    }
+
+    (plot_setup
+    + geom_line()
+        + facet_wrap(vars(state), scales = "free_y")
+        + scale_x_date(
+            date_breaks = "1 month",
+            date_labels = "%b"
+        )
+    ## + scale_y_continuous(labels = scales::label_number_si())
+    ) -> gg
+
+    if (show_times && !is.null(ptv)) {
+        gg <- gg + geom_vline(xintercept = ptv$Date, lty = 2)
+    }
+
+    return(gg)
+}
+
+## FIXME: allow faceting automatically? (each var alone or by groups?) don't
+## compare prevalences and incidences?
+## FIXME: incorporate age-specific plotting in setup of base plot,
+## then add stuff (like vlines for timepars) overtop,
+## just in this plotting function (not separately in each plot style) currently,
+## this is done in a redundant way currently
 ##' plot method for simulations
 ##' @param x fitted \code{pansim} object
 ##' @param drop_states states to \emph{exclude} from plot
 ##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
 ##' @param condense condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}
+##' @param facet_by_age if this is an age-structured simulation, do we want to facet by age? if FALSE, facet by state (default)
 ##' @param log plot y-axis on log scale?
 ##' @param log_lwr lower bound for log scale
 ##' @param show_times indicate times when parameters changed?
@@ -58,13 +236,31 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
 ##' @export
 plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incidence"),
                         keep_states = NULL, condense = FALSE,
+                        facet_by_age = FALSE,
                         log = FALSE,
                         log_lwr = 1,
                         show_times = TRUE, ...) {
     ## global variables
     var <- value <- NULL
+
+    ## if age-structured, use a different plotting method
+    if (has_age(x)) {
+        plot_args <- list(
+            res = x,
+            drop_states = drop_states,
+            condense_I = condense,
+            show_times = show_times
+        )
+        if (facet_by_age) {
+            return(do.call(plot_res_by_age, plot_args))
+        } else {
+            return(do.call(plot_res_by_state, plot_args))
+        }
+    }
+
     ## attributes get lost somewhere below ...
     ptv <- attr(x, "params_timevar")
+
     if (!is.null(keep_states)) {
         drop_states <- setdiff(names(x), c(keep_states, "date"))
     }
@@ -120,6 +316,7 @@ pivot.pansim <- function(object, ...) {
 
 ## test whether variables have already been condensed
 is_condensed <- function(x) "I" %in% names(x)
+has_report <- function(x) "report" %in% names(x)
 
 ##' Condense columns (infected, ICU, hospitalized) in a pansim output
 ##' @param object a pansim object
@@ -140,14 +337,34 @@ condense.pansim <- function(object, add_reports = TRUE,
                             ...) {
     check_dots(...)
     aa <- get_attr(object)
+
+    regex_expanded_suffix <- case_when(
+        has_age(params) & has_vax(params) ~ "_[0-9]+\\.[0-9]?[0-9]?_",
+        has_age(params) ~ "_[0-9]+\\.[0-9]?[0-9]?$",
+        has_vax(params) ~ "vax",
+        T ~ ""
+    )
+
     ## condense columns and add, if present
-    add_col <- function(dd, name, regex) {
+    add_col <- function(dd, name, regex, collapse = TRUE) {
         vars <- grep(regex, names(object), value = TRUE)
         if (length(vars) > 0) {
-            dd[[name]] <- rowSums(object[vars])
+            if (collapse) {
+                dd[[name]] <- rowSums(object[vars])
+            } else {
+                dd <- dfs(dd, object[vars])
+            }
         }
         return(dd)
     }
+
+    ## should incidence be added for expanded sims?
+    ## (need foi columns, if so)
+    add_expanded_reports <- (add_reports &&
+        (has_age(params) || has_vax(params)) &&
+        any(grepl("^foi", names(object))))
+
+    ## check first if condensed
     ## FIXME: rearrange logic?
     if (is_condensed(object)) {
         dd <- object
@@ -155,11 +372,21 @@ condense.pansim <- function(object, add_reports = TRUE,
         if (keep_all) {
             dd <- object
         } else {
-            ## keep susc and exposed classes
+            ## start by keeping date
             dd <- object["date"]
+
+            ## if foi by subcategory is in results,
+            ## keep unaggregated S categories for now
+            ## (so that we can calculate incidence)
+            if (add_expanded_reports) {
+                dd <- add_col(dd, "S", "^S", collapse = FALSE)
+            }
+
+            ## keep susc and exposed classes
             for (n in c("S", "E")) {
                 dd <- add_col(dd, n, paste0("^", n))
             }
+
             dd <- add_col(dd, "I", "^I[^C]") ## collapse all I* variables that aren't ICU
             for (n in c("H", "ICU", "R")) {
                 dd <- add_col(dd, n, paste0("^", n))
@@ -175,28 +402,62 @@ condense.pansim <- function(object, add_reports = TRUE,
                     dd <- add_col(dd, nm, re)
                 }
             }
-            ## keep foi ... might need it for future add_reports ...
+            ## keep foi (if it exists) as a single column
             if ("foi" %in% names(object)) {
                 dd <- data.frame(dd, foi = object[["foi"]])
+            } else {
+                ## if foi is expanded, keep without condensing
+                ## in case we want to calculate incidence later
+                if (any(grepl("^foi", names(object)))) {
+                    dd <- add_col(dd, "foi", "^foi", collapse = FALSE)
+                }
             }
         } ## not keep_all
     } ## already condensed
-    if (add_reports &&
-        !("report" %in% names(object)) ## don't add reports if already there ...
-    ) {
-        if (!"c_delay_mean" %in% names(params)) {
-            warning("add_reports requested but delay parameters missing")
-        } else {
-            if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
-            if (!"S" %in% names(dd)) {
-                stop("can't currently compute reports without condensing S first")
+
+    ## no check if we should add reports
+    if (add_reports) {
+        ## if reports aren't already in the output object
+        if (!has_report(dd)) {
+            ## and they're not already in the input object
+            if (!has_report(object)) {
+                if (!"c_delay_mean" %in% names(params)) {
+                    warning("add_reports requested but delay parameters missing")
+                } else {
+                    if (cum_reports) warning("cum_reports is deprecated (reports are cumulated in run_sim)")
+                    ## if we don't either have condensed S or age-specific S, can't generate reports
+                    ## if (!any("S" %in% names(dd), grepl("^S_[0-9]+", names(dd)))) {
+                    ##     stop("need either condensed S or age-specific S to compute reports (at least one is missing)")
+                    ## }
+                    cr <- calc_reports(dd, params, add_cumrep = cum_reports)
+                    dd <- data.frame(dd, cr)
+                }
+            } else {
+                ## the reports are in the input object, so just copy them over
+                dd <- dfs(dd, object[grepl(
+                    "^(incidence|report|cumRep)",
+                    names(object)
+                )])
             }
-            cr <- calc_reports(dd, params, add_cumrep = cum_reports)
-            dd <- data.frame(dd, cr)
+        }
+        ## but if not keep_all, drop any expanded reports (if they've been
+        ## added to the output object)
+        if (!keep_all && (has_age(params) || has_vax(params))) {
+            dd <- dd[!grepl(
+                paste0("^(incidence|report)", regex_expanded_suffix),
+                names(dd)
+            )]
         }
     } ## add_reports
+
     if (het_S) {
         dd$hetS <- (dd$S / params[["N"]])^(1 + params[["zeta"]])
+    }
+
+    ## drop age-specific S classes
+    ## (if they still exist from the incidence calc)
+    if (add_expanded_reports && !keep_all) {
+        dd <- dd[!grepl("^S_", names(dd))]
     }
     dd <- put_attr(dd, aa)
     return(dd)
@@ -493,7 +754,8 @@ coef.fit_pansim <- function(object,
     if (method == "fitted") {
         return(opt_pars)
     }
-    params <- update(f_args$base_params, opt_pars$params)
+    params <- f_args$base_params
+    if (!is.null(opt_pars$params)) params <- update(f_args$base_params, opt_pars$params)
     return(params)
 }
 
@@ -533,7 +795,12 @@ summary.fit_pansim <- function(object, ...) {
 
 
 ##' @export
-update.fit_pansim <- function(object, ...) {
+update.fit_pansim <- function(object, newparams = NULL, ...) {
+    if (!is.null(newparams)) {
+      ## substitute named elements of newparams into the parameters/coefficients of the fit
+      ## these are stored in object$mle2@coef [for fitted parameters]
+      ## f_args$base_params
+    }
     cc <- object$call
     L <- list(...)
     for (i in seq_along(L)) {
@@ -849,3 +1116,7 @@ vcov.fit_pansim <- function(object, ...) {
     v <- try(solve(object$hessian))
     return(v)
 }
+
+##' @export
+is.nan.data.frame <- function(x)
+    do.call(cbind, lapply(x, is.nan))

@@ -51,7 +51,7 @@ pop_pred_samp <- function(object,
     keep_params <- !names(cc) %in% fix_params
 
     cc <- cc[keep_params]
-    Sigma <- Sigma[keep_params, keep_params]
+    Sigma <- as.matrix(Sigma[keep_params, keep_params])
 
     fixed_pars <- setdiff(names(object@fullcoef), names(cc))
     res <- matrix(NA,

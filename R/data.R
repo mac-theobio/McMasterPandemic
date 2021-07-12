@@ -31,6 +31,7 @@
 ##' Calibration to mobility data
 "ont_cal_mob1"
 
+
 ##' @rdname ontario_data
 ##' @name ont_all_sub
 ##' @format A subset of ont_all containing fewer columns.

@@ -49,6 +49,3 @@ p3 <- fix_pars(target=c(r=get_r(p1)*1.1),
          pars_adj="beta0")
 get_r(p3)/get_r(p1)
 ```
-
-
-

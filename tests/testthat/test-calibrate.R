@@ -18,6 +18,7 @@ system.time(cal0 <- suppressWarnings(calibrate(
     use_DEoptim = FALSE
 )))
 
+
 test_that("truncated calibration 'works'", {
     expect_is(cal0, "fit_pansim")
     expect_equal(
@@ -28,6 +29,30 @@ test_that("truncated calibration 'works'", {
 
 dd_nonint <- (dd0 %>%
     mutate(value = value + 0.1))
+
+test_that("run_sim_break with NA params_timevar[[val_column]] correctly inherits corresponding parameters from extra_pars$time_params", {
+  pt <- data.frame(Date = c("2020-02-25", "2020-03-14"), Symbol = c("beta0", c("beta0")), Value = c(NA, NA), Type=c('rel_orig', 'rel_orig'))
+  results_all_na <- run_sim_break(params,
+                                  time_args=list(params_timevar = pt),
+                                  sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
+                                  extra_pars=list(time_params = 0.5))
+
+  pt <- data.frame(Date = c("2020-02-25", "2020-03-14"), Symbol = c("beta0", c("beta0")), Value = c(0.5, 0.5), Type=c('rel_orig', 'rel_orig'))
+  results_1_na <- run_sim_break(params,
+                                  time_args=list(params_timevar = pt),
+                                  sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
+                                  extra_pars=list(time_params = 0.5))
+
+  pt <- data.frame(Date = c("2020-02-25", "2020-03-14"), Symbol = c("beta0", c("beta0")), Value = c(NA, 0.5), Type=c('rel_orig', 'rel_orig'))
+  results_2_na <- run_sim_break(params,
+                                time_args=list(params_timevar = pt),
+                                sim_args=list(start_date="2020-02-01", end_date="2020-04-01"),
+                                extra_pars=list(time_params = 0.5))
+  expect(identical(results_all_na, results_1_na), "results with all NA != results with Value specified!")
+  expect(identical(results_1_na, results_2_na),  "results with 1 NA != results with all NA")
+})
+
+
 
 test_that("non-integer values throw error", {
     expect_error(
@@ -63,7 +88,8 @@ test_that("calibrate parameters other than beta0", {
     time_pars <- data.frame(
         Date = c("2020-05-01", "2020-07-01"),
         Symbol = c("phi2", "beta0"),
-        Relative_value = c(1e-3, 1e-3)
+        Value = c(1e-3, 1e-3),
+        Type = "rel_orig"
     )
     sd <- "2020-03-01"
     ed <- "2020-10-02"
@@ -78,7 +104,7 @@ test_that("calibrate parameters other than beta0", {
     ## FIXME: would like to be able to pass type="ICU1" through ... ?
     ## (run_sim_break uses make.state(params) without optional args
     pt <- time_pars
-    pt$Relative_value <- NA
+    pt$Value <- NA
     SS2 <- run_sim_break(params,
         sim_args = list(
             start_date = sd,

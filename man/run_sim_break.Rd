@@ -8,8 +8,8 @@ run_sim_break(
   params,
   extra_pars = NULL,
   time_args = NULL,
-  sim_args = list(),
   return_timevar = FALSE,
+  sim_args = list(),
   ...
 )
 }
@@ -22,9 +22,9 @@ is relative to baseline *or* is absolute? (will require corresponding change in 
 
 \item{time_args}{list containing \code{break_dates}, **FIXME and Symbol!}
 
-\item{sim_args}{parameters to pass to \code{\link{run_sim}}}
-
 \item{return_timevar}{return data frame of params by time?}
+
+\item{sim_args}{parameters to pass to \code{\link{run_sim}}}
 
 \item{...}{extra args (why??)}
 }

@@ -26,3 +26,6 @@ make_pkglist.sh
 utils/
 ^\.github$
 refactor/
+docs/
+dockerfile
+weekly_calibrations/

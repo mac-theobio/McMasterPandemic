@@ -73,7 +73,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -99,6 +99,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -106,6 +109,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -207,20 +213,21 @@
 <span class='op'>}</span>
 </div><div class='img'><img src='make_ratemat-1.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'>make_ratemat</span><span class='op'>(</span><span class='va'>state</span>,<span class='va'>params</span>,symbols<span class='op'>=</span><span class='cn'>TRUE</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;       to
-#&gt; from   S   E                                        Ia             
-#&gt;   S    "0" "sum(beta_vec * state[names(beta_vec)])" "0"            
-#&gt;   E    "0" "0"                                      "alpha * sigma"
-#&gt;   Ia   "0" "0"                                      "0"            
-#&gt;   Ip   "0" "0"                                      "0"            
-#&gt;   Im   "0" "0"                                      "0"            
-#&gt;   Is   "0" "0"                                      "0"            
-#&gt;   H    "0" "0"                                      "0"            
-#&gt;   H2   "0" "0"                                      "0"            
-#&gt;   ICUs "0" "0"                                      "0"            
-#&gt;   ICUd "0" "0"                                      "0"            
-#&gt;   D    "0" "0"                                      "0"            
-#&gt;   R    "0" "0"                                      "0"            
-#&gt;   X    "0" "0"                                      "0"            
+#&gt; from   S   E                                            Ia             
+#&gt;   S    "0" "sum(beta_array * state[names(beta_array)])" "0"            
+#&gt;   E    "0" "0"                                          "alpha * sigma"
+#&gt;   Ia   "0" "0"                                          "0"            
+#&gt;   Ip   "0" "0"                                          "0"            
+#&gt;   Im   "0" "0"                                          "0"            
+#&gt;   Is   "0" "0"                                          "0"            
+#&gt;   H    "0" "0"                                          "0"            
+#&gt;   H2   "0" "0"                                          "0"            
+#&gt;   ICUs "0" "0"                                          "0"            
+#&gt;   ICUd "0" "0"                                          "0"            
+#&gt;   D    "0" "0"                                          "0"            
+#&gt;   R    "0" "0"                                          "0"            
+#&gt;   X    "0" "0"                                          "0"            
+#&gt;   V    "0" "0"                                          "0"            
 #&gt;       to
 #&gt; from   Ip                    Im             Is                  
 #&gt;   S    "0"                   "0"            "0"                 
@@ -236,6 +243,7 @@
 #&gt;   D    "0"                   "0"            "0"                 
 #&gt;   R    "0"                   "0"            "0"                 
 #&gt;   X    "0"                   "0"            "0"                 
+#&gt;   V    "0"                   "0"            "0"                 
 #&gt;       to
 #&gt; from   H                                     H2    
 #&gt;   S    "0"                                   "0"   
@@ -251,6 +259,7 @@
 #&gt;   D    "0"                                   "0"   
 #&gt;   R    "0"                                   "0"   
 #&gt;   X    "0"                                   "0"   
+#&gt;   V    "0"                                   "0"   
 #&gt;       to
 #&gt; from   ICUs                                                    
 #&gt;   S    "0"                                                     
@@ -266,6 +275,7 @@
 #&gt;   D    "0"                                                     
 #&gt;   R    "0"                                                     
 #&gt;   X    "0"                                                     
+#&gt;   V    "0"                                                     
 #&gt;       to
 #&gt; from   ICUd                                              
 #&gt;   S    "0"                                               
@@ -281,21 +291,23 @@
 #&gt;   D    "0"                                               
 #&gt;   R    "0"                                               
 #&gt;   X    "0"                                               
+#&gt;   V    "0"                                               
 #&gt;       to
-#&gt; from   D                        R         X                          
-#&gt;   S    "0"                      "0"       "0"                        
-#&gt;   E    "0"                      "0"       "0"                        
-#&gt;   Ia   "0"                      "gamma_a" "0"                        
-#&gt;   Ip   "0"                      "0"       "0"                        
-#&gt;   Im   "0"                      "gamma_m" "0"                        
-#&gt;   Is   "nonhosp_mort * gamma_s" "0"       "M[pfun(\"Is\", \"H\", M)]"
-#&gt;   H    "0"                      "rho"     "0"                        
-#&gt;   H2   "0"                      "psi3"    "0"                        
-#&gt;   ICUs "0"                      "0"       "0"                        
-#&gt;   ICUd "psi2"                   "0"       "0"                        
-#&gt;   D    "0"                      "0"       "0"                        
-#&gt;   R    "0"                      "0"       "0"                        
-#&gt;   X    "0"                      "0"       "0"                        </div></pre>
+#&gt; from   D                        R         X                           V  
+#&gt;   S    "0"                      "0"       "0"                         "0"
+#&gt;   E    "0"                      "0"       "0"                         "0"
+#&gt;   Ia   "0"                      "gamma_a" "0"                         "0"
+#&gt;   Ip   "0"                      "0"       "0"                         "0"
+#&gt;   Im   "0"                      "gamma_m" "0"                         "0"
+#&gt;   Is   "nonhosp_mort * gamma_s" "0"       "M[pfun(\"Is\", \"H\", M)]" "0"
+#&gt;   H    "0"                      "rho"     "0"                         "0"
+#&gt;   H2   "0"                      "psi3"    "0"                         "0"
+#&gt;   ICUs "0"                      "0"       "0"                         "0"
+#&gt;   ICUd "psi2"                   "0"       "0"                         "0"
+#&gt;   D    "0"                      "0"       "0"                         "0"
+#&gt;   R    "0"                      "0"       "0"                         "0"
+#&gt;   X    "0"                      "0"       "0"                         "0"
+#&gt;   V    "0"                      "0"       "0"                         "0"</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

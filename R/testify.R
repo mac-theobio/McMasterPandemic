@@ -1,30 +1,5 @@
 ## it takes existing ratemat from make_ratemat and transform it into the testify version rate mat
 
-## FIXME: document these for real!
-##' global variables for testify expansion
-##' @export
-non_expanded_states <- c("D", "X")
-
-##' @rdname non_expanded_states
-##' @export
-test_extensions <- c("u", "p", "n", "t")
-
-##' @rdname non_expanded_states
-##' @export
-test_accumulators <- c("N", "P")
-
-##' @rdname non_expanded_states
-##' @export
-asymp_cat <- c("S", "E", "Ia", "Ip", "R")
-
-##' @rdname non_expanded_states
-severe_cat <- c("Is", "H", "H2", "ICUs", "ICUd")
-
-##' @rdname non_expanded_states
-## these are 'asymptomatic' (= pre- or asymptomatic)
-##' @export
-cryptic_cat <- c("Ia", "Ip")
-
 mk_zero_vec <- function(n) {
     setNames(numeric(length(n)), n)
 }
@@ -187,7 +162,7 @@ expand_stateval_testing <- function(x, method = c("eigvec", "untested", "spread"
         accum_vec <- mk_zero_vec(test_accumulators)
         if (has_age(params)) {
             ## FIXME: non-default age categories???
-            accum_vec <- expand_stateval_age(accum_vec)
+            accum_vec <- expand_state_age(accum_vec)
         }
         new_states <- c(new_states, non_expanded_vec, accum_vec)
     }

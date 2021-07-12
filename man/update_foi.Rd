@@ -6,14 +6,14 @@
 at present, this is the only state-dependent \emph{per capita} rate
 maybe more efficient than modifying & returning the whole matrix}
 \usage{
-update_foi(state, params, beta_vec)
+update_foi(state, params, beta)
 }
 \arguments{
 \item{state}{named vector of states}
 
 \item{params}{named vector of parameters}
 
-\item{beta_vec}{vector of transmission rates (matching state vector)}
+\item{beta}{vector or matrix of transmission rates, where (length(beta) | ncol(beta)) == length(state)}
 }
 \description{
 calculate only updated force of infection

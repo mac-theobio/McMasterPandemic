@@ -50,11 +50,11 @@ test_that("make_ratemat from scratch (ignore testify in state)", {
 })
 
 ## Making beta_vec wtr states (infectious compartments only)
-beta_vec0 <- make_betavec(state, pp, full = FALSE)
-beta_vec0_testified <- make_betavec(state_testified, pp, full = FALSE)
+beta_vec0 <- make_beta(state, pp, full = FALSE)
+beta_vec0_testified <- make_beta(state_testified, pp, full = FALSE)
 ## full
-beta_vec <- make_betavec(state, pp)
-beta_vec_testified <- make_betavec(state_testified, pp)
+beta_vec <- make_beta(state, pp)
+beta_vec_testified <- make_beta(state_testified, pp)
 
 test_that("testified betas make sense", {
     ## test names of testified beta against I_
@@ -133,7 +133,8 @@ test_that("time-varying test intensity", {
     pt <- data.frame(
         Date = as.Date(c("2020-04-01", "2020-04-15")),
         Symbol = rep("testing_intensity", 2),
-        Relative_value = c(0.1, 4)
+        Value = c(0.1, 4),
+        Type = "rel_orig"
     )
     ## don't reduce testing to 0 - it will break things!
     pp[["testing_intensity"]] <- 0.002

@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -141,11 +147,17 @@
     <pre class="usage"><span class='fu'>show_ratemat</span><span class='op'>(</span>
   <span class='va'>M</span>,
   method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Matrix"</span>, <span class='st'>"diagram"</span>, <span class='st'>"igraph"</span><span class='op'>)</span>,
+  subset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  xlab <span class='op'>=</span> <span class='st'>"to"</span>,
+  ylab <span class='op'>=</span> <span class='st'>"from"</span>,
+  sub <span class='op'>=</span> <span class='st'>""</span>,
+  zlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span>,
   aspect <span class='op'>=</span> <span class='st'>"iso"</span>,
   block_size <span class='op'>=</span> <span class='cn'>NULL</span>,
   block_col <span class='op'>=</span> <span class='fl'>2</span>,
   axlabs <span class='op'>=</span> <span class='cn'>TRUE</span>,
   const_width <span class='op'>=</span> <span class='op'>(</span><span class='va'>method</span> <span class='op'>==</span> <span class='st'>"igraph"</span><span class='op'>)</span>,
+  colour_palette <span class='op'>=</span> <span class='fu'>viridis</span><span class='fu'>::</span><span class='fu'><a href='https://sjmgarnier.github.io/viridisLite/reference/viridis.html'>magma</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='fl'>50</span>, direction <span class='op'>=</span> <span class='op'>-</span><span class='fl'>1</span><span class='op'>)</span>,
   do_symbols <span class='op'>=</span> <span class='cn'>NULL</span>,
   box.size <span class='op'>=</span> <span class='fl'>0.02</span>,
   <span class='va'>...</span>
@@ -161,6 +173,26 @@
     <tr>
       <th>method</th>
       <td><p>visualization method</p></td>
+    </tr>
+    <tr>
+      <th>subset</th>
+      <td><p>list of two regular expressions, the first to subset rate matrix rows (based on rownames) and the second to subset columns (based on colnames)</p></td>
+    </tr>
+    <tr>
+      <th>xlab</th>
+      <td><p>label on x axis</p></td>
+    </tr>
+    <tr>
+      <th>ylab</th>
+      <td><p>label on y axis</p></td>
+    </tr>
+    <tr>
+      <th>sub</th>
+      <td><p>subtitle for plot</p></td>
+    </tr>
+    <tr>
+      <th>zlim</th>
+      <td><p>appears to be unused (!!)</p></td>
     </tr>
     <tr>
       <th>aspect</th>
@@ -181,6 +213,10 @@
     <tr>
       <th>const_width</th>
       <td><p>set flows to constant value of 1?</p></td>
+    </tr>
+    <tr>
+      <th>colour_palette</th>
+      <td><p>vector of colours for rate matrix heatmap</p></td>
     </tr>
     <tr>
       <th>do_symbols</th>

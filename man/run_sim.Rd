@@ -32,7 +32,7 @@ run_sim(
 
 \item{end_date}{ending date (ditto)}
 
-\item{params_timevar}{three-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Relative_value' (value \emph{relative to baseline})}
+\item{params_timevar}{four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero), \code{rel_prev} (relative to previous value), possibly others to be determined. If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.}
 
 \item{dt}{time step for \code{\link{do_step}}}
 

@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -146,6 +152,9 @@
   use_eigvec <span class='op'>=</span> <span class='cn'>NULL</span>,
   params <span class='op'>=</span> <span class='cn'>NULL</span>,
   x <span class='op'>=</span> <span class='cn'>NULL</span>,
+  normalize <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  ageify <span class='op'>=</span> <span class='cn'>NULL</span>,
+  vaxify <span class='op'>=</span> <span class='cn'>NULL</span>,
   testify <span class='op'>=</span> <span class='cn'>NULL</span>
 <span class='op'>)</span></pre>
 
@@ -183,6 +192,18 @@ to zero: default is to set this to <code>TRUE</code> if <code>params</code> is n
       <td><p>proposed (named) state vector; missing values will be set</p></td>
     </tr>
     <tr>
+      <th>normalize</th>
+      <td><p>(logical) should the state vector be normalized to sum to 1?</p></td>
+    </tr>
+    <tr>
+      <th>ageify</th>
+      <td><p>expand state vector to include different age groups (??)</p></td>
+    </tr>
+    <tr>
+      <th>vaxify</th>
+      <td><p>expand state vector to include groups that have 1-2 vaccine doses (??)</p></td>
+    </tr>
+    <tr>
       <th>testify</th>
       <td><p>expand state vector to include testing compartments (untested, neg waiting, pos waiting, pos received) ?</p></td>
     </tr>
@@ -207,14 +228,20 @@ to zero: default is to set this to <code>TRUE</code> if <code>params</code> is n
 <span class='fu'>make_state</span><span class='op'>(</span>N<span class='op'>=</span><span class='fl'>1e6</span>,E0<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;      S      E     Ia     Ip     Im     Is      H     H2   ICUs   ICUd      D 
 #&gt; 999999      1      0      0      0      0      0      0      0      0      0 
-#&gt;      R      X 
-#&gt;      0      0 
+#&gt;      R      X      V 
+#&gt;      0      0      0 
+#&gt; attr(,"epi_cat")
+#&gt;  [1] "S"    "E"    "Ia"   "Ip"   "Im"   "Is"   "H"    "H2"   "ICUs" "ICUd"
+#&gt; [11] "D"    "R"    "X"    "V"   
 #&gt; attr(,"class")
 #&gt; [1] "state_pansim"</div><div class='input'><span class='fu'>make_state</span><span class='op'>(</span>params<span class='op'>=</span><span class='va'>p</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;      S      E     Ia     Ip     Im     Is      H     H2   ICUs   ICUd      D 
 #&gt; 999995      3      1      0      1      0      0      0      0      0      0 
-#&gt;      R      X 
-#&gt;      0      0 
+#&gt;      R      X      V 
+#&gt;      0      0      0 
+#&gt; attr(,"epi_cat")
+#&gt;  [1] "S"    "E"    "Ia"   "Ip"   "Im"   "Is"   "H"    "H2"   "ICUs" "ICUd"
+#&gt; [11] "D"    "R"    "X"    "V"   
 #&gt; attr(,"class")
 #&gt; [1] "state_pansim"</div></pre>
   </div>

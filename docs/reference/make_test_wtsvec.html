@@ -73,7 +73,7 @@ make vector of test positivity" />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -99,6 +99,9 @@ make vector of test positivity" />
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -106,6 +109,9 @@ make vector of test positivity" />
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -164,7 +170,7 @@ make vector of test positivity" />
 
 <span class='va'>state1</span><span class='op'>[</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fl'>1</span>  <span class='co'>## occupy all states</span>
 <span class='va'>state</span> <span class='op'>&lt;-</span> <span class='fu'><a href='expand_stateval_testing.html'>expand_stateval_testing</a></span><span class='op'>(</span><span class='va'>state0</span>, params<span class='op'>=</span><span class='va'>pp</span><span class='op'>)</span>
-<span class='va'>vn</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://generics.r-lib.org/reference/setops.html'>setdiff</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span><span class='op'>(</span><span class='va'>state0</span><span class='op'>)</span>,<span class='va'>non_expanded_states</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: CHECK: may not be working properly for testify?</span></div><div class='input'><span class='va'>vn</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://generics.r-lib.org/reference/setops.html'>setdiff</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span><span class='op'>(</span><span class='va'>state0</span><span class='op'>)</span>,<span class='va'>non_expanded_states</span><span class='op'>)</span>
 <span class='va'>wtsvec</span> <span class='op'>&lt;-</span> <span class='fu'>make_test_wtsvec</span><span class='op'>(</span><span class='va'>pp</span>, <span class='va'>vn</span><span class='op'>)</span>
 <span class='va'>posvec</span> <span class='op'>&lt;-</span> <span class='fu'>make_test_posvec</span><span class='op'>(</span><span class='va'>pp</span>, <span class='va'>vn</span><span class='op'>)</span>
 <span class='co'>## need to make_ratemat() with *unexpanded* state, then expand it</span>

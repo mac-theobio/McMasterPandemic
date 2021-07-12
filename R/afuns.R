@@ -2,11 +2,20 @@
 
 ##' return growth rate (from Jacobian)
 ##' @param p parameters
+##' @param state state (needed for vaxified model)
 ##' @param method computation method
 ##' @export
-get_r <- function(p, method = c("expsim", "kernel", "analytical")) {
+get_r <- function(p, state = NULL,
+                  method = c("expsim", "kernel", "analytical")) {
     ## expsim and kernel match well, analytical is ???
     method <- match.arg(method)
+
+    if (has_vax(p) && is.null(state)) {
+        p <- condense_params_vax(p)
+    }
+    ## if(method == "expsim"){
+    ##   steps <- ifelse(has_vax(p), 200, 100)
+    ## }
     res <- switch(method,
         analytical = {
             warning("Jacobian-based r may be unreliable!")
@@ -16,7 +25,7 @@ get_r <- function(p, method = c("expsim", "kernel", "analytical")) {
             get_kernel_moments(p)[["r0"]]
         },
         expsim = {
-            rExp(p)
+            rExp(p, state = state)
         }
     )
     return(res)
@@ -37,7 +46,7 @@ get_evec <- function(p, method = c("expsim", "analytical"), ...) {
             v <- ee$vectors
             rownames(v) <- rownames(J)
             dom_vec <- v[, which.max(ee$values)]
-            drop_vars <- c("date", "t", "S", "R", "D", "foi", "hosp", "X")
+            drop_vars <- c("date", "t", "S", "R", "D", "foi", "hosp", "X", "V")
             dd <- abs(dom_vec[!names(dom_vec) %in% drop_vars])
             dd / sum(dd)
         }

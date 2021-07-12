@@ -9,6 +9,7 @@
   drop_states = c("t", "S", "R", "E", "I", "X", "incidence"),
   keep_states = NULL,
   condense = FALSE,
+  facet_by_age = FALSE,
   log = FALSE,
   log_lwr = 1,
   show_times = TRUE,
@@ -23,6 +24,8 @@
 \item{keep_states}{states to \emph{include} in plot (overrides \code{drop_states})}
 
 \item{condense}{condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}}
+
+\item{facet_by_age}{if this is an age-structured simulation, do we want to facet by age? if FALSE, facet by state (default)}
 
 \item{log}{plot y-axis on log scale?}
 

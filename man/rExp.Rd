@@ -12,6 +12,7 @@ rExp(
   steps = 100,
   ndt = 1,
   do_hazard = FALSE,
+  state = NULL,
   testify = has_testing(params = params),
   return_val = c("r0", "eigenvector", "sim"),
   type = "ICU1"
@@ -25,6 +26,8 @@ rExp(
 \item{ndt}{sub-time steps}
 
 \item{do_hazard}{run with hazard}
+
+\item{state}{initial state as created by make_state. Leave as NULL to create state from params (??)}
 
 \item{testify}{testing compartments}
 

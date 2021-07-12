@@ -3,8 +3,10 @@ pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   calibration: calibration.html
+  farr: farr.html
   getting_started: getting_started.html
   model: model.html
   testing_flow: testing_flow.html
-last_built: 2021-06-04T17:50Z
+  vaxify_implementation: vaxify_implementation.html
+last_built: 2021-07-06T21:35Z
 

@@ -139,8 +139,7 @@ run_sim_loglin <- function(params,
             Date = as.Date(X_date),
             Symbol = "beta0",
             Relative_value = exp(X %*% time_params)
-        )
-        ## log-linear model for beta
+        ) ## log-linear model for beta
     }
 
     if (!is.null(timevar) && length(sim_args) > 0) {
@@ -276,13 +275,13 @@ run_sim_mobility <- function(params,
 run_sim_break <- function(params,
                           extra_pars = NULL,
                           time_args = NULL,
-                          sim_args = list(),
                           return_timevar = FALSE,
+                          sim_args = list(),
                           ...) {
-    ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
     if (any(c("time_break_dates", "Symbol") %in% names(time_args))) {
         stop("probably using outdated time_args() specification")
     }
+    ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
     sim_args <- c(
         sim_args,
         nlist(params,
@@ -291,26 +290,25 @@ run_sim_break <- function(params,
     )
     if (length(time_args) == 1 && is.null(names(time_args))) {
         ## HACK:: namedrop() problems in mle2????
-        names(time_args) <- "time_pars"
+        names(time_args) <- "break_dates"
     }
-
     params_timevar <- time_args$params_timevar
     if (!is.null(params_timevar)) {
-        params_timevar <- within(
-            time_args$params_timevar,
-            if (any(rvals <- is.na(Relative_value))) {
-                Relative_value[rvals] <- extra_pars$time_params
-            }
-        )
+        val_column <- grep("[Vv]alue", names(params_timevar)) ## back-compatible
+        rvals <- is.na(params_timevar[[val_column]])
+        if (any(rvals)) {
+            params_timevar[[val_column]][rvals] <- extra_pars$time_params
+        }
     }
-
     if (return_timevar) {
         return(params_timevar)
     }
+
     sim_args <- c(
         sim_args,
         list(params_timevar = params_timevar)
     )
+
     do.call("run_sim", sim_args)
 }
 
@@ -555,9 +553,10 @@ mle_fun <- function(p, data,
                     na_penalty = 1e6,
                     ... ## ... is to drop any extra crap that gets in there
 ) {
+    ## browser()
+
     if (debug) cat("mle_fun: ", p, "\n")
     var <- pred <- value <- NULL ## defeat global-variable checkers
-
     ## pass ALL of opt_pars and p to forecaster
     ##  nb_disp stuff isn't necessary within forecaster but we need p and opt_pars to stay in sync!
     f_args <- nlist(
@@ -621,6 +620,7 @@ mle_fun <- function(p, data,
     ret <- sum(dvals)
     if (!is.null(priors)) {
         for (pr in priors) {
+            ## browser()
             pr <- pr[[2]] ## drop tilde
             pr <- add_d_log(pr)
             ret <- ret - eval(pr, list2env(pp))
@@ -721,7 +721,7 @@ update_debug_hist <- function(params, NLL) {
 ##' params <- fix_pars(read_params("ICU1.csv"))
 ##'  opt_pars <- list(params=c(log_E0=4, log_beta0=-1,
 ##'         log_mu=log(params[["mu"]]), logit_phi1=qlogis(params[["phi1"]])),
-##'                                   logit_value=c(-1,-1),
+##'                                   logit_rel_beta0=c(-1,-1),
 ##'                                    log_nb_disp=NULL)
 ##' dd <- (ont_all %>% trans_state_vars() %>% filter(var %in% c("report", "death", "H")))
 ##' \dontrun{
@@ -738,10 +738,23 @@ update_debug_hist <- function(params, NLL) {
 calibrate <- function(start_date = min(data$date) - start_date_offset,
                       start_date_offset = 15,
                       end_date = max(data$date),
-                      time_args = NULL,
+                      time_args = list(
+                          params_timevar = data.frame(
+                              Date = c("2020-03-23", "2020-03-30", "2020-04-01"),
+                              Symbol = rep("beta0", 3),
+                              Relative_value = c(-1, NA, NA)
+                          )
+                      ),
                       base_params,
                       data,
-                      opt_pars,
+                      opt_pars = list(
+                          params = c(
+                              log_E0 = 4,
+                              log_beta0 = -1
+                          ),
+                          logit_time_params = c(-1, -1),
+                          log_nb_disp = NULL
+                      ),
                       fixed_pars = NULL,
                       sim_fun = run_sim_break,
                       sim_args = NULL,
@@ -762,7 +775,6 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                       DE_upr = NULL,
                       DE_cores = getOption("mc.cores", 2)) {
     start_time <- proc.time()
-
     v <- na.omit(data$value)
     if (any(abs(v - round(v)) > 1e-9)) {
         stop("need integer values in reported data (to match dnbinom)")
@@ -940,6 +952,9 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
 ##' @param .progress progress bar?
 ##' @param Sigma covariance matrix to pass to \code{pop_pred_samp}
 ##' @param scale_Sigma multiplier for covariance matrix
+##' @param parallel whether to attempt parallel processing
+##' @param n_cores number of cores for parallel forecasting (ignored if not parallel) (??)
+##' @import foreach
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 forecast_ensemble <- function(fit,
@@ -954,7 +969,14 @@ forecast_ensemble <- function(fit,
                               calc_Rt = FALSE,
                               fix_pars_re = "nb_disp",
                               raw_ensembles = FALSE,
+                              parallel = FALSE,
+                              n_cores = 4,
                               .progress = if (interactive()) "text" else "none") {
+    if (parallel) {
+        ## register parallelization
+        doParallel::registerDoParallel(cores = n_cores)
+    }
+
     var <- NULL
     ## FIXME: include baseline forecast as well?
 
@@ -1025,7 +1047,12 @@ forecast_ensemble <- function(fit,
     t1 <- system.time(e_res <- plyr::alply(as.matrix(e_pars),
         .margins = 1,
         .fun = ff,
-        .progress = .progress
+        .progress = .progress,
+        .parallel = parallel,
+        .paropts = list(
+            .export = c("ff", "calcRt"),
+            .packages = "McMasterPandemic"
+        )
     ))
 
     if (is.null(qvec)) {
@@ -1401,13 +1428,7 @@ calibrate_comb <- function(data,
         spline_pars <- grep("^[bn]s\\(", names(opt_pars$time_params))
         spline_beg <- spline_pars[1]
         spline_end <- spline_pars[length(spline_pars)]
-        priors <- c(
-            priors,
-            list(bquote(~ sum(dnorm(
-                time_params[.(spline_beg):.(spline_end)],
-                mean = 0, sd = .(1 / spline_pen)
-            ))))
-        )
+        priors <- c(priors, list(bquote(~ sum(dnorm(time_params[.(spline_beg):.(spline_end)], mean = 0, sd = .(1 / spline_pen))))))
     }
     ## do the calibration
     ## debug <- use_DEoptim

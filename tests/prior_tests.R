@@ -25,6 +25,8 @@ pt <- data.frame(
     Symbol = rep("beta0", 3), Relative_value = c(0, NA, 0)
 )
 
+formals(calibrate)$time_args
+formals(calibrate)$opt_pars
 vague_priors <- list(~ dlnorm(time_params[1], meanlog = -1, sd = 5))
 strong_priors <- list(~ dlnorm(time_params[1], meanlog = -1, sd = 0.01))
 

@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -97,6 +97,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -104,6 +107,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -160,9 +166,22 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="add_updated_vaxrate.html">add_updated_vaxrate()</a></code> </p>
+        </td>
+        <td><p>compute and add vaxrates to ratemat
+(returns whole ratemat because the update part is non-trivial)</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="aggregate.pansim.html">aggregate(<i>&lt;pansim&gt;</i>)</a></code> </p>
         </td>
         <td><p>Temporal aggregation of pansim objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="aggregate_agecats.html">aggregate_agecats()</a></code> </p>
+        </td>
+        <td><p>Aggregate age categories into larger age categories</p></td>
       </tr><tr>
         
         <td>
@@ -181,6 +200,19 @@
           <p><code><a href="calibrate_comb.html">calibrate_comb()</a></code> </p>
         </td>
         <td><p>Combined calibration of model to multiple types of data</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="check_age_cat_compatibility.html">check_age_cat_compatibility()</a></code> </p>
+        </td>
+        <td><p>Check compatibility of user-specified age categories with age categories in
+Mistry data</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="check_contact_rate_setting.html">check_contact_rate_setting()</a></code> </p>
+        </td>
+        <td><p>Helper function to check setting-specific contact rate list initialization</p></td>
       </tr><tr>
         
         <td>
@@ -209,6 +241,24 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
+          <p><code><a href="condense_params_vax.html">condense_params_vax()</a></code> </p>
+        </td>
+        <td><p>condense vaxified parameters to base parameters</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="condense_state.html">condense_state()</a></code> </p>
+        </td>
+        <td><p>collapse (non-accumulator) states into subcategories (ages, vax status)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="condense_vax.html">condense_vax()</a></code> </p>
+        </td>
+        <td><p>collapse vaccination categories (only; don't do other condensation)</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="describe_params.html">describe_params()</a></code> </p>
         </td>
         <td><p>Describe parameters</p></td>
@@ -221,15 +271,72 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
+          <p><code><a href="distribute_counts.html">distribute_counts()</a></code> </p>
+        </td>
+        <td><p>distribute counts given a desired distribution (with smart rounding)</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="do_step.html">do_step()</a></code> </p>
         </td>
         <td><p>Take a single simulation time step</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="expand_stateval_age.html">expand_stateval_age()</a></code> <code><a href="expand_stateval_age.html">ageify()</a></code> </p>
+          <p><code><a href="expand_params_age.html">expand_params_age()</a></code> </p>
         </td>
-        <td><p>expand state vector and rate matrix by age classes</p></td>
+        <td><p>Expand parameter list to include age structure</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_desc_age.html">expand_params_desc_age()</a></code> </p>
+        </td>
+        <td><p>Edit parameter description attribute to include age-specific definitions
+(helper function for `expand_params_age()`)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_desc_variant.html">expand_params_desc_variant()</a></code> </p>
+        </td>
+        <td><p>Edit parameter description attribute to include variant-specific definitions
+(helper function for `expand_params_variant()`)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_desc_vax.html">expand_params_desc_vax()</a></code> </p>
+        </td>
+        <td><p>Edit parameter description attribute to include vax-specific definitions
+(helper function for `expand_params_vax()`)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_mistry.html">expand_params_mistry()</a></code> </p>
+        </td>
+        <td><p>Expand parameter list to include age structure using Mistry et al. data</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_variant.html">expand_params_variant()</a></code> </p>
+        </td>
+        <td><p>Expand parameter list to include variant strain</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_params_vax.html">expand_params_vax()</a></code> </p>
+        </td>
+        <td><p>Expand parameter list to include vaccination</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_state_age.html">expand_state_age()</a></code> <code><a href="expand_state_age.html">ageify()</a></code> </p>
+        </td>
+        <td><p>expand state vector by age classes and population distribution</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="expand_state_vax.html">expand_state_vax()</a></code> </p>
+        </td>
+        <td><p>expand state vector by vaccination status</p></td>
       </tr><tr>
         
         <td>
@@ -242,6 +349,12 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
           <p><code><a href="fix_pars.html">fix_pars()</a></code> </p>
         </td>
         <td><p>adjust pars to match targets</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="fix_stored.html">fix_stored()</a></code> </p>
+        </td>
+        <td><p>convert 'old' forecast args to 'new' format</p></td>
       </tr><tr>
         
         <td>
@@ -281,6 +394,12 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
+          <p><code><a href="get_doses_per_day.html">get_doses_per_day()</a></code> </p>
+        </td>
+        <td><p>Compute total number of vaccine doses actually administered per day in a simulation</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="get_evec.html">get_evec()</a></code> </p>
         </td>
         <td><p>get dominant eigenvector</p></td>
@@ -314,6 +433,12 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
           <p><code><a href="invlink_trans.html">invlink_trans()</a></code> </p>
         </td>
         <td><p>apply inverse-link functions to parameter vector or list based on names</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="make_beta.html">make_beta()</a></code> </p>
+        </td>
+        <td><p>construct vector of transmission multipliers</p></td>
       </tr><tr>
         
         <td>
@@ -354,9 +479,45 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
+          <p><code><a href="make_vaxrate.html">make_vaxrate()</a></code> </p>
+        </td>
+        <td><p>generate per capita daily vaccination rates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="mk_Nvec.html">mk_Nvec()</a></code> </p>
+        </td>
+        <td><p>generate a population distribution (as a vector of counts)</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="mk_agecats.html">mk_agecats()</a></code> </p>
         </td>
-        <td><p>construct age categories</p></td>
+        <td><p>Construct vector of age category labels</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="mk_contact_rate_setting.html">mk_contact_rate_setting()</a></code> </p>
+        </td>
+        <td><p>Helper function to generate a vector of setting-specific contact rates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="mk_mistry_Nvec.html">mk_mistry_Nvec()</a></code> </p>
+        </td>
+        <td><p>Make population distribution using Mistry et al. data</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="mk_pmat.html">mk_pmat()</a></code> </p>
+        </td>
+        <td><p>generate a contact matrix (where each row is a probability distribution)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="mk_vaxcats.html">mk_vaxcats()</a></code> </p>
+        </td>
+        <td><p>Construct vector of vaccine category labels</p></td>
       </tr><tr>
         
         <td>
@@ -408,9 +569,27 @@ This is implemented for performance reasons, as it is much faster than sweep.</p
       </tr><tr>
         
         <td>
+          <p><code><a href="plot_res_by_age.html">plot_res_by_age()</a></code> </p>
+        </td>
+        <td><p>Plot age-structured simulation result faceted by age categories</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plot_res_by_state.html">plot_res_by_state()</a></code> </p>
+        </td>
+        <td><p>Plot age-structured simulation result faceted by state</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="predict.fit_pansim.html">predict(<i>&lt;fit_pansim&gt;</i>)</a></code> <code><a href="predict.fit_pansim.html">plot(<i>&lt;fit_pansim&gt;</i>)</a></code> </p>
         </td>
         <td><p>make forecasts from sim</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="prep_res_for_plotting.html">prep_res_for_plotting()</a></code> </p>
+        </td>
+        <td><p>Prepare age-structured simulation results data frame for plotting</p></td>
       </tr><tr>
         
         <td>
@@ -435,6 +614,12 @@ used to calculate either r (technically r0) or eigenvector (for distributing ini
       </tr><tr>
         
         <td>
+          <p><code><a href="repair_names_age.html">repair_names_age()</a></code> </p>
+        </td>
+        <td><p>Repair ageified names</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="restore.html">restore()</a></code> </p>
         </td>
         <td><p>convert a parameter vector back to a structured list
@@ -446,6 +631,12 @@ parameters from a "fixed-parameter" vector</p></td>
           <p><code><a href="run_sim.html">run_sim()</a></code> </p>
         </td>
         <td><p>Run pandemic simulation</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="run_sim_ageify.html">run_sim_ageify()</a></code> </p>
+        </td>
+        <td><p>Ageify a basic simulation</p></td>
       </tr><tr>
         
         <td>
@@ -517,11 +708,23 @@ this is a replacement for <code>with()</code> (which is hard to debug) and <code
       </tr><tr>
         
         <td>
+          <p><code><a href="update_contact_rate_setting.html">update_contact_rate_setting()</a></code> </p>
+        </td>
+        <td><p>Helper function to update setting-specific contact rate list</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="update_foi.html">update_foi()</a></code> </p>
         </td>
         <td><p>calculate only updated force of infection
 at present, this is the only state-dependent <em>per capita</em> rate
 maybe more efficient than modifying &amp; returning the whole matrix</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="update_params_mistry.html">update_params_mistry()</a></code> </p>
+        </td>
+        <td><p>Update Mistry-based parameters</p></td>
       </tr><tr>
         
         <td>

@@ -75,7 +75,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -101,6 +101,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -108,6 +111,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -192,21 +198,23 @@
 #&gt;   D    0  0.00000000  0.0000000  0.000  0.0000000  0.00000000  0.0  0.0  0.00
 #&gt;   R    0  0.00000000  0.1428571  0.000  0.1428571  0.00000000  0.1  0.2  0.00
 #&gt;   X    0  0.00000000  0.0000000  0.000  0.0000000  0.00000000  0.0  0.0  0.00
+#&gt;   V    0  0.00000000  0.0000000  0.000  0.0000000  0.00000000  0.0  0.0  0.00
 #&gt;       to
-#&gt; from     ICUd D R X
-#&gt;   S     0.000 0 0 0
-#&gt;   E     0.000 0 0 0
-#&gt;   Ia    0.000 0 0 0
-#&gt;   Ip    0.000 0 0 0
-#&gt;   Im    0.000 0 0 0
-#&gt;   Is    0.000 0 0 0
-#&gt;   H     0.000 0 0 0
-#&gt;   H2    0.000 0 0 0
-#&gt;   ICUs  0.000 0 0 0
-#&gt;   ICUd -0.125 0 0 0
-#&gt;   D     0.125 0 0 0
-#&gt;   R     0.000 0 0 0
-#&gt;   X     0.000 0 0 0</div></pre>
+#&gt; from     ICUd D R X V
+#&gt;   S     0.000 0 0 0 0
+#&gt;   E     0.000 0 0 0 0
+#&gt;   Ia    0.000 0 0 0 0
+#&gt;   Ip    0.000 0 0 0 0
+#&gt;   Im    0.000 0 0 0 0
+#&gt;   Is    0.000 0 0 0 0
+#&gt;   H     0.000 0 0 0 0
+#&gt;   H2    0.000 0 0 0 0
+#&gt;   ICUs  0.000 0 0 0 0
+#&gt;   ICUd -0.125 0 0 0 0
+#&gt;   D     0.125 0 0 0 0
+#&gt;   R     0.000 0 0 0 0
+#&gt;   X     0.000 0 0 0 0
+#&gt;   V     0.000 0 0 0 0</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

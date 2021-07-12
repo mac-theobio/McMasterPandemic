@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>construct age categories — mk_agecats • McMasterPandemic</title>
+<title>Construct vector of age category labels — mk_agecats • McMasterPandemic</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="construct age categories — mk_agecats" />
-<meta property="og:description" content="construct age categories" />
+<meta property="og:title" content="Construct vector of age category labels — mk_agecats" />
+<meta property="og:description" content="Construct vector of age category labels" />
 
 
 
@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">McMasterPandemic</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.19.002</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.20</span>
       </span>
     </div>
 
@@ -98,6 +98,9 @@
       <a href="../articles/calibration.html">Model calibration</a>
     </li>
     <li>
+      <a href="../articles/farr.html">Cumulative curves, Farr's law, and all that</a>
+    </li>
+    <li>
       <a href="../articles/getting_started.html">getting started</a>
     </li>
     <li>
@@ -105,6 +108,9 @@
     </li>
     <li>
       <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+    </li>
+    <li>
+      <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
     </li>
   </ul>
 </li>
@@ -129,16 +135,16 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>construct age categories</h1>
+    <h1>Construct vector of age category labels</h1>
     <small class="dont-index">Source: <a href='https://github.com/bbolker/McMasterPandemic/blob/master/R/ageify.R'><code>R/ageify.R</code></a></small>
     <div class="hidden name"><code>mk_agecats.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>construct age categories</p>
+    <p>Construct vector of age category labels</p>
     </div>
 
-    <pre class="usage"><span class='fu'>mk_agecats</span><span class='op'>(</span>min <span class='op'>=</span> <span class='fl'>1</span>, max <span class='op'>=</span> <span class='fl'>100</span>, da <span class='op'>=</span> <span class='fl'>10</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>mk_agecats</span><span class='op'>(</span>min <span class='op'>=</span> <span class='fl'>0</span>, max <span class='op'>=</span> <span class='fl'>90</span>, da <span class='op'>=</span> <span class='fl'>10</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

@@ -29,7 +29,10 @@ test_that("basic examples", {
         Im = 2626.01147876609, Is = 47.3684384214429, H = 873.671213383553,
         H2 = 202.916185137484, ICUs = 626.537390949812, ICUd = 72.4089826500752,
         D = 3438.87998360902, R = 989978.979634929
-    ), class = "state_pansim"), row.names = "100", class = "data.frame"
+    ),
+    class = "state_pansim",
+    epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R")
+    ), row.names = "100", class = "data.frame"
     )
     expect_equal(tail(s0, 1), ss,
         tolerance = 1e-8
@@ -50,11 +53,26 @@ test_that("params methods", {
 })
 
 
-time_pars <- data.frame(
+time_pars_old <- data.frame(
     Date = c("2020-03-10", "2020-03-25"),
     Symbol = c("beta0", "beta0"),
     Relative_value = c(0.5, 0.1)
 )
+
+time_pars <- data.frame(
+    Date = c("2020-03-10", "2020-03-25"),
+    Symbol = c("beta0", "beta0"),
+    Value = c(0.5, 0.1),
+    Type = "rel_orig"
+)
+
+time_pars_bad <- data.frame(
+    Date = c("2020-03-10", "2020-03-25"),
+    Symbol = c("beta0", "beta0"),
+    Value = c(0.5, 0.1),
+    Type = "weird"
+)
+
 
 test_that("time-varying example", {
     resICU_t <- run_sim(params, state,
@@ -70,6 +88,26 @@ test_that("time-varying example", {
     ## FIXME: test values!
 })
 
+test_that("bad time-varying examples", {
+    expect_warning(
+        run_sim(params, state,
+            start_date = "2020-03-01",
+            end_date = "2020-06-01",
+            params_timevar = time_pars_old,
+            step_args = list(do_hazard = TRUE)
+        ),
+        "specifying params_timevar with Relative_value is deprecated"
+    )
+    expect_error(
+        run_sim(params, state,
+            start_date = "2020-03-01",
+            end_date = "2020-06-01",
+            params_timevar = time_pars_bad,
+            step_args = list(do_hazard = TRUE)
+        ),
+        "unknown time_params type weird"
+    )
+})
 
 ## test for 'bad date' error
 ## test multiple param switch
@@ -103,7 +141,10 @@ test_that("ndt>1", {
             Im = 128.383139203259, Is = 5.46913724380533, H = 2.03123004779139,
             H2 = 0.0400421128254433, ICUs = 0.371377275540251, ICUd = 0.300078574043836,
             D = 0.139442448949961, R = 114.198320079343
-        ), class = "state_pansim"), row.names = "100", class = "data.frame")
+        ),
+        class = "state_pansim",
+        epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R")
+        ), row.names = "100", class = "data.frame")
     )
 
     s3 <- run_sim(params, state,
@@ -115,7 +156,6 @@ test_that("ndt>1", {
         start_date = "2020-03-01",
         end_date = "2020-03-20"
     )
-
     ## s3C <- run_sim(params,state=unlist(tail(s3B,1)),
     ## start_date="2020-03-01",
     ## end_date="2020-03-20")
@@ -139,8 +179,11 @@ test_that("state methods", {
             Im = 0, Is = 0, H = 0,
             H2 = 0,
             ICUs = 0, ICUd = 0,
-            D = 0, R = 0, X = 0
-        ), class = "state_pansim")
+            D = 0, R = 0, X = 0, V = 0
+        ),
+        class = "state_pansim",
+        epi_cat = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X", "V")
+        )
     )
     expect_error(make_state(x = 1:5, use_eigvec = FALSE), regexp = "must be named")
     expect_warning(make_state(
@@ -204,7 +247,7 @@ test_that("var-specific obsdisp", {
 test_that("mle prediction", {
     ## Ontario_basic.rda
     ## suppress "dropped switch times on final day" warning
-    suppressWarnings(test_mle_pred <- predict(ont_cal1)) ## Ontario_fit
+    suppressWarnings(test_mle_pred <- predict(ont_cal1))
     ## hack around test comparison
     test_mle_pred$var <- unname(test_mle_pred$var)
     ## FIXME: recalculate and save Ontario_basic after conservation fixes
