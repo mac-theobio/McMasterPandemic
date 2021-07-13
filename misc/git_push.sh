@@ -1,5 +1,7 @@
-git pull
-echo $(date) > test_file.txt
+#!/bin/bash
+location=$1
+cd $location
+
 git config --global user.name 'calibration-bot'
 git config --global user.email 'calibration-bot@users.noreply.github.com'
 git add --all
