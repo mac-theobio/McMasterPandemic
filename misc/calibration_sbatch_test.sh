@@ -7,4 +7,4 @@
 
 touch calibration_sbatch_test.txt 
 loc=$(pwd)
-ssh gra-login1 < git_push.sh $($loc)
+ssh gra-login2 "cd $loc; echo $(pwd); bash git_push.sh"

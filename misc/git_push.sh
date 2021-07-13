@@ -1,5 +1,4 @@
 #!/bin/bash
-# location
 git pull
 git config --global user.name 'calibration-bot'
 git config --global user.email 'calibration-bot@users.noreply.github.com'

@@ -8,4 +8,4 @@ module load r/4.1.0
 
 Rscript ont_cal_NelderMead.R
 loc=$(pwd)
-ssh gra-login1 < git_push.sh $($loc)
+ssh gra-login2 "cd $loc; echo $(pwd); bash git_push.sh"
