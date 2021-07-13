@@ -1,6 +1,8 @@
 #!/bin/bash
-location=$1
-cd $location
+# location
+echo $1
+cd $1
+echo $(pwd)
 
 git pull
 git config --global user.name 'calibration-bot'

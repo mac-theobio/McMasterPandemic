@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --time=00:01:00
+#SBATCH --time=00:00:15
 #SBATCH --account=def-bolker
 #SBATCH --job-name=git_test
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=128M
+#SBATCH --mem-per-cpu=64M
 
-
-ssh gra-login1 < bash git_push.sh $(pwd)
+touch calibration_sbatch_test.txt 
+loc=$(pwd)
+ssh gra-login1 < git_push.sh $($loc)
