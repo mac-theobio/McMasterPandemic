@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
   cache = FALSE,
   error = FALSE,  ## override knitr::knit() default
   ## error=TRUE,  ## allow run to continue with error (good for debugging1)
-  ##warning=FALSE,
+  warning=FALSE,  ## temporary fix for issue #75
   comment = "#>"
 )
 @
@@ -311,8 +311,6 @@ these data as follows.
 
 Note that \code{calibrate()} requires the data come in ``long form'', which means that for each date on which we have data, there are separate rows for each type of data (report, death, hospitalization, \emph{etc}).  This is in contrast to ``wide form'', for which there is one row for each date, and separate columns for each observed variable.
 
-\david{I am not supressing warnings so users aren't alarmed when they see these warnings themselves.  We should, of course, consider revisions that either avoid warnings or explain clearly to the user how to resolve them.}
-
 <<calibrateTOres1obs, message=FALSE>>=
 library(dplyr)
 ## pull out only the reported cases and convert to long form:
@@ -523,7 +521,7 @@ We can now look at the relative value of $\beta$ in each scenario, and the corre
 <<plot_rel_beta>>=
 print(gg_rel_beta)
 print(gg0
-		+ geom_point(data=sim0_t_reduce, aes(x=date,y=incidence), color="red")
+	+ geom_point(data=sim0_t_reduce, aes(x=date,y=incidence), color="red")
 )
 @
 
