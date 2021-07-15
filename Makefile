@@ -129,6 +129,7 @@ VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 testversion:
 	echo "${VERSION}"
 
+Ignore += McMasterPandemic*.tar.gz
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 ZIPFILE := =$(PACKAGE)_$(VERSION).zip
 
