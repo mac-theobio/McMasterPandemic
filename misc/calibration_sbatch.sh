@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=00:01:00
+#SBATCH --time=00:03:00
 #SBATCH --account=def-bolker
 #SBATCH --job-name=ont_cal_NelderMead
 #SBATCH --cpus-per-task=1
