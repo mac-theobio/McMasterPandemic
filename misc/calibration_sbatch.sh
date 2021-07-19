@@ -10,4 +10,4 @@ loc=$(pwd)
 ssh gra-login1 "cd $loc && git add --all && git commit -am 'calibration sync [skip ci]' && git pull"
 #touch test_file.txt
 Rscript ont_cal_NelderMead.R							
-ssh gra-login1 "cd $loc && git pull && bash git_push.sh"
+ssh gra-login1 "cd $loc && bash git_push.sh"
