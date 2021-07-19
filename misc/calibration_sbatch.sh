@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=00:25:00
+#SBATCH --time=00:01:00
 #SBATCH --account=def-bolker
 #SBATCH --job-name=ont_cal_NelderMead
 #SBATCH --cpus-per-task=1
@@ -8,5 +8,6 @@ module load r/4.1.0
 
 loc=$(pwd)
 ssh gra-login1 "cd $loc && git add --all && git commit -am 'calibration sync' && git pull"
-Rscript ont_cal_NelderMead.R							
-ssh gra-login1 "cd $loc && bash git_push.sh"
+touch test_file.txt
+#Rscript ont_cal_NelderMead.R							
+ssh gra-login1 "cd $loc && git pull && bash git_push.sh"
