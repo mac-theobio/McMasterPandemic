@@ -1,6 +1,6 @@
 library(TMB)
-compile("do_step.cpp")
-dyn.load(dynlib("do_step"))
+compile("TMB_do_step.cpp")
+dyn.load(dynlib("TMB_do_step"))
 library(McMasterPandemic)
 
 p <- read_params("ICU1.csv")
@@ -10,6 +10,7 @@ init <- s0[1]
 M <- make_ratemat(state = s, params = p, sparse=TRUE)
 ## note that attributes mess up MakeADFun - need to strip them with c()
 ## before passing to MakeADFun
+print("***** Before calling MakeADFun ...")
 dd <- MakeADFun(data = list(state = s0,
                             ratemat = M,
                             inf_ind = grep("I[a-z]", names(s)),
@@ -21,7 +22,27 @@ dd <- MakeADFun(data = list(state = s0,
 
                             ),
                 parameters = list(params=c(p)))
+
+print("state in R = ")
+print(s0)
+print("ratemat in R = ")
+print(M)
+print("inf_ind in R= ")
+print(grep("I[a-z]", names(s)))
+print("transm_ind in R= ")
+print(which(names(p) == "beta0"))
+print("transm_wt_ind in R = ")
+print(grep("C[a-z]", names(p)))
+print("foi_ind in R= ")
+print(c(which(rownames(M) == "S"), which(colnames(M) == "E")))
+
+print("parameters in R = ")
+print(list(params=c(p)))
+
+print("***** Before calling cpp ...")
 dd$fn(p)
+print("***** After calling cpp ...")
+
 identical(s0[1], init)
 s == dd$report()$state ## new state
 
