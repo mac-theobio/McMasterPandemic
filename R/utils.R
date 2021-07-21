@@ -686,6 +686,7 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
                          block_col = 2,
                          axlabs = TRUE,
                          const_width = (method == "igraph"),
+                         colorkey = NULL,
                          colour_palette = viridis::magma(n = 50, direction = -1),
                          do_symbols = NULL,
                          box.size = 0.02, ...) {
@@ -697,6 +698,8 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
             grepl(subset[2], dimnames(M)$to)
         ]
     }
+
+    if(is.null(colorkey)) colorkey <- !const_width
 
     p <- NULL
     if (is.null(do_symbols)) {
@@ -730,7 +733,7 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
             xlab = xlab,
             ylab = ylab,
             sub = sub,
-            colorkey = !const_width,
+            colorkey = colorkey,
             col.regions = colour_palette,
             aspect = aspect, ...
         )
