@@ -5,46 +5,38 @@ library(McMasterPandemic)
 
 p <- read_params("ICU1.csv")
 s <- make_state(params = p)
-s0 <- c(s)
-init <- s0[1]
 M <- make_ratemat(state = s, params = p, sparse=TRUE)
-## note that attributes mess up MakeADFun - need to strip them with c()
-## before passing to MakeADFun
-print("***** Before calling MakeADFun ...")
-dd <- MakeADFun(data = list(state = s0,
-                            ratemat = M,
-                            inf_ind = grep("I[a-z]", names(s)),
-                            transm_ind = which(names(p) == "beta0"),
-                            ## fragile! assumes same order as state
-                            transm_wt_ind = grep("C[a-z]", names(p)),
-                            foi_ind = c(which(rownames(M) == "S"),
-                                        which(colnames(M) == "E"))
 
+# Make the C++ function interface identical to do_step() in sim_funs.R
+# NOTE: attributes mess up MakeADFun - need to strip them with c()
+# before passing to MakeADFun
+
+print("***** Before calling MakeADFun ...")
+print(as.numeric(Sys.time())*1000000, digits=19)
+dd <- MakeADFun(data = list(state = c(s),
+                            ratemat = M,
+                            dt = 1,
+                            do_hazard = TRUE,
+                            stoch_proc = FALSE,
+                            do_exponential = FALSE,
+                            testwt_scale = "Noooo!"
+                            #inf_ind = grep("I[a-z]", names(s)),
+                            #transm_ind = which(names(p) == "beta0"),
+                            ## fragile! assumes same order as state
+                            #transm_wt_ind = grep("C[a-z]", names(p)),
+                            #foi_ind = c(which(rownames(M) == "S"),
+                            #            which(colnames(M) == "E"))
                             ),
                 parameters = list(params=c(p)))
 
-print("state in R = ")
-print(s0)
-print("ratemat in R = ")
-print(M)
-print("inf_ind in R= ")
-print(grep("I[a-z]", names(s)))
-print("transm_ind in R= ")
-print(which(names(p) == "beta0"))
-print("transm_wt_ind in R = ")
-print(grep("C[a-z]", names(p)))
-print("foi_ind in R= ")
-print(c(which(rownames(M) == "S"), which(colnames(M) == "E")))
-
-print("parameters in R = ")
-print(list(params=c(p)))
 
 print("***** Before calling cpp ...")
-dd$fn(p)
+print(as.numeric(Sys.time())*1000000, digits=19)
+#dd$fn(p)	# This doesn't call the C++ function
 print("***** After calling cpp ...")
+print(as.numeric(Sys.time())*1000000, digits=19)
 
-identical(s0[1], init)
-s == dd$report()$state ## new state
+s == dd$report()$state ## new state (this triggers the calling of the c++ function)
 
 ## it's probably possible to update data etc.
 ## by messing around with objects in the environment, e.g.
