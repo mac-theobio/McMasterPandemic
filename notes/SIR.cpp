@@ -30,10 +30,10 @@ Type objective_function<Type>::operator() ()
                     // likely value to get in trouble with dipping negative
                     // this is *not* done in MacPan because (?) it doesn't fit
                     // nicely into the overall 'flows' framework
-   
+
    for (int t = 0; t < nobs ; t++) {
       log_incidence(t) = log_beta + log_I + log(S);
-      // no delta-t here yet ... time steps are dt=1 
+      // no delta-t here yet ... time steps are dt=1
       S -= exp(log_incidence(t));
       log_I += exp(log_beta) - exp(log_gamma);  // d(log(I))/dt = (dI/dt)/I = beta-gamma
 
@@ -54,14 +54,15 @@ Type objective_function<Type>::operator() ()
 			     );
       SIMULATE {
 	      // simulation code: adapted from glmmTMB
-	      Type s1 = exp(log_incidence(t));      
+	      Type s1 = exp(log_incidence(t));
 	      Type s2 = s1 * (Type(1) + s1 / exp(log_nbdisp));
 	      obs_incidence(t) = rnbinom2(s1, s2);
+	      REPORT(obs_incidence)
       }
    }
-   
+
    return jnll;
 }
-   
+
 
 
