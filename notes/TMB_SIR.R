@@ -9,7 +9,7 @@ very_fake_data = ceiling(dnorm(seq(from = -3, to = 3, length.out = 100)) * 100)
 sim_obj = MakeADFun(
   data = list(
     obs_incidence = very_fake_data,  # only required to create simulation object
-    N = 1e7
+    N = 1e7  # total number of people
   ),
   parameters = list(
     log_beta = log(0.05),
@@ -47,10 +47,20 @@ obj = MakeADFun(
   DLL = "SIR"
 )
 
+obj$fn()
+obj$gr()
+obj$he()
+
 obj$hessian <- TRUE
 opt <- do.call("optim", obj)
-exp(opt$par)
 opt$convergence
+opt$par
+sim_obj$par
+
+obj$fn(opt$par)
+obj$gr(opt$par)
+obj$he(opt$par)
+
 cov2cor(solve(opt$hessian))
 
 fn = function(log_beta, log_gamma, log_I0, log_nbdisp) {
