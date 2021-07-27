@@ -1,11 +1,17 @@
 library(TMB)
 compile("TMB_do_step.cpp")
+#dyn.load(dynlib("/lib/libRmath"))
 dyn.load(dynlib("TMB_do_step"))
 library(McMasterPandemic)
 
 p <- read_params("ICU1.csv")
 s <- make_state(params = p)
 M <- make_ratemat(state = s, params = p, sparse=TRUE)
+
+print(p)
+print(M)
+M1 = M*c(s)
+print(M1)
 
 # Make the C++ function interface identical to do_step() in sim_funs.R
 # NOTE: attributes mess up MakeADFun - need to strip them with c()
