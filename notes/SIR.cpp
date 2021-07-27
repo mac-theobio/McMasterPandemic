@@ -16,16 +16,18 @@ Type objective_function<Type>::operator() ()
   // fit positive parameters on log scale; this is handled via 'link functions' in MacPan
   PARAMETER(log_beta);    // transmission parameter ('contact rate')
   PARAMETER(log_gamma);   // recovery rate
-  PARAMETER(log_I0);      // initial number infected (proportion?)
+  //PARAMETER(log_I0);      // initial number infected (proportion?)
   PARAMETER(log_nbdisp);  // negative binomial dispersion parameter
 
   Type S, log_I;  // state variables (scalars)
 
   int nobs = obs_incidence.size();  // number of observations
-  vector<Type> log_incidence(nobs);     // model-based/theoretical incidence
+  Type log_I0 = -3; // FIXME: remove hardcoding
+  vector<Type> log_incidence(nobs); // model-based/theoretical incidence
 
    Type I0 = exp(log_I0);
-   S = N - I0;
+   S = N - I0;      // the susceptible population is the total (N) minus
+                    // the initial number infected (I0)
    log_I = log_I0;  // evaluate I dynamics on the log scale; I is the most
                     // likely value to get in trouble with dipping negative
                     // this is *not* done in MacPan because (?) it doesn't fit
@@ -57,12 +59,10 @@ Type objective_function<Type>::operator() ()
 	      Type s1 = exp(log_incidence(t));
 	      Type s2 = s1 * (Type(1) + s1 / exp(log_nbdisp));
 	      obs_incidence(t) = rnbinom2(s1, s2);
-	      REPORT(obs_incidence)
+	      REPORT(obs_incidence);
+	      REPORT(log_incidence);
       }
    }
 
    return jnll;
 }
-
-
-
