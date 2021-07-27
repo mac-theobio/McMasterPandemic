@@ -1,6 +1,6 @@
 library(TMB)
-compile("TMB_do_step.cpp")
-dyn.load(dynlib("TMB_do_step"))
+compile("notes/TMB_do_step.cpp")
+dyn.load(dynlib("notes/TMB_do_step"))
 library(McMasterPandemic)
 
 p <- read_params("ICU1.csv")
