@@ -1,0 +1,78 @@
+---
+title: "Indices"
+output: md_document
+---
+
+# Create Indices for Accessing Elements of the Rate Matrix
+
+## Dependence of the Rate Matrix on the Parameter Vector
+
+Let $M = [M_{ij}]$ be the rate matrix and $\theta = [\theta_k]$ be the parameter vector. The elements of $M$ are functions of the elements of $\theta$. The dependence of $M$ on $\theta$ can only take certain forms. In particular, each element of $M$ is a product of zero or more elements of $\theta$ or their complements (i.e. $1-\theta$). Here are some examples:
+
+* $M_{4,5} = \theta_1 \theta_2$
+* $M_{1,2} = (1-\theta_3)\theta_4\theta_5(1-\theta_{10})$
+* $M_{10,3} = (1-\theta_4)$
+
+In general,
+
+$M_{ij} = \prod_k \theta_k^{x_{ijk}} (1-\theta_k)^{y_{ijk}}$
+
+where $x_{ijk}$ (or $y_{ijk}$) is one if $M_{ij}$ depends on $\theta_k$ (or $1 - \theta_k$) and zero otherwise. Note that these $x$ and $y$ numbers define the dependence of $M$ on $\theta$, and are constants that do not change throughout a simulation.
+
+## User Interface
+
+When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
+
+Before defining the interface, assume that we have a rate matrix on the R-side with named rows and columns, and a named parameter vector also on the R-side with named elements.
+```{r}
+theta <- McMasterPandemic:::read_params("ICU1.csv")
+state = McMasterPandemic:::make_state(params=theta)
+M <- McMasterPandemic:::make_ratemat(params=theta, state=state, sparse=TRUE)
+print(theta)
+print(M)
+```
+
+```{r}
+state_names = row.names(M)
+par_names = names(theta)
+print(state_names)
+print(par_names)
+```
+
+
+```{r}
+pfun <- McMasterPandemic:::pfun
+```
+
+
+```{r}
+make_beta_light <- function(state, params, full = TRUE) {
+    # does not use 'full' (argument)
+    # does not use 'testcats' (below)
+    Icats <- c("Ia", "Ip", "Im", "Is")
+    testcats <- c("_u", "_p", "_n", "_t")
+    Icat_prop_vec <- with(
+        as.list(params),
+        c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
+    )
+    names(Icat_prop_vec) <- Icats
+    beta_0 <- with(as.list(params), beta0 * Icat_prop_vec / N)
+    beta <- setNames(numeric(length(state)), names(state))
+    beta[names(beta_0)] <- beta_0
+    return(beta)
+}
+
+update_ratemat_light <- function(ratemat, state, params, testwt_scale = "N") {
+  # testwt_scale not needed
+  ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_beta(state, params))
+}
+
+update_foi_light <- function(state, params, beta) {
+  # params not needed
+  foi <- sum(state * beta)
+}
+
+```
+
+
+
