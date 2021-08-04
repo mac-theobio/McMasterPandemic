@@ -2,7 +2,7 @@
 
 ## Dependence of the Rate Matrix on the Parameter Vector
 
-Let *M* = \[*M*<sub>*i**j*</sub>\] be the rate matrix and
+Let *M* = \[*M*<sub>*i*, *j*</sub>\] be the rate matrix and
 *θ* = \[*θ*<sub>*k*</sub>\] be the parameter vector. The elements of *M*
 are functions of the elements of *θ*. The dependence of *M* on *θ* can
 only take certain forms. In particular, each element of *M* is a product
@@ -15,10 +15,10 @@ Here are some examples:
 
 In general,
 
-*M*<sub>*i**j*</sub> = ∏<sub>*k*</sub>*θ*<sub>*k*</sub><sup>*x*<sub>*i**j**k*</sub></sup>(1−*θ*<sub>*k*</sub>)<sup>*y*<sub>*i**j**k*</sub></sup>
+*M*<sub>*i*, *j*</sub> = ∏<sub>*k*</sub>*θ*<sub>*k*</sub><sup>*x*<sub>*i**j**k*</sub></sup>(1−*θ*<sub>*k*</sub>)<sup>*y*<sub>*i**j**k*</sub></sup>
 
 where *x*<sub>*i**j**k*</sub> (or *y*<sub>*i**j**k*</sub>) is one if
-*M*<sub>*i**j*</sub> depends on *θ*<sub>*k*</sub> (or
+*M*<sub>*i*, *j*</sub> depends on *θ*<sub>*k*</sub> (or
 1 − *θ*<sub>*k*</sub>) and zero otherwise. Note that these *x* and *y*
 numbers define the dependence of *M* on *θ*, and are constants that do
 not change throughout a simulation.

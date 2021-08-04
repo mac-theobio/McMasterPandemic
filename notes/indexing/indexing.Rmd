@@ -7,7 +7,7 @@ output: md_document
 
 ## Dependence of the Rate Matrix on the Parameter Vector
 
-Let $M = [M_{ij}]$ be the rate matrix and $\theta = [\theta_k]$ be the parameter vector. The elements of $M$ are functions of the elements of $\theta$. The dependence of $M$ on $\theta$ can only take certain forms. In particular, each element of $M$ is a product of zero or more elements of $\theta$ or their complements (i.e. $1-\theta$). Here are some examples:
+Let $M = [M_{i,j}]$ be the rate matrix and $\theta = [\theta_k]$ be the parameter vector. The elements of $M$ are functions of the elements of $\theta$. The dependence of $M$ on $\theta$ can only take certain forms. In particular, each element of $M$ is a product of zero or more elements of $\theta$ or their complements (i.e. $1-\theta$). Here are some examples:
 
 * $M_{4,5} = \theta_1 \theta_2$
 * $M_{1,2} = (1-\theta_3)\theta_4\theta_5(1-\theta_{10})$
@@ -15,9 +15,9 @@ Let $M = [M_{ij}]$ be the rate matrix and $\theta = [\theta_k]$ be the parameter
 
 In general,
 
-$M_{ij} = \prod_k \theta_k^{x_{ijk}} (1-\theta_k)^{y_{ijk}}$
+$M_{i,j} = \prod_k \theta_k^{x_{ijk}} (1-\theta_k)^{y_{ijk}}$
 
-where $x_{ijk}$ (or $y_{ijk}$) is one if $M_{ij}$ depends on $\theta_k$ (or $1 - \theta_k$) and zero otherwise. Note that these $x$ and $y$ numbers define the dependence of $M$ on $\theta$, and are constants that do not change throughout a simulation.
+where $x_{ijk}$ (or $y_{ijk}$) is one if $M_{i,j}$ depends on $\theta_k$ (or $1 - \theta_k$) and zero otherwise. Note that these $x$ and $y$ numbers define the dependence of $M$ on $\theta$, and are constants that do not change throughout a simulation.
 
 ## User Interface
 
