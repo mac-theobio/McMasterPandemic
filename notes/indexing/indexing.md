@@ -153,7 +153,30 @@ summation will be taken over a subset of the elements of the products
 vector, but we simplified this example to include on elements that are
 involved in the force of infection computation.
 
-## Future Improvements
+## Roadmap
+
+### Avoid Copying on the R-Side
+
+Although the overall motivation for this work is to facilitate C++/TMB
+refactoring, it would be good to have the R-side version as efficient as
+possible.
+
+### Constants
+
+Could be convenient to just allow users to hard code constant rate
+matrix entries in the rate matrix structure. This is an example from
+MacPan.
+
+    afun("H", "D", 0)
+
+I’m surprised this is necessary though because I have been assuming that
+unspecified rate matrix elements imply zero.
+
+### Regex Matching
+
+Not thinking about this at all, but probably should. For example, could
+`pfun` return multiple rate matrix positions? If so that would screw up
+the current index machinery.
 
 ### Index Permutations
 
