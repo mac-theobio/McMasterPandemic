@@ -104,21 +104,26 @@ The non-zero elements of the rate matrix, $M$, can be any one of the following.
 * The sum of one or more elements in the product vector, $u$
 
 Explicitly expressing the force of infection in terms of this model we have.
+
 $$
 s = [Ia, Ip, Im, Is]
 $$
+
 $$
 \theta = [beta0, Ca, Cp, Cm, Cs, iso_m, iso_s, N]
 $$
+
 $$
 u = [s_1, s_2, s_3, s_4, \theta_1, \theta_2, \theta_3, \theta_4, \theta_5, 1 - \theta_6, 1 - \theta_7, 1/\theta_8]
 $$
+
 $$
 v = [u_1  u_5  u_6          u_{12}, 
      u_2  u_5  u_7          u_{12},
      u_3  u_5  u_{10}  u_8  u_{12},
      u_4  u_5  u_{11}  u_9  u_{12}]
 $$
+
 And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the products vector, $v$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include on elements that are involved in the force of infection computation.
 
 ## Future Improvements
