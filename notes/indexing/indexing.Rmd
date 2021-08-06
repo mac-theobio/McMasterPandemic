@@ -5,9 +5,11 @@ output: md_document
 
 # Create Indices for Accessing Elements of the Rate Matrix
 
-## Dependence of the Rate Matrix on the Parameter Vector
+## Rate Matrix Models
 
-### Warm Up Model
+### Warm Up Rate Matrix Model
+
+Allow each element of the rate matrix to depend on products of parameters (or their complements).
 
 Let $M = [M_{i,j}]$ be the rate matrix and $\theta = [\theta_k]$ be the parameter vector. The elements of $M$ are functions of the elements of $\theta$. The dependence of $M$ on $\theta$ can only take certain forms. In particular, each element of $M$ is a product of zero or more elements of $\theta$ or their complements (i.e. $1-\theta$). Here are some examples:
 
@@ -21,7 +23,34 @@ $M_{i,j} = \prod_k \theta_k^{x_{ijk}} (1-\theta_k)^{y_{ijk}}$
 
 where $x_{ijk}$ (or $y_{ijk}$) is one if $M_{i,j}$ depends on $\theta_k$ (or $1 - \theta_k$) and zero otherwise. Note that these $x$ and $y$ numbers define the dependence of $M$ on $\theta$, and are constants that do not change throughout a simulation.
 
-### Rate Matrix Model
+This model allows one to compute simple rate matrix structure where the elements of the rate matrix are simply parameters.  An example in MacPan is the following.
+```{r, eval=FALSE}
+afun("Ia", "R", gamma_a)
+```
+This model also allows products of parameters and complements of parameters, such as this example from MacPan.
+```{r, eval=FALSE}
+afun("Is", "ICUs", (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * gamma_s)
+```
+
+### More General Rate Matrix Model
+
+#### Motivation for generalization
+
+The above warm up model is too restrictive for some rate matrix elements, with the most important example being the force of infection. Here is a definition of the force of infection that is equivalent (I think) to what MacPan uses (at least in some cases).
+```{r, eval=FALSE}
+afun("S", "E", sum(state[c("Ia", "Ip", "Im", "Is")] 
+  * beta0 
+  * c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs) 
+  / N))
+```
+
+To accommodate such force of infection updates and others, we define a more general model that allows the following additional operations.
+
+1. state variables can be used, in addition to parameters
+2. parameters and state variables can be inverted, in addition to complements
+3. products of parameters, state variables, and their inverses and complements can be added together
+
+#### User Interface
 
 Users can define the structure of a rate matrix with a list of expressions, each determining the parameter and state dependence of a non-zero rate matrix element. For example,
 ```{r, eval=FALSE}
@@ -43,12 +72,15 @@ list(
 )
 ```
 The formulas allow the following operations:
-* Any element, $x$, of either the parameter or state vector can be placed in parentheses to produce a _factor_ in one of the following three forms
+
+* Any element, $x$, of either the parameter or state vector can be placed _in parentheses_ to produce a _factor_ in one of the following three forms
   * Identity: `(x)`
   * Complement: `(1-x)`
   * Inverse: `(1/x)`
-* Any number of factors in parentheses can be multiplied together using `*` to produce a _product_
-* Any number of factors and products can be summed together using `+`
+* Any number of factors can be multiplied together using `*` to produce a _product_
+* Any number of factors and products can be added together using `+`
+
+#### Mathematical Model Description
 
 We make a series of transformations from the state vector, $s$, and parameter vector to the rate matrix, $M$. Given how TMB works, we need to distinguish parameters that will be optimized, $\theta$, from those that will remain constant, $\eta$ (or those that are derived from parameters being optimized, e.g. time-varying??, still unsure how time varying machinery is working with run_sim_break or will work with run_sim_loglin). We define two intermediate vectors as well: the factor vector, $v$, and the product vector, $u$. At a high level we take the elements of the state vector and two parameter vectors into the non-zero elements of the rate matrix as follows.
 $$
@@ -61,7 +93,7 @@ The factor vector, $v$, is a function of $s$ and $\theta$.  The dependence is si
 * [complement] the complement of this element, $1-x$
 * [inverse] the inverse of this element, $1/x$
 
-In the future we can generalize this by adding more operations, but for now identity, complement, and inverse should be sufficient to do everything -- although it will make age structure awkward given that such problems are more naturally handled with matrix operations like Kronecker products and sweeps.
+In the future we can generalize this by adding more operations, but for now identity, complement, and inverse should get us pretty far -- although it will make age structure awkward given that such problems are more naturally handled with matrix operations like Kronecker products and sweeps.
 
 The product vector, $u$, is a function of $v$.  The dependence is simple in that each element of the product vector is the product of one or more elements of the factor vector, $v$.
 
@@ -69,24 +101,9 @@ The non-zero elements of the rate matrix, $M$, can be any one of the following.
 
 * An element of the factor vector, $v$
 * An element of the product vector, $u$
-* The sum of one of more elements in the product vector, $u$
+* The sum of one or more elements in the product vector, $u$
 
-The CIPS model allows one to compute simple rate matrix structure where the elements of the rate matrix are simply parameters.  An example in MacPan is the following.
-```{r, eval=FALSE}
-afun("Ia", "R", gamma_a)
-```
-CIPS also allows the common products of parameters and complements of parameters, such as this example from MacPan.
-```{r, eval=FALSE}
-afun("Is", "ICUs", (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * gamma_s)
-```
-CIPS also allows one to formulate the force of infection.
-```{r, eval=FALSE}
-afun("S", "E", sum(state[c("Ia", "Ip", "Im", "Is")] 
-  * beta0 
-  * c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs) 
-  / N))
-```
-Explicitly expressing the force of infection in CIPS we have.
+Explicitly expressing the force of infection in terms of this model we have.
 $$
 s = [Ia, Ip, Im, Is]
 $$
@@ -102,24 +119,21 @@ v = [u_1  u_5  u_6          u_{12},
      u_3  u_5  u_{10}  u_8  u_{12},
      u_4  u_5  u_{11}  u_9  u_{12}]
 $$
-And finally the non-zero element of $M$ determining the rate of flow from S to E is simply the sum of the elements in the products vector, $v$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include on elements that are involved in the force of infection computation.
+And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the products vector, $v$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include on elements that are involved in the force of infection computation.
 
+## Future Improvements
 
-Such a list could be parsed into a data structure that can be consumed by TMB/C++.
-```{r}
-list(
-  rate_matrix = list(
-    from = 1, to = 2, operation = ''
-  ),
-  factors = data.frame(
-    
-  )
-)
-```
+### Index Permutations
 
-The CIPS model allows a separation of concerns among epidemiological modellers and C++ developers.
+Permutation of the parameter, state, and factor vectors for computational efficiency. We don't want to have to sum together products that depend on elements of the state vector that are far apart from each other in memory. This is similar to permutations of sparse matrices in the Matrix package and Eigen.
 
-## User Interface
+### Model Specification in Terms of Matrices and Vectors
+
+The model above treats all parameters and state variables as scalars. But in many cases it is more natural to consider vector- and matrix-valued parameters and states. For example, the contact matrix (`pmat`) that is used by MacPan in models of age-structure.
+
+As far as I can tell models such as age structure _could_ be defined in terms of the model above (because matrix operations are composed of products and sums of products), but it would just require large numbers of tedious entries. There are two ways around this tedium. First, we could add matrix operations to the list of allowable operations in the rate matrix update model. Second, we could create convenience model-specification utilities that would automatically expand to the notation used in the above model. I'm not sure which one I like better, but the first one could take advantage of sparse matrix optimizations from Eigen etc. On the other hand, maybe we can get similar performance with smart index permutations on the R-side?
+
+## Unstructured Notes
 
 When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
 
