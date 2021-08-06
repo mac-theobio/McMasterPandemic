@@ -106,11 +106,11 @@ The non-zero elements of the rate matrix, $M$, can be any one of the following.
 Explicitly expressing the force of infection in terms of this model we have.
 
 $$
-s = [Ia, Ip, Im, Is]
+s = [I_a, I_p, I_m, I_s]
 $$
 
 $$
-\theta = [beta0, Ca, Cp, Cm, Cs, iso_m, iso_s, N]
+\theta = [\beta_0, C_a, C_p, C_m, C_s, iso_m, iso_s, N]
 $$
 
 $$
@@ -120,7 +120,7 @@ $$
 $$
 v = [u_1  u_5  u_6          u_{12}, 
      u_2  u_5  u_7          u_{12},
-     u_3  u_5  u_{1}_{0}  u_8  u_{12},
+     u_3  u_5  u_{10}  u_8  u_{12},
      u_4  u_5  u_{11}  u_9  u_{12}]
 $$
 
