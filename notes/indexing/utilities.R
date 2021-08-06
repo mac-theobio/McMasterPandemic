@@ -1,20 +1,3 @@
-# Example Rate Matrix Structure
-ratemat_struc = list(
-  # recovery
-  list(from = "Ia", to = "R",
-       formula = ~ (gamma_a)),
-  # hospitalizations
-  list(from = "Is", to = "ICUs",
-       formula = ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
-  # force of infection
-  list(from = "S",  to = "E",
-       formula = ~
-         (Ia) * (beta0) * (1/N) * (Ca) +
-         (Ip) * (beta0) * (1/N) * (Cp) +
-         (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-         (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
-)
-
 library(dplyr)
 
 opt_list = 'beta0' # vector of parameters to optimize
@@ -25,6 +8,7 @@ state = McMasterPandemic::make_state(params = params)
 M = McMasterPandemic::make_ratemat(state, params)
 state_params = c(state, params)
 pfun = McMasterPandemic:::pfun
+do_step = McMasterPandemic::do_step
 
 #' Rate Structure
 #'
@@ -61,7 +45,7 @@ rate = function(from, to, formula) {
   }
   factor_table = function(x) {
     data.frame(
-      var = unlist(lapply(x, get_variables)),
+      var   = unlist(lapply(x, get_variables)),
       compl = unlist(lapply(x, find_operators, '-')),
       invrs = unlist(lapply(x, find_operators, '/')))
   }
@@ -101,7 +85,8 @@ mk_ratemat_struct = function(...) {
   update_w_indices = function(x) {
     # line up the indices into the factor vector, with the lists of
     # factors for each product
-    x$factors = left_join(x$factors, all_factors, by = c('var', 'compl', 'invrs'))
+    x$factors = left_join(x$factors, all_factors,
+                          by = c('var', 'compl', 'invrs'))
     x
   }
 
@@ -121,65 +106,21 @@ mk_ratemat_struct = function(...) {
     all_factors = all_factors)
 }
 
-`ratemat_env<-` = function(struct, value) {
-  set_formula_env = function(x) {
-    environment(x$formula) = value
-    x
+update_ratemat2 = function(M, params, state, ratemat_struct) {
+  for(i in seq_along(ratemat_struct)) {
+    M[ratemat_struct[[i]]$ratemat_indices] = eval(
+      ratemat_struct[[i]]$formula[[2]],
+      as.list(c(state, params)))
   }
-  lapply(struct, set_formula_env)
+  M
 }
 
-save_ratemat_envs = function(struct) {
-  save_formula_env = function(x) {
-    x$ratemat_env = environment(x$formula)
-    x
-  }
-  lapply(struct, save_formula_env)
+do_step2 = function(state, M, params, ratemat_struct) {
+  M = update_ratemat2(M, params, state, ratemat_struct)
+  flows = M * state
+  p_states = c("S", "E", "Ia", "Ip", "Im", "Is", "H",
+               "H2", "ICUs", "ICUd", "D", "R")
+  outflow = rowSums(flows[, p_states])
+  inflow = colSums(flows)
+  state - outflow + inflow
 }
-
-restore_ratemat_envs = function(struct) {
-  restore_formula_env = function(x) {
-    if((!is.null(x$ratemat_env)) & (is.environment(x$ratemat_env))) {
-      environment(x$formula) = x$ratemat_env
-    } else {
-      warning("no saved environment available to restore")
-    }
-    x
-  }
-}
-
-update_ratemat2 = function(ratemat_struct, model_env = .GlobalEnv) {
-  ratemat_env(ratemat_struct) = model_env
-  update_rate = function()
-
-  restore
-}
-
-ratemat_struct = mk_ratemat_struct(
-  rate("E", "Ia", ~ (alpha) * (sigma)),
-  rate("E", "Ip", ~ (1 - alpha) * (sigma)),
-  rate("Ia", "R", ~ (gamma_a)),
-  rate("Ip", "Im", ~ (mu) * (gamma_p)),
-  rate("Ip", "Is", ~ (1 - mu) * (gamma_p)),
-  rate("Im", "R", ~ (gamma_m)),
-  rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)),
-  rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
-  rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s)),
-  rate("Is", "D", ~ (nonhosp_mort) * (gamma_s)),
-  rate("ICUs", "H2", ~ (psi1)), ## ICU to post-ICU acute care
-  rate("ICUd", "D", ~ (psi2)), ## ICU to death
-  rate("H2", "R", ~ (psi3)), ## post-ICU to discharge
-  ## H now means 'acute care' only; all H survive & are discharged
-  #list(from = "H", to = "D", formula = ~ 0),
-  rate("H", "R", ~ (rho)), ## all acute-care survive
-  rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)), ## assuming that hosp admissions mean *all* (acute-care + ICU)
-  # force of infection
-  rate("S",  "E", ~
-         (Ia) * (beta0) * (1/N) * (Ca) +
-         (Ip) * (beta0) * (1/N) * (Cp) +
-         (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-         (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
-)
-
-
-

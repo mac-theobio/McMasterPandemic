@@ -1,6 +1,6 @@
 ---
 title: "Indices"
-output: html_document
+output: md_document
 ---
 
 # Create Indices for Accessing Elements of the Rate Matrix
@@ -79,6 +79,58 @@ The formulas allow the following operations:
   * Inverse: `(1/x)`
 * Any number of factors can be multiplied together using `*` to produce a _product_
 * Any number of factors and products can be added together using `+`
+
+#### Example
+
+The `utilities.R` file in the folder for this document contains some prototype functions for this approach. Using them we illustrate how rate matrix structure can be flexibly described by the user.
+```{r}
+source('utilities.R')
+ratemat_struct = mk_ratemat_struct(
+  rate("E", "Ia", ~ (alpha) * (sigma)),
+  rate("E", "Ip", ~ (1 - alpha) * (sigma)),
+  rate("Ia", "R", ~ (gamma_a)),
+  rate("Ip", "Im", ~ (mu) * (gamma_p)),
+  rate("Ip", "Is", ~ (1 - mu) * (gamma_p)),
+  rate("Im", "R", ~ (gamma_m)),
+  rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)),
+  rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
+  rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s)),
+  rate("Is", "D", ~ (nonhosp_mort) * (gamma_s)),
+  rate("ICUs", "H2", ~ (psi1)), ## ICU to post-ICU acute care
+  rate("ICUd", "D", ~ (psi2)), ## ICU to death
+  rate("H2", "R", ~ (psi3)), ## post-ICU to discharge
+  ## H now means 'acute care' only; all H survive & are discharged
+  #list(from = "H", to = "D", formula = ~ 0),
+  rate("H", "R", ~ (rho)), ## all acute-care survive
+  rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)), ## assuming that hosp admissions mean *all* (acute-care + ICU)
+  # force of infection
+  rate("S",  "E", ~
+         (Ia) * (beta0) * (1/N) * (Ca) +
+         (Ip) * (beta0) * (1/N) * (Cp) +
+         (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+         (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+)
+
+# sanity check:
+all.equal(
+  c(do_step2(state, M, params, ratemat_struct)),
+  c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
+)
+```
+
+We can parse this structure to produce information about how to update the elements of the rate matrix. First, all of the _factors_ over all rate matrix entries in this model can be displayed.
+```{r}
+attributes(ratemat_struct)$all_factors
+```
+
+Here is an example where this input,
+```{r}
+ratemat_struct[[5]][c('from', 'to', 'formula')]
+```
+parses as this,
+```{r}
+ratemat_struct[[5]][c('factors')]
+```
 
 #### Mathematical Model Description
 

@@ -97,6 +97,119 @@ The formulas allow the following operations:
     produce a *product*
 -   Any number of factors and products can be added together using `+`
 
+#### Example
+
+The `utilities.R` file in the folder for this document contains some
+prototype functions for this approach. Using them we illustrate how rate
+matrix structure can be flexibly described by the user.
+
+    source('utilities.R')
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+    ratemat_struct = mk_ratemat_struct(
+      rate("E", "Ia", ~ (alpha) * (sigma)),
+      rate("E", "Ip", ~ (1 - alpha) * (sigma)),
+      rate("Ia", "R", ~ (gamma_a)),
+      rate("Ip", "Im", ~ (mu) * (gamma_p)),
+      rate("Ip", "Is", ~ (1 - mu) * (gamma_p)),
+      rate("Im", "R", ~ (gamma_m)),
+      rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)),
+      rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
+      rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s)),
+      rate("Is", "D", ~ (nonhosp_mort) * (gamma_s)),
+      rate("ICUs", "H2", ~ (psi1)), ## ICU to post-ICU acute care
+      rate("ICUd", "D", ~ (psi2)), ## ICU to death
+      rate("H2", "R", ~ (psi3)), ## post-ICU to discharge
+      ## H now means 'acute care' only; all H survive & are discharged
+      #list(from = "H", to = "D", formula = ~ 0),
+      rate("H", "R", ~ (rho)), ## all acute-care survive
+      rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)), ## assuming that hosp admissions mean *all* (acute-care + ICU)
+      # force of infection
+      rate("S",  "E", ~
+             (Ia) * (beta0) * (1/N) * (Ca) +
+             (Ip) * (beta0) * (1/N) * (Cp) +
+             (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+             (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+    )
+
+    # sanity check:
+    all.equal(
+      c(do_step2(state, M, params, ratemat_struct)),
+      c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
+    )
+
+    ## [1] TRUE
+
+We can parse this structure to produce information about how to update
+the elements of the rate matrix. First, all of the *factors* over all
+rate matrix entries in this model can be displayed.
+
+    attributes(ratemat_struct)$all_factors
+
+    ##             var compl invrs state_param_index factor_index
+    ## 1         alpha FALSE FALSE                20            1
+    ## 2         sigma FALSE FALSE                21            2
+    ## 3         alpha  TRUE FALSE                20            3
+    ## 4       gamma_a FALSE FALSE                22            4
+    ## 5            mu FALSE FALSE                28            5
+    ## 6       gamma_p FALSE FALSE                25            6
+    ## 7            mu  TRUE FALSE                28            7
+    ## 8       gamma_m FALSE FALSE                23            8
+    ## 9  nonhosp_mort  TRUE FALSE                31            9
+    ## 10         phi1 FALSE FALSE                34           10
+    ## 11      gamma_s FALSE FALSE                24           11
+    ## 12         phi1  TRUE FALSE                34           12
+    ## 13         phi2  TRUE FALSE                35           13
+    ## 14         phi2 FALSE FALSE                35           14
+    ## 15 nonhosp_mort FALSE FALSE                31           15
+    ## 16         psi1 FALSE FALSE                36           16
+    ## 17         psi2 FALSE FALSE                37           17
+    ## 18         psi3 FALSE FALSE                38           18
+    ## 19          rho FALSE FALSE                26           19
+    ## 20           Ia FALSE FALSE                 3           20
+    ## 21        beta0 FALSE FALSE                15           21
+    ## 22            N FALSE  TRUE                29           22
+    ## 23           Ca FALSE FALSE                16           23
+    ## 24           Ip FALSE FALSE                 4           24
+    ## 25           Cp FALSE FALSE                17           25
+    ## 26           Im FALSE FALSE                 5           26
+    ## 27           Cm FALSE FALSE                18           27
+    ## 28        iso_m  TRUE FALSE                32           28
+    ## 29           Is FALSE FALSE                 6           29
+    ## 30           Cs FALSE FALSE                19           30
+
+Here is an example where this input,
+
+    ratemat_struct[[5]][c('from', 'to', 'formula')]
+
+    ## $from
+    ## [1] "Ip"
+    ## 
+    ## $to
+    ## [1] "Is"
+    ## 
+    ## $formula
+    ## ~(1 - mu) * (gamma_p)
+
+parses as this,
+
+    ratemat_struct[[5]][c('factors')]
+
+    ## $factors
+    ##   product_index     var compl invrs state_param_index factor_index
+    ## 1             1      mu  TRUE FALSE                28            7
+    ## 2             1 gamma_p FALSE FALSE                25            6
+
 #### Mathematical Model Description
 
 We make a series of transformations from the state vector, *s*, and
