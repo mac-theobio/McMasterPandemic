@@ -139,13 +139,13 @@ following.
 Explicitly expressing the force of infection in terms of this model we
 have.
 
-*s* = \[*I**a*,*I**p*,*I**m*,*I**s*\]
+*s* = \[*I*<sub>*a*</sub>,*I*<sub>*p*</sub>,*I*<sub>*m*</sub>,*I*<sub>*s*</sub>\]
 
-*θ* = \[*b**e**t**a*0,*C**a*,*C**p*,*C**m*,*C**s*,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
+*θ* = \[*β*<sub>0</sub>,*C*<sub>*a*</sub>,*C*<sub>*p*</sub>,*C*<sub>*m*</sub>,*C*<sub>*s*</sub>,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
 
 *u* = \[*s*<sub>1</sub>,*s*<sub>2</sub>,*s*<sub>3</sub>,*s*<sub>4</sub>,*θ*<sub>1</sub>,*θ*<sub>2</sub>,*θ*<sub>3</sub>,*θ*<sub>4</sub>,*θ*<sub>5</sub>,1−*θ*<sub>6</sub>,1−*θ*<sub>7</sub>,1/*θ*<sub>8</sub>\]
 
-*v* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>1<sub>0</sub></sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
+*v* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>10</sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
 
 And the non-zero element of *M* determining the rate of flow from S to E
 is the sum of the elements in the products vector, *v*. Typically this
