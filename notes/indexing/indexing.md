@@ -318,6 +318,17 @@ but the first one could take advantage of sparse matrix optimizations
 from Eigen etc. On the other hand, maybe we can get similar performance
 with smart index permutations on the R-side?
 
+One issue with the first option is that there is only one kind of scalar
+multiplication, but several kinds of matrix multiplication – so we can’t
+just overload the `*` operator (although we probably should as is done
+in `col_multiply`) and will need to introduce explicit matrix operators
+(e.g. `%*%`, `%x%`). An issue with Kronecker-type operations (as are
+used in age-structured models) is that they often involve matrix
+transposing.
+
+There are some relevant notes on this topic here:
+<https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns>
+
 ## Unstructured Notes
 
 When coding this up, we do not need to explicitly store all of the zeros

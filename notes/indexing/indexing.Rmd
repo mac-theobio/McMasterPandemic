@@ -206,6 +206,10 @@ The model above treats all parameters and state variables as scalars. But in man
 
 As far as I can tell models such as age structure _could_ be defined in terms of the model above (because matrix operations are composed of products and sums of products), but it would just require large numbers of tedious entries. There are two ways around this tedium. First, we could add matrix operations to the list of allowable operations in the rate matrix update model. Second, we could create convenience model-specification utilities that would automatically expand to the notation used in the above model. I'm not sure which one I like better, but the first one could take advantage of sparse matrix optimizations from Eigen etc. On the other hand, maybe we can get similar performance with smart index permutations on the R-side?
 
+One issue with the first option is that there is only one kind of scalar multiplication, but several kinds of matrix multiplication -- so we can't just overload the `*` operator (although we probably should as is done in `col_multiply`) and will need to introduce explicit matrix operators (e.g. `%*%`, `%x%`). An issue with Kronecker-type operations (as are used in age-structured models) is that they often involve matrix transposing.
+
+There are some relevant notes on this topic here:  https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns
+
 ## Unstructured Notes
 
 When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
