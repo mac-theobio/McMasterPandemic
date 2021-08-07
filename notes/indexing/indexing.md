@@ -224,11 +224,11 @@ the elements of the state vector and two parameter vectors into the
 non-zero elements of the rate matrix as follows.
 {*s*, *η*, *θ*} → *v* → *u* → *M*
 
-The factor vector, *v*, is a function of *s* and *θ*. The dependence is
-simple in that each scalar element of the factor vector can be one of
-the following.
+The factor vector, *v*, is a function of *s*, *η*, and *θ*. The
+dependence is simple in that each scalar element of the factor vector
+can be one of the following.
 
--   \[identity\] an element, *x*, of either *s* or *θ*
+-   \[identity\] an element, *x*, of *s*, *η*, or *θ*
 -   \[complement\] the complement of this element, 1 − *x*
 -   \[inverse\] the inverse of this element, 1/*x*
 

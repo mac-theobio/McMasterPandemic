@@ -139,9 +139,9 @@ $$
 \{s,\eta,\theta\} \rightarrow v \rightarrow u \rightarrow M
 $$
 
-The factor vector, $v$, is a function of $s$ and $\theta$.  The dependence is simple in that each scalar element of the factor vector can be one of the following.
+The factor vector, $v$, is a function of $s$, $\eta$, and $\theta$.  The dependence is simple in that each scalar element of the factor vector can be one of the following.
 
-* [identity] an element, $x$, of either $s$ or $\theta$
+* [identity] an element, $x$, of $s$, $\eta$, or $\theta$
 * [complement] the complement of this element, $1-x$
 * [inverse] the inverse of this element, $1/x$
 
