@@ -45,3 +45,4 @@ afun_ind("B", "C", z*(1-y))
 
 ## construct dependence matrix for graphs?
 
+
