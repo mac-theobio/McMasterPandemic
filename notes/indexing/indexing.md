@@ -7,19 +7,24 @@ we would like to maintain the ability of epidemiologically-focused
 developers to define new models in R as much as possible. At the same
 time we would like to have `C++` developers focused on computational
 efficiency rather than details of epidemiological models. In order to
-achieve this separation of concerns among these two different kinds of
-developers, we will need to formalize a spec for the general model of
-how state transition rates depend on parameters and state variables.
-This spec will make it easier for the two groups to work together. This
-spec can be versioned so that we can build it in steps, making sure that
-we don’t over-engineer anything.
+achieve this separation of concerns, we will need to formalize a spec
+for a general model of how state transition rates depend on parameters
+and state variables. This spec will make it easier for the two types of
+developers to work together. We will version this spec so that we can
+build it in steps, making sure that we don’t over-engineer it.
 
 This is a working document that provides background on current thinking,
 spec definitions (currently only drafts), and a roadmap for planning and
 remembering details that are not yet sorted out. Over time items from
-the roadmap will move into defined spec versions.
+the roadmap will move into defined spec versions. To update it use
+`make` from this folder.
 
-## Rate Matrix Models
+## Versioned Rate Matrix Models
+
+There are currently no versioned rate matrix models. See below for
+experimental models.
+
+## Experimental Rate Matrix Models
 
 ### Warm Up Rate Matrix Model
 

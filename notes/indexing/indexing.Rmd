@@ -1,15 +1,17 @@
 ---
-title: "Indices"
-output: md_document
+output: html_document
 ---
 
 # Dependence of State Transition Rates on Parameters and State Variables
 
-Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns among these two different kinds of developers, we will need to formalize a spec for the general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two groups to work together. This spec can be versioned so that we can build it in steps, making sure that we don't over-engineer anything. 
+Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns, we will need to formalize a spec for a general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two types of developers to work together. We will version this spec so that we can build it in steps, making sure that we don't over-engineer it. 
+This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions. To update it use `make` from this folder.
 
-This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions.
+## Versioned Rate Matrix Models
 
-## Rate Matrix Models
+There are currently no versioned rate matrix models. See below for experimental models.
+
+## Experimental Rate Matrix Models
 
 ### Warm Up Rate Matrix Model
 
@@ -129,12 +131,18 @@ attributes(ratemat_struct)$all_factors
 
 Here is an example where this input,
 ```{r}
-ratemat_struct[[5]][c('from', 'to', 'formula')]
+ratemat_struct$Ip_to_Is[c('from', 'to', 'formula')]
 ```
 parses as this,
 ```{r}
-ratemat_struct[[5]][c('factors')]
+ratemat_struct$Ip_to_Is$factors
 ```
+More generally, all elements of a `ratemat-struct` object are `rate-struct` objects and contain the following elements:
+```{r}
+names(ratemat_struct$Is_to_H)
+```
+
+The `from` and `to` elements give the name of the associated states, `formula` gives the expression determining the rate, `factors` gives a data frame where each row is a _factor_ (as defined above) required to compute the rate, and `ratemat_indices` gives the row and column index of the rate in the rate matrix.
 
 #### Mathematical Model Description
 
@@ -232,6 +240,26 @@ As far as I can tell models such as age structure _could_ be defined in terms of
 One issue with the first option is that there is only one kind of scalar multiplication, but several kinds of matrix multiplication -- so we can't just overload the `*` operator (although we probably should as is done in `col_multiply`) and will need to introduce explicit matrix operators (e.g. `%*%`, `%x%`). An issue with Kronecker-type operations (as are used in age-structured models) is that they often involve matrix transposing.
 
 There are some relevant notes on this topic here:  https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns
+
+## Steve's Notes on Meeting with Ben (2021-08-09)
+
+* very important to be able to specify multiple rates in the model specification machinery -- this is what the regex stuff is doing now
+* Additional motivation: figuring out indexing ahead of simulation time is also likely to be an efficiency win.
+* 3 components of the model that involve updates of state variables (TODO: verify that the model works for these cases at a minimum):
+  * FOI
+  * testing -- vec of weights that determines prob of being testing depending on state
+  * vaccination -- we know realized vaccination rates, but need to scale to per-capita
+* kronecker products may only be convenient for producing a matrix, rather than updating it
+* most elements of the rate matrix only need to be touched once (update/make rate matrix)
+  * this needs to go into the indexing framework
+  * by defining in terms of per-capita flows means that most elements can stay fixed
+    1. once at beginning of opt run
+    2. every time a new set of params are updated
+    3. done within the simulation (e.g. state-dependence and time varying parameters
+* logs of parameters -- think more about them
+* block structure of rate dependence could have a connection with identifiability -- there exists a literature on identifiability of dynamical systems models that boarders on practical
+* `TMB::MakeADFun` has a map argument to specify that parameters can be fixed at their starting values or set groups of parameters to be equal -- should use this instead of switching back and forth between the `PARAMETER` and `DATA` macros
+
 
 ## Unstructured / Incoherent Notes
 
