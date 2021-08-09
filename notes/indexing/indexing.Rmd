@@ -3,7 +3,11 @@ title: "Indices"
 output: md_document
 ---
 
-# Create Indices for Accessing Elements of the Rate Matrix
+# Dependence of State Transition Rates on Parameters and State Variables
+
+Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns among these two different kinds of developers, we will need to formalize a spec for the general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two groups to work together. This spec can be versioned so that we can build it in steps, making sure that we don't over-engineer anything. 
+
+This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions.
 
 ## Rate Matrix Models
 
@@ -196,9 +200,28 @@ I'm surprised this is necessary though because I have been assuming that unspeci
 
 Not thinking about this at all, but probably should.  For example, could `pfun` return multiple rate matrix positions?  If so that would screw up the current index machinery.
 
+### Parameters to optimize vs other parameters
+
+Because of how TMB is used to produce objective functions for optimization, the parameters to optimize/calibrate must be separated from the other parameters. Currently I have ignored this complexity, but I think we don't need to think about it until we actually implement this on the `C++` side. This separation of parameters will still need to be done thoughtfully though, because it might have implications for accessing memory efficiently during simulation steps.
+
 ### Index Permutations
 
 Permutation of the parameter, state, and factor vectors for computational efficiency. We don't want to have to sum together products that depend on elements of the state vector that are far apart from each other in memory. This is similar to permutations of sparse matrices in the Matrix package and Eigen.
+
+Made some progress here -- we can visualize the dependence of state transition rates on variables (either parameters or state variables) by plotting a heat map with transitions on one axis and variables on the other. The colour of the heatmap depends on the number of times a variable appears in the expression for the transition rate.
+
+```{r}
+m = as.matrix(ratemat_struct)
+ca = corresp(m)
+heatmap(m[order(ca$rscore), order(ca$cscore)], 
+        Colv = NA, Rowv = NA, scale = "none")
+```
+
+I've ordered the axes using correspondence analysis, which is a statistical technique for finding block structure in matrices. Block structure might be relevant because such structure means that we can access parameters in chunks, which could be useful for optimizing on the `C++` side.
+
+### Time Varying Parameters
+
+The model above does not consider time varying parameters, but this will need to be done obviously. My current sense is that for break-point-style parameter changes should be handled when we separate parameters to be optimized from the other parameters (see above). Log-linear-style parameter changes, should probably be handled when we introduce model specification in terms of matrices and vectors (see below).
 
 ### Model Specification in Terms of Matrices and Vectors
 
@@ -210,7 +233,7 @@ One issue with the first option is that there is only one kind of scalar multipl
 
 There are some relevant notes on this topic here:  https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns
 
-## Unstructured Notes
+## Unstructured / Incoherent Notes
 
 When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
 

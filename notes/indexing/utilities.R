@@ -1,4 +1,7 @@
 library(dplyr)
+library(tidyr)
+library(tibble)
+library(MASS)
 
 opt_list = 'beta0' # vector of parameters to optimize
 params = McMasterPandemic::read_params('ICU1.csv')
@@ -89,19 +92,23 @@ mk_ratemat_struct = function(...) {
                           by = c('var', 'compl', 'invrs'))
     x
   }
+  update_ratemat_indices = function(x) {
+    setNames(x, sapply(x, function(x) {paste(x$from, x$to, sep = '_to_')}))
+  }
 
   struct = list(...)
   lapply(struct, inherits, 'rate-struct') %>% lapply(stopifnot)
   all_factors = (struct
     %>% lapply(`[[`, "factors")
     %>% bind_rows
-    %>% select(var, compl, invrs)
+    %>% dplyr::select(var, compl, invrs)
     %>% distinct
     %>% mutate(state_param_index = mk_indices(var))
     %>% mutate(factor_index = seq_along(var))
   )
+
   structure(
-    lapply(struct, update_w_indices),
+    lapply(update_ratemat_indices(struct), update_w_indices),
     class = 'ratemat-struct',
     all_factors = all_factors)
 }
@@ -123,4 +130,24 @@ do_step2 = function(state, M, params, ratemat_struct) {
   outflow = rowSums(flows[, p_states])
   inflow = colSums(flows)
   state - outflow + inflow
+}
+
+`as.data.frame.ratemat-struct` <- function(x) {
+  (x
+   %>% lapply(`[[`, 'factors')
+   %>% bind_rows(.id = 'ratemat_index')
+   %>% dplyr::select(var, factor_index, product_index, ratemat_index, compl, invrs)
+   %>% arrange(var, as.numeric(ratemat_index))
+  )
+}
+
+`as.matrix.ratemat-struct` <- function(x) {
+  (x
+   %>% as.data.frame
+   %>% group_by(var, ratemat_index)
+   %>% summarise(n = n())
+   %>% pivot_wider(names_from = ratemat_index, values_from = n, values_fill = 0)
+   %>% column_to_rownames("var")
+   %>% as.matrix
+  )
 }
