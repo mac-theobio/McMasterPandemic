@@ -5,6 +5,7 @@ output: html_document
 # Dependence of State Transition Rates on Parameters and State Variables
 
 Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns, we will need to formalize a spec for a general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two types of developers to work together. We will version this spec so that we can build it in steps, making sure that we don't over-engineer it. 
+
 This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions. To update it use `make` from this folder.
 
 ## Versioned Rate Matrix Models
@@ -91,7 +92,7 @@ The formulas allow the following operations:
 The `utilities.R` file in the folder for this document contains some prototype functions for this approach. Using them we illustrate how rate matrix structure can be flexibly described by the user.
 ```{r}
 source('utilities.R')
-ratemat_struct = mk_ratemat_struct(
+rs = mk_ratemat_struct(
   rate("E", "Ia", ~ (alpha) * (sigma)),
   rate("E", "Ip", ~ (1 - alpha) * (sigma)),
   rate("Ia", "R", ~ (gamma_a)),
@@ -119,27 +120,27 @@ ratemat_struct = mk_ratemat_struct(
 
 # sanity check:
 all.equal(
-  c(do_step2(state, M, params, ratemat_struct)),
+  c(do_step2(state, M, params, rs)),
   c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
 )
 ```
 
 We can parse this structure to produce information about how to update the elements of the rate matrix. First, all of the _factors_ over all rate matrix entries in this model can be displayed.
 ```{r}
-attributes(ratemat_struct)$all_factors
+attributes(rs)$all_factors
 ```
 
 Here is an example where this input,
 ```{r}
-ratemat_struct$Ip_to_Is[c('from', 'to', 'formula')]
+rs$Ip_to_Is[c('from', 'to', 'formula')]
 ```
 parses as this,
 ```{r}
-ratemat_struct$Ip_to_Is$factors
+rs$Ip_to_Is$factors
 ```
 More generally, all elements of a `ratemat-struct` object are `rate-struct` objects and contain the following elements:
 ```{r}
-names(ratemat_struct$Is_to_H)
+names(rs$Is_to_H)
 ```
 
 The `from` and `to` elements give the name of the associated states, `formula` gives the expression determining the rate, `factors` gives a data frame where each row is a _factor_ (as defined above) required to compute the rate, and `ratemat_indices` gives the row and column index of the rate in the rate matrix.
@@ -219,7 +220,7 @@ Permutation of the parameter, state, and factor vectors for computational effici
 Made some progress here -- we can visualize the dependence of state transition rates on variables (either parameters or state variables) by plotting a heat map with transitions on one axis and variables on the other. The colour of the heatmap depends on the number of times a variable appears in the expression for the transition rate.
 
 ```{r}
-m = as.matrix(ratemat_struct)
+m = as.matrix(rs)
 ca = corresp(m)
 heatmap(m[order(ca$rscore), order(ca$cscore)], 
         Colv = NA, Rowv = NA, scale = "none")
@@ -230,6 +231,14 @@ I've ordered the axes using correspondence analysis, which is a statistical tech
 ### Time Varying Parameters
 
 The model above does not consider time varying parameters, but this will need to be done obviously. My current sense is that for break-point-style parameter changes should be handled when we separate parameters to be optimized from the other parameters (see above). Log-linear-style parameter changes, should probably be handled when we introduce model specification in terms of matrices and vectors (see below).
+
+Now that I've read the MacPan manuscript I feel better about the log-linear model of the transmission rate, $\beta$. A generalization to something beyond the transmission rate is the following.
+
+$$
+\log(\theta_i(t)) = \log\left(\theta_i^{(0)}\right) + \mathbf{X}
+$$
+
+Each row of $\mathbf{X}$ corresponds to 
 
 ### Model Specification in Terms of Matrices and Vectors
 
@@ -247,9 +256,9 @@ There are some relevant notes on this topic here:  https://github.com/mac-theobi
 * Additional motivation: figuring out indexing ahead of simulation time is also likely to be an efficiency win.
 * 3 components of the model that involve updates of state variables (TODO: verify that the model works for these cases at a minimum):
   * FOI
-  * testing -- vec of weights that determines prob of being testing depending on state
+  * testing -- vec of weights that determines prob of being tested depending on state
   * vaccination -- we know realized vaccination rates, but need to scale to per-capita
-* kronecker products may only be convenient for producing a matrix, rather than updating it
+* Kronecker products may only be convenient for producing a matrix, rather than efficient at updating it
 * most elements of the rate matrix only need to be touched once (update/make rate matrix)
   * this needs to go into the indexing framework
   * by defining in terms of per-capita flows means that most elements can stay fixed
@@ -259,62 +268,3 @@ There are some relevant notes on this topic here:  https://github.com/mac-theobi
 * logs of parameters -- think more about them
 * block structure of rate dependence could have a connection with identifiability -- there exists a literature on identifiability of dynamical systems models that boarders on practical
 * `TMB::MakeADFun` has a map argument to specify that parameters can be fixed at their starting values or set groups of parameters to be equal -- should use this instead of switching back and forth between the `PARAMETER` and `DATA` macros
-
-
-## Unstructured / Incoherent Notes
-
-When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
-
-Before defining the interface, assume that we have a rate matrix on the R-side with named rows and columns, and a named parameter vector also on the R-side with named elements.
-```{r}
-theta <- McMasterPandemic:::read_params("ICU1.csv")
-state = McMasterPandemic:::make_state(params=theta)
-M <- McMasterPandemic:::make_ratemat(params=theta, state=state, sparse=TRUE)
-print(theta)
-print(M)
-```
-
-```{r}
-state_names = row.names(M)
-par_names = names(theta)
-print(state_names)
-print(par_names)
-```
-
-
-```{r}
-pfun <- McMasterPandemic:::pfun
-```
-
-
-```{r}
-make_beta_light <- function(state, params, full = TRUE) {
-    # does not use 'full' (argument)
-    # does not use 'testcats' (below)
-    Icats <- c("Ia", "Ip", "Im", "Is")
-    testcats <- c("_u", "_p", "_n", "_t")
-    Icat_prop_vec <- with(
-        as.list(params),
-        c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
-    )
-    names(Icat_prop_vec) <- Icats
-    beta_0 <- with(as.list(params), beta0 * Icat_prop_vec / N)
-    beta <- setNames(numeric(length(state)), names(state))
-    beta[names(beta_0)] <- beta_0
-    return(beta)
-}
-
-update_ratemat_light <- function(ratemat, state, params, testwt_scale = "N") {
-  # testwt_scale not needed
-  ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_beta(state, params))
-}
-
-update_foi_light <- function(state, params, beta) {
-  # params not needed
-  foi <- sum(state * beta)
-}
-
-```
-
-
-

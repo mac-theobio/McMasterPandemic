@@ -147,7 +147,7 @@ matrix structure can be flexibly described by the user.
     ## 
     ##     select
 
-    ratemat_struct = mk_ratemat_struct(
+    rs = mk_ratemat_struct(
       rate("E", "Ia", ~ (alpha) * (sigma)),
       rate("E", "Ip", ~ (1 - alpha) * (sigma)),
       rate("Ia", "R", ~ (gamma_a)),
@@ -175,7 +175,7 @@ matrix structure can be flexibly described by the user.
 
     # sanity check:
     all.equal(
-      c(do_step2(state, M, params, ratemat_struct)),
+      c(do_step2(state, M, params, rs)),
       c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
     )
 
@@ -185,43 +185,74 @@ We can parse this structure to produce information about how to update
 the elements of the rate matrix. First, all of the *factors* over all
 rate matrix entries in this model can be displayed.
 
-    attributes(ratemat_struct)$all_factors
+    attributes(rs)$all_factors
 
-    ##             var compl invrs state_param_index factor_index
-    ## 1         alpha FALSE FALSE                20            1
-    ## 2         sigma FALSE FALSE                21            2
-    ## 3         alpha  TRUE FALSE                20            3
-    ## 4       gamma_a FALSE FALSE                22            4
-    ## 5            mu FALSE FALSE                28            5
-    ## 6       gamma_p FALSE FALSE                25            6
-    ## 7            mu  TRUE FALSE                28            7
-    ## 8       gamma_m FALSE FALSE                23            8
-    ## 9  nonhosp_mort  TRUE FALSE                31            9
-    ## 10         phi1 FALSE FALSE                34           10
-    ## 11      gamma_s FALSE FALSE                24           11
-    ## 12         phi1  TRUE FALSE                34           12
-    ## 13         phi2  TRUE FALSE                35           13
-    ## 14         phi2 FALSE FALSE                35           14
-    ## 15 nonhosp_mort FALSE FALSE                31           15
-    ## 16         psi1 FALSE FALSE                36           16
-    ## 17         psi2 FALSE FALSE                37           17
-    ## 18         psi3 FALSE FALSE                38           18
-    ## 19          rho FALSE FALSE                26           19
-    ## 20           Ia FALSE FALSE                 3           20
-    ## 21        beta0 FALSE FALSE                15           21
-    ## 22            N FALSE  TRUE                29           22
-    ## 23           Ca FALSE FALSE                16           23
-    ## 24           Ip FALSE FALSE                 4           24
-    ## 25           Cp FALSE FALSE                17           25
-    ## 26           Im FALSE FALSE                 5           26
-    ## 27           Cm FALSE FALSE                18           27
-    ## 28        iso_m  TRUE FALSE                32           28
-    ## 29           Is FALSE FALSE                 6           29
-    ## 30           Cs FALSE FALSE                19           30
+    ##             var compl invrs sim_updates opt_updates state_param_index
+    ## 1         alpha FALSE FALSE       FALSE       FALSE                20
+    ## 2         sigma FALSE FALSE       FALSE       FALSE                21
+    ## 3         alpha  TRUE FALSE       FALSE       FALSE                20
+    ## 4       gamma_a FALSE FALSE       FALSE       FALSE                22
+    ## 5            mu FALSE FALSE       FALSE       FALSE                28
+    ## 6       gamma_p FALSE FALSE       FALSE       FALSE                25
+    ## 7            mu  TRUE FALSE       FALSE       FALSE                28
+    ## 8       gamma_m FALSE FALSE       FALSE       FALSE                23
+    ## 9  nonhosp_mort  TRUE FALSE       FALSE       FALSE                31
+    ## 10         phi1 FALSE FALSE       FALSE       FALSE                34
+    ## 11      gamma_s FALSE FALSE       FALSE       FALSE                24
+    ## 12         phi1  TRUE FALSE       FALSE       FALSE                34
+    ## 13         phi2  TRUE FALSE       FALSE       FALSE                35
+    ## 14         phi2 FALSE FALSE       FALSE       FALSE                35
+    ## 15 nonhosp_mort FALSE FALSE       FALSE       FALSE                31
+    ## 16         psi1 FALSE FALSE       FALSE       FALSE                36
+    ## 17         psi2 FALSE FALSE       FALSE       FALSE                37
+    ## 18         psi3 FALSE FALSE       FALSE       FALSE                38
+    ## 19          rho FALSE FALSE       FALSE       FALSE                26
+    ## 20           Ia FALSE FALSE        TRUE        TRUE                 3
+    ## 21        beta0 FALSE FALSE       FALSE        TRUE                15
+    ## 22            N FALSE  TRUE       FALSE       FALSE                29
+    ## 23           Ca FALSE FALSE       FALSE       FALSE                16
+    ## 24           Ip FALSE FALSE        TRUE        TRUE                 4
+    ## 25           Cp FALSE FALSE       FALSE       FALSE                17
+    ## 26           Im FALSE FALSE        TRUE        TRUE                 5
+    ## 27           Cm FALSE FALSE       FALSE       FALSE                18
+    ## 28        iso_m  TRUE FALSE       FALSE       FALSE                32
+    ## 29           Is FALSE FALSE        TRUE        TRUE                 6
+    ## 30           Cs FALSE FALSE       FALSE       FALSE                19
+    ##    factor_index
+    ## 1             1
+    ## 2             2
+    ## 3             3
+    ## 4             4
+    ## 5             5
+    ## 6             6
+    ## 7             7
+    ## 8             8
+    ## 9             9
+    ## 10           10
+    ## 11           11
+    ## 12           12
+    ## 13           13
+    ## 14           14
+    ## 15           15
+    ## 16           16
+    ## 17           17
+    ## 18           18
+    ## 19           19
+    ## 20           20
+    ## 21           21
+    ## 22           22
+    ## 23           23
+    ## 24           24
+    ## 25           25
+    ## 26           26
+    ## 27           27
+    ## 28           28
+    ## 29           29
+    ## 30           30
 
 Here is an example where this input,
 
-    ratemat_struct[[5]][c('from', 'to', 'formula')]
+    rs$Ip_to_Is[c('from', 'to', 'formula')]
 
     ## $from
     ## [1] "Ip"
@@ -234,12 +265,28 @@ Here is an example where this input,
 
 parses as this,
 
-    ratemat_struct[[5]][c('factors')]
+    rs$Ip_to_Is$factors
 
-    ## $factors
-    ##   product_index     var compl invrs state_param_index factor_index
-    ## 1             1      mu  TRUE FALSE                28            7
-    ## 2             1 gamma_p FALSE FALSE                25            6
+    ##   product_index     var compl invrs sim_updates.x opt_updates.x sim_updates.y
+    ## 1             1      mu  TRUE FALSE         FALSE         FALSE         FALSE
+    ## 2             1 gamma_p FALSE FALSE         FALSE         FALSE         FALSE
+    ##   opt_updates.y state_param_index factor_index
+    ## 1         FALSE                28            7
+    ## 2         FALSE                25            6
+
+More generally, all elements of a `ratemat-struct` object are
+`rate-struct` objects and contain the following elements:
+
+    names(rs$Is_to_H)
+
+    ## [1] "from"            "to"              "formula"         "factors"        
+    ## [5] "ratemat_indices"
+
+The `from` and `to` elements give the name of the associated states,
+`formula` gives the expression determining the rate, `factors` gives a
+data frame where each row is a *factor* (as defined above) required to
+compute the rate, and `ratemat_indices` gives the row and column index
+of the rate in the rate matrix.
 
 #### Mathematical Model Description
 
@@ -346,7 +393,7 @@ plotting a heat map with transitions on one axis and variables on the
 other. The colour of the heatmap depends on the number of times a
 variable appears in the expression for the transition rate.
 
-    m = as.matrix(ratemat_struct)
+    m = as.matrix(rs)
 
     ## Warning in mask$eval_all_mutate(quo): NAs introduced by coercion
 
@@ -356,7 +403,7 @@ variable appears in the expression for the transition rate.
     heatmap(m[order(ca$rscore), order(ca$cscore)], 
             Colv = NA, Rowv = NA, scale = "none")
 
-![](indexing_files/figure-markdown_strict/unnamed-chunk-10-1.png)
+![](indexing_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
 I’ve ordered the axes using correspondence analysis, which is a
 statistical technique for finding block structure in matrices. Block
@@ -373,6 +420,14 @@ parameters to be optimized from the other parameters (see above).
 Log-linear-style parameter changes, should probably be handled when we
 introduce model specification in terms of matrices and vectors (see
 below).
+
+Now that I’ve read the MacPan manuscript I feel better about the
+log-linear model of the transmission rate, *β*. A generalization to
+something beyond the transmission rate is the following.
+
+log (*θ*<sub>*i*</sub>(*t*)) = log (*θ*<sub>*i*</sub><sup>(0)</sup>) + **X**
+
+Each row of **X** corresponds to
 
 ### Model Specification in Terms of Matrices and Vectors
 
@@ -404,110 +459,35 @@ transposing.
 There are some relevant notes on this topic here:
 <https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns>
 
-## Unstructured / Incoherent Notes
+## Steve’s Notes on Meeting with Ben (2021-08-09)
 
-When coding this up, we do not need to explicitly store all of the zeros
-in *x* and *y*. Instead we just track what elements of *M* depend on
-what elements of *θ* and whether/how the dependence involves complements
-of the values of *θ*.
-
-Before defining the interface, assume that we have a rate matrix on the
-R-side with named rows and columns, and a named parameter vector also on
-the R-side with named elements.
-
-    theta <- McMasterPandemic:::read_params("ICU1.csv")
-    state = McMasterPandemic:::make_state(params=theta)
-    M <- McMasterPandemic:::make_ratemat(params=theta, state=state, sparse=TRUE)
-    print(theta)
-
-    ##        beta0           Ca           Cp           Cm           Cs        alpha 
-    ## 1.000000e+00 6.666667e-01 1.000000e+00 1.000000e+00 1.000000e+00 3.333333e-01 
-    ##        sigma      gamma_a      gamma_m      gamma_s      gamma_p          rho 
-    ## 1.923077e-01 1.428571e-01 1.428571e-01 1.748252e-01 2.000000e+00 1.000000e-01 
-    ##        delta           mu            N           E0 nonhosp_mort        iso_m 
-    ## 0.000000e+00 9.560000e-01 1.000000e+06 5.000000e+00 0.000000e+00 0.000000e+00 
-    ##        iso_s         phi1         phi2         psi1         psi2         psi3 
-    ## 0.000000e+00 7.600000e-01 5.000000e-01 5.000000e-02 1.250000e-01 2.000000e-01 
-    ##       c_prop c_delay_mean   c_delay_cv    proc_disp         zeta 
-    ## 1.000000e-01 1.100000e+01 2.500000e-01 0.000000e+00 0.000000e+00
-
-    print(M)
-
-    ## 14 x 14 sparse Matrix of class "dgTMatrix"
-
-    ##    [[ suppressing 14 column names 'S', 'E', 'Ia' ... ]]
-
-    ##                                                                               
-    ## S    . 1.666667e-06 .          .         .     .     .         .    .         
-    ## E    . .            0.06410256 0.1282051 .     .     .         .    .         
-    ## Ia   . .            .          .         .     .     .         .    .         
-    ## Ip   . .            .          .         1.912 0.088 .         .    .         
-    ## Im   . .            .          .         .     .     .         .    .         
-    ## Is   . .            .          .         .     .     0.1328671 .    0.02097902
-    ## H    . .            .          .         .     .     .         .    .         
-    ## H2   . .            .          .         .     .     .         .    .         
-    ## ICUs . .            .          .         .     .     .         0.05 .         
-    ## ICUd . .            .          .         .     .     .         .    .         
-    ## D    . .            .          .         .     .     .         .    .         
-    ## R    . .            .          .         .     .     .         .    .         
-    ## X    . .            .          .         .     .     .         .    .         
-    ## V    . .            .          .         .     .     .         .    .         
-    ##                                            
-    ## S    .          .     .         .         .
-    ## E    .          .     .         .         .
-    ## Ia   .          .     0.1428571 .         .
-    ## Ip   .          .     .         .         .
-    ## Im   .          .     0.1428571 .         .
-    ## Is   0.02097902 .     .         0.1328671 .
-    ## H    .          .     0.1000000 .         .
-    ## H2   .          .     0.2000000 .         .
-    ## ICUs .          .     .         .         .
-    ## ICUd .          0.125 .         .         .
-    ## D    .          .     .         .         .
-    ## R    .          .     .         .         .
-    ## X    .          .     .         .         .
-    ## V    .          .     .         .         .
-
-    state_names = row.names(M)
-    par_names = names(theta)
-    print(state_names)
-
-    ##  [1] "S"    "E"    "Ia"   "Ip"   "Im"   "Is"   "H"    "H2"   "ICUs" "ICUd"
-    ## [11] "D"    "R"    "X"    "V"
-
-    print(par_names)
-
-    ##  [1] "beta0"        "Ca"           "Cp"           "Cm"           "Cs"          
-    ##  [6] "alpha"        "sigma"        "gamma_a"      "gamma_m"      "gamma_s"     
-    ## [11] "gamma_p"      "rho"          "delta"        "mu"           "N"           
-    ## [16] "E0"           "nonhosp_mort" "iso_m"        "iso_s"        "phi1"        
-    ## [21] "phi2"         "psi1"         "psi2"         "psi3"         "c_prop"      
-    ## [26] "c_delay_mean" "c_delay_cv"   "proc_disp"    "zeta"
-
-    pfun <- McMasterPandemic:::pfun
-
-    make_beta_light <- function(state, params, full = TRUE) {
-        # does not use 'full' (argument)
-        # does not use 'testcats' (below)
-        Icats <- c("Ia", "Ip", "Im", "Is")
-        testcats <- c("_u", "_p", "_n", "_t")
-        Icat_prop_vec <- with(
-            as.list(params),
-            c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
-        )
-        names(Icat_prop_vec) <- Icats
-        beta_0 <- with(as.list(params), beta0 * Icat_prop_vec / N)
-        beta <- setNames(numeric(length(state)), names(state))
-        beta[names(beta_0)] <- beta_0
-        return(beta)
-    }
-
-    update_ratemat_light <- function(ratemat, state, params, testwt_scale = "N") {
-      # testwt_scale not needed
-      ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_beta(state, params))
-    }
-
-    update_foi_light <- function(state, params, beta) {
-      # params not needed
-      foi <- sum(state * beta)
-    }
+-   very important to be able to specify multiple rates in the model
+    specification machinery – this is what the regex stuff is doing now
+-   Additional motivation: figuring out indexing ahead of simulation
+    time is also likely to be an efficiency win.
+-   3 components of the model that involve updates of state variables
+    (TODO: verify that the model works for these cases at a minimum):
+    -   FOI
+    -   testing – vec of weights that determines prob of being tested
+        depending on state
+    -   vaccination – we know realized vaccination rates, but need to
+        scale to per-capita
+-   Kronecker products may only be convenient for producing a matrix,
+    rather than efficient at updating it
+-   most elements of the rate matrix only need to be touched once
+    (update/make rate matrix)
+    -   this needs to go into the indexing framework
+    -   by defining in terms of per-capita flows means that most
+        elements can stay fixed
+        1.  once at beginning of opt run
+        2.  every time a new set of params are updated
+        3.  done within the simulation (e.g. state-dependence and time
+            varying parameters
+-   logs of parameters – think more about them
+-   block structure of rate dependence could have a connection with
+    identifiability – there exists a literature on identifiability of
+    dynamical systems models that boarders on practical
+-   `TMB::MakeADFun` has a map argument to specify that parameters can
+    be fixed at their starting values or set groups of parameters to be
+    equal – should use this instead of switching back and forth between
+    the `PARAMETER` and `DATA` macros
