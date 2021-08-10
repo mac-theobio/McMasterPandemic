@@ -21,7 +21,7 @@ the roadmap will move into defined spec versions. To update it use
 
 ## Versioned Rate Matrix Models
 
-There are currently no versioned rate matrix models. See below for
+There are currently no versioned rate matrix model specs. See below for
 experimental models.
 
 ## Experimental Rate Matrix Models
