@@ -92,21 +92,21 @@ Users can define the structure of a rate matrix with a list of
 expressions, each determining the parameter and state dependence of a
 non-zero rate matrix element. For example,
 
-    list(
+    mk_ratemat_struct(
       # recovery
-      list(from = "Ia", to = "R",    
+      rate(from = "Ia", to = "R",    
            formula = ~ (gamma_a)),
       # hospitalizations
-      list(from = "Is", to = "ICUs", 
+      rate(from = "Is", to = "ICUs", 
            formula = ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
       # force of infection
-      list(from = "S",  to = "E",
+      rate(from = "S",  to = "E",
            formula = ~ 
              (Ia) * (beta0) * (1/N) * (Ca) + 
              (Ip) * (beta0) * (1/N) * (Cp) + 
              (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) + 
              (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)),
-      list('etc...')
+      rate('etc...')
     )
 
 The formulas allow the following operations:
