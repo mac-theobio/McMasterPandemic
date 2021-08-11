@@ -70,9 +70,9 @@ rate = function(from, to, formula) {
                  %>% as.character %>% getElement(2L)
                  %>% strsplit(split = '\\+') %>% getElement(1L)
                  %>% strsplit(split = '\\*')
-                 %>% lapply(factor_table) %>% bind_rows(.id = 'product_index')
-                 %>% mutate(sim_updates = var %in% names(state)) # TODO: this is where we need to add time-varying parameter because they also need to be updated every simulation step
-                 %>% mutate(opt_updates = (var %in% names(params_to_opt)) | sim_updates)
+                 %>% lapply(factor_table) %>% bind_rows(.id = 'prod_indx')
+                 %>% mutate(sim_updt = var %in% names(state)) # TODO: this is where we need to add time-varying parameter because they also need to be updated every simulation step
+                 %>% mutate(opt_updt = (var %in% names(params_to_opt)) | sim_updt)
                  #%>% mutate(value = c(state, params)[var])
                  #%>% mutate(factor = ifelse(compl, 1 - value, ifelse(invrs, 1 / value, value)))
     )
@@ -100,8 +100,11 @@ mk_ratemat_struct = function(...) {
   update_w_indices = function(x) {
     # line up the indices into the factor vector, with the lists of
     # factors for each product
-    x$factors = left_join(x$factors, all_factors,
-                          by = c('var', 'compl', 'invrs'))
+    x$factors = (
+      x$factors
+      %>% dplyr::select(var, compl, invrs, prod_indx)
+      %>% left_join(all_factors, by = c('var', 'compl', 'invrs'))
+    )
     x
   }
   update_ratemat_indices = function(x) {
@@ -113,10 +116,10 @@ mk_ratemat_struct = function(...) {
   all_factors = (struct
     %>% lapply(`[[`, "factors")
     %>% bind_rows
-    %>% dplyr::select(var, compl, invrs, sim_updates, opt_updates)
+    %>% dplyr::select(var, compl, invrs, sim_updt, opt_updt)
     %>% distinct
-    %>% mutate(state_param_index = mk_indices(var))
-    %>% mutate(factor_index = seq_along(var))
+    %>% mutate(var_indx = mk_indices(var))
+    %>% mutate(factor_indx = seq_along(var))
   )
 
   structure(
@@ -147,18 +150,18 @@ do_step2 = function(state, M, params, ratemat_struct) {
 `as.data.frame.ratemat-struct` <- function(x) {
   (x
    %>% lapply(`[[`, 'factors')
-   %>% bind_rows(.id = 'ratemat_index')
-   %>% dplyr::select(var, factor_index, product_index, ratemat_index, compl, invrs)
-   %>% arrange(var, as.numeric(ratemat_index))
+   %>% bind_rows(.id = 'ratemat_indx')
+   %>% dplyr::select(var, factor_indx, prod_indx, ratemat_indx, compl, invrs)
+   %>% arrange(var, as.numeric(ratemat_indx))
   )
 }
 
 `as.matrix.ratemat-struct` <- function(x) {
   (x
    %>% as.data.frame
-   %>% group_by(var, ratemat_index)
+   %>% group_by(var, ratemat_indx)
    %>% summarise(n = n())
-   %>% pivot_wider(names_from = ratemat_index, values_from = n, values_fill = 0)
+   %>% pivot_wider(names_from = ratemat_indx, values_from = n, values_fill = 0)
    %>% column_to_rownames("var")
    %>% as.matrix
   )
@@ -190,3 +193,4 @@ rs = mk_ratemat_struct(
          (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
          (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
 )
+

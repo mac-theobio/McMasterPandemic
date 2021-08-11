@@ -147,51 +147,67 @@ The `from` and `to` elements give the name of the associated states, `formula` g
 
 #### Mathematical Model Description
 
-We make a series of transformations from the state vector, $s$, and parameter vector to the rate matrix, $M$. Given how TMB works, we need to distinguish parameters that will be optimized, $\theta$, from those that will remain constant, $\eta$ (or those that are derived from parameters being optimized, e.g. time-varying??, still unsure how time varying machinery is working with run_sim_break or will work with run_sim_loglin). We define two intermediate vectors as well: the factor vector, $v$, and the product vector, $u$. At a high level we take the elements of the state vector and two parameter vectors into the non-zero elements of the rate matrix as follows.
+We make a series of transformations from the state vector and parameter vector to the rate matrix, $M$. We concatenate the state vector and parameter vector into a single _variable_ vector called $v$. We define two intermediate vectors as well: the factor vector, $u$, and the product vector, $w$. At a high level we take the elements of the variable vector into the non-zero elements of the rate matrix as follows.
 $$
-\{s,\eta,\theta\} \rightarrow v \rightarrow u \rightarrow M
+v \rightarrow u \rightarrow w \rightarrow M
 $$
 
-The factor vector, $v$, is a function of $s$, $\eta$, and $\theta$.  The dependence is simple in that each scalar element of the factor vector can be one of the following.
+The factor vector, $u$, is a function of the variable vector, $v$. The dependence is simple in that each scalar element of the factor vector can be one of the following.
 
-* [identity] an element, $x$, of $s$, $\eta$, or $\theta$
+* [identity] an element, $x$, of $v$
 * [complement] the complement of this element, $1-x$
 * [inverse] the inverse of this element, $1/x$
 
 In the future we can generalize this by adding more operations, but for now identity, complement, and inverse should get us pretty far -- although it will make age structure awkward given that such problems are more naturally handled with matrix operations like Kronecker products and sweeps.
 
-The product vector, $u$, is a function of $v$.  The dependence is simple in that each element of the product vector is the product of one or more elements of the factor vector, $v$.
+The product vector, $w$, is a function of $u$.  The dependence is simple in that each element of the product vector is the product of one or more elements of the factor vector, $u$.
 
 The non-zero elements of the rate matrix, $M$, can be any one of the following.
 
-* An element of the factor vector, $v$
-* An element of the product vector, $u$
-* The sum of one or more elements in the product vector, $u$
+* An element of the factor vector, $u$
+* An element of the product vector, $w$
+* The sum of one or more elements in the product vector, $w$
 
 Explicitly expressing the force of infection in terms of this model we have.
 
 $$
-s = [I_a, I_p, I_m, I_s]
+v = [I_a, I_p, I_m, I_s, \beta_0, C_a, C_p, C_m, C_s, iso_m, iso_s, N]
 $$
 
 $$
-\theta = [\beta_0, C_a, C_p, C_m, C_s, iso_m, iso_s, N]
+u = [v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9, 1 - v_{10}, 1 - v_{11}, 1/v_{12}]
 $$
 
 $$
-u = [s_1, s_2, s_3, s_4, \theta_1, \theta_2, \theta_3, \theta_4, \theta_5, 1 - \theta_6, 1 - \theta_7, 1/\theta_8]
-$$
-
-$$
-v = [u_1  u_5  u_6          u_{12}, 
+w = [u_1  u_5  u_6          u_{12}, 
      u_2  u_5  u_7          u_{12},
      u_3  u_5  u_{10}  u_8  u_{12},
      u_4  u_5  u_{11}  u_9  u_{12}]
 $$
 
-And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the products vector, $v$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include on elements that are involved in the force of infection computation.
+And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the product vector, $w$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include only elements that are involved in the force of infection computation.
 
 ## Roadmap
+
+### Common Factors
+
+It should be possible to express the force of infection in this way:
+```
+(beta0) * (1/N) * (
+  (Ia) * (Ca) +
+  (Ip) * (Cp) +
+  (Im) * (Cm) * (1-iso_m) +
+  (Is) * (Cs) * (1-iso_m))
+```
+
+Rather than this way:
+
+```
+(Ia) * (beta0) * (1/N) * (Ca) +
+(Ip) * (beta0) * (1/N) * (Cp) +
+(Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+(Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)
+```
 
 ### Avoid Copying on the R-Side
 
@@ -235,10 +251,10 @@ The model above does not consider time varying parameters, but this will need to
 Now that I've read the MacPan manuscript I feel better about the log-linear model of the transmission rate, $\beta$. A generalization to something beyond the transmission rate is the following.
 
 $$
-\log(\theta_i(t)) = \log\left(\theta_i^{(0)}\right) + \mathbf{X}
+\log(\theta_i(t)) = \log\left(\theta_i^{(0)}\right) + \mathbf{Xc}
 $$
 
-Each row of $\mathbf{X}$ corresponds to 
+Each row of $\mathbf{X}$ corresponds to ... TODO
 
 ### Model Specification in Terms of Matrices and Vectors
 

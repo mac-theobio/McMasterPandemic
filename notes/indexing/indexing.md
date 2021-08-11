@@ -22,7 +22,7 @@ the roadmap will move into defined spec versions. To update it use
 ## Versioned Rate Matrix Models
 
 There are currently no versioned rate matrix model specs. See below for
-experimental models.
+experimental specs.
 
 ## Experimental Rate Matrix Models
 
@@ -187,68 +187,37 @@ rate matrix entries in this model can be displayed.
 
     attributes(rs)$all_factors
 
-    ##             var compl invrs sim_updates opt_updates state_param_index
-    ## 1         alpha FALSE FALSE       FALSE       FALSE                20
-    ## 2         sigma FALSE FALSE       FALSE       FALSE                21
-    ## 3         alpha  TRUE FALSE       FALSE       FALSE                20
-    ## 4       gamma_a FALSE FALSE       FALSE       FALSE                22
-    ## 5            mu FALSE FALSE       FALSE       FALSE                28
-    ## 6       gamma_p FALSE FALSE       FALSE       FALSE                25
-    ## 7            mu  TRUE FALSE       FALSE       FALSE                28
-    ## 8       gamma_m FALSE FALSE       FALSE       FALSE                23
-    ## 9  nonhosp_mort  TRUE FALSE       FALSE       FALSE                31
-    ## 10         phi1 FALSE FALSE       FALSE       FALSE                34
-    ## 11      gamma_s FALSE FALSE       FALSE       FALSE                24
-    ## 12         phi1  TRUE FALSE       FALSE       FALSE                34
-    ## 13         phi2  TRUE FALSE       FALSE       FALSE                35
-    ## 14         phi2 FALSE FALSE       FALSE       FALSE                35
-    ## 15 nonhosp_mort FALSE FALSE       FALSE       FALSE                31
-    ## 16         psi1 FALSE FALSE       FALSE       FALSE                36
-    ## 17         psi2 FALSE FALSE       FALSE       FALSE                37
-    ## 18         psi3 FALSE FALSE       FALSE       FALSE                38
-    ## 19          rho FALSE FALSE       FALSE       FALSE                26
-    ## 20           Ia FALSE FALSE        TRUE        TRUE                 3
-    ## 21        beta0 FALSE FALSE       FALSE        TRUE                15
-    ## 22            N FALSE  TRUE       FALSE       FALSE                29
-    ## 23           Ca FALSE FALSE       FALSE       FALSE                16
-    ## 24           Ip FALSE FALSE        TRUE        TRUE                 4
-    ## 25           Cp FALSE FALSE       FALSE       FALSE                17
-    ## 26           Im FALSE FALSE        TRUE        TRUE                 5
-    ## 27           Cm FALSE FALSE       FALSE       FALSE                18
-    ## 28        iso_m  TRUE FALSE       FALSE       FALSE                32
-    ## 29           Is FALSE FALSE        TRUE        TRUE                 6
-    ## 30           Cs FALSE FALSE       FALSE       FALSE                19
-    ##    factor_index
-    ## 1             1
-    ## 2             2
-    ## 3             3
-    ## 4             4
-    ## 5             5
-    ## 6             6
-    ## 7             7
-    ## 8             8
-    ## 9             9
-    ## 10           10
-    ## 11           11
-    ## 12           12
-    ## 13           13
-    ## 14           14
-    ## 15           15
-    ## 16           16
-    ## 17           17
-    ## 18           18
-    ## 19           19
-    ## 20           20
-    ## 21           21
-    ## 22           22
-    ## 23           23
-    ## 24           24
-    ## 25           25
-    ## 26           26
-    ## 27           27
-    ## 28           28
-    ## 29           29
-    ## 30           30
+    ##             var compl invrs sim_updt opt_updt var_indx factor_indx
+    ## 1         alpha FALSE FALSE    FALSE    FALSE       20           1
+    ## 2         sigma FALSE FALSE    FALSE    FALSE       21           2
+    ## 3         alpha  TRUE FALSE    FALSE    FALSE       20           3
+    ## 4       gamma_a FALSE FALSE    FALSE    FALSE       22           4
+    ## 5            mu FALSE FALSE    FALSE    FALSE       28           5
+    ## 6       gamma_p FALSE FALSE    FALSE    FALSE       25           6
+    ## 7            mu  TRUE FALSE    FALSE    FALSE       28           7
+    ## 8       gamma_m FALSE FALSE    FALSE    FALSE       23           8
+    ## 9  nonhosp_mort  TRUE FALSE    FALSE    FALSE       31           9
+    ## 10         phi1 FALSE FALSE    FALSE    FALSE       34          10
+    ## 11      gamma_s FALSE FALSE    FALSE    FALSE       24          11
+    ## 12         phi1  TRUE FALSE    FALSE    FALSE       34          12
+    ## 13         phi2  TRUE FALSE    FALSE    FALSE       35          13
+    ## 14         phi2 FALSE FALSE    FALSE    FALSE       35          14
+    ## 15 nonhosp_mort FALSE FALSE    FALSE    FALSE       31          15
+    ## 16         psi1 FALSE FALSE    FALSE    FALSE       36          16
+    ## 17         psi2 FALSE FALSE    FALSE    FALSE       37          17
+    ## 18         psi3 FALSE FALSE    FALSE    FALSE       38          18
+    ## 19          rho FALSE FALSE    FALSE    FALSE       26          19
+    ## 20           Ia FALSE FALSE     TRUE     TRUE        3          20
+    ## 21        beta0 FALSE FALSE    FALSE     TRUE       15          21
+    ## 22            N FALSE  TRUE    FALSE    FALSE       29          22
+    ## 23           Ca FALSE FALSE    FALSE    FALSE       16          23
+    ## 24           Ip FALSE FALSE     TRUE     TRUE        4          24
+    ## 25           Cp FALSE FALSE    FALSE    FALSE       17          25
+    ## 26           Im FALSE FALSE     TRUE     TRUE        5          26
+    ## 27           Cm FALSE FALSE    FALSE    FALSE       18          27
+    ## 28        iso_m  TRUE FALSE    FALSE    FALSE       32          28
+    ## 29           Is FALSE FALSE     TRUE     TRUE        6          29
+    ## 30           Cs FALSE FALSE    FALSE    FALSE       19          30
 
 Here is an example where this input,
 
@@ -267,12 +236,9 @@ parses as this,
 
     rs$Ip_to_Is$factors
 
-    ##   product_index     var compl invrs sim_updates.x opt_updates.x sim_updates.y
-    ## 1             1      mu  TRUE FALSE         FALSE         FALSE         FALSE
-    ## 2             1 gamma_p FALSE FALSE         FALSE         FALSE         FALSE
-    ##   opt_updates.y state_param_index factor_index
-    ## 1         FALSE                28            7
-    ## 2         FALSE                25            6
+    ##       var compl invrs prod_indx sim_updt opt_updt var_indx factor_indx
+    ## 1      mu  TRUE FALSE         1    FALSE    FALSE       28           7
+    ## 2 gamma_p FALSE FALSE         1    FALSE    FALSE       25           6
 
 More generally, all elements of a `ratemat-struct` object are
 `rate-struct` objects and contain the following elements:
@@ -290,23 +256,20 @@ of the rate in the rate matrix.
 
 #### Mathematical Model Description
 
-We make a series of transformations from the state vector, *s*, and
-parameter vector to the rate matrix, *M*. Given how TMB works, we need
-to distinguish parameters that will be optimized, *θ*, from those that
-will remain constant, *η* (or those that are derived from parameters
-being optimized, e.g. time-varying??, still unsure how time varying
-machinery is working with run\_sim\_break or will work with
-run\_sim\_loglin). We define two intermediate vectors as well: the
-factor vector, *v*, and the product vector, *u*. At a high level we take
-the elements of the state vector and two parameter vectors into the
-non-zero elements of the rate matrix as follows.
-{*s*, *η*, *θ*} → *v* → *u* → *M*
+We make a series of transformations from the state vector and parameter
+vector to the rate matrix, *M*. We concatenate the state vector and
+parameter vector into a single *variable* vector called *v*. We define
+two intermediate vectors as well: the factor vector, *u*, and the
+product vector, *w*. At a high level we take the elements of the
+variable vector into the non-zero elements of the rate matrix as
+follows.
+*v* → *u* → *w* → *M*
 
-The factor vector, *v*, is a function of *s*, *η*, and *θ*. The
+The factor vector, *u*, is a function of the variable vector, *v*. The
 dependence is simple in that each scalar element of the factor vector
 can be one of the following.
 
--   \[identity\] an element, *x*, of *s*, *η*, or *θ*
+-   \[identity\] an element, *x*, of *v*
 -   \[complement\] the complement of this element, 1 − *x*
 -   \[inverse\] the inverse of this element, 1/*x*
 
@@ -316,35 +279,50 @@ although it will make age structure awkward given that such problems are
 more naturally handled with matrix operations like Kronecker products
 and sweeps.
 
-The product vector, *u*, is a function of *v*. The dependence is simple
+The product vector, *w*, is a function of *u*. The dependence is simple
 in that each element of the product vector is the product of one or more
-elements of the factor vector, *v*.
+elements of the factor vector, *u*.
 
 The non-zero elements of the rate matrix, *M*, can be any one of the
 following.
 
--   An element of the factor vector, *v*
--   An element of the product vector, *u*
--   The sum of one or more elements in the product vector, *u*
+-   An element of the factor vector, *u*
+-   An element of the product vector, *w*
+-   The sum of one or more elements in the product vector, *w*
 
 Explicitly expressing the force of infection in terms of this model we
 have.
 
-*s* = \[*I*<sub>*a*</sub>,*I*<sub>*p*</sub>,*I*<sub>*m*</sub>,*I*<sub>*s*</sub>\]
+*v* = \[*I*<sub>*a*</sub>,*I*<sub>*p*</sub>,*I*<sub>*m*</sub>,*I*<sub>*s*</sub>,*β*<sub>0</sub>,*C*<sub>*a*</sub>,*C*<sub>*p*</sub>,*C*<sub>*m*</sub>,*C*<sub>*s*</sub>,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
 
-*θ* = \[*β*<sub>0</sub>,*C*<sub>*a*</sub>,*C*<sub>*p*</sub>,*C*<sub>*m*</sub>,*C*<sub>*s*</sub>,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
+*u* = \[*v*<sub>1</sub>,*v*<sub>2</sub>,*v*<sub>3</sub>,*v*<sub>4</sub>,*v*<sub>5</sub>,*v*<sub>6</sub>,*v*<sub>7</sub>,*v*<sub>8</sub>,*v*<sub>9</sub>,1−*v*<sub>10</sub>,1−*v*<sub>11</sub>,1/*v*<sub>12</sub>\]
 
-*u* = \[*s*<sub>1</sub>,*s*<sub>2</sub>,*s*<sub>3</sub>,*s*<sub>4</sub>,*θ*<sub>1</sub>,*θ*<sub>2</sub>,*θ*<sub>3</sub>,*θ*<sub>4</sub>,*θ*<sub>5</sub>,1−*θ*<sub>6</sub>,1−*θ*<sub>7</sub>,1/*θ*<sub>8</sub>\]
-
-*v* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>10</sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
+*w* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>10</sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
 
 And the non-zero element of *M* determining the rate of flow from S to E
-is the sum of the elements in the products vector, *v*. Typically this
+is the sum of the elements in the product vector, *w*. Typically this
 summation will be taken over a subset of the elements of the products
-vector, but we simplified this example to include on elements that are
+vector, but we simplified this example to include only elements that are
 involved in the force of infection computation.
 
 ## Roadmap
+
+### Common Factors
+
+It should be possible to express the force of infection in this way:
+
+    (beta0) * (1/N) * (
+      (Ia) * (Ca) +
+      (Ip) * (Cp) +
+      (Im) * (Cm) * (1-iso_m) +
+      (Is) * (Cs) * (1-iso_m))
+
+Rather than this way:
+
+    (Ia) * (beta0) * (1/N) * (Ca) +
+    (Ip) * (beta0) * (1/N) * (Cp) +
+    (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+    (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)
 
 ### Avoid Copying on the R-Side
 
@@ -425,9 +403,9 @@ Now that I’ve read the MacPan manuscript I feel better about the
 log-linear model of the transmission rate, *β*. A generalization to
 something beyond the transmission rate is the following.
 
-log (*θ*<sub>*i*</sub>(*t*)) = log (*θ*<sub>*i*</sub><sup>(0)</sup>) + **X**
+log (*θ*<sub>*i*</sub>(*t*)) = log (*θ*<sub>*i*</sub><sup>(0)</sup>) + **X****c**
 
-Each row of **X** corresponds to
+Each row of **X** corresponds to … TODO
 
 ### Model Specification in Terms of Matrices and Vectors
 
