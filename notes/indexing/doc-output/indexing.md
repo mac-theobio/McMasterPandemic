@@ -381,7 +381,7 @@ variable appears in the expression for the transition rate.
     heatmap(m[order(ca$rscore), order(ca$cscore)], 
             Colv = NA, Rowv = NA, scale = "none")
 
-![](indexing_files/figure-markdown_strict/unnamed-chunk-11-1.png)
+![](/Users/stevenwalker/Development/McMasterPandemic/notes/indexing/doc-output/indexing_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
 I’ve ordered the axes using correspondence analysis, which is a
 statistical technique for finding block structure in matrices. Block
