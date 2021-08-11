@@ -10,7 +10,7 @@ This is a working document that provides background on current thinking, spec de
 
 ## Versioned Rate Matrix Models
 
-There are currently no versioned rate matrix model specs. See below for experimental models.
+There are currently no versioned rate matrix model specs. See below for experimental specs.
 
 ## Experimental Rate Matrix Models
 
