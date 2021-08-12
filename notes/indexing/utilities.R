@@ -167,13 +167,14 @@ do_step2 = function(state, M, params, ratemat_struct) {
   )
 }
 
+#' @param x a ratemat-struct
 to_tmb = function(x) {
   ratemat_indices = sapply(x, `[[`, 'ratemat_indices')
   spi = {lapply(x, function(y) {y$factors$var_indx}) %>% unlist}
   count = sapply(x, function(y) {
     nrow(y$factors)
   })
-  modifier = lapply(unname(rs), '[[', 'factors') %>%
+  modifier = lapply(unname(x), '[[', 'factors') %>%
     bind_rows(.id = 'rate_indx') %>%
     mutate(add = as.logical(c(0, diff(as.numeric(d$prod_indx))))) %>%
     mutate(modifier = 4 * add + 2 * invrs + compl) %>%
