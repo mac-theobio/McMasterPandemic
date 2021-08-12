@@ -50,7 +50,7 @@ Let *s* be the state vector, *p* be the parameter vector, *M* be the rate matrix
  - Create an integer vector ***spi*** by concatenating *n* vectors, each of which consists of a series of `state_param_index` of `ratemat_struct[[i]]`.
  - Create an integer vector ***modifier*** by concatenating *n* vectors, each of which consists of a series of numbers (in binary form): 0**00**, 0**01**, 0**10**, **1**xx (meaning identity, complement, inverse, addition operation respectively) corresponding to the variable referred by `state_param_index` of `ratemat_struct[[i]]`. By checking bits (bitwise AND), we can translate a segment of ***modifier*** vector back to formula (see section "*On the C++ side*" below).
 ### What to transfer
-We then transfer ***sp*** as data (we can also transfer *s* and *p* separately and combine them on the C++ side if transferring ***sp*** breaks TMB) together with the vectors created in the above 4 steps. In other words, the data strcture to transfer is a collection of vectors:
+We then transfer ***sp*** as data (we can also transfer *s* and *p* separately and combine them on the C++ side if transferring ***sp*** breaks TMB) together with the vectors created in the above 4 steps. To be more specific, the data strcture to transfer is a collection of vectors:
  - ***sp***
  - ***from*** 
  - ***to***
@@ -107,6 +107,8 @@ The current proposed data structure cannot handle these cases. There are two pos
     
  2. Passing the formula as string. We can then evaluate the passed math expression using a math expression pasrer such as [Boost.Spirit](https://www.boost.org/doc/libs/1_76_0/libs/spirit/doc/html/index.html) or [exprtk](http://partow.net/programming/exprtk/index.html) or [TinyExpr](https://github.com/codeplea/tinyexpr)
 ## Summary
-This document proposes a data structure and the associated rate matrix calculation method. The data strcture is filled on the R side, and transferred to and used in the C++ side. In the proposal, we actually implement a simple parser for a class of restricted math expressions.
+This document proposes a data structure and the associated rate matrix calculation method. The data strcture is filled on the R side, and transferred to and used on the C++ side. In the rate matrix calculation, we actually implement a simple parser for a class of restricted math expressions.
+
+In this proposal, we do not distinguish `make_ratemat` and `update_ratemat`, which may be considered in the future. In other words, we don't take into account `sim_updt` and `opt_updt` in the current proposal.
     
 
