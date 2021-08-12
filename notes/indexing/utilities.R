@@ -30,27 +30,37 @@ rate = function(from, to, formula) {
             length(to) == 1L,
             inherits(formula, 'formula'))
 
-  # regex pattern for finding any variable
-  # (i.e. any parameter or state variable)
+  # regex pattern for finding variables
+  # (e.g. any parameter or state variable)
   # variable_regex looks like this '(beta0|Ca|...|zeta|S|E|Ia|...|V)'
-  variable_regex = paste0(
-    '(',
-    paste0(c(names(params), names(state)), collapse = '|'),
-    ')', sep = '')
+  variable_regex = function(...) {
+    character_class =
+      (list(...)
+       %>% lapply(names)
+       %>% unlist
+       %>% paste0(collapse = "|")
+      )
+    paste0('(', character_class, ')', sep = '')
+  }
+  #variable_regex = paste0(
+  #  '(',
+  #  paste0(c(names(params), names(state)), collapse = '|'),
+  #  ')', sep = '')
   get_variables = function(x) {
-    r = regexpr(variable_regex, x)
+    r = regexpr(variable_regex(params, state), x)
     regmatches(x, r)
   }
   # this only works because complements (1 - x) and inverses (1 / x) are
   # so similar in structure
   find_operators = function(x, operator) {
-    grepl(paste0('\\( *1 *', operator, ' *', variable_regex, collapse = ''), x)
+    grepl(paste0('\\( *1 *', operator, ' *', variable_regex(params, state), collapse = ''), x)
   }
   factor_table = function(x) {
     data.frame(
       var   = unlist(lapply(x, get_variables)),
       compl = unlist(lapply(x, find_operators, '-')),
       invrs = unlist(lapply(x, find_operators, '/')))
+
   }
   product_list = function(x) {
     # x is a list defining rate matrix structure. return an altered x with
@@ -60,7 +70,9 @@ rate = function(from, to, formula) {
                  %>% as.character %>% getElement(2L)
                  %>% strsplit(split = '\\+') %>% getElement(1L)
                  %>% strsplit(split = '\\*')
-                 %>% lapply(factor_table) %>% bind_rows(.id = 'product_index')
+                 %>% lapply(factor_table) %>% bind_rows(.id = 'prod_indx')
+                 %>% mutate(sim_updt = var %in% names(state)) # TODO: this is where we need to add time-varying parameter because they also need to be updated every simulation step
+                 %>% mutate(opt_updt = (var %in% names(params_to_opt)) | sim_updt)
                  #%>% mutate(value = c(state, params)[var])
                  #%>% mutate(factor = ifelse(compl, 1 - value, ifelse(invrs, 1 / value, value)))
     )
@@ -88,8 +100,11 @@ mk_ratemat_struct = function(...) {
   update_w_indices = function(x) {
     # line up the indices into the factor vector, with the lists of
     # factors for each product
-    x$factors = left_join(x$factors, all_factors,
-                          by = c('var', 'compl', 'invrs'))
+    x$factors = (
+      x$factors
+      %>% dplyr::select(var, compl, invrs, prod_indx)
+      %>% left_join(all_factors, by = c('var', 'compl', 'invrs'))
+    )
     x
   }
   update_ratemat_indices = function(x) {
@@ -101,10 +116,10 @@ mk_ratemat_struct = function(...) {
   all_factors = (struct
     %>% lapply(`[[`, "factors")
     %>% bind_rows
-    %>% dplyr::select(var, compl, invrs)
+    %>% dplyr::select(var, compl, invrs, sim_updt, opt_updt)
     %>% distinct
-    %>% mutate(state_param_index = mk_indices(var))
-    %>% mutate(factor_index = seq_along(var))
+    %>% mutate(var_indx = mk_indices(var))
+    %>% mutate(factor_indx = seq_along(var))
   )
 
   structure(
@@ -135,19 +150,47 @@ do_step2 = function(state, M, params, ratemat_struct) {
 `as.data.frame.ratemat-struct` <- function(x) {
   (x
    %>% lapply(`[[`, 'factors')
-   %>% bind_rows(.id = 'ratemat_index')
-   %>% dplyr::select(var, factor_index, product_index, ratemat_index, compl, invrs)
-   %>% arrange(var, as.numeric(ratemat_index))
+   %>% bind_rows(.id = 'ratemat_indx')
+   %>% dplyr::select(var, factor_indx, prod_indx, ratemat_indx, compl, invrs)
+   %>% arrange(var, as.numeric(ratemat_indx))
   )
 }
 
 `as.matrix.ratemat-struct` <- function(x) {
   (x
    %>% as.data.frame
-   %>% group_by(var, ratemat_index)
+   %>% group_by(var, ratemat_indx)
    %>% summarise(n = n())
-   %>% pivot_wider(names_from = ratemat_index, values_from = n, values_fill = 0)
+   %>% pivot_wider(names_from = ratemat_indx, values_from = n, values_fill = 0)
    %>% column_to_rownames("var")
    %>% as.matrix
   )
 }
+
+
+rs = mk_ratemat_struct(
+  rate("E", "Ia", ~ (alpha) * (sigma)),
+  rate("E", "Ip", ~ (1 - alpha) * (sigma)),
+  rate("Ia", "R", ~ (gamma_a)),
+  rate("Ip", "Im", ~ (mu) * (gamma_p)),
+  rate("Ip", "Is", ~ (1 - mu) * (gamma_p)),
+  rate("Im", "R", ~ (gamma_m)),
+  rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)),
+  rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
+  rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s)),
+  rate("Is", "D", ~ (nonhosp_mort) * (gamma_s)),
+  rate("ICUs", "H2", ~ (psi1)), ## ICU to post-ICU acute care
+  rate("ICUd", "D", ~ (psi2)), ## ICU to death
+  rate("H2", "R", ~ (psi3)), ## post-ICU to discharge
+  ## H now means 'acute care' only; all H survive & are discharged
+  #list(from = "H", to = "D", formula = ~ 0),
+  rate("H", "R", ~ (rho)), ## all acute-care survive
+  rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s)), ## assuming that hosp admissions mean *all* (acute-care + ICU)
+  # force of infection
+  rate("S",  "E", ~
+         (Ia) * (beta0) * (1/N) * (Ca) +
+         (Ip) * (beta0) * (1/N) * (Cp) +
+         (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+         (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+)
+

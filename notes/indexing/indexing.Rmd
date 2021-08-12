@@ -5,11 +5,12 @@ output: html_document
 # Dependence of State Transition Rates on Parameters and State Variables
 
 Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns, we will need to formalize a spec for a general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two types of developers to work together. We will version this spec so that we can build it in steps, making sure that we don't over-engineer it. 
+
 This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions. To update it use `make` from this folder.
 
 ## Versioned Rate Matrix Models
 
-There are currently no versioned rate matrix models. See below for experimental models.
+There are currently no versioned rate matrix model specs. See below for experimental specs.
 
 ## Experimental Rate Matrix Models
 
@@ -60,21 +61,21 @@ To accommodate such force of infection updates and others, we define a more gene
 
 Users can define the structure of a rate matrix with a list of expressions, each determining the parameter and state dependence of a non-zero rate matrix element. For example,
 ```{r, eval=FALSE}
-list(
+mk_ratemat_struct(
   # recovery
-  list(from = "Ia", to = "R",    
+  rate(from = "Ia", to = "R",    
        formula = ~ (gamma_a)),
   # hospitalizations
-  list(from = "Is", to = "ICUs", 
+  rate(from = "Is", to = "ICUs", 
        formula = ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
   # force of infection
-  list(from = "S",  to = "E",
+  rate(from = "S",  to = "E",
        formula = ~ 
          (Ia) * (beta0) * (1/N) * (Ca) + 
          (Ip) * (beta0) * (1/N) * (Cp) + 
          (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) + 
          (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)),
-  list('etc...')
+  rate('etc...')
 )
 ```
 The formulas allow the following operations:
@@ -91,7 +92,7 @@ The formulas allow the following operations:
 The `utilities.R` file in the folder for this document contains some prototype functions for this approach. Using them we illustrate how rate matrix structure can be flexibly described by the user.
 ```{r}
 source('utilities.R')
-ratemat_struct = mk_ratemat_struct(
+rs = mk_ratemat_struct(
   rate("E", "Ia", ~ (alpha) * (sigma)),
   rate("E", "Ip", ~ (1 - alpha) * (sigma)),
   rate("Ia", "R", ~ (gamma_a)),
@@ -119,78 +120,94 @@ ratemat_struct = mk_ratemat_struct(
 
 # sanity check:
 all.equal(
-  c(do_step2(state, M, params, ratemat_struct)),
+  c(do_step2(state, M, params, rs)),
   c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
 )
 ```
 
 We can parse this structure to produce information about how to update the elements of the rate matrix. First, all of the _factors_ over all rate matrix entries in this model can be displayed.
 ```{r}
-attributes(ratemat_struct)$all_factors
+attributes(rs)$all_factors
 ```
 
 Here is an example where this input,
 ```{r}
-ratemat_struct$Ip_to_Is[c('from', 'to', 'formula')]
+rs$Ip_to_Is[c('from', 'to', 'formula')]
 ```
 parses as this,
 ```{r}
-ratemat_struct$Ip_to_Is$factors
+rs$Ip_to_Is$factors
 ```
 More generally, all elements of a `ratemat-struct` object are `rate-struct` objects and contain the following elements:
 ```{r}
-names(ratemat_struct$Is_to_H)
+names(rs$Is_to_H)
 ```
 
 The `from` and `to` elements give the name of the associated states, `formula` gives the expression determining the rate, `factors` gives a data frame where each row is a _factor_ (as defined above) required to compute the rate, and `ratemat_indices` gives the row and column index of the rate in the rate matrix.
 
 #### Mathematical Model Description
 
-We make a series of transformations from the state vector, $s$, and parameter vector to the rate matrix, $M$. Given how TMB works, we need to distinguish parameters that will be optimized, $\theta$, from those that will remain constant, $\eta$ (or those that are derived from parameters being optimized, e.g. time-varying??, still unsure how time varying machinery is working with run_sim_break or will work with run_sim_loglin). We define two intermediate vectors as well: the factor vector, $v$, and the product vector, $u$. At a high level we take the elements of the state vector and two parameter vectors into the non-zero elements of the rate matrix as follows.
+We make a series of transformations from the state vector and parameter vector to the rate matrix, $M$. We concatenate the state vector and parameter vector into a single _variable_ vector called $v$. We define two intermediate vectors as well: the factor vector, $u$, and the product vector, $w$. At a high level we take the elements of the variable vector into the non-zero elements of the rate matrix as follows.
 $$
-\{s,\eta,\theta\} \rightarrow v \rightarrow u \rightarrow M
+v \rightarrow u \rightarrow w \rightarrow M
 $$
 
-The factor vector, $v$, is a function of $s$, $\eta$, and $\theta$.  The dependence is simple in that each scalar element of the factor vector can be one of the following.
+The factor vector, $u$, is a function of the variable vector, $v$. The dependence is simple in that each scalar element of the factor vector can be one of the following.
 
-* [identity] an element, $x$, of $s$, $\eta$, or $\theta$
+* [identity] an element, $x$, of $v$
 * [complement] the complement of this element, $1-x$
 * [inverse] the inverse of this element, $1/x$
 
 In the future we can generalize this by adding more operations, but for now identity, complement, and inverse should get us pretty far -- although it will make age structure awkward given that such problems are more naturally handled with matrix operations like Kronecker products and sweeps.
 
-The product vector, $u$, is a function of $v$.  The dependence is simple in that each element of the product vector is the product of one or more elements of the factor vector, $v$.
+The product vector, $w$, is a function of $u$.  The dependence is simple in that each element of the product vector is the product of one or more elements of the factor vector, $u$.
 
 The non-zero elements of the rate matrix, $M$, can be any one of the following.
 
-* An element of the factor vector, $v$
-* An element of the product vector, $u$
-* The sum of one or more elements in the product vector, $u$
+* An element of the factor vector, $u$
+* An element of the product vector, $w$
+* The sum of one or more elements in the product vector, $w$
 
 Explicitly expressing the force of infection in terms of this model we have.
 
 $$
-s = [I_a, I_p, I_m, I_s]
+v = [I_a, I_p, I_m, I_s, \beta_0, C_a, C_p, C_m, C_s, iso_m, iso_s, N]
 $$
 
 $$
-\theta = [\beta_0, C_a, C_p, C_m, C_s, iso_m, iso_s, N]
+u = [v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9, 1 - v_{10}, 1 - v_{11}, 1/v_{12}]
 $$
 
 $$
-u = [s_1, s_2, s_3, s_4, \theta_1, \theta_2, \theta_3, \theta_4, \theta_5, 1 - \theta_6, 1 - \theta_7, 1/\theta_8]
-$$
-
-$$
-v = [u_1  u_5  u_6          u_{12}, 
+w = [u_1  u_5  u_6          u_{12}, 
      u_2  u_5  u_7          u_{12},
      u_3  u_5  u_{10}  u_8  u_{12},
      u_4  u_5  u_{11}  u_9  u_{12}]
 $$
 
-And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the products vector, $v$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include on elements that are involved in the force of infection computation.
+And the non-zero element of $M$ determining the rate of flow from S to E is the sum of the elements in the product vector, $w$. Typically this summation will be taken over a subset of the elements of the products vector, but we simplified this example to include only elements that are involved in the force of infection computation.
 
 ## Roadmap
+
+### Common Factors
+
+It should be possible to express the force of infection in this way:
+```
+(beta0) * (1/N) * (
+  (Ia) * (Ca) +
+  (Ip) * (Cp) +
+  (Im) * (Cm) * (1-iso_m) +
+  (Is) * (Cs) * (1-iso_m))
+```
+
+Rather than this way:
+
+```
+(Ia) * (beta0) * (1/N) * (Ca) +
+(Ip) * (beta0) * (1/N) * (Cp) +
+(Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+(Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)
+```
 
 ### Avoid Copying on the R-Side
 
@@ -219,7 +236,7 @@ Permutation of the parameter, state, and factor vectors for computational effici
 Made some progress here -- we can visualize the dependence of state transition rates on variables (either parameters or state variables) by plotting a heat map with transitions on one axis and variables on the other. The colour of the heatmap depends on the number of times a variable appears in the expression for the transition rate.
 
 ```{r}
-m = as.matrix(ratemat_struct)
+m = as.matrix(rs)
 ca = corresp(m)
 heatmap(m[order(ca$rscore), order(ca$cscore)], 
         Colv = NA, Rowv = NA, scale = "none")
@@ -230,6 +247,14 @@ I've ordered the axes using correspondence analysis, which is a statistical tech
 ### Time Varying Parameters
 
 The model above does not consider time varying parameters, but this will need to be done obviously. My current sense is that for break-point-style parameter changes should be handled when we separate parameters to be optimized from the other parameters (see above). Log-linear-style parameter changes, should probably be handled when we introduce model specification in terms of matrices and vectors (see below).
+
+Now that I've read the MacPan manuscript I feel better about the log-linear model of the transmission rate, $\beta$. A generalization to something beyond the transmission rate is the following.
+
+$$
+\log(\theta_i(t)) = \log\left(\theta_i^{(0)}\right) + \mathbf{Xc}
+$$
+
+Each row of $\mathbf{X}$ corresponds to ... TODO
 
 ### Model Specification in Terms of Matrices and Vectors
 
@@ -247,9 +272,9 @@ There are some relevant notes on this topic here:  https://github.com/mac-theobi
 * Additional motivation: figuring out indexing ahead of simulation time is also likely to be an efficiency win.
 * 3 components of the model that involve updates of state variables (TODO: verify that the model works for these cases at a minimum):
   * FOI
-  * testing -- vec of weights that determines prob of being testing depending on state
+  * testing -- vec of weights that determines prob of being tested depending on state
   * vaccination -- we know realized vaccination rates, but need to scale to per-capita
-* kronecker products may only be convenient for producing a matrix, rather than updating it
+* Kronecker products may only be convenient for producing a matrix, rather than efficient at updating it
 * most elements of the rate matrix only need to be touched once (update/make rate matrix)
   * this needs to go into the indexing framework
   * by defining in terms of per-capita flows means that most elements can stay fixed
@@ -259,62 +284,3 @@ There are some relevant notes on this topic here:  https://github.com/mac-theobi
 * logs of parameters -- think more about them
 * block structure of rate dependence could have a connection with identifiability -- there exists a literature on identifiability of dynamical systems models that boarders on practical
 * `TMB::MakeADFun` has a map argument to specify that parameters can be fixed at their starting values or set groups of parameters to be equal -- should use this instead of switching back and forth between the `PARAMETER` and `DATA` macros
-
-
-## Unstructured / Incoherent Notes
-
-When coding this up, we do not need to explicitly store all of the zeros in $x$ and $y$. Instead we just track what elements of $M$ depend on what elements of $\theta$ and whether/how the dependence involves complements of the values of $\theta$.
-
-Before defining the interface, assume that we have a rate matrix on the R-side with named rows and columns, and a named parameter vector also on the R-side with named elements.
-```{r}
-theta <- McMasterPandemic:::read_params("ICU1.csv")
-state = McMasterPandemic:::make_state(params=theta)
-M <- McMasterPandemic:::make_ratemat(params=theta, state=state, sparse=TRUE)
-print(theta)
-print(M)
-```
-
-```{r}
-state_names = row.names(M)
-par_names = names(theta)
-print(state_names)
-print(par_names)
-```
-
-
-```{r}
-pfun <- McMasterPandemic:::pfun
-```
-
-
-```{r}
-make_beta_light <- function(state, params, full = TRUE) {
-    # does not use 'full' (argument)
-    # does not use 'testcats' (below)
-    Icats <- c("Ia", "Ip", "Im", "Is")
-    testcats <- c("_u", "_p", "_n", "_t")
-    Icat_prop_vec <- with(
-        as.list(params),
-        c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
-    )
-    names(Icat_prop_vec) <- Icats
-    beta_0 <- with(as.list(params), beta0 * Icat_prop_vec / N)
-    beta <- setNames(numeric(length(state)), names(state))
-    beta[names(beta_0)] <- beta_0
-    return(beta)
-}
-
-update_ratemat_light <- function(ratemat, state, params, testwt_scale = "N") {
-  # testwt_scale not needed
-  ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_beta(state, params))
-}
-
-update_foi_light <- function(state, params, beta) {
-  # params not needed
-  foi <- sum(state * beta)
-}
-
-```
-
-
-

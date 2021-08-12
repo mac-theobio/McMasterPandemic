@@ -22,7 +22,7 @@ the roadmap will move into defined spec versions. To update it use
 ## Versioned Rate Matrix Models
 
 There are currently no versioned rate matrix model specs. See below for
-experimental models.
+experimental specs.
 
 ## Experimental Rate Matrix Models
 
@@ -92,21 +92,21 @@ Users can define the structure of a rate matrix with a list of
 expressions, each determining the parameter and state dependence of a
 non-zero rate matrix element. For example,
 
-    list(
+    mk_ratemat_struct(
       # recovery
-      list(from = "Ia", to = "R",    
+      rate(from = "Ia", to = "R",    
            formula = ~ (gamma_a)),
       # hospitalizations
-      list(from = "Is", to = "ICUs", 
+      rate(from = "Is", to = "ICUs", 
            formula = ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s)),
       # force of infection
-      list(from = "S",  to = "E",
+      rate(from = "S",  to = "E",
            formula = ~ 
              (Ia) * (beta0) * (1/N) * (Ca) + 
              (Ip) * (beta0) * (1/N) * (Cp) + 
              (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) + 
              (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)),
-      list('etc...')
+      rate('etc...')
     )
 
 The formulas allow the following operations:
@@ -147,7 +147,7 @@ matrix structure can be flexibly described by the user.
     ## 
     ##     select
 
-    ratemat_struct = mk_ratemat_struct(
+    rs = mk_ratemat_struct(
       rate("E", "Ia", ~ (alpha) * (sigma)),
       rate("E", "Ip", ~ (1 - alpha) * (sigma)),
       rate("Ia", "R", ~ (gamma_a)),
@@ -175,7 +175,7 @@ matrix structure can be flexibly described by the user.
 
     # sanity check:
     all.equal(
-      c(do_step2(state, M, params, ratemat_struct)),
+      c(do_step2(state, M, params, rs)),
       c(do_step(state, params, M, do_hazard = FALSE, do_exponential = FALSE))
     )
 
@@ -185,43 +185,43 @@ We can parse this structure to produce information about how to update
 the elements of the rate matrix. First, all of the *factors* over all
 rate matrix entries in this model can be displayed.
 
-    attributes(ratemat_struct)$all_factors
+    attributes(rs)$all_factors
 
-    ##             var compl invrs state_param_index factor_index
-    ## 1         alpha FALSE FALSE                20            1
-    ## 2         sigma FALSE FALSE                21            2
-    ## 3         alpha  TRUE FALSE                20            3
-    ## 4       gamma_a FALSE FALSE                22            4
-    ## 5            mu FALSE FALSE                28            5
-    ## 6       gamma_p FALSE FALSE                25            6
-    ## 7            mu  TRUE FALSE                28            7
-    ## 8       gamma_m FALSE FALSE                23            8
-    ## 9  nonhosp_mort  TRUE FALSE                31            9
-    ## 10         phi1 FALSE FALSE                34           10
-    ## 11      gamma_s FALSE FALSE                24           11
-    ## 12         phi1  TRUE FALSE                34           12
-    ## 13         phi2  TRUE FALSE                35           13
-    ## 14         phi2 FALSE FALSE                35           14
-    ## 15 nonhosp_mort FALSE FALSE                31           15
-    ## 16         psi1 FALSE FALSE                36           16
-    ## 17         psi2 FALSE FALSE                37           17
-    ## 18         psi3 FALSE FALSE                38           18
-    ## 19          rho FALSE FALSE                26           19
-    ## 20           Ia FALSE FALSE                 3           20
-    ## 21        beta0 FALSE FALSE                15           21
-    ## 22            N FALSE  TRUE                29           22
-    ## 23           Ca FALSE FALSE                16           23
-    ## 24           Ip FALSE FALSE                 4           24
-    ## 25           Cp FALSE FALSE                17           25
-    ## 26           Im FALSE FALSE                 5           26
-    ## 27           Cm FALSE FALSE                18           27
-    ## 28        iso_m  TRUE FALSE                32           28
-    ## 29           Is FALSE FALSE                 6           29
-    ## 30           Cs FALSE FALSE                19           30
+    ##             var compl invrs sim_updt opt_updt var_indx factor_indx
+    ## 1         alpha FALSE FALSE    FALSE    FALSE       20           1
+    ## 2         sigma FALSE FALSE    FALSE    FALSE       21           2
+    ## 3         alpha  TRUE FALSE    FALSE    FALSE       20           3
+    ## 4       gamma_a FALSE FALSE    FALSE    FALSE       22           4
+    ## 5            mu FALSE FALSE    FALSE    FALSE       28           5
+    ## 6       gamma_p FALSE FALSE    FALSE    FALSE       25           6
+    ## 7            mu  TRUE FALSE    FALSE    FALSE       28           7
+    ## 8       gamma_m FALSE FALSE    FALSE    FALSE       23           8
+    ## 9  nonhosp_mort  TRUE FALSE    FALSE    FALSE       31           9
+    ## 10         phi1 FALSE FALSE    FALSE    FALSE       34          10
+    ## 11      gamma_s FALSE FALSE    FALSE    FALSE       24          11
+    ## 12         phi1  TRUE FALSE    FALSE    FALSE       34          12
+    ## 13         phi2  TRUE FALSE    FALSE    FALSE       35          13
+    ## 14         phi2 FALSE FALSE    FALSE    FALSE       35          14
+    ## 15 nonhosp_mort FALSE FALSE    FALSE    FALSE       31          15
+    ## 16         psi1 FALSE FALSE    FALSE    FALSE       36          16
+    ## 17         psi2 FALSE FALSE    FALSE    FALSE       37          17
+    ## 18         psi3 FALSE FALSE    FALSE    FALSE       38          18
+    ## 19          rho FALSE FALSE    FALSE    FALSE       26          19
+    ## 20           Ia FALSE FALSE     TRUE     TRUE        3          20
+    ## 21        beta0 FALSE FALSE    FALSE     TRUE       15          21
+    ## 22            N FALSE  TRUE    FALSE    FALSE       29          22
+    ## 23           Ca FALSE FALSE    FALSE    FALSE       16          23
+    ## 24           Ip FALSE FALSE     TRUE     TRUE        4          24
+    ## 25           Cp FALSE FALSE    FALSE    FALSE       17          25
+    ## 26           Im FALSE FALSE     TRUE     TRUE        5          26
+    ## 27           Cm FALSE FALSE    FALSE    FALSE       18          27
+    ## 28        iso_m  TRUE FALSE    FALSE    FALSE       32          28
+    ## 29           Is FALSE FALSE     TRUE     TRUE        6          29
+    ## 30           Cs FALSE FALSE    FALSE    FALSE       19          30
 
 Here is an example where this input,
 
-    ratemat_struct[[5]][c('from', 'to', 'formula')]
+    rs$Ip_to_Is[c('from', 'to', 'formula')]
 
     ## $from
     ## [1] "Ip"
@@ -234,32 +234,42 @@ Here is an example where this input,
 
 parses as this,
 
-    ratemat_struct[[5]][c('factors')]
+    rs$Ip_to_Is$factors
 
-    ## $factors
-    ##   product_index     var compl invrs state_param_index factor_index
-    ## 1             1      mu  TRUE FALSE                28            7
-    ## 2             1 gamma_p FALSE FALSE                25            6
+    ##       var compl invrs prod_indx sim_updt opt_updt var_indx factor_indx
+    ## 1      mu  TRUE FALSE         1    FALSE    FALSE       28           7
+    ## 2 gamma_p FALSE FALSE         1    FALSE    FALSE       25           6
+
+More generally, all elements of a `ratemat-struct` object are
+`rate-struct` objects and contain the following elements:
+
+    names(rs$Is_to_H)
+
+    ## [1] "from"            "to"              "formula"         "factors"        
+    ## [5] "ratemat_indices"
+
+The `from` and `to` elements give the name of the associated states,
+`formula` gives the expression determining the rate, `factors` gives a
+data frame where each row is a *factor* (as defined above) required to
+compute the rate, and `ratemat_indices` gives the row and column index
+of the rate in the rate matrix.
 
 #### Mathematical Model Description
 
-We make a series of transformations from the state vector, *s*, and
-parameter vector to the rate matrix, *M*. Given how TMB works, we need
-to distinguish parameters that will be optimized, *θ*, from those that
-will remain constant, *η* (or those that are derived from parameters
-being optimized, e.g. time-varying??, still unsure how time varying
-machinery is working with run\_sim\_break or will work with
-run\_sim\_loglin). We define two intermediate vectors as well: the
-factor vector, *v*, and the product vector, *u*. At a high level we take
-the elements of the state vector and two parameter vectors into the
-non-zero elements of the rate matrix as follows.
-{*s*, *η*, *θ*} → *v* → *u* → *M*
+We make a series of transformations from the state vector and parameter
+vector to the rate matrix, *M*. We concatenate the state vector and
+parameter vector into a single *variable* vector called *v*. We define
+two intermediate vectors as well: the factor vector, *u*, and the
+product vector, *w*. At a high level we take the elements of the
+variable vector into the non-zero elements of the rate matrix as
+follows.
+*v* → *u* → *w* → *M*
 
-The factor vector, *v*, is a function of *s*, *η*, and *θ*. The
+The factor vector, *u*, is a function of the variable vector, *v*. The
 dependence is simple in that each scalar element of the factor vector
 can be one of the following.
 
--   \[identity\] an element, *x*, of *s*, *η*, or *θ*
+-   \[identity\] an element, *x*, of *v*
 -   \[complement\] the complement of this element, 1 − *x*
 -   \[inverse\] the inverse of this element, 1/*x*
 
@@ -269,35 +279,50 @@ although it will make age structure awkward given that such problems are
 more naturally handled with matrix operations like Kronecker products
 and sweeps.
 
-The product vector, *u*, is a function of *v*. The dependence is simple
+The product vector, *w*, is a function of *u*. The dependence is simple
 in that each element of the product vector is the product of one or more
-elements of the factor vector, *v*.
+elements of the factor vector, *u*.
 
 The non-zero elements of the rate matrix, *M*, can be any one of the
 following.
 
--   An element of the factor vector, *v*
--   An element of the product vector, *u*
--   The sum of one or more elements in the product vector, *u*
+-   An element of the factor vector, *u*
+-   An element of the product vector, *w*
+-   The sum of one or more elements in the product vector, *w*
 
 Explicitly expressing the force of infection in terms of this model we
 have.
 
-*s* = \[*I*<sub>*a*</sub>,*I*<sub>*p*</sub>,*I*<sub>*m*</sub>,*I*<sub>*s*</sub>\]
+*v* = \[*I*<sub>*a*</sub>,*I*<sub>*p*</sub>,*I*<sub>*m*</sub>,*I*<sub>*s*</sub>,*β*<sub>0</sub>,*C*<sub>*a*</sub>,*C*<sub>*p*</sub>,*C*<sub>*m*</sub>,*C*<sub>*s*</sub>,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
 
-*θ* = \[*β*<sub>0</sub>,*C*<sub>*a*</sub>,*C*<sub>*p*</sub>,*C*<sub>*m*</sub>,*C*<sub>*s*</sub>,*i**s**o*<sub>*m*</sub>,*i**s**o*<sub>*s*</sub>,*N*\]
+*u* = \[*v*<sub>1</sub>,*v*<sub>2</sub>,*v*<sub>3</sub>,*v*<sub>4</sub>,*v*<sub>5</sub>,*v*<sub>6</sub>,*v*<sub>7</sub>,*v*<sub>8</sub>,*v*<sub>9</sub>,1−*v*<sub>10</sub>,1−*v*<sub>11</sub>,1/*v*<sub>12</sub>\]
 
-*u* = \[*s*<sub>1</sub>,*s*<sub>2</sub>,*s*<sub>3</sub>,*s*<sub>4</sub>,*θ*<sub>1</sub>,*θ*<sub>2</sub>,*θ*<sub>3</sub>,*θ*<sub>4</sub>,*θ*<sub>5</sub>,1−*θ*<sub>6</sub>,1−*θ*<sub>7</sub>,1/*θ*<sub>8</sub>\]
-
-*v* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>10</sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
+*w* = \[*u*<sub>1</sub>*u*<sub>5</sub>*u*<sub>6</sub>*u*<sub>12</sub>,*u*<sub>2</sub>*u*<sub>5</sub>*u*<sub>7</sub>*u*<sub>12</sub>,*u*<sub>3</sub>*u*<sub>5</sub>*u*<sub>10</sub>*u*<sub>8</sub>*u*<sub>12</sub>,*u*<sub>4</sub>*u*<sub>5</sub>*u*<sub>11</sub>*u*<sub>9</sub>*u*<sub>12</sub>\]
 
 And the non-zero element of *M* determining the rate of flow from S to E
-is the sum of the elements in the products vector, *v*. Typically this
+is the sum of the elements in the product vector, *w*. Typically this
 summation will be taken over a subset of the elements of the products
-vector, but we simplified this example to include on elements that are
+vector, but we simplified this example to include only elements that are
 involved in the force of infection computation.
 
 ## Roadmap
+
+### Common Factors
+
+It should be possible to express the force of infection in this way:
+
+    (beta0) * (1/N) * (
+      (Ia) * (Ca) +
+      (Ip) * (Cp) +
+      (Im) * (Cm) * (1-iso_m) +
+      (Is) * (Cs) * (1-iso_m))
+
+Rather than this way:
+
+    (Ia) * (beta0) * (1/N) * (Ca) +
+    (Ip) * (beta0) * (1/N) * (Cp) +
+    (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+    (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m)
 
 ### Avoid Copying on the R-Side
 
@@ -346,7 +371,7 @@ plotting a heat map with transitions on one axis and variables on the
 other. The colour of the heatmap depends on the number of times a
 variable appears in the expression for the transition rate.
 
-    m = as.matrix(ratemat_struct)
+    m = as.matrix(rs)
 
     ## Warning in mask$eval_all_mutate(quo): NAs introduced by coercion
 
@@ -356,7 +381,7 @@ variable appears in the expression for the transition rate.
     heatmap(m[order(ca$rscore), order(ca$cscore)], 
             Colv = NA, Rowv = NA, scale = "none")
 
-![](indexing_files/figure-markdown_strict/unnamed-chunk-10-1.png)
+![](/Users/stevenwalker/Development/McMasterPandemic/notes/indexing/doc-output/indexing_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
 I’ve ordered the axes using correspondence analysis, which is a
 statistical technique for finding block structure in matrices. Block
@@ -373,6 +398,14 @@ parameters to be optimized from the other parameters (see above).
 Log-linear-style parameter changes, should probably be handled when we
 introduce model specification in terms of matrices and vectors (see
 below).
+
+Now that I’ve read the MacPan manuscript I feel better about the
+log-linear model of the transmission rate, *β*. A generalization to
+something beyond the transmission rate is the following.
+
+log (*θ*<sub>*i*</sub>(*t*)) = log (*θ*<sub>*i*</sub><sup>(0)</sup>) + **X****c**
+
+Each row of **X** corresponds to … TODO
 
 ### Model Specification in Terms of Matrices and Vectors
 
@@ -404,110 +437,35 @@ transposing.
 There are some relevant notes on this topic here:
 <https://github.com/mac-theobio/McMasterPandemic/blob/master/notes/structure.md#general-concerns>
 
-## Unstructured / Incoherent Notes
+## Steve’s Notes on Meeting with Ben (2021-08-09)
 
-When coding this up, we do not need to explicitly store all of the zeros
-in *x* and *y*. Instead we just track what elements of *M* depend on
-what elements of *θ* and whether/how the dependence involves complements
-of the values of *θ*.
-
-Before defining the interface, assume that we have a rate matrix on the
-R-side with named rows and columns, and a named parameter vector also on
-the R-side with named elements.
-
-    theta <- McMasterPandemic:::read_params("ICU1.csv")
-    state = McMasterPandemic:::make_state(params=theta)
-    M <- McMasterPandemic:::make_ratemat(params=theta, state=state, sparse=TRUE)
-    print(theta)
-
-    ##        beta0           Ca           Cp           Cm           Cs        alpha 
-    ## 1.000000e+00 6.666667e-01 1.000000e+00 1.000000e+00 1.000000e+00 3.333333e-01 
-    ##        sigma      gamma_a      gamma_m      gamma_s      gamma_p          rho 
-    ## 1.923077e-01 1.428571e-01 1.428571e-01 1.748252e-01 2.000000e+00 1.000000e-01 
-    ##        delta           mu            N           E0 nonhosp_mort        iso_m 
-    ## 0.000000e+00 9.560000e-01 1.000000e+06 5.000000e+00 0.000000e+00 0.000000e+00 
-    ##        iso_s         phi1         phi2         psi1         psi2         psi3 
-    ## 0.000000e+00 7.600000e-01 5.000000e-01 5.000000e-02 1.250000e-01 2.000000e-01 
-    ##       c_prop c_delay_mean   c_delay_cv    proc_disp         zeta 
-    ## 1.000000e-01 1.100000e+01 2.500000e-01 0.000000e+00 0.000000e+00
-
-    print(M)
-
-    ## 14 x 14 sparse Matrix of class "dgTMatrix"
-
-    ##    [[ suppressing 14 column names 'S', 'E', 'Ia' ... ]]
-
-    ##                                                                               
-    ## S    . 1.666667e-06 .          .         .     .     .         .    .         
-    ## E    . .            0.06410256 0.1282051 .     .     .         .    .         
-    ## Ia   . .            .          .         .     .     .         .    .         
-    ## Ip   . .            .          .         1.912 0.088 .         .    .         
-    ## Im   . .            .          .         .     .     .         .    .         
-    ## Is   . .            .          .         .     .     0.1328671 .    0.02097902
-    ## H    . .            .          .         .     .     .         .    .         
-    ## H2   . .            .          .         .     .     .         .    .         
-    ## ICUs . .            .          .         .     .     .         0.05 .         
-    ## ICUd . .            .          .         .     .     .         .    .         
-    ## D    . .            .          .         .     .     .         .    .         
-    ## R    . .            .          .         .     .     .         .    .         
-    ## X    . .            .          .         .     .     .         .    .         
-    ## V    . .            .          .         .     .     .         .    .         
-    ##                                            
-    ## S    .          .     .         .         .
-    ## E    .          .     .         .         .
-    ## Ia   .          .     0.1428571 .         .
-    ## Ip   .          .     .         .         .
-    ## Im   .          .     0.1428571 .         .
-    ## Is   0.02097902 .     .         0.1328671 .
-    ## H    .          .     0.1000000 .         .
-    ## H2   .          .     0.2000000 .         .
-    ## ICUs .          .     .         .         .
-    ## ICUd .          0.125 .         .         .
-    ## D    .          .     .         .         .
-    ## R    .          .     .         .         .
-    ## X    .          .     .         .         .
-    ## V    .          .     .         .         .
-
-    state_names = row.names(M)
-    par_names = names(theta)
-    print(state_names)
-
-    ##  [1] "S"    "E"    "Ia"   "Ip"   "Im"   "Is"   "H"    "H2"   "ICUs" "ICUd"
-    ## [11] "D"    "R"    "X"    "V"
-
-    print(par_names)
-
-    ##  [1] "beta0"        "Ca"           "Cp"           "Cm"           "Cs"          
-    ##  [6] "alpha"        "sigma"        "gamma_a"      "gamma_m"      "gamma_s"     
-    ## [11] "gamma_p"      "rho"          "delta"        "mu"           "N"           
-    ## [16] "E0"           "nonhosp_mort" "iso_m"        "iso_s"        "phi1"        
-    ## [21] "phi2"         "psi1"         "psi2"         "psi3"         "c_prop"      
-    ## [26] "c_delay_mean" "c_delay_cv"   "proc_disp"    "zeta"
-
-    pfun <- McMasterPandemic:::pfun
-
-    make_beta_light <- function(state, params, full = TRUE) {
-        # does not use 'full' (argument)
-        # does not use 'testcats' (below)
-        Icats <- c("Ia", "Ip", "Im", "Is")
-        testcats <- c("_u", "_p", "_n", "_t")
-        Icat_prop_vec <- with(
-            as.list(params),
-            c(Ca, Cp, (1 - iso_m) * Cm, (1 - iso_s) * Cs)
-        )
-        names(Icat_prop_vec) <- Icats
-        beta_0 <- with(as.list(params), beta0 * Icat_prop_vec / N)
-        beta <- setNames(numeric(length(state)), names(state))
-        beta[names(beta_0)] <- beta_0
-        return(beta)
-    }
-
-    update_ratemat_light <- function(ratemat, state, params, testwt_scale = "N") {
-      # testwt_scale not needed
-      ratemat[pfun("S", "E", ratemat)] <- update_foi(state, params, make_beta(state, params))
-    }
-
-    update_foi_light <- function(state, params, beta) {
-      # params not needed
-      foi <- sum(state * beta)
-    }
+-   very important to be able to specify multiple rates in the model
+    specification machinery – this is what the regex stuff is doing now
+-   Additional motivation: figuring out indexing ahead of simulation
+    time is also likely to be an efficiency win.
+-   3 components of the model that involve updates of state variables
+    (TODO: verify that the model works for these cases at a minimum):
+    -   FOI
+    -   testing – vec of weights that determines prob of being tested
+        depending on state
+    -   vaccination – we know realized vaccination rates, but need to
+        scale to per-capita
+-   Kronecker products may only be convenient for producing a matrix,
+    rather than efficient at updating it
+-   most elements of the rate matrix only need to be touched once
+    (update/make rate matrix)
+    -   this needs to go into the indexing framework
+    -   by defining in terms of per-capita flows means that most
+        elements can stay fixed
+        1.  once at beginning of opt run
+        2.  every time a new set of params are updated
+        3.  done within the simulation (e.g. state-dependence and time
+            varying parameters
+-   logs of parameters – think more about them
+-   block structure of rate dependence could have a connection with
+    identifiability – there exists a literature on identifiability of
+    dynamical systems models that boarders on practical
+-   `TMB::MakeADFun` has a map argument to specify that parameters can
+    be fixed at their starting values or set groups of parameters to be
+    equal – should use this instead of switching back and forth between
+    the `PARAMETER` and `DATA` macros
