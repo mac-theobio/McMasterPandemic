@@ -167,6 +167,26 @@ do_step2 = function(state, M, params, ratemat_struct) {
   )
 }
 
+to_tmb = function(x) {
+  ratemat_indices = sapply(x, `[[`, 'ratemat_indices')
+  spi = {lapply(x, function(y) {y$factors$var_indx}) %>% unlist}
+  count = sapply(x, function(y) {
+    nrow(y$factors)
+  })
+  modifier = lapply(unname(rs), '[[', 'factors') %>%
+    bind_rows(.id = 'rate_indx') %>%
+    mutate(add = as.logical(c(0, diff(as.numeric(d$prod_indx))))) %>%
+    mutate(modifier = 4 * add + 2 * invrs + compl) %>%
+    getElement(11L)
+  names(spi) = colnames(ratemat_indices) = names(count) = NULL
+  list(
+    from = ratemat_indices[1,],
+    to = ratemat_indices[2,],
+    count = count,
+    spi = spi,
+    modifier = modifier
+  )
+}
 
 rs = mk_ratemat_struct(
   rate("E", "Ia", ~ (alpha) * (sigma)),
@@ -194,3 +214,4 @@ rs = mk_ratemat_struct(
          (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
 )
 
+to_tmb(rs)
