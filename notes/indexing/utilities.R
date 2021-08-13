@@ -176,7 +176,7 @@ to_tmb = function(x) {
   })
   modifier = lapply(unname(x), '[[', 'factors') %>%
     bind_rows(.id = 'rate_indx') %>%
-    mutate(add = as.logical(c(0, diff(as.numeric(d$prod_indx))))) %>%
+    mutate(add = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
     mutate(modifier = 4 * add + 2 * invrs + compl) %>%
     getElement(11L)
   names(spi) = colnames(ratemat_indices) = names(count) = NULL
