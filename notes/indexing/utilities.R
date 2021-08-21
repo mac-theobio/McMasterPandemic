@@ -3,6 +3,8 @@ library(tidyr)
 library(tibble)
 library(MASS)
 
+options(macpan_pfun_method = "grep")
+
 opt_list = 'beta0' # vector of parameters to optimize
 params = McMasterPandemic::read_params('ICU1.csv')
 params_to_opt = params[opt_list]
@@ -12,6 +14,12 @@ M = McMasterPandemic::make_ratemat(state, params)
 state_params = c(state, params)
 pfun = McMasterPandemic:::pfun
 do_step = McMasterPandemic::do_step
+
+params_vax = McMasterPandemic::expand_params_vax(params)
+state_vax = McMasterPandemic::make_state(params = params_vax, vaxify = TRUE)
+
+params = params_vax; state = state_vax
+M = McMasterPandemic::make_ratemat(state, params)
 
 #' Rate Structure
 #'
@@ -29,6 +37,9 @@ rate = function(from, to, formula) {
             length(from) == 1L,
             length(to) == 1L,
             inherits(formula, 'formula'))
+
+  print(from)
+  print(to)
 
   # regex pattern for finding variables
   # (e.g. any parameter or state variable)
