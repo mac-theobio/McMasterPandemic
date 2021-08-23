@@ -17,17 +17,57 @@ Each frozen version of the spec must contain the following five sections.
 
 * _New Capabilities_ -- very short summary; refer to previous versions for background
 * _Assumptions_ -- known assumptions that can help users/developers understand if this version will suite their needs
-* _Mathematical Description_ -- precise definition of the model; refer to previous versions for definitions being reused
+* _Mathematical Description_ -- precise definition of the new or changed features of the model; refer to previous versions for definitions being reused
 * _User Interface_ -- short description and example of the user interface in `R` for model specification
 * _Data Structure_ -- definition of the data structure to be passed from `R` to `TMB`/`C++` that stores the model structure
 
 Versions of the spec that are marked as '[future]' define the roadmap and only need to contain the _New Capabilities_ section.
+
+# [future] 0.0.1-alpha-3
+
+## New Capabilities (0.0.1-alpha-3)
+
+Time-varying parameters.
 
 # [future] 0.0.1-alpha-2
 
 ## New Capabilities (0.0.1-alpha-2)
 
 Iterated updates of the state vector.
+
+## Assumptions (0.0.1-alpha-2)
+
+1. No parameter varies throughout a simulation
+2. `do_exponential == FALSE`, `do_hazard == FALSE`
+4. No stochasticity
+5. `MP_badsum_action = 'ignore'`
+6. Unit time step, `dt = 1`
+7. Assumptions 2-4 from 0.0.1-alpha-1
+
+## Mathematical Description (0.0.1-alpha-2)
+
+Let $s$ be the state vector and $M$ be the rate matrix. Define the flows matrix, $F$ to have the same dimensions as $M$. The elements of $F$ are given by the following.
+
+$$
+F_{ij} = M_{ij} s_i
+$$
+
+Let $f_{\text{in}}$ and $f_{\text{out}}$ be the inflow and outflow vectors, given by the column sums and row sums of $F$ respectively. If the use specifies some states as being parallel accumulators, then the columns associated with those special states are removed from $F$ before the row sums are taken to compute $f_{\text{out}}$.
+
+With these definitions in place the state vector update at each iteration is given by the following.
+
+$$
+s \to s - f_{\text{out}} + f_{\text{in}}
+$$
+
+## Data Structure (0.0.1-alpha-2)
+
+The following additional pieces of information need to be provided in order to make state vector updates, in addition to rate matrix updates.
+
+* A vector, `si` of indices into `state_param` such that `state_param[si]` returns the state vector
+   * A good choice for `si` is `1:N` where `N` is the number of state variables, but this is only possible if the first `N` elements of `state_param` are the state variables and they are in the same order as the rows and columns of the rate matrix
+* A vector, `ai` of indices into the rows (or equivalently columns) of the rate matrix, identifying the states that are parallel accumulators
+* The number of iterations of the state matrix
 
 # [future] 0.0.1-alpha-1
 
@@ -37,10 +77,10 @@ Update the elements of a rate matrix on the `TMB`/`C++` side using a restricted 
 
 ## Assumptions (0.0.1-alpha-1)
 
-* No parameter varies throughout a simulation
-* A `param_pansim` and a `state_pansim` object exists or can be constructed
-* If `make_state` is used to create the `state_pansim` object, `vaxify`, `ageify`, and `testify` are all set to `FALSE`
-* The results of running the parameter and state vectors against `make_ratemat` are stored
+1. The state vector is not actually updated, making this a more-or-less useless spec (but it provides a good 'warm-up' and sanity check)
+2. A `param_pansim` and a `state_pansim` object exists or can be constructed
+3. If `make_state` is used to create the `state_pansim` object, `vaxify`, `ageify`, and `testify` are all set to `FALSE`
+4. The results of running the parameter and state vectors through `make_ratemat` are stored
 
 ## Mathematical Description (0.0.1-alpha-1)
 
@@ -146,4 +186,3 @@ The data structure must contain the following six objects.
 * An integer vector, `to`, of 1-based indices, the $i$th element of which points to the column of the $i$th non-zero rate matrix element
 * An integer vector, `count`, the $i$th element of which gives the number of factors used to calculate the $i$th non-zero rate matrix element
    * In terms of the Mathematical Description above, the elements of `count` store these sums $\sum_{j=1}^{n_i}m_{ij}$
-
