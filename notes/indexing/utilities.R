@@ -41,9 +41,6 @@ rate = function(from, to, formula) {
             length(to) == 1L,
             inherits(formula, 'formula'))
 
-  print(from)
-  print(to)
-
   # regex pattern for finding variables
   # (e.g. any parameter or state variable)
   # variable_regex looks like this '(beta0|Ca|...|zeta|S|E|Ia|...|V)'
@@ -181,10 +178,13 @@ do_step2 = function(state, M, params, ratemat_struct) {
   )
 }
 
-#' @param x a ratemat-struct
+#' @param rate_list a list of rate-struct objects
+#' @param state state vector
+#' @param params parameter vector
 #' @param p_accum vector of regular expressions for finding parallel
+#' @param iters number of state vector updates
 #' accumulators
-to_tmb = function(rate_list, state, params, p_accum) {
+to_tmb = function(rate_list, state, params, p_accum, iters) {
   state_params = c(state, params)
   x = do.call(mk_ratemat_struct, rate_list)
   pai = (
@@ -210,7 +210,9 @@ to_tmb = function(rate_list, state, params, p_accum) {
     count = count,
     spi = spi,
     modifier = modifier,
-    pai = pai
+    pai = pai,
+    si = seq_along(state),
+    iters = iters
   )
 }
 
@@ -240,6 +242,6 @@ rl = list(
          (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
 )
 
-to_tmb(rl, state, params, p_accum)
+to_tmb(rl, state, params, p_accum, 10)
 
 
