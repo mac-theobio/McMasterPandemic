@@ -243,5 +243,3 @@ rl = list(
 )
 
 to_tmb(rl, state, params, p_accum, 10)
-
-

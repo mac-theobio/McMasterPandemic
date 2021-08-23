@@ -23,11 +23,17 @@ Each frozen version of the spec must contain the following five sections.
 
 Versions of the spec that are marked as '[future]' define the roadmap and only need to contain the _New Capabilities_ section.
 
+# [future] 0.0.1-alpha-4
+
+## New Capabilities 0.0.1-alpha-4
+
+Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
+
 # [future] 0.0.1-alpha-3
 
 ## New Capabilities (0.0.1-alpha-3)
 
-Time-varying parameters.
+Time-varying parameters.  There is a question of whether we should start with break-points or just jump to general log-linear model.
 
 # [future] 0.0.1-alpha-2
 
@@ -59,6 +65,10 @@ With these definitions in place the state vector update at each iteration is giv
 $$
 s \to s - f_{\text{out}} + f_{\text{in}}
 $$
+
+## User Interface (0.0.1-alpha-2)
+
+In addition to the interface elements specified in 0.0.1-alpha-1, the user needs to specify some additional arguments. We need a character vector of regex patterns with which to find the indices of the parallel accumulators amongst the state names (e.g. `r c("X", "N", "P", "V")`). We also need to specify the number of iterative state vector updates.
 
 ## Data Structure (0.0.1-alpha-2)
 
