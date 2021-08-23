@@ -15,11 +15,14 @@ state_params = c(state, params)
 pfun = McMasterPandemic:::pfun
 do_step = McMasterPandemic::do_step
 
-params_vax = McMasterPandemic::expand_params_vax(params)
-state_vax = McMasterPandemic::make_state(params = params_vax, vaxify = TRUE)
+p_accum = c("X", "N", "P", "V")
 
-params = params_vax; state = state_vax
-M = McMasterPandemic::make_ratemat(state, params)
+
+#params_vax = McMasterPandemic::expand_params_vax(params)
+#state_vax = McMasterPandemic::make_state(params = params_vax, vaxify = TRUE)
+
+#params = params_vax; state = state_vax
+#M = McMasterPandemic::make_ratemat(state, params)
 
 #' Rate Structure
 #'
@@ -179,7 +182,16 @@ do_step2 = function(state, M, params, ratemat_struct) {
 }
 
 #' @param x a ratemat-struct
-to_tmb = function(x) {
+#' @param p_accum vector of regular expressions for finding parallel
+#' accumulators
+to_tmb = function(rate_list, state, params, p_accum) {
+  state_params = c(state, params)
+  x = do.call(mk_ratemat_struct, rate_list)
+  pai = (
+    p_accum
+    %>% lapply(function(x) which(grepl(x, colnames(M))))
+    %>% unlist
+  )
   ratemat_indices = sapply(x, `[[`, 'ratemat_indices')
   spi = {lapply(x, function(y) {y$factors$var_indx}) %>% unlist}
   count = sapply(x, function(y) {
@@ -192,15 +204,17 @@ to_tmb = function(x) {
     getElement(11L)
   names(spi) = colnames(ratemat_indices) = names(count) = NULL
   list(
+    sp = state_params,
     from = ratemat_indices[1,],
     to = ratemat_indices[2,],
     count = count,
     spi = spi,
-    modifier = modifier
+    modifier = modifier,
+    pai = pai
   )
 }
 
-rs = mk_ratemat_struct(
+rl = list(
   rate("E", "Ia", ~ (alpha) * (sigma)),
   rate("E", "Ip", ~ (1 - alpha) * (sigma)),
   rate("Ia", "R", ~ (gamma_a)),
@@ -226,4 +240,6 @@ rs = mk_ratemat_struct(
          (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
 )
 
-to_tmb(rs)
+to_tmb(rl, state, params, p_accum)
+
+
