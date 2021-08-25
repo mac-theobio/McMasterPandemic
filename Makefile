@@ -148,18 +148,27 @@ pkgtest:
 pkgcheck:
 	echo "devtools::check('.')" | $(R) --slave
 
+tmbtest:
+	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
+
+vignettes/flex_specs.html: vignettes/flex_specs.rmd
+	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
+	
+
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
 CPP_SRC=
 
-dependencies:
+dependencies:	
 	Rscript misc/dependencies.R
 
 ## FIXME: depend on ??
+## added $(BUILDARGS) so that this is possible:
+## make install BUILDARGS="--no-build-vignettes"
 build-package: $(TARBALL)
 $(TARBALL): ./NAMESPACE
-	$(R) CMD build .
+	$(R) CMD build $(BUILDARGS) .
 	mv $@ ..
 
 install: $(TARBALL)

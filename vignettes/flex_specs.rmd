@@ -1,17 +1,19 @@
 ---
-title: "Flexible Modelling Specifications"
+title: "Flexible Compartmental Modelling Specifications"
 author: "Steve Walker, Weiguang Guan, Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Flexible Modelling Specifications}
+  %\VignetteIndexEntry{Flexible Compartmental Modelling Specifications}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 
-`McMasterPandemic` is a modelling tool that was rapidly developed to provide timely insights into the Covid-19 Pandemic in Canada. We are currently refactoring this tool so that it is faster and more general. This refactoring will be done incrementally by implementing a series of versioned specifications that define each step. This document outlines these specifications, and provides a roadmap for planning future specifications.
+[McMasterPandemic](https://github.com/mac-theobio/McMasterPandemic) is a modelling tool that was rapidly developed to provide timely insights into the Covid-19 Pandemic in Canada. We are currently refactoring this tool so that it is faster and more general. This refactoring will be done incrementally by implementing a series of versioned specifications that define each step. This document outlines these specifications, and provides a roadmap for planning future specifications.
 
-We are using semantic versioning https://semver.org/ to provide versions for the specs themselves. All versions of the spec that have not been implemented in a released McMasterPandemic R package have pre-release `-alpha-x` identifiers (https://semver.org/#spec-item-9).
+We are using semantic versioning https://semver.org/ to provide versions for the specs themselves. All versions of the spec that have not been implemented in a released version of the McMasterPandemic R package have major version 0 (e.g. 0.x.y, https://semver.org#spec-item-4) -- currently all of them.
+
+We use `r options(macpan_spec_version = '0.0.1')`
 
 Each frozen version of the spec must contain the following five sections.
 
@@ -21,36 +23,71 @@ Each frozen version of the spec must contain the following five sections.
 * _User Interface_ -- short description and example of the user interface in `R` for model specification
 * _Data Structure_ -- definition of the data structure to be passed from `R` to `TMB`/`C++` that stores the model structure
 
-Versions of the spec that are marked as '[future]' define the roadmap and only need to contain the _New Capabilities_ section.
+# Table of Contents
 
-# [future] 0.0.1-alpha-4
+## Released Versions
 
-## New Capabilities 0.0.1-alpha-4
+The specs for the following versions are released, which means that they will not change.
+
+* [0.0.1 -- Simple rate matrix updates](#v0.0.1)
+
+## Future Versions
+
+The specs for the following versions are unreleased, which means that they will probably change and are actively being developed. These versions also serve as a roadmap.
+
+* [0.0.2 -- Simulation (iterated state variable updates)](#v0.0.2)
+* [0.0.3 -- Time-varying parameters](#v0.0.3)
+* [0.0.4 -- Model structure](#v0.0.4)
+* [0.0.5 -- Condensation and calibration](#v0.0.5)
+* [0.0.6 -- Hazard and ODE simulation](#v0.0.6)
+* [0.0.7 -- Stochasticity](#v0.0.7)
+
+# v0.0.7
+
+## New Capabilities 0.0.7
+
+Stochasticity.
+
+# v0.0.6
+
+## New Capabilities 0.0.6
+
+Hazard and exponential simulation.
+
+# v0.0.5
+
+## New Capabilities 0.0.5
+
+Condensation and calibration.
+
+# v0.0.4
+
+## New Capabilities (0.0.4)
 
 Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
 
-# [future] 0.0.1-alpha-3
+# v0.0.3
 
-## New Capabilities (0.0.1-alpha-3)
+## New Capabilities (0.0.3)
 
 Time-varying parameters.  There is a question of whether we should start with break-points or just jump to general log-linear model.
 
-# [future] 0.0.1-alpha-2
+# v0.0.2
 
-## New Capabilities (0.0.1-alpha-2)
+## New Capabilities (0.0.2)
 
 Iterated updates of the state vector.
 
-## Assumptions (0.0.1-alpha-2)
+## Assumptions (0.0.2)
 
 1. No parameter varies throughout a simulation
 2. `do_exponential == FALSE`, `do_hazard == FALSE`
 4. No stochasticity
 5. `MP_badsum_action = 'ignore'`
 6. Unit time step, `dt = 1`
-7. Assumptions 2-4 from 0.0.1-alpha-1
+7. Assumptions 2-4 from 0.0.1
 
-## Mathematical Description (0.0.1-alpha-2)
+## Mathematical Description (0.0.2)
 
 Let $s$ be the state vector and $M$ be the rate matrix. Define the flows matrix, $F$ to have the same dimensions as $M$. The elements of $F$ are given by the following.
 
@@ -66,33 +103,33 @@ $$
 s \to s - f_{\text{out}} + f_{\text{in}}
 $$
 
-## User Interface (0.0.1-alpha-2)
+## User Interface (0.0.2)
 
-In addition to the interface elements specified in 0.0.1-alpha-1, the user needs to specify some additional arguments. We need a character vector of regex patterns with which to find the indices of the parallel accumulators amongst the state names (e.g. `r c("X", "N", "P", "V")`). We also need to specify the number of iterative state vector updates.
+In addition to the interface elements specified in 0.0.1, the user needs to specify some additional arguments. We need a character vector of regex patterns with which to find the indices of the parallel accumulators amongst the state names (e.g. `r c("X", "N", "P", "V")`). We also need to specify the number of iterative state vector updates.
 
-## Data Structure (0.0.1-alpha-2)
+## Data Structure (0.0.2)
 
 The following additional pieces of information need to be provided in order to make state vector updates, in addition to rate matrix updates.
 
 * A vector, `si` of indices into `state_param` such that `state_param[si]` returns the state vector
    * A good choice for `si` is `1:N` where `N` is the number of state variables, but this is only possible if the first `N` elements of `state_param` are the state variables and they are in the same order as the rows and columns of the rate matrix
 * A vector, `ai` of indices into the rows (or equivalently columns) of the rate matrix, identifying the states that are parallel accumulators
-* The number of iterations of the state matrix
+* The number of iterations of the state vector
 
-# [future] 0.0.1-alpha-1
+# v0.0.1
 
-## New Capabilities (0.0.1-alpha-1)
+## New Capabilities (0.0.1)
 
 Update the elements of a rate matrix on the `TMB`/`C++` side using a restricted set of operations (complements, inverses, sums, and products). The update formula must be specified separately for each non-zero element.
 
-## Assumptions (0.0.1-alpha-1)
+## Assumptions (0.0.1)
 
 1. The state vector is not actually updated, making this a more-or-less useless spec (but it provides a good 'warm-up' and sanity check)
 2. A `param_pansim` and a `state_pansim` object exists or can be constructed
 3. If `make_state` is used to create the `state_pansim` object, `vaxify`, `ageify`, and `testify` are all set to `FALSE`
 4. The results of running the parameter and state vectors through `make_ratemat` are stored
 
-## Mathematical Description (0.0.1-alpha-1)
+## Mathematical Description (0.0.1)
 
 Any element, $x$, of either the parameter or state vector can be used to define a _factor_ in one of the following three forms.
 
@@ -116,7 +153,7 @@ $$
 
 where $y_{ijk}$ is the $k$th factor associated with the $j$th product associated with the $i$th non-zero rate matrix element.
 
-## User Interface (0.0.1-alpha-1)
+## User Interface (0.0.1)
 
 Users can define the structure of a rate matrix with a list of expressions, each determining the parameter-dependence and/or state-dependence of a single non-zero rate matrix element. The standard `McMasterPandemic` introductory example model can be defined as follows.
 
@@ -157,7 +194,7 @@ Each call to `rate` defines the dependence of a single non-zero rate matrix elem
    * Factors can be multiplied together with the `*` operator to produce a _product_
    * Products and factors can be added together with the `+` operator to produce a non-zero rate matrix element
 
-## Data Structure (0.0.1-alpha-1)
+## Data Structure (0.0.1)
 
 ```{r, echo=FALSE}
 to_tmb_eg = list(
