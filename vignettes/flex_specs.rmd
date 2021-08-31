@@ -15,9 +15,9 @@ vignette: >
 
 # Table of Contents
 
-* [Versioning and Lifecycle](https://canmod.net/misc/flex_specs#Versioning-and-Lifecycle)
-* [Version Summary](https://canmod.net/misc/flex_specs#Version-Summary)
-* [Version Descriptions](https://canmod.net/misc/flex_specs#Version-Descriptions)
+* [Versioning and Lifecycle](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+* [Version Summary](https://canmod.net/misc/flex_specs#version-summary)
+* [Version Descriptions](https://canmod.net/misc/flex_specs#version-descriptions)
 
 # Versioning and Lifecycle
 
