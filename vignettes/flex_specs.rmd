@@ -1,7 +1,7 @@
 ---
 title: "Flexible Compartmental Modelling Specifications"
 author: "Steve Walker, Weiguang Guan, Ben Bolker"
-date: "`r Sys.Date()`"
+date: 
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Flexible Compartmental Modelling Specifications}
@@ -9,7 +9,7 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-[![Live Version](https://img.shields.io/static/v1.svg?label=Live&message=Document&color=green)](https://canmod.net/misc/flex_specs)
+[![Live Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_specs)
 
 [McMasterPandemic](https://github.com/mac-theobio/McMasterPandemic) is a modelling tool that was rapidly developed to provide timely insights into the Covid-19 Pandemic in Canada. We are currently refactoring this tool so that it is faster and more general. This refactoring will be done incrementally by implementing a series of versioned specifications that define each step. This document outlines these specifications, and provides a roadmap for planning future specifications.
 
@@ -44,12 +44,13 @@ The specs for the following versions are frozen, which means that they will not 
 
 The specs for the following versions are being actively developed and modified. These versions also serve as a roadmap. Note that version numbers of experimental versions can change without warning.
 
-* [0.0.3 -- Time-varying parameters](#v0.0.3)
-* [0.0.4 -- Model structure](#v0.0.4)
-* [0.0.5 -- Condensation and calibration](#v0.0.5)
-* [0.0.6 -- Hazard and ODE simulation](#v0.0.6)
-* [0.0.7 -- Stochasticity](#v0.0.7)
-* [0.0.8 -- State dependent time-variation of parameters](#v0.0.8)
+* [0.0.3 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.3)
+* [0.0.4 -- Log-linear exogenous time-variation of parameters](#v0.0.3)
+* [0.1.0 -- Model structure](#v0.0.4)
+* [0.2.0 -- Condensation and calibration](#v0.0.5)
+* [0.2.1 -- Hazard and ODE simulation](#v0.0.6)
+* [0.2.2 -- Stochasticity](#v0.0.7)
+* [0.3.0 -- Endogenous time-variation of parameters](#v0.0.8)
 
 ## Archived Versions
 
@@ -57,37 +58,45 @@ The specs for archived versions are frozen but no longer respected by the `McMas
 
 # Version Descriptions
 
-## v0.0.8
+## v0.3.0
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities 0.0.8
+### New Capabilities (0.3.0)
 
-State dependent time-variation of parameters.
+Endogenous time-variation of parameters.
 
-## v0.0.7
+## v0.2.2
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities 0.0.7
+### New Capabilities (0.2.2)
 
 Stochasticity.
 
-## v0.0.6
+## v0.2.1
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities 0.0.6
+### New Capabilities (0.2.1)
 
 Hazard and exponential simulation.
 
-## v0.0.5
+## v0.2.0
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities 0.0.5
+### New Capabilities (0.2.0)
 
 Condensation and calibration.
+
+## v0.1.0
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.1.0)
+
+Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
 
 ## v0.0.4
 
@@ -95,23 +104,12 @@ Condensation and calibration.
 
 ### New Capabilities (0.0.4)
 
-Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
+Log-linear exogenous time-variation of parameters.
 
-## v0.0.3
+### Mathematical Description (0.0.4)
 
-[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
 
-There is a lot here for this version, but it is far from complete/correct and still pretty scattered.
-
-### New Capabilities (0.0.3)
-
-Time-varying parameters.
-
-### Assumptions (0.0.3)
-
-* Time-varying parameters cannot be accumulators
-
-### Mathematical Description (0.0.3)
 
 $$
 \log(u) = \log(u_0) + Xv
@@ -140,42 +138,193 @@ u_0, & t < t_1 \\
 \end{cases}
 $$
 
+## v0.0.3
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.0.3)
+
+This version considers simple piece-wise constant and exogenous time-variation. _Piece-wise constant_ means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes -- at all other times the parameter is constant. _Exogenous_ means that the changes in the parameters do not depend on state variables, and therefore all of the values that a time-varying parameter takes throughout a simulation can be pre-computed before the simulation begins. We plan to relax the _piece-wise constant_ restriction in [version 0.0.4](https://canmod.net/misc/flex_specs#v0.0.4) and the _exogenous_ restriction in [version 0.3.0](https://canmod.net/misc/flex_specs#v0.3.0).
+
+### Assumptions (0.0.3)
+
+* Time-varying parameters cannot be accumulators
+
+### Mathematical Description (0.0.3)
+
+In the non-time-varying case of [version 0.0.2](https://canmod.net/misc/flex_specs#v0.0.2), we have scalar valued parameters. These parameters are constant in simulation time. We now consider parameters that can vary at any particular simulation step.
+
+Consider a focal scalar-valued time-varying parameter $u$. In the non-time-varying case this scalar value, $u$, is an element of the parameter vector, $\theta$.
+
+$$
+\theta = [..., u, ...]
+$$
+
+In the time-varying case, there is a series of values, $u_0, u_1, ..., u_n$ associated with an initial value $u = u_0$ and the values, $u_1, ..., u_n$, at $n$ break-points, $t_1, ..., t_n$.
+
+$$
+\theta = [..., u_0, u_1, ..., u_n, ...]
+$$
+
+Each simulation step is indexed $t = 1, ..., T$, where $T$ is the number of simulation steps. If the time-varying parameter, $u$, is required at time $t$ to update an element of the rate-matrix, the value of $u$ that is used is $u_i$ such that $t \in [i, i+1)$.
+
 ### User Interface (0.0.3)
 
-There is a question of whether we should start with break-points or just jump to general log linear model. Then there is the related question of whether we should have a formula interface.
+We follow the `params_timevar` argument to `run_sim` in `McMasterPandemic`, which allows the user to specify a data frame with the following columns.
 
-Thoughts:
+* Date
+* Symbol
+* Value
+* Type
 
-* The break-point schedule provided as a table (as is currently done in MacPan) is intuitive and probably preferable if nothing more complex is required
-* 
+The definition of these columns at the time of writing is given [here](https://github.com/mac-theobio/McMasterPandemic/blob/c1e8aa40d12918728e25a41368f751a8b7f4b983/R/sim_funs.R#L864).
+
+The user must also specify the starting and ending calendar dates of the simulation.
+
+An example model with time variation can be defined as follows.
+
+```{r, eval=FALSE}
+params = read_params('ICU1.csv')
+state = make_state(params = params)
+model = (
+  init_model(
+    params, state,
+    start_date = '2021-08-26', end_date = "2021-09-26",
+    timevar_piece_wise = data.frame(
+      Date = c("2021-09-01", "2021-09-15", "2021-09-10", "2021-08-28"),
+      Symbol = c("mu", "beta0", "beta0", "mu"),
+      Value = c(0.5, 0.1, 2, 0.2),
+      Type = c("rel_prev", "rel_orig", "rel_prev", "rel_orig")
+    ))
+  %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
+  %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+  %>% add_rate("Ia", "R", ~ (gamma_a))
+  %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+  %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+  %>% add_rate("Im", "R", ~ (gamma_m))
+  %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+  %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+  %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+  %>% add_rate("ICUs", "H2", ~ (psi1))
+  %>% add_rate("ICUd", "D", ~ (psi2))
+  %>% add_rate("H2", "R", ~ (psi3))
+  %>% add_rate("H", "R", ~ (rho))
+  %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+  %>% add_rate("S",  "E", ~
+                 (Ia) * (beta0) * (1/N) * (Ca) +
+                 (Ip) * (beta0) * (1/N) * (Cp) +
+                 (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+  %>% add_parallel_accumulators(c("X", "N", "P", "V"))
+  %>% add_tmb_indices()
+)
+```
 
 ### Data Structure (0.0.3)
 
-In the non-time-varying case of v0.0.2, we have scalar valued parameters. These parameters are constant in simulation time. We now move to time-varying parameters. Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
+Here we make a distinction between indices and time-indices. An index is a 1-based integer identifying a value within a vector. A time-index is a 1-based integer identifying the simulation step.
 
-* `tvi_spi`: vector of indices for each time varying factor into the `spi` vector from [version 0.0.1](https://canmod.net/misc/flex_specs#v0.0.1)
+* `tvi_spi`: vector of indices for each time varying factor, identifying the elements of the `spi` vector from [version 0.0.1](https://canmod.net/misc/flex_specs#v0.0.1)
 * `n_breaks`: vector of the number of time breaks for each time varying factor
-* `t_breaks`: vector of indices locating all time breaks for all time varying factors, organized such that time indices associated with the same factor are grouped together and time indices are all ascending
+* `t_breaks`: vector of time-indices locating all time breaks for all time varying factors, organized such that time-indices associated with the same factor are grouped together and time-indices are all ascending
 
-The basic idea is to expand the parameter vector to represent time variation. Consider the case where there is a single baseline transmission rate, `beta0`.
+These indices and counts can be used to update the `spi` vector at each simulation step. Here is an example in `R`.
 
-```{r, eval=FALSE}
-params = c(..., beta0, ...)
+```{r}
+tvi_spi = c(1L, 3L, 6L, 10L, 14L, 19L)
+n_breaks = c(3L, 3L, 2L, 2L, 2L, 2L)
+t_breaks = c(
+  2L, 6L, 17L, # factor 1 has 3 break-points 
+  2L, 6L, 17L, # factor 2 has 3 break-points 
+  15L, 20L,    # factor 3 has 2 break-points 
+  15L, 20L,    # factor 4 has 2 break-points 
+  15L, 20L,    # factor 5 has 2 break-points 
+  15L, 20L     # factor 6 has 2 break-points 
+)
+
+# number of time varying factors
+n = length(tvi_spi)
+
+# initialize a break point counter. each element of t_breaks_t
+# is associated with a time varying factor. each time a break
+# point is encountered, increment the corresponding element in 
+# this counter
+t_breaks_t = rep(0, n)
+
+# indices into the state param vector for all factors, including
+# those that are not time varying
+spi = c(30L, 27L, 30L, 27L, 3L, 15L, 33L, 18L, 4L, 15L, 33L, 19L, 5L,
+  15L, 33L, 20L, 36L, 6L, 15L, 33L, 21L, 36L)
+print(spi)
+# loop over time steps
+for(t in 1:30) {
+  
+  # loop over time-varying factors
+  for(i in 1:n) {
+    
+    # only do something if factor i has a break-point at time t
+    break_now = t == t_breaks[1 + t_breaks_t[i] + sum(n_breaks[1:(i-1)])]
+    if(isTRUE(break_now)) {
+      
+      # increment the break-point counter
+      t_breaks_t[i] = t_breaks_t[i] + 1
+      
+      # increment the spi vector for the ith time varying factor
+      spi[tvi_spi[i]] = spi[tvi_spi[i]] + 1
+      
+    }
+  }
+  print(spi)
+  
+  # do the rest of what needs to be done in this simulation step
+  # (e.g. update the rate matrix, update the state vector)
+  # ...
+}
 ```
 
-Now if `beta0` changes throughout the simulation, we expand the parameter vector. For example, if the transmission rate changes at time-steps 10 and 14, we would have the following expanded parameter vector.
+Each row in this output is a time step and each column is the `spi` index for a particular factor.  Notice that only six columns change through time, and these are associated with the six time-varying factors.  Columns 1 and 3 are associated with the same time-varying parameter, and so they change at the same break-points.  The same is true of columns 6, 10, 14, and 19, which are associated with another time-varying parameter.
 
-```{r, eval=FALSE}
-params = c(..., beta0, beta_t_10, beta_t_14, ...)
+```{r, eval=FALSE, echo=FALSE}
+        Date Symbol Value     Type
+1 2021-09-10  beta0   2.0 rel_prev
+2 2021-09-15  beta0   0.1 rel_orig
+3 2021-08-28     mu   0.2 rel_orig
+4 2021-09-01     mu   0.5 rel_prev
 ```
 
-It could even be that there is a different transmission rate for every time step.
+```{r, eval=FALSE, echo=FALSE}
+           S            E           Ia           Ip           Im           Is 
+9.999950e+05 3.000000e+00 1.000000e+00 0.000000e+00 1.000000e+00 0.000000e+00 
+           H           H2         ICUs         ICUd            D            R 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+           X            V        beta0     beta0_t1     beta0_t2           Ca 
+0.000000e+00 0.000000e+00 1.000000e+00 2.000000e+00 1.000000e-01 6.666667e-01 
+          Cp           Cm           Cs        alpha        sigma      gamma_a 
+1.000000e+00 1.000000e+00 1.000000e+00 3.333333e-01 1.923077e-01 1.428571e-01 
+     gamma_m      gamma_s      gamma_p          rho        delta           mu 
+1.428571e-01 1.748252e-01 2.000000e+00 1.000000e-01 0.000000e+00 9.560000e-01 
+       mu_t1        mu_t2            N           E0 nonhosp_mort        iso_m 
+1.912000e-01 9.560000e-02 1.000000e+06 5.000000e+00 0.000000e+00 0.000000e+00 
+       iso_s         phi1         phi2         psi1         psi2         psi3 
+0.000000e+00 7.600000e-01 5.000000e-01 5.000000e-02 1.250000e-01 2.000000e-01 
+      c_prop c_delay_mean   c_delay_cv    proc_disp         zeta 
+1.000000e-01 1.100000e+01 2.500000e-01 0.000000e+00 0.000000e+00
+```
 
-For each time-varying parameter we need to have the following vectors, each of which have length given by the number of different values for the parameter (three in the example above).
+```{r, eval=FALSE, echo=FALSE}
+$nbreaks
 
-* `tvpi` gives indices into the parameter vector such that `params[tvpi]` returns all elements of the parameter vector associated with a single scalar-valued epidemiological parameter that is varying in time
-   * Note that when the state variable and parameter vectors are concatenated, an offset is required: `state_param[tvpi + num_state_vars]`
-* `bp` gives the indices of the break-points, or time steps at which the parameter changes
+beta0    mu 
+    2     2 
+
+$tbreaks
+[1] 15 20  2  6
+
+$pi_tv_par
+beta0    mu 
+    1    14 
+```
 
 ## v0.0.2
 
