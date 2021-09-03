@@ -51,18 +51,22 @@ Based on the above data structure, the algorithm of *update_ratemat* will have t
 
 Below is a C-like pseudo code:
 
-     int n = 300; // number of simulations steps int nextBreak = 
-    0; int start = 0; for (i=0; i<n; i++) {
+    int n = 300; // number of simulations steps 
+    int nextBreak = 0; 
+    int start = 0; 
+    for (i=0; i<n; i++) {
         // 1 update sp
-        if (nextBreak<breaks.size() && i==breaks[nextBreak]) { for (j=start; 
-            j<start+count_of_tv_at_break[nextBreak]; j++)
-                sp[tv_spi[j]] = tv_val[j]; start += count_of_tv_at_break[nextBreak]; 
+        if (nextBreak<breaks.size() && i==breaks[nextBreak]) { 
+            for (j=start; j<start+count_of_tv_at_break[nextBreak]; j++)
+                sp[tv_spi[j]] = tv_val[j]; 
+
+            start += count_of_tv_at_break[nextBreak]; 
             nextBreak++;
         }
         // 2 Update those elements that need to be updated
-        for (j=0; j<updateidx.size(); j++) { Update element [from[updateidx[j]], 
-            to[updateidx[j]] by using formula defined by count[updateidx[j]] plus 
-            corresponding spi and modifier, and data sp.
+        for (j=0; j<updateidx.size(); j++) { 
+            Update element [from[updateidx[j]], to[updateidx[j]] by using 
+            formula defined by count[updateidx[j]] plus corresponding spi and modifier, and data sp.
         }
     }
 
