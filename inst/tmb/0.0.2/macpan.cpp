@@ -220,7 +220,7 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-  int numIterations = 5; //10000;
+  int numIterations = 3; //10000;
   int stateSize = state.size();
   vector<Type> concatenated_state_vector(numIterations*stateSize);
   //concatenated_state_vector.block(0, 0, stateSize, 1) = state;
@@ -228,9 +228,10 @@ Type objective_function<Type>::operator() ()
     ratemat = update_ratemat(ratemat, sp, update_from, update_to, update_count, update_spi, update_modifier);
     Eigen::SparseMatrix<Type> flows = col_multiply(ratemat, state); // ignore * dt
     vector<Type> inflow = colSums(flows);
-    remove_cols(ratemat, par_accum_indices);
+    remove_cols(flows, par_accum_indices);
     vector<Type> outflow = rowSums(flows); // remove some columns before doing so
     state = state - outflow + inflow;
+    sp << state, params;
     concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
   }
 
