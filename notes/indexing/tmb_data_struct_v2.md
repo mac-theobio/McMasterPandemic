@@ -44,9 +44,9 @@ respectively. Suppose *beta0* changes to values [100, 103, 107, 200] at steps [2
  - *tv_val* = [100, 0.1, 103, 0.3, 107, 200, 0.8]
 
 ## Update rate matrix
-Based on the above data structure, the algorithm of *update_ratemat* will have two phases: 
- 1. Update vector *sp* to make sure every time-varying parameter gets updated at each step 
- of simulation if needed. 
+Based on the above data structure, the algorithm of *update_ratemat* will have two phases
+at each simulation step: 
+ 1. Update the value of every time-varying parameter in vector *sp* if needed. 
  2. Loop through *updateidx* to update the rate matrix.
 
 Below is a C-like pseudo code:
