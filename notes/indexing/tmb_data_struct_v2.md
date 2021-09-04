@@ -19,7 +19,7 @@ The parts of the data structure that are added, removed or alterred are:
  in the rate matrix that need to be updated. It includes the indices of the elements that 
  depend on either the state vector (0.0.2), or time-varying parameters (0.0.3 or 0.0.4), 
  or both. At each simulation step, we will update only those elements specified by 
- updateidx. The drawback of this design is that elements that only depends on piece-wise 
+ *updateidx*. The drawback of this design is that elements that only depends on piece-wise 
  parameters (0.0.3) are updated at each step although they only need to be updated at 
  certain breaks.
  - *update_indices* (**removed**): a second set of *from* *to*, etc for 
