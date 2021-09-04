@@ -13,6 +13,7 @@ The parts of the data structure that remain unchanged are:
  hold multiple values of time-varying factors.
  - *from*,*to*, *count*, *spi* and 
  *modifier* are defined in the same as in previous proposals.
+
 The parts of the data structure that are added, removed or alterred are:
  - *upateidx* (**added**): a vector of indices into vectors *from*, *to*, and *count* of those elements 
  in the rate matrix that need to be updated. It includes the indices of the elements that 
