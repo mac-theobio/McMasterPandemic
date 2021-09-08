@@ -26,7 +26,6 @@ library(semver)
 # ------------------------------------------------------------------
 spec_version = "0.0.1"
 options(MP_flex_spec_version = spec_version)
-context(paste0("tests for spec version: ", spec_version))
 test_files = "../../inst/tmb/"
 
 cpp = file.path(test_files, spec_version, "macpan.cpp")
@@ -110,8 +109,13 @@ test_that("matrix elements are equal", {
 
 spec_version = "0.0.2"
 options(MP_flex_spec_version = spec_version)
-context(paste0("tests for spec version: ", spec_version))
 test_files = "../../inst/tmb/"
+
+cpp = file.path(test_files, spec_version, "macpan.cpp")
+dll = file_path_sans_ext(cpp)
+
+compile(cpp)
+dyn.load(dynlib(dll))
 
 
 params = read_params('ICU1.csv')
@@ -149,6 +153,7 @@ update_indices = test_model$tmb_indices$update_ratemat_indices
 par_accum_indices = test_model$tmb_indices$par_accum_indices
 
 dd <- MakeADFun(data = list(state = c(test_model$state),
+                            ratemat = M,
                             from = indices$from,
                             to = indices$to,
                             count = indices$count,
@@ -164,7 +169,6 @@ dd <- MakeADFun(data = list(state = c(test_model$state),
 parameters = list(params=c(test_model$params)),
 DLL=basename(dll))
 
-tmb_sparse_ratemat = dd$report()$ratemat
 tmb_concatenated_state_vector = dd$report()$concatenated_state_vector
 
 tmb_traj = (state
@@ -176,32 +180,6 @@ tmb_traj = (state
 r_traj = run_sim_range(
   params = params, state = state, nt = 4,
   step_args = list(do_hazard = FALSE))[,names(state)]
-
-r_dense_ratemat = as.matrix(M)
-tmb_dense_ratemat = as.matrix(tmb_sparse_ratemat)
-r_sparse_ratemat = M
-dimnames(tmb_sparse_ratemat) <-
-  dimnames(r_sparse_ratemat) <-
-  dimnames(tmb_dense_ratemat) <-
-  dimnames(r_dense_ratemat) <- NULL
-
-test_that("rate matrix types match", {
-  expect_equal(
-    class(tmb_sparse_ratemat),
-    class(r_sparse_ratemat))
-})
-
-test_that("rate matrix dimensions match", {
-  expect_equal(
-    tmb_sparse_ratemat@Dim,
-    r_sparse_ratemat@Dim)
-})
-
-test_that("matrix elements are equal", {
-  expect_equal(
-    tmb_dense_ratemat,
-    r_dense_ratemat)
-})
 
 test_that("simulated state trajectories are equal", {
   expect_equal(tmb_traj, r_traj)
