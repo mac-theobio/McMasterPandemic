@@ -164,15 +164,12 @@ dd <- MakeADFun(data = list(state = c(test_model$state),
                             update_count = update_indices$count,
                             update_spi = update_indices$spi,
                             update_modifier = update_indices$modifier,
-                            par_accum_indices = par_accum_indices
-),
-parameters = list(params=c(test_model$params)),
-DLL=basename(dll))
-
-tmb_concatenated_state_vector = dd$report()$concatenated_state_vector
+                            par_accum_indices = par_accum_indices),
+                parameters = list(params=c(test_model$params)),
+                DLL=basename(dll))
 
 tmb_traj = (state
-  %>% c(tmb_concatenated_state_vector)
+  %>% c(dd$report()$concatenated_state_vector)
   %>% matrix(length(state), 4, dimnames = list(names(state), 1:4))
   %>% t
   %>% as.data.frame
