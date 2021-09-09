@@ -9,18 +9,95 @@
 #' @param state a \code{state_pansim} object
 #' @return object representing a compartmental model
 #' @export
-init_model <- function(params, state) {
+init_model <- function(params, state,
+                       start_date = NULL, end_date = NULL,
+                       timevar_piece_wise = NULL) {
   model = list(
     state = state,
     params = params,
     ratemat = make_ratemat(state, params),
-    rates = list(),
-    tmb_indices = list()  # TODO: clarify index structure here once we converge
+    rates = list()
   )
 
-  if(spec_version_greater_than('0.0.1')) {
+  if(spec_ver_gt('0.0.1')) {
     model$parallel_accumulators = character()
   }
+
+  if((!is.null(start_date)) & (!is.null(end_date))) {
+    spec_check(introduced_version = '0.0.3', feature = 'Start and end dates')
+    model$start_date = as.Date(start_date)
+    model$end_date = as.Date(end_date)
+    model$iters = as.integer(model$end_date - model$start_date)
+  } else {
+    if((!is.null(start_date)) | (!is.null(end_date))) {
+      spec_check(introduced_version = '0.0.3', feature = 'Start and end dates')
+      stop("\n\nIf you specify either a start or end date,\n",
+           "you need to specify the other one as well.")
+    }
+    feature_check(introduced_version = '0.0.3', feature = 'Start and end dates')
+  }
+
+  if(spec_ver_gt('0.0.2')) {
+    model$timevar = list(piece_wise = NULL)
+  }
+  if(!is.null(timevar_piece_wise)) {
+    if(is.null(start_date) | is.null(end_date)) {
+      stop("\n\nIf you specify a timevar_table, you need to also\n",
+           "specify a start and end date")
+    }
+    spec_check(introduced_version = '0.0.3',
+               feature = 'Piece-wise contant time variation of parameters')
+
+    nbreaks = table(timevar_piece_wise$Symbol)
+    pi_tv_par = find_vec_indices(names(nbreaks), params)
+    names(pi_tv_par) = names(nbreaks)
+
+    # want to be able to assume a particular structure
+    # and ordering in downstream processing
+    schedule = (
+      timevar_piece_wise
+      %>% mutate(Date = as.Date(Date))
+      %>% mutate(Order = pi_tv_par[Symbol])
+      %>% arrange(Order, Date)
+    )
+
+    o = order(pi_tv_par)
+    pi_tv_par = pi_tv_par[o]
+    nbreaks = nbreaks[o]
+
+    # Initialize the values of the time-varying parameters
+    # at the breakpoints
+    #
+    # this task is a bit like:
+    # https://github.com/mac-theobio/McMasterPandemic/blob/478e520bf20279a2bd803da1301fc3cb15f03a34/R/sim_funs.R#L1050
+    # the difference is that we are saving parameter values for
+    # every breakpoint
+    schedule$Init = NA
+    new_param = TRUE
+    ns = nrow(schedule)
+    for(i in 1:ns) {
+      if(new_param | schedule$Type[i] == 'rel_orig') {
+        old_val = params[schedule$Symbol[i]]
+      } else {
+        old_val = schedule$Init[i-1]
+      }
+      schedule$Init[i] = old_val * schedule$Value[i]
+      new_param = schedule$Symbol[i] != schedule$Symbol[min(ns, i+i)]
+    }
+
+    expanded_params = expand_time(params, schedule$Init, nbreaks, pi_tv_par)
+
+    model$timevar$piece_wise = list(
+      schedule = schedule,
+      original_params = params,
+      nbreaks = nbreaks,
+      pi_tv_par = pi_tv_par)
+
+    model$params = expanded_params
+  }
+
+  # TODO: clarify index structure here once we converge
+  model$tmb_indices = list()
 
   return(model)
 }
@@ -30,42 +107,69 @@ spec_version = function() {
   parse_version(getOption('MP_flex_spec_version'))
 }
 
-spec_check = function(introduced_version, msg_if_version_too_old) {
+#' Spec check
+#'
+#' Throw an error if a feature is being used that is not supported yet.
+spec_check = function(introduced_version, feature) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
+  verb = ifelse(grepl("s$", feature, perl = TRUE), " were ", " was ")
   if(parse_version(current_version) < parse_version(introduced_version)) {
-  stop("\n\n", msg_if_version_too_old, "\n",
-       "The specification version currently being used is ",
-       getOption('MP_flex_spec_version'), '\n',
-       "See ", getOption('MP_flex_spec_doc_site'),
-       " for more information on specification versions.",
-       call. = FALSE)
+    stop(
+      "\n\n",
+      feature, verb, "not introduced until specification version ",
+      introduced_version, ".\n",
+      "The specification version currently being used is ",
+      getOption('MP_flex_spec_version'), '\n',
+      "See ", getOption('MP_flex_spec_doc_site'),
+      " for more information on specification versions.",
+      call. = FALSE)
   }
 }
 
-spec_version_equal_to = function(version) {
+#' Feature Check
+#'
+#' Throw an error if a feature is not being used, even though it is required
+#' by the spec being used.
+feature_check = function(introduced_version, feature) {
+  # https://canmod.net/misc/flex_specs
+  current_version = getOption("MP_flex_spec_version")
+  if(parse_version(current_version) >= parse_version(introduced_version)) {
+    stop(
+      "\n\n", feature,
+      " must be used for all specification versions greater than or equal to ",
+      introduced_version, ".\n",
+      "The specification version currently being used is ",
+      getOption('MP_flex_spec_version'), '\n',
+      "See ", getOption('MP_flex_spec_doc_site'),
+      " for more information on specification versions.",
+      call. = FALSE)
+  }
+}
+
+spec_ver_eq = function(version) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
   parse_version(current_version) == parse_version(version)
 }
 
-spec_version_greater_than = function(version) {
+spec_ver_gt = function(version) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
   parse_version(current_version) > parse_version(version)
 }
 
-spec_version_less_than = function(version) {
+spec_ver_lt = function(version) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
   parse_version(current_version) < parse_version(version)
 }
 
-spec_version_between = function(version_left, version_right) {
+spec_ver_btwn = function(version_left, version_right) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
-  spec_version_greater_than(version_left) &
-    spec_version_less_than(version_right)
+  spec_ver_gt(version_left) &
+    spec_ver_lt(version_right)
 }
 
 #' Rate Structure
@@ -118,17 +222,12 @@ rate = function(from, to, formula, state, params, ratemat) {
     r = regexpr(variable_regex(params, state), x)
     regmatches(x, r)
   }
-  # this only works because complements (1 - x) and inverses (1 / x) are
-  # so similar in structure
+  # FIXME: this only works because complements (1 - x) and
+  # inverses (1 / x) are so similar in structure
   find_operators = function(x, operator) {
     grepl(
-      paste0(
-        '\\( *1 *',
-        operator,
-        ' *',
-        variable_regex(params, state),
-        collapse = ''),
-      x)
+      paste0('\\( *1 *', operator, ' *', variable_regex(params, state),
+             collapse = ''), x)
   }
   factor_table = function(x) {
     data.frame(
@@ -137,9 +236,6 @@ rate = function(from, to, formula, state, params, ratemat) {
       invrs = unlist(lapply(x, find_operators, '/')))
   }
   product_list = function(x) {
-    # x is a list defining rate matrix structure. return an altered x with
-    # factor list appended to the structure of each non-zero rate matrix
-    # element
     x$factors = (x$formula
                  %>% as.character %>% getElement(2L)
                  %>% strsplit(split = '\\+') %>% getElement(1L)
@@ -148,19 +244,86 @@ rate = function(from, to, formula, state, params, ratemat) {
     )
     x$ratemat_indices =
       do.call(McMasterPandemic:::pfun, c(x[c('from', 'to')], list(mat = M)))
-    x$factors$var_indx = (
-      x$factors$var
-      %>% outer(names(c(state, params)), '==')
-      %>% apply(1, which)
-    )
-    if(spec_version_greater_than('0.0.1')) {
+    x$factors$var_indx = find_vec_indices(x$factors$var, c(state, params))
+
+    if(spec_ver_gt('0.0.1')) {
       x$state_dependent = any(x$factors$var_indx <= length(state))
+    }
+    if(spec_ver_gt('0.0.2')) {
+      if(has_time_varying(params)) {
+        x$factors$tv = x$factors$var %in%
+          names(attributes(params)$tv_param_indices)
+        x$time_varying = any(x$factors$tv)
+      }
     }
     x
   }
   structure(
     product_list(list(from = from, to = to, formula = formula)),
     class = 'rate-struct')
+}
+
+find_vec_indices = function(x, vec) {
+  (
+    x
+    %>% as.character
+    %>% outer(names(vec), '==')
+    %>% apply(1, which)
+  )
+}
+
+#' Expand Parameters
+#'
+#' @param x parameter vector
+#' @param vals initial time-varying parameter values
+#' @param nbreaks integer vector of time indices of the breakpoints
+#' (in the case of piece-wise constant time variation, this can be
+#' computed using \code{table(model$timevar$piece_wise$schedule$Symbol)})
+#' @param pi_tv_par indices into the non-expanded/original parameter
+#' vector for selecting time-varying parameters
+#' @export
+expand_time = function(x, vals, nbreaks, pi_tv_par){
+
+  after = unname(pi_tv_par + c(0, nbreaks[-length(nbreaks)]))
+  tv_param_indices = mapply(
+    seq, from = after, length.out = nbreaks + 1, SIMPLIFY = FALSE)
+  names(tv_param_indices) = names(nbreaks)
+
+  names(vals) = paste0(
+    rep(names(nbreaks), times = nbreaks),
+    paste0('_t', sequence(nbreaks)))
+
+  # insert time-dependent parameters
+  start = 1
+  end = 0
+  for(i in seq_along(nbreaks)) {
+    end = end + nbreaks[i]
+    x = append(x, vals[start:end], after[i])
+    start = end + 1
+  }
+
+  tv_param_indices = lapply(tv_param_indices, function(i) {
+    setNames(i, names(x)[i])
+  })
+
+  structure(x, tv_param_indices = tv_param_indices)
+}
+
+#' @export
+has_time_varying = function(x) {
+  "tv_param_indices" %in% names(attributes(x))
+}
+
+#' @export
+time_varying_rates = function(model) {
+  sd = sapply(model$rates, '[[', 'state_dependent')
+  tv = sapply(model$rates, '[[', 'time_varying')
+  model$rates[sd | tv]
+}
+
+#' @export
+state_dependent_rates = function(model) {
+  model$rates[sapply(model$rates, '[[', 'state_dependent')]
 }
 
 #' Add Parallel Accumulators
@@ -173,16 +336,27 @@ rate = function(from, to, formula, state, params, ratemat) {
 #' @return another compartmental model with parallel accumulators specified
 #' @export
 add_parallel_accumulators = function(model, state_patterns) {
+  if(spec_ver_gt('0.0.2')) {
+    # TODO: check with experts if time-varying
+    # parameters can be parallel accumulators?
+    # currently assumed 'no' in the spec
+    # https://canmod.net/misc/flex_specs#assumptions-0.0.3
+    nms_tv_params = names(model$timevar$piece_wise$nbreaks)
+    tv_accumulators = unlist(lapply(
+      state_patterns, grep, nms_tv_params, perl = TRUE, value = TRUE))
+    if(length(tv_accumulators) > 0) {
+      stop('Time-varying parameters cannot be accumulators,\n',
+           'but the following are:\n',
+           paste(tv_accumulators, collapse = ', '))
+    }
+  }
   model$parallel_accumulators = parallel_accumulators(model, state_patterns)
   return(model)
 }
 
 #' @export
 parallel_accumulators = function(model, state_patterns) {
-  spec_check(
-    introduced_version = '0.0.2',
-    msg_if_version_too_old =
-      "Parallel accumulators are not introduced until spec version 0.0.2.")
+  spec_check(introduced_version = '0.0.2', feature = "Parallel accumulators")
   (
     state_patterns
     %>% lapply(function(x) {grep(x, colnames(model$ratemat), value = TRUE)})
@@ -204,41 +378,56 @@ add_tmb_indices = function(model) {
 }
 
 #' @export
+ratemat_indices = function(rates, state_params) {
+  sp = state_params
+  ratemat_indices = sapply(rates, `[[`, 'ratemat_indices')
+  spi = {lapply(rates, function(y) {y$factors$var_indx}) %>% unlist}
+  count = sapply(rates, function(y) {
+    nrow(y$factors)
+  })
+  modifier = lapply(unname(rates), '[[', 'factors') %>%
+    bind_rows(.id = 'rate_indx') %>%
+    mutate(add = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
+    mutate(modifier = 4 * add + 2 * invrs + compl) %>%
+    `$`("modifier")
+  names(spi) = colnames(ratemat_indices) = names(count) = NULL
+  indices = list(
+    from = ratemat_indices[1,],
+    to = ratemat_indices[2,],
+    count = count,
+    spi = spi,
+    modifier = modifier
+  )
+  return(indices)
+}
+
+#' @export
+piece_wise_indices = function(rates, timevar, start_date) {
+  dd = lapply(unname(rates), '[[', 'factors') %>%
+    bind_rows(.id = 'rate_indx')
+  spi_tv_fac = with(dd, which(tv))
+  nbreaks_fac = m$timevar$piece_wise$nbreaks[dd[spi_tv_fac,]$var]
+  b = with(m$timevar$piece_wise$schedule, as.integer(Date - m$start_date))
+  s = m$timevar$piece_wise$schedule$Symbol
+  tbreaks = lapply(names(nbreaks_fac), function(v) {b[s == v]}) %>% unlist
+}
+
+#' @export
 tmb_indices = function(model) {
-  state_dependent_rates = function(model) {
-    model$rates[sapply(model$rates, '[[', 'state_dependent')]
-  }
-
-  ratemat_indices = function(rates, state_params) {
-    sp = state_params
-    ratemat_indices = sapply(rates, `[[`, 'ratemat_indices')
-    spi = {lapply(rates, function(y) {y$factors$var_indx}) %>% unlist}
-    count = sapply(rates, function(y) {
-      nrow(y$factors)
-    })
-    modifier = lapply(unname(rates), '[[', 'factors') %>%
-      bind_rows(.id = 'rate_indx') %>%
-      mutate(add = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
-      mutate(modifier = 4 * add + 2 * invrs + compl) %>%
-      `$`("modifier")
-    names(spi) = colnames(ratemat_indices) = names(count) = NULL
-    list(
-      from = ratemat_indices[1,],
-      to = ratemat_indices[2,],
-      count = count,
-      spi = spi,
-      modifier = modifier
-    )
-  }
-
   sp = c(model$state, model$params)
   indices = list(make_ratemat_indices = ratemat_indices(model$rates, sp))
 
-  if(spec_version_greater_than('0.0.1')) {
-    indices$update_ratemat_indices =
-      ratemat_indices(state_dependent_rates(model), sp)
+  if(spec_ver_gt('0.0.1')) {
     indices$par_accum_indices =
       which(colnames(model$ratemat) %in% model$parallel_accumulators)
+  }
+  if(spec_ver_eq('0.0.2')) {
+    indices$update_ratemat_indices =
+      ratemat_indices(state_dependent_rates(model), sp)
+  }
+  if(spec_ver_gt('0.0.2')) {
+    indices$update_ratemat_indices =
+      ratemat_indices(time_varying_rates(model), sp)
   }
   return(indices)
 }
