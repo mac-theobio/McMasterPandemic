@@ -4,7 +4,13 @@
 \alias{init_model}
 \title{Initialize Compartmental Model}
 \usage{
-init_model(params, state)
+init_model(
+  params,
+  state,
+  start_date = NULL,
+  end_date = NULL,
+  timevar_piece_wise = NULL
+)
 }
 \arguments{
 \item{params}{a \code{param_pansim} object}
