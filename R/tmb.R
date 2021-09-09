@@ -8,6 +8,7 @@
 #' @param params a \code{param_pansim} object
 #' @param state a \code{state_pansim} object
 #' @return object representing a compartmental model
+#' @useDynLib macpan
 #' @export
 init_model <- function(params, state,
                        start_date = NULL, end_date = NULL,
@@ -48,52 +49,91 @@ init_model <- function(params, state,
     spec_check(introduced_version = '0.0.3',
                feature = 'Piece-wise contant time variation of parameters')
 
-    nbreaks = table(timevar_piece_wise$Symbol)
-    pi_tv_par = find_vec_indices(names(nbreaks), params)
-    names(pi_tv_par) = names(nbreaks)
 
-    # want to be able to assume a particular structure
-    # and ordering in downstream processing
-    schedule = (
-      timevar_piece_wise
-      %>% mutate(Date = as.Date(Date))
-      %>% mutate(Order = pi_tv_par[Symbol])
-      %>% arrange(Order, Date)
-    )
+    if(spec_ver_eq('0.0.3')) {
+      nbreaks = table(timevar_piece_wise$Symbol)
+      pi_tv_par = find_vec_indices(names(nbreaks), model$params)
+      names(pi_tv_par) = names(nbreaks)
 
-    o = order(pi_tv_par)
-    pi_tv_par = pi_tv_par[o]
-    nbreaks = nbreaks[o]
+      # want to be able to assume a particular structure
+      # and ordering in downstream processing
+      schedule = (
+        timevar_piece_wise
+        %>% mutate(Date = as.Date(Date))
+        %>% mutate(Order = pi_tv_par[Symbol])
+        %>% arrange(Order, Date)
+      )
 
-    # Initialize the values of the time-varying parameters
-    # at the breakpoints
-    #
-    # this task is a bit like:
-    # https://github.com/mac-theobio/McMasterPandemic/blob/478e520bf20279a2bd803da1301fc3cb15f03a34/R/sim_funs.R#L1050
-    # the difference is that we are saving parameter values for
-    # every breakpoint
-    schedule$Init = NA
-    new_param = TRUE
-    ns = nrow(schedule)
-    for(i in 1:ns) {
-      if(new_param | schedule$Type[i] == 'rel_orig') {
-        old_val = params[schedule$Symbol[i]]
-      } else {
-        old_val = schedule$Init[i-1]
+      o = order(pi_tv_par)
+      pi_tv_par = pi_tv_par[o]
+      nbreaks = nbreaks[o]
+
+      # Initialize the values of the time-varying parameters
+      # at the breakpoints
+      #
+      # this task is a bit like:
+      # https://github.com/mac-theobio/McMasterPandemic/blob/478e520bf20279a2bd803da1301fc3cb15f03a34/R/sim_funs.R#L1050
+      # the difference is that we are saving parameter values for
+      # every breakpoint
+      schedule$Init = NA
+      new_param = TRUE
+      ns = nrow(schedule)
+      for(i in 1:ns) {
+        if(new_param | schedule$Type[i] == 'rel_orig') {
+          old_val = model$params[schedule$Symbol[i]]
+        } else {
+          old_val = schedule$Init[i-1]
+        }
+        schedule$Init[i] = old_val * schedule$Value[i]
+        new_param = schedule$Symbol[i] != schedule$Symbol[min(ns, i+i)]
       }
-      schedule$Init[i] = old_val * schedule$Value[i]
-      new_param = schedule$Symbol[i] != schedule$Symbol[min(ns, i+i)]
-    }
 
-    expanded_params = expand_time(params, schedule$Init, nbreaks, pi_tv_par)
+      expanded_params = expand_time(model$params, schedule$Init, nbreaks, pi_tv_par)
 
-    model$timevar$piece_wise = list(
-      schedule = schedule,
-      original_params = params,
-      nbreaks = nbreaks,
-      pi_tv_par = pi_tv_par)
+      model$timevar$piece_wise = list(
+        schedule = schedule,
+        original_params = params,
+        nbreaks = nbreaks,
+        pi_tv_par = pi_tv_par)
 
-    model$params = expanded_params
+      model$params = expanded_params
+    } # v0.0.3
+
+    if(spec_ver_gt("0.0.3")) {
+      schedule = (
+        timevar_piece_wise
+        %>% mutate(Date = as.Date(Date))
+        %>% mutate(breaks = as.integer(Date - model$start_date))
+        %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
+        %>% arrange(breaks, tv_spi)
+      )
+      count_of_tv_at_breaks = c(table(schedule$breaks))
+
+      # DRY: copied from v0.0.3 above
+      schedule$tv_val = NA
+      new_param = TRUE
+      ns = nrow(schedule)
+      for(i in 1:ns) {
+        if(new_param | schedule$Type[i] == 'rel_orig') {
+          old_val = params[schedule$Symbol[i]]
+        } else {
+          old_val = schedule$tv_val[i-1]
+        }
+        schedule$tv_val[i] = old_val * schedule$Value[i]
+        new_param = schedule$Symbol[i] != schedule$Symbol[min(ns, i+i)]
+      }
+
+      attr(model$params, 'tv_param_indices') = setNames(find_vec_indices(
+        unique(schedule$Symbol),
+        params), unique(schedule$Symbol))
+
+
+      model$timevar$piece_wise = list(
+        schedule = schedule, # schedule includes tv_spi and tv_val as in spec
+        breaks = as.integer(names(count_of_tv_at_breaks)),
+        count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
+      )
+    } # >v0.0.3
   }
 
   # TODO: clarify index structure here once we converge
@@ -274,6 +314,8 @@ find_vec_indices = function(x, vec) {
 
 #' Expand Parameters
 #'
+#' Should only be used for spec version 0.0.3
+#'
 #' @param x parameter vector
 #' @param vals initial time-varying parameter values
 #' @param nbreaks integer vector of time indices of the breakpoints
@@ -309,16 +351,25 @@ expand_time = function(x, vals, nbreaks, pi_tv_par){
   structure(x, tv_param_indices = tv_param_indices)
 }
 
+#' @param x parameter vector
 #' @export
 has_time_varying = function(x) {
+  spec_check(
+    feature = "Time-varying parameters",
+    introduced_version = '0.0.3')
   "tv_param_indices" %in% names(attributes(x))
 }
 
 #' @export
 time_varying_rates = function(model) {
+  model$rates[which_time_varying_rates(model)]
+}
+
+#' @export
+which_time_varying_rates = function(model) {
   sd = sapply(model$rates, '[[', 'state_dependent')
   tv = sapply(model$rates, '[[', 'time_varying')
-  model$rates[sd | tv]
+  which(sd | tv)
 }
 
 #' @export
@@ -425,9 +476,12 @@ tmb_indices = function(model) {
     indices$update_ratemat_indices =
       ratemat_indices(state_dependent_rates(model), sp)
   }
-  if(spec_ver_gt('0.0.2')) {
+  if(spec_ver_eq('0.0.3')) {
     indices$update_ratemat_indices =
       ratemat_indices(time_varying_rates(model), sp)
+  }
+  if(spec_ver_gt('0.0.3')) {
+    indices$updateidx = which_time_varying_rates(model)
   }
   return(indices)
 }
