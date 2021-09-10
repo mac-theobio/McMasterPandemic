@@ -152,6 +152,8 @@ indices = test_model$tmb_indices$make_ratemat_indices
 update_indices = test_model$tmb_indices$update_ratemat_indices
 par_accum_indices = test_model$tmb_indices$par_accum_indices
 
+numIters = 3 # This value should have been kept in test_model
+
 dd <- MakeADFun(data = list(state = c(test_model$state),
                             ratemat = M,
                             from = indices$from,
@@ -164,7 +166,8 @@ dd <- MakeADFun(data = list(state = c(test_model$state),
                             update_count = update_indices$count,
                             update_spi = update_indices$spi,
                             update_modifier = update_indices$modifier,
-                            par_accum_indices = par_accum_indices),
+                            par_accum_indices = par_accum_indices,
+                            numIterations = numIters),
                 parameters = list(params=c(test_model$params)),
                 DLL=basename(dll))
 
