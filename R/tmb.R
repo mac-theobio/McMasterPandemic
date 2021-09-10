@@ -103,13 +103,14 @@ init_model <- function(params, state,
       schedule = (
         timevar_piece_wise
         %>% mutate(Date = as.Date(Date))
-        %>% mutate(breaks = as.integer(Date - model$start_date))
+        # Hack: adding two to the breaks because 'it works'
+        %>% mutate(breaks = as.integer(Date - model$start_date) + 2)
         %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
         %>% arrange(breaks, tv_spi)
       )
       count_of_tv_at_breaks = c(table(schedule$breaks))
 
-      # DRY: copied from v0.0.3 above
+      # DRY: copied and modified from v0.0.3 above
       schedule$tv_val = NA
       new_param = TRUE
       ns = nrow(schedule)
