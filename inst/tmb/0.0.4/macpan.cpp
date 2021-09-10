@@ -226,8 +226,17 @@ Type objective_function<Type>::operator() ()
   int nextBreak = 0; 
   int start = 0; 
   for (int i=0; i<numIterations; i++) {
-    // update sp (state+params)
-    if (nextBreak<breaks.size() && i==(breaks[nextBreak]-1)) {
+    // Calculate flow matrix
+    Eigen::SparseMatrix<Type> flows = col_multiply(ratemat, state); // ignore * dt
+    vector<Type> inflow = colSums(flows);
+    remove_cols(flows, par_accum_indices);
+    vector<Type> outflow = rowSums(flows); // remove some columns before doing so
+    state = state - outflow + inflow;
+    sp.block(0, 0, stateSize, 1) = state;
+    concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
+
+    // update sp (state+params) and rate matrix
+    if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
         std::cout << "At break: " << i << " number of paramters " \
         << count_of_tv_at_breaks[nextBreak] << std::endl;
  
@@ -242,14 +251,6 @@ Type objective_function<Type>::operator() ()
     }
 
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
-
-    Eigen::SparseMatrix<Type> flows = col_multiply(ratemat, state); // ignore * dt
-    vector<Type> inflow = colSums(flows);
-    remove_cols(flows, par_accum_indices);
-    vector<Type> outflow = rowSums(flows); // remove some columns before doing so
-    state = state - outflow + inflow;
-    sp.block(0, 0, stateSize, 1) = state;
-    concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
   }
 
   //std::cout << "concatenated_state_vector = " << concatenated_state_vector << std::endl;
