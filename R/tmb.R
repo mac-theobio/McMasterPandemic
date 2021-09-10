@@ -102,8 +102,7 @@ init_model <- function(params, state,
       schedule = (
         timevar_piece_wise
         %>% mutate(Date = as.Date(Date))
-        # Hack: adding two to the breaks because 'it works'
-        %>% mutate(breaks = as.integer(Date - model$start_date) + 2)
+        %>% mutate(breaks = as.integer(Date - model$start_date))
         %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
         %>% arrange(breaks, tv_spi)
       )
@@ -116,8 +115,11 @@ init_model <- function(params, state,
       for(i in 1:ns) {
         if(new_param | schedule$Type[i] == 'rel_orig') {
           old_val = params[schedule$Symbol[i]]
-        } else {
+        } else if(schedule$Type[i] == 'rel_prev') {
           old_val = schedule$tv_val[i-1]
+        } else {
+          stop("Unrecognized break-point type.\n",
+               "Only rel_orig and rel_prev are allowed")
         }
         schedule$tv_val[i] = old_val * schedule$Value[i]
         new_param = schedule$Symbol[i] != schedule$Symbol[min(ns, i+i)]
