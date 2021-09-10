@@ -193,6 +193,7 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_spi);
   DATA_VECTOR(tv_val);
   DATA_IVECTOR(par_accum_indices);
+  DATA_INTEGER(numIterations);
 
   std::cout << "updateidx = " << updateidx << std::endl;
   std::cout << "breaks = " << breaks << std::endl;
@@ -217,7 +218,7 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-  int numIterations = 30; //10000;
+  //int numIterations = 30; //10000;
 
   int stateSize = state.size();
   vector<Type> concatenated_state_vector(numIterations*stateSize);
