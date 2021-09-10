@@ -210,16 +210,6 @@ tv_dat = data.frame(
   Type = c('rel_prev', 'rel_orig', 'rel_prev')
 )
 
-tv_dat_r = data.frame(
-  Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
-  Symbol = c("beta0", "beta0", "beta0"),
-  Value = c(0.5, 0.1, 0.05),
-  Type = c('rel_prev', 'rel_orig', 'rel_prev')
-)
-
-#beta0 = c(1, 0.5, 0.05, 0.0025)
-#nt = c(9, 6, 16, 4)
-
 test_model = (init_model(
   params, state,
   start_date = "2021-09-09", end_date = "2021-10-09",
@@ -248,7 +238,6 @@ test_model = (init_model(
   %>% add_tmb_indices()
 )
 
-#sp = c(test_model$state, test_model$params)
 from = test_model$tmb_indices$make_ratemat_indices$from
 to = test_model$tmb_indices$make_ratemat_indices$to
 count = test_model$tmb_indices$make_ratemat_indices$count
@@ -261,8 +250,9 @@ count_of_tv_at_breaks = test_model$timevar$piece_wise$count_of_tv_at_breaks
 tv_spi = test_model$timevar$piece_wise$schedule$tv_spi
 tv_val = test_model$timevar$piece_wise$schedule$tv_val
 par_accum_indices = test_model$tmb_indices$par_accum_indices
+iters = test_model$iters
 
-dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
+dd <- MakeADFun(data = list(state = c(state),
                             ratemat = M,
                             from = from,
                             to = to,
@@ -274,14 +264,10 @@ dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
                             count_of_tv_at_breaks = count_of_tv_at_breaks,
                             tv_spi = tv_spi,
                             tv_val = tv_val,
-                            par_accum_indices = par_accum_indices),
+                            par_accum_indices = par_accum_indices,
+                            numIterations = iters),
                 parameters = list(params=c(test_model$params)),
                 DLL=basename(dll))
-
-tmb_sparse_ratemat = dd$report()$ratemat
-concatenated_state_vector = dd$report()$concatenated_state_vector
-
-print(concatenated_state_vector)
 
 tmb_traj = (state
             %>% c(dd$report()$concatenated_state_vector)
@@ -297,16 +283,13 @@ r_traj = run_sim(
   params = params, state = state,
   start_date = test_model$start_date,
   end_date = test_model$end_date,
-  params_timevar = tv_dat_r,
+  params_timevar = tv_dat,
   condense = FALSE,
-  step_args = list(do_hazard = FALSE))[,names(state)] %>% as.data.frame
+  step_args = list(do_hazard = FALSE))[,names(state)] %>%
+  as.data.frame
 
 row.names(r_traj) = row.names(tmb_traj) = NULL
-
-plot(tmb_traj$S, ylim = range(tmb_traj$S, r_traj$S))
-lines(r_traj$S)
 
 test_that("simulated state trajectories are equal", {
   expect_equal(tmb_traj, r_traj)
 })
-

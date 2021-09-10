@@ -8,7 +8,6 @@
 #' @param params a \code{param_pansim} object
 #' @param state a \code{state_pansim} object
 #' @return object representing a compartmental model
-#' @useDynLib macpan
 #' @export
 init_model <- function(params, state,
                        start_date = NULL, end_date = NULL,
@@ -152,9 +151,13 @@ spec_version = function() {
 #'
 #' Throw an error if a feature is being used that is not supported yet.
 spec_check = function(introduced_version, feature) {
+
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
+
+  # TODO: need to handle possessive case?
   verb = ifelse(grepl("s$", feature, perl = TRUE), " were ", " was ")
+
   if(parse_version(current_version) < parse_version(introduced_version)) {
     stop(
       "\n\n",
