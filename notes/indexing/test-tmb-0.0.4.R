@@ -84,4 +84,6 @@ dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
                 DLL=basename(dll))
 
 tmb_sparse_ratemat = dd$report()$ratemat
+concatenated_state_vector = dd$report()$concatenated_state_vector
 
+print(concatenated_state_vector)
