@@ -79,7 +79,8 @@ dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
                             count_of_tv_at_breaks = count_of_tv_at_breaks,
                             tv_spi = tv_spi,
                             tv_val = tv_val,
-                            par_accum_indices = par_accum_indices),
+                            par_accum_indices = par_accum_indices,
+                            numIterations = test_model$iters),
                 parameters = list(params=c(test_model$params)),
                 DLL=basename(dll))
 
