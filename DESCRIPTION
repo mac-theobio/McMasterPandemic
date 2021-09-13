@@ -35,7 +35,8 @@ Imports:
 	forcats, 
 	foreach, 
 	readr, 
-	stringr
+	stringr,
+	semver
 Suggests:
 	knitr,
 	testthat,

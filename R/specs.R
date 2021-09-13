@@ -21,7 +21,7 @@
 #' @param version string with the version of the spec
 #' (e.g. \code{"0.0.5"})
 #' @return \code{svlist} object with the specification version.
-#' @importFrom parse_version semver
+#' @importFrom semver parse_version
 #' @export
 spec_version = function() {
   # https://canmod.net/misc/flex_specs
