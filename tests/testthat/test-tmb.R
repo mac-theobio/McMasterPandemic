@@ -4,6 +4,7 @@ library(TMB)
 library(tools)
 library(dplyr)
 library(semver)
+library(numDeriv)
 
 # TODO/FIXME/BACKGROUND --------------------------------------------
 # rename/repurpose this once the tmb engine is properly added
@@ -401,4 +402,16 @@ row.names(r_traj) = row.names(tmb_traj) = NULL
 
 test_that("simulated state trajectories are equal", {
   expect_equal(tmb_traj, r_traj)
+})
+
+test_that("mock objective function is correct", {
+  expect_equal(sum(tmb_traj[31,]), dd$fn(dd$par))
+})
+
+test_that("tmb-computed gradient equals (with tolerance) a numerically-approximated gradient", {
+  numeric_gradient = numDeriv::grad(dd$fn, dd$par)
+  tmb_gradient = dd$gr(dd$par)
+  attributes(numeric_gradient) = attributes(tmb_gradient) = NULL
+  expect_equal(tmb_gradient, numeric_gradient,
+               tolerance = 1e-04) # test fails with tol=1e-05
 })
