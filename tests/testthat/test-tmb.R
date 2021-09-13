@@ -408,10 +408,12 @@ test_that("mock objective function is correct", {
   expect_equal(sum(tmb_traj[31,]), dd$fn(dd$par))
 })
 
-test_that("tmb-computed gradient equals (with tolerance) a numerically-approximated gradient", {
+test_that("tmb-computed gradient equals numerical gradient", {
   numeric_gradient = numDeriv::grad(dd$fn, dd$par)
   tmb_gradient = dd$gr(dd$par)
   attributes(numeric_gradient) = attributes(tmb_gradient) = NULL
   expect_equal(tmb_gradient, numeric_gradient,
-               tolerance = 1e-04) # test fails with tol=1e-05
+               # test fails with tol=1e-05.
+               # is this just due to error in the numerical derivative??
+               tolerance = 1e-04)
 })
