@@ -9,6 +9,7 @@ Type objective_function<Type>::operator() ()
 
   DATA_VECTOR(obs_incidence);      // observed incidence (new cases) over time
   DATA_SCALAR(N);                  // pop size
+  DATA_SPARSE_MATRIX(beta);        // trying to break automatic differentiation
 
   // chose to treat parameters as scalars rather than elements of a parameter vector
   // do_step.cpp indexes the parameter vector in order to allow for (lots) of flexibility
@@ -25,6 +26,7 @@ Type objective_function<Type>::operator() ()
   Type log_I0 = -3; // FIXME: remove hardcoding
   vector<Type> log_incidence(nobs); // model-based/theoretical incidence
 
+  beta.coeffRef(0, 0) = exp(log_beta);
    Type I0 = exp(log_I0);
    S = N - I0;      // the susceptible population is the total (N) minus
                     // the initial number infected (I0)
@@ -34,10 +36,10 @@ Type objective_function<Type>::operator() ()
                     // nicely into the overall 'flows' framework
 
    for (int t = 0; t < nobs ; t++) {
-      log_incidence(t) = log_beta + log_I + log(S);
+      log_incidence(t) = log(beta.coeff(0, 0)) + log_I + log(S);
       // no delta-t here yet ... time steps are dt=1
       S -= exp(log_incidence(t));
-      log_I += exp(log_beta) - exp(log_gamma);  // d(log(I))/dt = (dI/dt)/I = beta-gamma
+      log_I += beta.coeff(0, 0) - exp(log_gamma);  // d(log(I))/dt = (dI/dt)/I = beta-gamma
 
       // this part is a little bit mind-bending
       // TMB has two parameterizations of the negative binomial likelihood

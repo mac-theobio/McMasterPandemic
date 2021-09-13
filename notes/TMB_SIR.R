@@ -9,7 +9,8 @@ very_fake_data = ceiling(dnorm(seq(from = -3, to = 3, length.out = 100)) * 100)
 sim_obj = MakeADFun(
   data = list(
     obs_incidence = very_fake_data,  # only required to create simulation object
-    N = 1e7  # total number of people
+    N = 1e7,  # total number of people
+    beta = as(Matrix::sparseMatrix(i = 1, j = 1, x = 0), "dgTMatrix") # trying to break AD
   ),
   parameters = list(
     log_beta = log(0.05),
@@ -36,7 +37,8 @@ set.seed(1)
 obj = MakeADFun(
   data = list(
     obs_incidence = simulated_incidence,
-    N = 1e7
+    N = 1e7,
+    beta = as(Matrix::sparseMatrix(i = 1, j = 1, x = 0), "dgTMatrix")
   ),
   parameters = list(
     log_beta = log(0.05) + rnorm(1, sd = 10),

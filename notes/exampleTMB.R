@@ -16,9 +16,9 @@ dd <- MakeADFun(data = list(state = c(state1),
                             do_exponential = FALSE,
                             testwt_scale = "N"
                             ),
-                parameters = list(params=c(params1)))
+                parameters = list(params=c(params1)),
+                DLL = "TMB_do_step")
 
 new_state = dd$report()$state
 
 new_state
-
