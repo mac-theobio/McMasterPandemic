@@ -2,17 +2,83 @@
 output: html_document
 ---
 
+[![Superseded](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Superseded&color=red)](https://canmod.net/misc/flex_specs)
+
 # Dependence of State Transition Rates on Parameters and State Variables
 
 Currently MacPan developers specify new models by writing R code that transforms parameters and state variables into state transition rates (`make_ratemat`, `update_ratemat`). As we build more of MacPan in `C++` we would like to maintain the ability of epidemiologically-focused developers to define new models in R as much as possible. At the same time we would like to have `C++` developers focused on computational efficiency rather than details of epidemiological models. In order to achieve this separation of concerns, we will need to formalize a spec for a general model of how state transition rates depend on parameters and state variables. This spec will make it easier for the two types of developers to work together. We will version this spec so that we can build it in steps, making sure that we don't over-engineer it. 
 
-This is a working document that provides background on current thinking, spec definitions (currently only drafts), and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions. To update it use `make` from this folder.
+This is a working document that provides background on current thinking, spec definitions, and a roadmap for planning and remembering details that are not yet sorted out. Over time items from the roadmap will move into defined spec versions. To update it use `make` from this folder.
 
-## Versioned Rate Matrix Models
+## Versioned Model Specs
 
-There are currently no versioned rate matrix model specs. See below for experimental specs.
+Using semantic versioning https://semver.org/. All versions of the spec that have not been implemented in a released McMasterPandemic R package have pre-release `-alpha` identifiers (https://semver.org/#spec-item-9).
 
-## Experimental Rate Matrix Models
+### 0.0.1-alpha
+
+#### Summary of Capabilities (0.0.1-alpha)
+
+Update the elements of a rate matrix on the `TMB`/`C++` side using a restricted set of operations. The update formula must be specified separately for each element.
+
+#### Assumptions (0.0.1-alpha)
+
+* `vaxify`, `ageify`, and `testify` are all `FALSE` for all `McMasterPandemic` function calls
+* No parameter vary throughout a simulation
+* A `param_pansim` and a `state_pansim` object exists or can be constructed
+* The results of running the parameter and state vectors against `make_ratemat` are stored
+
+#### Interface (0.0.1-alpha)
+
+Users can define the structure of a rate matrix with a list of expressions, each determining the parameter and state dependence of a single non-zero rate matrix element. The formulas allow the following operations:
+
+* Any element, $x$, of either the parameter or state vector can be placed _in parentheses_ to produce a _factor_ in one of the following three forms
+  * Identity: `(x)`
+  * Complement: `(1-x)`
+  * Inverse: `(1/x)`
+* Any number of factors can be multiplied together using `*` to produce a _product_
+* Any number of factors and products can be added together using `+`
+
+#### Data Structure (0.0.1-alpha)
+
+```{r, echo=FALSE}
+to_tmb_eg = list(
+  from = c(2L, 2L, 3L, 4L, 4L, 5L, 6L, 6L, 6L, 6L, 9L, 10L, 8L, 7L, 6L, 1L), 
+  to = c(3L, 4L, 12L, 5L, 6L, 12L, 7L, 9L, 10L, 11L, 8L, 11L, 12L, 12L, 13L, 2L), 
+  count = c(2L, 2L, 1L, 2L, 2L, 1L, 3L, 4L, 4L, 2L, 1L, 1L, 1L, 1L, 3L, 18L), 
+  spi = c(20L, 21L, 20L, 21L, 22L, 28L, 25L, 28L, 25L, 23L, 31L, 34L, 24L, 31L, 
+          34L, 35L, 24L, 31L, 34L, 35L, 24L, 31L, 24L, 36L, 37L, 38L, 26L, 31L,
+          34L, 24L, 3L, 15L, 29L, 16L, 4L, 15L, 29L, 17L, 5L, 15L, 29L, 18L, 
+          32L, 6L, 15L, 29L, 19L, 32L), 
+  modifier = c(0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 
+               0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 4, 0, 2, 0, 4, 0, 2, 0, 1, 4, 
+               0, 2, 0, 1))
+```
+
+Five integer vectors must be passed to TMB to define a rate matrix model
+
+Each of the elements of three of these vectors correspond to each of the non-zero elements of the rate matrix. These three vectors are defined as follows.
+
+* `from`: Vector of indices pointing to the rows of the rate matrix to be updated
+
+##### `from`
+
+- _Description_: Vector over the of 1-based indices pointing to the rows corresponding to the of the rate matrix to be updated. This index identifies a compartment in the model _from_ which individuals flow. The `from` vector and `to` vector 'line-up', in the sense that the $i$th position in `from` indexes the state that is flowing to the state indexed by the $i$th position in `to`
+- _Length_: Number of scalar-valued states.  If the model contains vector or matrix valued states, then each element of these vectors and matrices is counted separately
+- _Example_: `r to_tmb_eg$from`
+
+##### `to`
+
+##### `count`
+
+##### `spi`
+
+##### `modifier`
+
+
+### In-Development Model Specs
+
+
+## Background
 
 ### Warm Up Rate Matrix Model
 
