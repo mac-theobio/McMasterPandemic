@@ -6,7 +6,11 @@ install.packages('roxygen2')
 install.packages('styler')
 install.packages('lintr')
 
-remotes::install_deps('.', dependencies = TRUE, upgrade = TRUE)
+# These are required under https://hub.docker.com/r/rocker/rstudio
+# install.packages('Hmisc')
+# install.packages('tidyverse')
+
+remotes::install_deps('.', dependencies = "Depends", upgrade = TRUE)
 remotes::install_github('bbolker/bbmle')
 
 tinytex::install_tinytex()
