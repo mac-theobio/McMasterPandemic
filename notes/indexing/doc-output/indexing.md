@@ -1,3 +1,5 @@
+[![Superseded](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Superseded&color=red)](https://canmod.net/misc/flex_specs)
+
 # Dependence of State Transition Rates on Parameters and State Variables
 
 Currently MacPan developers specify new models by writing R code that
@@ -14,17 +16,87 @@ developers to work together. We will version this spec so that we can
 build it in steps, making sure that we don’t over-engineer it.
 
 This is a working document that provides background on current thinking,
-spec definitions (currently only drafts), and a roadmap for planning and
-remembering details that are not yet sorted out. Over time items from
-the roadmap will move into defined spec versions. To update it use
-`make` from this folder.
+spec definitions, and a roadmap for planning and remembering details
+that are not yet sorted out. Over time items from the roadmap will move
+into defined spec versions. To update it use `make` from this folder.
 
-## Versioned Rate Matrix Models
+## Versioned Model Specs
 
-There are currently no versioned rate matrix model specs. See below for
-experimental specs.
+Using semantic versioning <https://semver.org/>. All versions of the
+spec that have not been implemented in a released McMasterPandemic R
+package have pre-release `-alpha` identifiers
+(<https://semver.org/#spec-item-9>).
 
-## Experimental Rate Matrix Models
+### 0.0.1-alpha
+
+#### Summary of Capabilities (0.0.1-alpha)
+
+Update the elements of a rate matrix on the `TMB`/`C++` side using a
+restricted set of operations. The update formula must be specified
+separately for each element.
+
+#### Assumptions (0.0.1-alpha)
+
+-   `vaxify`, `ageify`, and `testify` are all `FALSE` for all
+    `McMasterPandemic` function calls
+-   No parameter vary throughout a simulation
+-   A `param_pansim` and a `state_pansim` object exists or can be
+    constructed
+-   The results of running the parameter and state vectors against
+    `make_ratemat` are stored
+
+#### Interface (0.0.1-alpha)
+
+Users can define the structure of a rate matrix with a list of
+expressions, each determining the parameter and state dependence of a
+single non-zero rate matrix element. The formulas allow the following
+operations:
+
+-   Any element, *x*, of either the parameter or state vector can be
+    placed *in parentheses* to produce a *factor* in one of the
+    following three forms
+    -   Identity: `(x)`
+    -   Complement: `(1-x)`
+    -   Inverse: `(1/x)`
+-   Any number of factors can be multiplied together using `*` to
+    produce a *product*
+-   Any number of factors and products can be added together using `+`
+
+#### Data Structure (0.0.1-alpha)
+
+Five integer vectors must be passed to TMB to define a rate matrix model
+
+Each of the elements of three of these vectors correspond to each of the
+non-zero elements of the rate matrix. These three vectors are defined as
+follows.
+
+-   `from`: Vector of indices pointing to the rows of the rate matrix to
+    be updated
+
+##### `from`
+
+-   *Description*: Vector over the of 1-based indices pointing to the
+    rows corresponding to the of the rate matrix to be updated. This
+    index identifies a compartment in the model *from* which individuals
+    flow. The `from` vector and `to` vector ‘line-up’, in the sense that
+    the *i*th position in `from` indexes the state that is flowing to
+    the state indexed by the *i*th position in `to`
+-   *Length*: Number of scalar-valued states. If the model contains
+    vector or matrix valued states, then each element of these vectors
+    and matrices is counted separately
+-   *Example*: 2, 2, 3, 4, 4, 5, 6, 6, 6, 6, 9, 10, 8, 7, 6, 1
+
+##### `to`
+
+##### `count`
+
+##### `spi`
+
+##### `modifier`
+
+### In-Development Model Specs
+
+## Background
 
 ### Warm Up Rate Matrix Model
 
@@ -381,7 +453,7 @@ variable appears in the expression for the transition rate.
     heatmap(m[order(ca$rscore), order(ca$cscore)], 
             Colv = NA, Rowv = NA, scale = "none")
 
-![](/Users/stevenwalker/Development/McMasterPandemic/notes/indexing/doc-output/indexing_files/figure-markdown_strict/unnamed-chunk-11-1.png)
+![](/Users/stevenwalker/Development/McMasterPandemic/notes/indexing/doc-output/indexing_files/figure-markdown_strict/unnamed-chunk-12-1.png)
 
 I’ve ordered the axes using correspondence analysis, which is a
 statistical technique for finding block structure in matrices. Block

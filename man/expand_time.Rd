@@ -4,15 +4,20 @@
 \alias{expand_time}
 \title{Expand Parameters}
 \usage{
-expand_time(x, vals, nbreaks)
+expand_time(x, vals, nbreaks, pi_tv_par)
 }
 \arguments{
 \item{x}{parameter vector}
 
+\item{vals}{initial time-varying parameter values}
+
 \item{nbreaks}{integer vector of time indices of the breakpoints
 (in the case of piece-wise constant time variation, this can be
 computed using \code{table(model$timevar$piece_wise$schedule$Symbol)})}
+
+\item{pi_tv_par}{indices into the non-expanded/original parameter
+vector for selecting time-varying parameters}
 }
 \description{
-Expand Parameters
+Should only be used for spec version 0.0.3
 }

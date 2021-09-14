@@ -44,19 +44,31 @@ The specs for the following versions are frozen, which means that they will not 
 
 The specs for the following versions are being actively developed and modified. These versions also serve as a roadmap. Note that version numbers of experimental versions can change without warning.
 
-* [0.0.3 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.3)
-* [0.0.4 -- Log-linear exogenous time-variation of parameters](#v0.0.3)
-* [0.1.0 -- Model structure](#v0.0.4)
-* [0.2.0 -- Condensation and calibration](#v0.0.5)
-* [0.2.1 -- Hazard and ODE simulation](#v0.0.6)
-* [0.2.2 -- Stochasticity](#v0.0.7)
-* [0.3.0 -- Endogenous time-variation of parameters](#v0.0.8)
+* [0.0.3 -- Piece-wise constant exogenous time-variation of parameters (first attempt)](#v0.0.3)
+* [0.0.4 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.4)
+* [0.0.5 -- Hazard simulation](#v0.0.5)
+* [0.0.6 -- Log-linear exogenous time-variation of parameters](#v0.0.6)
+* [0.1.0 -- Model structure](#v0.1.0)
+* [0.2.0 -- Condensation and calibration](#v0.2.0)
+* [0.2.1 -- ODE simulation](#v0.2.1)
+* [0.2.2 -- Stochasticity](#v0.2.2)
+* [0.3.0 -- Endogenous time-variation of parameters](#v0.3.0)
+* [0.4.0 -- Time steps not equal to one](#0.4.0)
 
 ## Archived Versions
 
-The specs for archived versions are frozen but no longer respected by the `McMasterPandemic` `R` package and/or its test framework. Archived versions cannot be ignored because Frozen and Experimental versions may still reference them. Currently no versions are archived.
+The specs for archived versions are frozen but no longer respected by the `McMasterPandemic` `R` package and/or its test framework. Archived versions cannot be ignored because Frozen and Experimental versions may still reference them.
+
 
 # Version Descriptions
+
+## v0.4.0
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.4.0)
+
+Time steps not equal to one.
 
 ## v0.3.0
 
@@ -80,7 +92,7 @@ Stochasticity.
 
 ### New Capabilities (0.2.1)
 
-Hazard and exponential simulation.
+ODE (i.e. exponential) simulation.
 
 ## v0.2.0
 
@@ -98,15 +110,15 @@ Condensation and calibration.
 
 Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
 
-## v0.0.4
+## v0.0.6
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities (0.0.4)
+### New Capabilities (0.0.6)
 
 Log-linear exogenous time-variation of parameters.
 
-### Mathematical Description (0.0.4)
+### Mathematical Description (0.0.6)
 
 Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
 
@@ -138,21 +150,92 @@ u_0, & t < t_1 \\
 \end{cases}
 $$
 
-## v0.0.3
+## v0.0.5
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
+### New Capabilities (0.0.5)
+
+Hazard simulation.
+
+### Mathematical Description
+
+Define the sums of the rows of the rate matrix. 
+$$
+r_i = \sum_{j=1}^n M_{ij}
+$$
+Define the elements of a vector of exponentiated row sums
+$$
+\rho_i = \exp(-r_i)
+$$
+
+Define the elements of a normalized state vector.
+$$
+\tilde{s}_i = \begin{cases}
+0 & r_i = 0 \\
+\frac{s_i}{r_i} & \text{otherwise}
+\end{cases}
+$$
+With these definitions we can define the modified flow matrix.
+$$
+F_{ij} = \begin{cases}
+M_{ij}\tilde{s}_i(1-\rho_i) & i \ne j \\
+0 & \text{otherwise}
+\end{cases}
+$$
+This modified flow matrix can now be used in the same way as the unmodified flow matrix to produce state variable updates following spec version 0.0.2.
+
+### User Interface (0.0.5)
+
+A Boolean argument needs to be added to the interface, indicating whether or not the hazard-based flow matrix is used rather than the simple flow matrix.
+
+### Data Structure (0.0.5)
+
+The data structure is equivalent to 0.0.4.
+
+## v0.0.4
+
+ We begin with simple piece-wise constant time-variation. _Piece-wise constant_ means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes -- at all other times the parameter is constant. We plan to relax the _piece-wise constant_ restriction in [version 0.0.6](#v0.0.6).
+
+### New Capabilities (0.0.4)
+
+Patch of the spec from 0.0.3 on piece-wise constant time-varying parameters.
+
+### Data Structure (0.0.4)
+
+ - *update_indices* (**removed**): a second set of *from* *to*, etc for 
+ need-to-update elements proposed in spec 0.0.2 is removed in this proposal because the 
+ newly introduced *upateidx* provides the information needed.
+ - *upateidx* (**added**): a vector of indices into vectors *from*, *to*, and *count* of those elements 
+ in the rate matrix that need to be updated. It includes the indices of the elements that 
+ depend on either the state vector (0.0.2), or time-varying parameters (0.0.3 or 0.0.4), 
+ or both. At each simulation step, we will update only those elements specified by 
+ *updateidx*. The drawback of this design is that elements that only depends on piece-wise 
+ parameters (0.0.3) are updated at each step although they only need to be updated at 
+ certain breaks.
+ - *breaks* (**added**): 
+ vector of all the breaks.
+ - *count_of_tv_at_breaks (**added**): vector of number of 
+ time-varying parameters that change at each break.
+ - *tv_spi* (**added**): vector of 
+ indices into vector *sp* of those time-varying parameters in the order of breaks as major 
+ and parameters as minor.
+ - *tv_val* (**added**): vector of new values corresponding to 
+ *tv_spi*.
+
+## v0.0.3
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Archived&color=red)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
 ### New Capabilities (0.0.3)
 
-This version considers simple piece-wise constant and exogenous time-variation. _Piece-wise constant_ means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes -- at all other times the parameter is constant. _Exogenous_ means that the changes in the parameters do not depend on state variables, and therefore all of the values that a time-varying parameter takes throughout a simulation can be pre-computed before the simulation begins. We plan to relax the _piece-wise constant_ restriction in [version 0.0.4](https://canmod.net/misc/flex_specs#v0.0.4) and the _exogenous_ restriction in [version 0.3.0](https://canmod.net/misc/flex_specs#v0.3.0).
+This version was an early attempt to introduce parameters that can vary at each simulation step. It was never implemented on the `C++`-side, and has been superseded by [version 0.0.4](#v0.0.4)
 
 ### Assumptions (0.0.3)
 
-* Time-varying parameters cannot be accumulators
-
 ### Mathematical Description (0.0.3)
 
-In the non-time-varying case of [version 0.0.2](https://canmod.net/misc/flex_specs#v0.0.2), we have scalar valued parameters. These parameters are constant in simulation time. We now consider parameters that can vary at any particular simulation step.
+In the non-time-varying case of [version 0.0.2](#v0.0.2), we have scalar valued parameters. These parameters are constant in simulation time. We now consider parameters that can vary at any particular simulation step.
 
 Consider a focal scalar-valued time-varying parameter $u$. In the non-time-varying case this scalar value, $u$, is an element of the parameter vector, $\theta$.
 
@@ -160,13 +243,13 @@ $$
 \theta = [..., u, ...]
 $$
 
-In the time-varying case, there is a series of values, $u_0, u_1, ..., u_n$ associated with an initial value $u = u_0$ and the values, $u_1, ..., u_n$, at $n$ break-points, $t_1, ..., t_n$.
+In the time-varying case, there is a series of values, $u_0, u_1, ..., u_n$ associated with an initial value $u = u_0$ and the values, $u_1, ..., u_n$, at $n_u$ break-points, $t_1, ..., t_{n_u}$. We store these additional values by expanding the parameter vector to make room for them.
 
 $$
 \theta = [..., u_0, u_1, ..., u_n, ...]
 $$
 
-Each simulation step is indexed $t = 1, ..., T$, where $T$ is the number of simulation steps. If the time-varying parameter, $u$, is required at time $t$ to update an element of the rate-matrix, the value of $u$ that is used is $u_i$ such that $t \in [i, i+1)$.
+Each simulation step is indexed $t = 1, ..., T$, where $T$ is the number of simulation steps. If the time-varying parameter, $u$, is required at time $t$ to update an element of the rate-matrix, the value of $u$ that is used is $u_i$ such that $t \in [t_i, t_{i+1})$.
 
 ### User Interface (0.0.3)
 
@@ -203,8 +286,10 @@ model = (
   %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
   %>% add_rate("Im", "R", ~ (gamma_m))
   %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-  %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-  %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUs", ~ 
+                 (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUd", ~ 
+                 (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
   %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
   %>% add_rate("ICUs", "H2", ~ (psi1))
   %>% add_rate("ICUd", "D", ~ (psi2))
@@ -379,7 +464,7 @@ The user must also be able to specify the number of state vector updates and the
 
 ### Data Structure (0.0.2)
 
-The following pieces of information need to be added to those described in [Data Structure (0.0.2)](#data-structure-0.0.2) in order to make state vector updates.
+The following pieces of information need to be added to those described in [Data Structure (0.0.1)](#data-structure-0.0.1) in order to make state vector updates.
 
 * Modified copies of the following integer vectors described in [0.0.1](#data-structure-0.0.1): `spi`, `modifier`, `from`, `to`, `count`
    * These copies will only contain indices necessary for updating the rate matrix elements that could potentially change at each simulation step
@@ -443,8 +528,10 @@ model = (
   %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
   %>% add_rate("Im", "R", ~ (gamma_m))
   %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-  %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-  %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUs", ~ 
+                 (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUd", ~ 
+                 (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
   %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
   %>% add_rate("ICUs", "H2", ~ (psi1))
   %>% add_rate("ICUd", "D", ~ (psi2))
@@ -460,7 +547,7 @@ model = (
 )
 ```
 
-The first step, `init_model`, in this pipeline initializes the compartmental model by specifying `state_params` and `state_pansim` objects containing the parameters and state variables respectively.
+The first step, `init_model`, in this pipeline initializes the compartmental model by specifying objects containing the parameters and state variables respectively.
 
 Each subsequent call to `add_rate` defines the dependence of a single non-zero rate matrix element on parameters and state variables. When used in a pipeline, the `add_rate` function takes three arguments.
 
