@@ -64,13 +64,13 @@ cache
 .DS_Store
 *.rtmp
 wget-*
-
+slurm-*
 ## stop ignoring some files
 !git_push/*.html
 !git_push/*.png
 !notes/*.html
 !sandbox/*.RDS
-!sandbox/*.Rdata
+!weekly_calibrations/*.png
 
 notes/debugging.R
 notes/expandify_implementation.nb.html

@@ -2,7 +2,7 @@
 library(McMasterPandemic)
 library(tidyverse)
 
-dir.create(file.path('weekly_calibrations'), showWarnings = FALSE)
+dir.create(file.path('../weekly_calibrations'), showWarnings = FALSE)
 
 keep_vars <- c("H", "ICU", "death", "report")
 ## data since 15 March
@@ -51,7 +51,7 @@ timevar_df <- data.frame(Date = bd,
                          Symbol = c("beta0", "beta0", "beta0"),
                          Relative_value = c(NA, NA, NA))
 
-
+start_time <- Sys.time()
 ont_cal1 <- calibrate(
   data = ont_all_sub,
   base_params = params,
@@ -60,30 +60,24 @@ ont_cal1 <- calibrate(
   sim_args = list(step_args = list())
 )
 
+end_time <- Sys.time()
 
-save("ont_cal1", "bd", "ont_all_sub", file=sprintf(file.path("weekly_calibrations", "ONcalib.rda"),
-                                                   format(Sys.time(),"%Y%b%d")))
+time_diff <- end_time - start_time
+print(time_diff)
 
+file = file.path("../weekly_calibrations", paste("ONcalib_", format(Sys.time(), "%Y%b%d"), ".rda", sep=""))
+save("ont_cal1", "bd", "ont_all_sub", "time_diff", file=file)
 
-
-
-end_date <- as.Date(do_hazard$mle2@data$end_date) + 30
+end_date = as.Date(ont_cal1$mle2@data$end_date) + 30
 prediction <- predict(ont_cal1, end_date = end_date) %>%
   filter(!(var %in% c("cumRep")))
 
-replace_na <- function(x) {
-  x[is.na(x)] <- 0
-  return(x)
-}
 
 ggplot_df <- prediction %>% filter(var == "incidence")
 
+file = file.path("../weekly_calibrations", paste("prediction_", format(Sys.time(), "%Y%b%d"), ".png", sep=""))
 ggplot(ggplot_df) +
-  theme(text = element_text(size = 20)) +
-  geom_line(aes(x = date, y = value), size = 1) +
-  labs(x = "date", y = "incidence", title = "", col = "")
-ggsave(file=sprintf(file.path("weekly_calibrations", "predictions.png"),
-                    format(Sys.time(),"%Y%b%d")), width = 16, height = 10)
-
-
-
+	theme(text = element_text(size = 20)) +
+	geom_line(aes(x = date, y = value), size = 1) +
+	labs(x = "date", y = "incidence", title = "", col = "")
+	ggsave(file=file, width = 16, height = 10)

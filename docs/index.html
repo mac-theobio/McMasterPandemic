@@ -98,22 +98,39 @@
 <a href="#mcmasterpandemic" class="anchor"></a>McMasterPandemic</h1></div>
 <!-- badges: start -->
 
-<p>Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li, Irena Papst (in alphabetical order). Feedback is welcome at the <a href="https://github.com/bbolker/McMasterPandemic/issues">issues list</a>, or e-mail us.</p>
+<p>Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li, Irena Papst (in alphabetical order). Feedback is welcome at the <a href="https://github.com/mac-theobio/McMasterPandemic/issues">issues list</a>, or e-mail us.</p>
+<div id="documentation" class="section level3">
+<h3 class="hasAnchor">
+<a href="#documentation" class="anchor"></a>Documentation</h3>
+<ul>
+<li>See the accompanying <a href="https://mac-theobio.github.io/McMasterPandemic/">pkgdown</a> site.</li>
+<li>Functions are under the <code>Reference</code> tab.</li>
+<li>Vignettes (under construction!) are under <code>Articles</code>.</li>
+<li>
+<a href="https://github.com/mac-theobio/McMasterPandemic/issues">Issues</a> list.</li>
+<li>
+<a href="https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/">Shiny app</a> written by Zach Levine</li>
+</ul>
+</div>
 <div id="installation" class="section level3">
 <h3 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h3>
-<p>The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from <a href="https://github.com/bbolker/McMasterPandemic">here</a>) and install locally or use <code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("bbolker/McMasterPandemic")</a></code> to install the package. You will need to first install the developer version of <code>bbmle</code> (<code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("bbolker/bbmle")</a></code>) before installing <code>McMasterPandemic</code>.</p>
+<p>The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from <a href="https://github.com/mac-theobio/McMasterPandemic">here</a>) and install locally or use <code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("mac-theobio/McMasterPandemic")</a></code> to install the package. You will need to first install the developer version of <code>bbmle</code> (<code><a href="https://remotes.r-lib.org/reference/install_github.html">remotes::install_github("bbolker/bbmle")</a></code>) before installing <code>McMasterPandemic</code>.</p>
 </div>
 <div id="for-developers" class="section level3">
 <h3 class="hasAnchor">
 <a href="#for-developers" class="anchor"></a>For developers</h3>
 <ul>
-<li>to re-install the package, including re-building and incorporating vignettes, use <code>make build</code>
+<li>the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) – there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see <code>dockerfile</code> for details on Debian Linux)</li>
+<li>as a convenience you can install all of the R and tex package dependencies using <code>make dependencies</code> or running <code>/misc/dependencies.R</code>
+</li>
+<li>to re-install the package, including re-building and incorporating vignettes, use <code>make build-package</code>
 </li>
 <li>If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use <code>make doc-update</code> to update the <code>.Rd</code> files.</li>
 <li>
-<strong>please test/check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org//reference/check.html">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org//reference/test.html">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/bbolker/McMasterPandemic/actions">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Please don’t make a habit of pushing without testing.</li>
+<strong>please test/check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org//reference/check.html">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org//reference/test.html">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/mac-theobio/McMasterPandemic/actions">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Please don’t make a habit of pushing without testing.</li>
 <li>To avoid whitespace diffs between versions/branches, automatically style the package with <code>make style</code> or run <code>misc/macpan_style.R</code>. <code>make style</code> (or running <code>misc/macpan_lint.R</code>) also creates a new file, <code>misc/lints.csv</code>, which contains stylistic and other lints that <code>styler</code> cannot automatically fix.</li>
+<li>rebuild the <code>pkgdown</code> site using <a href="https://github.com/mac-theobio/McMasterPandemic/actions/workflows/pkgdown.yaml">GitHub Actions</a>: click “run workflow” on the link to rebuild.</li>
 <li>Code that is used in the refactoring process should go in the top-level <code>refactor</code> folder.</li>
 <li>Slow tests are skipped by default; this process is controlled by the presence of a <code>MACPAN_TEST_LEVEL</code> environment (shell) variable. Many of the test files contain this code:</li>
 </ul>
@@ -121,9 +138,9 @@
 <code class="sourceCode R"><span class="va">testLevel</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html">nzchar</a></span><span class="op">(</span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html">Sys.getenv</a></span><span class="op">(</span><span class="st">"MACPAN_TEST_LEVEL"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></code></pre></div>
 <p>which sets <code>testLevel</code> to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via <code>export MACPAN_TEST_LEVEL=2</code> in a bash shell), or via <code><a href="https://rdrr.io/r/base/Sys.setenv.html">Sys.setenv(MACPAN_TEST_LEVEL=2)</a></code> from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and &gt;1 are distinguished.</p>
 </div>
-<div id="documentation" class="section level3">
+<div id="documentation-1" class="section level3">
 <h3 class="hasAnchor">
-<a href="#documentation" class="anchor"></a>Documentation</h3>
+<a href="#documentation-1" class="anchor"></a>Documentation</h3>
 <p>The documentation is a little bit scattered right now, working on cleaning it up. In addition to the standard short descriptions of the functions (<code><a href="https://rdrr.io/pkg/McMasterPandemic/man">help(package="McMasterPandemic")</a></code>), stuff can be found:</p>
 <ul>
 <li>in the vignettes (look at the source code in the [vignettes] directory or <code>vignette(&lt;title&gt;, package="McMasterPandemic")</code>)
@@ -145,7 +162,6 @@
 <code>ontario_calibration_report.html</code>: more technical and less up-to-date than the preceding document</li>
 <li>
 <code>TODO.md</code>: active to-do list</li>
-<li>issues list on github</li>
 </ul>
 <p>More bits and pieces: <code>notes/refactor.Rmd</code>, <code>testing.md</code>, <code>reimplementation.md</code></p>
 </div>
@@ -186,7 +202,7 @@
   <div class="dev-status">
 <h2>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/bbolker/McMasterPandemic/actions"><img src="https://github.com/bbolker/McMasterPandemic/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/mac-theobio/McMasterPandemic/actions"><img src="https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
 </ul>
 </div>
 </div>

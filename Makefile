@@ -59,7 +59,6 @@ Sources += $(wildcard R/*.R)
 
 Sources += dottarget.mk
 
-
 ######################################################################
 
 subdirs += ontario notes
@@ -130,6 +129,7 @@ VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 testversion:
 	echo "${VERSION}"
 
+Ignore += McMasterPandemic*.tar.gz
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 ZIPFILE := =$(PACKAGE)_$(VERSION).zip
 
@@ -153,6 +153,9 @@ clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
 CPP_SRC=
+
+dependencies:
+	Rscript misc/dependencies.R
 
 ## FIXME: depend on ??
 build-package: $(TARBALL)
@@ -204,4 +207,3 @@ localstuff:
 
 -include makestuff/git.mk
 -include makestuff/visual.mk
--include makestuff/projdir.mk

@@ -27,3 +27,5 @@ utils/
 ^\.github$
 refactor/
 docs/
+dockerfile
+weekly_calibrations/
