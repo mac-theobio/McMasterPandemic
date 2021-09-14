@@ -300,7 +300,7 @@ model = (
                  (Ia) * (beta0) * (1/N) * (Ca) +
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
   %>% add_tmb_indices()
 )
