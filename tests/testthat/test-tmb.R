@@ -26,6 +26,7 @@ library(numDeriv)
 # spec versioning.
 # ------------------------------------------------------------------
 spec_version = "0.0.1"
+print(spec_version)
 options(MP_flex_spec_version = spec_version)
 test_files = "../../inst/tmb/"
 
@@ -66,16 +67,7 @@ test_model = (
   %>% add_tmb_indices()
 )
 
-indices = test_model$tmb_indices$make_ratemat_indices
-dd <- MakeADFun(data = list(state = c(test_model$state),
-                            ratemat = M,
-                            from = indices$from,
-                            to = indices$to,
-                            count = indices$count,
-                            spi = indices$spi,
-                            modifier = indices$modifier),
-                parameters = list(params=c(test_model$params)),
-                DLL=basename(dll))
+dd = tmb_fun(test_model, basename(dll))
 
 tmb_sparse_ratemat = dd$report()$ratemat
 r_dense_ratemat = as.matrix(M)
@@ -109,6 +101,7 @@ test_that("matrix elements are equal", {
 
 
 spec_version = "0.0.2"
+print(spec_version)
 options(MP_flex_spec_version = spec_version)
 test_files = "../../inst/tmb/"
 
@@ -149,28 +142,7 @@ test_model = (
   %>% add_tmb_indices()
 )
 
-indices = test_model$tmb_indices$make_ratemat_indices
-update_indices = test_model$tmb_indices$update_ratemat_indices
-par_accum_indices = test_model$tmb_indices$par_accum_indices
-
-numIters = 3 # This value should have been kept in test_model
-
-dd <- MakeADFun(data = list(state = c(test_model$state),
-                            ratemat = M,
-                            from = indices$from,
-                            to = indices$to,
-                            count = indices$count,
-                            spi = indices$spi,
-                            modifier = indices$modifier,
-                            update_from = update_indices$from,
-                            update_to = update_indices$to,
-                            update_count = update_indices$count,
-                            update_spi = update_indices$spi,
-                            update_modifier = update_indices$modifier,
-                            par_accum_indices = par_accum_indices,
-                            numIterations = numIters),
-                parameters = list(params=c(test_model$params)),
-                DLL=basename(dll))
+dd = tmb_fun(test_model, basename(dll))
 
 tmb_traj = (state
   %>% c(dd$report()$concatenated_state_vector)
@@ -190,6 +162,7 @@ test_that("simulated state trajectories are equal", {
 
 
 spec_version = "0.0.4"
+print(spec_version)
 options(MP_flex_spec_version = spec_version)
 
 test_files = "../../inst/tmb/"
@@ -239,36 +212,7 @@ test_model = (init_model(
   %>% add_tmb_indices()
 )
 
-from = test_model$tmb_indices$make_ratemat_indices$from
-to = test_model$tmb_indices$make_ratemat_indices$to
-count = test_model$tmb_indices$make_ratemat_indices$count
-spi = test_model$tmb_indices$make_ratemat_indices$spi
-modifier = test_model$tmb_indices$make_ratemat_indices$modifier
-
-updateidx = test_model$tmb_indices$updateidx
-breaks = test_model$timevar$piece_wise$breaks
-count_of_tv_at_breaks = test_model$timevar$piece_wise$count_of_tv_at_breaks
-tv_spi = test_model$timevar$piece_wise$schedule$tv_spi
-tv_val = test_model$timevar$piece_wise$schedule$tv_val
-par_accum_indices = test_model$tmb_indices$par_accum_indices
-iters = test_model$iters
-
-dd <- MakeADFun(data = list(state = c(state),
-                            ratemat = M,
-                            from = from,
-                            to = to,
-                            count = count,
-                            spi = spi,
-                            modifier = modifier,
-                            updateidx = c(updateidx),
-                            breaks = breaks,
-                            count_of_tv_at_breaks = count_of_tv_at_breaks,
-                            tv_spi = tv_spi,
-                            tv_val = tv_val,
-                            par_accum_indices = par_accum_indices,
-                            numIterations = iters),
-                parameters = list(params=c(test_model$params)),
-                DLL=basename(dll))
+dd = tmb_fun(test_model, basename(dll))
 
 tmb_traj = (state
             %>% c(dd$report()$concatenated_state_vector)
@@ -297,6 +241,7 @@ test_that("simulated state trajectories are equal", {
 
 
 spec_version = "0.0.5"
+print(spec_version)
 options(MP_flex_spec_version = spec_version)
 
 test_files = "../../inst/tmb/"
@@ -317,6 +262,7 @@ tv_dat = data.frame(
   Value = c(0.5, 0.1, 0.05),
   Type = c('rel_prev', 'rel_orig', 'rel_prev')
 )
+
 
 test_model = (init_model(
   params, state,
@@ -346,40 +292,7 @@ test_model = (init_model(
   %>% add_tmb_indices()
 )
 
-#sp = c(test_model$state, test_model$params)
-from = test_model$tmb_indices$make_ratemat_indices$from
-to = test_model$tmb_indices$make_ratemat_indices$to
-count = test_model$tmb_indices$make_ratemat_indices$count
-spi = test_model$tmb_indices$make_ratemat_indices$spi
-modifier = test_model$tmb_indices$make_ratemat_indices$modifier
-
-updateidx = test_model$tmb_indices$updateidx
-breaks = test_model$timevar$piece_wise$breaks
-count_of_tv_at_breaks = test_model$timevar$piece_wise$count_of_tv_at_breaks
-tv_spi = test_model$timevar$piece_wise$schedule$tv_spi
-tv_val = test_model$timevar$piece_wise$schedule$tv_val
-par_accum_indices = test_model$tmb_indices$par_accum_indices
-
-do_hazard = TRUE
-
-dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
-                            ratemat = M,
-                            from = from,
-                            to = to,
-                            count = count,
-                            spi = spi,
-                            modifier = modifier,
-                            updateidx = c(updateidx),
-                            breaks = breaks,
-                            count_of_tv_at_breaks = count_of_tv_at_breaks,
-                            tv_spi = tv_spi,
-                            tv_val = tv_val,
-                            par_accum_indices = par_accum_indices,
-                            do_hazard = do_hazard,
-                            numIterations = test_model$iters),
-                parameters = list(params=c(test_model$params)),
-                DLL=basename(dll))
-
+dd = tmb_fun(test_model, basename(dll))
 
 tmb_traj = (state
             %>% c(dd$report()$concatenated_state_vector)
@@ -395,8 +308,9 @@ r_traj = run_sim(
   end_date = test_model$end_date,
   params_timevar = tv_dat,
   condense = FALSE,
-  step_args = list(do_hazard = do_hazard))[,names(state)] %>%
+  step_args = list(do_hazard = TRUE))[,names(state)] %>%
   as.data.frame
+
 
 row.names(r_traj) = row.names(tmb_traj) = NULL
 
@@ -409,11 +323,21 @@ test_that("mock objective function is correct", {
 })
 
 test_that("tmb-computed gradient equals numerical gradient", {
-  numeric_gradient = numDeriv::grad(dd$fn, dd$par)
+
+  # numerical differentiation settings:
+  # used defaults from `?grad` with one exception: d = 0.1, not 0.0001.
+  # i don't understand why this helps, but it allows us to take the
+  # tolerance from 1e-4 down to 1e-6
+  numerical_deriv_args =
+    list(eps=1e-4, d=0.1,
+         zero.tol=sqrt(.Machine$double.eps/7e-7), r=4, v=2,
+         show.details=FALSE)
+
+
+  numeric_gradient = numDeriv::grad(dd$fn, dd$par,
+                                    method.args = numerical_deriv_args)
   tmb_gradient = dd$gr(dd$par)
   attributes(numeric_gradient) = attributes(tmb_gradient) = NULL
   expect_equal(tmb_gradient, numeric_gradient,
-               # test fails with tol=1e-05.
-               # is this just due to error in the numerical derivative??
-               tolerance = 1e-04)
+               tolerance = 1e-6)
 })

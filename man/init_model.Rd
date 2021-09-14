@@ -9,20 +9,29 @@ init_model(
   state,
   start_date = NULL,
   end_date = NULL,
-  timevar_piece_wise = NULL
+  timevar_piece_wise = NULL,
+  do_hazard = TRUE
 )
 }
 \arguments{
 \item{params}{a \code{param_pansim} object}
 
 \item{state}{a \code{state_pansim} object}
+
+\item{start_date}{simulation start date}
+
+\item{end_date}{simulation end date}
+
+\item{timevar_piece_wise}{data frame with scheduling for piece-wise
+constant parameter variation (TODO: direct to other help pages)}
+
+\item{do_hazard}{should hazard simulation steps be used?
+(https://canmod.net/misc/flex_specs#v0.0.5) -- only used
+if \code{spec_ver_gt('0.0.4')}}
 }
 \value{
 object representing a compartmental model
 }
 \description{
-TODO: `recompute` argument for functions below
-TODO: `overwrite` argument for add functions that force `recompute`
-TODO: create versions of `rate/add_rate` functions that allow structure.
-      maybe `rates/add_rates`??
+Initialize Compartmental Model
 }

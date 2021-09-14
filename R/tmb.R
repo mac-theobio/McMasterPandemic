@@ -1,21 +1,25 @@
 #' Initialize Compartmental Model
 #'
-#' TODO: `recompute` argument for functions below
-#' TODO: `overwrite` argument for add functions that force `recompute`
-#' TODO: create versions of `rate/add_rate` functions that allow structure.
-#'       maybe `rates/add_rates`??
-#'
 #' @param params a \code{param_pansim} object
 #' @param state a \code{state_pansim} object
+#' @param start_date simulation start date
+#' @param end_date simulation end date
+#' @param timevar_piece_wise data frame with scheduling for piece-wise
+#' constant parameter variation (TODO: direct to other help pages)
+#' @param do_hazard should hazard simulation steps be used?
+#' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
+#' if \code{spec_ver_gt('0.0.4')}
 #' @return object representing a compartmental model
 #' @export
 init_model <- function(params, state,
                        start_date = NULL, end_date = NULL,
-                       timevar_piece_wise = NULL) {
+                       timevar_piece_wise = NULL,
+                       do_hazard = TRUE) {
+  check_spec_ver_archived()
   model = list(
     state = state,
     params = params,
-    ratemat = make_ratemat(state, params),
+    ratemat = make_ratemat(state, params, sparse = TRUE),
     rates = list()
   )
 
@@ -137,11 +141,12 @@ init_model <- function(params, state,
       )
     } # >v0.0.3
   }
+  if(spec_ver_gt('0.0.4')) model$do_hazard = do_hazard
 
   # TODO: clarify index structure here once we converge
   model$tmb_indices = list()
 
-  return(model)
+  structure(model, class = "flexmodel")
 }
 
 #' Rate Structure
@@ -397,6 +402,8 @@ piece_wise_indices = function(rates, timevar, start_date) {
 
 #' @export
 tmb_indices = function(model) {
+  check_spec_ver_archived()
+
   sp = c(model$state, model$params)
   indices = list(make_ratemat_indices = ratemat_indices(model$rates, sp))
 
@@ -416,4 +423,103 @@ tmb_indices = function(model) {
     indices$updateidx = which_time_varying_rates(model)
   }
   return(indices)
+}
+
+#' Make Objective Function with TMB
+#'
+#' Construct an objective function in TMB from a \code{flexmodel}
+#' object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
+#'
+#' @param model object of class \code{flexmodel}
+#' @param DLL argument to pass to the \code{DLL} argument of
+#' \code{TMB::MakeADFun}. TODO: make this optional, and choose the main
+#' package DLL once it exists
+#' (https://github.com/mac-theobio/McMasterPandemic/issues/96)
+#' @export
+tmb_fun = function(model, DLL) {
+
+  check_spec_ver_archived()
+
+  # unpack model structure
+  unpack(model)
+  unpack(tmb_indices)
+  unpack(make_ratemat_indices)
+  if(spec_ver_gt('0.0.3')) unpack(timevar$piece_wise)
+
+
+  # make ad functions
+  if(spec_ver_eq('0.0.1')) {
+    dd <- MakeADFun(data = list(state = c(state),
+                                ratemat = ratemat,
+                                from = from,
+                                to = to,
+                                count = count,
+                                spi = spi,
+                                modifier = modifier),
+                    parameters = list(params=c(params)),
+                    DLL=DLL)
+  } else if(spec_ver_eq('0.0.2')) {
+    up = update_ratemat_indices
+
+    # TODO: spec problem -- numIters should have been kept in model
+    numIters = 3
+
+    dd <- MakeADFun(data = list(state = c(state),
+                                ratemat = ratemat,
+                                from = from,
+                                to = to,
+                                count = count,
+                                spi = spi,
+                                modifier = modifier,
+                                update_from = up$from,
+                                update_to = up$to,
+                                update_count = up$count,
+                                update_spi = up$spi,
+                                update_modifier = up$modifier,
+                                par_accum_indices = par_accum_indices,
+                                numIterations = numIters),
+                    parameters = list(params=c(params)),
+                    DLL=DLL)
+  } else if(spec_ver_eq('0.0.4')) {
+
+    dd <- MakeADFun(data = list(state = c(state),
+                                ratemat = ratemat,
+                                from = from,
+                                to = to,
+                                count = count,
+                                spi = spi,
+                                modifier = modifier,
+                                updateidx = c(updateidx),
+                                breaks = breaks,
+                                count_of_tv_at_breaks = count_of_tv_at_breaks,
+                                tv_spi = schedule$tv_spi,
+                                tv_val = schedule$tv_val,
+                                par_accum_indices = par_accum_indices,
+                                numIterations = iters),
+                    parameters = list(params=c(params)),
+                    DLL=DLL)
+
+  } else if(spec_ver_eq('0.0.5')) {
+
+    dd <- MakeADFun(data = list(state = c(state),
+                                ratemat = ratemat,
+                                from = from,
+                                to = to,
+                                count = count,
+                                spi = spi,
+                                modifier = modifier,
+                                updateidx = c(updateidx),
+                                breaks = breaks,
+                                count_of_tv_at_breaks = count_of_tv_at_breaks,
+                                tv_spi = schedule$tv_spi,
+                                tv_val = schedule$tv_val,
+                                par_accum_indices = par_accum_indices,
+                                do_hazard = do_hazard,
+                                numIterations = iters),
+                    parameters = list(params=c(params)),
+                    DLL=DLL)
+  } else{
+    stop('This feature is not supported by your installation of MacPan')
+  }
+  return(dd)
 }
