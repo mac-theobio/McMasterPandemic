@@ -43,21 +43,16 @@ void remove_cols(
     Eigen::SparseMatrix<Type>& mat,
     const vector<int>& indices_to_remove)
 {
-  //std::cout << "matrix before= " << mat << std::endl;
-
   Type* valPtr = mat.valuePtr();
   int* rowIndexPtr = mat.innerIndexPtr();
   int* outPtr = mat.outerIndexPtr();
 
   for (int j= 0; j<indices_to_remove.size(); j++) {
     int jj = indices_to_remove[j] - 1;
-    //std::cout << "jj= " << jj << std::endl;
     for (int i= outPtr[jj]; i<outPtr[jj+1]; i++) {
-      //std::cout << valPtr[i] << " will be zero-ed out ****" << std::endl;
       valPtr[i] = 0.0;
     }
   }
-  //std::cout << "matrix after= " << mat << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,9 +68,6 @@ Eigen::SparseMatrix<Type> make_ratemat(
     const vector<int>& modifier)
 {
   Eigen::SparseMatrix<Type> result(size, size);
-
-  //std::cout << "=========================================" << std::endl;
-  //std::cout << ratemat << std::endl;
 
   int start = 0;
   int n = count.size();
@@ -102,8 +94,6 @@ Eigen::SparseMatrix<Type> make_ratemat(
   
   result.makeCompressed();
 
-  //std::cout << "-------------------------------------" << std::endl;
-  //std::cout << result << std::endl;
   return result;
 }
 
@@ -120,14 +110,11 @@ void update_ratemat(
     const vector<int>& modifier,
     const vector<int>& updateidx)
 {
-  //std::cout << "=========================================" << std::endl;
-  //std::cout << *ratemat << std::endl;
-
   for (int i=0; i<updateidx.size(); i++) {
     int idx = updateidx[i] - 1;
     int row = from[idx] - 1;
     int col = to[idx] - 1;
-    //std::cout << "updating element " << row << ", " << col << std::endl;
+
     ratemat->coeffRef(row,col) = 0.0;
     Type prod = 1.0;
     for (int j=count_integral[idx]; j<count_integral[idx+1]; j++) {
@@ -144,9 +131,6 @@ void update_ratemat(
     }
     ratemat->coeffRef(row,col) += prod;
   }
-
-  //std::cout << "-------------------------------------" << std::endl;
-  //std::cout << *ratemat << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,9 +166,7 @@ Eigen::SparseMatrix<Type> calc_flowmat(
     return col_multiply(mat, vec);
   else {
     vector<Type> r = rowSums(mat);
-    //std::cout << "r = " << r << std::endl;
     vector<Type> rho = exp(-r);
-    //std::cout << "rho = " << rho << std::endl;
 
     vector<Type> s_tilde(vec.size());
     for (int i=0; i<vec.size(); i++)
@@ -192,11 +174,8 @@ Eigen::SparseMatrix<Type> calc_flowmat(
         s_tilde[i] = 0.0;
       else
         s_tilde[i] = vec[i]/r[i];
-    //std::cout << "state = " << vec << std::endl;
-    //std::cout << "s_tilde = " << s_tilde << std::endl;
 
     vector<Type> v = s_tilde*(1.0-rho);
-    //std::cout << "v = " << v << std::endl;
 
     // Maybe a more efficient way is using a modified version of col_multiply()
     //Eigen::SparseMatrix<Type> flowmat = col_multiply(mat, v); 
@@ -225,8 +204,6 @@ Eigen::SparseMatrix<Type> calc_flowmat(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << "===================== objective_function ====================" << std::endl;
-
   // Joint negative log-likelihood (stub)
   //Type jnll= 0;
 
@@ -247,19 +224,11 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
 
-  std::cout << "updateidx = " << updateidx << std::endl;
-  std::cout << "breaks = " << breaks << std::endl;
-  std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
-  std::cout << "tv_spi = " << tv_spi << std::endl;
-  std::cout << "tv_val = " << tv_val << std::endl;
-  std::cout << "par_accum_indices = " << par_accum_indices << std::endl;
-
   PARAMETER_VECTOR(params);
 
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size());
   sp << state, params;
-  //std::cout << "sp = " << sp << std::endl;
 
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
@@ -288,12 +257,7 @@ Type objective_function<Type>::operator() ()
 
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-        std::cout << "At break: " << i << " number of paramters " \
-        << count_of_tv_at_breaks[nextBreak] << std::endl;
- 
         for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-            std::cout << "sp changes at " << tv_spi[j]-1 << \
-            " from " << sp[tv_spi[j]-1] << " to " << tv_val[j] << std::endl;
             sp[tv_spi[j]-1] = tv_val[j]; 
         }
 
@@ -303,8 +267,6 @@ Type objective_function<Type>::operator() ()
 
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
   }
-
-  //std::cout << "concatenated_state_vector = " << concatenated_state_vector << std::endl;
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
