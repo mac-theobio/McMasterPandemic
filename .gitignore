@@ -83,3 +83,4 @@ refactor/*/*.txt
 !docs/**
 misc/lints.csv
 sandbox/vaxify.csv
+!notes/*.RDS

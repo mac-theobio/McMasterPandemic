@@ -1,0 +1,454 @@
+---
+title: "Developer's guide to vaxify"
+author: "Irena Papst"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    df_print: 'paged'
+---
+
+```{r setup, echo = FALSE}
+devtools::load_all() ## do this instead of `library(McMasterPandemic)` because some functions I want to highlight here are not exported to the package namespace (they're internal utilities)
+## I last compiled this document on the ip_devel branch (last commit # was de52fbf)
+
+options(macpan_pfun_method = "grep") ## need to set this to ensure `make_ratemat()` works correctly with vaxified params
+
+library(dplyr)
+library(ggplot2)
+```
+
+## Base parameters
+
+To run a simulation with vaccination (a "vaxified" simulation), we start with the minimal components needed for a basic simulation, mainly the parameters list:
+
+```{r base_sim_setup}
+start_date <- "2020-02-01"
+end_date <- "2020-09-01"
+
+## initialize params
+base_params <- read_params("PHAC.csv")
+
+## what is the structure of the base params?
+str(base_params)
+```
+
+With these settings, the base simulation looks like this:
+
+```{r base_sim}
+base_sim <- run_sim(
+  params = base_params,
+  start_date = start_date,
+  end_date = end_date
+)
+
+plot(base_sim)
+```
+
+## Vaxified parameters
+
+To add vaccination, we expand (or "expandify") the base parameters using the `expand_params_vax()` function:
+
+```{r expand_params_vax_args}
+args(expand_params_vax)
+```
+
+The first step is to specify the vaccine model type (currently either `onedose` or `twodose`), and then we pass whichever parameters are needed for the model type. If we specify a `onedose` model but pass a parameter related to the second dose, *e.g.* `vax_efficacy_dose2` (vaccine efficacy after the second dose), the second dose parameter is ignored.
+
+Let's look at the `twodose` model with the default parameters from the `expand_params_vax()` function. We can take the set difference with the names of the base parameters to see what has been added for the model with vaccination:
+
+```{r vax_params}
+vax_params <- expand_params_vax(
+  params = base_params,
+  model_type = "twodose"
+)
+
+setdiff(names(vax_params), names(base_params))
+```
+As you can see, there are a number of new parameters, but they all follow the naming convention of `^vax_*` to make them easy to spot. 
+
+The structure of the vaxified parameters is as follows:
+
+```{r vax_params_str}
+str(vax_params)
+```
+
+We see here that the parameters object is no longer a named atomic numeric vector, but is instead a list (with all numeric entries). However, each list element is only of length 1, so it's not difficult to convert back to a named vec:
+
+```{r vax_params_str_unlist}
+str(unlist(vax_params))
+```
+
+If we do this within the package internals, we want to make sure we don't lose two useful custom attributes from the original object, especially:
+
+1. the parameter descriptions (useful to the user as opposed to the developer)
+
+```{r vax_params_desc, eval = FALSE}
+## the description attribute
+attr(vax_params, "description")
+## (suppressing the printing of this object because it's very verbose)
+```
+
+```{r vax_params_desc2}
+## a utility fo the user to view parameter descriptions from this attribute
+describe_params(vax_params)
+```
+
+2. the vaccine category labels (used in the software)
+
+```{r vax_params_cats}
+## the attribute
+attr(vax_params, "vax_cat")
+
+## utility to retrieve vaccine category labels
+get_vax(vax_params)
+```
+
+The `vax_cat` attribute also has its own attribute (!) denoting the model type (`onedose` or `twodose`):
+
+```{r vax_params_type}
+## the attribute
+attr(attr(vax_params, "vax_cat"), "model_type")
+
+## utility to quickly access vax model type
+get_vax_model_type(vax_params)
+```
+
+The vaccine model type could be inferred from the category labels themselves, and this should be pretty stable since the user can't change the default labels (they're generated internally using `mk_vaxcat()`). However, I think it's safer to just attach the model type metadata separately as its own attribute in case the labels in `mk_vaxcat()` get changed. (Various methods in the package rely on looking up the model type.)
+
+There is also a utility function to check whether or not a parameter set (or a state vec) is vaxified:
+
+```{r has_vax}
+has_vax(vax_params)
+
+has_vax(base_params)
+```
+
+## Vaxified state
+
+Once we have vaxified parameters, we can either plug these directly into `run_sim()` and let `make_state()` handle the initial state, or we can expand a given base state ourselves with vaccination strata:
+
+```{r base_state}
+base_state <- make_state(params = base_params)
+
+attr(base_state, "epi_cat")
+```
+
+State objects carry around the `epi_cat` attribute mainly for the vaxify case, where we construct some regex to fill in various objects (like the rate matrix) correctly, namely using the methods:
+
+- `add_updated_vaxrate()` which updates flow rates between vaccination strata depending on the current number of doses per day and how many people there are left that are eligible for vaccination, which is state-dependent;
+
+- `expand_state_vax()`, which were are about to demo below.
+
+As previously discussed with SW, this method is probably not super efficient and will hopefully be phased out in the current refactoring with the TMB implementation. (The `epi_cat` attribute was also used in `do_step`, even in the base case, but that method has been phased out with the TMB implementation.)
+
+Anyway! Here is how we can expand a base state with vaccination:
+
+```{r}
+vax_state <- expand_state_vax(
+  x = base_state,
+  model_type = "twodose",
+  unif = FALSE
+)
+
+vax_state
+```
+
+The default of `unif = FALSE`, places everyone in their epidemic category in the unvaccinated layer (which is usually what we want to simuilate). Setting `unif = TRUE` will sprinkle everyone uniformly among the vaccination strata (kind of a long story why I thought this feature would be useful, but it relates to estimating $r$ and is documented [here](https://github.com/mac-theobio/McMasterPandemic/issues/51)... this is probably not a necessary toggle).
+
+You can see a familiar attribute also gets attached to vaxified states:
+
+```{r vax_state_cat}
+attr(vax_state, "vax_cat")
+```
+
+And the vax utilities previously demonstrated for vaxified parameters still work for the vaxified state:
+
+```{r vax_state_utils}
+has_vax(vax_state)
+get_vax(vax_state)
+get_vax_model_type(vax_state)
+```
+
+
+## Vaxified simulation
+
+Here is a minimal example of a vaxified simulation:
+
+```{r vax_sim}
+vax_sim <- run_sim(
+  params = vax_params,
+  start_date = start_date,
+  end_date = end_date
+)
+
+plot(vax_sim)
+```
+
+By default, state variables (but not reporting variables) get condensed over vaccination strata in the output of the simulation:
+
+```{r vax_sim_names}
+names(vax_sim)
+```
+
+We can save the vaccine-faceted state variables as follows:
+
+```{r vax_sim_full}
+vax_sim_full <- run_sim(
+  params = vax_params,
+  start_date = start_date,
+  end_date = end_date,
+  condense_args = list(keep_all = TRUE)
+)
+
+names(vax_sim_full)
+```
+
+I've written plotting code a few times for vaxified results, but I haven't gotten around to rolling it up into the `plot.pansim()` method. Here's some simple plotting code for now:
+
+```{r vax_sim_full_plot, fig.height = 11}
+##' @param x a \code{pansim} object generated using the model with vaccination
+plot_vaxified_sim <- function(x){ 
+  p <- (x
+   %>% select(-!(contains("_")|date))
+   %>% pivot_longer(cols = -date)
+   %>% tidyr::separate(
+     col = name,
+     into = c("variable", "vax_cat")
+   )
+   %>% mutate(variable = forcats::as_factor(variable),
+              vax_cat = forcats::as_factor(vax_cat)) ## to keep states and vax_cat ordered by disease history instead of alphabetically
+   %>% ggplot(aes(x = date, y = value,
+                  colour = variable))
+   + geom_line()
+   + facet_grid(rows = vars(variable),
+                cols = vars(vax_cat),
+                scales = "free_y")
+   + theme(axis.title = element_blank())
+  )
+    return(p)
+}
+
+plot_vaxified_sim(vax_sim_full)
+```
+
+By default, all doses are allocated to first doses (`vax_prop_first_dose = 1` in `expand_params_vax()` by default), so you may notice that there is no activity in the `vaxdose2` and `vaxprotect2` strata (this is effectively the `onedose` model). (There is still a non-zero `foi` calculated for those strata---the `foi` applied to individuals in that vax layer---but since there is no one in those layers, these terms get zeroed out when the flows are computed.)
+
+## Time-varying parameters
+
+We could instead instantaneously switch to administering some proportion of those as second doses part-way thought the simulation, using the `params_timevar` argument of the `run_sim()` function (see docs for details):
+
+```{r vax_sim_full2}
+vax_sim_full2 <- run_sim(
+  params = vax_params,
+  start_date = start_date,
+  end_date = end_date,
+  condense_args = list(keep_all = TRUE),
+  ## allocate 50% of the doses administered per day to second doses 30 days after the simulation start date
+  params_timevar = data.frame(
+    Date = as.Date(start_date) + 30,
+    Symbol = "vax_prop_first_dose",
+    Value = 0.5,
+    Type = "rel_orig" # take 0.5 of the parameter in the *original* params list (which happens to be 1 for this parameter) as opposed to taking it relative to its previous value ("rel_prev") in params_timevar (there isn't one)
+  )
+)
+```
+
+```{r vax_sim_full_plot2, fig.height = 11}
+plot_vaxified_sim(vax_sim_full2)
+```
+
+You can clearly see when the switch to second doses happened if you look at $V$, the accumulator state for vaccinated people in the `vaxdose1` and `vaxdose2` layers. Of course, this instantaneous switch is much simpler than the gradual changeover observed in real life. One could of course follow the exact vaccine rollout by feeding in the exact timeseries of observed doses per day and proportion first doses into the simulation using `params_timevar` and a different value each day, which is what we've done in our group's forecasts.
+
+## Calibration
+
+The above code is sufficient to simulate the model with known parameters, but we can instead feed data in to calibrate various parameters. 
+
+In real life, we're usually most concerned with calibrating a time-dependent transmission rate, modelled as a piecewise constant function: this captures the average transmission rate over some pre-specified estimation window. These estimation windows are chosen using re-estimation dates (the endpoints of each window), which are meant to be representative dates of some major change to the population's transmission patterns. For instance, we may specify one re-estimation date (or "break date") as the date a provincial stay-at-home order went into effect, and then a subsequent break date as when this stay-at-home order was lifted. The main thing to keep in mind is that our calibration algorithm needs at least three weeks between re-estimation dates to reliably calibrate transmission in each estimation period, and that the more break dates that get added, the longer the calibration algorithm takes to converge, so use this function sparingly! For reference, to calibration to Ontario's infection reports data from summer 2020 to summer 2021, we have been using 7-8 break dates.
+
+Here is an example of a calibration to synthetic report data, where we're fitting the transmission rate with one re-estimation date (so we get two values of the transmission rate, one per estimation window):
+
+```{r calibration_demo_setup}
+## make synthetic data to fit to 
+
+## set up time-varying parameters
+params_timevar <- data.frame(
+    Date = c(as.Date(start_date) + 30,
+             as.Date(start_date) + 60),
+    Symbol = c("vax_prop_first_dose", "beta0"),
+    Value = rep(0.5, 2),
+    Type = rep("rel_orig", 2)
+  )
+
+## generate reports from sim
+synth_reports <- (run_sim(
+  params = vax_params,
+  start_date = start_date,
+  end_date = end_date, 
+  # do the same thing with the switch to second doses as above, but now also cut the original transmission rate to 50% of its value 60 days after the simulation start date 
+  params_timevar = params_timevar
+)
+  ## reshape into the correct format for input data passed to calibrate()
+  %>% mutate(value=round(report), var="report")
+  %>% select(date, value, var)
+  %>% na.omit()
+)
+
+## set up optimization parameters
+## (base parameter values)
+opt_pars <- list(
+  params = c(beta0 = 0.6), ## set initial guess for beta0
+  time_params = c(0.8) ## initial guess for change in beta0 on the one and only break date (guess 80% of the base value)
+)
+## (time-varying relative values: insert an NA wherever you want a parameter to be calibrated)
+params_timevar_calib <- (params_timevar
+  %>% mutate(Value = ifelse(Symbol == "beta0",
+                            NA, 
+                            Value))                       
+)
+```
+
+```{r calibration_demo, eval = FALSE}
+## fit!
+fitted_mod <- calibrate(
+  base_params = vax_params,
+  data = synth_reports,
+  opt_pars = opt_pars,
+  time_args = list(
+    params_timevar = params_timevar_calib
+    ),
+  sim_args = list(
+    ndt = 1,
+    step_args = list(do_hazard = TRUE)
+  ) ## there are both the defaults currently but i'm putting them here to emphasize that for the vaxified model's current implementation, 
+  ## we need ndt = 1 because the vax rate is specified as doses *per day*, implicitly assuming that the simulation algorithm takes daily steps
+  ## and we need do_hazard = TRUE to avoid accidentally stepping into negative state space when vaccination occurs relatively quickly
+)
+
+## save result so we can just load it into this doc by default
+saveRDS(fitted_mod, file = "vaxify_calibration.RDS")
+```
+
+That chunk is set so that it doesn't get executed since it takes a little while...instead, we can just load the pre-computed calibration and plot the fit:
+
+```{r plot_calibration_demo}
+fitted_mod <- readRDS("vaxify_calibration.RDS")
+
+plot(fitted_mod, data = synth_reports)
+```
+
+## Forecast
+
+To forecast, we take a calibration and make some assumptions on model parameters past the fit end date:
+
+```{r forecast_demo_setup}
+## handle dates
+fit_end_date <- as.Date(max(synth_reports$date))
+forecast_end_date <- fit_end_date + 100 ## forecast for 100 days after the last observation to which we fitted
+
+## get full parameters list, fitted pars, and time-varying params
+pp <- coef(fitted_mod,"all")
+cc <- coef(fitted_mod,"fitted")
+time_pars <- fitted_mod$forecast_args$time_args$params_timevar
+
+## add beta0 forecast
+## we're going to take 100% of the last estimated beta0 value (using "rel_prev" here) into the forecast period (so this is a status quo forecast where we assume that whatever was going on in the population last continues)
+time_pars_forecast <- data.frame(
+Date = fit_end_date,
+Symbol = "beta0",
+Value = 1, 
+Type = "rel_prev"
+)
+
+## bind forecasts to timepars from fit period
+time_pars <- bind_rows(
+time_pars,
+time_pars_forecast
+) %>% arrange(Symbol, Date)
+
+## update forecast args
+fa <- fitted_mod$forecast_args
+fa$end_date <- forecast_end_date
+fa$time_args$params_timevar <- time_pars
+
+## keep all state variables (split by vax cat) to inspect (if desired)
+fa$sim_args$condense_args <- list(keep_all = TRUE)
+```
+
+```{r forecast_demo, eval = FALSE}
+## check metadata in calibrate object before feeding into forecast_ensemble
+forecast <- forecast_ensemble(fitted_mod
+                      , nsim = 4 ## just a few forecasts in the ensemble for speed
+                      , forecast_args = fa
+                      , seed = 1
+                      , parallel = TRUE
+                      , n_cores = 4
+)
+
+## save time-parameters for forecast period
+saveRDS(forecast, file = "vaxify_forecast.RDS")
+```
+
+Then we can look at the resulting infection reports (both the fit and the forecast):
+
+```{r plot_forecast_demo, fig.height = 3}
+forecast <- readRDS("vaxify_forecast.RDS")
+
+head(forecast)
+
+(forecast 
+  %>% filter(stringr::str_detect(var, "^report$"))
+  %>% ggplot(aes(x = date))
+  + geom_vline(aes(xintercept = fit_end_date),
+               colour = "grey60", linetype = "dashed")
+  + annotate("text",
+             x = fit_end_date - 5, 
+             y = 250,
+             label = "forecast date",
+             size = 3,
+             angle = 90,
+             colour = "grey60")
+  + geom_ribbon(aes(ymin = lwr,
+                    ymax = upr),
+                alpha = 0.3)
+  + geom_line(aes(y = value))
+  + geom_point(data = synth_reports,
+               aes(x = date, y = value),
+               shape = 1)
+  + labs(y = "reports")
+  + theme(axis.title.x = element_blank())
+)
+```
+
+(Points are the synthetic data to which the model was fit.)
+
+We can also inspect all of the intermediate model states if desired (instead of just looking at infection reports):
+
+```{r plot_forecast_demo_full, fig.height = 11}
+(forecast
+  %>% filter(stringr::str_detect(var, "_"))
+  %>% tidyr::separate(
+     col = var,
+     into = c("variable", "vax_cat")
+   )
+   %>% mutate(variable = forcats::as_factor(variable),
+              vax_cat = forcats::as_factor(vax_cat)) ## to keep states and vax_cat ordered by disease history instead of alphabetically
+   %>% ggplot(aes(x = date))
+   + geom_vline(
+     aes(xintercept = fit_end_date),
+     colour = "grey60",
+     linetype = "dashed")
+   + geom_ribbon(aes(ymin = lwr,
+                     ymax = upr,
+                     fill = variable),
+                 alpha = 0.3)
+   + geom_line(aes(y = value,
+                   colour = variable))
+   + facet_grid(rows = vars(variable),
+                cols = vars(vax_cat),
+                scales = "free_y")
+   + theme(axis.title = element_blank())
+)
+```
+
+
+
