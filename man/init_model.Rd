@@ -9,8 +9,9 @@ init_model(
   state,
   start_date = NULL,
   end_date = NULL,
-  timevar_piece_wise = NULL,
-  do_hazard = TRUE
+  params_timevar = NULL,
+  do_hazard = TRUE,
+  ...
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ init_model(
 
 \item{end_date}{simulation end date}
 
-\item{timevar_piece_wise}{data frame with scheduling for piece-wise
+\item{params_timevar}{data frame with scheduling for piece-wise
 constant parameter variation (TODO: direct to other help pages)}
 
 \item{do_hazard}{should hazard simulation steps be used?

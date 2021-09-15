@@ -20,7 +20,8 @@ run_sim(
   use_ode = FALSE,
   condense = TRUE,
   condense_args = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  use_flex = FALSE
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ run_sim(
 \item{condense_args}{arguments to pass to \code{\link{condense}} (before adding observation error)}
 
 \item{verbose}{print messages (e.g. about time-varying parameters)?}
+
+\item{use_flex}{use \code{flexmodel} approach (experimental)}
 }
 \description{
 Run pandemic simulation

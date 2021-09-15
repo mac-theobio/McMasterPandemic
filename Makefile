@@ -125,9 +125,11 @@ PACKAGE=McMasterPandemic
 # get VERSION from glmmTMB/DESCRIPTION  
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
 VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
+SPECVERSION := $(shell cat inst/tmb/recommended_spec_version)
 
 testversion:
 	echo "${VERSION}"
+	echo "${SPECVERSION}"
 
 Ignore += McMasterPandemic*.tar.gz
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
@@ -152,6 +154,9 @@ pkgcheck:
 tmbtest:
 	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
 
+src/McMasterPandemic.cpp: inst/tmb/recommended_spec_version
+	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
+
 vignettes/flex_specs.html: vignettes/flex_specs.rmd
 	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
 	
@@ -168,7 +173,7 @@ dependencies:
 ## added $(BUILDARGS) so that this is possible:
 ## make install BUILDARGS="--no-build-vignettes"
 build-package: $(TARBALL)
-$(TARBALL): ./NAMESPACE
+$(TARBALL): ./NAMESPACE src/McMasterPandemic.cpp
 	$(R) CMD build $(BUILDARGS) .
 	mv $@ ..
 

@@ -4,7 +4,7 @@
 #' @param state a \code{state_pansim} object
 #' @param start_date simulation start date
 #' @param end_date simulation end date
-#' @param timevar_piece_wise data frame with scheduling for piece-wise
+#' @param params_timevar data frame with scheduling for piece-wise
 #' constant parameter variation (TODO: direct to other help pages)
 #' @param do_hazard should hazard simulation steps be used?
 #' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
@@ -13,8 +13,8 @@
 #' @export
 init_model <- function(params, state,
                        start_date = NULL, end_date = NULL,
-                       timevar_piece_wise = NULL,
-                       do_hazard = TRUE) {
+                       params_timevar = NULL,
+                       do_hazard = TRUE, ...) {
   check_spec_ver_archived()
   model = list(
     state = state,
@@ -44,9 +44,9 @@ init_model <- function(params, state,
   if(spec_ver_gt('0.0.2')) {
     model$timevar = list(piece_wise = NULL)
   }
-  if(!is.null(timevar_piece_wise)) {
+  if(!is.null(params_timevar)) {
     if(is.null(start_date) | is.null(end_date)) {
-      stop("\n\nIf you specify a timevar_table, you need to also\n",
+      stop("\n\nIf you specify a timevar table, you need to also\n",
            "specify a start and end date")
     }
     spec_check(introduced_version = '0.0.3',
@@ -54,14 +54,14 @@ init_model <- function(params, state,
 
 
     if(spec_ver_eq('0.0.3')) {
-      nbreaks = table(timevar_piece_wise$Symbol)
+      nbreaks = table(params_timevar$Symbol)
       pi_tv_par = find_vec_indices(names(nbreaks), model$params)
       names(pi_tv_par) = names(nbreaks)
 
       # want to be able to assume a particular structure
       # and ordering in downstream processing
       schedule = (
-        timevar_piece_wise
+        params_timevar
         %>% mutate(Date = as.Date(Date))
         %>% mutate(Order = pi_tv_par[Symbol])
         %>% arrange(Order, Date)
@@ -104,7 +104,7 @@ init_model <- function(params, state,
 
     if(spec_ver_gt("0.0.3")) {
       schedule = (
-        timevar_piece_wise
+        params_timevar
         %>% mutate(Date = as.Date(Date))
         %>% mutate(breaks = as.integer(Date - model$start_date))
         %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
@@ -435,8 +435,10 @@ tmb_indices = function(model) {
 #' \code{TMB::MakeADFun}. TODO: make this optional, and choose the main
 #' package DLL once it exists
 #' (https://github.com/mac-theobio/McMasterPandemic/issues/96)
+#' @importFrom TMB MakeADFun
+#' @useDynLib McMasterPandemic
 #' @export
-tmb_fun = function(model, DLL) {
+tmb_fun = function(model, DLL = "McMasterPandemic") {
 
   check_spec_ver_archived()
 

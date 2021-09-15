@@ -63,7 +63,7 @@ test_model = (
                  (Ia) * (beta0) * (1/N) * (Ca) +
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_tmb_indices()
 )
 
@@ -96,7 +96,7 @@ test_that("matrix elements are equal", {
     r_dense_ratemat)
 })
 
-
+dyn.unload(dynlib(dll))
 
 
 
@@ -137,7 +137,7 @@ test_model = (
                  (Ia) * (beta0) * (1/N) * (Ca) +
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
   %>% add_tmb_indices()
 )
@@ -158,7 +158,7 @@ test_that("simulated state trajectories are equal", {
   expect_equal(tmb_traj, r_traj)
 })
 
-
+dyn.unload(dynlib(dll))
 
 
 spec_version = "0.0.4"
@@ -187,7 +187,7 @@ tv_dat = data.frame(
 test_model = (init_model(
   params, state,
   start_date = "2021-09-09", end_date = "2021-10-09",
-  timevar_piece_wise = tv_dat)
+  params_timevar = tv_dat)
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
   %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -207,7 +207,7 @@ test_model = (init_model(
                  (Ia) * (beta0) * (1/N) * (Ca) +
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
   %>% add_tmb_indices()
 )
@@ -267,7 +267,7 @@ tv_dat = data.frame(
 test_model = (init_model(
   params, state,
   start_date = "2021-09-09", end_date = "2021-10-09",
-  timevar_piece_wise = tv_dat)
+  params_timevar = tv_dat)
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
   %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -287,7 +287,7 @@ test_model = (init_model(
                  (Ia) * (beta0) * (1/N) * (Ca) +
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
+                 (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
   %>% add_tmb_indices()
 )
@@ -339,5 +339,31 @@ test_that("tmb-computed gradient equals numerical gradient", {
   tmb_gradient = dd$gr(dd$par)
   attributes(numeric_gradient) = attributes(tmb_gradient) = NULL
   expect_equal(tmb_gradient, numeric_gradient,
-               tolerance = 1e-6)
+               tolerance = 1e-5)
+})
+
+test_that("use_flex flag does not change results" , {
+  tmb_sim = run_sim(
+    params = params, state = state,
+    start_date = "2021-09-10",
+    end_date = "2021-10-10",
+    params_timevar = tv_dat,
+    condense = FALSE,
+    step_args = list(do_hazard = TRUE),
+    use_flex = TRUE)
+
+  r_sim = run_sim(
+    params = params, state = state,
+    start_date = "2021-09-10",
+    end_date = "2021-10-10",
+    params_timevar = tv_dat,
+    condense = FALSE,
+    step_args = list(do_hazard = TRUE),
+    use_flex = FALSE)
+
+  # TODO: get rid of these lines so that we truly have a drop-in replacement
+  r_sim = r_sim[, names(tmb_sim)]
+  attributes(r_sim) = attributes(tmb_sim) = NULL
+
+  expect_equal(tmb_sim, r_sim)
 })

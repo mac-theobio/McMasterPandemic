@@ -87,8 +87,20 @@ spec_check = function(introduced_version, feature) {
   # https://canmod.net/misc/flex_specs
   current_version = getOption("MP_flex_spec_version")
 
+  more_info = paste0("See ", getOption('MP_flex_spec_doc_site'),
+                     " for more information on specification versions.")
+
   # TODO: need to handle possessive case?
   verb = ifelse(grepl("s$", feature, perl = TRUE), " were ", " was ")
+
+  if(is.null(introduced_version)) {
+    stop(
+      "\n\n",
+      feature, verb,
+      "has not yet been introduced by any specification version.\n",
+      more_info,
+      call. = FALSE)
+  }
 
   if(parse_version(current_version) < parse_version(introduced_version)) {
     stop(
@@ -97,8 +109,7 @@ spec_check = function(introduced_version, feature) {
       introduced_version, ".\n",
       "The specification version currently being used is ",
       getOption('MP_flex_spec_version'), '\n',
-      "See ", getOption('MP_flex_spec_doc_site'),
-      " for more information on specification versions.",
+      more_info,
       call. = FALSE)
   }
 }
@@ -110,7 +121,7 @@ feature_check = function(introduced_version, feature) {
   current_version = getOption("MP_flex_spec_version")
   if(parse_version(current_version) >= parse_version(introduced_version)) {
     stop(
-      "\n\n", feature,
+      "\n\n", trimws(feature),
       " must be used for all specification versions greater than or equal to ",
       introduced_version, ".\n",
       "The specification version currently being used is ",
