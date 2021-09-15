@@ -241,7 +241,7 @@ Type objective_function<Type>::operator() ()
 
   int stateSize = state.size();
   vector<Type> concatenated_state_vector(numIterations*stateSize);
-  vector<Type> concatenated_ratemat_nonzeros(numIterations*ratemat.nonZeros());
+  vector<Type> concatenated_ratemat_nonzeros(numIterations*updateidx.size());
 
   int nextBreak = 0;
   int start = 0;
@@ -260,11 +260,14 @@ Type objective_function<Type>::operator() ()
     Type* valPtr = ratemat.valuePtr();
     int* outPtr = ratemat.outerIndexPtr();
 
-    int offset = i*ratemat.nonZeros();
-    int cnt = 0;
-    for (int j= 0; j<ratemat.outerSize(); j++)
-      for (int k= outPtr[j]; k<outPtr[j+1]; k++) 
-        concatenated_ratemat_nonzeros[offset+cnt++] = valPtr[k];
+    int offset = i*updateidx.size();
+
+    for (int j=0; j<updateidx.size(); j++) {
+      int idx = updateidx[j] - 1;
+      int row = from[idx] - 1;
+      int col = to[idx] - 1;
+      concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
+    }
 
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
@@ -280,8 +283,8 @@ Type objective_function<Type>::operator() ()
         update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
   }
 
-  //std::cout << concatenated_ratemat_nonzeros << std::endl;
-  //std::cout << ratemat << std::endl;
+  std::cout << concatenated_ratemat_nonzeros << std::endl;
+  std::cout << ratemat << std::endl;
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
