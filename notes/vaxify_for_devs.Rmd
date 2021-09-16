@@ -511,6 +511,15 @@ make_beta(state = vax_state, params = vax_params)
 
 When using `make_beta()` for a vaxified simulation, the base `beta0` vector (containing the `beta0`,`C_x` values, `iso_m`, `iso_s`, and `1/N`) gets expanded with a Kronecker product to incorporate the vaccine-related transmission reduction based on vax stratum (set up as `vax_trans_red`). The vaccine transmission reduction is just 1 minus the vaccine efficacy that applies to that vax layer. (We may also do some additional transmission adjustment if we're including a variant that changes vaccine efficacy.)
 
+Allow me to just re-use some slides that show the Kronecker product expansion for the vaxified FOI (here I'm omitting the `vaxdose1` and `vaxdose2` layers, since they're identical to `unvax` and `vaxprotect1`, respectively)...
+
+![](vaxify_for_devs_figs/foi-1.png)
+![](vaxify_for_devs_figs/foi-2.png)
+Below, $\rm{VE}$ stands for vaccine efficacy, and is indexed by dose number.
+
+![](vaxify_for_devs_figs/foi-3.png)
+![](vaxify_for_devs_figs/foi-4.png)
+
 ### `add_updated_vaxrate()`
 
 ```{r, eval = FALSE}
