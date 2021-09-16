@@ -450,5 +450,76 @@ We can also inspect all of the intermediate model states if desired (instead of 
 )
 ```
 
+## Vaxified simulation internals
 
+When the user requests a vaxified simulation (solely by passing a vaxified parameter list, without specifying a vaxified state), the following major steps occur:
 
+1. `run_sim()` starts with some checks to ensure that its arguments are correctly specified;
+1. since no state is provided, `make_state()` is called to initialize a state compatible with the parameters provided;
+1. we initialize the rate matrix for the first step of the simulation using `make_M()`, a wrapper for `make_ratemat()` that also handles some testify stuff;
+1. we use `run_sim_range()` to step through the simulation just as in the base case (I don't think there are any vax-model-specific changes here).
+
+The sections below dive into the internals of key functions mentioned above. To follow then, it would help to `debug()` and step through each function as you read. I've added a chunk at the top of each subsection with sample code to step through (but make sure to run it directly in the console instead of from the chunk in the notebook because I find `debug()` can behave strangely when run in a chunk):
+
+### `make_state()`
+
+```{r, eval = FALSE}
+debug(make_state)
+make_state(params = vax_params)
+```
+
+In step 2, `make_state()` will detect that the parameters are vaxified and use the eigenvector method of finding a stable direction from which to start the simulation. To do so, it first needs to expand the state names with vaccination categories, which it does with `expand_state_vax()` (getting the vax model type from the parameter set). The expanded state vector is initialized with all zeros but with expanded state names. 
+
+To fill in the zero entries, the software calls `get_evec()` with the option `method = "expsim"`, so that we get the eigenvector using an exponential simulation, performed by the `rExp()` function. For the vaxified case, `rExp()` will turn off the flows between vaccine strata by setting three parameters to zero: `vax_doses_per_day`, `vax_response_rate`, `vax_reponse_rate_R`. (I can't remember exactly why we did it this way but I know Ben and I discussed it and came to the conclusion that this was the right thing to do...). Then we make an initial state using the base model (again with `make_state()`), assuming the population count sums to 1 and there are `1e-5` initially exposed individuals, and we call `expand_state_vax()` to expand this base state into a vaxified one by putting everyone in the unvaccinated layer initially (still in the same epi categories as in the base state). This is the default, though we could set `unif = TRUE` in `make_state()` to uniformly spread everyone out among the different vaccine strata (still within their epidemiological state).
+
+Now, going back to the `rExp()` simulation, we initialize the rate matrix using `make_ratemat()` with this initial vaxified state (all zeros except for proportion `1e-5` of the population in the `E_unvax` state and `1 - 1e-5` proportion in `S_unvax`) and the modified parameters with parameters specifying between-strata flows turned off. We use `run_sim_range()` to run the exponential simulation (specifying `do_exponential = TRUE`) and then we finish by computing the eigenvector as the last row of the exponential simulation, dropping non-infected states ($S$, $R$, accumulator compartments), normalized to sum to 1.  
+
+Once we have this eigenvector, we go back to `make_state()` and scale this vector up to sum to the `E0` value specified in this function's arguments (by default, this is 5). (We also take care to `smart_round()` the entries of this scaled vector, so that we only have whole numbers of individuals in each "exposed" (infectious) category, while ensuring the vector still sums to `E0`). Then we slot these values into the state vector we initialized with zeros before (using regex). Finally, we compute the implied number of susceptibles (in the unvaccinated layer) from the population size and `E0` (`N - E0`). (If we were spreading people out uniformly across vaccine starta using `unif = TRUE`, we would just ensure we're keeping the population size fixed within each vax layer when computing $S$ in each stratum.) Finally, we attach the epidemic categories as the attribute `epi_cat` and class the state vector as `state_pansim`.
+
+### `make_ratemat()`
+
+```{r, eval = FALSE}
+debug(make_ratemat)
+make_ratemat(state = vax_state, params = vax_params)
+```
+
+`make_ratemat()` starts by specifying an option for the `macpan_pfun_method`: `pfun()` is a utility (defined in `utils.R`) for looking up the indices of entries in a rate matrix given the from and to states (stored as row and column names of the matrix, respectively) to help fill the rate matrix. The original `pfun()` method used `grep()`, so when I added vaccination to the model, that's what I was relying on. However, this is slow, so Matthew So added the option to use `startsWith()`, which improved performance. However, this broke the vax code, so as a quick fix, we specify `options(macpan_pfun_method = "grep")` at the top of scripts using the vax model. The software will throw an error if it detects the user has requested a vaxified simulation but hasn't set this global option (the error instructs the user how to set this  option). Don't ask me why we didn't just set the option silently for users doing vaxified sims... Not ideal, but it's what we did in a pinch. Probably not worth fussing with this now that we're planning on moving over to the TMB core implementation!
+
+Anyway, back to `make_ratemat()`. After checking lengths in the parameters list, we unpack the parameters locally to make the code more readable. Then we initialize a matrix of zeros with the correct dimensions and name the rows and columns using the state names grabbed from `names(state)`. After setting up a utility (`afun()`) to fill the entries of the rate matrix $M$ by referencing the from and to states, we start with the force of infection (FOI). To calculate it, we use `make_beta()`, which collects all of the parameter pre-factors of the FOIs, including `beta0`, `C_x` (where `x = a, p, m, s` is the infection type), `iso_m`, `iso_s`, and `1/N` (more on this function below). In the case of a vaxified simulation, `make_beta()` returns a *2D array* instead of a 1D array (as in the base model). This is because we have different FOIs for each vax stratum (the rows of the beta matrix correspond to the vaccination status of a susceptible, and the columns correspond to the infection type of an infective, as in the base case). Once we have the beta array, we (matrix) multiply it with the current population of the infective states to get the FOI and fill that in the `S` to `E` block.
+
+The rest of the parameters are filled into the rate matrix as in the base case (across all vaccine strata!), until we reach a big awful chunk of code where we specify (1) how individuals flow between vax layers (using `add_updated_vaxrate()`, `vax_response_rate` and `vax_response_rate_R`) and (2) how epidemiological parameters are modified in the vax-protected layers. 
+
+For item (1), `add_updated_vaxrate()` is described further below and the vaccine response rates are described here:
+
+```{r}
+(describe_params(vax_params) 
+  %>% filter(grepl("^vax_response", symbol))
+  %>% select(-value)
+)
+```
+
+For item (2), we use regex in `afun()` to find epidemic categories in specific vax layers and change the rate matrix value based on vaccine-specific parameters (*e.g.* multiplying `sigma` the average base rate from `E` to `Ia` by `vax_alpha_dose1`, the `alpha`, or proportion of infections that are asymptomatic, specific to those protected by only one dose of the vaccine, for the $E \to I_a$ flow in the `vaxprotect1` and `vaxdose2` layers). This part of the code is very verbose, and there's probably a nice way to clean it up for the TMB iteration of the software.
+
+Once we've initialized the rate matrix, we go back into `run_sim()` and I don't think anything else differs with the way a base simulation is run after this point!
+
+### `make_beta()`
+
+```{r, eval = FALSE}
+debug(make_beta())
+make_beta(state = vax_state, params = vax_params)
+```
+
+When using `make_beta()` for a vaxified simulation, the base `beta0` vector (containing the `beta0`,`C_x` values, `iso_m`, `iso_s`, and `1/N`) gets expanded with a Kronecker product to incorporate the vaccine-related transmission reduction based on vax stratum (set up as `vax_trans_red`). The vaccine transmission reduction is just 1 minus the vaccine efficacy that applies to that vax layer. (We may also do some additional transmission adjustment if we're including a variant that changes vaccine efficacy.)
+
+### `add_updated_vaxrate()`
+
+```{r, eval = FALSE}
+debug(add_updated_vaxrate)
+add_updated_vaxrate(state = vax_state,
+                    params = vax_params,
+                    ratemat = make_ratemat(vax_state, vax_params))
+```
+
+We need this function because we're distributing vaccines across the unvaccinated, non-symptomatic population, so the corresponding rates in the rate matrix are state-dependent and must be updated at each time step. My hunch is that this function is a non-trivial bottleneck in the current implementation of the vaxified model. 
+
+We start by calculating the per capita vax rate using `make_vaxrate()`, where per capita is per non-symptomatic individual in the vax layer targeted per dose (`unvax` for dose 1 and `vaxprotect1` for dose 2): we get this from the current state vector. Then we distribute vaccines specified using `vax_doses_per_day` and `vax_prop_first_dose` uniformly across non-symptomatic categories (stored in the globally-defined vector `asymp_cat` from `structure.R`). Once we have this rate, we set up a matrix block that will encode the vaccine allocation flow rates (between non-symptomatic states in the `unvax` to `vaxdose1` layers for dose 1 and `vaxprotect1` to `vaxdose2` layers for dose 2). We slot this block into the ratemat twice (once for each dose), and then we also replicate it into $V$, the vaccination accumulator compartment (just for the `vaxdose1` and `vaxdose2` layers). Finally, we perform a check to ensure that the calculated daily vax rate matches with the total number of daily doses administered specified in the parameter set. 
