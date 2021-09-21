@@ -976,13 +976,16 @@ run_sim <- function(params,
       )
 
       obj_fun = tmb_fun(model)
-      res = (state
-        %>% c(obj_fun$report()$concatenated_state_vector)
-        %>% matrix(length(state), model$iters + 1,
-                   dimnames = list(names(state), 1:(model$iters+1)))
-        %>% t
-        %>% as.data.frame
-      )
+      res = matrix(
+        c(state, obj_fun$report()$concatenated_state_vector),
+        nrow = model$iters + 1, ncol = length(state),
+        dimnames = list(1:(model$iters+1), names(state)),
+        byrow = TRUE)
+      res <- dfs(date = seq(model$start_date, model$end_date, by = 1), res)
+      foi_off = which(names(model$tmb_indices$updateidx) == "S_to_E")
+      foi_indices = seq(from = foi_off, by = foi_off, length.out = model$iters)
+      res$foi = c(obj_fun$report()$concatenated_ratemat_nonzeros[foi_indices], NA)
+
     } else {
 
       call <- match.call()
@@ -1240,6 +1243,10 @@ run_sim <- function(params,
     attr(res, "end_date") <- end_date
     attr(res, "call") <- call
     attr(res, "params_timevar") <- params_timevar
+    if(use_flex) {
+      attr(res, "flex_model") <- model
+      attr(res, "ad_fun") <- obj_fun
+    }
     ## attr(res,"final_state") <- state
     class(res) <- c("pansim", "data.frame")
 
