@@ -9,3 +9,7 @@
         MP_flex_spec_doc_site = "https://canmod.net/misc/flex_specs"
     )
 }
+
+.onUnload <- function (libpath) {
+    library.dynam.unload("McMasterPandemic", libpath)
+}
