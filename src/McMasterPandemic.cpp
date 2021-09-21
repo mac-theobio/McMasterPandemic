@@ -1,4 +1,4 @@
-// This version implements spec 0.0.4 in https://canmod.net/misc/flex_specs
+// This version implements spec 0.0.5 in https://canmod.net/misc/flex_specs
 
 #include <iostream>
 #include <string>
@@ -91,7 +91,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
     result.coeffRef(row,col) += prod;
     start += count[i];
   }
-  
+
   result.makeCompressed();
 
   return result;
@@ -162,7 +162,7 @@ Eigen::SparseMatrix<Type> calc_flowmat(
     const vector<Type>& vec,
     int do_hazard)
 {
-  if (!do_hazard) 
+  if (!do_hazard)
     return col_multiply(mat, vec);
   else {
     vector<Type> r = rowSums(mat);
@@ -178,7 +178,7 @@ Eigen::SparseMatrix<Type> calc_flowmat(
     vector<Type> v = s_tilde*(1.0-rho);
 
     // Maybe a more efficient way is using a modified version of col_multiply()
-    //Eigen::SparseMatrix<Type> flowmat = col_multiply(mat, v); 
+    //Eigen::SparseMatrix<Type> flowmat = col_multiply(mat, v);
     //flowmat.diagonal() = 0.0; // doesn't work
     //return flowmat;
 
@@ -233,7 +233,7 @@ Type objective_function<Type>::operator() ()
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
   count_integral[0] = 0;
-  for (int i=0; i<count.size(); i++) 
+  for (int i=0; i<count.size(); i++)
     count_integral[i+1] = count_integral[i] + count[i];
 
   // We've got everything we need, lets do the job ...
@@ -241,9 +241,10 @@ Type objective_function<Type>::operator() ()
 
   int stateSize = state.size();
   vector<Type> concatenated_state_vector(numIterations*stateSize);
+  vector<Type> concatenated_ratemat_nonzeros(numIterations*updateidx.size());
 
-  int nextBreak = 0; 
-  int start = 0; 
+  int nextBreak = 0;
+  int start = 0;
   for (int i=0; i<numIterations; i++) {
     // Calculate flow matrix
     Eigen::SparseMatrix<Type> flows = calc_flowmat(ratemat, state, do_hazard);
@@ -255,21 +256,39 @@ Type objective_function<Type>::operator() ()
     sp.block(0, 0, stateSize, 1) = state;
     concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
 
+    // Add non-zero elements of ratemat to vector concatenated_ratemat_nonzeros
+    Type* valPtr = ratemat.valuePtr();
+    int* outPtr = ratemat.outerIndexPtr();
+
+    int offset = i*updateidx.size();
+
+    for (int j=0; j<updateidx.size(); j++) {
+      int idx = updateidx[j] - 1;
+      int row = from[idx] - 1;
+      int col = to[idx] - 1;
+      concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
+    }
+
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
         for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-            sp[tv_spi[j]-1] = tv_val[j]; 
+            sp[tv_spi[j]-1] = tv_val[j];
         }
 
-        start += count_of_tv_at_breaks[nextBreak]; 
+        start += count_of_tv_at_breaks[nextBreak];
         nextBreak++;
     }
 
-    update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+    if (i<numIterations-1)
+        update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
   }
+
+  //std::cout << concatenated_ratemat_nonzeros << std::endl;
+  //std::cout << ratemat << std::endl;
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
+  REPORT(concatenated_ratemat_nonzeros);
 
   return state.sum();
 }
