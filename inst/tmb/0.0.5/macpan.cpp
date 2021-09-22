@@ -44,7 +44,6 @@ void remove_cols(
     const vector<int>& indices_to_remove)
 {
   Type* valPtr = mat.valuePtr();
-  int* rowIndexPtr = mat.innerIndexPtr();
   int* outPtr = mat.outerIndexPtr();
 
   for (int j= 0; j<indices_to_remove.size(); j++) {
@@ -257,9 +256,6 @@ Type objective_function<Type>::operator() ()
     concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
 
     // Add non-zero elements of ratemat to vector concatenated_ratemat_nonzeros
-    Type* valPtr = ratemat.valuePtr();
-    int* outPtr = ratemat.outerIndexPtr();
-
     int offset = i*updateidx.size();
 
     for (int j=0; j<updateidx.size(); j++) {
