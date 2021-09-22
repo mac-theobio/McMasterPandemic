@@ -239,8 +239,19 @@ Type objective_function<Type>::operator() ()
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
   int stateSize = state.size();
-  vector<Type> concatenated_state_vector(numIterations*stateSize);
-  vector<Type> concatenated_ratemat_nonzeros(numIterations*updateidx.size());
+  vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
+  vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
+
+  // Add initial state vector and non-zero element of the rate matrix into 
+  // corresponding vectors prefixed with "concatenated_".
+  concatenated_state_vector.block(0, 0, stateSize, 1) = state;
+    
+  for (int j=0; j<updateidx.size(); j++) {
+    int idx = updateidx[j] - 1;
+    int row = from[idx] - 1;
+    int col = to[idx] - 1;
+    concatenated_ratemat_nonzeros[j] = ratemat.coeff(row,col);
+  }
 
   int nextBreak = 0;
   int start = 0;
@@ -253,17 +264,6 @@ Type objective_function<Type>::operator() ()
     vector<Type> outflow = rowSums(flows); // remove some columns before doing so
     state = state - outflow + inflow;
     sp.block(0, 0, stateSize, 1) = state;
-    concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
-
-    // Add non-zero elements of ratemat to vector concatenated_ratemat_nonzeros
-    int offset = i*updateidx.size();
-
-    for (int j=0; j<updateidx.size(); j++) {
-      int idx = updateidx[j] - 1;
-      int row = from[idx] - 1;
-      int col = to[idx] - 1;
-      concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
-    }
 
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
@@ -275,8 +275,19 @@ Type objective_function<Type>::operator() ()
         nextBreak++;
     }
 
-    if (i<numIterations-1)
-        update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+    update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+
+    // Update vectors "concatenated_*"
+    concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
+
+    int offset = (i+1)*updateidx.size();
+
+    for (int j=0; j<updateidx.size(); j++) {
+      int idx = updateidx[j] - 1;
+      int row = from[idx] - 1;
+      int col = to[idx] - 1;
+      concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
+    }
   }
 
   //std::cout << concatenated_ratemat_nonzeros << std::endl;
