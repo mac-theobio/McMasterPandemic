@@ -89,5 +89,7 @@ dd <- MakeADFun(data = list(state = c(state), #c(test_model$state),
 
 tmb_sparse_ratemat = dd$report()$ratemat
 concatenated_state_vector = dd$report()$concatenated_state_vector
+concatenated_ratemat_nonzeros = dd$report()$concatenated_ratemat_nonzeros
 
 print(concatenated_state_vector)
+print(concatenated_ratemat_nonzeros)
