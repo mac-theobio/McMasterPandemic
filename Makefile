@@ -154,7 +154,7 @@ pkgcheck:
 tmbtest:
 	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
 
-src/McMasterPandemic.cpp: inst/tmb/recommended_spec_version
+src/McMasterPandemic.cpp: inst/tmb/**/*
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
 
 vignettes/flex_specs.html: vignettes/flex_specs.rmd

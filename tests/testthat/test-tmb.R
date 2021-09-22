@@ -294,6 +294,13 @@ test_model = (init_model(
 
 dd = tmb_fun(test_model, basename(dll))
 
+#(dd$report()$concatenated_ratemat_nonzeros
+#  %>% matrix(length(test_model$rates), test_model$iters)
+#  %>% t
+#  %>% as.data.frame
+#  %>% setNames(names(test_model$rates))
+#)
+
 tmb_traj = (state
             %>% c(dd$report()$concatenated_state_vector)
             %>% matrix(length(state), test_model$iters + 1,
@@ -310,7 +317,6 @@ r_traj = run_sim(
   condense = FALSE,
   step_args = list(do_hazard = TRUE))[,names(state)] %>%
   as.data.frame
-
 
 row.names(r_traj) = row.names(tmb_traj) = NULL
 
@@ -342,6 +348,7 @@ test_that("tmb-computed gradient equals numerical gradient", {
                tolerance = 1e-5)
 })
 
+
 test_that("use_flex flag does not change results" , {
   tmb_sim = run_sim(
     params = params, state = state,
@@ -362,7 +369,9 @@ test_that("use_flex flag does not change results" , {
     use_flex = FALSE)
 
   # TODO: get rid of these lines so that we truly have a drop-in replacement
-  r_sim = r_sim[, names(tmb_sim)]
+  #  note: the -nrow(...) subscripts should be removed once #101 is fixed
+  r_sim = r_sim[-nrow(r_sim), names(tmb_sim)]
+  tmb_sim = tmb_sim[-nrow(tmb_sim),]
   attributes(r_sim) = attributes(tmb_sim) = NULL
 
   expect_equal(tmb_sim, r_sim)

@@ -279,8 +279,8 @@ Type objective_function<Type>::operator() ()
         update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
   }
 
-  std::cout << concatenated_ratemat_nonzeros << std::endl;
-  std::cout << ratemat << std::endl;
+  //std::cout << concatenated_ratemat_nonzeros << std::endl;
+  //std::cout << ratemat << std::endl;
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
