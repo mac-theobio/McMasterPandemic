@@ -15,7 +15,7 @@ Compartmental epidemic models for forecasting and analysis of infectious disease
 
 ### Installation
 
-The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) and install locally or use `remotes::install_github("mac-theobio/McMasterPandemic")` to install the package. You will need to first install the developer version of `bbmle` (`remotes::install_github("bbolker/bbmle")`) before installing `McMasterPandemic`.
+The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) and install locally or use `remotes::install_github("mac-theobio/McMasterPandemic")` to install the package. You will need to first install the developer version of `bbmle` (`remotes::install_github("bbolker/bbmle")`) before installing `McMasterPandemic`, followed by another package that is not on CRAN (`remotes::install_github("johndharrison/semver")`).
 
 ### For developers
 
