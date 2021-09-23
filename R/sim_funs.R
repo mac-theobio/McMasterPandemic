@@ -912,81 +912,51 @@ run_sim <- function(params,
                     condense = TRUE,
                     condense_args = NULL,
                     verbose = FALSE,
-                    use_flex = FALSE) {
+                    use_flex = FALSE,
+                    flexmodel = NULL,
+                    obj_fun = NULL) {
 
-    if(use_flex) {
-      # tmb/c++ computational approach (experimental)
-      # (https://canmod.net/misc/flex_specs)
+  if (use_flex) {
+    ## tmb/c++ computational approach (experimental)
+    ## (https://canmod.net/misc/flex_specs)
 
-      spec_check('0.0.5', 'run_sim with TMB')
+    start_date <- as.Date(start_date)
+    end_date <- as.Date(end_date)
 
-      # Check for features not yet implemented in flexmodel approach,
-      # and throw error with message if TRUE
-      if(any(stoch)) spec_check(NULL, 'Stochasticity')
-      if((dt != 1) | (ndt != 1)) spec_check(NULL, "Flexible time steps")
-      if(has_zeta(params)) spec_check(NULL, "Zeta parameters")
-      if(has_vax(params) | has_vax(state) | has_vacc(params)) {
-        spec_check(NULL, "Vaccination structure")
-      }
-      if(has_testing(state, params)) spec_check(NULL, "Testing structure")
-      if(has_age(params)) spec_check(NULL, "Age structure")
-
-      # may need to modify this when we start updating time-varying parameters
-      # on the c++ side (currently params0 should always equal params)
-      params0 = params
-      state0 = state
-
-      step_args_to_flex = c('do_hazard')
-      flex_args = c(
-        list(
-          params = params,
-          state = state,
-          start_date = start_date,
-          end_date = end_date,
-          params_timevar = params_timevar),
-        step_args[names(step_args) %in% step_args_to_flex])
-
-      model = (init_model
-        %>% do.call(flex_args)
-        %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
-        %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
-        %>% add_rate("Ia", "R", ~ (gamma_a))
-        %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
-        %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
-        %>% add_rate("Im", "R", ~ (gamma_m))
-        %>% add_rate("Is", "H", ~
-                       (1 - nonhosp_mort) * (phi1) * (gamma_s))
-        %>% add_rate("Is", "ICUs", ~
-                       (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-        %>% add_rate("Is", "ICUd", ~
-                       (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
-        %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
-        %>% add_rate("ICUs", "H2", ~ (psi1))
-        %>% add_rate("ICUd", "D", ~ (psi2))
-        %>% add_rate("H2", "R", ~ (psi3))
-        %>% add_rate("H", "R", ~ (rho))
-        %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-        %>% add_rate("S",  "E", ~
-                       (Ia) * (beta0) * (1/N) * (Ca) +
-                       (Ip) * (beta0) * (1/N) * (Cp) +
-                       (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
-                       (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
-        %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-        %>% add_tmb_indices()
+    if (is.null(flexmodel)) {
+      flexmodel <- make_unflexmodel(
+        params = params,
+        state = state,
+        start_date = start_date,
+        end_date = end_date,
+        params_timevar = params_timevar,
+        step_args = step_args
       )
+    }
 
-      obj_fun = tmb_fun(model)
-      res = matrix(
-        c(state, obj_fun$report()$concatenated_state_vector),
-        nrow = model$iters + 1, ncol = length(state),
-        dimnames = list(1:(model$iters+1), names(state)),
-        byrow = TRUE)
-      res <- dfs(date = seq(model$start_date, model$end_date, by = 1), res)
-      foi_off = which(names(model$tmb_indices$updateidx) == "S_to_E")
-      foi_indices = seq(from = foi_off, by = foi_off, length.out = model$iters)
-      res$foi = c(obj_fun$report()$concatenated_ratemat_nonzeros[foi_indices], NA)
+    if (is.null(obj_fun)) {
+      obj_fun <- tmb_fun(flexmodel)
+    }
 
-    } else {
+    params0 <- params
+    state0 <- state
+
+    obj_fun$env$data$tv_val <- params[obj_fun$env$data$tv_spi - length(state)] * obj_fun$env$data$tv_val
+
+    ## simulate trajectories based on new parameters
+    tmb_sims <- obj_fun$simulate(params)
+
+    res <- matrix(
+      tmb_sims$concatenated_state_vector,
+      nrow = flexmodel$iters + 1, ncol = length(state),
+      dimnames = list(1:(flexmodel$iters + 1), names(state)),
+      byrow = TRUE
+    )
+    res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
+    foi_off <- which(names(flexmodel$tmb_indices$updateidx) == "S_to_E")
+    foi_indices <- seq(from = foi_off, by = foi_off, length.out = flexmodel$iters + 1)
+    res$foi <- tmb_sims$concatenated_ratemat_nonzeros[foi_indices]
+  } else {
 
       call <- match.call()
 
@@ -1244,7 +1214,7 @@ run_sim <- function(params,
     attr(res, "call") <- call
     attr(res, "params_timevar") <- params_timevar
     if(use_flex) {
-      attr(res, "flex_model") <- model
+      attr(res, "flexmodel") <- flexmodel
       attr(res, "ad_fun") <- obj_fun
     }
     ## attr(res,"final_state") <- state
