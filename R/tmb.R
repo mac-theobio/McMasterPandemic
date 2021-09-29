@@ -311,24 +311,6 @@ state_dependent_rates <- function(model) {
 ##' @return another compartmental model with parallel accumulators specified
 ##' @export
 add_parallel_accumulators <- function(model, state_patterns) {
-    if (spec_ver_gt("0.0.2")) {
-        ## TODO: check with experts if time-varying
-        ## parameters can be parallel accumulators?
-        ## currently assumed 'no' in the spec
-        ## https://canmod.net/misc/flex_specs#assumptions-0.0.3
-        nms_tv_params <- names(model$timevar$piece_wise$nbreaks)
-        tv_accumulators <- unlist(lapply(
-            state_patterns, grep, nms_tv_params,
-            perl = TRUE, value = TRUE
-        ))
-        if (length(tv_accumulators) > 0) {
-            stop(
-                "Time-varying parameters cannot be accumulators,\n",
-                "but the following are:\n",
-                paste(tv_accumulators, collapse = ", ")
-            )
-        }
-    }
     model$parallel_accumulators <- parallel_accumulators(model, state_patterns)
     return(model)
 }
