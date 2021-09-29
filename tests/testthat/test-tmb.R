@@ -447,7 +447,7 @@ test_that('time-varying parameters are correctly updated on C++ side', {
     )
 
     r_sim <- run_sim(
-        params = params, state = state,
+        params = test_pars, state = state,
         start_date = "2021-09-10",
         end_date = "2021-10-10",
         params_timevar = tv_dat,
