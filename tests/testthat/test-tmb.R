@@ -303,13 +303,6 @@ test_model <- (init_model(
 
 dd <- tmb_fun(test_model)
 
-## (dd$report()$concatenated_ratemat_nonzeros
-##  %>% matrix(length(test_model$rates), test_model$iters)
-##  %>% t
-##  %>% as.data.frame
-##  %>% setNames(names(test_model$rates))
-## )
-
 tmb_traj <- (dd$report()$concatenated_state_vector
     %>% matrix(length(state), test_model$iters + 1,
         dimnames = list(names(state), 1:(test_model$iters + 1))
@@ -395,6 +388,78 @@ test_that("use_flex flag does not change results", {
     attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
     attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
     for(a in names(attributes(r_sim))) {
+        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
+    }
+
+    attributes(r_sim) <- attributes(tmb_sim) <- NULL
+    expect_equal(tmb_sim, r_sim)
+})
+
+
+
+spec_version <- "0.0.6"
+print(spec_version)
+options(MP_flex_spec_version = spec_version)
+
+test_files <- "../../inst/tmb/"
+
+cpp <- file.path(test_files, spec_version, "macpan.cpp")
+dll <- file_path_sans_ext(cpp)
+options(MP_flex_spec_dll = basename(dll))
+
+compile(cpp)
+dyn.load(dynlib(dll))
+
+test_that('time-varying parameters are correctly updated on C++ side', {
+    params <- read_params("ICU1.csv")
+    state <- make_state(params = params)
+    M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
+
+    tv_dat <- data.frame(
+        Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
+        Symbol = c("beta0", "beta0", "beta0"),
+        Value = c(0.5, 0.1, 0.05),
+        Type = c("rel_prev", "rel_orig", "rel_prev")
+    )
+
+    mm = make_unflexmodel(
+        params, state,
+        start_date = "2021-09-10",
+        end_date = "2021-10-10",
+        params_timevar = tv_dat,
+        step_args = list(do_hazard = TRUE)
+    )
+
+    # change beta0, which is time-varying, so that
+    # we can check that the parameter updates are
+    # happening correctly in the C++ side
+    test_pars = params
+    test_pars[1] = 3
+
+    tmb_sim <- run_sim(
+        params = test_pars, state = state,
+        start_date = "2021-09-10",
+        end_date = "2021-10-10",
+        params_timevar = tv_dat,
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE, flexmodel = mm),
+        use_flex = TRUE
+    )
+
+    r_sim <- run_sim(
+        params = params, state = state,
+        start_date = "2021-09-10",
+        end_date = "2021-10-10",
+        params_timevar = tv_dat,
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE),
+        use_flex = FALSE
+    )
+
+    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
+    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
+    for(a in names(attributes(r_sim))) {
+        print(a)
         expect_equal(attr(tmb_sim, a), attr(r_sim, a))
     }
 
