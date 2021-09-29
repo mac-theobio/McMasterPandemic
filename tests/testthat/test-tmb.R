@@ -384,11 +384,20 @@ test_that("use_flex flag does not change results", {
         use_flex = FALSE
     )
 
-    ## TODO: get rid of these lines so that we truly have a drop-in replacement
-    ##  note: the -nrow(...) subscripts should be removed once #101 is fixed
-    r_sim <- r_sim[-nrow(r_sim), names(tmb_sim)]
-    tmb_sim <- tmb_sim[-nrow(tmb_sim), ]
-    attributes(r_sim) <- attributes(tmb_sim) <- NULL
+    # exceptions to drop-in replacement:
+    # 1. don't require that the attributes are in the same order
+    # 2. don't require that the r version returns everything that the tmb
+    #    version does (e.g. flexmodel)
+    # 3. don't require that the row.names are identical (is this ok?
+    #    the r version counts iterations with skips, but is this informative?)
+    # 4. don't require that the call is identical (obvious i guess, but
+    #    being exhaustive)
+    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
+    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
+    for(a in names(attributes(r_sim))) {
+        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
+    }
 
+    attributes(r_sim) <- attributes(tmb_sim) <- NULL
     expect_equal(tmb_sim, r_sim)
 })
