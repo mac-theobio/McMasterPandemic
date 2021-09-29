@@ -2,6 +2,7 @@
 ##'
 ##' @param params a \code{param_pansim} object
 ##' @param state a \code{state_pansim} object
+##' @param struc a \code{struc_pansim} object
 ##' @param start_date simulation start date
 ##' @param end_date simulation end date
 ##' @param params_timevar data frame with scheduling for piece-wise
@@ -11,7 +12,7 @@
 ##' if \code{spec_ver_gt('0.0.4')}
 ##' @return object representing a compartmental model
 ##' @export
-init_model <- function(params, state,
+init_model <- function(params, state, struc = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE, ...) {
@@ -182,6 +183,15 @@ add_rate <- function(model, from, to, formula) {
     return(model)
 }
 
+##' Define Rate for Single Element of Rate Matrix
+##'
+##' @param from from state
+##' @param to to state
+##' @param formula one-sided formula defining the rate with reference
+##' to the parameters and state variables
+##' @param state state_pansim object
+##' @param params param_pansim object
+##' @param ratemat rate matrix
 ##' @export
 rate <- function(from, to, formula, state, params, ratemat) {
     ## TODO: test for formula structure
@@ -236,6 +246,10 @@ rate <- function(from, to, formula, state, params, ratemat) {
         )
         x$ratemat_indices <-
             do.call(McMasterPandemic:::pfun, c(x[c("from", "to")], list(mat = M)))
+        if(nrow(x$ratemat_indices) > 1L) {
+            stop('you are referring to more than one element of the rate matrix\n',
+                 'try using rep_rate instead of rate')
+        }
         x$factors$var_indx <- find_vec_indices(x$factors$var, c(state, params))
 
         if (spec_ver_gt("0.0.1")) {
@@ -254,6 +268,22 @@ rate <- function(from, to, formula, state, params, ratemat) {
         product_list(list(from = from, to = to, formula = formula)),
         class = "rate-struct"
     )
+}
+
+#' Repeat a Rate for Several Rate Matrix Elements
+#'
+#' @inheritParams rate
+#' @export
+rep_rate = function(to, from, formula, state, params, ratemat) {
+    ratemat_indices = pfun(to, from, ratemat)
+    nms = rownames(ratemat)
+    from = nms[ratemat_indices[,'from_pos']]
+    to = nms[ratemat_indices[,'to_pos']]
+    lst = mapply(rate, to, from,
+           MoreArgs = nlist(formula, state, params, ratemat),
+           SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
+    setNames(lst, nms)
 }
 
 find_vec_indices <- function(x, vec) {
@@ -674,4 +704,5 @@ make_unflexmodel <- function(params,
     ## print(make_model_end - make_model_start)
     ## print(make_obj_fun_end - make_obj_fun_start)
     ## print(post_process_end - post_process_start)
+    return(model)
 }
