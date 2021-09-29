@@ -41,12 +41,12 @@ The specs for the following versions are frozen, which means that they will not 
 * [0.0.2 -- Simulation (iterated state variable updates)](#v0.0.2)
 * [0.0.4 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.4)
 * [0.0.5 -- Hazard simulation](#v0.0.5)
+* [0.0.6 -- Updates of time-varying parameters from the initial parameters on the `C++` side](#v0.0.6)
 
 ## Experimental Versions
 
 The specs for the following versions are being actively developed and modified. These versions also serve as a roadmap. Note that version numbers of experimental versions can change without warning.
 
-* [0.0.6 -- Updates of time-varying parameters from the initial parameters on the `C++` side](#v0.0.6)
 * [0.1.0 -- Model structure](#v0.1.0)
 * [0.1.1 -- Log-linear exogenous time-variation of parameters](#v0.1.1)
 * [0.2.0 -- Condensation and calibration](#v0.2.0)
@@ -102,6 +102,46 @@ ODE (i.e. exponential) simulation.
 ### New Capabilities (0.2.0)
 
 Condensation and calibration.
+
+## v0.1.1
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.1.1)
+
+Log-linear exogenous time-variation of parameters.
+
+### Mathematical Description (0.1.1)
+
+Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
+
+
+$$
+\log(u) = \log(u_0) + Xv
+$$
+where $u$ is a vector of length $T$, the number of time steps, $u_0$ is a scalar parameter, $v$ is a vector of length $D < T$ that parameterizes the model of time variation, and $X$ is a $T$-by-$D$ matrix of constant columns (e.g. indicator variables, spline bases). Note that logs of vectors are taken element-wise.
+
+$$
+\log(u_t) = \log(u_0) + \sum_{i=1}^Dx_{ti}v_i
+$$
+$$
+u_t = u_0 \prod_{i=1}^D\exp\left(x_{ti}v_i\right)
+$$
+For example:
+
+* $D=2$ breakpoints 
+* $v_1 = v_2 = \log\left(\frac{1}{2}\right) \approx -0.69$
+* $x_{ti} = \begin{cases} 1, & t \ge t_i \\ 0, & \text{otherwise} \end{cases}$
+
+In this case we have the following time variation of $u$.
+$$
+u_t = 
+\begin{cases} 
+u_0, & t < t_1 \\
+\frac{u_0}{2}, & t_1 \le t < t_2 \\
+\frac{u_0}{4}, & t \ge t_2
+\end{cases}
+$$
 
 ## v0.1.0
 
@@ -182,49 +222,9 @@ foi = kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
 foi
 ```
 
-## v0.1.1
-
-[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.1.1)
-
-Log-linear exogenous time-variation of parameters.
-
-### Mathematical Description (0.1.1)
-
-Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
-
-
-$$
-\log(u) = \log(u_0) + Xv
-$$
-where $u$ is a vector of length $T$, the number of time steps, $u_0$ is a scalar parameter, $v$ is a vector of length $D < T$ that parameterizes the model of time variation, and $X$ is a $T$-by-$D$ matrix of constant columns (e.g. indicator variables, spline bases). Note that logs of vectors are taken element-wise.
-
-$$
-\log(u_t) = \log(u_0) + \sum_{i=1}^Dx_{ti}v_i
-$$
-$$
-u_t = u_0 \prod_{i=1}^D\exp\left(x_{ti}v_i\right)
-$$
-For example:
-
-* $D=2$ breakpoints 
-* $v_1 = v_2 = \log\left(\frac{1}{2}\right) \approx -0.69$
-* $x_{ti} = \begin{cases} 1, & t \ge t_i \\ 0, & \text{otherwise} \end{cases}$
-
-In this case we have the following time variation of $u$.
-$$
-u_t = 
-\begin{cases} 
-u_0, & t < t_1 \\
-\frac{u_0}{2}, & t_1 \le t < t_2 \\
-\frac{u_0}{4}, & t \ge t_2
-\end{cases}
-$$
-
 ## v0.0.6
 
-[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=red)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.0.6)
 

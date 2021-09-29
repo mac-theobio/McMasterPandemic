@@ -11,7 +11,7 @@ parse_formula(x)
 the dependence of rate matrix elements on parameter and/or state variables}
 }
 \value{
-todo
+depends on the spec version (TODO: add detail once we converge)
 }
 \description{
 Parse a Flexmodel Formula

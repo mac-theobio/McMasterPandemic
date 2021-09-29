@@ -4,15 +4,10 @@
 \alias{tmb_fun}
 \title{Make Objective Function with TMB}
 \usage{
-tmb_fun(model, DLL = "McMasterPandemic")
+tmb_fun(model)
 }
 \arguments{
 \item{model}{object of class \code{flexmodel}}
-
-\item{DLL}{argument to pass to the \code{DLL} argument of
-\code{TMB::MakeADFun}. TODO: make this optional, and choose the main
-package DLL once it exists
-(https://github.com/mac-theobio/McMasterPandemic/issues/96)}
 }
 \description{
 Construct an objective function in TMB from a \code{flexmodel}

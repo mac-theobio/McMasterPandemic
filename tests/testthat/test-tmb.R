@@ -466,3 +466,37 @@ test_that('time-varying parameters are correctly updated on C++ side', {
     attributes(r_sim) <- attributes(tmb_sim) <- NULL
     expect_equal(tmb_sim, r_sim)
 })
+
+test_that('it remains ok to _not_ use time-varying parameters', {
+    params <- read_params("ICU1.csv")
+    state <- make_state(params = params)
+    M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
+
+    tmb_sim <- run_sim(
+        params = params, state = state,
+        start_date = "2021-09-10",
+        end_date = "2021-10-10",
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE),
+        use_flex = TRUE
+    )
+
+    r_sim <- run_sim(
+        params = params, state = state,
+        start_date = "2021-09-10",
+        end_date = "2021-10-10",
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE),
+        use_flex = FALSE
+    )
+
+    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
+    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
+    for(a in names(attributes(r_sim))) {
+        print(a)
+        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
+    }
+
+    attributes(r_sim) <- attributes(tmb_sim) <- NULL
+    expect_equal(tmb_sim, r_sim)
+})

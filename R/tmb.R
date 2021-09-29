@@ -59,57 +59,6 @@ init_model <- function(params, state, struc = NULL,
             feature = "Piece-wise contant time variation of parameters"
         )
 
-
-        if (spec_ver_eq("0.0.3")) {
-            nbreaks <- table(params_timevar$Symbol)
-            pi_tv_par <- find_vec_indices(names(nbreaks), model$params)
-            names(pi_tv_par) <- names(nbreaks)
-
-            ## want to be able to assume a particular structure
-            ## and ordering in downstream processing
-            schedule <- (
-                params_timevar
-                    %>% mutate(Date = as.Date(Date))
-                    %>% mutate(Order = pi_tv_par[Symbol])
-                    %>% arrange(Order, Date)
-            )
-
-            o <- order(pi_tv_par)
-            pi_tv_par <- pi_tv_par[o]
-            nbreaks <- nbreaks[o]
-
-            ## Initialize the values of the time-varying parameters
-            ## at the breakpoints
-            ##
-            ## this task is a bit like:
-            ## https://github.com/mac-theobio/McMasterPandemic/blob/478e520bf20279a2bd803da1301fc3cb15f03a34/R/sim_funs.R#L1050
-            ## the difference is that we are saving parameter values for
-            ## every breakpoint
-            schedule$Init <- NA
-            new_param <- TRUE
-            ns <- nrow(schedule)
-            for (i in 1:ns) {
-                if (new_param | schedule$Type[i] == "rel_orig") {
-                    old_val <- model$params[schedule$Symbol[i]]
-                } else {
-                    old_val <- schedule$Init[i - 1]
-                }
-                schedule$Init[i] <- old_val * schedule$Value[i]
-                new_param <- schedule$Symbol[i] != schedule$Symbol[min(ns, i + i)]
-            }
-
-            expanded_params <- expand_time(model$params, schedule$Init, nbreaks, pi_tv_par)
-
-            model$timevar$piece_wise <- list(
-                schedule = schedule,
-                original_params = params,
-                nbreaks = nbreaks,
-                pi_tv_par = pi_tv_par
-            )
-
-            model$params <- expanded_params
-        } ## v0.0.3
-
         if (spec_ver_gt("0.0.3")) {
             schedule <- (
                 params_timevar
@@ -120,7 +69,6 @@ init_model <- function(params, state, struc = NULL,
             )
             count_of_tv_at_breaks <- c(table(schedule$breaks))
 
-            ## DRY: copied and modified from v0.0.3 above
             schedule$tv_val <- NA
             new_param <- TRUE
             ns <- nrow(schedule)
@@ -261,6 +209,8 @@ rate <- function(from, to, formula, state, params, ratemat) {
                 x$factors$tv <- x$factors$var %in%
                     names(attributes(params)$tv_param_indices)
                 x$time_varying <- any(x$factors$tv)
+            } else {
+                x$time_varying = FALSE
             }
         }
         x
@@ -297,7 +247,7 @@ rep_rate = function(to, from, formula, state, params, ratemat) {
 #'
 #' @param x one-sided formula, character vector, or struc object describing
 #' the dependence of rate matrix elements on parameter and/or state variables
-#' @return todo
+#' @return depends on the spec version (TODO: add detail once we converge)
 #' @export
 parse_formula = function(x) {
     y = as.character(x)
@@ -322,47 +272,6 @@ find_vec_indices <- function(x, vec) {
             %>% outer(names(vec), "==")
             %>% apply(1, which)
     )
-}
-
-##' Expand Parameters
-##'
-##' Should only be used for spec version 0.0.3
-##'
-##' @param x parameter vector
-##' @param vals initial time-varying parameter values
-##' @param nbreaks integer vector of time indices of the breakpoints
-##' (in the case of piece-wise constant time variation, this can be
-##' computed using \code{table(model$timevar$piece_wise$schedule$Symbol)})
-##' @param pi_tv_par indices into the non-expanded/original parameter
-##' vector for selecting time-varying parameters
-##' @export
-expand_time <- function(x, vals, nbreaks, pi_tv_par) {
-    after <- unname(pi_tv_par + c(0, nbreaks[-length(nbreaks)]))
-    tv_param_indices <- mapply(
-        seq,
-        from = after, length.out = nbreaks + 1, SIMPLIFY = FALSE
-    )
-    names(tv_param_indices) <- names(nbreaks)
-
-    names(vals) <- paste0(
-        rep(names(nbreaks), times = nbreaks),
-        paste0("_t", sequence(nbreaks))
-    )
-
-    ## insert time-dependent parameters
-    start <- 1
-    end <- 0
-    for (i in seq_along(nbreaks)) {
-        end <- end + nbreaks[i]
-        x <- append(x, vals[start:end], after[i])
-        start <- end + 1
-    }
-
-    tv_param_indices <- lapply(tv_param_indices, function(i) {
-        setNames(i, names(x)[i])
-    })
-
-    structure(x, tv_param_indices = tv_param_indices)
 }
 
 ##' @param x parameter vector
@@ -619,7 +528,7 @@ tmb_fun <- function(model) {
             parameters = list(params = c(params)),
             DLL = DLL
         )
-    } else if (spec_ver_eq("0.0.6")) {
+    } else if (spec_ver_gt("0.0.5")) {
         dd <- MakeADFun(
             data = list(
                 state = c(state),
