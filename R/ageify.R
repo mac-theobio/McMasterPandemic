@@ -24,33 +24,35 @@ mk_agecats <- function(min = 0, max = 90, da = 10) {
     return(out)
 }
 
-#' Repair ageified names
-#'
-#' sometimes age categories get changed from 0-10 to 0.10 and 60+ to 60.
-#' replace each substituted period with the correct character
-#'
-#' @param x a named list or data.frame
-#'
-#' @return a named list or data.frame
-#' @export
-#'
-#' @examples
-#' state <- c(S_0.10 = 100, E_60. = 1)
-#' repair_names_age(state)
-repair_names_age <- function(x){
-  the_names <- names(x)
-  ## remove "date" from the names since this isn't a state variable
-  the_names <- the_names[!grepl("date", the_names)]
-  ## if there aren't any x names that have an age groups, just return x
-  if(!any(grepl("_\\d+", the_names))) return(x)
+##' Repair ageified names
+##'
+##' sometimes age categories get changed from 0-10 to 0.10 and 60+ to 60.
+##' replace each substituted period with the correct character
+##'
+##' @param x a named list or data.frame
+##'
+##' @return a named list or data.frame
+##' @export
+##'
+##' @examples
+##' state <- c(S_0.10 = 100, E_60. = 1)
+##' repair_names_age(state)
+repair_names_age <- function(x) {
+    the_names <- names(x)
+    ## remove "date" from the names since this isn't a state variable
+    the_names <- the_names[!grepl("date", the_names)]
+    ## if there aren't any x names that have an age groups, just return x
+    if (!any(grepl("_\\d+", the_names))) {
+        return(x)
+    }
 
-  ## first replace all periods with a hyphen
-  names(x) <- sub("\\.", "-", names(x))
-  ## then replace hyphens at the end of the name or before an underscore with a +
-  names(x) <- sub("-$", "\\+", names(x))
-  names(x) <- sub("-_", "\\+_", names(x))
+    ## first replace all periods with a hyphen
+    names(x) <- sub("\\.", "-", names(x))
+    ## then replace hyphens at the end of the name or before an underscore with a +
+    names(x) <- sub("-$", "\\+", names(x))
+    names(x) <- sub("-_", "\\+_", names(x))
 
-  return(x)
+    return(x)
 }
 
 ##' Aggregate age categories into larger age categories
@@ -168,22 +170,22 @@ aggregate_agecats <- function(age,
 
 ## STATE UTILITIES
 
-#' expand state vector by age classes and population distribution
-#'
-#' epidemiological state varies fast, age category varies slowly
-#' @param x state vector
-#' @param age_cat vector of age categories
-#' @param Nvec population distribution (as counts)
-#' @examples
-#' params <- read_params("PHAC_testify.csv")
-#' ss <- make_state(params=params)
-#' # ss2 <- expand_state_age(ss)
-#' @importFrom purrr map_dfr
-#' @importFrom dplyr across
-#' @importFrom dplyr relocate
-#' @importFrom dplyr everything
-#' @export
-expand_state_age <- function(x, age_cat=mk_agecats(),
+##' expand state vector by age classes and population distribution
+##'
+##' epidemiological state varies fast, age category varies slowly
+##' @param x state vector
+##' @param age_cat vector of age categories
+##' @param Nvec population distribution (as counts)
+##' @examples
+##' params <- read_params("PHAC_testify.csv")
+##' ss <- make_state(params=params)
+##' # ss2 <- expand_state_age(ss)
+##' @importFrom purrr map_dfr
+##' @importFrom dplyr across
+##' @importFrom dplyr relocate
+##' @importFrom dplyr everything
+##' @export
+expand_state_age <- function(x, age_cat = mk_agecats(),
                              Nvec = NULL) {
     ## workaround for rcmdcheck
     total <- S <- NULL
@@ -598,8 +600,10 @@ check_age_cat_compatibility <- function(age_cat) {
 }
 
 ## dput(unique(substr(list.files(system.file("params", "mistry-cmats", package="McMasterPandemic")), 1, 2)))
-provterr_abbrevs <- c("AB", "BC", "CA", "MB", "NB", "NL", "NS", "NT", "NU", "ON",
-                  "PE", "QC", "SK", "YT")
+provterr_abbrevs <- c(
+    "AB", "BC", "CA", "MB", "NB", "NL", "NS", "NT", "NU", "ON",
+    "PE", "QC", "SK", "YT"
+)
 
 ##' Make population distribution using Mistry et al. data
 ##'
@@ -612,13 +616,12 @@ provterr_abbrevs <- c("AB", "BC", "CA", "MB", "NB", "NL", "NS", "NT", "NU", "ON"
 ##' @examples mk_mistry_Nvec()
 mk_mistry_Nvec <- function(province = "ON",
                            age_cat = NULL) {
-
-    if (nchar(province)>2) {
-      stop("please use two-letter abbreviations for provinces and territories")
+    if (nchar(province) > 2) {
+        stop("please use two-letter abbreviations for provinces and territories")
     }
     province <- toupper(province)
     if (!province %in% provterr_abbrevs) {
-      stop("unknown province territory ", sQuote(province))
+        stop("unknown province territory ", sQuote(province))
     }
 
     ## workaround for rcmdcheck
@@ -928,21 +931,23 @@ update_contact_rate_setting <- function(contact_rate_setting,
     return(contact_rate_setting)
 }
 
-#' Helper function to check setting-specific contact rate list initialization
-#'
-#' @param contact_rate_setting named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
-#'
-#' @export
-#' @examples
-#' check_contact_rate_setting(mk_contact_rate_setting())
-check_contact_rate_setting <- function(contact_rate_setting){
-  ## check that it's a list
-  if(!is.list(contact_rate_setting)) stop("setting-specific contact rate must be specified as a list")
-  ## check that the avg_contact_rate_per_setting list is correctly specified
-  if(!isTRUE(all.equal(sort(names(contact_rate_setting)),
-                       c("community", "household", "school", "work")))){
-    stop("setting-specific contact rate list must have names 'household', 'school', 'work', 'community'")
-  }
+##' Helper function to check setting-specific contact rate list initialization
+##'
+##' @param contact_rate_setting named list containing setting-specific contact rates (in units of average contacts in the given setting per individual of age i with individuals of age j per day)
+##'
+##' @export
+##' @examples
+##' check_contact_rate_setting(mk_contact_rate_setting())
+check_contact_rate_setting <- function(contact_rate_setting) {
+    ## check that it's a list
+    if (!is.list(contact_rate_setting)) stop("setting-specific contact rate must be specified as a list")
+    ## check that the avg_contact_rate_per_setting list is correctly specified
+    if (!isTRUE(all.equal(
+        sort(names(contact_rate_setting)),
+        c("community", "household", "school", "work")
+    ))) {
+        stop("setting-specific contact rate list must have names 'household', 'school', 'work', 'community'")
+    }
 }
 
 ##' Update Mistry-based parameters
@@ -1017,25 +1022,25 @@ update_params_mistry <- function(params,
 
 ## SIMULATION
 
-#' Ageify a basic simulation
-#'
-#' Wrapper function for `run_sim()` that incorporates existing ageify tools
-#'
-#' @param base_params base parameter set without age structure (e.g. generated by `read_params()`)
-#' @param base_state base state vector without age structure (e.g. generated by `make_state()`)
-#' @param age_cat age categories (e.g. generated by `mk_agecats()`)
-#' @param beta0 vector of beta0 values for each age group
-#' @param pmat contact matrix (e.g. generated by `mk_pmat()`)
-#' @param Nvec population distribution (e.g. generated by `mk_Nvec()`)
-#' @param ... additional arguments to `run_sim()`
-#'
-#' @return simulation results (an object of class `pansim`)
-#' @export
-#'
-#' @examples
-#' params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
-#' state <- make_state(params=params)
-#' run_sim_ageify(base_params = params, base_state = state)
+##' Ageify a basic simulation
+##'
+##' Wrapper function for `run_sim()` that incorporates existing ageify tools
+##'
+##' @param base_params base parameter set without age structure (e.g. generated by `read_params()`)
+##' @param base_state base state vector without age structure (e.g. generated by `make_state()`)
+##' @param age_cat age categories (e.g. generated by `mk_agecats()`)
+##' @param beta0 vector of beta0 values for each age group
+##' @param pmat contact matrix (e.g. generated by `mk_pmat()`)
+##' @param Nvec population distribution (e.g. generated by `mk_Nvec()`)
+##' @param ... additional arguments to `run_sim()`
+##'
+##' @return simulation results (an object of class `pansim`)
+##' @export
+##'
+##' @examples
+##' params <- update(read_params("PHAC_testify.csv"), testing_intensity=0)
+##' state <- make_state(params=params)
+##' run_sim_ageify(base_params = params, base_state = state)
 run_sim_ageify <- function(base_params,
                            base_state,
                            age_cat = mk_agecats(),

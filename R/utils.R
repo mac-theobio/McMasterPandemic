@@ -13,11 +13,11 @@ nlist <- function(...) {
     L <- list(...)
     snm <- vapply(substitute(list(...)), deparse, character(1))[-1]
     if (is.null(nm <- names(L))) {
-          nm <- snm
-      }
+        nm <- snm
+    }
     if (any(nonames <- nm == "")) {
-          nm[nonames] <- snm[nonames]
-      }
+        nm[nonames] <- snm[nonames]
+    }
     setNames(L, nm)
 }
 
@@ -916,36 +916,38 @@ capitalize <- function(x) {
 ##' @param sim_fun simulation function
 ##' @export
 fix_stored <- function(x, sim_fun = run_sim_break) {
-  if (requireNamespace("anytime")) {
-    x$forecast_args$start_date <- anytime::anydate(x$forecast_args$start_date)
-    x$forecast_args$end_date <- anytime::anydate(x$forecast_args$end_date)
-    if ("break_dates" %in% names(x$forecast_args$time_args)) {
-      x$forecast_args$time_args$break_dates <-
-        anytime::anydate(x$forecast_args$time_args$break_dates)
+    if (requireNamespace("anytime")) {
+        x$forecast_args$start_date <- anytime::anydate(x$forecast_args$start_date)
+        x$forecast_args$end_date <- anytime::anydate(x$forecast_args$end_date)
+        if ("break_dates" %in% names(x$forecast_args$time_args)) {
+            x$forecast_args$time_args$break_dates <-
+                anytime::anydate(x$forecast_args$time_args$break_dates)
+        }
     }
-  }
-  x$forecast_args$sim_fun <- sim_fun
-  pt <- x$forecast_args$time_args$params_timevar
-  if (!is.null(pt)) {
-    pt <- with(pt, data.frame(Date, Symbol, Value = Relative_value,
-                              Type = "rel_orig"))
-    x$forecast_args$time_args$params_timevar <- pt
-  }
-  return(x)
+    x$forecast_args$sim_fun <- sim_fun
+    pt <- x$forecast_args$time_args$params_timevar
+    if (!is.null(pt)) {
+        pt <- with(pt, data.frame(Date, Symbol,
+            Value = Relative_value,
+            Type = "rel_orig"
+        ))
+        x$forecast_args$time_args$params_timevar <- pt
+    }
+    return(x)
 }
 
-#' convert a tibble row (with all entries of the same data type) to a named vector (used in `condense_state()`)
-#' @param x a tibble with at most one row
-#'
-#' @return a named vector
-tibble_row_to_named_vec <- function(x){
-  if(nrow(x) > 1) stop("this function only works on tibbles with one row")
+##' convert a tibble row (with all entries of the same data type) to a named vector (used in `condense_state()`)
+##' @param x a tibble with at most one row
+##'
+##' @return a named vector
+tibble_row_to_named_vec <- function(x) {
+    if (nrow(x) > 1) stop("this function only works on tibbles with one row")
 
-  if(length(unique(sapply(x, "class"))) > 1) stop("this function only works on tibbles where each column has the same data type")
+    if (length(unique(sapply(x, "class"))) > 1) stop("this function only works on tibbles where each column has the same data type")
 
-  the_names <- names(x)
-  x <- unname(unlist(x))
-  names(x) <- the_names
+    the_names <- names(x)
+    x <- unname(unlist(x))
+    names(x) <- the_names
 
-  return(x)
+    return(x)
 }

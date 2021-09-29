@@ -775,6 +775,24 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                       DE_upr = NULL,
                       DE_cores = getOption("mc.cores", 2)) {
     start_time <- proc.time()
+
+    if (isTRUE(sim_args$use_flex)) {
+        spec_check("0.0.6", "calibration with TMB")
+        if (is.null(sim_args$flexmodel)) {
+            sim_args$flexmodel <- make_unflexmodel(
+                params = base_params,
+                state = make_state(params = base_params),
+                start_date = start_date,
+                end_date = end_date,
+                params_timevar = time_args$params_timevar,
+                step_args = sim_args$step_args
+            )
+        }
+        if (is.null(sim_args$obj_fun)) {
+            sim_args$obj_fun <- tmb_fun(sim_args$flexmodel)
+        }
+    }
+
     v <- na.omit(data$value)
     if (any(abs(v - round(v)) > 1e-9)) {
         stop("need integer values in reported data (to match dnbinom)")
