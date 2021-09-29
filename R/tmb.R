@@ -99,6 +99,10 @@ init_model <- function(params, state, struc = NULL,
                 count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
             )
         } ## >v0.0.3
+    } else {
+        if (spec_ver_gt("0.0.3")) {
+
+        }
     }
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
 
@@ -423,7 +427,21 @@ tmb_fun <- function(model) {
     unpack(model)
     unpack(tmb_indices)
     unpack(make_ratemat_indices)
-    if (spec_ver_gt("0.0.3")) unpack(timevar$piece_wise)
+    if (spec_ver_gt("0.0.3")) {
+        if(is.null(timevar$piece_wise)) {
+            # HACK: avoid breakage on the C++ side
+            #  - proper fix should allow NULLs
+            breaks = integer()
+            count_of_tv_at_breaks = integer()
+            schedule = list()
+            schedule$tv_spi = integer()
+            schedule$tv_val = numeric()
+            schedule$Value = numeric()
+            schedule$Type = character()
+        } else {
+            unpack(timevar$piece_wise)
+        }
+    }
 
 
     ## make ad functions
