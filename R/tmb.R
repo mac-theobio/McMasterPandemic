@@ -521,15 +521,12 @@ tmb_indices <- function(model) {
 ##' object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 ##'
 ##' @param model object of class \code{flexmodel}
-##' @param DLL argument to pass to the \code{DLL} argument of
-##' \code{TMB::MakeADFun}. TODO: make this optional, and choose the main
-##' package DLL once it exists
-##' (https://github.com/mac-theobio/McMasterPandemic/issues/96)
 ##' @importFrom TMB MakeADFun
 ##' @useDynLib McMasterPandemic
 ##' @export
-tmb_fun <- function(model, DLL = "McMasterPandemic") {
+tmb_fun <- function(model) {
     check_spec_ver_archived()
+    DLL = getOption('MP_flex_spec_dll')
 
     ## unpack model structure
     unpack(model)

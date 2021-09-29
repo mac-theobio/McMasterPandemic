@@ -32,6 +32,7 @@ test_files <- "../../inst/tmb/"
 
 cpp <- file.path(test_files, spec_version, "macpan.cpp")
 dll <- file_path_sans_ext(cpp)
+options(MP_flex_spec_dll = basename(dll))
 
 compile(cpp)
 dyn.load(dynlib(dll))
@@ -67,7 +68,7 @@ test_model <- (
         %>% add_tmb_indices()
 )
 
-dd <- tmb_fun(test_model, basename(dll))
+dd <- tmb_fun(test_model)
 
 tmb_sparse_ratemat <- dd$report()$ratemat
 r_dense_ratemat <- as.matrix(M)
@@ -107,6 +108,7 @@ test_files <- "../../inst/tmb/"
 
 cpp <- file.path(test_files, spec_version, "macpan.cpp")
 dll <- file_path_sans_ext(cpp)
+options(MP_flex_spec_dll = basename(dll))
 
 compile(cpp)
 dyn.load(dynlib(dll))
@@ -142,7 +144,7 @@ test_model <- (
         %>% add_tmb_indices()
 )
 
-dd <- tmb_fun(test_model, basename(dll))
+dd <- tmb_fun(test_model)
 
 tmb_traj <- (state
     %>% c(dd$report()$concatenated_state_vector)
@@ -170,6 +172,7 @@ test_files <- "../../inst/tmb/"
 
 cpp <- file.path(test_files, spec_version, "macpan.cpp")
 dll <- file_path_sans_ext(cpp)
+options(MP_flex_spec_dll = basename(dll))
 
 compile(cpp)
 dyn.load(dynlib(dll))
@@ -214,7 +217,7 @@ test_model <- (init_model(
     %>% add_tmb_indices()
 )
 
-dd <- tmb_fun(test_model, basename(dll))
+dd <- tmb_fun(test_model)
 
 tmb_traj <- (state
     %>% c(dd$report()$concatenated_state_vector)
@@ -252,6 +255,7 @@ test_files <- "../../inst/tmb/"
 
 cpp <- file.path(test_files, spec_version, "macpan.cpp")
 dll <- file_path_sans_ext(cpp)
+options(MP_flex_spec_dll = basename(dll))
 
 compile(cpp)
 dyn.load(dynlib(dll))
@@ -297,7 +301,7 @@ test_model <- (init_model(
     %>% add_tmb_indices()
 )
 
-dd <- tmb_fun(test_model, basename(dll))
+dd <- tmb_fun(test_model)
 
 ## (dd$report()$concatenated_ratemat_nonzeros
 ##  %>% matrix(length(test_model$rates), test_model$iters)
