@@ -265,12 +265,14 @@ rate <- function(from, to, formula, state, params, ratemat) {
         }
         x
     }
-    formula = parse_formula(formula)
-    if(length(formula) != 1L)
-        stop("you are trying to pass multiple formulas,\n',
-             'perhaps you want multi_rate instead of rate")
+    if(spec_ver_gt('0.1.0') | spec_ver_eq('0.1.0')) {
+        test_parse = parse_formula(formula)
+        if(length(test_parse) != 1L)
+            stop("you are trying to pass multiple formulas,\n',
+                 'perhaps you want multi_rate instead of rate")
+    }
     structure(
-        product_list(list(from = from, to = to, formula = formula[[1L]])),
+        product_list(list(from = from, to = to, formula = formula)),
         class = "rate-struct"
     )
 }
@@ -306,7 +308,11 @@ parse_formula = function(x) {
          %>% strsplit(split = "\\*")
         )
     }
-    lapply(y, pf)
+    o = lapply(y, pf)
+    if(spec_ver_lt('0.1.0')) {
+        return(o[[1L]])
+    }
+    return(o)
 }
 
 find_vec_indices <- function(x, vec) {
