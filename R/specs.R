@@ -5,7 +5,7 @@
 ##
 ## Specification Document: https://canmod.net/misc/flex_specs
 
-maximum_spec_version <- "0.0.5"
+maximum_spec_version <- "0.0.6"
 archived_spec_versions <- c("0.0.3")
 check_spec_ver_archived <- function() {
     if (getOption("MP_flex_spec_version") %in% archived_spec_versions) {

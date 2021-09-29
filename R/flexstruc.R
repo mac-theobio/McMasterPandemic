@@ -37,7 +37,7 @@ struc = function(...) {
   stopifnot(is.matrix(v) | is.atomic(v))
   d = get_dim(v)
   dim(v) = NULL
-  new('struc', v = v, dims = d)
+  new('struc', v = wrap_paren(v), dims = d)
 }
 
 #' @rdname struc
@@ -163,6 +163,18 @@ pluralizer = function(number, noun) {
         ifelse(number == 1L, '', 's'), sep = '')
 }
 
+wrap_paren = function(x) {
+  # not perfect but provides some convenience
+  i = which_unwraped(x)
+  x[i] = paste0('(', x[i], ')')
+  x
+}
+
+which_unwraped = function(x) {
+  # test for no parentheses, + or * signs
+  #  -- this is a weak test, but ok for now
+  !grepl('(\\(|\\)|\\+|\\*)', x)
+}
 
 setMethod(f = "show",
           signature = "struc",

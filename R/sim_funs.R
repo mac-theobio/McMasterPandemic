@@ -941,7 +941,7 @@ run_sim <- function(params,
     params0 <- params
     state0 <- state
 
-    obj_fun$env$data$tv_val <- params[obj_fun$env$data$tv_spi - length(state)] * obj_fun$env$data$tv_val
+    # obj_fun$env$data$tv_val <- params[obj_fun$env$data$tv_spi - length(state)] * obj_fun$env$data$tv_val
 
     ## simulate trajectories based on new parameters
     tmb_sims <- obj_fun$simulate(params)

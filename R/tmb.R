@@ -202,7 +202,10 @@ rate <- function(from, to, formula, state, params, ratemat) {
         is.character(to),
         length(from) == 1L,
         length(to) == 1L,
-        inherits(formula, "formula")
+        (  inherits(formula, "formula")
+         | is.character(formula)
+         | is(formula, 'struc')
+        )
     )
 
     ## regex pattern for finding variables
@@ -239,9 +242,7 @@ rate <- function(from, to, formula, state, params, ratemat) {
     }
     product_list <- function(x) {
         x$factors <- (x$formula
-            %>% as.character() %>% getElement(2L)
-            %>% strsplit(split = "\\+") %>% getElement(1L)
-            %>% strsplit(split = "\\*")
+            %>% parse_formula
             %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
         )
         x$ratemat_indices <-
@@ -264,8 +265,12 @@ rate <- function(from, to, formula, state, params, ratemat) {
         }
         x
     }
+    formula = parse_formula(formula)
+    if(length(formula) != 1L)
+        stop("you are trying to pass multiple formulas,\n',
+             'perhaps you want multi_rate instead of rate")
     structure(
-        product_list(list(from = from, to = to, formula = formula)),
+        product_list(list(from = from, to = to, formula = formula[[1L]])),
         class = "rate-struct"
     )
 }
@@ -284,6 +289,24 @@ rep_rate = function(to, from, formula, state, params, ratemat) {
            SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
     setNames(lst, nms)
+}
+
+#' Parse a Flexmodel Formula
+#'
+#' @param x one-sided formula, character vector, or struc object describing
+#' the dependence of rate matrix elements on parameter and/or state variables
+#' @return todo
+#' @export
+parse_formula = function(x) {
+    y = as.character(x)
+    if(inherits(x, "formula")) y = y[[2L]]
+    pf = function(y) {
+        (y
+         %>% strsplit(split = "\\+") %>% getElement(1L)
+         %>% strsplit(split = "\\*")
+        )
+    }
+    lapply(y, pf)
 }
 
 find_vec_indices <- function(x, vec) {
