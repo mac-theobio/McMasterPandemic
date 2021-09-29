@@ -21,7 +21,9 @@ run_sim(
   condense = TRUE,
   condense_args = NULL,
   verbose = FALSE,
-  use_flex = FALSE
+  use_flex = FALSE,
+  flexmodel = NULL,
+  obj_fun = NULL
 )
 }
 \arguments{

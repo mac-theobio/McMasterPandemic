@@ -7,6 +7,7 @@
 init_model(
   params,
   state,
+  struc = NULL,
   start_date = NULL,
   end_date = NULL,
   params_timevar = NULL,
@@ -18,6 +19,8 @@ init_model(
 \item{params}{a \code{param_pansim} object}
 
 \item{state}{a \code{state_pansim} object}
+
+\item{struc}{a \code{struc_pansim} object}
 
 \item{start_date}{simulation start date}
 
