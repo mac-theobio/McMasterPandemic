@@ -1,4 +1,4 @@
-// This version implements spec 0.0.5 in https://canmod.net/misc/flex_specs
+// This version implements spec 0.0.6 in https://canmod.net/misc/flex_specs
 
 #include <iostream>
 #include <string>
@@ -44,7 +44,6 @@ void remove_cols(
     const vector<int>& indices_to_remove)
 {
   Type* valPtr = mat.valuePtr();
-  int* rowIndexPtr = mat.innerIndexPtr();
   int* outPtr = mat.outerIndexPtr();
 
   for (int j= 0; j<indices_to_remove.size(); j++) {
@@ -219,16 +218,32 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(breaks);
   DATA_IVECTOR(count_of_tv_at_breaks);
   DATA_IVECTOR(tv_spi);
-  DATA_VECTOR(tv_val);
+  //DATA_VECTOR(tv_val);
+  DATA_VECTOR(tv_mult);
+  DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(par_accum_indices);
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
 
   PARAMETER_VECTOR(params);
 
+  //std::cout << "breaks = " << breaks << std::endl;
+  //std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
+  //std::cout << "tv_spi = " << tv_spi << std::endl;
+  //std::cout << "tv_val = " << tv_val << std::endl;
+
+  //std::cout << "tv_mult = " << tv_mult << std::endl;
+  //std::cout << "tv_orig = " << tv_orig << std::endl;
+
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size());
   sp << state, params;
+
+  // make a copy of sp
+  vector<Type> sp_orig(sp);
+
+  //std::cout << "sp = " << sp << std::endl;
+  //std::cout << "sp_orig = " << sp_orig << std::endl;
 
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
@@ -240,8 +255,19 @@ Type objective_function<Type>::operator() ()
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
   int stateSize = state.size();
-  vector<Type> concatenated_state_vector(numIterations*stateSize);
-  vector<Type> concatenated_ratemat_nonzeros(numIterations*updateidx.size());
+  vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
+  vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
+
+  // Add initial state vector and non-zero element of the rate matrix into 
+  // corresponding vectors prefixed with "concatenated_".
+  concatenated_state_vector.block(0, 0, stateSize, 1) = state;
+    
+  for (int j=0; j<updateidx.size(); j++) {
+    int idx = updateidx[j] - 1;
+    int row = from[idx] - 1;
+    int col = to[idx] - 1;
+    concatenated_ratemat_nonzeros[j] = ratemat.coeff(row,col);
+  }
 
   int nextBreak = 0;
   int start = 0;
@@ -254,13 +280,26 @@ Type objective_function<Type>::operator() ()
     vector<Type> outflow = rowSums(flows); // remove some columns before doing so
     state = state - outflow + inflow;
     sp.block(0, 0, stateSize, 1) = state;
-    concatenated_state_vector.block(i*stateSize, 0, stateSize, 1) = state;
 
-    // Add non-zero elements of ratemat to vector concatenated_ratemat_nonzeros
-    Type* valPtr = ratemat.valuePtr();
-    int* outPtr = ratemat.outerIndexPtr();
+    // update sp (state+params) and rate matrix
+    if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
+        for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+            if (tv_orig[j])
+              sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
+            else
+              sp[tv_spi[j]-1] *= tv_mult[j];
+        }
 
-    int offset = i*updateidx.size();
+        start += count_of_tv_at_breaks[nextBreak];
+        nextBreak++;
+    }
+
+    update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+
+    // Update vectors "concatenated_*"
+    concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
+
+    int offset = (i+1)*updateidx.size();
 
     for (int j=0; j<updateidx.size(); j++) {
       int idx = updateidx[j] - 1;
@@ -268,19 +307,6 @@ Type objective_function<Type>::operator() ()
       int col = to[idx] - 1;
       concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
     }
-
-    // update sp (state+params) and rate matrix
-    if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-        for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-            sp[tv_spi[j]-1] = tv_val[j];
-        }
-
-        start += count_of_tv_at_breaks[nextBreak];
-        nextBreak++;
-    }
-
-    if (i<numIterations-1)
-        update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
   }
 
   //std::cout << concatenated_ratemat_nonzeros << std::endl;
