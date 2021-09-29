@@ -40,6 +40,19 @@ struc = function(...) {
   new('struc', v = wrap_paren(v), dims = d)
 }
 
+#' @export
+vec = struc
+
+#' @export
+mat = function(...) {
+  x = list(...)
+  stopifnot(length(unique(sapply(x, length))) == 1L)
+  nrow = length(x)
+  ncol = length(x[[1]])
+  x = unlist(lapply(x, as.character))
+  struc(matrix(x, nrow, ncol, byrow = TRUE))
+}
+
 #' @rdname struc
 #' @param x object to convert to a struc object
 #' @export
@@ -179,6 +192,8 @@ which_unwraped = function(x) {
 setMethod(f = "show",
           signature = "struc",
           definition = function(object){
+            is_one_row = nrow(object) == 1L
+            is_one_col = ncol(object) == 1L
             cat(
               "struc object with ",
               pluralizer(nrow(object), "row"),
@@ -187,8 +202,8 @@ setMethod(f = "show",
               ":\n\n", sep = '')
             for(i in 1:nrow(object)) {
               for(j in 1:ncol(object)) {
-                cat('Row', i, '\n')
-                cat('Column', j, '\n')
+                if(!is_one_row) cat('Row', i, '\n')
+                if(!is_one_col) cat('Column', j, '\n')
                 cat(trimws(gsub('\\+', '\\+\n', as.matrix(object)[i, j])),
                     '\n', sep = '')
               }

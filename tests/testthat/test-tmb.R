@@ -377,22 +377,7 @@ test_that("use_flex flag does not change results", {
         use_flex = FALSE
     )
 
-    # exceptions to drop-in replacement:
-    # 1. don't require that the attributes are in the same order
-    # 2. don't require that the r version returns everything that the tmb
-    #    version does (e.g. flexmodel)
-    # 3. don't require that the row.names are identical (is this ok?
-    #    the r version counts iterations with skips, but is this informative?)
-    # 4. don't require that the call is identical (obvious i guess, but
-    #    being exhaustive)
-    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
-    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
-    for(a in names(attributes(r_sim))) {
-        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
-    }
-
-    attributes(r_sim) <- attributes(tmb_sim) <- NULL
-    expect_equal(tmb_sim, r_sim)
+    compare_sims(r_sim, tmb_sim)
 })
 
 
@@ -455,16 +440,7 @@ test_that('time-varying parameters are correctly updated on C++ side', {
         step_args = list(do_hazard = TRUE),
         use_flex = FALSE
     )
-
-    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
-    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
-    for(a in names(attributes(r_sim))) {
-        print(a)
-        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
-    }
-
-    attributes(r_sim) <- attributes(tmb_sim) <- NULL
-    expect_equal(tmb_sim, r_sim)
+    compare_sims(r_sim, tmb_sim)
 })
 
 test_that('it remains ok to _not_ use time-varying parameters', {
@@ -489,14 +465,5 @@ test_that('it remains ok to _not_ use time-varying parameters', {
         step_args = list(do_hazard = TRUE),
         use_flex = FALSE
     )
-
-    attr(tmb_sim, 'row.names') = attr(r_sim, 'row.names') = NULL
-    attr(tmb_sim, 'call') = attr(r_sim, 'call') = NULL
-    for(a in names(attributes(r_sim))) {
-        print(a)
-        expect_equal(attr(tmb_sim, a), attr(r_sim, a))
-    }
-
-    attributes(r_sim) <- attributes(tmb_sim) <- NULL
-    expect_equal(tmb_sim, r_sim)
+    compare_sims(r_sim, tmb_sim)
 })

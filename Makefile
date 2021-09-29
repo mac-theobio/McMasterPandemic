@@ -153,6 +153,7 @@ pkgcheck:
 
 tmbtest:
 	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
+	echo "testthat::test_file('tests/testthat/test-struc.R')" | $(R) --slave
 
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
