@@ -203,17 +203,17 @@ print(coef(c_r2e, "fitted"))
 if (!isTRUE(all.equal(coef(c_r2e, "fitted"),
     ref_val,
     tolerance = 1e-6
-))){
-  warning('coef_r2e is not within 1e-6 tolerance bounds')
+))) {
+    warning("coef_r2e is not within 1e-6 tolerance bounds")
 }
 
 stopifnot(all.equal(coef(c_r2e, "fitted"),
-                 ref_val,
-                 tolerance = 5e-3
+    ref_val,
+    tolerance = 5e-3
 ))
 
-if (!isTRUE(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance = 1e-5))){
-  warning('get_last_rpt is not within 1e-5 tolerance bounds')
+if (!isTRUE(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance = 1e-5))) {
+    warning("get_last_rpt is not within 1e-5 tolerance bounds")
 }
 
 stopifnot(all.equal(get_last_rpt(c_r2e), 306.3345, tolerance = 5e-3))
