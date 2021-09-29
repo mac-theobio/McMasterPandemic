@@ -39,16 +39,16 @@ The specs for the following versions are frozen, which means that they will not 
 
 * [0.0.1 -- Simple rate matrix updates](#v0.0.1)
 * [0.0.2 -- Simulation (iterated state variable updates)](#v0.0.2)
+* [0.0.4 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.4)
+* [0.0.5 -- Hazard simulation](#v0.0.5)
 
 ## Experimental Versions
 
 The specs for the following versions are being actively developed and modified. These versions also serve as a roadmap. Note that version numbers of experimental versions can change without warning.
 
-* [0.0.3 -- Piece-wise constant exogenous time-variation of parameters (first attempt)](#v0.0.3)
-* [0.0.4 -- Piece-wise constant exogenous time-variation of parameters](#v0.0.4)
-* [0.0.5 -- Hazard simulation](#v0.0.5)
-* [0.0.6 -- Log-linear exogenous time-variation of parameters](#v0.0.6)
+* [0.0.6 -- Updates of time-varying parameters from the initial parameters on the `C++` side](#v0.0.6)
 * [0.1.0 -- Model structure](#v0.1.0)
+* [0.1.1 -- Log-linear exogenous time-variation of parameters](#v0.1.1)
 * [0.2.0 -- Condensation and calibration](#v0.2.0)
 * [0.2.1 -- ODE simulation](#v0.2.1)
 * [0.2.2 -- Stochasticity](#v0.2.2)
@@ -59,6 +59,7 @@ The specs for the following versions are being actively developed and modified. 
 
 The specs for archived versions are frozen but no longer respected by the `McMasterPandemic` `R` package and/or its test framework. Archived versions cannot be ignored because Frozen and Experimental versions may still reference them.
 
+* [0.0.3 -- Piece-wise constant exogenous time-variation of parameters (first attempt)](#v0.0.3)
 
 # Version Descriptions
 
@@ -181,15 +182,15 @@ foi = kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
 foi
 ```
 
-## v0.0.6
+## v0.1.1
 
 [![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
-### New Capabilities (0.0.6)
+### New Capabilities (0.1.1)
 
 Log-linear exogenous time-variation of parameters.
 
-### Mathematical Description (0.0.6)
+### Mathematical Description (0.1.1)
 
 Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index `spi + t` where `spi` is the index into the `state_param` vector that picks out the first parameter in the time series and `t` is the current time step. I'm a little worried that this could have us jumping around to different memory locations too much, so I will need to discuss with Weiguang and Ben.
 
@@ -221,13 +222,22 @@ u_0, & t < t_1 \\
 \end{cases}
 $$
 
+## v0.0.6
+
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=red)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.0.6)
+
+Updates of time-varying parameters from the initial parameters on the `C++` side. This is really a patch of 0.0.4, which didn't work for calibration because it required updating the objective function (or its environment?) at every iteration of the optimizer.  It is just easier to do it on the `C++` and we need to do this anyways.
+
 ## v0.0.5
 
-[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.0.5)
 
-Hazard simulation.
+1. Hazard simulation
+2. Returning the time-varying rate matrix elements from `C++` to `R` so that they can be included in the results of `run_sim`
 
 ### Mathematical Description
 
@@ -266,7 +276,9 @@ The data structure is equivalent to 0.0.4.
 
 ## v0.0.4
 
- We begin with simple piece-wise constant time-variation. _Piece-wise constant_ means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes -- at all other times the parameter is constant. We plan to relax the _piece-wise constant_ restriction in [version 0.0.6](#v0.0.6).
+[![Lifecycle Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+ We begin with simple piece-wise constant time-variation. _Piece-wise constant_ means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes -- at all other times the parameter is constant. We plan to relax the _piece-wise constant_ restriction in later versions.
 
 ### New Capabilities (0.0.4)
 
