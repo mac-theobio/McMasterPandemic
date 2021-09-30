@@ -258,10 +258,10 @@ Type objective_function<Type>::operator() ()
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
 
-  // Add initial state vector and non-zero element of the rate matrix into 
+  // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
   concatenated_state_vector.block(0, 0, stateSize, 1) = state;
-    
+
   for (int j=0; j<updateidx.size(); j++) {
     int idx = updateidx[j] - 1;
     int row = from[idx] - 1;
@@ -293,6 +293,9 @@ Type objective_function<Type>::operator() ()
         start += count_of_tv_at_breaks[nextBreak];
         nextBreak++;
     }
+
+    // loop over a set of state variables, and update them with
+    // expressions of other state variables and parameters
 
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
 

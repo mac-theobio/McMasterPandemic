@@ -17,11 +17,17 @@ init_model <- function(params, state, struc = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE, ...) {
     check_spec_ver_archived()
+    name_regex = paste0("^", getOption("MP_name_search_regex"), "$")
+    if(!all(grepl(name_regex, c(names(params), names(state))))) {
+        stop("only syntactically valid r names can be used ",
+             "for state variables and parameters")
+    }
     model <- list(
         state = state,
         params = params,
         ratemat = make_ratemat(state, params, sparse = TRUE),
-        rates = list()
+        rates = list(),
+        name_regex = name_regex
     )
 
     if (spec_ver_gt("0.0.1")) {
@@ -105,6 +111,10 @@ init_model <- function(params, state, struc = NULL,
         }
     }
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
+    if (spec_ver_gt("0.0.6")) {
+        model$sums = list()
+        model$sum_vector = c()
+    }
 
     ## TODO: clarify index structure here once we converge
     model$tmb_indices <- list()
@@ -127,7 +137,7 @@ init_model <- function(params, state, struc = NULL,
 ##' @export
 add_rate <- function(model, from, to, formula) {
     added_rate <- (
-        rate(from, to, formula, model$state, model$params, model$ratemat)
+        rate(from, to, formula, model$state, model$params, model$sum_vector, model$ratemat)
             %>% list()
             %>% setNames(paste(from, to, sep = "_to_"))
     )
@@ -143,9 +153,10 @@ add_rate <- function(model, from, to, formula) {
 ##' to the parameters and state variables
 ##' @param state state_pansim object
 ##' @param params param_pansim object
+##' @param sums vector of sums of state variables and parameters
 ##' @param ratemat rate matrix
 ##' @export
-rate <- function(from, to, formula, state, params, ratemat) {
+rate <- function(from, to, formula, state, params, sums, ratemat) {
     ## TODO: test for formula structure
     ## TODO: test that from and to are available in the state vector
     M <- ratemat
@@ -164,6 +175,11 @@ rate <- function(from, to, formula, state, params, ratemat) {
     ## (e.g. any parameter or state variable)
     ## variable_regex looks like this '(beta0|Ca|...|zeta|S|E|Ia|...|V)'
     variable_regex <- function(...) {
+        return(getOption("MP_name_search_regex"))
+        # only works because there are no reserved words allowed yet
+        return('[A-z]([A-z][0-9])+')
+
+        # this strategy failed (e.g. Isum matches Is)
         character_class <-
             (list(...)
                 %>% lapply(names)
@@ -173,15 +189,18 @@ rate <- function(from, to, formula, state, params, ratemat) {
         paste0("(", character_class, ")", sep = "")
     }
     get_variables <- function(x) {
-        r <- regexpr(variable_regex(params, state), x)
-        regmatches(x, r)
+        r = gregexpr(variable_regex(), x)
+        # r <- regexpr(variable_regex(params, state), x)
+        unlist(regmatches(x, r))
     }
     ## FIXME: this only works because complements (1 - x) and
     ## inverses (1 / x) are so similar in structure
     find_operators <- function(x, operator) {
         grepl(
-            paste0("\\( *1 *", operator, " *", variable_regex(params, state),
-                collapse = ""
+            paste0("\\( *1 *", operator, " *",
+                   #variable_regex(params, state),
+                   variable_regex(),
+                   collapse = ""
             ), x
         )
     }
@@ -203,7 +222,9 @@ rate <- function(from, to, formula, state, params, ratemat) {
             stop('you are referring to more than one element of the rate matrix\n',
                  'try using rep_rate instead of rate')
         }
-        x$factors$var_indx <- find_vec_indices(x$factors$var, c(state, params))
+        x$factors$var_indx <- find_vec_indices(
+            x$factors$var,
+            c(state, params, sums))
 
         if (spec_ver_gt("0.0.1")) {
             x$state_dependent <- any(x$factors$var_indx <= length(state))
@@ -216,6 +237,12 @@ rate <- function(from, to, formula, state, params, ratemat) {
             } else {
                 x$time_varying = FALSE
             }
+        }
+        if (spec_ver_gt('0.0.6')) {
+            x$sum_dependent =
+                any(x$factors$var_indx > (length(state) + length(params)))
+        } else {
+            x$sum_dependent = FALSE
         }
         x
     }
@@ -278,6 +305,45 @@ find_vec_indices <- function(x, vec) {
     )
 }
 
+#' @param sum name of sum of state variables and parameters
+#' @param summands character vector of regular expressions for identifying
+#' state variables and parameters to sum together
+#' @param state pansim_state object
+#' @param params pansim_param object
+#' @return indices of summands
+#' @export
+state_param_sum = function(sum, summands, state, params) {
+    spec_check('0.1.0', 'sums of state variables and parameters')
+    sp = c(state, params)
+    summands = (summands
+        %>% lapply(grep, names(sp), value = TRUE)
+        %>% unlist
+    )
+    ii = find_vec_indices(summands, sp)
+    val = sum(sp[ii])
+    list(
+        summands = summands,
+        sum_indices = ii,
+        initial_value = val)
+}
+
+#' @rdname state_param_sum
+#' @inheritParams state_param_sum
+#' @param model flexmodel
+#' @export
+add_state_param_sum = function(model, sum, summands) {
+    model$sums[[sum]] = state_param_sum(
+        sum, summands, model$state, model$params)
+
+    # assumes that order of sums doesn't change!
+    model$sum_vector = get_sum_vector(model$sums)
+    model
+}
+
+get_sum_vector = function(sums) {
+    unlist(lapply(sums, `[[`, 'initial_value'))
+}
+
 ##' @param x parameter vector
 ##' @export
 has_time_varying <- function(x) {
@@ -295,14 +361,20 @@ time_varying_rates <- function(model) {
 
 ##' @export
 which_time_varying_rates <- function(model) {
-    sd <- sapply(model$rates, "[[", "state_dependent")
-    tv <- sapply(model$rates, "[[", "time_varying")
-    which(sd | tv)
+    sd  <- sapply(model$rates, "[[", "state_dependent")
+    tv  <- sapply(model$rates, "[[", "time_varying")
+    smd <- sapply(model$rates, "[[", "sum_dependent")
+    which(sd | tv | smd)
 }
 
 ##' @export
 state_dependent_rates <- function(model) {
     model$rates[sapply(model$rates, "[[", "state_dependent")]
+}
+
+##' @export
+sum_dependent_rates = function(model) {
+    model$rates[sapply(model$rates, "[[", "sum_dependent")]
 }
 
 ##' Add Parallel Accumulators
@@ -342,6 +414,16 @@ parallel_accumulators <- function(model, state_patterns) {
 add_tmb_indices <- function(model) {
     model$tmb_indices <- tmb_indices(model)
     return(model)
+}
+
+##' @export
+sum_indices = function(sums) {
+    sum_index_list = lapply(sums, "[[", "sum_indices")
+    list(
+        sumidx = c(seq_len(length(sums))),
+        sumcount = c(sapply(sum_index_list, length)),
+        summandidx = c(unlist(sum_index_list))
+    )
 }
 
 ##' @export
@@ -406,6 +488,9 @@ tmb_indices <- function(model) {
     }
     if (spec_ver_gt("0.0.3")) {
         indices$updateidx <- which_time_varying_rates(model)
+    }
+    if (spec_ver_gt("0.0.6")) {
+        indices$sum_indices = sum_indices(model$sums)
     }
     return(indices)
 }
@@ -528,7 +613,7 @@ tmb_fun <- function(model) {
             parameters = list(params = c(params)),
             DLL = DLL
         )
-    } else if (spec_ver_gt("0.0.5")) {
+    } else if (spec_ver_eq("0.0.6")) {
         dd <- MakeADFun(
             data = list(
                 state = c(state),
@@ -550,6 +635,30 @@ tmb_fun <- function(model) {
                 numIterations = iters
             ),
             parameters = list(params = c(params)),
+            DLL = DLL
+        )
+    } else if (spec_ver_eq("0.1.0")) {
+        dd <- MakeADFun(
+            data = list(
+                state = c(state),
+                ratemat = ratemat,
+                from = from,
+                to = to,
+                count = count,
+                spi = spi,
+                modifier = modifier,
+                updateidx = c(updateidx),
+                breaks = breaks,
+                count_of_tv_at_breaks = count_of_tv_at_breaks,
+                tv_spi = schedule$tv_spi,
+                tv_val = schedule$tv_val,
+                tv_mult = schedule$Value,
+                tv_orig = schedule$Type == "rel_orig",
+                par_accum_indices = par_accum_indices,
+                do_hazard = do_hazard,
+                numIterations = iters
+            ),
+            parameters = list(params = c(params, sum_vector)),
             DLL = DLL
         )
     } else {

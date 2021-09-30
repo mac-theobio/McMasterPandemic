@@ -71,7 +71,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
     result.coeffRef(row,col) += prod;
     start += count[i];
   }
-  
+
   result.makeCompressed();
 
   //std::cout << "-------------------------------------" << std::endl;
@@ -174,7 +174,7 @@ vector<Type> colSums(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << "===================== objective_function ====================" << std::endl;
+  // std::cout << "===================== objective_function ====================" << std::endl;
 
   // Joint negative log-likelihood (stub)
   Type jnll= 0;
@@ -195,12 +195,12 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(par_accum_indices);
   DATA_INTEGER(numIterations);
 
-  std::cout << "updateidx = " << updateidx << std::endl;
-  std::cout << "breaks = " << breaks << std::endl;
-  std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
-  std::cout << "tv_spi = " << tv_spi << std::endl;
-  std::cout << "tv_val = " << tv_val << std::endl;
-  std::cout << "par_accum_indices = " << par_accum_indices << std::endl;
+  //std::cout << "updateidx = " << updateidx << std::endl;
+  //std::cout << "breaks = " << breaks << std::endl;
+  //std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
+  //std::cout << "tv_spi = " << tv_spi << std::endl;
+  //std::cout << "tv_val = " << tv_val << std::endl;
+  //std::cout << "par_accum_indices = " << par_accum_indices << std::endl;
 
   PARAMETER_VECTOR(params);
 
@@ -212,7 +212,7 @@ Type objective_function<Type>::operator() ()
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
   count_integral[0] = 0;
-  for (int i=0; i<count.size(); i++) 
+  for (int i=0; i<count.size(); i++)
     count_integral[i+1] = count_integral[i] + count[i];
 
   // We've got everything we need, lets do the job ...
@@ -223,8 +223,8 @@ Type objective_function<Type>::operator() ()
   int stateSize = state.size();
   vector<Type> concatenated_state_vector(numIterations*stateSize);
 
-  int nextBreak = 0; 
-  int start = 0; 
+  int nextBreak = 0;
+  int start = 0;
   for (int i=0; i<numIterations; i++) {
     // Calculate flow matrix
     Eigen::SparseMatrix<Type> flows = col_multiply(ratemat, state); // ignore * dt
@@ -237,16 +237,16 @@ Type objective_function<Type>::operator() ()
 
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-        std::cout << "At break: " << i << " number of paramters " \
+        // std::cout << "At break: " << i << " number of paramters " \
         << count_of_tv_at_breaks[nextBreak] << std::endl;
- 
+
         for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-            std::cout << "sp changes at " << tv_spi[j]-1 << \
+            // std::cout << "sp changes at " << tv_spi[j]-1 << \
             " from " << sp[tv_spi[j]-1] << " to " << tv_val[j] << std::endl;
-            sp[tv_spi[j]-1] = tv_val[j]; 
+            sp[tv_spi[j]-1] = tv_val[j];
         }
 
-        start += count_of_tv_at_breaks[nextBreak]; 
+        start += count_of_tv_at_breaks[nextBreak];
         nextBreak++;
     }
 

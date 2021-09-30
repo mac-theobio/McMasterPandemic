@@ -130,7 +130,7 @@ Type objective_function<Type>::operator() ()
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size());
   sp << state, params;
-  std::cout << "using 0.0.1" << std::endl;
+  // std::cout << "using 0.0.1" << std::endl;
 
   // We've got everything we need, lets do the job ...
   ratemat = update_ratemat2(ratemat, sp, from, to, count, spi, modifier);

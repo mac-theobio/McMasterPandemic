@@ -175,6 +175,7 @@ dependencies:
 ## make install BUILDARGS="--no-build-vignettes"
 build-package: $(TARBALL)
 $(TARBALL): ./NAMESPACE src/McMasterPandemic.cpp
+	$(info spec version: $(SPECVERSION))
 	$(R) CMD build $(BUILDARGS) .
 	mv $@ ..
 

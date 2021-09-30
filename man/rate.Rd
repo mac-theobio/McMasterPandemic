@@ -4,7 +4,7 @@
 \alias{rate}
 \title{Define Rate for Single Element of Rate Matrix}
 \usage{
-rate(from, to, formula, state, params, ratemat)
+rate(from, to, formula, state, params, sums, ratemat)
 }
 \arguments{
 \item{from}{from state}
@@ -17,6 +17,8 @@ to the parameters and state variables}
 \item{state}{state_pansim object}
 
 \item{params}{param_pansim object}
+
+\item{sums}{vector of sums of state variables and parameters}
 
 \item{ratemat}{rate matrix}
 }

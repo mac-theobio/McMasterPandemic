@@ -77,7 +77,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
     result.coeffRef(row,col) += prod;
     start += count[i];
   }
-  
+
   result.makeCompressed();
 
   //std::cout << "-------------------------------------" << std::endl;
@@ -185,7 +185,7 @@ vector<Type> colSums(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << "===================== objective_function ====================" << std::endl;
+  // std::cout << "===================== objective_function ====================" << std::endl;
 
   // Joint negative log-likelihood (stub)
   Type jnll= 0;
