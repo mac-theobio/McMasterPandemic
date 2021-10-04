@@ -19,9 +19,9 @@
 \arguments{
 \item{x}{fitted \code{pansim} object}
 
-\item{drop_states}{states to \emph{exclude} from plot}
+\item{drop_states}{epidemiological states to \emph{exclude} from plot}
 
-\item{keep_states}{states to \emph{include} in plot (overrides \code{drop_states})}
+\item{keep_states}{epidemiological states to \emph{include} in plot (overrides \code{drop_states})}
 
 \item{condense}{condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}}
 

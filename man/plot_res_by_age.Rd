@@ -9,7 +9,7 @@ plot_res_by_age(res, drop_states = NULL, condense_I = FALSE, show_times = TRUE)
 \arguments{
 \item{res}{age-structured simulation result}
 
-\item{drop_states}{states to \emph{exclude} from plot}
+\item{drop_states}{epidemiological states to \emph{exclude} from plot}
 
 \item{condense_I}{condense all the different I (infectious) states to a single I state? (??)}
 

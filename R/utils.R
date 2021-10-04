@@ -651,6 +651,10 @@ do_variant <- function(x) {
     return(!is.null(check) && check)
 }
 
+## test whether variables have already been condensed
+is_condensed <- function(x) "I" %in% names(x)
+has_report <- function(x) "report" %in% names(x)
+
 ##' visualize rate (per-capita flow) matrix
 ##' @param M rate matrix
 ##' @param method visualization method

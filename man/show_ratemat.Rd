@@ -17,6 +17,7 @@ show_ratemat(
   block_col = 2,
   axlabs = TRUE,
   const_width = (method == "igraph"),
+  colorkey = NULL,
   colour_palette = viridis::magma(n = 50, direction = -1),
   do_symbols = NULL,
   box.size = 0.02,

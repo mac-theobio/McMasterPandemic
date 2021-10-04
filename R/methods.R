@@ -222,8 +222,8 @@ plot_res_by_state <- function(res, drop_states = NULL,
 ## this is done in a redundant way currently
 ##' plot method for simulations
 ##' @param x fitted \code{pansim} object
-##' @param drop_states states to \emph{exclude} from plot
-##' @param keep_states states to \emph{include} in plot (overrides \code{drop_states})
+##' @param drop_states epidemiological states to \emph{exclude} from plot
+##' @param keep_states epidemiological states to \emph{include} in plot (overrides \code{drop_states})
 ##' @param condense condense states (e.g. all ICU states -> "ICU") before plotting?  See \code{\link{condense.pansim}}
 ##' @param facet_by_age if this is an age-structured simulation, do we want to facet by age? if FALSE, facet by state (default)
 ##' @param log plot y-axis on log scale?
@@ -235,7 +235,8 @@ plot_res_by_state <- function(res, drop_states = NULL,
 ##' @return a \code{\link[ggplot2]{ggplot}} object
 ##' @export
 plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incidence"),
-                        keep_states = NULL, condense = FALSE,
+                        keep_states = NULL,
+                        condense = FALSE,
                         facet_by_age = FALSE,
                         log = FALSE,
                         log_lwr = 1,
@@ -260,24 +261,60 @@ plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incide
 
     ## attributes get lost somewhere below ...
     ptv <- attr(x, "params_timevar")
+    vax <- !is_condensed(x) && has_vax(x)
+
+    epi_cat <- if(is_condensed(x)) {setdiff(names(x), c("date"))} else {unique(sub("_.*$", "", names(vax_sim_full)))}
 
     if (!is.null(keep_states)) {
-        drop_states <- setdiff(names(x), c(keep_states, "date"))
+        drop_states <- setdiff(epi_cat, c(keep_states, "date"))
     }
     ## don't try to drop columns that aren't there
     ## FIXME: use condense.pansim method?
-    drop_states <- intersect(drop_states, names(x))
+    drop_states <- intersect(drop_states, epi_cat)
+
+    # if(condense){
+    #   grouping_vars <- c("date", "var")
+    #   if (vax) grouping_vars <- c(grouping_vars, "vax_cat")
+    #   }
+
     ## FIXME: don't pivot if already pivoted
     xL <- (pivot(x)
+        %>% {if(vax)
+          (dplyr::filter(., grepl("_", var)) ## remove vars that aren't split by vaccine status before separating to avoid warnings and misc NAs
+          %>% tidyr::separate(var, into = c("var", "vax_cat"))) else .}
+        ## set up condense step with relabelling
+        %>% {if(condense)
+           mutate(., var = dplyr::case_when(
+             grepl("^ICU", var) ~ "ICU",
+             grepl("^I", var) ~ "I",
+             grepl("^H", var) ~ "H",
+             T ~ var
+           ))
+          else .}
         %>% dplyr::filter(!var %in% drop_states)
         %>% dplyr::mutate(var = factor(var, levels = unique(var)))
-    ## FIXME: order factor in pivot?
+        ## FIXME: order factor in pivot?
+        %>% {if(vax)
+          dplyr::mutate(., vax_cat = factor(vax_cat, levels = unique(vax_cat)))
+          else .}
+        ## complete condense step with summarising, after various grouping columns have been turned into factors (to preserve ordering)
+        %>% {if(condense)
+          (dplyr::group_by(.,across(!where(is.numeric)))
+           %>% dplyr::summarise(
+             value = sum(value), .groups = "drop"
+           ))
+          else .}
     )
+
     if (log) xL <- dplyr::filter(xL, value >= log_lwr)
+
     gg0 <- (ggplot(xL, aes(date, value, colour = var))
     +
         geom_line()
     )
+
+    if(vax && !is_condensed(x)) gg0 <- gg0 + facet_grid(rows = vars(var), cols = vars(vax_cat), scales = "free_y")
+
     if (log) gg0 <- gg0 + scale_y_log10()
     if (show_times && !is.null(ptv)) {
         gg0 <- gg0 + geom_vline(xintercept = ptv$Date, lty = 2)
@@ -313,10 +350,6 @@ pivot.pansim <- function(object, ...) {
     )
     return(dd)
 }
-
-## test whether variables have already been condensed
-is_condensed <- function(x) "I" %in% names(x)
-has_report <- function(x) "report" %in% names(x)
 
 ##' Condense columns (infected, ICU, hospitalized) in a pansim output
 ##' @param object a pansim object

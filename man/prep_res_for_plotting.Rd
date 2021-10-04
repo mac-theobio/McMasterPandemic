@@ -14,7 +14,7 @@ prep_res_for_plotting(
 \arguments{
 \item{res}{age-structured simulation result}
 
-\item{drop_states}{states to \emph{exclude} from plot}
+\item{drop_states}{epidemiological states to \emph{exclude} from plot}
 
 \item{condense_I}{condense all the different I (infectious) states to a single I state? (??)}
 
