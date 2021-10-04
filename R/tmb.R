@@ -22,6 +22,13 @@ init_model <- function(params, state, struc = NULL,
         stop("only syntactically valid r names can be used ",
              "for state variables and parameters")
     }
+
+    # TODO: keep an eye on this -- i think that the
+    # flex framework should _not_ use parameter
+    # lists and rather stick to numeric vectors, but
+    # not totally sure
+    params = setNames(unlist(params), names(params))
+
     model <- list(
         state = state,
         params = params,
@@ -113,7 +120,7 @@ init_model <- function(params, state, struc = NULL,
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
     if (spec_ver_gt("0.0.6")) {
         model$sums = list()
-        model$sum_vector = c()
+        model$sum_vector = numeric(0L)
     }
 
     ## TODO: clarify index structure here once we converge
@@ -122,28 +129,104 @@ init_model <- function(params, state, struc = NULL,
     structure(model, class = "flexmodel")
 }
 
-##' Rate Structure
-##'
-##' Define how the rate of flow from one compartment to another
-##' depends on the parameters and state variables.
-##'
-##' @param model compartmental model
-##' @param from Name of state where flow is happening from
-##' @param to Name of state where flow is happening to
-##' @param formula Model formula defining dependence of the rate on
-##' parameters and state variables
-##' @return another compartmental model with an additional non-zero rate matrix
-##' element specified
-##' @export
-add_rate <- function(model, from, to, formula) {
-    added_rate <- (
-        rate(from, to, formula, model$state, model$params, model$sum_vector, model$ratemat)
-            %>% list()
-            %>% setNames(paste(from, to, sep = "_to_"))
-    )
-    model$rates <- c(model$rates, added_rate)
-    return(model)
+# ----------------------------
+# Utilities for rate functions
+
+## regex pattern for finding variables
+## (e.g. any parameter or state variable)
+## variable_regex looks like this '(beta0|Ca|...|zeta|S|E|Ia|...|V)'
+variable_regex <- function(...) {
+    return(getOption("MP_name_search_regex"))
+    # only works because there are no reserved words allowed yet
+    return('[A-z]([A-z][0-9])+')
+
+    # this strategy failed (e.g. Isum matches Is)
+    character_class <-
+        (list(...)
+            %>% lapply(names)
+            %>% unlist()
+            %>% paste0(collapse = "|")
+        )
+    paste0("(", character_class, ")", sep = "")
 }
+get_variables <- function(x) {
+    r = gregexpr(variable_regex(), x)
+    unlist(regmatches(x, r))
+}
+## FIXME: this only works because complements (1 - x) and
+## inverses (1 / x) are so similar in structure
+find_operators <- function(x, operator) {
+    grepl(
+        paste0("\\( *1 *", operator, " *",
+               #variable_regex(params, state),
+               variable_regex(),
+               collapse = ""
+        ), x
+    )
+}
+factor_table <- function(x) {
+    data.frame(
+        var = unlist(lapply(x, get_variables)),
+        compl = unlist(lapply(x, find_operators, "-")),
+        invrs = unlist(lapply(x, find_operators, "/"))
+    )
+}
+
+find_pos_grep <- function(tags, x) {
+    pos_list = (tags
+     %>% sprintf(fmt = "^%s(_|$)")
+     %>% lapply(grep, x)
+     %>% unlist(use.names = FALSE)
+    )
+}
+
+check_in_rate_fun = function(pf) {
+    stopifnot(inherits(get("model", envir = pf), 'flexmodel'))
+    f = get("formula", envir = pf)
+    stopifnot(
+        inherits(f, "formula") |
+        inherits(f, "struc") |
+        inherits(f, "character")
+    )
+}
+
+#' @export
+cross = function(from, to, mat) {
+    expand.grid(
+        from_pos = unique(find_pos_grep(from, rownames(mat))),
+        to_pos = unique(find_pos_grep(to, colnames(mat)))
+    )
+}
+
+#' @export
+pwise = function(from, to, mat) {
+    from_pos = find_pos_grep(from, rownames(mat))
+    to_pos = find_pos_grep(to, colnames(mat))
+    if(length(from_pos) != length(to_pos)) {
+        stop("\nargument 'from' matches to ", length(from_pos), " row indices.",
+             "\nargument 'to' matches to ", length(to_pos), " column indices.",
+             "\nbut these numbers must match for valid pairwise indexing of ",
+             "the rate matrix")
+    }
+    cbind(from_pos, to_pos)
+}
+
+#' Paste with Underscore Separator
+#' @export
+`%_%` = function(x, y) paste(x, y, sep = "_")
+
+#' Paste with Blank Separator
+#'
+#' Like Python string `+`
+#' @export
+`%+%` = function(x, y) paste(x, y, sep = "")
+
+# ---------------------
+# rate and associated functions:
+#   add_rate
+#   rep_rate
+#   vec_rate
+#   mat_rate
 
 ##' Define Rate for Single Element of Rate Matrix
 ##'
@@ -171,50 +254,10 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         )
     )
 
-    ## regex pattern for finding variables
-    ## (e.g. any parameter or state variable)
-    ## variable_regex looks like this '(beta0|Ca|...|zeta|S|E|Ia|...|V)'
-    variable_regex <- function(...) {
-        return(getOption("MP_name_search_regex"))
-        # only works because there are no reserved words allowed yet
-        return('[A-z]([A-z][0-9])+')
-
-        # this strategy failed (e.g. Isum matches Is)
-        character_class <-
-            (list(...)
-                %>% lapply(names)
-                %>% unlist()
-                %>% paste0(collapse = "|")
-            )
-        paste0("(", character_class, ")", sep = "")
-    }
-    get_variables <- function(x) {
-        r = gregexpr(variable_regex(), x)
-        # r <- regexpr(variable_regex(params, state), x)
-        unlist(regmatches(x, r))
-    }
-    ## FIXME: this only works because complements (1 - x) and
-    ## inverses (1 / x) are so similar in structure
-    find_operators <- function(x, operator) {
-        grepl(
-            paste0("\\( *1 *", operator, " *",
-                   #variable_regex(params, state),
-                   variable_regex(),
-                   collapse = ""
-            ), x
-        )
-    }
-    factor_table <- function(x) {
-        data.frame(
-            var = unlist(lapply(x, get_variables)),
-            compl = unlist(lapply(x, find_operators, "-")),
-            invrs = unlist(lapply(x, find_operators, "/"))
-        )
-    }
     product_list <- function(x) {
         x$factors <- (x$formula
-            %>% parse_formula
-            %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
+                      %>% parse_formula
+                      %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
         )
         x$ratemat_indices <-
             do.call(McMasterPandemic:::pfun, c(x[c("from", "to")], list(mat = M)))
@@ -225,6 +268,13 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
             c(state, params, sums))
+
+        missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
+        if(length(missing_vars) > 0L) {
+            stop("The following variables were used to define the model,\n",
+                 "but they could not be found in the state, parameter or sum vectors:\n",
+                 paste0(missing_vars, collapse = "\n"))
+        }
 
         if (spec_ver_gt("0.0.1")) {
             x$state_dependent <- any(x$factors$var_indx <= length(state))
@@ -246,32 +296,150 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         }
         x
     }
-    if(spec_ver_gt('0.1.0') | spec_ver_eq('0.1.0')) {
-        test_parse = parse_formula(formula)
-        if(length(test_parse) != 1L)
-            stop("you are trying to pass multiple formulas,\n',
-                 'perhaps you want multi_rate instead of rate")
-    }
+
+    #if(spec_ver_gt('0.1.0') | spec_ver_eq('0.1.0')) {
+    #    test_parse = parse_formula(formula)
+    #    if(length(test_parse) != 1L)
+    #        stop("you are trying to pass multiple formulas,\n',
+    #             'perhaps you want multi_rate instead of rate")
+    #}
     structure(
         product_list(list(from = from, to = to, formula = formula)),
         class = "rate-struct"
     )
 }
 
+##' Rate Structure
+##'
+##' Define how the rate of flow from one compartment to another
+##' depends on the parameters and state variables.
+##'
+##' @param model compartmental model
+##' @param from Name of state where flow is happening from
+##' @param to Name of state where flow is happening to
+##' @param formula Model formula defining dependence of the rate on
+##' parameters and state variables
+##' @return another compartmental model with an additional non-zero rate matrix
+##' element specified
+##' @export
+add_rate <- function(model, from, to, formula) {
+    added_rate <- (
+        rate(from, to, formula, model$state, model$params, model$sum_vector, model$ratemat)
+            %>% list()
+            %>% setNames(paste(from, to, sep = "_to_"))
+    )
+    model$rates <- c(model$rates, added_rate)
+    return(model)
+}
+
 #' Repeat a Rate for Several Rate Matrix Elements
 #'
-#' @inheritParams rate
+#' @param model flexmodel
+#' @param indices two-column matrix of indices with column names "from_pos"
+#' and "to_pos", locaing elements of the rate matrix in model
+#' @param formula formula or length-1 character vector
 #' @export
-rep_rate = function(to, from, formula, state, params, ratemat) {
-    ratemat_indices = pfun(to, from, ratemat)
-    nms = rownames(ratemat)
-    from = nms[ratemat_indices[,'from_pos']]
-    to = nms[ratemat_indices[,'to_pos']]
-    lst = mapply(rate, to, from,
-           MoreArgs = nlist(formula, state, params, ratemat),
-           SIMPLIFY = FALSE, USE.NAMES = FALSE)
+rep_rate = function(model, from, to, formula,
+                    mapping = c("pairwise", "blockwise")) {
+
+    map_fun = switch(
+        match.arg(mapping),
+        pairwise = pwise,
+        blockwise = block)
+
+    stopifnot(inherits(model, "flexmodel"))
+
+    unpack(model)
+    indices = map_fun(from, to, model$ratemat)
+
+    if(!inherits(indices, "matrix")) {
+        stop("indices must be a matrix")
+    } else if(!(ncol(indices) == 2L)) {
+        stop("indices must be a two-column matrix")
+    } else if(!all(colnames(indices) == c("from_pos", "to_pos"))) {
+        stop("indices must be a matrix with columns from_pos and to_pos")
+    }
+
+
+    if(!inherits(formula, "formula")) {
+        if(!inherits(formula, "character")) {
+            stop("formula must be either a formula or character object")
+        } else if(length(formula) != 1L){
+            stop("character formulas must be of length 1")
+        }
+    }
+
+    from = rownames(ratemat)[indices[,'from_pos']]
+    to = colnames(ratemat)[indices[,'to_pos']]
+
+    lst = mapply(rate, from, to,
+        MoreArgs = nlist(formula, state, params, sums, ratemat),
+        SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
-    setNames(lst, nms)
+    model$rates <- c(rates, setNames(lst, nms))
+
+    return(model)
+}
+
+#' @export
+vec_rate = function(model, from, to, formula,
+                    mapping = c("pairwise", "blockwise")) {
+
+    map_fun = switch(
+        match.arg(mapping),
+        pairwise = pwise,
+        blockwise = block)
+
+    unpack(model)
+
+    indices = map_fun(from, to, ratemat)
+
+
+    from = rownames(ratemat)[indices[,'from_pos']]
+    to = colnames(ratemat)[indices[,'to_pos']]
+
+    lst = mapply(rate, from, to, as.character(formula),
+                 MoreArgs = nlist(state, params, sums, ratemat),
+                 SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
+    model$rates <- c(rates, setNames(lst, nms))
+
+    return(model)
+}
+
+#' @export
+mat_rate = function() {
+    stop("coming sometime in the future ... maybe")
+}
+
+
+#' @export
+lookup_pairwise = function(from, to, M) {
+    i = pwise(from, to, M)
+    data.frame(
+        from = rownames(M)[i[,"from_pos"]],
+        to = colnames(M)[i[,"to_pos"]]
+    )
+}
+
+
+#' Rate Matrix Loopup Table
+#'
+#' @param state state_pansim object
+#' @param ratemat rate matrix
+#' @export
+rate_matrix_lookup = function(ratemat) {
+    #McMasterPandemic:::pfun_block(, , ratemat)
+
+    ratemat = as(ratemat, "dgTMatrix")
+    (data.frame(
+        from_pos = ratemat@i + 1,
+        to_pos = ratemat@j + 1)
+     %>% mutate(
+         from_state = ratemat@Dimnames[[1]][from_pos],
+         to_state = ratemat@Dimnames[[2]][to_pos]
+     )
+    )
 }
 
 #' Parse a Flexmodel Formula
@@ -289,6 +457,7 @@ parse_formula = function(x) {
          %>% strsplit(split = "\\*")
         )
     }
+    return(pf(y))
     o = lapply(y, pf)
     if(spec_ver_lt('0.1.0')) {
         return(o[[1L]])
@@ -417,12 +586,12 @@ add_tmb_indices <- function(model) {
 }
 
 ##' @export
-sum_indices = function(sums) {
+sum_indices = function(sums, state, params) {
     sum_index_list = lapply(sums, "[[", "sum_indices")
     list(
-        sumidx = c(seq_len(length(sums))),
-        sumcount = c(sapply(sum_index_list, length)),
-        summandidx = c(unlist(sum_index_list))
+        sumidx = c(seq_len(length(sums))) + length(state) + length(params),
+        sumcount = c(sapply(sum_index_list, length, USE.NAMES = FALSE)),
+        summandidx = c(unlist(sum_index_list, use.names = FALSE))
     )
 }
 
@@ -490,7 +659,7 @@ tmb_indices <- function(model) {
         indices$updateidx <- which_time_varying_rates(model)
     }
     if (spec_ver_gt("0.0.6")) {
-        indices$sum_indices = sum_indices(model$sums)
+        indices$sum_indices = sum_indices(model$sums, model$state, model$params)
     }
     return(indices)
 }

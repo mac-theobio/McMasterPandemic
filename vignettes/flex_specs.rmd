@@ -149,44 +149,41 @@ $$
 
 ### New Capabilities (0.1.0)
 
-Model structure (e.g. vaccination, age, testing) by modifying the user interface to accept matrix/vector inputs. There are two ways to do this: (1)  expand the inputs to fit into the scalar models below or (2) pass the inputs directly to `TMB`/`C++` and modify the code on that side.
+We bump major versions here to start working on model structure (e.g. vaccination, age, testing). We make ?? enhancements:
+
+1. Introduce a new `struc` object class that allows for symbolic manipulation of matrices and vectors of parameters and state variables when defining rate matrix elements 
+2. The ability to refer to sums of state variables and parameters when defining expressions for rate matrix elements.
+
+### Mathematical Description (0.1.0)
+
+#### struc objects
+
+#### Sums of state variables and parameters
+
+Within each simulation iteration, a user-defined number of sums of state variables and parameters are computed and stored immediately before the rate matrix is updated.
 
 ### User Interface (0.1.0)
 
-Introduce a new `struc` object class that allows for symbolic manipulation of matrices and vectors of parameters and state variables. As an example, the force of infection under the two-dose vaccination model can be given by the following.
-```{r, echo=FALSE}
-wrap_paren = function(x) {
-  paste0('(', x, ')')
-}
-```
+#### struc objects
+
+As an example, the force of infection under the two-dose vaccination model can be given by the following `struc` objects.
 
 Start by getting a set of vaccination parameters and state variables.
-```{r}
+```{r, echo=FALSE, message=FALSE}
 library(McMasterPandemic)
 library(dplyr)
-options(macpan_pfun_method = "grep")
+```
 
+Create a symbolic vector of I-state variables, with 4 base states by 5 vaccination categories = 20 variables.
+```{r}
 base_params <- read_params("PHAC.csv")
 vax_params <- expand_params_vax(
   params = base_params,
   model_type = "twodose"
 )
-base_state <- make_state(params = base_params)
-vax_state <- expand_state_vax(
-  x = base_state,
-  model_type = "twodose",
-  unif = FALSE
-)
-M = make_ratemat(vax_state, vax_params)
-#pfun("S", "E", M)
-```
-
-Create a symbolic vector of I-state variables, with 4 base states by 5 vaccination categories = 20 variables.
-```{r}
 Istate = (McMasterPandemic:::expand_names(
   c('Ia', 'Ip', 'Im', 'Is'),   # = Icats
   attr(vax_params, 'vax_cat')) # = vax_cats
-  %>% wrap_paren
   %>% struc
 )
 as.matrix(Istate)
@@ -196,8 +193,8 @@ Create a vector of base transmission rates associated with each of the 4 base I-
 ```{r}
 baseline_trans_rates =
   struc(
-  '(Ca)',
-  '(Cp)',
+  'Ca',
+  'Cp',
   '(1 - iso_m) * (Cm)',
   '(1 - iso_s) * (Cs)') *
   struc('(beta0) * (1/N)')
@@ -207,8 +204,8 @@ as.matrix(baseline_trans_rates)
 Create a 5-by-5 block matrix of vaccine efficacies
 ```{r}
 vax_trans_red = struc_block(struc(
-  '(1)',
-  '(1)',
+  '1',
+  '1',
   '(1 - vax_efficacy_dose1)',
   '(1 - vax_efficacy_dose1)',
   '(1 - vax_efficacy_dose2)'),
@@ -221,6 +218,73 @@ And finally the force of infection vector, which looks like we really need to in
 foi = kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
 foi
 ```
+
+#### Sums of state variables and parameters
+
+Start with a basic example model.
+```{r}
+params <- read_params("ICU1.csv")
+state <- make_state(params = params)
+M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
+test_model <- init_model(
+    params, state,
+    start_date = "2021-09-09", end_date = "2021-10-09"
+)
+```
+
+Then we define sums of state variables and parameter vectors. Here we add the sum of the `I` states and of the `ICU` states using regular expressions and just a list of state names.
+```{r}
+test_model = (test_model
+  %>% add_state_param_sum(sum = "Isum", summands = "^I[a-z]")
+  %>% add_state_param_sum(sum = "ICUsum", summands = c("ICUs", "ICUd"))
+)
+```
+
+Then we can just proceed as we normally would, but with the option to refer to these sums (this is not meant to reflect real epidemiology, but to illustrate the interface).
+```{r}
+test_model = (test_model
+  %>% add_rate("E", "Ia", ~ (alpha) * (sigma) * (1 / Isum))
+  %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+  %>% add_rate("Ia", "R", ~ (gamma_a))
+  %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+  %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+  %>% add_rate("Im", "R", ~ (gamma_m))
+  %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+  %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+  %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+  %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+  %>% add_rate("ICUs", "H2", ~ (psi1))
+  %>% add_rate("ICUd", "D", ~ (psi2))
+  %>% add_rate("H2", "R", ~ (psi3))
+  %>% add_rate("H", "R", ~ (rho) / (1 / ICUsum))
+  %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+  %>% add_rate("S", "E", ~
+                 (Ia) * (beta0) * (1 / N) * (Ca) +
+                 (Ip) * (beta0) * (1 / N) * (Cp) +
+                 (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
+                 (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+  %>% add_parallel_accumulators(c("X", "N", "P", "V"))
+  %>% add_tmb_indices()
+)
+```
+
+And here are the indices that are relevant to the tracking of sums of state variables and parameters.
+```{r}
+test_model$tmb_indices$sum_indices
+```
+We describe these below.
+
+### Data Structure (0.1.0)
+
+#### struc objects
+
+#### Sums of state variables and parameters
+
+We introduce three new index/count vectors.
+
+* `sumidx` -- indices, locating the variable to store each sum, into the `state_param` vector defined in version 0.0.1
+* `sumcount` -- vector containing the number of summands required for each sum
+* `summandidx` -- indices, locating the summands, into the `state_param` vector
 
 ## v0.0.6
 
@@ -239,7 +303,7 @@ Updates of time-varying parameters from the initial parameters on the `C++` side
 1. Hazard simulation
 2. Returning the time-varying rate matrix elements from `C++` to `R` so that they can be included in the results of `run_sim`
 
-### Mathematical Description
+### Mathematical Description (0.0.5)
 
 Define the sums of the rows of the rate matrix. 
 $$

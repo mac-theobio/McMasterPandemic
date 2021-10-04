@@ -4,21 +4,15 @@
 \alias{rep_rate}
 \title{Repeat a Rate for Several Rate Matrix Elements}
 \usage{
-rep_rate(to, from, formula, state, params, ratemat)
+rep_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 }
 \arguments{
-\item{to}{to state}
+\item{model}{flexmodel}
 
-\item{from}{from state}
+\item{formula}{formula or length-1 character vector}
 
-\item{formula}{one-sided formula defining the rate with reference
-to the parameters and state variables}
-
-\item{state}{state_pansim object}
-
-\item{params}{param_pansim object}
-
-\item{ratemat}{rate matrix}
+\item{indices}{two-column matrix of indices with column names "from_pos"
+and "to_pos", locaing elements of the rate matrix in model}
 }
 \description{
 Repeat a Rate for Several Rate Matrix Elements
