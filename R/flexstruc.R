@@ -189,6 +189,20 @@ which_unwraped = function(x) {
   !grepl('(\\(|\\)|\\+|\\*)', x)
 }
 
+#' @export
+complement = function(x) {
+  i = which_unwraped(x)
+  x[i] = "1 - " %+% x[i]
+  x
+}
+
+#' @export
+inverse = function(x) {
+  i = which_unwraped(x)
+  x[i] = "1 / " %+% x[i]
+  x
+}
+
 setMethod(f = "show",
           signature = "struc",
           definition = function(object){
@@ -383,4 +397,16 @@ struc_stretch = function(x, row_each, col_each) {
   x =   matrix(rep(c(  x ), each = row_each), row_each * nrow(x), ncol(x))
   x = t(matrix(rep(c(t(x)), each = col_each), col_each * ncol(x), nrow(x)))
   return(struc(x))
+}
+
+#' @export
+struc_eval = function(x, values) {
+  x = as.matrix(x)
+  y = matrix(nrow = nrow(x), ncol = ncol(x))
+  for(i in 1:nrow(x)) {
+    for(j in 1:ncol(x)) {
+      y[i, j] = with(as.list(values), eval(parse(text = x[i, j])))
+    }
+  }
+  y
 }

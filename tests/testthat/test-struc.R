@@ -4,7 +4,7 @@ library(testthat)
 
 test_that('foi can be expressed as model structure', {
 
-  options(MP_flex_spec_version = "0.0.6")
+  options(MP_flex_spec_version = "0.1.0")
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
   M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -68,7 +68,7 @@ library(testthat)
 
 test_that('many rates can be expressed at the same time', {
 
-  options(MP_flex_spec_version = "0.0.6")
+  options(MP_flex_spec_version = "0.1.0")
 
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)

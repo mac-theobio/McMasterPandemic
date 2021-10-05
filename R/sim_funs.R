@@ -954,9 +954,34 @@ run_sim <- function(params,
       byrow = TRUE
     )
     res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
-    foi_off <- which(names(flexmodel$tmb_indices$updateidx) == "S_to_E")
-    foi_indices <- seq(from = foi_off, by = foi_off, length.out = flexmodel$iters + 1)
-    res$foi <- tmb_sims$concatenated_ratemat_nonzeros[foi_indices]
+
+    # look for foi -- TODO: formalize the definition of foi so that we
+    #                       can reliably check
+    foi = (flexmodel$tmb_indices$updateidx
+      %>% names
+      %>% strsplit("_to_")
+      %>% lapply(function(x) {
+        # vax_cat may not exist and therefore be a blank string
+        vax_cat = sub("^E(_|$)", "", x[2])
+        setNames(
+          startsWith(x[1], "S") & startsWith(x[2], "E"),
+          ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
+      })
+      %>% unlist
+      %>% which
+      %>% lapply(function(foi_off) {
+        tmb_sims$concatenated_ratemat_nonzeros[
+          seq(from = foi_off,
+              by = length(flexmodel$tmb_indices$updateidx),
+              length.out = flexmodel$iters + 1)
+        ]
+      })
+      %>% as.data.frame
+    )
+    res = cbind(res, foi)
+    # foi_off <- which(names(flexmodel$tmb_indices$updateidx) == "S_to_E")
+    # foi_indices <- seq(from = foi_off, by = foi_off, length.out = flexmodel$iters + 1)
+    # res$foi <- tmb_sims$concatenated_ratemat_nonzeros[foi_indices]
   } else {
 
       call <- match.call()

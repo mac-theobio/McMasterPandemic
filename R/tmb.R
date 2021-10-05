@@ -23,6 +23,9 @@ init_model <- function(params, state, struc = NULL,
              "for state variables and parameters")
     }
 
+    # need to do this before we ruin the pansim structure
+    ratemat = make_ratemat(state, params, sparse = TRUE)
+
     # TODO: keep an eye on this -- i think that the
     # flex framework should _not_ use parameter
     # lists and rather stick to numeric vectors, but
@@ -32,7 +35,7 @@ init_model <- function(params, state, struc = NULL,
     model <- list(
         state = state,
         params = params,
-        ratemat = make_ratemat(state, params, sparse = TRUE),
+        ratemat = ratemat,
         rates = list(),
         name_regex = name_regex
     )
@@ -474,6 +477,38 @@ find_vec_indices <- function(x, vec) {
     )
 }
 
+#' @export
+get_rates = function(model) {
+    from = lapply(model$rates, '[[', 'from')
+    to = lapply(model$rates, '[[', 'to')
+    mapply(function(from, to) {
+        model$ratemat[from, to]
+    }, from = from, to = to,
+    SIMPLIFY = TRUE)
+}
+
+compute_rates = function(model) {
+    (model$rates
+     %>% lapply("[[", "formula")
+     %>% lapply(function(x) ifelse(inherits(x, 'formula'), as.character(x[2]), x))
+     %>% sapply(as.character)
+     %>% struc
+     %>% struc_eval(c(as.list(model$params), as.list(model$state), as.list(model$sum_vector)))
+     %>% c()
+     %>% setNames(names(model$rates))
+    )
+}
+
+#' @export
+check_rates = function(model, eps = 1e-5) {
+    (data.frame(get_rates(test_model), compute_rates(test_model))
+        %>% setNames(c('get', 'compute'))
+        %>% mutate(diff = abs(get - compute))
+        %>% mutate(bads = (diff > eps) | is.nan(compute) | is.na(get))
+        %>% filter(bads)
+    )
+}
+
 #' @param sum name of sum of state variables and parameters
 #' @param summands character vector of regular expressions for identifying
 #' state variables and parameters to sum together
@@ -588,11 +623,16 @@ add_tmb_indices <- function(model) {
 ##' @export
 sum_indices = function(sums, state, params) {
     sum_index_list = lapply(sums, "[[", "sum_indices")
-    list(
-        sumidx = c(seq_len(length(sums))) + length(state) + length(params),
-        sumcount = c(sapply(sum_index_list, length, USE.NAMES = FALSE)),
-        summandidx = c(unlist(sum_index_list, use.names = FALSE))
-    )
+    sumidx = c(seq_len(length(sums))) + length(state) + length(params)
+    sumcount = c(sapply(sum_index_list, length, USE.NAMES = FALSE))
+    summandidx = c(unlist(sum_index_list, use.names = FALSE))
+    clean_if_empty = function(x) {
+        if((length(x) == 0L) | is.null(x)) return(integer(0L))
+        x
+    }
+    list(sumidx = clean_if_empty(sumidx),
+         sumcount = clean_if_empty(sumcount),
+         summandidx = clean_if_empty(summandidx))
 }
 
 ##' @export
@@ -807,6 +847,7 @@ tmb_fun <- function(model) {
             DLL = DLL
         )
     } else if (spec_ver_eq("0.1.0")) {
+        unpack(sum_indices)
         dd <- MakeADFun(
             data = list(
                 state = c(state),
@@ -823,11 +864,14 @@ tmb_fun <- function(model) {
                 tv_val = schedule$tv_val,
                 tv_mult = schedule$Value,
                 tv_orig = schedule$Type == "rel_orig",
+                sumidx = sumidx,
+                sumcount = unname(sumcount),
+                summandidx = summandidx,
                 par_accum_indices = par_accum_indices,
                 do_hazard = do_hazard,
                 numIterations = iters
             ),
-            parameters = list(params = c(params, sum_vector)),
+            parameters = list(params = c(params)),
             DLL = DLL
         )
     } else {
