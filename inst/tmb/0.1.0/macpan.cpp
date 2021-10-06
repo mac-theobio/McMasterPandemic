@@ -84,7 +84,9 @@ Eigen::SparseMatrix<Type> make_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        x = 1/x;
+        if (x != 0) {
+          x = 1/x;
+        }
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
@@ -125,7 +127,9 @@ void update_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        x = 1/x;
+        if (x != 0) {
+          x = 1/x;
+        }
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
@@ -203,9 +207,9 @@ Eigen::SparseMatrix<Type> calc_flowmat(
 // Helper function update_sum_in_sp
 template<class Type>
 void update_sum_in_sp(
-    vector<Type>& sp, 
-    const vector<int>& sumidx, 
-    const vector<int>& sumcount, 
+    vector<Type>& sp,
+    const vector<int>& sumidx,
+    const vector<int>& sumcount,
     const vector<int>& summandidx)
 {
   for (int i=0; i<sumidx.size(); i++) {

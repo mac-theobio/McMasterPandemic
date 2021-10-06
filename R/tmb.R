@@ -499,6 +499,34 @@ compute_rates = function(model) {
     )
 }
 
+compute_rate_from_indices = function(model, i) {
+    #unpack(model$rates[[i]])
+    unpack(get_indices_per_rate(model, i))
+    from = model$tmb_indices$make_ratemat_indices$from[i]
+    to = model$tmb_indices$make_ratemat_indices$to[i]
+    count = model$tmb_indices$make_ratemat_indices$count[i]
+    sp = c(model$state, model$param, model$sum_vector)
+    result = 0
+    prod = 1.0
+    for (j in seq_along(spi)) { # j<start+count[i]; j++) {
+        x = sp[spi[j]]
+        if (modifier[j] > 3) {
+            result = result + prod
+            prod = 1
+        }
+        if (modifier[j] %in% c(1, 3, 5, 7)) {
+            x = 1-x
+        } else if (modifier[j] %in% c(2, 3, 6, 7)){
+            if (x != 0) {
+                x = 1/x
+            }
+        }
+        prod = prod * x
+    }
+    result = result + prod
+    return(result)
+}
+
 #' @export
 check_rates = function(model, eps = 1e-5) {
     (data.frame(get_rates(test_model), compute_rates(test_model))
@@ -649,7 +677,9 @@ ratemat_indices <- function(rates, state_params) {
     })
     modifier <- lapply(unname(rates), "[[", "factors") %>%
         bind_rows(.id = "rate_indx") %>%
-        mutate(add = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
+        mutate(new_rate = as.logical(c(0, diff(as.numeric(rate_indx))))) %>%
+        mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
+        mutate(add = new_prod & (!new_rate)) %>%
         mutate(modifier = 4 * add + 2 * invrs + compl) %>%
         `$`("modifier")
     names(spi) <- colnames(ratemat_indices) <- names(count) <- NULL
@@ -680,7 +710,12 @@ piece_wise_indices <- function(rates, timevar, start_date) {
 tmb_indices <- function(model) {
     check_spec_ver_archived()
 
-    sp <- c(model$state, model$params)
+    if (spec_ver_eq("0.1.0")) {
+        sp <- c(model$state, model$params, model$sum_vector)
+    } else {
+        sp <- c(model$state, model$params)
+    }
+
     indices <- list(make_ratemat_indices = ratemat_indices(model$rates, sp))
 
     if (spec_ver_gt("0.0.1")) {
@@ -702,6 +737,15 @@ tmb_indices <- function(model) {
         indices$sum_indices = sum_indices(model$sums, model$state, model$params)
     }
     return(indices)
+}
+
+get_indices_per_rate = function(model, i) {
+    unpack(model$tmb_indices$make_ratemat_indices)
+    start = sum(c(1, count)[1:i])
+    end = start + count[i] - 1L
+    list(spi = spi[start:end],
+        modifier = modifier[start:end],
+        start = start, end = end)
 }
 
 ##' Make Objective Function with TMB

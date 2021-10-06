@@ -84,7 +84,9 @@ Eigen::SparseMatrix<Type> make_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        x = 1/x;
+        if (x != 0) {
+          x = 1/x;
+        }
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
@@ -125,7 +127,9 @@ void update_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        x = 1/x;
+        if (x != 0) {
+          x = 1/x;
+        }
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
@@ -200,6 +204,27 @@ Eigen::SparseMatrix<Type> calc_flowmat(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Helper function update_sum_in_sp
+template<class Type>
+void update_sum_in_sp(
+    vector<Type>& sp,
+    const vector<int>& sumidx,
+    const vector<int>& sumcount,
+    const vector<int>& summandidx)
+{
+  for (int i=0; i<sumidx.size(); i++) {
+    int idx = sumidx[i] - 1;
+    sp[idx] = 0.0;
+
+    int start = 0;
+    for (int j=start; j<start+sumcount[i]; j++) {
+      sp[idx] += sp[summandidx[j]-1];
+    }
+    start += sumcount[i];
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
@@ -222,6 +247,11 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(tv_mult);
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(par_accum_indices);
+
+  DATA_IVECTOR(sumidx);
+  DATA_IVECTOR(sumcount);
+  DATA_IVECTOR(summandidx);
+
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
 
@@ -236,8 +266,11 @@ Type objective_function<Type>::operator() ()
   //std::cout << "tv_orig = " << tv_orig << std::endl;
 
   // Concatenate state and params
-  vector<Type> sp(state.size()+params.size());
-  sp << state, params;
+  vector<Type> sp(state.size()+params.size()+sumidx.size());
+  vector<Type> place_holder(sumidx.size());
+  sp << state, params, place_holder;
+
+  update_sum_in_sp(sp, sumidx, sumcount, summandidx);
 
   // make a copy of sp
   vector<Type> sp_orig(sp);
@@ -297,6 +330,7 @@ Type objective_function<Type>::operator() ()
     // loop over a set of state variables, and update them with
     // expressions of other state variables and parameters
 
+    update_sum_in_sp(sp, sumidx, sumcount, summandidx);
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
 
     // Update vectors "concatenated_*"
