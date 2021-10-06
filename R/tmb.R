@@ -41,7 +41,7 @@ init_model <- function(params, state, struc = NULL,
     )
 
     if (spec_ver_gt("0.0.1")) {
-        model$parallel_accumulators <- character()
+        model$parallel_accumulators <- character(0L)
     }
 
     if ((!is.null(start_date)) & (!is.null(end_date))) {
@@ -126,8 +126,22 @@ init_model <- function(params, state, struc = NULL,
         model$sum_vector = numeric(0L)
     }
 
-    ## TODO: clarify index structure here once we converge
-    model$tmb_indices <- list()
+    model$tmb_indices <- list(
+        make_ratemat_indices = list(
+            from = integer(0L),
+            to = integer(0L),
+            count = integer(0L),
+            spi = integer(0L),
+            modifier = integer(0L)
+        ),
+        par_accum_indices = integer(0L),
+        updateidx = integer(0L),
+        sum_indices = list(
+            sumidx = integer(0L),
+            sumcount = integer(0L),
+            summandidx = integer(0L)
+        )
+    )
 
     structure(model, class = "flexmodel")
 }
@@ -300,12 +314,6 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         x
     }
 
-    #if(spec_ver_gt('0.1.0') | spec_ver_eq('0.1.0')) {
-    #    test_parse = parse_formula(formula)
-    #    if(length(test_parse) != 1L)
-    #        stop("you are trying to pass multiple formulas,\n',
-    #             'perhaps you want multi_rate instead of rate")
-    #}
     structure(
         product_list(list(from = from, to = to, formula = formula)),
         class = "rate-struct"
