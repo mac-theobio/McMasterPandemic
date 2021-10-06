@@ -12,6 +12,7 @@
 ##' @param do_hazard should hazard simulation steps be used?
 ##' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 ##' if \code{spec_ver_gt('0.0.4')}
+##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
 init_model <- function(params, state, struc = NULL,
@@ -180,6 +181,7 @@ init_model <- function(params, state, struc = NULL,
 ##' @param params param_pansim object
 ##' @param sums vector of sums of state variables and parameters
 ##' @param ratemat rate matrix
+##' @family flexmodels
 ##' @export
 rate <- function(from, to, formula, state, params, sums, ratemat) {
     ## TODO: test for formula structure
@@ -257,6 +259,7 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
 ##' parameters and state variables
 ##' @return another compartmental model with an additional non-zero rate matrix
 ##' element specified
+##' @family flexmodels
 ##' @export
 add_rate <- function(model, from, to, formula) {
     added_rate <- (
@@ -274,6 +277,7 @@ add_rate <- function(model, from, to, formula) {
 #' @param indices two-column matrix of indices with column names "from_pos"
 #' and "to_pos", locaing elements of the rate matrix in model
 #' @param formula formula or length-1 character vector
+#' @family flexmodels
 #' @export
 rep_rate = function(model, from, to, formula,
                     mapping = c("pairwise", "blockwise")) {
@@ -317,6 +321,9 @@ rep_rate = function(model, from, to, formula,
     return(model)
 }
 
+#' Specify Vector of Rates
+#'
+#' @family flexmodels
 #' @export
 vec_rate = function(model, from, to, formula,
                     mapping = c("pairwise", "blockwise")) {
@@ -343,6 +350,9 @@ vec_rate = function(model, from, to, formula,
     return(model)
 }
 
+#' Specify Matrix of Rates
+#'
+#' @family flexmodels
 #' @export
 mat_rate = function() {
     stop("\nrate specification with matrices is ",
@@ -360,6 +370,7 @@ mat_rate = function() {
 #' @param state pansim_state object
 #' @param params pansim_param object
 #' @return indices of summands
+#' @family flexmodels
 #' @export
 state_param_sum = function(sum, summands, state, params) {
     spec_check('0.1.0', 'sums of state variables and parameters')
@@ -379,6 +390,7 @@ state_param_sum = function(sum, summands, state, params) {
 #' @rdname state_param_sum
 #' @inheritParams state_param_sum
 #' @param model flexmodel
+#' @family flexmodels
 #' @export
 add_state_param_sum = function(model, sum, summands) {
     model$sums[[sum]] = state_param_sum(
@@ -399,12 +411,14 @@ add_state_param_sum = function(model, sum, summands) {
 ##' @param state_patterns regular expressions for identifying states as
 ##' parallel accumulators
 ##' @return another compartmental model with parallel accumulators specified
+##' @family flexmodels
 ##' @export
 add_parallel_accumulators <- function(model, state_patterns) {
     model$parallel_accumulators <- parallel_accumulators(model, state_patterns)
     return(model)
 }
 
+##' @family flexmodels
 ##' @export
 parallel_accumulators <- function(model, state_patterns) {
     spec_check(introduced_version = "0.0.2", feature = "Parallel accumulators")
@@ -426,12 +440,14 @@ parallel_accumulators <- function(model, state_patterns) {
 ##'
 ##' @param model compartmental model
 ##' @param another compartmental model with indices for TMB
+##' @family flexmodels
 ##' @export
 add_tmb_indices <- function(model) {
     model$tmb_indices <- tmb_indices(model)
     return(model)
 }
 
+##' @family flexmodels
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
@@ -471,6 +487,7 @@ tmb_indices <- function(model) {
 ##' object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 ##'
 ##' @param model object of class \code{flexmodel}
+##' @family flexmodels
 ##' @importFrom TMB MakeADFun
 ##' @useDynLib McMasterPandemic
 ##' @export

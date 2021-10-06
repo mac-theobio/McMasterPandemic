@@ -24,3 +24,18 @@ element specified
 Define how the rate of flow from one compartment to another
 depends on the parameters and state variables.
 }
+\seealso{
+Other flexmodels: 
+\code{\link{add_parallel_accumulators}()},
+\code{\link{add_tmb_indices}()},
+\code{\link{init_model}()},
+\code{\link{make_base_model}()},
+\code{\link{make_vaccination_model}()},
+\code{\link{mat_rate}()},
+\code{\link{rate}()},
+\code{\link{rep_rate}()},
+\code{\link{state_param_sum}()},
+\code{\link{tmb_fun}()},
+\code{\link{vec_rate}()}
+}
+\concept{flexmodels}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/tmb.R
 \name{init_model}
 \alias{init_model}
-\title{Initialize Compartmental Model}
+\title{Initialize Flexible Compartmental Model}
 \usage{
 init_model(
   params,
@@ -34,8 +34,23 @@ constant parameter variation (TODO: direct to other help pages)}
 if \code{spec_ver_gt('0.0.4')}}
 }
 \value{
-object representing a compartmental model
+flexmodel object representing a compartmental model
 }
 \description{
-Initialize Compartmental Model
+https://canmod.net/misc/flex_specs
 }
+\seealso{
+Other flexmodels: 
+\code{\link{add_parallel_accumulators}()},
+\code{\link{add_rate}()},
+\code{\link{add_tmb_indices}()},
+\code{\link{make_base_model}()},
+\code{\link{make_vaccination_model}()},
+\code{\link{mat_rate}()},
+\code{\link{rate}()},
+\code{\link{rep_rate}()},
+\code{\link{state_param_sum}()},
+\code{\link{tmb_fun}()},
+\code{\link{vec_rate}()}
+}
+\concept{flexmodels}

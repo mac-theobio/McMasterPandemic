@@ -25,3 +25,18 @@ to the parameters and state variables}
 \description{
 Define Rate for Single Element of Rate Matrix
 }
+\seealso{
+Other flexmodels: 
+\code{\link{add_parallel_accumulators}()},
+\code{\link{add_rate}()},
+\code{\link{add_tmb_indices}()},
+\code{\link{init_model}()},
+\code{\link{make_base_model}()},
+\code{\link{make_vaccination_model}()},
+\code{\link{mat_rate}()},
+\code{\link{rep_rate}()},
+\code{\link{state_param_sum}()},
+\code{\link{tmb_fun}()},
+\code{\link{vec_rate}()}
+}
+\concept{flexmodels}

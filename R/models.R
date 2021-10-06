@@ -1,37 +1,14 @@
-##' Represent a Standard Model as a flexmodel
+##' Represent a Standard Unstructured Model as a flexmodel
 ##'
+##' @inheritDotParams init_model
+##' @family flexmodels
+##' @family canned_models
 ##' @export
-make_unflexmodel <- function(params,
-                             state = NULL,
-                             start_date = "2020-03-20",
-                             end_date = "2020-05-1",
-                             params_timevar = NULL,
-                             step_args = list()) {
+make_base_model <- function(...) {
 
-  ## check_start = Sys.time()
   spec_check("0.0.5", "run_sim with TMB")
 
-  ## may need to modify this when we start updating time-varying parameters
-  ## on the c++ side (currently params0 should always equal params)
-  params0 <- params
-  state0 <- state
-
-  step_args_to_flex <- c("do_hazard")
-  flex_args <- c(
-    list(
-      params = params,
-      state = state,
-      start_date = start_date,
-      end_date = end_date,
-      params_timevar = params_timevar
-    ),
-    step_args[names(step_args) %in% step_args_to_flex]
-  )
-  init_end <- Sys.time()
-
-  ## make_model_start = Sys.time()
-  model <- (init_model
-            %>% do.call(flex_args)
+  model <- (init_model(...)
             %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
             %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
             %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -59,4 +36,127 @@ make_unflexmodel <- function(params,
             %>% add_tmb_indices()
   )
   return(model)
+}
+
+
+#' Make a Two-Dose Vaccination Model
+#'
+#' @inheritDotParams init_model
+#' @family flexmodels
+#' @family canned_models
+#' @export
+make_vaccination_model = function(...) {
+
+  spec_check("0.1.0", "model structure")
+
+  args = list(...)
+  unpack(args)
+
+  stopifnot(has_vax(params))
+  stopifnot(attr(params, "model_type") != 'twodose')
+  if(is.null(state)) state = make_state(params = params)
+  if(has_vax(state)) {
+    stopifnot(attr(state, "model_type") != 'twodose')
+  } else {
+    state <- expand_state_vax(
+      x = state,
+      model_type = "twodose",
+      unif = FALSE
+    )
+  }
+
+  # problem dimensions
+  (epi_states = c(attr(state, "epi_cat")))
+  (asymp_cat = c("S", "E", "Ia", "Ip", "R"))
+  (vax_cat = c(attr(state, "vax_cat")))
+  (dose_from = rep(asymp_cat, 2))
+  (dose_to = c(asymp_cat, rep("V", 5)))
+
+  # Specify structure of the force of infection calculation
+  Istate = (McMasterPandemic:::expand_names(
+    c('Ia', 'Ip', 'Im', 'Is'),   # = Icats
+    attr(params, 'vax_cat')) # = vax_cats
+    %>% struc
+  )
+  baseline_trans_rates =
+    struc(
+      'Ca',
+      'Cp',
+      '(1 - iso_m) * (Cm)',
+      '(1 - iso_s) * (Cs)') *
+    struc('(beta0) * (1/N)')
+  vax_trans_red = struc_block(struc(
+    '1',
+    '1',
+    '(1 - vax_efficacy_dose1)',
+    '(1 - vax_efficacy_dose1)',
+    '(1 - vax_efficacy_dose2)'),
+    row_times = 1, col_times = 5)
+
+  alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
+  mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
+  sigma   = struc("sigma")
+  gamma_p = struc("gamma_p")
+  E_to_Ia_rates  = struc(           alpha ) * sigma
+  E_to_Ip_rates  = struc(complement(alpha)) * sigma
+  Ip_to_Im_rates = struc(              mu ) * gamma_p
+  Ip_to_Is_rates = struc(complement(   mu)) * gamma_p
+
+
+  (init_model(...)
+
+    # Flow within vaccination categories,
+    # with constant rates across categories
+    %>% rep_rate("Ia",   "R",    ~                      (gamma_a))
+    %>% rep_rate("Im",   "R",    ~                      (gamma_m))
+    %>% rep_rate("Is",   "D",    ~ (    nonhosp_mort) * (gamma_s))
+    %>% rep_rate("Is",   "H",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+    %>% rep_rate("Is",   "X",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+    %>% rep_rate("Is",   "ICUs", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (1 - phi2))
+    %>% rep_rate("Is",   "ICUd", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (    phi2))
+    %>% rep_rate("ICUs", "H2",   ~                                  (    psi1))
+    %>% rep_rate("ICUd", "D",    ~                                  (    psi2))
+    %>% rep_rate("H2",   "R",    ~                                  (    psi3))
+    %>% rep_rate("H",    "R",    ~ (rho))
+
+    # Flow within vaccination categories,
+    # with rates that depend on category
+    # (see struc objects created above)
+    %>% vec_rate("E", "Ia",  E_to_Ia_rates)
+    %>% vec_rate("E", "Ip",  E_to_Ip_rates)
+    %>% vec_rate("Ip", "Im", Ip_to_Im_rates)
+    %>% vec_rate("Ip", "Is", Ip_to_Is_rates)
+
+    # Vaccination Response Rates
+    %>% add_rate("R_vaxdose1", "R_vaxprotect1",  ~ (vax_response_rate_R))
+    %>% add_rate("R_vaxdose2", "R_vaxprotect2",  ~ (vax_response_rate_R))
+    %>% add_rate("S_vaxdose1", "S_vaxprotect1",  ~ (vax_response_rate))
+    %>% add_rate("S_vaxdose2", "S_vaxprotect2",  ~ (vax_response_rate))
+
+    # Forces of Infection
+    %>% vec_rate(
+      "S" %_% vax_cat,
+      "E" %_% vax_cat,
+      kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
+    )
+
+    # Sums across vaccination categories
+    %>% add_state_param_sum("asymp_unvax_N",       asymp_cat %_% "unvax")
+    %>% add_state_param_sum("asymp_vaxprotect1_N", asymp_cat %_% "vaxprotect1")
+
+    # Flow among vaccination categories
+    # (see dose_* above for epi states that are involved)
+    %>% rep_rate(
+      dose_from %_% 'unvax',
+      dose_to   %_% 'vaxdose1',
+      ~ (    vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_unvax_N))
+    %>% rep_rate(
+      dose_from %_% 'vaxprotect1',
+      dose_to   %_% 'vaxdose2',
+      ~ (1 - vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect1_N))
+
+    # Technical steps
+    %>% add_parallel_accumulators(c('V' %_% vax_cat, 'X' %_% vax_cat))
+    %>% add_tmb_indices()
+  )
 }

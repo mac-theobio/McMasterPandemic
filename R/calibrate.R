@@ -779,7 +779,7 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
     if (isTRUE(sim_args$use_flex)) {
         spec_check("0.0.6", "calibration with TMB")
         if (is.null(sim_args$flexmodel)) {
-            sim_args$flexmodel <- make_unflexmodel(
+            sim_args$flexmodel <- make_base_model(
                 params = base_params,
                 state = make_state(params = base_params),
                 start_date = start_date,

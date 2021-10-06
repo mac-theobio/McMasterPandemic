@@ -925,7 +925,7 @@ run_sim <- function(params,
     if(!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)
 
     if (is.null(flexmodel)) {
-      flexmodel <- make_unflexmodel(
+      flexmodel <- make_base_model(
         params = params,
         state = state,
         start_date = start_date,
