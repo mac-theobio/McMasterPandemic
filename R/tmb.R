@@ -45,19 +45,22 @@ init_model <- function(params, state, struc = NULL,
     }
 
     if ((!is.null(start_date)) & (!is.null(end_date))) {
-        spec_check(introduced_version = "0.0.3", feature = "Start and end dates")
+        spec_check(introduced_version = "0.0.3",
+                   feature = "Start and end dates")
         model$start_date <- as.Date(start_date)
         model$end_date <- as.Date(end_date)
         model$iters <- as.integer(model$end_date - model$start_date)
     } else {
         if ((!is.null(start_date)) | (!is.null(end_date))) {
-            spec_check(introduced_version = "0.0.3", feature = "Start and end dates")
+            spec_check(introduced_version = "0.0.3",
+                       feature = "Start and end dates")
             stop(
                 "\n\nIf you specify either a start or end date,\n",
                 "you need to specify the other one as well."
             )
         }
-        feature_check(introduced_version = "0.0.3", feature = "Start and end dates")
+        feature_check(introduced_version = "0.0.3",
+                      feature = "Start and end dates")
     }
 
     if (spec_ver_gt("0.0.2")) {
@@ -110,15 +113,12 @@ init_model <- function(params, state, struc = NULL,
 
 
             model$timevar$piece_wise <- list(
-                schedule = schedule, ## schedule includes tv_spi and tv_val as in spec
+                ## schedule includes tv_spi and tv_val as in spec
+                schedule = schedule,
                 breaks = as.integer(names(count_of_tv_at_breaks)),
                 count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
             )
         } ## >v0.0.3
-    } else {
-        if (spec_ver_gt("0.0.3")) {
-
-        }
     }
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
     if (spec_ver_gt("0.0.6")) {
@@ -420,7 +420,11 @@ vec_rate = function(model, from, to, formula,
 
 #' @export
 mat_rate = function() {
-    stop("coming sometime in the future ... maybe")
+    stop("\nrate specification with matrices is ",
+         "coming sometime in the future ... maybe\n",
+         "in the meantime you can specify vector-valued rates with vec_rate\n",
+         "see this document for potentially more information on priorities:\n",
+         options("MP_flex_spec_doc_site")[[1]])
 }
 
 
@@ -440,8 +444,6 @@ lookup_pairwise = function(from, to, M) {
 #' @param ratemat rate matrix
 #' @export
 rate_matrix_lookup = function(ratemat) {
-    #McMasterPandemic:::pfun_block(, , ratemat)
-
     ratemat = as(ratemat, "dgTMatrix")
     (data.frame(
         from_pos = ratemat@i + 1,
@@ -486,9 +488,63 @@ find_vec_indices <- function(x, vec) {
 }
 
 #' @export
+get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+
+#' @export
+get_rate_from = function(model) get_rate_info(model, 'from')
+
+#' @export
+get_rate_to = function(model) get_rate_info(model, 'to')
+
+#' @export
+get_rate_ratemat_indices = function(model) get_rate_info(model, 'ratemat_indices')
+
+#' @export
+get_rate_formula = function(model) get_rate_info(model, 'formula')
+
+#' @export
+get_rate_factors = function(model) get_rate_info(model, 'factors')
+
+#' @export
+get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
+
+#' @export
+get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
+
+#' @export
+get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
+
+#' @export
+get_n_products = function(model) {
+    (model
+     %>% get_rate_info('factors')
+     %>% lapply('[[', 'prod_indx')
+     %>% lapply(length)
+    )
+}
+
+#' @export
+get_n_variables = function(model) {
+    (model
+     %>% get_rate_info('factors')
+     %>% lapply('[[', 'var')
+     %>% lapply(length)
+    )
+}
+
+#' @export
+get_n_factors = function(model) {
+    (model
+     %>% get_rate_info('factors')
+     %>% lapply(nrow)
+    )
+}
+
+
+#' @export
 get_rates = function(model) {
-    from = lapply(model$rates, '[[', 'from')
-    to = lapply(model$rates, '[[', 'to')
+    from = flex_from(model)
+    to = flex_to(model)
     mapply(function(from, to) {
         model$ratemat[from, to]
     }, from = from, to = to,
@@ -496,8 +552,8 @@ get_rates = function(model) {
 }
 
 compute_rates = function(model) {
-    (model$rates
-     %>% lapply("[[", "formula")
+    (model
+     %>% get_rate_info("formula")
      %>% lapply(function(x) ifelse(inherits(x, 'formula'), as.character(x[2]), x))
      %>% sapply(as.character)
      %>% struc
@@ -508,7 +564,6 @@ compute_rates = function(model) {
 }
 
 compute_rate_from_indices = function(model, i) {
-    #unpack(model$rates[[i]])
     unpack(get_indices_per_rate(model, i))
     from = model$tmb_indices$make_ratemat_indices$from[i]
     to = model$tmb_indices$make_ratemat_indices$to[i]
@@ -516,7 +571,7 @@ compute_rate_from_indices = function(model, i) {
     sp = c(model$state, model$param, model$sum_vector)
     result = 0
     prod = 1.0
-    for (j in seq_along(spi)) { # j<start+count[i]; j++) {
+    for (j in seq_along(spi)) {
         x = sp[spi[j]]
         if (modifier[j] > 3) {
             result = result + prod
@@ -601,20 +656,36 @@ time_varying_rates <- function(model) {
 
 ##' @export
 which_time_varying_rates <- function(model) {
-    sd  <- sapply(model$rates, "[[", "state_dependent")
-    tv  <- sapply(model$rates, "[[", "time_varying")
-    smd <- sapply(model$rates, "[[", "sum_dependent")
+    sd  <- get_rate_info(model, "state_dependent") %>% unlist
+    tv  <- get_rate_info(model, "time_varying") %>% unlist
+    smd <- get_rate_info(model, "sum_dependent") %>% unlist
     which(sd | tv | smd)
 }
 
 ##' @export
 state_dependent_rates <- function(model) {
-    model$rates[sapply(model$rates, "[[", "state_dependent")]
+    i = get_rate_info(model, "state_dependent") %>% unlist
+    model$rates[i]
 }
 
 ##' @export
 sum_dependent_rates = function(model) {
-    model$rates[sapply(model$rates, "[[", "sum_dependent")]
+    i = get_rate_info(model, "sum_dependent") %>% unlist
+    model$rates[i]
+}
+
+##' @export
+rate_summary = function(model) {
+    data.frame(
+        from = get_rate_info(model, "from") %>% unlist,
+        to = get_rate_info(model, "to") %>% unlist,
+        n_factors = get_n_factors(model) %>% unlist,
+        n_products = get_n_products(model) %>% unlist,
+        n_variables = get_n_variables(model) %>% unlist,
+        state_dependent = get_rate_info(model, "state_dependent") %>% unlist,
+        time_varying = get_rate_info(model, "time_varying") %>% unlist,
+        sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
+    )
 }
 
 ##' Add Parallel Accumulators
@@ -660,7 +731,7 @@ add_tmb_indices <- function(model) {
 sum_indices = function(sums, state, params) {
     sum_index_list = lapply(sums, "[[", "sum_indices")
     sumidx = c(seq_len(length(sums))) + length(state) + length(params)
-    sumcount = c(sapply(sum_index_list, length, USE.NAMES = FALSE))
+    sumcount = sapply(sum_index_list, length, USE.NAMES = FALSE) %>% unname
     summandidx = c(unlist(sum_index_list, use.names = FALSE))
     clean_if_empty = function(x) {
         if((length(x) == 0L) | is.null(x)) return(integer(0L))
@@ -683,13 +754,16 @@ ratemat_indices <- function(rates, state_params) {
     count <- sapply(rates, function(y) {
         nrow(y$factors)
     })
-    modifier <- lapply(unname(rates), "[[", "factors") %>%
-        bind_rows(.id = "rate_indx") %>%
-        mutate(new_rate = as.logical(c(0, diff(as.numeric(rate_indx))))) %>%
-        mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx))))) %>%
-        mutate(add = new_prod & (!new_rate)) %>%
-        mutate(modifier = 4 * add + 2 * invrs + compl) %>%
-        `$`("modifier")
+    modifier <- (rates
+        %>% unname
+        %>% lapply("[[", "factors")
+        %>% bind_rows(.id = "rate_indx")
+        %>% mutate(new_rate = as.logical(c(0, diff(as.numeric(rate_indx)))))
+        %>% mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx)))))
+        %>% mutate(add = new_prod & (!new_rate))
+        %>% mutate(modifier = 4 * add + 2 * invrs + compl)
+        %>% `$`("modifier")
+    )
     names(spi) <- colnames(ratemat_indices) <- names(count) <- NULL
     indices <- list(
         from = ratemat_indices[1, ],
@@ -699,19 +773,6 @@ ratemat_indices <- function(rates, state_params) {
         modifier = modifier
     )
     return(indices)
-}
-
-##' @export
-piece_wise_indices <- function(rates, timevar, start_date) {
-    dd <- lapply(unname(rates), "[[", "factors") %>%
-        bind_rows(.id = "rate_indx")
-    spi_tv_fac <- with(dd, which(tv))
-    nbreaks_fac <- m$timevar$piece_wise$nbreaks[dd[spi_tv_fac, ]$var]
-    b <- with(m$timevar$piece_wise$schedule, as.integer(Date - m$start_date))
-    s <- m$timevar$piece_wise$schedule$Symbol
-    tbreaks <- lapply(names(nbreaks_fac), function(v) {
-        b[s == v]
-    }) %>% unlist()
 }
 
 ##' @export
@@ -946,19 +1007,6 @@ make_unflexmodel <- function(params,
     ## check_start = Sys.time()
     spec_check("0.0.5", "run_sim with TMB")
 
-    ## Check for features not yet implemented in flexmodel approach,
-    ## and throw error with message if TRUE
-    ## if(any(stoch)) spec_check(NULL, 'Stochasticity')
-    ## if((dt != 1) | (ndt != 1)) spec_check(NULL, "Flexible time steps")
-    ## if(has_zeta(params)) spec_check(NULL, "Zeta parameters")
-    ## if(has_vax(params) | has_vax(state) | has_vacc(params)) {
-    ##  spec_check(NULL, "Vaccination structure")
-    ## }
-    ## if(has_testing(state, params)) spec_check(NULL, "Testing structure")
-    ## if(has_age(params)) spec_check(NULL, "Age structure")
-    ## check_end = Sys.time()
-
-    ## init_start = Sys.time()
     ## may need to modify this when we start updating time-varying parameters
     ## on the c++ side (currently params0 should always equal params)
     params0 <- params
@@ -1006,12 +1054,5 @@ make_unflexmodel <- function(params,
         %>% add_parallel_accumulators(c("X", "N", "P", "V"))
         %>% add_tmb_indices()
     )
-    ## make_model_end = Sys.time()
-
-    ## print(check_end - check_start)
-    ## print(init_end - init_end)
-    ## print(make_model_end - make_model_start)
-    ## print(make_obj_fun_end - make_obj_fun_start)
-    ## print(post_process_end - post_process_start)
     return(model)
 }
