@@ -580,3 +580,118 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
     expect_lt(tmb_speed, r_speed)
     compare_sims(r_sim, tmb_sim)
 })
+
+test_that("vax_prop_first_dose can be != 1", {
+    options(macpan_pfun_method = "grep")
+    params <- read_params("ICU1.csv")
+    state <- make_state(params = params)
+    vax_params <- expand_params_vax(
+        params = params,
+        model_type = "twodose"
+    )
+    vax_params[["vax_prop_first_dose"]] = 0.5
+    vax_state <- expand_state_vax(
+        x = state,
+        model_type = "twodose",
+        unif = FALSE
+    )
+    vax_state[["E_vaxprotect1"]] = 3
+    vax_state[["S_unvax"]] = vax_state[["S_unvax"]] - 3
+
+    params_timevar = data.frame(
+        Date = c("2021-09-20"),
+        Symbol = c("beta0"),
+        Value = c(0.5),
+        Type = c("rel_orig")
+    )
+
+    test_model <- make_vaccination_model(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = params_timevar,
+        step_args = list(do_hazard = TRUE)
+    )
+
+    tmb_strt = Sys.time()
+    tmb_sim <- run_sim(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        condense = FALSE,
+        params_timevar = params_timevar,
+        step_args = list(do_hazard = TRUE),
+        flexmodel = test_model,
+        use_flex = TRUE
+    )
+    tmb_nd = Sys.time()
+    r_strt = Sys.time()
+    r_sim = run_sim(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = params_timevar,
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE)
+    )
+    r_nd = Sys.time()
+    tmb_speed = as.numeric(tmb_nd - tmb_strt)
+    r_speed = as.numeric(r_nd - r_strt)
+    print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
+    expect_lt(tmb_speed, r_speed)
+    compare_sims(r_sim, tmb_sim)
+})
+
+
+test_that("time-varying parameters can be used with a vaccination model", {
+
+    options(macpan_pfun_method = "grep")
+    params <- read_params("ICU1.csv")
+    state <- make_state(params = params)
+    vax_params <- expand_params_vax(
+        params = params,
+        model_type = "twodose"
+    )
+    vax_state <- expand_state_vax(
+        x = state,
+        model_type = "twodose",
+        unif = FALSE
+    )
+
+    params_timevar = data.frame(
+        Date = c("2021-09-20"),
+        Symbol = c('vax_prop_first_dose'),
+        Value = c(0.5),
+        Type = c("rel_orig")
+    )
+
+    test_model <- make_vaccination_model(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = params_timevar,
+        step_args = list(do_hazard = TRUE)
+    )
+
+    tmb_strt = Sys.time()
+    tmb_sim <- run_sim(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        condense = FALSE,
+        params_timevar = params_timevar,
+        step_args = list(do_hazard = TRUE),
+        flexmodel = test_model,
+        use_flex = TRUE
+    )
+    tmb_nd = Sys.time()
+    r_strt = Sys.time()
+    r_sim = run_sim(
+        params = vax_params, state = vax_state,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = params_timevar,
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE)
+    )
+    r_nd = Sys.time()
+    tmb_speed = as.numeric(tmb_nd - tmb_strt)
+    r_speed = as.numeric(r_nd - r_strt)
+    print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
+    expect_lt(tmb_speed, r_speed)
+    compare_sims(r_sim, tmb_sim)
+})

@@ -384,3 +384,26 @@ ratemat_indices <- function(rates, state_params) {
   )
   return(indices)
 }
+
+
+# retrieving information from tmb objective function --------------
+
+#' @export
+simulate_changing_ratemat_elements = function(model) {
+  updateidx = model$tmb_indices$updateidx
+  ratemat_elements =
+    matrix(tmb_fun(model)$simulate()$concatenated_ratemat_nonzeros,
+           nrow = model$iters + 1L,
+           ncol = length(updateidx),
+           byrow = TRUE)
+  colnames(ratemat_elements) = names(updateidx)
+  as.data.frame(ratemat_elements)
+}
+
+#' @export
+simulate_state_vector = function(model) {
+  matrix(tmb_fun(model)$simulate()$concatenated_state_vector,
+         nrow = model$iters + 1L,
+         ncol = length(model$state),
+         byrow = TRUE) %>% as.data.frame %>% setNames(names(model$state))
+}

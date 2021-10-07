@@ -84,7 +84,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        if (x != 0) {
+        if (x > 1e-5) {
           x = 1/x;
         }
       prod *= x;
@@ -127,7 +127,7 @@ void update_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
-        if (x != 0) {
+        if (x > 1e-5) {
           x = 1/x;
         }
       prod *= x;
@@ -212,15 +212,17 @@ void update_sum_in_sp(
     const vector<int>& sumcount,
     const vector<int>& summandidx)
 {
+  int start = 0;
   for (int i=0; i<sumidx.size(); i++) {
     int idx = sumidx[i] - 1;
     sp[idx] = 0.0;
 
-    int start = 0;
     for (int j=start; j<start+sumcount[i]; j++) {
       sp[idx] += sp[summandidx[j]-1];
     }
     start += sumcount[i];
+    //std::cout << "idx = " << idx << std::endl;
+    //std::cout << "sp = " << sp[idx] << std::endl;
   }
 }
 
@@ -331,13 +333,17 @@ Type objective_function<Type>::operator() ()
     // expressions of other state variables and parameters
 
     update_sum_in_sp(sp, sumidx, sumcount, summandidx);
+    //for (int j=0; j<sumidx.size(); j++) {
+    //  std::cout << j << " idx = " << sumidx[j] << " sum = " << sp[sumidx[j]-1] << std::endl;
+    //}
+    //std::cout << "sp_110 = " << sp[110] << std::endl;
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
 
-    // Update vectors "concatenated_*"
+    // concatenate state vectors at each time step so they can be returned
     concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
 
+    // concatenate changing rate matrix elements at each time step so they can be returned
     int offset = (i+1)*updateidx.size();
-
     for (int j=0; j<updateidx.size(); j++) {
       int idx = updateidx[j] - 1;
       int row = from[idx] - 1;
