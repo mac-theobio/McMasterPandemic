@@ -101,4 +101,18 @@ test_that("predict", {
     expect_equal(length(attr(pp3, "imp_wts")), 10)
 })
 
+test_that("plot.pansim works for simplest case", {
+    res <- run_sim(params = read_params("PHAC.csv"))
+    p <- plot(res)
+    expect_s3_class(p, "ggplot")
+})
+
+test_that("plot.pansim works with disaggregated subcategories (e.g. age, vax)", {
+    options(macpan_pfun_method = "grep")
+    res <- run_sim(params = expand_params_vax(read_params("PHAC.csv")),
+                   condense_args = list(keep_all = TRUE))
+    p <- plot(res)
+    expect_s3_class(p, "ggplot")
+})
+
 ## FIXME:

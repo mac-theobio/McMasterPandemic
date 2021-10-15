@@ -230,7 +230,7 @@ plot_res_by_state <- function(res, drop_states = NULL,
 ##' @param log_lwr lower bound for log scale
 ##' @param show_times indicate times when parameters changed?
 ##' @param ... additional arguments to \code{\link{condense.pansim}}
-##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
+##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon facet_grid
 ##' @importFrom dplyr one_of
 ##' @return a \code{\link[ggplot2]{ggplot}} object
 ##' @export
@@ -263,7 +263,7 @@ plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incide
     ptv <- attr(x, "params_timevar")
     vax <- !is_condensed(x) && has_vax(x)
 
-    epi_cat <- if(is_condensed(x)) {setdiff(names(x), c("date"))} else {unique(sub("_.*$", "", names(vax_sim_full)))}
+    epi_cat <- if(is_condensed(x)) {setdiff(names(x), c("date"))} else {unique(sub("_.*$", "", names(x)))}
 
     if (!is.null(keep_states)) {
         drop_states <- setdiff(epi_cat, c(keep_states, "date"))
