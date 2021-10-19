@@ -1021,7 +1021,7 @@ run_sim <- function(params,
             warning("dropped switch times on final day")
             switch_times <- switch_times[switch_times < length(date_vec)]
         }
-    } ## steps
+    } ## set up timevars data frame properly
 
     ## no time-varying parameters at all
     if (is.null(switch_times)) {
@@ -1043,6 +1043,7 @@ run_sim <- function(params,
     } else {
       ## time-varying parameters
       rescale_params <- function(params_timevar, j_vec) {
+
         ## shortcut for determining previous param value to modify;
         ## looks in environment of rescale_params() for all variables
         get_old_param <- function(j) {
@@ -1052,6 +1053,7 @@ run_sim <- function(params,
                  stop("unknown time_params type ", Type[j])
                  )
         }
+
         report_change <- function(j) {
           if (verbose) {
             cat(sprintf(
@@ -1064,11 +1066,13 @@ run_sim <- function(params,
 
         ## figure out what's actually changing
         unpack(params_timevar[j_vec,]) ## 'attach' Symbol, Value, Type
+
         ## does each row refer to an element within a vector (list element),
         ##  e.g. the transmission rate for a particular age class?
         vector_element_changes <- grepl("\\.", Symbol)
         ## first make all of the full-element changes (params is still a list)
-        for (j in j_vec[!vector_element_changes]) {
+        ## j index goes by elements of *sub-vector* j_vec (not full params_timevar index)
+        for (j in seq_along(Symbol)[!vector_element_changes]) {
           if (Symbol[j] == "proc_disp") {
             state <- round(state)
           }
@@ -1082,16 +1086,15 @@ run_sim <- function(params,
           skel <- params
           params <- unlist(params)
           if (any(Type == "rel_prev")) params0 <- unlist(params0)
-          for (j in j_vec[vector_element_changes]) {
+          for (j in seq_along(Symbol)[vector_element_changes]) {
             params[[Symbol[j]]] <- get_old_param(j) * Value[j]
             report_change(j)
           }
           ## now relist
           params <- relist(params, skel)
         }
-        return(params = params, state = state)
+        return(list(params = params, state = state))
       }
-
 
       t_cur <- 1
       ## want to *include* end date
@@ -1103,19 +1106,20 @@ run_sim <- function(params,
       for (i in seq(length(times) - 1)) {
 
         ## change all parameters
-        j_vec = which(switch_times == times[i])
-        rr <- rescale_params(params_timevar, j_vec)
-        params <- rr$params
-        state <- rr$state
-        if (!all(grepl("beta0",params_timevar[j_vec, "Symbol"]))) {
-          ## changed a parameter other than beta;
-          ## can't rely on update_foi() to do this automatically
-          M <- make_M()
+        j_vec <- which(switch_times == times[i])
+        if (length(j_vec)>0) {
+          rr <- rescale_params(params_timevar, j_vec)
+          params <- rr$params
+          state <- rr$state
+          if (!all(grepl("beta0",params_timevar[j_vec, "Symbol"]))) {
+            ## changed a parameter other than beta;
+            ## can't rely on update_foi() to do this automatically
+            M <- make_M()
+          }
         }
-      }
 
-      resList[[i]] <- drop_last(
-                thin(
+        resList[[i]] <- drop_last(
+            thin(
                     ndt = ndt,
                     do.call(
                         run_sim_range,
@@ -1131,19 +1135,23 @@ run_sim <- function(params,
                         )
                     )
                 )
-            )
-            state <- attr(resList[[i]], "state")
-            t_cur <- times[i]
-        }
+        )
+        state <- attr(resList[[i]], "state")
+        t_cur <- times[i]
+
         ## combine
         res <- do.call(rbind, resList)
         ## add last row
         ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
-    }
+
+      } ## end loop over i
+    } ## time-varying params case
+
     ## drop internal stuff
     ## res <- res[,setdiff(names(res),c("t","foi"))]
     res <- dfs(date = seq(start_date, end_date, by = dt), res)
     res <- res[, !names(res) %in% "t"] ## we never want the internal time vector
+
     ## condense here
     if (condense) {
         ## FIXME: will it break anything if we call condense with 'params'
@@ -1213,8 +1221,7 @@ run_sim <- function(params,
             "End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ",
             paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
         )
-    }
-    else if (isTRUE(any(res[state_names] < 0))) {
+    } else if (isTRUE(any(res[state_names] < 0))) {
         state_vars <- (res %>% select(state_names))
         below_zero_lines <- (rowSums(state_vars < 0) > 0)
 
