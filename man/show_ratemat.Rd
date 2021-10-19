@@ -49,6 +49,8 @@ show_ratemat(
 
 \item{const_width}{set flows to constant value of 1?}
 
+\item{colorkey}{(logical) include color key? (by default, \code{!const_width})}
+
 \item{colour_palette}{vector of colours for rate matrix heatmap}
 
 \item{do_symbols}{plot symbolic values for flows?}

@@ -241,8 +241,9 @@ plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incide
                         log = FALSE,
                         log_lwr = 1,
                         show_times = TRUE, ...) {
-    ## global variables
-    var <- value <- NULL
+  ## global variables
+  ## where() is awful: https://github.com/r-lib/tidyselect/issues/201
+  var <- value <- vax_cat <- . <- where <- NULL
 
     ## if age-structured, use a different plotting method
     if (has_age(x)) {

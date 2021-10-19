@@ -25,7 +25,7 @@ distribute_counts <- function(total, dist) {
 
 ##' collapse (non-accumulator) states into subcategories (ages, vax status)
 ##' @param x a state vector or data frame (each row is a different time point)
-##' @param values_only just return values (unlisted and unnamed?)
+##' @param return_type what to return?
 ##' @importFrom dplyr matches
 ##' @export
 ##' @return a tibble of counts aggregated across epidemiological states

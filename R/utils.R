@@ -663,6 +663,7 @@ has_report <- function(x) "report" %in% names(x)
 ##' @param block_size numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments
 ##' @param block_col (numeric vector, of length 1 or length(block_size)
 ##' @param const_width set flows to constant value of 1?
+##' @param colorkey (logical) include color key? (by default, \code{!const_width})
 ##' @param colour_palette vector of colours for rate matrix heatmap
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?

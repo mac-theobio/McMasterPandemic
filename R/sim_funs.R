@@ -892,6 +892,7 @@ deprecate_timepars_warning <- FALSE
 ##' res3_Sz <- update(res1_S, params=paramsSz)
 ##' plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 ##' @importFrom stats rnbinom na.exclude napredict
+##' @importFrom utils relist
 ##' @param verbose print messages (e.g. about time-varying parameters)?
 ##' @export
 ## FIXME: automate state construction better
@@ -1064,6 +1065,7 @@ run_sim <- function(params,
           }
         }
 
+        Symbol <- Value <- Type <- NULL ## defeat static code check
         ## figure out what's actually changing
         unpack(params_timevar[j_vec,]) ## 'attach' Symbol, Value, Type
 

@@ -9,7 +9,7 @@ condense_state(x, return_type = c("tibble", "named_vector", "unnamed_vector"))
 \arguments{
 \item{x}{a state vector or data frame (each row is a different time point)}
 
-\item{values_only}{just return values (unlisted and unnamed?)}
+\item{return_type}{what to return?}
 }
 \value{
 a tibble of counts aggregated across epidemiological states
