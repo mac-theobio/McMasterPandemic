@@ -1023,6 +1023,7 @@ run_sim <- function(params,
         }
     } ## steps
 
+    ## no time-varying parameters at all
     if (is.null(switch_times)) {
         res <- thin(
             ndt = ndt,
@@ -1040,48 +1041,80 @@ run_sim <- function(params,
             )
         )
     } else {
-        t_cur <- 1
-        ## want to *include* end date
-        switch_times <- switch_times + 1
-        ## add beginning and ending time
-        times <- c(1, unique(switch_times), nt + 1)
-        resList <- list()
-        ## for switch time indices
-        for (i in seq(length(times) - 1)) {
-            recompute_M <- FALSE
-            for (j in which(switch_times == times[i])) {
-                ## reset all changing params
-                s <- params_timevar[j, "Symbol"]
-                v <- params_timevar[j, "Value"]
-                t <- params_timevar[j, "Type"]
-                old_param <- switch(t,
-                    ## this should work even if params0[[s]] is a vector
-                    rel_orig = params0[[s]],
-                    rel_prev = params[[s]],
-                    stop("unknown time_params type ", t)
-                )
-                params[[s]] <- old_param * v
-                if (s == "proc_disp") {
-                    state <- round(state)
-                }
-                if (verbose) {
-                    cat(sprintf(
-                        "changing value of %s from original %f to %f at time step %d\n",
-                        s, params0[[s]], params[[s]], i
-                    ))
-                }
+      ## time-varying parameters
+      rescale_params <- function(params_timevar, j_vec) {
+        ## shortcut for determining previous param value to modify;
+        ## looks in environment of rescale_params() for all variables
+        get_old_param <- function(j) {
+          switch(Type[j],
+                 rel_orig = params0[[Symbol[j]]],
+                 rel_prev = params[[Symbol[j]]],
+                 stop("unknown time_params type ", Type[j])
+                 )
+        }
+        report_change <- function(j) {
+          if (verbose) {
+            cat(sprintf(
+                "changing value of %s from original %f to %f at time step %d\n",
+                Symbol[j], params0[[Symbol[j]]], params[[Symbol[j]]], i
+                ## i is taken from several layers up ...
+            ))
+          }
+        }
 
-                if (!s %in% "beta0") { ## also testing rates?
-                    recompute_M <- TRUE
-                }
-                ## FIXME: so far still assuming that params only change foi
-                ## if we change another parameter we will have to recompute M
-            }
-            if (recompute_M) {
-                M <- make_M()
-            }
+        ## figure out what's actually changing
+        unpack(params_timevar[j_vec,]) ## 'attach' Symbol, Value, Type
+        ## does each row refer to an element within a vector (list element),
+        ##  e.g. the transmission rate for a particular age class?
+        vector_element_changes <- grepl("\\.", Symbol)
+        ## first make all of the full-element changes (params is still a list)
+        for (j in j_vec[!vector_element_changes]) {
+          if (Symbol[j] == "proc_disp") {
+            state <- round(state)
+          }
+          params[[Symbol[j]]] <- get_old_param(j) * Value[j]
+          report_change(j)
+        }
+        ## change all of vector elements, after unlisting
+        if (any(vector_element_changes)) {
+          ## at least one parameter to change is a component of a list element:
+          ## unlist everything
+          skel <- params
+          params <- unlist(params)
+          if (any(Type == "rel_prev")) params0 <- unlist(params0)
+          for (j in j_vec[vector_element_changes]) {
+            params[[Symbol[j]]] <- get_old_param(j) * Value[j]
+            report_change(j)
+          }
+          ## now relist
+          params <- relist(params, skel)
+        }
+        return(params = params, state = state)
+      }
 
-            resList[[i]] <- drop_last(
+
+      t_cur <- 1
+      ## want to *include* end date
+      switch_times <- switch_times + 1
+      ## add beginning and ending time
+      times <- c(1, unique(switch_times), nt + 1)
+      resList <- list()
+
+      for (i in seq(length(times) - 1)) {
+
+        ## change all parameters
+        j_vec = which(switch_times == times[i])
+        rr <- rescale_params(params_timevar, j_vec)
+        params <- rr$params
+        state <- rr$state
+        if (!all(grepl("beta0",params_timevar[j_vec, "Symbol"]))) {
+          ## changed a parameter other than beta;
+          ## can't rely on update_foi() to do this automatically
+          M <- make_M()
+        }
+      }
+
+      resList[[i]] <- drop_last(
                 thin(
                     ndt = ndt,
                     do.call(
