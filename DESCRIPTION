@@ -8,7 +8,10 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
-		   person("Matthew So", role="ctb"))
+		   person("Matthew So", role="ctb"),
+                   person("Irena Papst", role="aut"),
+                   person("Steve Walker", role="aut"),
+                   person("Weiguang Guan", role="aut"))
 Depends: R (>= 4.0.0)
 Imports:
 	lattice,
