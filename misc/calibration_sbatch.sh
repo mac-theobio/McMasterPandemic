@@ -6,6 +6,8 @@
 #SBATCH --mem-per-cpu=400M
 module load r/4.1.0
 
-Rscript ont_cal_NelderMead.R
-
-
+loc=$(pwd)
+ssh gra-login1 "cd $loc && git add --all && git commit -am 'calibration sync [skip ci]' && git pull"
+#touch test_file.txt
+Rscript ont_cal_NelderMead.R							
+ssh gra-login1 "cd $loc && bash git_push.sh"

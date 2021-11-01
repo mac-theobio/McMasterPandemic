@@ -1,4 +1,5 @@
 ## This is McMaster pandemic
+## https://github.com/bbolker/McMasterPandemic
 
 current: target
 -include target.mk
@@ -129,6 +130,7 @@ VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 testversion:
 	echo "${VERSION}"
 
+Ignore += McMasterPandemic*.tar.gz
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 ZIPFILE := =$(PACKAGE)_$(VERSION).zip
 
@@ -206,4 +208,3 @@ localstuff:
 
 -include makestuff/git.mk
 -include makestuff/visual.mk
--include makestuff/projdir.mk
