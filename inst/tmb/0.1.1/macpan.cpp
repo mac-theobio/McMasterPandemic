@@ -17,9 +17,8 @@ vector<Type> rowSums(
   vector<Type> result(mat.rows());
 
   for (int i=0; i< mat.rows(); i++)
-    vector<Type> row_i = mat.row(i)
     // here we need to zero out flows
-    result(i) = row_i.sum();
+    result(i) = mat.row(i).sum();
 
   return result;
 }
@@ -261,6 +260,7 @@ struct update_state_functor{
     Eigen::SparseMatrix<Type> ratemat,
     vector<int> par_accum_indices,
     int do_hazard) {
+      std::cout << "here in the constructor...";
       ratemat_ = ratemat;
       par_accum_indices_ = par_accum_indices;
       do_hazard_ = do_hazard;
@@ -269,18 +269,20 @@ struct update_state_functor{
 
   template <typename T>
   vector<T> operator()(vector<T> state_) {
-    // 1 transorm state from vector<T> to vector<Type>
+    // 1 transform state from vector<T> to vector<Type>
     int n = state_.size();
     vector<Type> st(n);
-    for(int i=0; i<n; i++) 
+    for(int i=0; i<n; i++)
        st[i] = CppAD::Value((AD<Type>)state_[i]);
 
     // 2 do all the calculations in Type
     vector<Type> updated_state = do_step(st, ratemat_, par_accum_indices_, do_hazard_);
-    //return updated_state;
 
-    // 3 transorm final result from vector<Type> back to vector<T>
-    return (CppAD::vector<T>(updated_state));
+    // 3 transform final result from vector<Type> back to vector<T>
+    CppAD::vector<T> xx = CppAD::vector<T>(updated_state);
+    std::cout << "here in the functor..." << updated_state.coeff(0) << "..." << xx[0];
+    //return updated_state;
+    return (xx);
   }
 
 };
@@ -318,6 +320,7 @@ Type objective_function<Type>::operator() ()
 
   PARAMETER_VECTOR(params);
 
+  std::cout << "here in the objective function...";
   // state = make_state(params);
 
   //std::cout << "breaks = " << breaks << std::endl;
