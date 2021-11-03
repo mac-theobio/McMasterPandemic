@@ -110,7 +110,7 @@ dtest:
 lpackage:
 	R CMD INSTALL .
 
-package: 
+package:
 	sudo R CMD INSTALL .
 
 newpackage: pull package
@@ -122,7 +122,7 @@ newpackage: pull package
 R=R
 # -> you can do    R=R-devel  make ....
 PACKAGE=McMasterPandemic
-# get VERSION from glmmTMB/DESCRIPTION  
+# get VERSION from glmmTMB/DESCRIPTION
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
 VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
 SPECVERSION := $(shell cat inst/tmb/recommended_spec_version)
@@ -160,14 +160,16 @@ src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 
 vignettes/flex_specs.html: vignettes/flex_specs.rmd
 	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
-	
+
+cleanobjects:
+	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so
 
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
 CPP_SRC=
 
-dependencies:	
+dependencies:
 	Rscript misc/dependencies.R
 
 ## FIXME: depend on ??
@@ -187,7 +189,7 @@ install: $(TARBALL)
 
 ## Looks cool; clashes with current Bolker rules.
 Ignore += maker
-maker: 
+maker:
 	git clone https://github.com/ComputationalProteomicsUnit/maker.git
 ## -include maker/Makefile
 
@@ -212,7 +214,7 @@ makestuff/Makefile:
 	git clone $(msrepo)/makestuff
 	ls $@
 
-localstuff: 
+localstuff:
 	ln -s ../makestuff .
 	ls $@
 
