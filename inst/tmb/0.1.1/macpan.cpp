@@ -267,11 +267,20 @@ struct update_state_functor{
 
   }
 
-  // template <class T>
-  vector<Type> operator()(vector<Type> state_) {
-    vector<Type> updated_state(state_.size());
-    updated_state = do_step(state_, ratemat_, par_accum_indices_, do_hazard_);
-    return updated_state;
+  template <typename T>
+  vector<T> operator()(vector<T> state_) {
+    // 1 transorm state from vector<T> to vector<Type>
+    int n = state_.size();
+    vector<Type> st(n);
+    for(int i=0; i<n; i++) 
+       st[i] = CppAD::Value((AD<Type>)state_[i]);
+
+    // 2 do all the calculations in Type
+    vector<Type> updated_state = do_step(st, ratemat_, par_accum_indices_, do_hazard_);
+    //return updated_state;
+
+    // 3 transorm final result from vector<Type> back to vector<T>
+    return (CppAD::vector<T>(updated_state));
   }
 
 };
