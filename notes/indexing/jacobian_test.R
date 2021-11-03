@@ -15,8 +15,9 @@ start_date = "2021-05-10"
 end_date = "2021-12-10"
 model <- make_base_model(
   params, state,
-  start_date = start_date, end_date = end_date,
-  step_args = list(do_hazard = TRUE)
+  start_date = start_date, end_date = end_date
 )
+model$do_hazard = FALSE
 report <- tmb_fun(model)$report()
 report$j
+
