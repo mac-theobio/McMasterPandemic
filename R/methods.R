@@ -1122,4 +1122,10 @@ vcov.fit_pansim <- function(object, ...) {
 ##' @export
 is.nan.data.frame <- function(x) {
       do.call(cbind, lapply(x, is.nan))
-  }
+}
+
+##' @export
+print.flexmodel = function(x) {
+    print(rate_summary(x))
+    invisible(x)
+}

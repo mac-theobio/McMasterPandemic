@@ -612,7 +612,7 @@ tmb_fun <- function(model) {
             parameters = list(params = c(params)),
             DLL = DLL
         )
-    } else if (spec_ver_eq("0.1.0")) {
+    } else if (spec_ver_gt("0.0.6")) { # 0.1.0 and up
         unpack(sum_indices)
         dd <- MakeADFun(
             data = list(

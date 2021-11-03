@@ -73,19 +73,18 @@ make_vaccination_model = function(...) {
   (dose_to = c(asymp_cat, rep("V", 5)))
 
   # Specify structure of the force of infection calculation
-  Istate = (McMasterPandemic:::expand_names(
-    c('Ia', 'Ip', 'Im', 'Is'),   # = Icats
-    attr(params, 'vax_cat')) # = vax_cats
-    %>% struc
+  Istate = (c('Ia', 'Ip', 'Im', 'Is')
+    %>% expand_names(vax_cat)
+    %>% vec
   )
   baseline_trans_rates =
-    struc(
+    vec(
       'Ca',
       'Cp',
       '(1 - iso_m) * (Cm)',
       '(1 - iso_s) * (Cs)') *
     struc('(beta0) * (1/N)')
-  vax_trans_red = struc_block(struc(
+  vax_trans_red = struc_block(vec(
     '1',
     '1',
     '(1 - vax_efficacy_dose1)',
@@ -97,10 +96,10 @@ make_vaccination_model = function(...) {
   mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
   sigma   = struc("sigma")
   gamma_p = struc("gamma_p")
-  E_to_Ia_rates  = struc(           alpha ) * sigma
-  E_to_Ip_rates  = struc(complement(alpha)) * sigma
-  Ip_to_Im_rates = struc(              mu ) * gamma_p
-  Ip_to_Is_rates = struc(complement(   mu)) * gamma_p
+  E_to_Ia_rates  = vec(           alpha ) * sigma
+  E_to_Ip_rates  = vec(complement(alpha)) * sigma
+  Ip_to_Im_rates = vec(              mu ) * gamma_p
+  Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
 
   (init_model(...)

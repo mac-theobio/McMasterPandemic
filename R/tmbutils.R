@@ -196,9 +196,9 @@ rate_summary = function(model) {
   data.frame(
     from = get_rate_info(model, "from") %>% unlist,
     to = get_rate_info(model, "to") %>% unlist,
-    n_factors = get_n_factors(model) %>% unlist,
-    n_products = get_n_products(model) %>% unlist,
-    n_variables = get_n_variables(model) %>% unlist,
+    n_fctrs = get_n_factors(model) %>% unlist,
+    n_prdcts = get_n_products(model) %>% unlist,
+    n_vrbls = get_n_variables(model) %>% unlist,
     state_dependent = get_rate_info(model, "state_dependent") %>% unlist,
     time_varying = get_rate_info(model, "time_varying") %>% unlist,
     sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
@@ -406,4 +406,52 @@ simulate_state_vector = function(model) {
          nrow = model$iters + 1L,
          ncol = length(model$state),
          byrow = TRUE) %>% as.data.frame %>% setNames(names(model$state))
+}
+
+
+
+# benchmarking and comparison in tests
+
+#' Compare TMB-based and classic MacPan Simulations
+#'
+#' Exceptions to drop-in replacement:
+#' 1. don't require that the attributes are in the same order
+#' 2. don't require that the r version returns everything that the tmb
+#'    version does (e.g. flexmodel)
+#' 3. don't require that the row.names are identical (is this ok?
+#'    the r version counts iterations with skips, but is this informative?)
+#' 4. don't require that the call is identical (obvious i guess, but
+#'    being exhaustive)
+#'
+#' @param classic_sim result of `run_sim` without using TMB
+#' @param tmb_sim result of `run_sim` using TMB
+#' @export
+compare_sims = function(classic_sim, tmb_sim) {
+  attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
+  attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
+  for(a in names(attributes(classic_sim))) {
+    expect_equal(attr(tmb_sim, a), attr(classic_sim, a))
+  }
+
+  attributes(classic_sim) <- attributes(tmb_sim) <- NULL
+  expect_equal(tmb_sim, classic_sim)
+  TRUE
+}
+
+
+#' @export
+time_wrap = function(expr1, expr2, units = 'secs') {
+  e = parent.frame()
+
+  strt1 = Sys.time()
+  eval(expr1, e)
+  nd1 = Sys.time()
+  dff1 = difftime(nd1, strt1, units = units)
+
+  strt2 = Sys.time()
+  eval(expr2, e)
+  nd2 = Sys.time()
+  dff2 = difftime(nd2, strt2, units = units)
+
+  list(dff1, dff2, as.numeric(dff2)/as.numeric(dff1))
 }
