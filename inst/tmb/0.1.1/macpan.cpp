@@ -248,43 +248,41 @@ vector<Type> do_step(
   return state;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Define Functor for jacobian
+
 template <class Type>
 struct update_state_functor{
-
+  // Data members
   Eigen::SparseMatrix<Type> ratemat_;
   vector<int> par_accum_indices_;
   int do_hazard_;
 
-  // constructor
+  // Constructor
   update_state_functor(
     Eigen::SparseMatrix<Type> ratemat,
     vector<int> par_accum_indices,
-    int do_hazard) {
-      // std::cout << "here in the constructor...";
+    int do_hazard) 
+  {
       ratemat_ = ratemat;
       par_accum_indices_ = par_accum_indices;
       do_hazard_ = do_hazard;
-
   }
 
+  // The function itself
   template <typename T>
-  vector<T> operator()(vector<T> state_) {
-    // 1 transform state from vector<T> to vector<Type>
-    int n = state_.size();
-    vector<Type> st(n);
-    for(int i=0; i<n; i++)
-       st[i] = CppAD::Value((AD<Type>)state_[i]);
+  vector<T> operator()(vector<T> state_) 
+  {
+    // 1 convert from Type to T
+    Eigen::SparseMatrix<T> ratemat;
+    ratemat = ratemat_.template cast<T>();
 
-    // 2 do all the calculations in Type
-    vector<Type> updated_state = do_step(st, ratemat_, par_accum_indices_, do_hazard_);
+    // 2 do all the calculations in T
+    vector<T> updated_state = do_step(state_, ratemat, par_accum_indices_, do_hazard_);
+    //std::cout << "updated_state = " << updated_state << std::endl;
 
-    // 3 transform final result from vector<Type> back to vector<T>
-    CppAD::vector<T> xx = CppAD::vector<T>(updated_state);
-    // std::cout << "here in the functor..." << updated_state.coeff(0) << "..." << xx[0];
-    //return updated_state;
-    return (xx);
+    return (updated_state);
   }
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -369,8 +367,16 @@ Type objective_function<Type>::operator() ()
   }
 
   // Calculate jacobian
+  //std::cout << ratemat << std::endl;
+  //std::cout << par_accum_indices << std::endl;
+  //std::cout << do_hazard << std::endl;
+  //std::cout << state << std::endl;
+
   update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
   matrix<Type> j = autodiff::jacobian(f, state);
+
+  //std::cout << "result j = " << std::endl << j << std::endl;
+
   REPORT(j);
 
   int nextBreak = 0;
