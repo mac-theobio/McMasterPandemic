@@ -260,7 +260,7 @@ struct update_state_functor{
     Eigen::SparseMatrix<Type> ratemat,
     vector<int> par_accum_indices,
     int do_hazard) {
-      std::cout << "here in the constructor...";
+      // std::cout << "here in the constructor...";
       ratemat_ = ratemat;
       par_accum_indices_ = par_accum_indices;
       do_hazard_ = do_hazard;
@@ -280,7 +280,7 @@ struct update_state_functor{
 
     // 3 transform final result from vector<Type> back to vector<T>
     CppAD::vector<T> xx = CppAD::vector<T>(updated_state);
-    std::cout << "here in the functor..." << updated_state.coeff(0) << "..." << xx[0];
+    // std::cout << "here in the functor..." << updated_state.coeff(0) << "..." << xx[0];
     //return updated_state;
     return (xx);
   }
@@ -320,7 +320,7 @@ Type objective_function<Type>::operator() ()
 
   PARAMETER_VECTOR(params);
 
-  std::cout << "here in the objective function...";
+  // std::cout << "here in the objective function...";
   // state = make_state(params);
 
   //std::cout << "breaks = " << breaks << std::endl;
