@@ -17,7 +17,9 @@ vector<Type> rowSums(
   vector<Type> result(mat.rows());
 
   for (int i=0; i< mat.rows(); i++)
-    result(i) = mat.row(i).sum();
+    vector<Type> row_i = mat.row(i)
+    // here we need to zero out flows
+    result(i) = row_i.sum();
 
   return result;
 }
@@ -47,8 +49,11 @@ void remove_cols(
   Type* valPtr = mat.valuePtr();
   int* outPtr = mat.outerIndexPtr();
 
+  // loop over columns to zero-out
   for (int j= 0; j<indices_to_remove.size(); j++) {
     int jj = indices_to_remove[j] - 1;
+
+    // loop over all rows in the current column
     for (int i= outPtr[jj]; i<outPtr[jj+1]; i++) {
       valPtr[i] = 0.0;
     }
@@ -237,7 +242,6 @@ vector<Type> do_step(
 {
   // Calculate flow matrix
   Eigen::SparseMatrix<Type> flows = calc_flowmat(ratemat, state, do_hazard);
-
   vector<Type> inflow = colSums(flows);
   remove_cols(flows, par_accum_indices);
   vector<Type> outflow = rowSums(flows); // remove some columns before doing so
