@@ -2,7 +2,7 @@ library(McMasterPandemic)
 library(tools)
 library(dplyr)
 
-cpp <- file.path("inst/tmb/0.1.1", "macpan.cpp")
+cpp <- file.path("../../inst/tmb/0.1.1", "macpan.cpp")
 dll <- file_path_sans_ext(cpp)
 options(MP_flex_spec_dll = basename(dll))
 
