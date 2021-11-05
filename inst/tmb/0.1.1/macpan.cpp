@@ -254,28 +254,62 @@ vector<Type> do_step(
 template <class Type>
 struct update_state_functor{
   // Data members
-  Eigen::SparseMatrix<Type> ratemat_;
+  vector<Type> params_;
+  vector<int> from_;
+  vector<int> to_;
+  vector<int> count_;
+  vector<int> spi_;
+  vector<int> modifier_;
+  vector<int> sumidx_;
+  vector<int> sumcount_;
+  vector<int> summandidx_;
   vector<int> par_accum_indices_;
   int do_hazard_;
 
   // Constructor
   update_state_functor(
-    Eigen::SparseMatrix<Type> ratemat,
+    vector<Type> params,
+    vector<int> from,
+    vector<int> to,
+    vector<int> count,
+    vector<int> spi,
+    vector<int> modifier,
+    vector<int> sumidx,
+    vector<int> sumcount,
+    vector<int> summandidx,
     vector<int> par_accum_indices,
-    int do_hazard) 
+    int do_hazard) : params_(params), from_(from), to_(to), count_(count), 
+                     spi_(spi), modifier_(modifier), sumidx_(sumidx), sumcount_(sumcount), 
+                     summandidx_(summandidx), par_accum_indices_(par_accum_indices), 
+                     do_hazard_(do_hazard)
   {
-      ratemat_ = ratemat;
-      par_accum_indices_ = par_accum_indices;
-      do_hazard_ = do_hazard;
   }
 
   // The function itself
   template <typename T>
   vector<T> operator()(vector<T> state_) 
   {
+    // Convert params_ from Type to T
+    int n = params_.size();
+    vector<T> params(n);
+    for (int i=0; i<n; i++)
+       params[i] = (T) params_[i];
+
+    // Concatenate state and params
+    vector<T> sp(state_.size()+params.size()+sumidx_.size());
+    vector<T> place_holder(sumidx_.size());
+    sp << state_, params, place_holder;
+
+    update_sum_in_sp(sp, sumidx_, sumcount_, summandidx_);
+
+    // We've got everything we need, lets do the job ...
+    Eigen::SparseMatrix<T> ratemat = make_ratemat(state_.size(), sp, from_, to_, count_, spi_, modifier_);
+
+
+
     // 1 convert from Type to T
-    Eigen::SparseMatrix<T> ratemat;
-    ratemat = ratemat_.template cast<T>();
+    //Eigen::SparseMatrix<T> ratemat;
+    //ratemat = ratemat_.template cast<T>();
 
     // 2 do all the calculations in T
     vector<T> updated_state = do_step(state_, ratemat, par_accum_indices_, do_hazard_);
@@ -372,7 +406,10 @@ Type objective_function<Type>::operator() ()
   //std::cout << do_hazard << std::endl;
   //std::cout << state << std::endl;
 
-  update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
+  //update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
+  update_state_functor<Type> f(params, from, to, count, spi, modifier, 
+                               sumidx, sumcount, summandidx, par_accum_indices, do_hazard);
+ 
   matrix<Type> j = autodiff::jacobian(f, state);
 
   //std::cout << "result j = " << std::endl << j << std::endl;
@@ -422,6 +459,7 @@ Type objective_function<Type>::operator() ()
     // expressions of other state variables and parameters
 
     update_sum_in_sp(sp, sumidx, sumcount, summandidx);
+
     //for (int j=0; j<sumidx.size(); j++) {
     //  std::cout << j << " idx = " << sumidx[j] << " sum = " << sp[sumidx[j]-1] << std::endl;
     //}
