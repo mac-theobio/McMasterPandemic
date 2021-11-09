@@ -36,9 +36,8 @@ Ni <- 1e6
 Nvec <- rep(Ni, n)
 
 ## set up base (non-ageified) params and state
-base_params <- update(read_params("PHAC_testify.csv")
+base_params <- update(read_params("PHAC.csv")
                       , N = sum(Nvec)
-                      , testing_intensity = 0
                       , beta0 = 2
                       )
 base_state <- make_state(N = base_params[["N"]],
