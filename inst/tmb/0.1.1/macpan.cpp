@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <TMB.hpp>
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function rowSums
 template<class Type>
@@ -21,6 +20,75 @@ vector<Type> rowSums(
     result(i) = mat.row(i).sum();
 
   return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper function Norm
+template<class Type>
+Type Norm(
+    const vector<Type>& vec
+)
+{
+  Type w = 0.0;
+  for (int j=0; j<vec.size(); j++)
+     w += vec(j)*vec(j);
+
+  return sqrt(w);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper function CalcEigenVector
+template<class Type>
+vector<Type> CalcEigenVector(
+    const matrix<Type>& jacobian,
+    const vector<Type>& state,
+    int iterations = 800,
+    Type tolerance = 0.001)
+{
+  int n = state.size();
+
+  //std::cout<< "n = " << n << std::endl;
+  //std::cout<< "jacob = " << jacobian.rows() << ", " << jacobian.cols() << std::endl;
+  //std::cout<< "state = " << state.rows() << ", " << state.cols() << std::endl;
+
+  // Remove first and last two rows and columns from jacobian matrix and state vector
+  matrix<Type> mat = jacobian.block(1, 1, n-3, n-3);
+  vector<Type> vec = state.block(1, 0, n-3, 1); 
+  vector<Type> prevec(1);
+
+  //std::cout<< "mat = " << mat << std::endl;
+  //std::cout<< "vec 1 = " << vec << std::endl;
+
+  int i;
+  vector<Type> diff;
+
+  for (i=0; i<iterations; i++) {
+    vec = mat*vec;
+    vec /= Norm(vec);
+
+    if (i%50==0) {
+      //std::cout << "======================= " << i << std::endl; 
+      if (prevec.size() != vec.size()) {
+        prevec = vec;
+      }
+      else {  
+        diff = vec-prevec;
+
+        if (Norm(diff) < tolerance) {
+          //std::cout<< "diff = " << diff << std::endl;
+          break;
+        }
+        else
+          prevec = vec;
+      }
+    }
+  }
+  std::cout << "==== Stop iteration at " << i << std::endl;
+          std::cout<< "====pre vec = " << prevec << std::endl;
+          std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
+          std::cout<< "====diff = " << diff << std::endl;
+ 
+  return vec;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -385,6 +453,7 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
+
   int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
@@ -412,9 +481,41 @@ Type objective_function<Type>::operator() ()
  
   matrix<Type> j = autodiff::jacobian(f, state);
 
-  //std::cout << "result j = " << std::endl << j << std::endl;
+  //j = matrix<Type>::Random(3,3);
+  vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
 
+//  Eigen::EigenSolver<Eigen::MatrixXd> es;
+//  Eigen::MatrixXd A = Eigen::MatrixXd::Random(4,4);
+//  es.compute(A, false);
+//  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
+
+  //matrix<double> m = j.template cast<Type>();
+/*
+  matrix<Type> aa(10, 10);
+  Eigen::MatrixXd cc(10, 10);
+
+  std::cout << aa.rows() << aa.cols() << std::endl;
+  double bb = 123.4;
+
+  aa(0,1) = bb;
+  //bb = CppAD::Value(CppAD::Var2Par((AD<Type>) aa(0,1)));
+  cc(0,1) = CppAD::Value(CppAD::Var2Par((AD<Type>) aa(0,1)));
+
+  cc(0,1) = bb;
+  bb = cc(0,1);
+
+  //cc = aa.template cast<double>();
+
+  Eigen::EigenSolver<matrix<Type>> es;
+  //matrix<Type> A = matrix<Type>::random(4,4);
+  //es.compute(j, false);
+  //std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
+
+  std::cout << "result j = " << std::endl << j << std::endl;
+  std::cout << j.coeff(0, 0) << std::endl;
+*/
   REPORT(j);
+  REPORT(eigenvec);
 
   int nextBreak = 0;
   int start = 0;
