@@ -18,3 +18,5 @@ model <- make_base_model(
   start_date = start_date, end_date = end_date
 )
 model$do_hazard = FALSE
+model$tmb_indices$outflow
+model$tmb_indices$linearized_outflow
