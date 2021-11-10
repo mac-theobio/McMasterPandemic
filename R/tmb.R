@@ -143,6 +143,18 @@ init_model <- function(params, state, struc = NULL,
         model$sum_vector = numeric(0L)
     }
 
+    if (spec_ver_eq("0.1.1")) {
+        model$disease_free = list(
+            params = list(),
+            state = list(
+                simple = list(),
+                state_mappings = list()
+            )
+        )
+        model$outflow = list()
+        model$linearized_outflow = list()
+    }
+
     model$tmb_indices <- list(
         make_ratemat_indices = list(
             from = integer(0L),
@@ -300,7 +312,6 @@ rep_rate = function(model, from, to, formula,
         stop("indices must be a matrix with columns from_pos and to_pos")
     }
 
-
     if(!inherits(formula, "formula")) {
         if(!inherits(formula, "character")) {
             stop("formula must be either a formula or character object")
@@ -422,13 +433,102 @@ add_parallel_accumulators <- function(model, state_patterns) {
 ##' @export
 parallel_accumulators <- function(model, state_patterns) {
     spec_check(introduced_version = "0.0.2", feature = "Parallel accumulators")
-    (
-        state_patterns
-            %>% lapply(function(x) {
-                grep(x, colnames(model$ratemat), value = TRUE)
-            })
-            %>% unlist()
+    (state_patterns
+        %>% lapply(function(x) {
+            grep(x, colnames(model$ratemat), value = TRUE)
+        })
+        %>% unlist()
     )
+}
+
+##' @family flexmodels
+##' @export
+add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
+    model$linearized_outflow = append(
+        model$linearized_outflow,
+        list(outflow(model, state_patterns, flow_state_patterns)))
+    return(model)
+}
+
+##' @family flexmodels
+##' @export
+add_outflow = function(model, state_patterns, flow_state_patterns) {
+    model$outflow = append(
+        model$outflow,
+        list(outflow(model, state_patterns, flow_state_patterns)))
+    return(model)
+}
+
+##' @family flexmodels
+##' @export
+outflow = function(model, state_patterns, flow_state_patterns) {
+    nlist(state_patterns, flow_state_patterns)
+}
+
+##' @family
+##' @export
+add_eigen_scaler = function(model, state_name) {
+    model$eigen_scaler = state_name
+    model
+}
+
+##' @family flexmodels
+##' @export
+update_disease_free_params = function(model, param_pattern, value) {
+    model$disease_free$params = c(
+        model$disease_free$params,
+        list(disease_free_params(model, param_pattern, value)))
+    return(model)
+}
+
+##' @family flexmodels
+##' @export
+disease_free_params = function(model, param_pattern, value) {
+    spec_check(introduced_version = "0.1.1",
+               feature = "Disease free parameter updates")
+    params_to_update = grep(param_pattern,
+                            names(model$params),
+                            value = TRUE, perl = TRUE)
+    if(length(params_to_update) == 0L)
+        stop("param_pattern does not match any parameters")
+    update_value = value
+    nlist(params_to_update, update_value)
+}
+
+##' @family flexmodels
+##' @export
+update_disease_free_state = function(model, state_pattern, param_pattern) {
+    model$disease_free$state$simple = c(
+        model$disease_free$state$simple,
+        list(disease_free_state(model, state_pattern, param_pattern)))
+    return(model)
+}
+
+##' @family flexmodels
+##' @export
+disease_free_state = function(model, state_pattern, param_pattern) {
+    spec_check(introduced_version = "0.1.1",
+               feature = "Disease free state updates")
+    states_to_update = grep(state_pattern,
+                            names(model$state),
+                            value = TRUE, perl = TRUE)
+    params_to_use = grep(param_pattern,
+                         names(model$params),
+                         value = TRUE, perl = TRUE)
+    if(length(params_to_use) != 1L) {
+        if(length(states_to_update) != length(params_to_use)) {
+            stop("incompatible mapping of parameters to states")
+        }
+    }
+    nlist(states_to_update, params_to_use)
+}
+
+##' @family flexmodels
+##' @export
+add_state_mappings = function(model, eigen_drop_pattern, infected_drop_pattern) {
+    model$disease_free$state$drop_patterns =
+        list(eigen = eigen_drop_pattern, infected = infected_drop_pattern)
+    return(model)
 }
 
 # compute indices and pass them to the tmb/c++ side ---------------------
@@ -451,6 +551,7 @@ add_tmb_indices <- function(model) {
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
+
 
     if (spec_ver_eq("0.1.0")) {
         sp <- c(model$state, model$params, model$sum_vector)
@@ -477,6 +578,12 @@ tmb_indices <- function(model) {
     }
     if (spec_ver_gt("0.0.6")) {
         indices$sum_indices = sum_indices(model$sums, model$state, model$params)
+    }
+    if (spec_ver_eq("0.1.1")) {
+        indices$disease_free = disease_free_indices(model)
+        indices$outflow = outflow_indices(model$outflow, model$ratemat)
+        indices$linearized_outflow = outflow_indices(
+            model$linearized_outflow, model$ratemat)
     }
     return(indices)
 }

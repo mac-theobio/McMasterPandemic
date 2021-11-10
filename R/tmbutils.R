@@ -157,6 +157,7 @@ get_n_products = function(model) {
   (model
    %>% get_rate_info('factors')
    %>% lapply('[[', 'prod_indx')
+   %>% lapply(unique)
    %>% lapply(length)
   )
 }
@@ -191,9 +192,10 @@ get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
 
+##' @param include_formula include a column for the expanded rate formula
 ##' @export
-rate_summary = function(model) {
-  data.frame(
+rate_summary = function(model, include_formula = FALSE) {
+  summary = data.frame(
     from = get_rate_info(model, "from") %>% unlist,
     to = get_rate_info(model, "to") %>% unlist,
     n_fctrs = get_n_factors(model) %>% unlist,
@@ -203,6 +205,15 @@ rate_summary = function(model) {
     time_varying = get_rate_info(model, "time_varying") %>% unlist,
     sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
   )
+  if(include_formula) {
+    summary$formula = (model
+      %>% get_rate_info('formula')
+      # TODO: this probably won't work for structured formulae
+      %>% lapply(getElement, 2L)
+      %>% as.character
+    )
+  }
+  summary
 }
 
 #' @export
@@ -385,6 +396,167 @@ ratemat_indices <- function(rates, state_params) {
   return(indices)
 }
 
+##' @family flexmodels
+##' @export
+state_mapping_indices = function(
+  model,
+  eigen_drop_pattern,
+  infected_drop_pattern) {
+  spec_check(introduced_version = "0.1.1",
+             feature = "Disease free state updates")
+
+  eigen = eigen_drop_pattern
+  infected = infected_drop_pattern
+  all = names(state)
+  index_set = make_nested_indices(all, nlist(eigen, infected), invert = TRUE)
+
+  c(
+    (index_set
+     %>% getElement('i')
+     %>% unlist(recursive = FALSE)
+     %>% setNames(c("all_to_eigen_idx",
+                    "all_to_infected_idx",
+                    "eigen_to_infected_idx"))
+    ),
+    (index_set
+     %>% getElement('j')
+     %>% unlist(recursive = FALSE)
+     %>% setNames(c("all_drop_eigen_idx",
+                    "all_drop_infected_idx",
+                    "eigen_drop_infected_idx"))
+    )
+  )
+}
+
+##' @export
+disease_free_indices = function(model) {
+  unpack(model)
+
+  df_param_vals = (disease_free$params
+   %>% lapply(`[`, 'update_value')
+   %>% unlist(use.names = FALSE)
+  )
+  df_param_count = (disease_free$params
+    %>% lapply(`[`, 'params_to_update')
+    %>% lapply(length)
+    %>% unlist
+  )
+  df_param_idx = (disease_free$params
+    %>% lapply(`[`, 'params_to_update')
+    %>% unlist(use.names = FALSE)
+    %>% find_vec_indices(params)
+  )
+  df_state_par_idx = (disease_free$state$simple
+    %>% lapply(`[`, 'params_to_use')
+    %>% unlist(use.names = FALSE)
+    %>% find_vec_indices(params)
+  )
+  df_state_count = (disease_free$state$simple
+    %>% lapply(`[`, 'states_to_update')
+    %>% lapply(length)
+    %>% unlist
+  )
+  df_state_idx = (disease_free$state$simple
+    %>% lapply(`[`, 'states_to_update')
+    %>% unlist(use.names = FALSE)
+    %>% find_vec_indices(state)
+  )
+  state_mappings = state_mapping_indices(
+    names(state),
+    disease_free$state$drop_patterns$eigen,
+    disease_free$state$drop_patterns$infected)
+
+  eigen_scaler_idx = which(eigen_scaler == names(params))
+
+  nlist(df_param_vals, df_param_count, df_param_idx,
+        df_state_par_idx, df_state_count, df_state_idx,
+        state_mappings, eigen_scaler_idx)
+}
+
+##' @export
+outflow_indices = function(outflow, ratemat) {
+  lapply(outflow, function(o) {
+    list(
+      state = grep(o$state_patterns, rownames(ratemat)),
+      flow = grep(o$flow_state_patterns, colnames(ratemat))
+    )
+  })
+  # TODO: add warning if any state_indices are equal to other state_indices
+  #       that are already added to some other call to outflow in the model.
+  #       in general state_indices should be mutually exclusive across each
+  #       outflow.
+  #nlist(state_indices, flow_state_indices)
+  #all = names(model$state)
+  #lapply(model$outflow, McMasterPandemic:::make_nested_indices, x = all)
+}
+
+#' Nested Indices
+#'
+#' Create and return a nested set of character vectors from a sequence
+#' of regular expressions, and return indices into each vector for recovering
+#' other shorter vectors that are lower in the hierarchy.
+#'
+#' @section Motivating Example
+#'
+#' There are three nested state vectors
+#' a_states -- all states
+#' p_states -- excludes accumulators
+#' e_states -- includes only infected states
+#'
+#' There are three index vectors
+#' i_ap -- indexes a_states to yield p_states
+#' i_ae -- indexes a_states to yield e_states
+#' i_pe -- indexes p_states to yield e_states
+#'
+#' There are also three inverse index vectors
+#' j_ap -- indexes a_states to yield setdiff(a_states, p_states)
+#' j_ae -- indexes a_states to yield setdiff(a_states, e_states)
+#' j_pe -- indexes p_states to yield setdiff(p_states, e_states)
+#'
+#' In general -- assume that y_states are nested in x_states
+#' i_xy -- indexes x_states to yield y_states
+#' j_xy -- indexes x_states to yeild setdiff(x_states, y_states)
+#' i_yx -- doesn't exist because not all x_states are also y_states
+#'
+#' @param x character vector
+#' @param patterns named list or vector of regular expressions to be applied
+#' sequentially to create a nested set of character vectors
+#' @return List with three elements.
+#' \describe{
+#'   \item{\code{x}}{Nested character vectors.}
+#'   \item{\code{i}}{
+#'     List of lists, with inner list giving the indices into character vectors
+#'     that are higher in the hierarchy. For example, one may read this
+#'     expression, \code{x$e == x$p\\[i$e$p\\]}, as "e equals p at the index
+#'     that takes p to e".
+#'   }
+#'   \item{\code{j}}{Set difference version of \code{i}.}
+#' }
+make_nested_indices = function(x, patterns, invert = FALSE) {
+
+  stopifnot(all(sapply(patterns, is.character)))
+  stopifnot(all(sapply(patterns, length) == 1L))
+  stopifnot(!any(is.null(names(patterns))))
+
+  nms = c(deparse(substitute(x)), names(patterns))
+  x_list = list(x)
+  i_list = j_list = list()
+
+  for(p in seq_along(patterns)) {
+    i_list[[p]] = j_list[[p]] = list()
+    for(v in seq_len(p)) {
+      i_list[[p]][[v]] = grep(patterns[[p]], x_list[[v]], perl = TRUE, invert =  invert)
+      j_list[[p]][[v]] = grep(patterns[[p]], x_list[[v]], perl = TRUE, invert = !invert)
+    }
+    x_list[[p+1]] = x_list[[p]][i_list[[p]][[v]]]
+    names(i_list[[p]]) = names(j_list[[p]]) = nms[1:p]
+  }
+  list(
+    x = setNames(x_list, nms),
+    i = setNames(i_list, nms[-1]),
+    j = setNames(j_list, nms[-1]))
+}
+
 
 # retrieving information from tmb objective function --------------
 
@@ -407,8 +579,6 @@ simulate_state_vector = function(model) {
          ncol = length(model$state),
          byrow = TRUE) %>% as.data.frame %>% setNames(names(model$state))
 }
-
-
 
 # benchmarking and comparison in tests
 

@@ -145,9 +145,15 @@ setMethod('resolve', c(x = 'struc_expanded'),
           function(x) {
             (x
              %>% slot('l')
-             %>% lapply(gsub, pattern = '\\**\\s*\\(1\\)\\s*\\**', replacement = '')
+             %>% lapply(gsub, pattern = '(\\(1\\)\\s*\\*{1}|\\*{1}\\s*\\(1\\))', replacement = '')
              %>% lapply(trimws)
              %>% lapply(function(y) ifelse(y == '', '(1)', y))
+             %>% lapply(sub, pattern = ".*\\(0\\).*", replacement = "(0)")
+             %>% lapply(function(y) {
+               y = y[y != "(0)"]
+               if(length(y) == 0L) y = "(0)"
+               y
+             })
              %>% struc_expanded(d = dim(x))
             )
           })
