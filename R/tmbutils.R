@@ -437,9 +437,9 @@ disease_free_indices = function(model) {
    %>% unlist(use.names = FALSE)
   )
   df_param_count = (disease_free$params
-    %>% lapply(`[`, 'params_to_update')
+    %>% lapply(`[[`, 'params_to_update')
     %>% lapply(length)
-    %>% unlist
+    %>% unlist(use.names = FALSE)
   )
   df_param_idx = (disease_free$params
     %>% lapply(`[`, 'params_to_update')
@@ -452,7 +452,7 @@ disease_free_indices = function(model) {
     %>% find_vec_indices(params)
   )
   df_state_count = (disease_free$state$simple
-    %>% lapply(`[`, 'states_to_update')
+    %>% lapply(`[[`, 'states_to_update')
     %>% lapply(length)
     %>% unlist
   )
