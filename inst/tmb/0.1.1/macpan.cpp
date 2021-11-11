@@ -83,10 +83,10 @@ vector<Type> CalcEigenVector(
       }
     }
   }
-  std::cout << "==== Stop iteration at " << i << std::endl;
-          std::cout<< "====pre vec = " << prevec << std::endl;
-          std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
-          std::cout<< "====diff = " << diff << std::endl;
+  //std::cout << "==== Stop iteration at " << i << std::endl;
+  //        std::cout<< "====pre vec = " << prevec << std::endl;
+  //        std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
+  //        std::cout<< "====diff = " << diff << std::endl;
  
   return vec;
 }
@@ -411,6 +411,16 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(par_accum_indices);
 
+  DATA_IVECTOR(linearized_outflow_row_count);
+  DATA_IVECTOR(linearized_outflow_col_count);
+  DATA_IVECTOR(linearized_outflow_rows);
+  DATA_IVECTOR(linearized_outflow_cols);
+
+  DATA_IVECTOR(outflow_row_count);
+  DATA_IVECTOR(outflow_col_count);
+  DATA_IVECTOR(outflow_rows);
+  DATA_IVECTOR(outflow_cols);
+
   DATA_IVECTOR(sumidx);
   DATA_IVECTOR(sumcount);
   DATA_IVECTOR(summandidx);
@@ -423,12 +433,16 @@ Type objective_function<Type>::operator() ()
   // std::cout << "here in the objective function...";
   // state = make_state(params);
 
-  //std::cout << "breaks = " << breaks << std::endl;
-  //std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
-  //std::cout << "tv_spi = " << tv_spi << std::endl;
-  //std::cout << "tv_val = " << tv_val << std::endl;
+  std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
+  std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
+  std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
+  std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
 
-  //std::cout << "tv_mult = " << tv_mult << std::endl;
+  std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
+  std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
+  std::cout << "outflow_rows = " << outflow_rows << std::endl;
+  std::cout << "outflow_cols = " << outflow_cols << std::endl;
+
   //std::cout << "tv_orig = " << tv_orig << std::endl;
 
   // Concatenate state and params
@@ -489,31 +503,7 @@ Type objective_function<Type>::operator() ()
 //  es.compute(A, false);
 //  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
 
-  //matrix<double> m = j.template cast<Type>();
-/*
-  matrix<Type> aa(10, 10);
-  Eigen::MatrixXd cc(10, 10);
 
-  std::cout << aa.rows() << aa.cols() << std::endl;
-  double bb = 123.4;
-
-  aa(0,1) = bb;
-  //bb = CppAD::Value(CppAD::Var2Par((AD<Type>) aa(0,1)));
-  cc(0,1) = CppAD::Value(CppAD::Var2Par((AD<Type>) aa(0,1)));
-
-  cc(0,1) = bb;
-  bb = cc(0,1);
-
-  //cc = aa.template cast<double>();
-
-  Eigen::EigenSolver<matrix<Type>> es;
-  //matrix<Type> A = matrix<Type>::random(4,4);
-  //es.compute(j, false);
-  //std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
-
-  std::cout << "result j = " << std::endl << j << std::endl;
-  std::cout << j.coeff(0, 0) << std::endl;
-*/
   REPORT(j);
   REPORT(eigenvec);
 
