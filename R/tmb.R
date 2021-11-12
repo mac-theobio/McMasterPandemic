@@ -145,12 +145,12 @@ init_model <- function(params, state, struc = NULL,
 
     if (spec_ver_eq("0.1.1")) {
         model$disease_free = list(
-            params = list(),
             state = list(
                 simple = list(),
                 state_mappings = list()
             )
         )
+        model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
     }
@@ -474,16 +474,16 @@ add_eigen_scaler = function(model, state_name) {
 
 ##' @family flexmodels
 ##' @export
-update_disease_free_params = function(model, param_pattern, value) {
-    model$disease_free$params = c(
-        model$disease_free$params,
-        list(disease_free_params(model, param_pattern, value)))
+update_linearized_params = function(model, param_pattern, value) {
+    model$linearized_params = c(
+        model$linearized_params,
+        list(linearized_params(model, param_pattern, value)))
     return(model)
 }
 
 ##' @family flexmodels
 ##' @export
-disease_free_params = function(model, param_pattern, value) {
+linearized_params = function(model, param_pattern, value) {
     spec_check(introduced_version = "0.1.1",
                feature = "Disease free parameter updates")
     params_to_update = grep(param_pattern,
@@ -523,11 +523,46 @@ disease_free_state = function(model, state_pattern, param_pattern) {
     nlist(states_to_update, params_to_use)
 }
 
+##' Initial Population
+##'
+##' \code{infected} is the scaler of the normalized infected components of the
+##' eigenvector. \code{total - infected} is multiplied by
+##' \code{1/length(initial_susceptible)}
+##'
+##' In the future we might want the ability to specify a distribution
+##' for the susceptible distribution, but not currently.
+##'
+##' @param total name of a single parameter to represent the total size of the
+##' population -- over all compartments
+##' @param infected name of a single parameter to represent the total size of
+##' the infected population -- over all infected compartments
 ##' @family flexmodels
 ##' @export
-add_state_mappings = function(model, eigen_drop_pattern, infected_drop_pattern) {
-    model$disease_free$state$drop_patterns =
-        list(eigen = eigen_drop_pattern, infected = infected_drop_pattern)
+initial_population = function(model, total, infected) {
+    model$initial_population = list(total = total, infected = infected)
+    model
+}
+
+##' @family flexmodels
+##' @export
+add_state_mappings = function(
+    model,
+    eigen_drop_pattern,
+    infected_drop_pattern,
+    initial_susceptible_pattern) {
+
+    # TODO: pull state_patterns out of disease_free, because it
+    # makes more sense as a general concept -- especially with
+    # initial_susceptible_pattern -- and maybe in the future
+    # it would be good to put things like vaccination categories
+    # in there (OTOH vaccination categories are 'user-defined'
+    # concepts whereas initial_susceptible_pattern and
+    # infected_drop_pattern are 'general' concepts)
+    #model$disease_free$state$patterns =
+    model$initialization_mappings =
+        list(eigen = eigen_drop_pattern,
+             infected = infected_drop_pattern,
+             susceptible = initial_susceptible_pattern)
     return(model)
 }
 
@@ -581,9 +616,11 @@ tmb_indices <- function(model) {
     }
     if (spec_ver_eq("0.1.1")) {
         indices$disease_free = disease_free_indices(model)
+        indices$linearized_params = linearized_param_indices(model)
         indices$outflow = outflow_indices(model$outflow, model$ratemat)
         indices$linearized_outflow = outflow_indices(
             model$linearized_outflow, model$ratemat)
+        indices$initialization_mapping = initialization_mapping_indices(model)
     }
     return(indices)
 }
