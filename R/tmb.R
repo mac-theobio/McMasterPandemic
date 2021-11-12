@@ -756,7 +756,7 @@ tmb_fun <- function(model) {
             parameters = list(params = c(params)),
             DLL = DLL
         )
-    } else if (spec_ver_gt("0.0.6")) { # 0.1.0 and up
+    } else if (spec_ver_eq("0.1.0")) {
         unpack(sum_indices)
         dd <- MakeADFun(
             data = list(
@@ -778,6 +778,33 @@ tmb_fun <- function(model) {
                 sumcount = unname(sumcount),
                 summandidx = summandidx,
                 par_accum_indices = par_accum_indices,
+                do_hazard = do_hazard,
+                numIterations = iters
+            ),
+            parameters = list(params = c(params)),
+            DLL = DLL
+        )
+    } else if (spec_ver_gt("0.1.0")) {
+        unpack(sum_indices)
+        dd <- MakeADFun(
+            data = list(
+                state = c(state),
+                ratemat = ratemat,
+                from = from,
+                to = to,
+                count = count,
+                spi = spi,
+                modifier = modifier,
+                updateidx = c(updateidx),
+                breaks = breaks,
+                count_of_tv_at_breaks = count_of_tv_at_breaks,
+                tv_spi = schedule$tv_spi,
+                tv_val = schedule$tv_val,
+                tv_mult = schedule$Value,
+                tv_orig = schedule$Type == "rel_orig",
+                sumidx = sumidx,
+                sumcount = unname(sumcount),
+                summandidx = summandidx,
                 linearized_outflow_row_count = linearized_outflow$row_count,
                 linearized_outflow_col_count = linearized_outflow$col_count,
                 linearized_outflow_rows = linearized_outflow$rows,

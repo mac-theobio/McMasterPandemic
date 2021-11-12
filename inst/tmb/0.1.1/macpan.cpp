@@ -92,7 +92,7 @@ vector<Type> CalcEigenVector(
 
   // Remove first and last two rows and columns from jacobian matrix and state vector
   matrix<Type> mat = jacobian.block(1, 1, n-3, n-3);
-  vector<Type> vec = state.block(1, 0, n-3, 1); 
+  vector<Type> vec = state.block(1, 0, n-3, 1);
   vector<Type> prevec(1);
 
   //std::cout<< "mat = " << mat << std::endl;
@@ -106,11 +106,11 @@ vector<Type> CalcEigenVector(
     vec /= Norm(vec);
 
     if (i%50==0) {
-      //std::cout << "======================= " << i << std::endl; 
+      //std::cout << "======================= " << i << std::endl;
       if (prevec.size() != vec.size()) {
         prevec = vec;
       }
-      else {  
+      else {
         diff = vec-prevec;
 
         if (Norm(diff) < tolerance) {
@@ -126,7 +126,7 @@ vector<Type> CalcEigenVector(
   //        std::cout<< "====pre vec = " << prevec << std::endl;
   //        std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
   //        std::cout<< "====diff = " << diff << std::endl;
- 
+
   return vec;
 }
 
@@ -342,7 +342,7 @@ template<class Type>
 vector<Type> do_step(
     vector<Type> state,
     Eigen::SparseMatrix<Type> ratemat,
-    vector<int> par_accum_indices,
+//    vector<int> par_accum_indices,
     vector<int> outflow_row_count,
     vector<int> outflow_col_count,
     vector<int> outflow_rows,
@@ -375,7 +375,7 @@ struct update_state_functor{
   vector<int> sumidx_;
   vector<int> sumcount_;
   vector<int> summandidx_;
-  vector<int> par_accum_indices_;
+  // vector<int> par_accum_indices_;
   vector<int> linearized_outflow_row_count_;
   vector<int> linearized_outflow_col_count_;
   vector<int> linearized_outflow_rows_;
@@ -393,25 +393,25 @@ struct update_state_functor{
     vector<int> sumidx,
     vector<int> sumcount,
     vector<int> summandidx,
-    vector<int> par_accum_indices,
+    // vector<int> par_accum_indices,
     vector<int> linearized_outflow_row_count,
     vector<int> linearized_outflow_col_count,
     vector<int> linearized_outflow_rows,
-    vector<int> linearized_outflow_cols,  
-    int do_hazard) : params_(params), from_(from), to_(to), count_(count), 
-                     spi_(spi), modifier_(modifier), sumidx_(sumidx), sumcount_(sumcount), 
-                     summandidx_(summandidx), par_accum_indices_(par_accum_indices),
+    vector<int> linearized_outflow_cols,
+    int do_hazard) : params_(params), from_(from), to_(to), count_(count),
+                     spi_(spi), modifier_(modifier), sumidx_(sumidx), sumcount_(sumcount),
+                     summandidx_(summandidx), // par_accum_indices_(par_accum_indices),
                      linearized_outflow_row_count_(linearized_outflow_row_count),
                      linearized_outflow_col_count_(linearized_outflow_col_count),
                      linearized_outflow_rows_(linearized_outflow_rows),
-                     linearized_outflow_cols_(linearized_outflow_cols), 
+                     linearized_outflow_cols_(linearized_outflow_cols),
                      do_hazard_(do_hazard)
   {
   }
 
   // The function itself
   template <typename T>
-  vector<T> operator()(vector<T> state_) 
+  vector<T> operator()(vector<T> state_)
   {
     // Convert params_ from Type to T
     int n = params_.size();
@@ -436,7 +436,7 @@ struct update_state_functor{
     //ratemat = ratemat_.template cast<T>();
 
     // 2 do all the calculations in T
-    vector<T> updated_state = do_step(state_, ratemat, par_accum_indices_, 
+    vector<T> updated_state = do_step(state_, ratemat, // par_accum_indices_,
                                       linearized_outflow_row_count_, linearized_outflow_col_count_,
                                       linearized_outflow_rows_, linearized_outflow_cols_,
                                       do_hazard_);
@@ -468,7 +468,7 @@ Type objective_function<Type>::operator() ()
   //DATA_VECTOR(tv_val);
   DATA_VECTOR(tv_mult);
   DATA_IVECTOR(tv_orig);
-  DATA_IVECTOR(par_accum_indices);
+  //DATA_IVECTOR(par_accum_indices);
 
   DATA_IVECTOR(linearized_outflow_row_count);
   DATA_IVECTOR(linearized_outflow_col_count);
@@ -547,11 +547,11 @@ Type objective_function<Type>::operator() ()
   //std::cout << state << std::endl;
 
   //update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
-  update_state_functor<Type> f(params, from, to, count, spi, modifier, 
-                               sumidx, sumcount, summandidx, par_accum_indices, 
-                               linearized_outflow_row_count, linearized_outflow_col_count, 
+  update_state_functor<Type> f(params, from, to, count, spi, modifier,
+                               sumidx, sumcount, summandidx, // par_accum_indices,
+                               linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols, do_hazard);
- 
+
   matrix<Type> j = autodiff::jacobian(f, state);
 
   //j = matrix<Type>::Random(3,3);
@@ -570,9 +570,9 @@ Type objective_function<Type>::operator() ()
   int start = 0;
   for (int i=0; i<numIterations; i++) {
 
-    state = do_step(state, ratemat, par_accum_indices, 
-                    outflow_row_count, outflow_col_count, 
-                    outflow_rows, outflow_cols, 
+    state = do_step(state, ratemat, // par_accum_indices,
+                    outflow_row_count, outflow_col_count,
+                    outflow_rows, outflow_cols,
                     do_hazard);
     sp.block(0, 0, stateSize, 1) = state;
 
