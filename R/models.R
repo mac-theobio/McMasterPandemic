@@ -32,16 +32,47 @@ make_base_model <- function(...) {
                            (Ip) * (beta0) * (1 / N) * (Cp) +
                            (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                            (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+
+            # TODO: choice of add_parallel_accumulator vs add_outflow will
+            # need to depend on the spec version
             %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-            %>% add_state_mappings('^(X|V)', '^(S|D|R)')
-            %>% add_eigen_scaler('E0')
+            %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
+
+            # Update parameters for use with the linearized model
+            %>% update_linearized_params('N', 1) # scale population to 1
+            %>% update_linearized_params('E0', 1e-5)
+
+            # Set the disease-free equilibrium of the linearized model
+            %>% update_disease_free_state('S', 'N')
+
+            # Perturb the disease-free equilibrium of the linearized model
+            %>% update_disease_free_state('E', 'E0')
+
+            # Define outflows for the linearized model
             %>% add_linearized_outflow("S", "S")
             %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
-            %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
-            %>% update_disease_free_params('N', 1)
-            %>% update_disease_free_params('E0', 1e-5)
-            %>% update_disease_free_state('S', 'N')
-            %>% update_disease_free_state('E', 'E0')
+
+            # Define state mappings used to put the initial state values in
+            # the correct positions of the initial state vector
+            %>% add_state_mappings(
+
+              # regular expression to find states to drop before computing
+              # the eigenvector of the linearized system
+              eigen_drop_pattern = '^(X|V)',
+
+              # regular expression to find states to drop from the eigenvector
+              # before distributing individuals among infected compartments
+              infected_drop_pattern = '^(S|D|R)',
+
+              # regular expression to find states in the initial population
+              # of susceptibles
+              initial_susceptible_pattern = '^S$'
+            )
+
+            # Set the total number of individuals and the total number of
+            # infected individuals in the initial state vector
+            %>% initial_population(total = 'N', infected = 'E0')
+
             %>% add_tmb_indices()
   )
   return(model)

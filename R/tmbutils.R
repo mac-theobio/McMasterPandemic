@@ -113,10 +113,11 @@ parse_formula = function(x) {
 }
 
 find_vec_indices <- function(x, vec) {
+  if(is.numeric(vec)) vec = names(vec)
   (
     x
     %>% as.character()
-    %>% outer(names(vec), "==")
+    %>% outer(vec, "==")
     %>% apply(1, which)
   )
 }
@@ -399,11 +400,14 @@ ratemat_indices <- function(rates, state_params) {
 ##' @family flexmodels
 ##' @export
 state_mapping_indices = function(
-  model,
+  state,
   eigen_drop_pattern,
-  infected_drop_pattern) {
+  infected_drop_pattern,
+  susceptible_pattern) {
   spec_check(introduced_version = "0.1.1",
              feature = "Disease free state updates")
+
+  susceptible_idx = grep(susceptible_pattern, names(state), perl = TRUE)
 
   eigen = eigen_drop_pattern
   infected = infected_drop_pattern
@@ -424,7 +428,8 @@ state_mapping_indices = function(
      %>% setNames(c("all_drop_eigen_idx",
                     "all_drop_infected_idx",
                     "eigen_drop_infected_idx"))
-    )
+    ),
+    nlist(susceptible_idx)
   )
 }
 
@@ -432,20 +437,6 @@ state_mapping_indices = function(
 disease_free_indices = function(model) {
   unpack(model)
 
-  df_param_vals = (disease_free$params
-   %>% lapply(`[`, 'update_value')
-   %>% unlist(use.names = FALSE)
-  )
-  df_param_count = (disease_free$params
-    %>% lapply(`[[`, 'params_to_update')
-    %>% lapply(length)
-    %>% unlist(use.names = FALSE)
-  )
-  df_param_idx = (disease_free$params
-    %>% lapply(`[`, 'params_to_update')
-    %>% unlist(use.names = FALSE)
-    %>% find_vec_indices(params)
-  )
   df_state_par_idx = (disease_free$state$simple
     %>% lapply(`[`, 'params_to_use')
     %>% unlist(use.names = FALSE)
@@ -461,26 +452,75 @@ disease_free_indices = function(model) {
     %>% unlist(use.names = FALSE)
     %>% find_vec_indices(state)
   )
-  state_mappings = state_mapping_indices(
-    names(state),
-    disease_free$state$drop_patterns$eigen,
-    disease_free$state$drop_patterns$infected)
+  nlist(df_state_par_idx, df_state_count, df_state_idx)
+}
 
-  eigen_scaler_idx = which(eigen_scaler == names(params))
+##' @export
+initial_population_indices = function(model) {
+  unpack(model)
+  init_infected_idx = which(initial_population$infected == names(params))
+  init_total_idx = which(initial_population$total == names(params))
+  nlist(init_infected_idx, init_infected_idx)
+}
 
-  nlist(df_param_vals, df_param_count, df_param_idx,
-        df_state_par_idx, df_state_count, df_state_idx,
-        state_mappings, eigen_scaler_idx)
+##' @export
+initialization_mapping_indices = function(model) {
+  unpack(model)
+  state_mapping_indices(
+    state,
+    initialization_mappings$eigen,
+    initialization_mappings$infected,
+    initialization_mappings$susceptible)
+}
+
+##' @export
+linearized_param_indices = function(model) {
+  unpack(model)
+  lin_param_vals = (linearized_params
+                   %>% lapply(`[`, 'update_value')
+                   %>% unlist(use.names = FALSE)
+  )
+  lin_param_count = (linearized_params
+                    %>% lapply(`[[`, 'params_to_update')
+                    %>% lapply(length)
+                    %>% unlist(use.names = FALSE)
+  )
+  lin_param_idx = (linearized_params
+                  %>% lapply(`[`, 'params_to_update')
+                  %>% unlist(use.names = FALSE)
+                  %>% find_vec_indices(params)
+  )
+
+  nlist(lin_param_vals, lin_param_count, lin_param_idx)
 }
 
 ##' @export
 outflow_indices = function(outflow, ratemat) {
-  lapply(outflow, function(o) {
+  indices = lapply(outflow, function(o) {
     list(
       state = grep(o$state_patterns, rownames(ratemat)),
       flow = grep(o$flow_state_patterns, colnames(ratemat))
     )
   })
+  n = length(indices)
+  indices$row_count = seq(n)
+  indices$col_count = seq(n)
+  indices$rows = vector()
+  indices$cols = vector()
+
+  for(i in 1:n) {
+    rows = indices[[i]]$state
+    cols = indices[[i]]$flow
+
+    indices$row_count[i] = length(rows)
+    indices$col_count[i] = length(cols)
+
+    indices$rows = c(indices$rows, rows)
+    indices$cols = c(indices$cols, cols)
+  }
+
+  indices
+
   # TODO: add warning if any state_indices are equal to other state_indices
   #       that are already added to some other call to outflow in the model.
   #       in general state_indices should be mutually exclusive across each
