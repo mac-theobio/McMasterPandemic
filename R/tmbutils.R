@@ -458,9 +458,9 @@ disease_free_indices = function(model) {
 ##' @export
 initial_population_indices = function(model) {
   unpack(model)
-  init_infected_idx = which(initial_population$infected == names(params))
-  init_total_idx = which(initial_population$total == names(params))
-  nlist(init_infected_idx, init_infected_idx)
+  infected_idx = which(initial_population$infected == names(params))
+  total_idx = which(initial_population$total == names(params))
+  nlist(total_idx, infected_idx)
 }
 
 ##' @export
