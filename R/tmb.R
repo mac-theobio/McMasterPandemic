@@ -621,6 +621,7 @@ tmb_indices <- function(model) {
         indices$linearized_outflow = outflow_indices(
             model$linearized_outflow, model$ratemat)
         indices$initialization_mapping = initialization_mapping_indices(model)
+        indices$initial_population = initial_population_indices(model)
     }
     return(indices)
 }
