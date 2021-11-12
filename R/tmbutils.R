@@ -496,12 +496,31 @@ linearized_param_indices = function(model) {
 
 ##' @export
 outflow_indices = function(outflow, ratemat) {
-  lapply(outflow, function(o) {
+  indices = lapply(outflow, function(o) {
     list(
       state = grep(o$state_patterns, rownames(ratemat)),
       flow = grep(o$flow_state_patterns, colnames(ratemat))
     )
   })
+  n = length(indices)
+  indices$row_count = seq(n)
+  indices$col_count = seq(n)
+  indices$rows = vector()
+  indices$cols = vector()
+
+  for(i in 1:n) {
+    rows = indices[[i]]$state
+    cols = indices[[i]]$flow
+
+    indices$row_count[i] = length(rows)
+    indices$col_count[i] = length(cols)
+
+    indices$rows = c(indices$rows, rows)
+    indices$cols = c(indices$cols, cols)
+  }
+
+  indices
+
   # TODO: add warning if any state_indices are equal to other state_indices
   #       that are already added to some other call to outflow in the model.
   #       in general state_indices should be mutually exclusive across each

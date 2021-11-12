@@ -18,45 +18,41 @@ model <- make_base_model(
   start_date = start_date, end_date = end_date
 )
 model$do_hazard = FALSE
+
+report <- tmb_fun(model)$report()
+i = model$tmb_indices$initialization_mapping$all_to_eigen_idx
+jac = report$j[i, i]
+evec = eigen(jac)$vectors[,1]
+evec / sum(evec)
+
+
+report$eigenvec / sum(report$eigenvec)
+
+
+
+
+lapply(model$tmb_indices, names)
+
+
+model$tmb_indices$make_ratemat_indices$from
+drop_pattern = '(S|Is)'
+nms = c(names(state), names(params)) # TODO -- need to add sums here too
+new_nms = grep(drop_pattern, nms, value = TRUE, invert = TRUE)
+McMasterPandemic:::find_vec_indices(
+  nms[model$tmb_indices$make_ratemat_indices$spi],
+  setNames(new_nms, new_nms))
+
 model$tmb_indices$outflow
 model$tmb_indices$linearized_outflow
 
+lapply(outflow, function(o) {
+  list(
+    state = grep(o$state_patterns, rownames(ratemat)),
+    flow = grep(o$flow_state_patterns, colnames(ratemat))
+  )
+})
+
+length(model$linearized_outflow)
+length(model$tmb_indices$linearized_outflow)
 # Reformat linearized_outflow
-n = length(model$tmb_indices$linearized_outflow)
-model$tmb_indices$linearized_outflow_row_count = seq(n)
-model$tmb_indices$linearized_outflow_col_count = seq(n)
-model$tmb_indices$linearized_outflow_rows = vector()
-model$tmb_indices$linearized_outflow_cols = vector()
-
-for(i in 1:n) {
-  rows = model$tmb_indices$linearized_outflow[[i]]$state
-  cols = model$tmb_indices$linearized_outflow[[i]]$flow
-
-  model$tmb_indices$linearized_outflow_row_count[i] = length(rows)
-  model$tmb_indices$linearized_outflow_col_count[i] = length(cols)
-
-  model$tmb_indices$linearized_outflow_rows = c(model$tmb_indices$linearized_outflow_rows, rows)
-  model$tmb_indices$linearized_outflow_cols = c(model$tmb_indices$linearized_outflow_cols, cols)  
-}
-
-# Reformat outflow in the same way as we reformat linearized_outflow
-n = length(model$tmb_indices$outflow)
-model$tmb_indices$outflow_row_count = seq(n)
-model$tmb_indices$outflow_col_count = seq(n)
-model$tmb_indices$outflow_rows = vector()
-model$tmb_indices$outflow_cols = vector()
-
-for(i in 1:n) {
-  rows = model$tmb_indices$outflow[[i]]$state
-  cols = model$tmb_indices$outflow[[i]]$flow
-
-  model$tmb_indices$outflow_row_count[i] = length(rows)
-  model$tmb_indices$outflow_col_count[i] = length(cols)
-
-  model$tmb_indices$outflow_rows = c(model$tmb_indices$outflow_rows, rows)
-  model$tmb_indices$outflow_cols = c(model$tmb_indices$outflow_cols, cols)
-}
-
-report <- tmb_fun(model)$report()
-report$j
 
