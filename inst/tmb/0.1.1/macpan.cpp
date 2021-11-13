@@ -480,6 +480,22 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(outflow_rows);
   DATA_IVECTOR(outflow_cols);
 
+  DATA_VECTOR(lin_param_vals);
+  DATA_IVECTOR(lin_param_count);
+  DATA_IVECTOR(lin_param_idx);
+
+  DATA_IVECTOR(df_state_par_idx);
+  DATA_IVECTOR(df_state_count);
+  DATA_IVECTOR(df_state_idx);
+
+  DATA_IVECTOR(im_all_drop_eigen_idx);
+  DATA_IVECTOR(im_eigen_drop_infected_idx);
+  DATA_IVECTOR(im_all_to_infected_idx);
+  DATA_IVECTOR(im_susceptible_idx);
+
+  DATA_IVECTOR(ip_total_idx);
+  DATA_IVECTOR(ip_infected_idx);
+
   DATA_IVECTOR(sumidx);
   DATA_IVECTOR(sumcount);
   DATA_IVECTOR(summandidx);
@@ -492,15 +508,31 @@ Type objective_function<Type>::operator() ()
   // std::cout << "here in the objective function...";
   // state = make_state(params);
 
-  //std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
-  //std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
-  //std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
-  //std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
+  std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
+  std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
+  std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
+  std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
 
-  //std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
-  //std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
-  //std::cout << "outflow_rows = " << outflow_rows << std::endl;
-  //std::cout << "outflow_cols = " << outflow_cols << std::endl;
+  std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
+  std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
+  std::cout << "outflow_rows = " << outflow_rows << std::endl;
+  std::cout << "outflow_cols = " << outflow_cols << std::endl;
+
+  std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+  std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+
+  std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  std::cout << "df_state_count = " << df_state_count << std::endl;
+  std::cout << "df_state_idx = " << df_state_idx << std::endl;
+
+  std::cout << "im_all_drop_eigen_idx = " << im_all_drop_eigen_idx << std::endl;
+  std::cout << "im_eigen_drop_infected_idx = " << im_eigen_drop_infected_idx << std::endl;
+  std::cout << "im_all_to_infected_idx = " << im_all_to_infected_idx << std::endl;
+  std::cout << "im_susceptible_idx = " << im_susceptible_idx << std::endl;
+
+  std::cout << "ip_total_idx = " << ip_total_idx << std::endl;
+  std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
 
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size()+sumidx.size());
