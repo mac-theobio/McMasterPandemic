@@ -836,6 +836,7 @@ tmb_fun <- function(model) {
                 sumidx = sumidx,
                 sumcount = unname(sumcount),
                 summandidx = summandidx,
+
                 linearized_outflow_row_count = linearized_outflow$row_count,
                 linearized_outflow_col_count = linearized_outflow$col_count,
                 linearized_outflow_rows = linearized_outflow$rows,
@@ -844,6 +845,23 @@ tmb_fun <- function(model) {
                 outflow_col_count = outflow$col_count,
                 outflow_rows = outflow$rows,
                 outflow_cols = outflow$cols,
+
+                lin_param_vals = linearized_params$lin_param_vals,
+                lin_param_count = linearized_params$lin_param_count,
+                lin_param_idx = linearized_params$lin_param_idx,
+
+                df_state_par_idx = disease_free$df_state_par_idx,
+                df_state_count = disease_free$df_state_count,
+                df_state_idx = disease_free$df_state_idx,
+
+                im_all_drop_eigen_idx = initialization_mapping$all_drop_eigen_idx,
+                im_eigen_drop_infected_idx = initialization_mapping$eigen_drop_infected_idx,
+                im_all_to_infected_idx = initialization_mapping$all_to_infected_idx,
+                im_susceptible_idx = initialization_mapping$susceptible_idx,
+
+                ip_total_idx = initial_population$total_idx,
+                ip_infected_idx = initial_population$infected_idx,
+
                 do_hazard = do_hazard,
                 numIterations = iters
             ),

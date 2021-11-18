@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <TMB.hpp>
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function rowSums
 template<class Type>
@@ -20,114 +21,6 @@ vector<Type> rowSums(
     result(i) = mat.row(i).sum();
 
   return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper function OutFlow
-template<class Type>
-vector<Type> OutFlow(
-    const Eigen::SparseMatrix<Type>& mat,
-    const vector<int>& outflow_row_count,
-    const vector<int>& outflow_col_count,
-    const vector<int>& outflow_rows,
-    const vector<int>& outflow_cols)
-{
-  vector<Type> result(mat.rows());
-
-  // Initialize result with zeros
-  for (int i=0; i<result.size(); i++)
-    result(i) = 0.0;
-
-  int startRow = 0;
-  for (int k=0; k<outflow_row_count.size(); k++) { // groups
-    for (int i=startRow; i<startRow+outflow_row_count(k); i++) { // rows in a group
-       int row = outflow_rows[i] - 1;
-
-       int startCol = 0;
-       for (int j=startCol; j<startCol+outflow_col_count(k); j++) { // cols in a row
-         int col = outflow_cols[j] - 1;
-         result[row] += mat.coeff(row, col);
-       }
-       startCol += outflow_cols(k);
-    }
-    startRow += outflow_row_count(k);
-  }
-
-  //std::cout << "++++++++++++++++++++++++++++" << std::endl;
-  //std::cout << mat << std::endl;
-  //std::cout << "----------------------------" << std::endl;
-  //std::cout << result << std::endl;
-
-  return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper function Norm
-template<class Type>
-Type Norm(
-    const vector<Type>& vec
-)
-{
-  Type w = 0.0;
-  for (int j=0; j<vec.size(); j++)
-     w += vec(j)*vec(j);
-
-  return sqrt(w);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helper function CalcEigenVector
-template<class Type>
-vector<Type> CalcEigenVector(
-    const matrix<Type>& jacobian,
-    const vector<Type>& state,
-    int iterations = 800,
-    Type tolerance = 0.001)
-{
-  int n = state.size();
-
-  //std::cout<< "n = " << n << std::endl;
-  //std::cout<< "jacob = " << jacobian.rows() << ", " << jacobian.cols() << std::endl;
-  //std::cout<< "state = " << state.rows() << ", " << state.cols() << std::endl;
-
-  // Remove first and last two rows and columns from jacobian matrix and state vector
-  matrix<Type> mat = jacobian.block(1, 1, n-3, n-3);
-  vector<Type> vec = state.block(1, 0, n-3, 1);
-  vector<Type> prevec(1);
-
-  //std::cout<< "mat = " << mat << std::endl;
-  //std::cout<< "vec 1 = " << vec << std::endl;
-
-  int i;
-  vector<Type> diff;
-
-  for (i=0; i<iterations; i++) {
-    vec = mat*vec;
-    vec /= Norm(vec);
-
-    if (i%50==0) {
-      //std::cout << "======================= " << i << std::endl;
-      if (prevec.size() != vec.size()) {
-        prevec = vec;
-      }
-      else {
-        diff = vec-prevec;
-
-        if (Norm(diff) < tolerance) {
-          //std::cout<< "diff = " << diff << std::endl;
-          break;
-        }
-        else
-          prevec = vec;
-      }
-    }
-  }
-  //std::cout << "==== Stop iteration at " << i << std::endl;
-  //        std::cout<< "====pre vec = " << prevec << std::endl;
-  //        std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
-  //        std::cout<< "====diff = " << diff << std::endl;
-
-  return vec;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -342,108 +235,56 @@ template<class Type>
 vector<Type> do_step(
     vector<Type> state,
     Eigen::SparseMatrix<Type> ratemat,
-//    vector<int> par_accum_indices,
-    vector<int> outflow_row_count,
-    vector<int> outflow_col_count,
-    vector<int> outflow_rows,
-    vector<int> outflow_cols,
+    vector<int> par_accum_indices,
     int do_hazard
 )
 {
   // Calculate flow matrix
   Eigen::SparseMatrix<Type> flows = calc_flowmat(ratemat, state, do_hazard);
   vector<Type> inflow = colSums(flows);
-  //remove_cols(flows, par_accum_indices);
-  //vector<Type> outflow = rowSums(flows); // remove some columns before doing so
-  vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
+  remove_cols(flows, par_accum_indices);
+  vector<Type> outflow = rowSums(flows); // remove some columns before doing so
   state = state - outflow + inflow;
   return state;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Define Functor for jacobian
-
 template <class Type>
 struct update_state_functor{
-  // Data members
-  vector<Type> params_;
-  vector<int> from_;
-  vector<int> to_;
-  vector<int> count_;
-  vector<int> spi_;
-  vector<int> modifier_;
-  vector<int> sumidx_;
-  vector<int> sumcount_;
-  vector<int> summandidx_;
-  // vector<int> par_accum_indices_;
-  vector<int> linearized_outflow_row_count_;
-  vector<int> linearized_outflow_col_count_;
-  vector<int> linearized_outflow_rows_;
-  vector<int> linearized_outflow_cols_;
+
+  Eigen::SparseMatrix<Type> ratemat_;
+  vector<int> par_accum_indices_;
   int do_hazard_;
 
-  // Constructor
+  // constructor
   update_state_functor(
-    vector<Type> params,
-    vector<int> from,
-    vector<int> to,
-    vector<int> count,
-    vector<int> spi,
-    vector<int> modifier,
-    vector<int> sumidx,
-    vector<int> sumcount,
-    vector<int> summandidx,
-    // vector<int> par_accum_indices,
-    vector<int> linearized_outflow_row_count,
-    vector<int> linearized_outflow_col_count,
-    vector<int> linearized_outflow_rows,
-    vector<int> linearized_outflow_cols,
-    int do_hazard) : params_(params), from_(from), to_(to), count_(count),
-                     spi_(spi), modifier_(modifier), sumidx_(sumidx), sumcount_(sumcount),
-                     summandidx_(summandidx), // par_accum_indices_(par_accum_indices),
-                     linearized_outflow_row_count_(linearized_outflow_row_count),
-                     linearized_outflow_col_count_(linearized_outflow_col_count),
-                     linearized_outflow_rows_(linearized_outflow_rows),
-                     linearized_outflow_cols_(linearized_outflow_cols),
-                     do_hazard_(do_hazard)
-  {
+    Eigen::SparseMatrix<Type> ratemat,
+    vector<int> par_accum_indices,
+    int do_hazard) {
+      // std::cout << "here in the constructor...";
+      ratemat_ = ratemat;
+      par_accum_indices_ = par_accum_indices;
+      do_hazard_ = do_hazard;
+
   }
 
-  // The function itself
   template <typename T>
-  vector<T> operator()(vector<T> state_)
-  {
-    // Convert params_ from Type to T
-    int n = params_.size();
-    vector<T> params(n);
-    for (int i=0; i<n; i++)
-       params[i] = (T) params_[i];
+  vector<T> operator()(vector<T> state_) {
+    // 1 transform state from vector<T> to vector<Type>
+    int n = state_.size();
+    vector<Type> st(n);
+    for(int i=0; i<n; i++)
+       st[i] = CppAD::Value((AD<Type>)state_[i]);
 
-    // Concatenate state and params
-    vector<T> sp(state_.size()+params.size()+sumidx_.size());
-    vector<T> place_holder(sumidx_.size());
-    sp << state_, params, place_holder;
+    // 2 do all the calculations in Type
+    vector<Type> updated_state = do_step(st, ratemat_, par_accum_indices_, do_hazard_);
 
-    update_sum_in_sp(sp, sumidx_, sumcount_, summandidx_);
-
-    // We've got everything we need, lets do the job ...
-    Eigen::SparseMatrix<T> ratemat = make_ratemat(state_.size(), sp, from_, to_, count_, spi_, modifier_);
-
-
-
-    // 1 convert from Type to T
-    //Eigen::SparseMatrix<T> ratemat;
-    //ratemat = ratemat_.template cast<T>();
-
-    // 2 do all the calculations in T
-    vector<T> updated_state = do_step(state_, ratemat, // par_accum_indices_,
-                                      linearized_outflow_row_count_, linearized_outflow_col_count_,
-                                      linearized_outflow_rows_, linearized_outflow_cols_,
-                                      do_hazard_);
-    //std::cout << "updated_state = " << updated_state << std::endl;
-
-    return (updated_state);
+    // 3 transform final result from vector<Type> back to vector<T>
+    CppAD::vector<T> xx = CppAD::vector<T>(updated_state);
+    // std::cout << "here in the functor..." << updated_state.coeff(0) << "..." << xx[0];
+    //return updated_state;
+    return (xx);
   }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -468,17 +309,7 @@ Type objective_function<Type>::operator() ()
   //DATA_VECTOR(tv_val);
   DATA_VECTOR(tv_mult);
   DATA_IVECTOR(tv_orig);
-  //DATA_IVECTOR(par_accum_indices);
-
-  DATA_IVECTOR(linearized_outflow_row_count);
-  DATA_IVECTOR(linearized_outflow_col_count);
-  DATA_IVECTOR(linearized_outflow_rows);
-  DATA_IVECTOR(linearized_outflow_cols);
-
-  DATA_IVECTOR(outflow_row_count);
-  DATA_IVECTOR(outflow_col_count);
-  DATA_IVECTOR(outflow_rows);
-  DATA_IVECTOR(outflow_cols);
+  DATA_IVECTOR(par_accum_indices);
 
   DATA_IVECTOR(sumidx);
   DATA_IVECTOR(sumcount);
@@ -492,15 +323,13 @@ Type objective_function<Type>::operator() ()
   // std::cout << "here in the objective function...";
   // state = make_state(params);
 
-  //std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
-  //std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
-  //std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
-  //std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
+  //std::cout << "breaks = " << breaks << std::endl;
+  //std::cout << "count_of_tv_at_breaks = " << count_of_tv_at_breaks << std::endl;
+  //std::cout << "tv_spi = " << tv_spi << std::endl;
+  //std::cout << "tv_val = " << tv_val << std::endl;
 
-  //std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
-  //std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
-  //std::cout << "outflow_rows = " << outflow_rows << std::endl;
-  //std::cout << "outflow_cols = " << outflow_cols << std::endl;
+  //std::cout << "tv_mult = " << tv_mult << std::endl;
+  //std::cout << "tv_orig = " << tv_orig << std::endl;
 
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size()+sumidx.size());
@@ -524,7 +353,6 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-
   int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
@@ -541,39 +369,15 @@ Type objective_function<Type>::operator() ()
   }
 
   // Calculate jacobian
-  //std::cout << ratemat << std::endl;
-  //std::cout << par_accum_indices << std::endl;
-  //std::cout << do_hazard << std::endl;
-  //std::cout << state << std::endl;
-
-  //update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
-  update_state_functor<Type> f(params, from, to, count, spi, modifier,
-                               sumidx, sumcount, summandidx, // par_accum_indices,
-                               linearized_outflow_row_count, linearized_outflow_col_count,
-                               linearized_outflow_rows, linearized_outflow_cols, do_hazard);
-
+  update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
   matrix<Type> j = autodiff::jacobian(f, state);
-
-  //j = matrix<Type>::Random(3,3);
-  vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
-
-//  Eigen::EigenSolver<Eigen::MatrixXd> es;
-//  Eigen::MatrixXd A = Eigen::MatrixXd::Random(4,4);
-//  es.compute(A, false);
-//  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
-
-
   REPORT(j);
-  REPORT(eigenvec);
 
   int nextBreak = 0;
   int start = 0;
   for (int i=0; i<numIterations; i++) {
 
-    state = do_step(state, ratemat, // par_accum_indices,
-                    outflow_row_count, outflow_col_count,
-                    outflow_rows, outflow_cols,
-                    do_hazard);
+    state = do_step(state, ratemat, par_accum_indices, do_hazard);
     sp.block(0, 0, stateSize, 1) = state;
 
     // // update sp (state+params) and rate matrix
@@ -612,7 +416,6 @@ Type objective_function<Type>::operator() ()
     // expressions of other state variables and parameters
 
     update_sum_in_sp(sp, sumidx, sumcount, summandidx);
-
     //for (int j=0; j<sumidx.size(); j++) {
     //  std::cout << j << " idx = " << sumidx[j] << " sum = " << sp[sumidx[j]-1] << std::endl;
     //}

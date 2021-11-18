@@ -8,6 +8,11 @@
 #include <TMB.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
+// Status of TMB calculations.
+// If it is 0, then succeed. Otherwise, it encodes various causes for failure
+static int tmb_status = 0;
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper function rowSums
 template<class Type>
 vector<Type> rowSums(
@@ -91,8 +96,8 @@ vector<Type> CalcEigenVector(
   //std::cout<< "state = " << state.rows() << ", " << state.cols() << std::endl;
 
   // Remove first and last two rows and columns from jacobian matrix and state vector
-  matrix<Type> mat = jacobian.block(1, 1, n-3, n-3);
-  vector<Type> vec = state.block(1, 0, n-3, 1);
+  matrix<Type> mat = jacobian; //jacobian.block(1, 1, n-3, n-3);
+  vector<Type> vec = state; //state.block(1, 0, n-3, 1);
   vector<Type> prevec(1);
 
   //std::cout<< "mat = " << mat << std::endl;
@@ -446,6 +451,193 @@ struct update_state_functor{
   }
 };
 
+
+///////////////////////////////////////////////////////////////////////////////
+// We follow the steps specified in https://canmod.net/misc/flex_specs#v0.1.1
+template<class Type>
+vector<Type> make_state(
+  const vector<Type>& params,
+  int n_states,
+  const vector<int>& lin_param_count,
+  const vector<int>& lin_param_idx,
+  const vector<Type>& lin_param_vals,
+  const vector<int>& df_state_count,
+  const vector<int>& df_state_idx,
+  const vector<int>& df_state_par_idx,
+  const vector<int>& from,
+  const vector<int>& to,
+  const vector<int>& count,
+  const vector<int>& spi,
+  const vector<int>& modifier,
+  const vector<int>& sumidx,
+  const vector<int>& sumcount,
+  const vector<int>& summandidx,
+  const vector<int>& linearized_outflow_row_count,
+  const vector<int>& linearized_outflow_col_count,
+  const vector<int>& linearized_outflow_rows,
+  const vector<int>& linearized_outflow_cols,
+  int do_hazard,
+  const vector<int>& im_all_drop_eigen_idx,
+  const vector<int>& im_eigen_drop_infected_idx,
+  const vector<int>& im_all_to_infected_idx,
+  const vector<int>& im_susceptible_idx,
+  const vector<int>&  ip_total_idx,
+  const vector<int>&  ip_infected_idx
+)
+{
+  std::cout << " ==== make_state ====" << std::endl;
+
+  // 1
+  vector<Type> state(n_states);
+  vector<Type> lin_state(n_states);
+
+  state = 0;
+  lin_state = 0;
+
+  //std::cout << "params = " << params << std::endl;
+  //std::cout << "state = " << state << std::endl;
+  //std::cout << "lin_state = " << lin_state << std::endl;
+
+  //if (n_states<params.size()) {
+  //  std::cout << "Error: size of params is greater than n_states" << std::endl;
+  //  return state;
+  //}
+
+  // 2
+  vector<Type> lin_params(params);
+  //std::cout << "lin_params = " << lin_params << std::endl;
+  //std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  //std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+  //std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+
+  // 3
+  int start = 0;
+  for (int i=0; i<lin_param_count.size(); i++) {
+    for (int j=start; j<start+lin_param_count[i]; j++) {
+      lin_params[lin_param_idx[j]-1] = lin_param_vals[i];
+    }
+    start += lin_param_count[i];
+  }
+  //std::cout << "lin_params after = " << lin_params << std::endl;
+
+  // 4
+  //std::cout << "df_state_count = " << df_state_count << std::endl;
+  //std::cout << "df_state_idx = " << df_state_idx << std::endl;
+  //std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  //std::cout << "--------------------" << std::endl;
+
+  start = 0;
+  for (int i=0; i<df_state_count.size(); i++) {
+    for (int j=start; j<start+df_state_count[i]; j++) {
+      lin_state[df_state_idx[j]-1] = lin_params[df_state_par_idx[i]-1];
+    }
+    start += df_state_count[i];
+  }
+  std::cout << "lin_state after = " << lin_state << std::endl;
+
+  // 5
+  update_state_functor<Type> f(lin_params, from, to, count, spi, modifier,
+                               sumidx, sumcount, summandidx,
+                               linearized_outflow_row_count, linearized_outflow_col_count,
+                               linearized_outflow_rows, linearized_outflow_cols, do_hazard);
+
+  matrix<Type> jacob = autodiff::jacobian(f, lin_state);
+  std::cout << "jacobian = " << std::endl << jacob << std::endl;
+
+  int nRows = jacob.rows();
+  int nCols = jacob.cols();
+
+  // 6
+  // Make a copy and append one nRows at the end.
+  int n = im_all_drop_eigen_idx.size();
+  vector<int> tmp_im_all_drop_eigen_idx(n+1);
+  for (int i=0; i<n; i++)
+    tmp_im_all_drop_eigen_idx[i] = im_all_drop_eigen_idx[i] - 1;	// 1-based indexing to 0-based indexing
+  tmp_im_all_drop_eigen_idx[n] = nRows;		// Adding this at the end makes condensing step below be able to complete in one for loop
+
+  //tmp_im_all_drop_eigen_idx[0] = 5;
+  //tmp_im_all_drop_eigen_idx[1] = 0;
+
+  n++;
+
+  matrix<Type> trimmed_jacob(nRows-n+1, nCols-n+1);
+  vector<Type> trimmed_lin_state(lin_state.size()-n+1);
+
+  if (n>1) {
+    // Sort the drop-out indices
+    for (int i=n-1; i>0; i--)
+      for (int j=0; j<i; j++)
+        if (tmp_im_all_drop_eigen_idx[j]>tmp_im_all_drop_eigen_idx[j+1]) { // swap
+          int t = tmp_im_all_drop_eigen_idx[j];
+          tmp_im_all_drop_eigen_idx[j] = tmp_im_all_drop_eigen_idx[j+1];
+          tmp_im_all_drop_eigen_idx[j+1] = t;
+        }
+    std::cout << tmp_im_all_drop_eigen_idx << std::endl;
+
+    // Condense rows/columns by moving unremoved ones to left/up
+    int empty_idx = tmp_im_all_drop_eigen_idx[0];
+    for (int i=1; i<n; i++)
+      for (int j=tmp_im_all_drop_eigen_idx[i-1]+1; j<tmp_im_all_drop_eigen_idx[i]; j++) {
+        jacob.block(empty_idx, 0, 1, nCols) = jacob.block(j, 0, 1, nCols);
+        jacob.block(0, empty_idx, nCols, 1) = jacob.block(0, j, nCols, 1);
+
+        lin_state[empty_idx] = lin_state[j];
+
+        empty_idx++;
+      }
+
+    // Copy the upper-left sub-matrix
+    trimmed_jacob = jacob.block(0, 0, nRows-n+1, nCols-n+1);
+    trimmed_lin_state = lin_state.block(0, 0, trimmed_lin_state.size(), 1);
+  }
+
+  std::cout << "trimmed jacobian = " << std::endl << trimmed_jacob << std::endl;
+  std::cout << "trimmed lin_state = " << std::endl << trimmed_lin_state << std::endl;
+
+  // 7
+  vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, 5000);
+  std::cout << "eigenvec = " << eigenvec << std::endl;
+
+  // 8
+  n = im_eigen_drop_infected_idx.size();
+  vector<int> tmp_im_eigen_drop_infected_idx(n+1);
+  for (int i=0; i<n; i++)
+    tmp_im_eigen_drop_infected_idx[i] = im_eigen_drop_infected_idx[i] - 1;        // 1-based indexing to 0-based indexing
+  tmp_im_eigen_drop_infected_idx[n] = eigenvec.size();         // Adding this at the end makes condensing step below be able to complete in one for loop
+
+  n++;
+
+  vector<Type> eig_infected(eigenvec.size()-n+1);
+
+  if (n>1) {
+    // Sort the drop-out indices
+    for (int i=n-1; i>0; i--)
+      for (int j=0; j<i; j++)
+        if (tmp_im_eigen_drop_infected_idx[j]>tmp_im_eigen_drop_infected_idx[j+1]) { // swap
+          int t = tmp_im_eigen_drop_infected_idx[j];
+          tmp_im_eigen_drop_infected_idx[j] = tmp_im_eigen_drop_infected_idx[j+1];
+          tmp_im_eigen_drop_infected_idx[j+1] = t;
+        }
+    std::cout << tmp_im_eigen_drop_infected_idx << std::endl;
+
+    // Condense rows/columns by moving unremoved ones to left/up
+    int empty_idx = tmp_im_eigen_drop_infected_idx[0];
+    for (int i=1; i<n; i++)
+      for (int j=tmp_im_eigen_drop_infected_idx[i-1]+1; j<tmp_im_eigen_drop_infected_idx[i]; j++) {
+        eigenvec[empty_idx] = eigenvec[j];
+
+        empty_idx++;
+      }
+
+    eig_infected = eigenvec.block(0, 0, eig_infected.size(), 1);
+  }
+  std::cout << "eig_infected = " << eig_infected << std::endl;
+
+  // 9
+
+  return state;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 template<class Type>
 Type objective_function<Type>::operator() ()
@@ -483,6 +675,22 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(outflow_rows);
   DATA_IVECTOR(outflow_cols);
 
+  DATA_VECTOR(lin_param_vals);
+  DATA_IVECTOR(lin_param_count);
+  DATA_IVECTOR(lin_param_idx);
+
+  DATA_IVECTOR(df_state_par_idx);
+  DATA_IVECTOR(df_state_count);
+  DATA_IVECTOR(df_state_idx);
+
+  DATA_IVECTOR(im_all_drop_eigen_idx);
+  DATA_IVECTOR(im_eigen_drop_infected_idx);
+  DATA_IVECTOR(im_all_to_infected_idx);
+  DATA_IVECTOR(im_susceptible_idx);
+
+  DATA_IVECTOR(ip_total_idx);
+  DATA_IVECTOR(ip_infected_idx);
+
   DATA_IVECTOR(sumidx);
   DATA_IVECTOR(sumcount);
   DATA_IVECTOR(summandidx);
@@ -493,22 +701,68 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
-  // std::cout << "here in the objective function...";
-  // state = make_state(params);
+  std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
+  std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
+  std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
+  std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
 
-  //std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
-  //std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
-  //std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
-  //std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
+  std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
+  std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
+  std::cout << "outflow_rows = " << outflow_rows << std::endl;
+  std::cout << "outflow_cols = " << outflow_cols << std::endl;
 
-  //std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
-  //std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
-  //std::cout << "outflow_rows = " << outflow_rows << std::endl;
-  //std::cout << "outflow_cols = " << outflow_cols << std::endl;
+  std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+  std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+
+  std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  std::cout << "df_state_count = " << df_state_count << std::endl;
+  std::cout << "df_state_idx = " << df_state_idx << std::endl;
+
+  std::cout << "im_all_drop_eigen_idx = " << im_all_drop_eigen_idx << std::endl;
+  std::cout << "im_eigen_drop_infected_idx = " << im_eigen_drop_infected_idx << std::endl;
+  std::cout << "im_all_to_infected_idx = " << im_all_to_infected_idx << std::endl;
+  std::cout << "im_susceptible_idx = " << im_susceptible_idx << std::endl;
+
+  std::cout << "ip_total_idx = " << ip_total_idx << std::endl;
+  std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
+
+  // make state vector from params vector
+  if (state.size()==0) // call make_state only if state doesn't exist
+    state = make_state(
+      params,
+      state.size(), // there should be a better way to give n_states a value
+      lin_param_count,
+      lin_param_idx,
+      lin_param_vals,
+      df_state_count,
+      df_state_idx,
+      df_state_par_idx,
+      from,
+      to,
+      count,
+      spi,
+      modifier,
+      sumidx,
+      sumcount,
+      summandidx,
+      linearized_outflow_row_count,
+      linearized_outflow_col_count,
+      linearized_outflow_rows,
+      linearized_outflow_cols,
+      do_hazard,
+      im_all_drop_eigen_idx,
+      im_eigen_drop_infected_idx,
+      im_all_to_infected_idx,
+      im_susceptible_idx,
+      ip_total_idx,
+      ip_infected_idx
+  );
 
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size()+sumidx.size());
   vector<Type> place_holder(sumidx.size());
+  //vector<Type> eig_infected(eigenvec.size()-n+1);
   sp << state, params, place_holder;
 
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
@@ -581,43 +835,6 @@ Type objective_function<Type>::operator() ()
                     do_hazard);
     sp.block(0, 0, stateSize, 1) = state;
 
-    // std::cout << "before outer breaks loop" << std::endl;
-    // if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-    //   std::cout << "before inner breaks loop" << std::endl;
-    //   for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-    //     if (tv_method[j] & 0b00)
-    //       std::cout << j << ", " << tv_method[j] << ", 0 and 0" << std::endl;
-    //     else if (tv_method[j] & 0b01)
-    //       std::cout << j << ", " << tv_method[j] << ", 0 and 1" << std::endl;
-    //     else if (tv_method[j] & 0b10)
-    //       std::cout << j << ", " << tv_method[j] << ", 1 and 0" << std::endl;
-    //     else if (tv_method[j] & 0b11)
-    //       std::cout << j << ", " << tv_method[j] << ", 1 and 1" << std::endl;
-    //   }
-    // }
-    // update sp (state+params) and rate matrix
-    //if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-    //   for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-           // tv_update_method[j] =
-           //    first bit:  0 -> tv_orig, 0 -> tv_prev
-           //    second bit: 0 -> tv_mult, 1 -> tv_param
-           //if (tv_orig[j])
-    //       if (tv_update_method[j] & 0b00)
-             // new value = original times another parameter
-    //         sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*sp[tv_mult_spi[j]-1];
-    //       else if ((tv_update_method[j] & 0b10) | (tv_update_method[j] & 0b11))
-             // new value = previous times another parameter
-    //         sp[tv_spi[j]-1] *= sp[tv_mult_spi[j]-1];
-
-    //       else if (tv_update_method[j] & 0b01)
-             // new value = another parameter
-    //         sp[tv_spi[j]-1] = sp[tv_mult_spi[j]-1];
-    //   }
-
-    //   start += count_of_tv_at_breaks[nextBreak];
-    //     nextBreak++;
-    //}
-
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
@@ -661,6 +878,8 @@ Type objective_function<Type>::operator() ()
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
   REPORT(concatenated_ratemat_nonzeros);
+
+  REPORT(tmb_status);
 
   return state.sum();
 }
