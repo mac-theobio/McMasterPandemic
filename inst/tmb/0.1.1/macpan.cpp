@@ -481,9 +481,9 @@ vector<Type> make_state(
   const vector<int>& im_eigen_drop_infected_idx,
   const vector<int>& im_all_to_infected_idx,
   const vector<int>& im_susceptible_idx,
-  const vector<int>&  ip_total_idx,
-  const vector<int>&  ip_infected_idx
-)
+  int  ip_total_idx,
+  int  ip_infected_idx
+) 
 {
   std::cout << " ==== make_state ====" << std::endl;
 
@@ -634,6 +634,19 @@ vector<Type> make_state(
   std::cout << "eig_infected = " << eig_infected << std::endl;
 
   // 9
+  eig_infected /= eig_infected.sum();
+  std::cout << "eig_infected = " << eig_infected << std::endl;
+
+  // 10
+  std::cout << "state = " << state << std::endl;
+  for (int i=0; i<im_all_to_infected_idx.size(); i++)
+    state[im_all_to_infected_idx[i]-1] = eig_infected[i] * params[ip_infected_idx-1];
+  std::cout << "state = " << state << std::endl;
+
+  // 11
+  for (int i=0; i<im_susceptible_idx.size(); i++)
+    state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
+  std::cout << "state = " << state << std::endl;
 
   return state;
 }
@@ -688,8 +701,8 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(im_all_to_infected_idx);
   DATA_IVECTOR(im_susceptible_idx);
 
-  DATA_IVECTOR(ip_total_idx);
-  DATA_IVECTOR(ip_infected_idx);
+  DATA_INTEGER(ip_total_idx);
+  DATA_INTEGER(ip_infected_idx);
 
   DATA_IVECTOR(sumidx);
   DATA_IVECTOR(sumcount);
