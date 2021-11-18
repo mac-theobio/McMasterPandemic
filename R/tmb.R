@@ -815,6 +815,8 @@ tmb_fun <- function(model) {
         )
     } else if (spec_ver_gt("0.1.0")) {
         unpack(sum_indices)
+        init_tv_mult = integer(0L)
+        if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
         dd <- MakeADFun(
             data = list(
                 state = c(state),
@@ -866,7 +868,7 @@ tmb_fun <- function(model) {
                 numIterations = iters
             ),
             parameters = list(params = c(params),
-                              tv_mult = schedule$init_tv_mult),
+                              tv_mult = init_tv_mult),
             DLL = DLL
         )
     } else {
