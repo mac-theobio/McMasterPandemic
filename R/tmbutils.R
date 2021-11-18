@@ -10,6 +10,12 @@
 #' @export
 `%+%` = function(x, y) paste(x, y, sep = "")
 
+##' Regex Alternation Group
+alt_group = function(x) {
+  "(" %+% paste0(x, collapse = "|") %+% ")"
+}
+
+
 # utilities for rate functions ----------------------------
 
 ## regex pattern for finding variables
@@ -112,10 +118,12 @@ parse_formula = function(x) {
   return(o)
 }
 
+#' @param x character vector of names to look for in \code{vec} or
+#' \code{names(vec)}
+#' @param vec character vector or object with names
 find_vec_indices <- function(x, vec) {
-  if(is.numeric(vec)) vec = names(vec)
-  (
-    x
+  if(!is.character(vec)) vec = names(vec)
+  (x
     %>% as.character()
     %>% outer(vec, "==")
     %>% apply(1, which)
@@ -227,13 +235,14 @@ get_rates = function(model) {
   SIMPLIFY = TRUE)
 }
 
-##' @param x parameter vector
+##' @param x parameter vector or flexmodel
 ##' @export
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
     introduced_version = "0.0.3"
   )
+  if(inherits(x, 'flexmodel')) x = x$params
   "tv_param_indices" %in% names(attributes(x))
 }
 
@@ -579,22 +588,31 @@ make_nested_indices = function(x, patterns, invert = FALSE) {
   stopifnot(!any(is.null(names(patterns))))
 
   nms = c(deparse(substitute(x)), names(patterns))
+
   x_list = list(x)
   i_list = j_list = list()
 
+  # p indexes list of patterns
+  # v indexes list of vectors (i.e. list of nested subsets of x)
   for(p in seq_along(patterns)) {
-    i_list[[p]] = j_list[[p]] = list()
+    x_list[[p+1]] = grep(patterns[[p]], x_list[[p]], value = TRUE, perl = TRUE, invert = invert)
+    #i_list[[to]][[from]]
+    i_list[[p+1]] = j_list[[p+1]] = list()
+
     for(v in seq_len(p)) {
-      i_list[[p]][[v]] = grep(patterns[[p]], x_list[[v]], perl = TRUE, invert =  invert)
-      j_list[[p]][[v]] = grep(patterns[[p]], x_list[[v]], perl = TRUE, invert = !invert)
+      indicators = x_list[[v]] %in% x_list[[p+1]]
+      i_list[[p+1]][[v]] = which( indicators)
+      j_list[[p+1]][[v]] = which(!indicators)
+
     }
-    x_list[[p+1]] = x_list[[p]][i_list[[p]][[v]]]
-    names(i_list[[p]]) = names(j_list[[p]]) = nms[1:p]
+    names(i_list[[p+1]]) = names(j_list[[p+1]]) = nms[1:p]
   }
+
+  drop_null_elements = function(e) e[!sapply(e, is.null)]
   list(
-    x = setNames(x_list, nms),
-    i = setNames(i_list, nms[-1]),
-    j = setNames(j_list, nms[-1]))
+    x = setNames(x_list, nms) %>% drop_null_elements,
+    i = setNames(i_list, nms) %>% drop_null_elements,
+    j = setNames(j_list, nms) %>% drop_null_elements)
 }
 
 

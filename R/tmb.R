@@ -20,7 +20,7 @@ init_model <- function(params, state, struc = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE, ...) {
     check_spec_ver_archived()
-    name_regex = paste0("^", getOption("MP_name_search_regex"), "$")
+    name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
     if(!all(grepl(name_regex, c(names(params), names(state))))) {
         stop("only syntactically valid r names can be used ",
              "for state variables and parameters")
@@ -52,7 +52,10 @@ init_model <- function(params, state, struc = NULL,
                    feature = "Start and end dates")
         model$start_date <- as.Date(start_date)
         model$end_date <- as.Date(end_date)
-        model$iters <- as.integer(model$end_date - model$start_date)
+        model$iters <- (model$end_date
+            %>% difftime(model$start_date, units = 'days')
+            %>% as.integer
+        )
     } else {
         if ((!is.null(start_date)) | (!is.null(end_date))) {
             spec_check(introduced_version = "0.0.3",
@@ -82,14 +85,24 @@ init_model <- function(params, state, struc = NULL,
         )
 
         if (spec_ver_gt("0.0.3")) {
-            schedule <- (
-                params_timevar
-                    %>% mutate(Date = as.Date(Date))
-                    %>% mutate(breaks = as.integer(Date - model$start_date))
-                    %>% mutate(tv_spi = find_vec_indices(
-                        Symbol, c(state, params)))
-                    %>% arrange(breaks, tv_spi)
+            schedule <- (params_timevar
+              %>% mutate(Date = as.Date(Date))
+              %>% mutate(breaks = (Date
+                %>% difftime(model$start_date, units = 'days')
+                %>% as.integer
+              ))
+              %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
+              %>% arrange(breaks, tv_spi)
             )
+
+            if(spec_ver_eq("0.1.1")) {
+              schedule = (schedule
+                %>% mutate(init_tv_mult = replace(Value,
+                                                  which(is.na(Value)),
+                                                  1))
+              )
+            }
+
             count_of_tv_at_breaks <- c(table(schedule$breaks))
 
             schedule$tv_val <- NA
@@ -137,11 +150,13 @@ init_model <- function(params, state, struc = NULL,
             )
         )
     }
+
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
+
     if (spec_ver_gt("0.0.6")) {
-        model$sums = list()
-        model$sum_vector = numeric(0L)
+      model$sums = list()
     }
+    model$sum_vector = numeric(0L)
 
     if (spec_ver_eq("0.1.1")) {
         model$disease_free = list(
@@ -212,14 +227,15 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
 
     product_list <- function(x) {
         x$factors <- (x$formula
-                      %>% parse_formula
-                      %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
+            %>% parse_formula
+            %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
         )
-        x$ratemat_indices <-
-            do.call(McMasterPandemic:::pfun, c(x[c("from", "to")], list(mat = M)))
+        x$ratemat_indices <- do.call(
+            pfun,
+            c(x[c("from", "to")], list(mat = M)))
         if(nrow(x$ratemat_indices) > 1L) {
-            stop('you are referring to more than one element of the rate matrix\n',
-                 'try using rep_rate instead of rate')
+            stop('you are referring to more than one element of the rate ',
+                 'matrix.\ntry using rep_rate instead of rate')
         }
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
@@ -228,7 +244,8 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
         if(length(missing_vars) > 0L) {
             stop("The following variables were used to define the model,\n",
-                 "but they could not be found in the state, parameter or sum vectors:\n",
+                 "but they could not be found in the state, parameter or sum ",
+                 "vectors:\n",
                  paste0(missing_vars, collapse = "\n"))
         }
 
@@ -274,10 +291,11 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
 ##' @family flexmodels
 ##' @export
 add_rate <- function(model, from, to, formula) {
-    added_rate <- (
-        rate(from, to, formula, model$state, model$params, model$sum_vector, model$ratemat)
-            %>% list()
-            %>% setNames(paste(from, to, sep = "_to_"))
+    unpack(model)
+    added_rate <- (from
+      %>% rate(to, formula, state, params, sum_vector, ratemat)
+      %>% list
+      %>% setNames(paste(from, to, sep = "_to_"))
     )
     model$rates <- c(model$rates, added_rate)
     return(model)
@@ -433,11 +451,13 @@ add_parallel_accumulators <- function(model, state_patterns) {
 ##' @export
 parallel_accumulators <- function(model, state_patterns) {
     spec_check(introduced_version = "0.0.2", feature = "Parallel accumulators")
+    if(spec_ver_gt('0.1.0')) stop('Parallel accumulators are now handled through outflow')
     (state_patterns
         %>% lapply(function(x) {
             grep(x, colnames(model$ratemat), value = TRUE)
         })
-        %>% unlist()
+        #%>% lapply(grep, patterns = colnames(model$ratemat), value = TRUE)
+        #%>% unlist
     )
 }
 
@@ -573,6 +593,15 @@ add_state_mappings = function(
 ##' Add, to a compartmental model, indices used to access appropriate values
 ##' during simulation and calibration using TMB
 ##'
+##' \describe{
+##'   \item{\code{make_ratemat_indices$from}}{}
+##'   \item{\code{make_ratemat_indices$to}}{}
+##'   \item{\code{make_ratemat_indices$count}}{}
+##'   \item{\code{updateidx}}{indices into the \code{to}, \code{from}, and \code{count}
+##'   vectors, identifying rates that need (or at least will) be updated at
+##'   every simulation step}
+##' }
+##'
 ##' @param model compartmental model
 ##' @param another compartmental model with indices for TMB
 ##' @family flexmodels
@@ -586,7 +615,6 @@ add_tmb_indices <- function(model) {
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
-
 
     if (spec_ver_eq("0.1.0")) {
         sp <- c(model$state, model$params, model$sum_vector)
@@ -799,10 +827,12 @@ tmb_fun <- function(model) {
                 updateidx = c(updateidx),
                 breaks = breaks,
                 count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_spi = schedule$tv_spi,
                 tv_val = schedule$tv_val,
-                tv_mult = schedule$Value,
+                tv_spi = schedule$tv_spi,
+                tv_spi_unique = sort(unique(schedule$tv_spi)),
+                # tv_mult = schedule$Value,  # moved to parameter vector
                 tv_orig = schedule$Type == "rel_orig",
+                ## tv_method = tv_method,
                 sumidx = sumidx,
                 sumcount = unname(sumcount),
                 summandidx = summandidx,
@@ -817,7 +847,8 @@ tmb_fun <- function(model) {
                 do_hazard = do_hazard,
                 numIterations = iters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(params),
+                              tv_mult = schedule$init_tv_mult),
             DLL = DLL
         )
     } else {

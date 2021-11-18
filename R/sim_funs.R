@@ -158,6 +158,7 @@ calc_variant_adjustment <- function(params,
 ##' @param state state vector
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
+##' @importFrom fastmatrix kronecker.prod
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
 make_beta <- function(state, params, full = TRUE) {
@@ -935,17 +936,35 @@ run_sim <- function(params,
       )
     }
 
-    if (is.null(obj_fun)) {
-      obj_fun <- tmb_fun(flexmodel)
-    }
+    #if (is.null(obj_fun)) {
+    # I think we need to always re-make the tmb_fun otherwise
+    # make_state is done for absolutely nothing.
+    # However, when we do make_state on the C++ side we will
+    # want to skip this step -- so probably should depend on
+    # a flexspec version or maybe we need a flag?
+    flexmodel$state = state
+    obj_fun <- tmb_fun(flexmodel)
+    #}
 
     params0 <- params
     state0 <- state
 
-    # obj_fun$env$data$tv_val <- params[obj_fun$env$data$tv_spi - length(state)] * obj_fun$env$data$tv_val
+    full_param_vec = params
+    if(spec_ver_eq('0.1.1')) {
+      if(has_time_varying(flexmodel)) {
+        if(!any(is.na(params_timevar$Value))) {
+          time_pars_no_missing = params_timevar$Value
+        } else {
+          # if we aren't filling missing values, we need to get some
+          # defaults that are contained in the flexmodel
+          time_pars_no_missing = flexmodel$timevar$piece_wise$schedule$init_tv_mult
+        }
+        full_param_vec = c(full_param_vec, time_pars_no_missing)
+      }
+    }
 
     ## simulate trajectories based on new parameters
-    tmb_sims <- obj_fun$simulate(params)
+    tmb_sims <- obj_fun$simulate(full_param_vec)
 
     res <- matrix(
       tmb_sims$concatenated_state_vector,

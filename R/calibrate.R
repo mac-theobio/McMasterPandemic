@@ -284,7 +284,15 @@ run_sim_break <- function(params,
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
     sim_args <- c(
         sim_args,
-        nlist(params,
+        nlist(
+            params,
+            # FIXME: do not remake state for tmb case
+            # once we are making the state on the c++
+            # side -- spec version 0.1.1
+            # PREDICTION: avoiding this line will have
+            # huge performance benefits, because this
+            # branch leads to power iteration for
+            # eigenvector calculation on the R side
             state = make_state(params = params)
         )
     )

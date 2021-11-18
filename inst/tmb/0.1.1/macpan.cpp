@@ -465,9 +465,12 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(breaks);
   DATA_IVECTOR(count_of_tv_at_breaks);
   DATA_IVECTOR(tv_spi);
+  DATA_IVECTOR(tv_spi_unique);
   //DATA_VECTOR(tv_val);
-  DATA_VECTOR(tv_mult);
+  //DATA_VECTOR(tv_mult);  // moved to parameter vector
   DATA_IVECTOR(tv_orig);
+  //DATA_IVECTOR(tv_method);
+
   //DATA_IVECTOR(par_accum_indices);
 
   DATA_IVECTOR(linearized_outflow_row_count);
@@ -488,6 +491,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(do_hazard);
 
   PARAMETER_VECTOR(params);
+  PARAMETER_VECTOR(tv_mult);
 
   // std::cout << "here in the objective function...";
   // state = make_state(params);
@@ -528,6 +532,7 @@ Type objective_function<Type>::operator() ()
   int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
+  vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
@@ -576,24 +581,42 @@ Type objective_function<Type>::operator() ()
                     do_hazard);
     sp.block(0, 0, stateSize, 1) = state;
 
-    // // update sp (state+params) and rate matrix
+    // std::cout << "before outer breaks loop" << std::endl;
     // if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
-    //     for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
-    //         //if (tv_orig[j])
-    //         if (tv_update_method[j] & 0b00)
-    //           // new value = original times another parameter
-    //           sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*sp[tv_mult_spi[j]-1];
-    //         else if ((tv_update_method[j] & 0b10) | (tv_update_method[j] & 0b11))
-    //           // new value = previous times another parameter
-    //           sp[tv_spi[j]-1] *= sp[tv_mult_spi[j]-1];
-    //         else if (tv_update_method[j] & 0b01)
-    //           // new value = another parameter
-    //           sp[tv_spi[j]-1] = sp[tv_mult_spi[j]-1];
-    //     }
-    //
-    //     start += count_of_tv_at_breaks[nextBreak];
-    //     nextBreak++;
+    //   std::cout << "before inner breaks loop" << std::endl;
+    //   for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+    //     if (tv_method[j] & 0b00)
+    //       std::cout << j << ", " << tv_method[j] << ", 0 and 0" << std::endl;
+    //     else if (tv_method[j] & 0b01)
+    //       std::cout << j << ", " << tv_method[j] << ", 0 and 1" << std::endl;
+    //     else if (tv_method[j] & 0b10)
+    //       std::cout << j << ", " << tv_method[j] << ", 1 and 0" << std::endl;
+    //     else if (tv_method[j] & 0b11)
+    //       std::cout << j << ", " << tv_method[j] << ", 1 and 1" << std::endl;
+    //   }
     // }
+    // update sp (state+params) and rate matrix
+    //if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
+    //   for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+           // tv_update_method[j] =
+           //    first bit:  0 -> tv_orig, 0 -> tv_prev
+           //    second bit: 0 -> tv_mult, 1 -> tv_param
+           //if (tv_orig[j])
+    //       if (tv_update_method[j] & 0b00)
+             // new value = original times another parameter
+    //         sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*sp[tv_mult_spi[j]-1];
+    //       else if ((tv_update_method[j] & 0b10) | (tv_update_method[j] & 0b11))
+             // new value = previous times another parameter
+    //         sp[tv_spi[j]-1] *= sp[tv_mult_spi[j]-1];
+
+    //       else if (tv_update_method[j] & 0b01)
+             // new value = another parameter
+    //         sp[tv_spi[j]-1] = sp[tv_mult_spi[j]-1];
+    //   }
+
+    //   start += count_of_tv_at_breaks[nextBreak];
+    //     nextBreak++;
+    //}
 
     // update sp (state+params) and rate matrix
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {

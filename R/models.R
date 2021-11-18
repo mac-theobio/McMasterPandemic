@@ -32,50 +32,51 @@ make_base_model <- function(...) {
                            (Ip) * (beta0) * (1 / N) * (Cp) +
                            (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                            (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-
-            # TODO: choice of add_parallel_accumulator vs add_outflow will
-            # need to depend on the spec version
-            %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-            %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
-
-            # Update parameters for use with the linearized model
-            %>% update_linearized_params('N', 1) # scale population to 1
-            %>% update_linearized_params('E0', 1e-5)
-
-            # Set the disease-free equilibrium of the linearized model
-            %>% update_disease_free_state('S', 'N')
-
-            # Perturb the disease-free equilibrium of the linearized model
-            %>% update_disease_free_state('E', 'E0')
-
-            # Define outflows for the linearized model
-            %>% add_linearized_outflow("S", "S")
-            %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
-
-            # Define state mappings used to put the initial state values in
-            # the correct positions of the initial state vector
-            %>% add_state_mappings(
-
-              # regular expression to find states to drop before computing
-              # the eigenvector of the linearized system
-              eigen_drop_pattern = '^(X|V)',
-
-              # regular expression to find states to drop from the eigenvector
-              # before distributing individuals among infected compartments
-              infected_drop_pattern = '^(S|D|R)',
-
-              # regular expression to find states in the initial population
-              # of susceptibles
-              initial_susceptible_pattern = '^S$'
-            )
-
-            # Set the total number of individuals and the total number of
-            # infected individuals in the initial state vector
-            %>% initial_population(total = 'N', infected = 'E0')
-
-            %>% add_tmb_indices()
   )
-  return(model)
+  if(spec_ver_lt('0.1.1')) {
+    # no deprecation period for add_parallel_accumulators
+    model = add_parallel_accumulators(model, c("X", "N", "P", "V"))
+  } else {
+    model = (model
+      %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
+
+      # Update parameters for use with the linearized model
+      %>% update_linearized_params('N', 1) # scale population to 1
+      %>% update_linearized_params('E0', 1e-5)
+
+      # Set the disease-free equilibrium of the linearized model
+      %>% update_disease_free_state('S', 'N')
+
+      # Perturb the disease-free equilibrium of the linearized model
+      %>% update_disease_free_state('E', 'E0')
+
+      # Define outflows for the linearized model
+      %>% add_linearized_outflow("S", "S")
+      %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
+
+      # Define state mappings used to put the initial state values in
+      # the correct positions of the initial state vector
+      %>% add_state_mappings(
+
+        # regular expression to find states to drop before computing
+        # the eigenvector of the linearized system
+        eigen_drop_pattern = '^(X|V)',
+
+        # regular expression to find states to drop from the eigenvector
+        # before distributing individuals among infected compartments
+        infected_drop_pattern = '^(S|D|R)',
+
+        # regular expression to find states in the initial population
+        # of susceptibles
+        initial_susceptible_pattern = '^S$'
+      )
+
+      # Set the total number of individuals and the total number of
+      # infected individuals in the initial state vector
+      %>% initial_population(total = 'N', infected = 'E0')
+    )
+  }
+  add_tmb_indices(model)
 }
 
 
@@ -85,9 +86,10 @@ make_base_model <- function(...) {
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(...) {
+make_vaccination_model = function(..., do_variant = FALSE) {
 
   spec_check("0.1.0", "model structure")
+  #stopifnot(spec_ver_gt('0.6.0.')) # TODO: upgrade vax models to use 0.1.1
 
   args = list(...)
   unpack(args)
@@ -111,6 +113,8 @@ make_vaccination_model = function(...) {
   (vax_cat = c(attr(state, "vax_cat")))
   (dose_from = rep(asymp_cat, 2))
   (dose_to = c(asymp_cat, rep("V", 5)))
+  (accum = c("X", "V"))
+  (non_accum = base::setdiff(epi_states, accum))
 
   # Specify structure of the force of infection calculation
   Istate = (c('Ia', 'Ip', 'Im', 'Is')
@@ -124,13 +128,23 @@ make_vaccination_model = function(...) {
       '(1 - iso_m) * (Cm)',
       '(1 - iso_s) * (Cs)') *
     struc('(beta0) * (1/N)')
-  vax_trans_red = struc_block(vec(
-    '1',
-    '1',
-    '(1 - vax_efficacy_dose1)',
-    '(1 - vax_efficacy_dose1)',
-    '(1 - vax_efficacy_dose2)'),
-    row_times = 1, col_times = 5)
+  if(!do_variant) {
+    vax_trans_red = struc_block(vec(
+      '1',
+      '1',
+      '(1 - vax_efficacy_dose1)',
+      '(1 - vax_efficacy_dose1)',
+      '(1 - vax_efficacy_dose2)'),
+      row_times = 1, col_times = 5)
+  } else {
+    vax_trans_red = struc_block(vec(
+      '1',
+      '1',
+      '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+      '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+      '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)'),
+      row_times = 1, col_times = 5)
+  }
 
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
   mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
@@ -142,7 +156,7 @@ make_vaccination_model = function(...) {
   Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
 
-  (init_model(...)
+  model = (init_model(...)
 
     # Flow within vaccination categories,
     # with constant rates across categories
@@ -193,9 +207,57 @@ make_vaccination_model = function(...) {
       dose_from %_% 'vaxprotect1',
       dose_to   %_% 'vaxdose2',
       ~ (1 - vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect1_N))
-
-    # Technical steps
-    %>% add_parallel_accumulators(c('V' %_% vax_cat, 'X' %_% vax_cat))
-    %>% add_tmb_indices()
   )
+  if(spec_ver_lt('0.1.1')) {
+    # no deprecation period for add_parallel_accumulators
+    model = add_parallel_accumulators(model, c('V' %_% vax_cat, 'X' %_% vax_cat))
+  } else {
+    model = (model
+
+      # definitely need a better syntax here
+      %>% add_outflow(
+        ".+",
+        "^" %+% alt_group(non_accum) %_% alt_group(vax_cat))
+
+      # Update parameters for use with the linearized model
+      %>% update_linearized_params('N', 1) # scale population to 1
+      %>% update_linearized_params('E0', 1e-5)
+      %>% update_linearized_params('vax_doses_per_day', 0)
+      %>% update_linearized_params('vax_response_rate', 0)
+      %>% update_linearized_params('vax_response_rate_R', 0)
+
+      # Set the disease-free equilibrium of the linearized model
+      %>% update_disease_free_state('S_unvax', 'N')
+
+      # Perturb the disease-free equilibrium of the linearized model
+      %>% update_disease_free_state('E_unvax', 'E0')
+
+      # Define outflows for the linearized model (FIXME: copied from basic model)
+      %>% add_linearized_outflow("S", "S")
+      %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
+
+      # Define state mappings used to put the initial state values in
+      # the correct positions of the initial state vector
+      %>% add_state_mappings(
+
+        # regular expression to find states to drop before computing
+        # the eigenvector of the linearized system
+        eigen_drop_pattern = '^(X|V)',
+
+        # regular expression to find states to drop from the eigenvector
+        # before distributing individuals among infected compartments
+        infected_drop_pattern = '^(S|D|R)',
+
+        # regular expression to find states in the initial population
+        # of susceptibles
+        initial_susceptible_pattern = '^S_unvax$' # or is it just '^S'
+      )
+
+      # Set the total number of individuals and the total number of
+      # infected individuals in the initial state vector
+      %>% initial_population(total = 'N', infected = 'E0')
+    )
+  }
+
+  add_tmb_indices(model)
 }
