@@ -45,7 +45,7 @@ make_base_model <- function(...) {
       %>% update_linearized_params('E0', 1e-5)
 
       # Set the disease-free equilibrium of the linearized model
-      %>% update_disease_free_state('S', 'N')
+      %>% update_disease_free_state('S', 'S0') # instead of N
 
       # Perturb the disease-free equilibrium of the linearized model
       %>% update_disease_free_state('E', 'E0')

@@ -282,20 +282,20 @@ run_sim_break <- function(params,
         stop("probably using outdated time_args() specification")
     }
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
-    sim_args <- c(
-        sim_args,
-        nlist(
-            params,
-            # FIXME: do not remake state for tmb case
-            # once we are making the state on the c++
-            # side -- spec version 0.1.1
-            # PREDICTION: avoiding this line will have
-            # huge performance benefits, because this
-            # branch leads to power iteration for
-            # eigenvector calculation on the R side
-            state = make_state(params = params)
+
+    ## Do not need to make_state on the R-side when using
+    ## recent versions of the flexmodel/tmb approach
+    if(isTRUE(sim_args$use_flex) & (!is.null(sim_args$flexmodel)) & spec_ver_gt('0.1.0')) {
+       sim_args = c(
+           sim_args,
+           nlist(params, state = sim_args$flexmodel$state))
+    } else {
+        sim_args <- c(
+            sim_args,
+            nlist(params, state = make_state(params = params))
         )
-    )
+    }
+
     if (length(time_args) == 1 && is.null(names(time_args))) {
         ## HACK:: namedrop() problems in mle2????
         names(time_args) <- "break_dates"

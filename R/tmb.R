@@ -865,6 +865,7 @@ tmb_fun <- function(model) {
                 ip_infected_idx = initial_population$infected_idx,
 
                 do_hazard = do_hazard,
+                do_hazard_lin = FALSE,
                 numIterations = iters
             ),
             parameters = list(params = c(params),

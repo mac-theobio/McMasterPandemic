@@ -653,16 +653,18 @@ simulate_state_vector = function(model) {
 #'
 #' @param classic_sim result of `run_sim` without using TMB
 #' @param tmb_sim result of `run_sim` using TMB
+#' @param tolerance numerical tolerance
+#' @importFrom testthat testthat_tolerance
 #' @export
-compare_sims = function(classic_sim, tmb_sim) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) {
   attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
   attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
   for(a in names(attributes(classic_sim))) {
-    expect_equal(attr(tmb_sim, a), attr(classic_sim, a))
+    expect_equal(attr(tmb_sim, a), attr(classic_sim, a), tolerance = tolerance)
   }
 
   attributes(classic_sim) <- attributes(tmb_sim) <- NULL
-  expect_equal(tmb_sim, classic_sim)
+  expect_equal(tmb_sim, classic_sim, tolerance = tolerance)
   TRUE
 }
 
