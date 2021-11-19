@@ -10,6 +10,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Status of TMB calculations.
 // If it is 0, then succeed. Otherwise, it encodes various causes for failure
+//          1: doesn't not converge in CalcEigenVector;
+//          2: eigen vector is all zeros in CalcEigenVector;
+//          3: mixed signs in eigen vector in CalcEigenVector;
+
 static int tmb_status = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,6 +105,9 @@ vector<Type> CalcEigenVector(
     int iterations = 800,
     Type tolerance = 0.001)
 {
+  if (iterations<101) 
+    iterations = 101;	// this is the minimum
+
   int n = state.size();
 
   //std::cout<< "n = " << n << std::endl;
@@ -108,8 +115,8 @@ vector<Type> CalcEigenVector(
   //std::cout<< "state = " << state.rows() << ", " << state.cols() << std::endl;
 
   // Remove first and last two rows and columns from jacobian matrix and state vector
-  matrix<Type> mat = jacobian; //jacobian.block(1, 1, n-3, n-3);
-  vector<Type> vec = state; //state.block(1, 0, n-3, 1);
+  matrix<Type> mat = jacobian;
+  vector<Type> vec = state; 
   vector<Type> prevec(1);
 
   //std::cout<< "mat = " << mat << std::endl;
@@ -139,10 +146,30 @@ vector<Type> CalcEigenVector(
       }
     }
   }
-  //std::cout << "==== Stop iteration at " << i << std::endl;
-  //        std::cout<< "====pre vec = " << prevec << std::endl;
-  //        std::cout<< "====cur vec (principla eigenvector) = " << vec << std::endl;
-  //        std::cout<< "====diff = " << diff << std::endl;
+
+  if (i==iterations) {
+    tmb_status = 1; 	// doesn't not converge
+    return vec;
+  }
+
+  // check if the signs are the same
+  for (i=0; i<vec.size(); i++) 
+    if (vec[i]!=0) break;
+
+  if (i==vec.size()) {
+    tmb_status = 2; 	// eigen vector is all zeros
+    return vec;
+  }
+
+  for (int j=i+1; j<vec.size(); j++) 
+    if (vec[j-1]*vec[j]<0) {
+      tmb_status = 3;     // mixed signs in eigen vector
+      return vec;
+    } 
+
+  // flip the sign
+  if (vec[i]<00) 
+    vec = -vec;
 
   return vec;
 }
@@ -500,7 +527,7 @@ vector<Type> make_state(
   int  ip_infected_idx
 )
 {
-  std::cout << " ==== make_state ====" << std::endl;
+  //std::cout << " ==== make_state ====" << std::endl;
 
   // 1
   vector<Type> state(n_states);
@@ -512,11 +539,6 @@ vector<Type> make_state(
   std::cout << "params = " << params << std::endl;
   std::cout << "state = " << state << std::endl;
   std::cout << "lin_state = " << lin_state << std::endl;
-
-  //if (n_states<params.size()) {
-  //  std::cout << "Error: size of params is greater than n_states" << std::endl;
-  //  return state;
-  //}
 
   // 2
   vector<Type> lin_params(params);
@@ -548,7 +570,7 @@ vector<Type> make_state(
     }
     start += df_state_count[i];
   }
-  std::cout << "lin_state after = " << lin_state << std::endl;
+  //std::cout << "lin_state after = " << lin_state << std::endl;
 
   // 5
   update_state_functor<Type> f(lin_params, from, to, count, spi, modifier,
@@ -562,7 +584,7 @@ vector<Type> make_state(
   std::cout << "linear functor update: " << test_lin_state_update << std::endl;
 
   matrix<Type> jacob = autodiff::jacobian(f, lin_state);
-  std::cout << "jacobian = " << std::endl << jacob << std::endl;
+  //std::cout << "jacobian = " << std::endl << jacob << std::endl;
 
   int nRows = jacob.rows();
   int nCols = jacob.cols();
@@ -592,8 +614,8 @@ vector<Type> make_state(
           tmp_im_all_drop_eigen_idx[j] = tmp_im_all_drop_eigen_idx[j+1];
           tmp_im_all_drop_eigen_idx[j+1] = t;
         }
-    std::cout << tmp_im_all_drop_eigen_idx << std::endl;
-
+    //std::cout << tmp_im_all_drop_eigen_idx << std::endl;
+ 
     // Condense rows/columns by moving unremoved ones to left/up
     int empty_idx = tmp_im_all_drop_eigen_idx[0];
     for (int i=1; i<n; i++)
@@ -610,13 +632,15 @@ vector<Type> make_state(
     trimmed_jacob = jacob.block(0, 0, nRows-n+1, nCols-n+1);
     trimmed_lin_state = lin_state.block(0, 0, trimmed_lin_state.size(), 1);
   }
-
-  std::cout << "trimmed jacobian = " << std::endl << trimmed_jacob << std::endl;
-  std::cout << "trimmed lin_state = " << std::endl << trimmed_lin_state << std::endl;
+  
+  //std::cout << "trimmed jacobian = " << std::endl << trimmed_jacob << std::endl;
+  //std::cout << "trimmed lin_state = " << std::endl << trimmed_lin_state << std::endl;
 
   // 7
   vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, 5000);
-  std::cout << "eigenvec = " << eigenvec << std::endl;
+  //std::cout << "eigenvec = " << eigenvec << std::endl;
+  
+  if (tmb_status) return state; // There is an error in the computation so far
 
   // 8
   n = im_eigen_drop_infected_idx.size();
@@ -638,7 +662,7 @@ vector<Type> make_state(
           tmp_im_eigen_drop_infected_idx[j] = tmp_im_eigen_drop_infected_idx[j+1];
           tmp_im_eigen_drop_infected_idx[j+1] = t;
         }
-    std::cout << tmp_im_eigen_drop_infected_idx << std::endl;
+    //std::cout << tmp_im_eigen_drop_infected_idx << std::endl;
 
     // Condense rows/columns by moving unremoved ones to left/up
     int empty_idx = tmp_im_eigen_drop_infected_idx[0];
@@ -651,22 +675,22 @@ vector<Type> make_state(
 
     eig_infected = eigenvec.block(0, 0, eig_infected.size(), 1);
   }
-  std::cout << "eig_infected = " << eig_infected << std::endl;
+  //std::cout << "eig_infected = " << eig_infected << std::endl;
 
   // 9
   eig_infected /= eig_infected.sum();
-  std::cout << "eig_infected = " << eig_infected << std::endl;
+  //std::cout << "eig_infected = " << eig_infected << std::endl;
 
   // 10
-  std::cout << "state = " << state << std::endl;
+  //std::cout << "state = " << state << std::endl;
   for (int i=0; i<im_all_to_infected_idx.size(); i++)
     state[im_all_to_infected_idx[i]-1] = eig_infected[i] * params[ip_infected_idx-1];
-  std::cout << "state = " << state << std::endl;
+  //std::cout << "state = " << state << std::endl;
 
   // 11
   for (int i=0; i<im_susceptible_idx.size(); i++)
     state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
-  std::cout << "state = " << state << std::endl;
+  //std::cout << "state = " << state << std::endl;
 
   //state = round_vec(state);
   std::cout << "TESTING ROUND: " << round_vec(state) << std::endl;
@@ -738,31 +762,31 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
-  std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
-  std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
-  std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
-  std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
+  //std::cout << "linearized_outflow_row_count = " << linearized_outflow_row_count << std::endl;
+  //std::cout << "linearized_outflow_col_count = " << linearized_outflow_col_count << std::endl;
+  //std::cout << "linearized_outflow_rows = " << linearized_outflow_rows << std::endl;
+  //std::cout << "linearized_outflow_cols = " << linearized_outflow_cols << std::endl;
 
-  std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
-  std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
-  std::cout << "outflow_rows = " << outflow_rows << std::endl;
-  std::cout << "outflow_cols = " << outflow_cols << std::endl;
+  //std::cout << "outflow_row_count = " << outflow_row_count << std::endl;
+  //std::cout << "outflow_col_count = " << outflow_col_count << std::endl;
+  //std::cout << "outflow_rows = " << outflow_rows << std::endl;
+  //std::cout << "outflow_cols = " << outflow_cols << std::endl;
 
-  std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
-  std::cout << "lin_param_count = " << lin_param_count << std::endl;
-  std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+  //std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+  //std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  //std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
 
-  std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
-  std::cout << "df_state_count = " << df_state_count << std::endl;
-  std::cout << "df_state_idx = " << df_state_idx << std::endl;
+  //std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  //std::cout << "df_state_count = " << df_state_count << std::endl;
+  //std::cout << "df_state_idx = " << df_state_idx << std::endl;
 
-  std::cout << "im_all_drop_eigen_idx = " << im_all_drop_eigen_idx << std::endl;
-  std::cout << "im_eigen_drop_infected_idx = " << im_eigen_drop_infected_idx << std::endl;
-  std::cout << "im_all_to_infected_idx = " << im_all_to_infected_idx << std::endl;
-  std::cout << "im_susceptible_idx = " << im_susceptible_idx << std::endl;
+  //std::cout << "im_all_drop_eigen_idx = " << im_all_drop_eigen_idx << std::endl;
+  //std::cout << "im_eigen_drop_infected_idx = " << im_eigen_drop_infected_idx << std::endl;
+  //std::cout << "im_all_to_infected_idx = " << im_all_to_infected_idx << std::endl;
+  //std::cout << "im_susceptible_idx = " << im_susceptible_idx << std::endl;
 
-  std::cout << "ip_total_idx = " << ip_total_idx << std::endl;
-  std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
+  //std::cout << "ip_total_idx = " << ip_total_idx << std::endl;
+  //std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
 
   // make state vector from params vector
   // if (state.size()==0) // call make_state only if state doesn't exist
@@ -796,10 +820,11 @@ Type objective_function<Type>::operator() ()
       ip_infected_idx
   );
 
+  if (tmb_status) return 0; // There is an error in the computation so far
+
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size()+sumidx.size());
   vector<Type> place_holder(sumidx.size());
-  //vector<Type> eig_infected(eigenvec.size()-n+1);
   sp << state, params, place_holder;
 
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
@@ -819,6 +844,7 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
+  if (tmb_status) return 0; // There is an error in the computation so far
 
   int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
@@ -853,11 +879,7 @@ Type objective_function<Type>::operator() ()
   //j = matrix<Type>::Random(3,3);
   //vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
 
-//  Eigen::EigenSolver<Eigen::MatrixXd> es;
-//  Eigen::MatrixXd A = Eigen::MatrixXd::Random(4,4);
-//  es.compute(A, false);
-//  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
-
+  if (tmb_status) return 0; // There is an error in the computation so far
 
   //REPORT(j);
   //REPORT(eigenvec);
@@ -870,6 +892,9 @@ Type objective_function<Type>::operator() ()
                     outflow_row_count, outflow_col_count,
                     outflow_rows, outflow_cols,
                     do_hazard);
+
+    if (tmb_status) return 0; // There is an error in the computation so far
+
     sp.block(0, 0, stateSize, 1) = state;
 
     // update sp (state+params) and rate matrix
@@ -895,6 +920,8 @@ Type objective_function<Type>::operator() ()
     //}
     //std::cout << "sp_110 = " << sp[110] << std::endl;
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+
+    if (tmb_status) return 0; // There is an error in the computation so far
 
     // concatenate state vectors at each time step so they can be returned
     concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
