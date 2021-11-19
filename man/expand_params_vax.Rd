@@ -6,7 +6,7 @@
 \usage{
 expand_params_vax(
   params,
-  model_type = c("onedose", "twodose"),
+  model_type = c("onedose", "twodose", "twodosewane"),
   vax_doses_per_day = 1e+05,
   vax_prop_first_dose = 1,
   vax_efficacy_dose1 = 0.6,
@@ -16,13 +16,18 @@ expand_params_vax(
   vax_alpha_dose1 = 0.5,
   vax_alpha_dose2 = 0.5,
   vax_mu_dose1 = 1,
-  vax_mu_dose2 = 1
+  vax_mu_dose2 = 1,
+  vax_wane_time = 180,
+  vax_wane_time_R = Inf,
+  vax_efficacy_wane = 0.7,
+  vax_alpha_wane = 0.5,
+  vax_mu_wane = 1
 )
 }
 \arguments{
 \item{params}{parameter list (e.g. read in with `read_params()`)}
 
-\item{model_type}{choose either the one-dose or the two-dose model}
+\item{model_type}{choose the one-dose, the two-dose model, or the two-dose model with waning}
 
 \item{vax_doses_per_day}{total number of vaccine doses administered per day}
 
@@ -34,7 +39,7 @@ expand_params_vax(
 
 \item{vax_avg_response_time}{average number of days it takes for a vaccine dose to confer protection for an individual that has never been infected}
 
-\item{vax_avg_response_time_R}{average number of days it takes for a vaccine dose to confer protection for an individual that has previously been infected (e.g. between being dosed and eliciting the protective immune response)}
+\item{vax_avg_response_time_R}{average number of days it takes for a vaccine dose to confer protection for an individual that has previously been infected}
 
 \item{vax_alpha_dose1}{proportion of infections that are asymptomatic in individuals that have received one dose of the vaccine}
 
@@ -43,9 +48,22 @@ expand_params_vax(
 \item{vax_mu_dose1}{proportion of infections that are mild (vs. severe) in individuals that have received one dose of the vaccine}
 
 \item{vax_mu_dose2}{proportion of infections that are mild (vs. severe) in individuals that have received two doses of the vaccine}
+
+\item{vax_wane_time}{average number of days it takes for an individual's second dose protection to wane for an individual that has never been infected (time since two-dose protection was conferred)}
+
+\item{vax_wane_time_R}{average number of days it takes for an individual's second dose protection to wane for an individual that has previously been infected (time since two-dose protection was conferred)}
+
+\item{vax_efficacy_wane}{infection-blocking vaccine efficacy for those whose two-dose protection has waned}
+
+\item{vax_alpha_wane}{proportion of infections that are asymptomatic in individuals whose two-dose protection has waned}
+
+\item{vax_mu_wane}{proportion of infections that are mild (vs. severe) in individuals whose two-dose protection has waned}
 }
 \description{
 Expand parameter list to include vaccination
+}
+\details{
+To shut off any of the flows associated with a "time" parameter (with `time` in the parameter name, e.g., vax_wane_time), set it to `Inf`.
 }
 \examples{
 params <- read_params("PHAC.csv")

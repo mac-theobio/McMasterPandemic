@@ -4,12 +4,16 @@
 \alias{expand_state_vax}
 \title{expand state vector by vaccination status}
 \usage{
-expand_state_vax(x, model_type = c("onedose", "twodose"), unif = FALSE)
+expand_state_vax(
+  x,
+  model_type = c("onedose", "twodose", "twodosewane"),
+  unif = FALSE
+)
 }
 \arguments{
 \item{x}{state vector}
 
-\item{model_type}{choose either the one-dose or the two-dose model}
+\item{model_type}{choose the one-dose, the two-dose model, or the two-dose model with waning}
 
 \item{unif}{should individuals in each epidemic category be distributed evenly among vaccination strata? (if FALSE, put everyone in the first vaccination category, i.e., the unvaccinated category)}
 }

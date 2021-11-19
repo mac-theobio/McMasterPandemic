@@ -61,6 +61,9 @@ Authors:
   \item Morgan Kain
   \item Mike Li
   \item Jonathan Dushoff
+  \item Irena Papst
+  \item Steve Walker
+  \item Weiguang Guan
 }
 
 Other contributors:

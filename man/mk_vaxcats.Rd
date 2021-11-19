@@ -4,10 +4,10 @@
 \alias{mk_vaxcats}
 \title{Construct vector of vaccine category labels}
 \usage{
-mk_vaxcats(model_type = c("onedose", "twodose"))
+mk_vaxcats(model_type = c("onedose", "twodose", "twodosewane"))
 }
 \arguments{
-\item{model_type}{choose either the one-dose or the two-dose model}
+\item{model_type}{choose the one-dose, the two-dose model, or the two-dose model with waning}
 }
 \description{
 Construct vector of vaccine category labels

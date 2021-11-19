@@ -9,7 +9,8 @@ expand_params_variant(
   variant_prop = 0.01,
   variant_advantage = 1.5,
   variant_vax_efficacy_dose1 = 0.3,
-  variant_vax_efficacy_dose2 = 0.8
+  variant_vax_efficacy_dose2 = 0.8,
+  variant_vax_efficacy_wane = 0.6
 )
 }
 \arguments{
