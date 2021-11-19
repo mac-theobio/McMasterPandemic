@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
   , fig.height = 2
   , fig.width  = 5
   , fig.retina = 3
+  , warning = FALSE
 )
 
 library(tidyverse)
@@ -21,17 +22,12 @@ options(macpan_pfun_method = "grep")
 
 Here we demonstrate an implementation of waning (vaccine-derived) immunity in the `McMasterPandemic` model with two-dose vaccination. 
 
-The main difference between the existing model with two-dose vaccination and the model with waning immunity is that there is a new vaccine stratum. In the basic two-dose model, the strata are:
+The gist is that there is an additional vaccination layer (after the “two-dose protection” layer) that is for individuals whose two-dose immunity has waned. People can enter the waned layer from the two-dose protection layer in two ways:
 
-```{r}
-mk_vaxcats(model_type = "twodose")
-```
-In the model with waning, there is an additional stratum at the end (chronologically) for individuals whose two-dose vaccine-deriving immunity was waned:
+- $S_{\rm two dose} \rightarrow S_{\rm waned}$, where $S$ = susceptible individuals, i.e. those that have never had a SARS-CoV-2 infection
+- $R_{\rm two dose} \rightarrow R_{\rm waned}$, where $R$ = recovered, i.e. those that have at some point in the past had a natural infection. 
 
-```{r}
-mk_vaxcats(model_type = "twodosewane")
-```
-(The `mk_vaxcats()` function is used internally and doesn't get called by the user when initializing a vaxified model. I'm just showing its output here because it sets up the vax strata labels and the `model_type` attribute, both of which get used a lot internally.)
+We allow individuals in the waned layer to be subject to a different vaccine efficacy, probability of asymptomatic infection, and probability of mild (vs severe) infection than in other vaccination layers. 
 
 ## Model specification
 
@@ -105,7 +101,7 @@ params_timevar <- data.frame(
 )
 ```
 
-```{r warning = FALSE}
+```{r}
 res <- run_sim(
   params = vax_params,
   start_date = start_date,
@@ -134,7 +130,14 @@ plot_total <- function(res){
 plot_total(res)
 ```
 
-The simulation results in two distinct, small waves, followed by a much larger uptick towards the end of the simulation. We can see which groups are driving each wave if we stratify the simulation results by vaccination layer: 
+The simulation results in two distinct, small waves, followed by a much larger uptick towards the end of the simulation. We can see which groups are driving each wave if we stratify the simulation results by vaccination layer. The strata are:
+
+- `unvax`: unvaccinated individuals
+- `vaxdose1`: individuals who have received one dose but have not yet undergone the protective immune response
+- `vaxprotect1`: individuals that are protected by one dose of the vaccine
+- `vaxdose2`: individuals who have received two doses but have not yet undergone the protective immune response to the second dose of vaccine
+- `vaxprotect2`: individuals that are protected by two doses of the vaccine
+- `vaxwane2`: individuals who have received two doses of the vaccine, but their vaccine-derived immunity has waned
 
 ```{r echo = FALSE}
 condense_epicat <- function(res){
