@@ -105,7 +105,7 @@ vector<Type> CalcEigenVector(
     int iterations = 800,
     Type tolerance = 0.001)
 {
-  if (iterations<101) 
+  if (iterations<101)
     iterations = 101;	// this is the minimum
 
   int n = state.size();
@@ -116,7 +116,7 @@ vector<Type> CalcEigenVector(
 
   // Remove first and last two rows and columns from jacobian matrix and state vector
   matrix<Type> mat = jacobian;
-  vector<Type> vec = state; 
+  vector<Type> vec = state;
   vector<Type> prevec(1);
 
   //std::cout<< "mat = " << mat << std::endl;
@@ -153,7 +153,7 @@ vector<Type> CalcEigenVector(
   }
 
   // check if the signs are the same
-  for (i=0; i<vec.size(); i++) 
+  for (i=0; i<vec.size(); i++)
     if (vec[i]!=0) break;
 
   if (i==vec.size()) {
@@ -161,14 +161,14 @@ vector<Type> CalcEigenVector(
     return vec;
   }
 
-  for (int j=i+1; j<vec.size(); j++) 
+  for (int j=i+1; j<vec.size(); j++)
     if (vec[j-1]*vec[j]<0) {
       tmb_status = 3;     // mixed signs in eigen vector
       return vec;
-    } 
+    }
 
   // flip the sign
-  if (vec[i]<00) 
+  if (vec[i]<00)
     vec = -vec;
 
   return vec;
@@ -615,7 +615,7 @@ vector<Type> make_state(
           tmp_im_all_drop_eigen_idx[j+1] = t;
         }
     //std::cout << tmp_im_all_drop_eigen_idx << std::endl;
- 
+
     // Condense rows/columns by moving unremoved ones to left/up
     int empty_idx = tmp_im_all_drop_eigen_idx[0];
     for (int i=1; i<n; i++)
@@ -632,14 +632,14 @@ vector<Type> make_state(
     trimmed_jacob = jacob.block(0, 0, nRows-n+1, nCols-n+1);
     trimmed_lin_state = lin_state.block(0, 0, trimmed_lin_state.size(), 1);
   }
-  
+
   //std::cout << "trimmed jacobian = " << std::endl << trimmed_jacob << std::endl;
   //std::cout << "trimmed lin_state = " << std::endl << trimmed_lin_state << std::endl;
 
   // 7
   vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, 5000);
   //std::cout << "eigenvec = " << eigenvec << std::endl;
-  
+
   if (tmb_status) return state; // There is an error in the computation so far
 
   // 8
@@ -693,7 +693,7 @@ vector<Type> make_state(
   //std::cout << "state = " << state << std::endl;
 
   //state = round_vec(state);
-  std::cout << "TESTING ROUND: " << round_vec(state) << std::endl;
+  // std::cout << "TESTING ROUND: " << round_vec(state) << std::endl;
   //vector<Type> rounded_state = state.array().round();
   return state;
 }
