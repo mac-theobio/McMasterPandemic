@@ -13,6 +13,18 @@
 static int tmb_status = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Helper function round
+template<class Type>
+vector<int> round_vec(const vector<Type> vec_in)
+{
+  vector<int> vec_rounded(vec_in.size());
+  for (int i=0; i < vec_in.size(); i++)
+    vec_rounded[i] = (int) (vec_in[i] + 0.5);
+
+  return vec_rounded;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper function rowSums
 template<class Type>
 vector<Type> rowSums(
@@ -282,9 +294,10 @@ Eigen::SparseMatrix<Type> calc_flowmat(
     const vector<Type>& vec,
     int do_hazard)
 {
-  if (!do_hazard)
+  if (!do_hazard) {
+    std::cout << "here we are not doing hazard" << std::endl;
     return col_multiply(mat, vec);
-  else {
+  } else {
     vector<Type> r = rowSums(mat);
     vector<Type> rho = exp(-r);
 
@@ -362,6 +375,8 @@ vector<Type> do_step(
   //vector<Type> outflow = rowSums(flows); // remove some columns before doing so
   vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
   state = state - outflow + inflow;
+  std::cout << "inflow: " << inflow << std::endl;
+  std::cout << "outflow: " << outflow << std::endl;
   return state;
 }
 
@@ -434,7 +449,7 @@ struct update_state_functor{
     // We've got everything we need, lets do the job ...
     Eigen::SparseMatrix<T> ratemat = make_ratemat(state_.size(), sp, from_, to_, count_, spi_, modifier_);
 
-
+    std::cout << "ratemat in functor: " << ratemat << std::endl;
 
     // 1 convert from Type to T
     //Eigen::SparseMatrix<T> ratemat;
@@ -483,7 +498,7 @@ vector<Type> make_state(
   const vector<int>& im_susceptible_idx,
   int  ip_total_idx,
   int  ip_infected_idx
-) 
+)
 {
   std::cout << " ==== make_state ====" << std::endl;
 
@@ -494,9 +509,9 @@ vector<Type> make_state(
   state = 0;
   lin_state = 0;
 
-  //std::cout << "params = " << params << std::endl;
-  //std::cout << "state = " << state << std::endl;
-  //std::cout << "lin_state = " << lin_state << std::endl;
+  std::cout << "params = " << params << std::endl;
+  std::cout << "state = " << state << std::endl;
+  std::cout << "lin_state = " << lin_state << std::endl;
 
   //if (n_states<params.size()) {
   //  std::cout << "Error: size of params is greater than n_states" << std::endl;
@@ -505,10 +520,10 @@ vector<Type> make_state(
 
   // 2
   vector<Type> lin_params(params);
-  //std::cout << "lin_params = " << lin_params << std::endl;
-  //std::cout << "lin_param_count = " << lin_param_count << std::endl;
-  //std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
-  //std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+  std::cout << "lin_params = " << lin_params << std::endl;
+  std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+  std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
 
   // 3
   int start = 0;
@@ -518,12 +533,12 @@ vector<Type> make_state(
     }
     start += lin_param_count[i];
   }
-  //std::cout << "lin_params after = " << lin_params << std::endl;
+  std::cout << "lin_params after = " << lin_params << std::endl;
 
   // 4
-  //std::cout << "df_state_count = " << df_state_count << std::endl;
-  //std::cout << "df_state_idx = " << df_state_idx << std::endl;
-  //std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  std::cout << "df_state_count = " << df_state_count << std::endl;
+  std::cout << "df_state_idx = " << df_state_idx << std::endl;
+  std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
   //std::cout << "--------------------" << std::endl;
 
   start = 0;
@@ -540,6 +555,11 @@ vector<Type> make_state(
                                sumidx, sumcount, summandidx,
                                linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols, do_hazard);
+
+  std::cout << "testing linear state update========================" << std::endl;
+  std::cout << "linear state before update: " << lin_state << std::endl;
+  vector<Type> test_lin_state_update = f(lin_state);
+  std::cout << "linear functor update: " << test_lin_state_update << std::endl;
 
   matrix<Type> jacob = autodiff::jacobian(f, lin_state);
   std::cout << "jacobian = " << std::endl << jacob << std::endl;
@@ -648,6 +668,9 @@ vector<Type> make_state(
     state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
   std::cout << "state = " << state << std::endl;
 
+  //state = round_vec(state);
+  std::cout << "TESTING ROUND: " << round_vec(state) << std::endl;
+  //vector<Type> rounded_state = state.array().round();
   return state;
 }
 
@@ -710,6 +733,7 @@ Type objective_function<Type>::operator() ()
 
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
+  DATA_INTEGER(do_hazard_lin);
 
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
@@ -741,7 +765,7 @@ Type objective_function<Type>::operator() ()
   std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
 
   // make state vector from params vector
-  if (state.size()==0) // call make_state only if state doesn't exist
+  // if (state.size()==0) // call make_state only if state doesn't exist
     state = make_state(
       params,
       state.size(), // there should be a better way to give n_states a value
@@ -763,7 +787,7 @@ Type objective_function<Type>::operator() ()
       linearized_outflow_col_count,
       linearized_outflow_rows,
       linearized_outflow_cols,
-      do_hazard,
+      do_hazard_lin,
       im_all_drop_eigen_idx,
       im_eigen_drop_infected_idx,
       im_all_to_infected_idx,
@@ -819,15 +843,15 @@ Type objective_function<Type>::operator() ()
   //std::cout << state << std::endl;
 
   //update_state_functor<Type> f(ratemat, par_accum_indices, do_hazard);
-  update_state_functor<Type> f(params, from, to, count, spi, modifier,
-                               sumidx, sumcount, summandidx, // par_accum_indices,
-                               linearized_outflow_row_count, linearized_outflow_col_count,
-                               linearized_outflow_rows, linearized_outflow_cols, do_hazard);
+  //update_state_functor<Type> f(params, from, to, count, spi, modifier,
+  //                             sumidx, sumcount, summandidx, // par_accum_indices,
+  //                             linearized_outflow_row_count, linearized_outflow_col_count,
+  //                             linearized_outflow_rows, linearized_outflow_cols, do_hazard);
 
-  matrix<Type> j = autodiff::jacobian(f, state);
+  //matrix<Type> j = autodiff::jacobian(f, state);
 
   //j = matrix<Type>::Random(3,3);
-  vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
+  //vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
 
 //  Eigen::EigenSolver<Eigen::MatrixXd> es;
 //  Eigen::MatrixXd A = Eigen::MatrixXd::Random(4,4);
@@ -835,8 +859,8 @@ Type objective_function<Type>::operator() ()
 //  std::cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << std::endl;
 
 
-  REPORT(j);
-  REPORT(eigenvec);
+  //REPORT(j);
+  //REPORT(eigenvec);
 
   int nextBreak = 0;
   int start = 0;
