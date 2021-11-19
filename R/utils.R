@@ -628,12 +628,14 @@ get_vax_model_type <- function(x) {
         return(attr(x, "model_type"))
     }
   ## then check for vax cat attribute which would contain a model type attribute
-    if (!is.null(attr(x, "vax_cat"))) {
+    if (!is.null(attr(attr(x, "vax_cat"), "model_type"))) {
       return(attr(attr(x, "vax_cat"), "model_type"))
     }
 
   ## otherwise, check object names
-    return(ifelse(any(grepl("2", x)), "twodose", "onedose"))
+    return(ifelse(any(grepl("dose2", names(x))),
+                  ifelse(any(grepl("wane", names(x))), "twodosewane", "twodose"),
+                  "onedose"))
 }
 
 ## round, preserving sum

@@ -137,7 +137,7 @@ make_betavec <- function(state, params, full = TRUE) {
 }
 
 calc_variant_adjustment <- function(params,
-                                    stratum = c("unvax", "dose1", "dose2")) {
+                                    stratum = c("unvax", "dose1", "dose2", "wane")) {
     ## used for the vaxified model
     stratum <- match.arg(stratum)
 
@@ -257,12 +257,17 @@ make_beta <- function(state, params, full = TRUE) {
         if (!do_variant(params)) {
             vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)), ] <- rep(1 - params[["vax_efficacy_dose1"]], length(vax_cat))
 
-            if (model_type == "twodose") {
+            if (grepl("twodose", model_type)) {
                 ## carry over efficacy from one dose to vaxdose2 (received second dose, but not yet protected)
                 vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)), ] <- rep(1 - params[["vax_efficacy_dose1"]], length(vax_cat))
 
                 ## add in efficacy for second dose
                 vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)), ] <- rep(1 - params[["vax_efficacy_dose2"]], length(vax_cat))
+            }
+
+            if(model_type == "twodosewane") {
+              ## add in efficacy for second dose waned
+              vax_trans_red[grepl(vax_cat[6], rownames(vax_trans_red)), ] <- rep(1 - params[["vax_efficacy_wane"]], length(vax_cat))
             }
         } else {
             ## if we're including a variant, we also need to take care to do the increased transmissibility adjustment here (for non-vaxified models, that's taken care of below)
@@ -271,10 +276,14 @@ make_beta <- function(state, params, full = TRUE) {
 
             vax_trans_red[grepl(vax_cat[3], rownames(vax_trans_red)), ] <- rep(calc_variant_adjustment(params, "dose1"))
 
-            if (model_type == "twodose") {
+            if (grepl("twodose", model_type)) {
                 vax_trans_red[grepl(vax_cat[4], rownames(vax_trans_red)), ] <- rep(calc_variant_adjustment(params, "dose1"))
 
                 vax_trans_red[grepl(vax_cat[5], rownames(vax_trans_red)), ] <- rep(calc_variant_adjustment(params, "dose2"))
+            }
+
+            if(model_type == "twodosewane") {
+              vax_trans_red[grepl(vax_cat[6], rownames(vax_trans_red)), ] <- rep(calc_variant_adjustment(params, "wane"))
             }
         }
 
@@ -411,8 +420,10 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
     alpha <- sigma <- gamma_a <- gamma_m <- gamma_s <- gamma_p <- NULL
     rho <- delta <- mu <- N <- E0 <- iso_m <- iso_s <- phi1 <- NULL
     phi2 <- psi1 <- psi2 <- psi3 <- c_prop <- c_delaymean <- c_delayCV <- NULL
-    vax_response_rate <- vax_response_rate_R <- vax_alpha_dose1 <- NULL
-    vax_mu_dose1 <- vax_alpha_dose2 <- vax_mu_dose2 <- NULL
+    vax_response_rate <- vax_response_rate_R <- NULL
+    vax_alpha_dose1 <- vax_mu_dose1 <- vax_alpha_dose2 <- vax_mu_dose2 <- NULL
+    vax_wane_rate <- vax_wane_rate_R <- NULL
+    vax_alpha_wane <- vax_mu_alpha <- NULL
     ## default values, will be masked (on purpose) by unpacking params/state
     nonhosp_mort <- 0
     ##
@@ -537,7 +548,7 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
         )
 
         ## dose2 -> protect2
-        if (model_type == "twodose") {
+        if (grepl("twodose", model_type)) {
             afun(
                 paste0("S_.*", vax_cat[4]),
                 paste0("S_.*", vax_cat[5]),
@@ -549,6 +560,21 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
                 paste0("R_.*", vax_cat[5]),
                 vax_response_rate_R
             )
+        }
+
+        ## add waning rate from two-dose protection
+        if (model_type == "twodosewane") {
+          afun(
+            paste0("S_.*", vax_cat[5]),
+            paste0("S_.*", vax_cat[6]),
+            vax_wane_rate
+          )
+
+          afun(
+            paste0("R_.*", vax_cat[5]),
+            paste0("R_.*", vax_cat[6]),
+            vax_wane_rate_R
+          )
         }
 
         ## modify epidemiological parameters for vaxprotect1
@@ -573,7 +599,7 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
             (1 - vax_mu_dose1) * gamma_p
         )
 
-        if (model_type == "twodose") {
+        if (grepl("twodose", model_type)) {
             ## carry over epi param adjustments from vaxprotect1
             ## to vaxdose2 layer
             afun(
@@ -616,6 +642,29 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
                 paste0("Is_.*", vax_cat[5]),
                 (1 - vax_mu_dose2) * gamma_p
             )
+        }
+
+        if(model_type == "twodosewane"){
+          ## adjust epi parameters for fully-vaccinated people whose immunity has waned
+          afun(
+            paste0("E_.*", vax_cat[6]),
+            paste0("Ia_.*", vax_cat[6]), vax_alpha_wane * sigma
+          )
+          afun(
+            paste0("E_.*", vax_cat[6]),
+            paste0("Ip_.*", vax_cat[6]),
+            (1 - vax_alpha_wane) * sigma
+          )
+          afun(
+            paste0("Ip_.*", vax_cat[6]),
+            paste0("Im_.*", vax_cat[6]),
+            vax_mu_wane * gamma_p
+          )
+          afun(
+            paste0("Ip_.*", vax_cat[6]),
+            paste0("Is_.*", vax_cat[6]),
+            (1 - vax_mu_wane) * gamma_p
+          )
         }
     }
 

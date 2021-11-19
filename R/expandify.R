@@ -107,18 +107,20 @@ condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed
 
 ##' Construct vector of vaccine category labels
 ##'
-##' @param model_type choose either the one-dose or the two-dose model
+##' @param model_type choose the one-dose, the two-dose model, or the two-dose model with waning
 ##'
 ##' @export
-mk_vaxcats <- function(model_type = c("onedose", "twodose")) {
+mk_vaxcats <- function(model_type = c("onedose", "twodose", "twodosewane")) {
     model_type <- match.arg(model_type)
 
-    if (model_type == "onedose") {
-        cats <- c("unvax", "vaxdose1", "vaxprotect1")
+    cats <- c("unvax", "vaxdose1", "vaxprotect1")
+
+    if (grepl("twodose", model_type)) {
+        cats <- c(cats, "vaxdose2", "vaxprotect2")
     }
 
-    if (model_type == "twodose") {
-        cats <- c("unvax", "vaxdose1", "vaxprotect1", "vaxdose2", "vaxprotect2")
+    if (model_type == "twodosewane") {
+      cats <- c(cats, "vaxwane2")
     }
 
     attr(cats, "model_type") <- model_type
@@ -135,22 +137,31 @@ mk_vaxcats <- function(model_type = c("onedose", "twodose")) {
 ##' @inheritParams mk_vaxcats
 ##'
 ##' @export
-expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodose")) {
+expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodose", "twodosewane")) {
     model_type <- match.arg(model_type)
 
     params_desc[["vax_doses_per_day"]] <- "Total number of doses administered per day in the entire population"
     params_desc[["vax_efficacy_dose1"]] <- "Infection-blocking one-dose efficacy of the vaccine"
-    params_desc[["vax_response_rate"]] <- "Average number of days to vaccine-derived immunity, after a dose, for an individual who has never been infected"
-    params_desc[["vax_response_rate_R"]] <- "Average number of days to vaccine-derived immunity, after a dose, for an individual who was infected after being dosed (but not yet protected)"
+    params_desc[["vax_response_rate"]] <- "Rate at which an individual develops vaccine-derived immunity, after a dose, for an individual who has never been infected (in units of 1/days)"
+    params_desc[["vax_response_rate_R"]] <- "Rate at which an individual develops vaccine-derived immunity, after a dose, for an individual who has been infected previously (in units of 1/days)"
     params_desc[["vax_alpha_dose1"]] <- "Proportion of infections in individuals protected with one dose of the vaccine that are asymptomatic (vs symptomatic)"
-    params_desc[["vax_mu_dose1"]] <- "Proportion of infections in individuals protected with one dose of the vaccine that are asymptomatic (vs symptomatic)"
+    params_desc[["vax_mu_dose1"]] <- "Proportion of infections in individuals protected with one dose of the vaccine that are mild (vs severe)"
 
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         params_desc[["vax_efficacy_dose2"]] <- "Infection-blocking two-dose efficacy of the vaccine"
         params_desc[["vax_alpha_dose2"]] <- "Proportion of infections in individuals protected with two doses of the vaccine that are asymptomatic (vs symptomatic)"
-        params_desc[["vax_mu_dose2"]] <- "Proportion of infections in individuals protected with two doses of the vaccine that are asymptomatic (vs symptomatic)"
+        params_desc[["vax_mu_dose2"]] <- "Proportion of infections in individuals protected with two doses of the vaccine that are mild (vs severe)"
 
         params_desc[["vax_prop_first_dose"]] <- "Proportion of the total number of doses administered per day that are first doses"
+    }
+
+    if (model_type == "twodosewane") {
+       params_desc[["vax_efficacy_wane"]] <- "Infection-blocking vaccine efficacy for individuals whose two-dose vaccination protection has waned"
+       params_desc[["vax_alpha_wane"]] <- "Proportion of infections that are asymptomatic (vs symptomatic) in individuals whose two-dose vaccination protection has waned"
+       params_desc[["vax_mu_wane"]] <- "Proportion of infections that are mild (vs severe) in individuals whose two-dose vaccination protection has waned"
+
+       params_desc[["vax_wane_rate"]] <- "Rate at which an individual's two-dose immunity wanes, for an individual who has never been infected (in units of 1/days)"
+       params_desc[["vax_wane_rate_R"]] <- "Rate at which an individual's two-dose immunity wanes, for an individual who has never been infected (in units of 1/days)"
     }
 
     return(params_desc)
@@ -165,18 +176,24 @@ expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodo
 ##' @param vax_efficacy_dose1 infection-blocking vaccine efficacy for dose 1
 ##' @param vax_efficacy_dose2 infection-blocking vaccine efficacy for dose 2
 ##' @param vax_avg_response_time average number of days it takes for a vaccine dose to confer protection for an individual that has never been infected
-##' @param vax_avg_response_time_R average number of days it takes for a vaccine dose to confer protection for an individual that has previously been infected (e.g. between being dosed and eliciting the protective immune response)
+##' @param vax_avg_response_time_R average number of days it takes for a vaccine dose to confer protection for an individual that has previously been infected
 ##' @param vax_alpha_dose1 proportion of infections that are asymptomatic in individuals that have received one dose of the vaccine
 ##' @param vax_alpha_dose2 proportion of infections that are asymptomatic in individuals that have received two doses of the vaccine
 ##' @param vax_mu_dose1 proportion of infections that are mild (vs. severe) in individuals that have received one dose of the vaccine
 ##' @param vax_mu_dose2 proportion of infections that are mild (vs. severe) in individuals that have received two doses of the vaccine
+##' @param vax_wane_time average number of days it takes for an individual's second dose protection to wane for an individual that has never been infected (time since two-dose protection was conferred)
+##' @param vax_wane_time_R average number of days it takes for an individual's second dose protection to wane for an individual that has previously been infected (time since two-dose protection was conferred)
+##' @param vax_efficacy_wane infection-blocking vaccine efficacy for those whose two-dose protection has waned
+##' @param vax_alpha_wane proportion of infections that are asymptomatic in individuals whose two-dose protection has waned
+##' @param vax_mu_wane proportion of infections that are mild (vs. severe) in individuals whose two-dose protection has waned
+##' @details To shut off any of the flows associated with a "time" parameter (with `time` in the parameter name, e.g., vax_wane_time), set it to `Inf`.
 ##'
 ##' @examples
 ##' params <- read_params("PHAC.csv")
 ##' params_vax <- expand_params_vax(params)
 ##' @export
 expand_params_vax <- function(params,
-                              model_type = c("onedose", "twodose"),
+                              model_type = c("onedose", "twodose", "twodosewane"),
                               vax_doses_per_day = 1e5,
                               vax_prop_first_dose = 1,
                               vax_efficacy_dose1 = 0.6,
@@ -186,7 +203,12 @@ expand_params_vax <- function(params,
                               vax_alpha_dose1 = 0.5,
                               vax_alpha_dose2 = 0.5,
                               vax_mu_dose1 = 1,
-                              vax_mu_dose2 = 1) {
+                              vax_mu_dose2 = 1,
+                              vax_wane_time = 180,
+                              vax_wane_time_R = Inf,
+                              vax_efficacy_wane = 0.7,
+                              vax_alpha_wane = 0.5,
+                              vax_mu_wane = 1) {
 
     ## prep inputs
     ##
@@ -211,11 +233,12 @@ expand_params_vax <- function(params,
     for (par in dose1_pars) {
         params[[par]] <- get(par)
     }
+
     ## update average immune response rate
     params[["vax_response_rate"]] <- 1 / vax_avg_response_time
     params[["vax_response_rate_R"]] <- 1 / vax_avg_response_time_R
 
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         dose2_pars <- c(
             "vax_prop_first_dose",
             "vax_efficacy_dose2",
@@ -226,6 +249,21 @@ expand_params_vax <- function(params,
         for (par in dose2_pars) {
             params[[par]] <- get(par)
         }
+    }
+
+    if (model_type == "twodosewane"){
+        wane_pars <- c(
+          "vax_efficacy_wane",
+          "vax_alpha_wane",
+          "vax_mu_wane"
+        )
+
+        for (par in wane_pars) {
+          params[[par]] <- get(par)
+        }
+
+      params[["vax_wane_rate"]] <- 1 / vax_wane_time
+      params[["vax_wane_rate_R"]] <- 1 / vax_wane_time_R
     }
 
     ## prep output
@@ -273,7 +311,7 @@ condense_params_vax <- function(params) {
 }
 
 ## STATE TOOLS
-
+## FIXME: UPDATE ME FOR TWODOSEWANE MODEL
 ##' expand state vector by vaccination status
 ##'
 ##' by default, everyone starts with an unvaccinated status
@@ -287,7 +325,7 @@ condense_params_vax <- function(params) {
 ##' ss2 <- expand_state_vax(ss)
 ##' @export
 expand_state_vax <- function(x,
-                             model_type = c("onedose", "twodose"),
+                             model_type = c("onedose", "twodose", "twodosewane"),
                              unif = FALSE) {
     model_type <- match.arg(model_type)
     vax_cat <- mk_vaxcats(model_type = model_type)
@@ -341,7 +379,7 @@ expand_state_vax <- function(x,
 }
 
 ## CONDENSE STATE OR SIM RESULTS
-
+## FIXME: check this still works with TWODOSEWANE model
 ##' collapse vaccination categories (only; don't do other condensation)
 ##' @param x a state vector or simulation result df (an object of class `state_pansim` or `pansim`)
 ##'
@@ -462,7 +500,7 @@ condense_vax <- function(x) {
 }
 
 ## SIM TOOLS
-
+## FIXME: check this works with TWODOSEWANE model
 ##' generate per capita daily vaccination rates
 ##' @param state state vector (an object of class `state_pansim`)
 ##' @param params model parameters (an object of class `params_pansim`)
@@ -483,7 +521,7 @@ make_vaxrate <- function(state, params) {
     )
 
     ## same as above but for pop that is protected by first dose
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         asymp_vaxprotect1_regex <- sprintf(
             "^(%s)_.*vaxprotect1",
             paste(asymp_cat, collapse = "|")
@@ -495,7 +533,7 @@ make_vaxrate <- function(state, params) {
         return_type = "named_vector"
     )
     ## same as above but for pop that is protected by first dose
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         asymp_vaxprotect1_N <- condense_state(
             state[grepl(asymp_vaxprotect1_regex, names(state))],
             return_type = "named_vector"
@@ -508,7 +546,7 @@ make_vaxrate <- function(state, params) {
         vax_rate$dose1 <- x
     }
 
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         x <- params[["vax_prop_first_dose"]] * params[["vax_doses_per_day"]] / asymp_unvax_N
         x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
         vax_rate$dose1 <- x
@@ -521,6 +559,7 @@ make_vaxrate <- function(state, params) {
     return(vax_rate)
 }
 
+## FIXME: check this works with TWODOSEWANE model
 ##' compute and add vaxrates to ratemat
 ##' (returns whole ratemat because the update part is non-trivial)
 ##' @param state state vector (an object of class `state_pansim`)
@@ -552,7 +591,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
                                 ncol = length(epi_states),
                                 dimnames = list(epi_states, epi_states)
       )
-      if (model_type == "twodose") vax_block_dose2 <- vax_block_dose1
+      if (grepl("twodose", model_type)) vax_block_dose2 <- vax_block_dose1
 
       ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
       for (state_cat in asymp_cat) {
@@ -563,7 +602,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
           vax_block_dose1
         )
         vax_block_dose1[index] <- vax_rate$dose1
-        if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+        if (grepl("twodose", model_type)) vax_block_dose2[index] <- vax_rate$dose2
 
         ## accumulator (not present e.g. when we do rExp in make_state)
         if ("V" %in% epi_states) {
@@ -573,13 +612,13 @@ add_updated_vaxrate <- function(state, params, ratemat) {
             vax_block_dose1
           )
           vax_block_dose1[index] <- vax_rate$dose1
-          if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+          if (grepl("twodose", model_type)) vax_block_dose2[index] <- vax_rate$dose2
         }
       }
 
       ## convert vax_block to Matrix::Matrix object for subset assignement
       vax_block_dose1 <- Matrix::Matrix(vax_block_dose1)
-      if (model_type == "twodose") vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
+      if (grepl("twodose", model_type)) vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
 
         ## just once, without ages
         from_regex <- vax_cat[1] ## unvax
@@ -588,7 +627,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
             grepl(from_regex, dimnames(ratemat)$from),
             grepl(to_regex, dimnames(ratemat)$to)
         ] <- vax_block_dose1
-        if (model_type == "twodose") {
+        if (grepl("twodose", model_type)) {
             ## just once, without ages
             from_regex <- vax_cat[3] ## vaxprotect1
             to_regex <- vax_cat[4] ## vaxdose2
@@ -628,7 +667,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
               ] <- rep(as.numeric(dose1_rate), block_size)
             }
 
-            if (model_type == "twodose") {
+            if (grepl("twodose", model_type)) {
                 from_regex_suffix <- sub(
                     "\\+", "\\\\+",
                     paste0(age, "_", vax_cat[3])
@@ -675,7 +714,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
         }
     }
 
-    if (model_type == "twodose") {
+    if (grepl("twodose", model_type)) {
         ## check dose 1
         ratemat_dose1_subset <- ratemat[
             grepl(vax_cat[1], dimnames(ratemat)$from),
@@ -764,6 +803,7 @@ expand_params_desc_variant <- function(params_desc) {
     params_desc[["variant_advantage"]] <- "Transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5."
     params_desc[["variant_vax_efficacy_dose1"]] <- "One-dose vaccine efficacy against variant (only used in vaxified model)"
     params_desc[["variant_vax_efficacy_dose2"]] <- "Two-dose vaccine efficacy against variant (only used in vaxified model)"
+    params_desc[["variant_vax_efficacy_wane"]] <- "Vaccine efficacy against variant for individuals whose two-dose protection has waned (only used in vaxified model)"
 
     return(params_desc)
 }
@@ -784,7 +824,8 @@ expand_params_variant <- function(params,
                                   variant_prop = 0.01,
                                   variant_advantage = 1.5,
                                   variant_vax_efficacy_dose1 = 0.3,
-                                  variant_vax_efficacy_dose2 = 0.8) {
+                                  variant_vax_efficacy_dose2 = 0.8,
+                                  variant_vax_efficacy_wane = 0.6) {
 
     ## grab existing parameter descriptions
     params_desc <- attr(params, "description")
@@ -798,7 +839,8 @@ expand_params_variant <- function(params,
         "variant_prop",
         "variant_advantage",
         "variant_vax_efficacy_dose1",
-        "variant_vax_efficacy_dose2"
+        "variant_vax_efficacy_dose2",
+        "variant_vax_efficacy_wane"
     )
 
     for (par in par_list) {
