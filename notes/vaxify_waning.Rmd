@@ -1,0 +1,265 @@
+---
+title: "Vaccination model with waning"
+author: "Irena Papst"
+date: "`r format(Sys.Date(), '%d %b %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE
+  , fig.height = 2
+  , fig.width  = 5
+  , fig.retina = 3
+)
+
+library(tidyverse)
+
+devtools::load_all()
+options(macpan_pfun_method = "grep")
+```
+
+Here we demonstrate an implementation of waning (vaccine-derived) immunity in the `McMasterPandemic` model with two-dose vaccination. 
+
+The main difference between the existing model with two-dose vaccination and the model with waning immunity is that there is a new vaccine stratum. In the basic two-dose model, the strata are:
+
+```{r}
+mk_vaxcats(model_type = "twodose")
+```
+In the model with waning, there is an additional stratum at the end (chronologically) for individuals whose two-dose vaccine-deriving immunity was waned:
+
+```{r}
+mk_vaxcats(model_type = "twodosewane")
+```
+(The `mk_vaxcats()` function is used internally and doesn't get called by the user when initializing a vaxified model. I'm just showing its output here because it sets up the vax strata labels and the `model_type` attribute, both of which get used a lot internally.)
+
+## Model specification
+
+To specify the two-dose model with waning vaccine-derived immunity, we proceed in a (hopefully) familiar way. We start with base model parameters,
+
+```{r}
+base_params <- read_params("PHAC.csv")
+```
+
+which we can expand them with vaccination:
+
+```{r}
+vax_params <- expand_params_vax(
+  params = base_params,
+  model_type = "twodosewane",
+  vax_wane_time = 180,
+  vax_wane_time_R = Inf, ## to shut the associated flow off, since it's computed as 1/vax_wane_time_R = 1/Inf = 0
+  vax_efficacy_wane = 0.7,
+  vax_alpha_wane = 0.5,
+  vax_mu_wane = 1
+)
+```
+
+Here, I'm only specifying values related to the waning model (which both start with `vax_wane_time`); all other vaccine-related parameters will be taken as the default values (see `?expand_params_vax`). The new parameters are:
+
+```{r}
+knitr::kable(describe_params(vax_params) %>% filter(grepl("wane", symbol)))
+```
+
+(Much like the vaccine response time parameters from the basic vaccination model (`vax_response_time` and `vax_response_time_R`), the new parameters related to waning rates, `vax_wane_time` `vax_wane_time_R`, get specified in terms of the average number of days to a given event, and then converted into a rate by taking the reciprocal. So, for the waning model, `vax_wane_time` gets specified by the user, but `vax_wane_rate` gets stored in the parameter list.)
+
+For the simulation below, we assume that two-dose immunity wanes only in individuals who have never been infected, and this waning starts on average 3 months (90 days) after the two-dose protection was conferred. (The implementation of the waning model is flexible enough to allow a user to specify waning in individuals with two-dose protection *and* a previous infection.) Two-dose infection-blocking vaccine efficacy is assumed to be 90\%, and it wanes to 70\%. The probabilities of asymptomatic and mild disease are unchanged by waning: only immunity to infection is affected by waning. 
+
+## Example simulation with the waning model
+
+We simulate an outbreak over two years.
+
+```{r}
+start_date <- "2020-03-20"
+end_date <- "2022-03-20"
+```
+
+We use the default parameters in `PHAC.csv` for SARS-CoV-2 (with a population size of `r format(vax_params$N, scientific = FALSE, big.mark = ",")`), and the default vaccination parameters assumed by `expand_params_vax()`, with two adjustments:
+
+1. we will bring bring the transmission rate down to a very low rate of 0.3 transmissions per susceptible per day at the start of the simulation;
+2. we will vaccinate at a constant rate of `r format(1e4, scientific = FALSE, big.mark = ",")` doses per day (all first doses to start).
+
+This simulates a scenario where vaccines are deployed at the start of an outbreak, though strict non-pharmaceutical interventions are also initially in effect, keeping transmission low during the vaccine roll-out.
+
+```{r}
+## slow down transmission and vax from default
+vax_params <- update(vax_params,
+       beta0 = 0.3,
+       vax_doses_per_day = 1e4)
+```
+
+We also make two parameter adjustments part-way through the simulation, to simulate changing conditions:
+
+1. 70 \% of vaccines will go to second doses beginning 8 weeks after the simulation start date (second doses start on `r format(as.Date(start_date) + 8*7, "%d %b %Y")`);
+2. the transmission rate will double from its initial value on `r format(as.Date("2020-10-01"), "%d %b %Y")`, simulating the relaxation of public health measures at a point where second dose coverage is increasing, but has only reached about 50% of the population (where every person in the population is eligible for vaccination).
+
+These changes are denoted with dashed vertical lines in the results plot below.
+
+```{r}
+## start administering second doses 8 weeks after start date
+params_timevar <- data.frame(
+  Date = c(as.Date(start_date) + 8*7, as.Date("2020-10-01")),
+  Symbol = c("vax_prop_first_dose", "beta0"),
+  Value = c(0.7, 2),
+  Type = rep("rel_orig", 2)
+)
+```
+
+```{r warning = FALSE}
+res <- run_sim(
+  params = vax_params,
+  start_date = start_date,
+  end_date = end_date,
+  params_timevar = params_timevar,
+  condense_args = list(keep_all = TRUE)
+)
+```
+
+This simulation results in the following predicted count of daily infection reports:
+
+```{r echo = FALSE}
+plot_total <- function(res){
+  p <- (plot(condense(res), keep_states = c("report")) 
+  + labs(title = "infection reports")
+  + scale_x_date(date_labels = "%b %Y")
+  + theme(legend.position = "none",
+          axis.title = element_blank())
+)
+  
+  return(p)
+}
+```
+
+```{r}
+plot_total(res)
+```
+
+The simulation results in two distinct, small waves, followed by a much larger uptick towards the end of the simulation. We can see which groups are driving each wave if we stratify the simulation results by vaccination layer: 
+
+```{r echo = FALSE}
+condense_epicat <- function(res){
+  ## store everything as attributes
+  params0 <- attr(res, "params")
+  state0 <- attr(res, "state0")
+  start_date <- attr(res, "start_date")
+  end_date <- attr(res, "end_date")
+  call <- attr(res, "call")
+  params_timevar <- attr(res, "params_timevar")
+  
+  df <- (res 
+    %>% pivot_longer(-date)
+    %>% separate(
+      col = "name",
+      into = c("state", "vax_cat")
+    )
+    %>% mutate(state = case_when(
+      str_detect(state, "^ICU") ~ "ICU",
+      str_detect(state, "^I[apms]") ~ "I",
+      T ~ state)
+    )
+    %>% mutate(state = as_factor(state),
+               vax_cat = as_factor(vax_cat))
+    %>% group_by(date, state, vax_cat)
+    %>% summarise(value = sum(value), .groups = "drop")
+    %>% unite(
+      col = "name",
+      state, vax_cat,
+      na.rm = TRUE
+    )
+    %>% pivot_wider(id_cols = date)
+  )
+  
+  ## store everything as attributes
+  df <- as.data.frame(df)
+  class(df) <- c("pansim", "data.frame")
+  attr(df, "params") <- params0
+  attr(df, "state0") <- state0
+  attr(df, "start_date") <- start_date
+  attr(df, "end_date") <- end_date
+  attr(df, "call") <- call
+  attr(df, "params_timevar") <- params_timevar
+  
+  return(df)
+}
+
+plot_stratified <- function(res){
+  
+  df <- condense_epicat(res)
+  
+  p <- (ggplot(df 
+        %>% pivot_longer(- date) 
+        %>% filter(str_detect(name, "report_"))
+        %>% separate(col = name, 
+                     into = c("state", "vaxcat"),
+                     sep = "_")
+        %>% mutate(vaxcat = as_factor(vaxcat)),
+        aes(x = date, y = value))
+  + geom_line(colour = "#F58A84")
+  + facet_grid(rows = vars(vaxcat))
+  + scale_x_date(date_labels = "%b %Y")
+  + theme(legend.position = "none",
+          axis.title = element_blank())
+)
+  
+  return(p)
+}
+```
+
+```{r fig.height = 6}
+plot_stratified(res)
+```
+
+The first part of the first wave (before Jul 2020) is driven by those without any vaccine protection (`unvax` and `vaxdose1`), with a modest contribution near the end from breakthrough cases in those with a single dose. The second wave is driven primarily by breakthrough cases in those with only a single dose, and it occurs after the transmission rate doubles in Oct 2020 (*e.g.* after some reopening). The final wave, which begins to take off in Fall 2021, but is cut off by the end of the simulation, is driven fully by those whose second dose immunity has waned.
+
+## Variants of concern
+
+The two-dose wane model has also been integrated with the variant expansion as well:
+
+```{r}
+variant_params <- expand_params_variant(
+  params = vax_params,
+  variant_prop = 1,
+  variant_vax_efficacy_wane = 0.6
+)
+```
+
+One additional parameter must be specified:
+
+```{r}
+knitr::kable(describe_params(variant_params) %>% filter(grepl("variant.*wane", symbol)))
+```
+
+Here, we assume that a new variant reduces infection-blocking vaccine efficacy to 60\%. We also assume that the variant is 50\% more transmissible, and gets introduced into 1 Jul 2021, at which point it (suddenly) represents 50\% of all infections going forward. 
+
+```{r}
+params_timevar <- rbind(
+  params_timevar,
+  data.frame(
+    Date = c(as.Date(start_date), as.Date("2021-07-01")),
+    Symbol = rep("variant_prop", 2),
+    Value = c(0, 0.5),
+    Type = rep("rel_orig", 2)
+  ))
+```
+
+Running the simulation...
+
+```{r}
+res <- run_sim(
+  params = variant_params,
+  start_date = start_date,
+  end_date = end_date,
+  params_timevar = params_timevar,
+  condense_args = list(keep_all = TRUE)
+)
+```
+
+```{r}
+plot_total(res)
+```
+
+```{r fig.height = 6}
+plot_stratified(res)
+```
+
+The late introduction of the variant has a sizeable effect on breakthrough cases, though eventually the epidemic turns over thanks to susceptible depletion (mostly of individuals whose two-dose immunity has waned slightly).
