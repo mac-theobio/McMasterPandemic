@@ -1,11 +1,16 @@
 test_that("states are properly expanded with vaccination", {
-    params <- read_params("PHAC_testify.csv")
-    ss <- make_state(params = params, testify = FALSE)
-    ssv <- expand_state_vax(ss)
-    ## check expand
-    expect_equal(sum(ssv), sum(ss))
-    ## check condense
-    ## expect_equal(condense_vax(ssv), ss, ignore_attr = TRUE)
+    params <- read_params("PHAC.csv")
+    ss <- make_state(params = params)
+    for(model_type in c("onedose", "twodose", "twodosewane")){
+        ssv <- expand_state_vax(ss, model_type = model_type)
+        ## test that the correct number of expanded states are generated
+        expect_equal(length(ssv), length(attr(ssv, "epi_cat"))*length(attr(ssv, "vax_cat")))
+        ## test that population size does not change when states are expanded with vaccination
+        expect_equal(sum(ssv), sum(ss))
+        ## check condense
+        ## expect_equal(condense_vax(ssv), ss, ignore_attr = TRUE)
+    }
+
 })
 
 ## test_that("states are properly expanded with age *and* vaccination", {
