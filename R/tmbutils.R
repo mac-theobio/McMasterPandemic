@@ -638,6 +638,15 @@ simulate_state_vector = function(model) {
          byrow = TRUE) %>% as.data.frame %>% setNames(names(model$state))
 }
 
+#' @export
+initial_state_vector = function(model) {
+  (model
+   %>% simulate_state_vector
+   %>% `[`(1, ) # get first row
+   %>% unlist
+  )
+}
+
 # benchmarking and comparison in tests
 
 #' Compare TMB-based and classic MacPan Simulations
@@ -669,6 +678,21 @@ compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) 
 }
 
 
+#' Time Two Expressions
+#'
+#' Evaluate two expressions in the environment in which
+#' \code{time_wrap} is called, and record the system
+#' time associated with each expression.
+#'
+#' @param expr1 first expression
+#' @param expr2 second expression
+#' @param units time units with which to measure the system time
+#' of each expression (see \code{\link{difftime}})
+#' @return list with three components: (1) time to evaluate
+#' the first expression, (2) time to evaluate the second expression,
+#' and (3) the time for the first expression divided by the time
+#' for the second
+#'
 #' @export
 time_wrap = function(expr1, expr2, units = 'secs') {
   e = parent.frame()
@@ -684,4 +708,41 @@ time_wrap = function(expr1, expr2, units = 'secs') {
   dff2 = difftime(nd2, strt2, units = units)
 
   list(dff1, dff2, as.numeric(dff2)/as.numeric(dff1))
+}
+
+##' Set Spec Version
+##'
+##' Set the spec version and optionally compile a
+##' specific c++ file associated with this version.
+##'
+##' The user need to have write permissions to
+##' \code{cpp_path}, because object and shared
+##' object files will be created in this
+##' directory.
+##'
+##' @param v character string with spec version
+##' @param cpp_path string containing path
+##' to a directory containing a file called
+##' \code{macpan.cpp}, which is to be used
+##' to construct the objective function --
+##' the default is \code{NULL}, which will
+##' make use of the packaged source file
+##' \code{McMasterPandemic.cpp}
+##'
+##' @importFrom tools file_path_sans_ext
+##' @export
+set_spec_version = function(v, cpp_path = NULL) {
+  spec_version <- as.character(unlist(v))[1]
+  print(spec_version)
+  options(MP_flex_spec_version = spec_version)
+
+  if(is.null(cpp_path)) {
+    options(MP_flex_spec_dll = "McMasterPandemic")
+  } else {
+    cpp <- file.path(cpp_path, spec_version, "macpan.cpp")
+    dll <- file_path_sans_ext(cpp)
+    options(MP_flex_spec_dll = basename(dll))
+    compile(cpp)
+    dyn.load(dynlib(dll))
+  }
 }

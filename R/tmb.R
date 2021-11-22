@@ -4,7 +4,6 @@
 ##'
 ##' @param params a \code{param_pansim} object
 ##' @param state a \code{state_pansim} object
-##' @param struc a \code{struc_pansim} object
 ##' @param start_date simulation start date
 ##' @param end_date simulation end date
 ##' @param params_timevar data frame with scheduling for piece-wise
@@ -15,7 +14,7 @@
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
-init_model <- function(params, state, struc = NULL,
+init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE, ...) {
@@ -25,6 +24,8 @@ init_model <- function(params, state, struc = NULL,
         stop("only syntactically valid r names can be used ",
              "for state variables and parameters")
     }
+
+    if(is.null(state)) state = make_state(params = params)
 
     # need to do this before we ruin the pansim structure
     ratemat = make_ratemat(state, params, sparse = TRUE)

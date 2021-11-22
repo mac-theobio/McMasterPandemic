@@ -15,11 +15,22 @@ add_tmb_indices(model)
 Add, to a compartmental model, indices used to access appropriate values
 during simulation and calibration using TMB
 }
+\details{
+\describe{
+  \item{\code{make_ratemat_indices$from}}{}
+  \item{\code{make_ratemat_indices$to}}{}
+  \item{\code{make_ratemat_indices$count}}{}
+  \item{\code{updateidx}}{indices into the \code{to}, \code{from}, and \code{count}
+  vectors, identifying rates that need (or at least will) be updated at
+  every simulation step}
+}
+}
 \seealso{
 Other flexmodels: 
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{init_model}()},
+\code{\link{initial_population}()},
 \code{\link{make_base_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},

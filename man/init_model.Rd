@@ -6,8 +6,7 @@
 \usage{
 init_model(
   params,
-  state,
-  struc = NULL,
+  state = NULL,
   start_date = NULL,
   end_date = NULL,
   params_timevar = NULL,
@@ -19,8 +18,6 @@ init_model(
 \item{params}{a \code{param_pansim} object}
 
 \item{state}{a \code{state_pansim} object}
-
-\item{struc}{a \code{struc_pansim} object}
 
 \item{start_date}{simulation start date}
 
@@ -44,6 +41,7 @@ Other flexmodels:
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},
+\code{\link{initial_population}()},
 \code{\link{make_base_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},

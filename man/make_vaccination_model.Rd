@@ -4,7 +4,7 @@
 \alias{make_vaccination_model}
 \title{Make a Two-Dose Vaccination Model}
 \usage{
-make_vaccination_model(...)
+make_vaccination_model(..., do_variant = FALSE)
 }
 \arguments{
 \item{...}{
@@ -12,7 +12,6 @@ make_vaccination_model(...)
   \describe{
     \item{\code{params}}{a \code{param_pansim} object}
     \item{\code{state}}{a \code{state_pansim} object}
-    \item{\code{struc}}{a \code{struc_pansim} object}
     \item{\code{start_date}}{simulation start date}
     \item{\code{end_date}}{simulation end date}
     \item{\code{params_timevar}}{data frame with scheduling for piece-wise
@@ -31,6 +30,7 @@ Other flexmodels:
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},
+\code{\link{initial_population}()},
 \code{\link{make_base_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},

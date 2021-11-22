@@ -817,3 +817,17 @@ expand_params_variant <- function(params,
 
     return(params)
 }
+
+##' @param params parameter list (e.g. read in with \code{read_params()})
+##' @param S0 initial proportion of individuals in susceptible compartments
+##'
+##' @export
+expand_params_S0 = function(params, S0) {
+    saved_attr = attributes(params)
+    params = c(params, S0)
+    saved_attr$description = c(saved_attr$description, "Initial proportion of individuals in S boxes")
+    saved_attr$names = c(saved_attr$names, "S0")
+    attributes(params) = saved_attr
+
+    params
+}

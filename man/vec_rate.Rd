@@ -15,6 +15,7 @@ Other flexmodels:
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},
+\code{\link{initial_population}()},
 \code{\link{make_base_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
