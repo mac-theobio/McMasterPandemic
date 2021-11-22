@@ -11,7 +11,8 @@
         MP_flex_spec_doc_site = "https://canmod.net/misc/flex_specs",
         MP_flex_spec_dll = "McMasterPandemic",
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
-        MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])"
+        MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
+        MP_use_state_rounding = TRUE
     )
 }
 

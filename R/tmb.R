@@ -11,13 +11,18 @@
 ##' @param do_hazard should hazard simulation steps be used?
 ##' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 ##' if \code{spec_ver_gt('0.0.4')}
+##' @param do_make_state should state be remade on the c++ size?
+##' (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
+##' if \code{spec_ver_gt('0.1.0')}
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
 init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
-                       do_hazard = TRUE, ...) {
+                       do_hazard = TRUE,
+                       do_make_state = FALSE,
+                       ...) {
     check_spec_ver_archived()
     name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
     if(!all(grepl(name_regex, c(names(params), names(state))))) {
@@ -154,12 +159,11 @@ init_model <- function(params, state = NULL,
 
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
 
-    if (spec_ver_gt("0.0.6")) {
-      model$sums = list()
-    }
+    if (spec_ver_gt("0.0.6")) model$sums = list()
     model$sum_vector = numeric(0L)
 
     if (spec_ver_eq("0.1.1")) {
+        model$do_make_state = do_make_state
         model$disease_free = list(
             state = list(
                 simple = list(),
@@ -457,14 +461,16 @@ parallel_accumulators <- function(model, state_patterns) {
         %>% lapply(function(x) {
             grep(x, colnames(model$ratemat), value = TRUE)
         })
-        #%>% lapply(grep, patterns = colnames(model$ratemat), value = TRUE)
-        #%>% unlist
     )
 }
 
 ##' @family flexmodels
 ##' @export
 add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
+    spec_check(
+      introduced_version = '0.1.1',
+      feature = 'Flexible restriction of outflows in the linearized model'
+    )
     model$linearized_outflow = append(
         model$linearized_outflow,
         list(outflow(model, state_patterns, flow_state_patterns)))
@@ -483,14 +489,11 @@ add_outflow = function(model, state_patterns, flow_state_patterns) {
 ##' @family flexmodels
 ##' @export
 outflow = function(model, state_patterns, flow_state_patterns) {
+    spec_check(
+      introduced_version = '0.1.1',
+      feature = 'Flexible restriction of outflows'
+    )
     nlist(state_patterns, flow_state_patterns)
-}
-
-##' @family
-##' @export
-add_eigen_scaler = function(model, state_name) {
-    model$eigen_scaler = state_name
-    model
 }
 
 ##' @family flexmodels
@@ -546,20 +549,24 @@ disease_free_state = function(model, state_pattern, param_pattern) {
 
 ##' Initial Population
 ##'
-##' \code{infected} is the scaler of the normalized infected components of the
+##' \code{infected} is the multiplier of the normalized infected components of the
 ##' eigenvector. \code{total - infected} is multiplied by
 ##' \code{1/length(initial_susceptible)}
 ##'
 ##' In the future we might want the ability to specify a distribution
-##' for the susceptible distribution, but not currently.
+##' across susceptible compartments -- currently a uniform distribution
+##' is assumed..
 ##'
 ##' @param total name of a single parameter to represent the total size of the
 ##' population -- over all compartments
-##' @param infected name of a single parameter to represent the total size of
+##' @param infected name of a single parameter to represent the initial total size of
 ##' the infected population -- over all infected compartments
 ##' @family flexmodels
 ##' @export
 initial_population = function(model, total, infected) {
+    spec_check(
+      introduced_version = '0.1.1',
+      feature = 'Specification of total population and initial numbers of infected')
     model$initial_population = list(total = total, infected = infected)
     model
 }
@@ -571,6 +578,11 @@ add_state_mappings = function(
     eigen_drop_pattern,
     infected_drop_pattern,
     initial_susceptible_pattern) {
+
+    spec_check(
+      introduced_version = '0.1.1',
+      feature = 'Mapping between different vectors containing state information'
+    )
 
     # TODO: pull state_patterns out of disease_free, because it
     # makes more sense as a general concept -- especially with
@@ -840,14 +852,17 @@ tmb_fun <- function(model) {
                 sumcount = unname(sumcount),
                 summandidx = summandidx,
 
-                linearized_outflow_row_count = linearized_outflow$row_count,
-                linearized_outflow_col_count = linearized_outflow$col_count,
-                linearized_outflow_rows = linearized_outflow$rows,
-                linearized_outflow_cols = linearized_outflow$cols,
+                do_make_state = do_make_state,
+
                 outflow_row_count = outflow$row_count,
                 outflow_col_count = outflow$col_count,
                 outflow_rows = outflow$rows,
                 outflow_cols = outflow$cols,
+
+                linearized_outflow_row_count = linearized_outflow$row_count,
+                linearized_outflow_col_count = linearized_outflow$col_count,
+                linearized_outflow_rows = linearized_outflow$rows,
+                linearized_outflow_cols = linearized_outflow$cols,
 
                 lin_param_vals = linearized_params$lin_param_vals,
                 lin_param_count = linearized_params$lin_param_count,

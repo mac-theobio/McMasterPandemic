@@ -11,6 +11,7 @@ init_model(
   end_date = NULL,
   params_timevar = NULL,
   do_hazard = TRUE,
+  do_make_state = FALSE,
   ...
 )
 }
@@ -29,6 +30,10 @@ constant parameter variation (TODO: direct to other help pages)}
 \item{do_hazard}{should hazard simulation steps be used?
 (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 if \code{spec_ver_gt('0.0.4')}}
+
+\item{do_make_state}{should state be remade on the c++ size?
+(https://canmod.net/misc/flex_specs#v0.1.1) -- only used
+if \code{spec_ver_gt('0.1.0')}}
 }
 \value{
 flexmodel object representing a compartmental model

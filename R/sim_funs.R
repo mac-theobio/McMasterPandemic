@@ -1154,7 +1154,7 @@ run_sim <- function(params,
                   )
                   params[[s]] <- old_param * v
                   if (s == "proc_disp") {
-                      state <- round(state)
+                      state <- state_round(state)
                   }
                   if (verbose) {
                       cat(sprintf(
@@ -1466,7 +1466,7 @@ make_state <- function(N = params[["N"]],
             ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
             ## FIXME: get_evec() should work for S!
             ufrac <- with(as.list(params), omega / ((testing_intensity * W_asymp) + omega))
-            S_values <- round((N - sum(E_values)) * c(ufrac, 1 - ufrac))
+            S_values <- state_round((N - sum(E_values)) * c(ufrac, 1 - ufrac))
         } else if (ageify || vaxify) {
             ## aggregate over states
             istart <- condense_state(E_values)

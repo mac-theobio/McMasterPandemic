@@ -632,10 +632,16 @@ get_vax_model_type <- function(x) {
 ## round, preserving sum
 ## https://stackoverflow.com/questions/32544646/round-vector-of-numerics-to-integer-while-preserving-their-sum
 smart_round <- function(x) {
+    if(!getOption("MP_use_state_rounding")) return(x)
     y <- floor(x)
     indices <- utils::tail(order(x - y), round(sum(x)) - sum(y))
     y[indices] <- y[indices] + 1
     y
+}
+
+state_round <- function(x) {
+    if(!getOption("MP_use_state_rounding")) return(x)
+    round(x)
 }
 
 do_variant <- function(x) {

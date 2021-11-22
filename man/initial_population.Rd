@@ -10,17 +10,18 @@ initial_population(model, total, infected)
 \item{total}{name of a single parameter to represent the total size of the
 population -- over all compartments}
 
-\item{infected}{name of a single parameter to represent the total size of
+\item{infected}{name of a single parameter to represent the initial total size of
 the infected population -- over all infected compartments}
 }
 \description{
-\code{infected} is the scaler of the normalized infected components of the
+\code{infected} is the multiplier of the normalized infected components of the
 eigenvector. \code{total - infected} is multiplied by
 \code{1/length(initial_susceptible)}
 }
 \details{
 In the future we might want the ability to specify a distribution
-for the susceptible distribution, but not currently.
+across susceptible compartments -- currently a uniform distribution
+is assumed..
 }
 \seealso{
 Other flexmodels: 

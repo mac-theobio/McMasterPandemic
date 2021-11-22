@@ -587,9 +587,9 @@ summary.pansim <- function(object, ...) {
     unpack(object)
     res <- data.frame(
         peak_ICU_date = date[which.max(ICU)],
-        peak_ICU_val = round(max(ICU)),
+        peak_ICU_val = state_round(max(ICU)),
         peak_H_date = date[which.max(H)],
-        peak_H_val = round(max(H))
+        peak_H_val = state_round(max(H))
     )
     ## FIXME: report time-varying R0
     if (!is.null(p)) {
