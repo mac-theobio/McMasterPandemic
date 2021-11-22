@@ -322,7 +322,6 @@ Eigen::SparseMatrix<Type> calc_flowmat(
     int do_hazard)
 {
   if (!do_hazard) {
-    std::cout << "here we are not doing hazard" << std::endl;
     return col_multiply(mat, vec);
   } else {
     vector<Type> r = rowSums(mat);
@@ -402,8 +401,8 @@ vector<Type> do_step(
   //vector<Type> outflow = rowSums(flows); // remove some columns before doing so
   vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
   state = state - outflow + inflow;
-  std::cout << "inflow: " << inflow << std::endl;
-  std::cout << "outflow: " << outflow << std::endl;
+  //std::cout << "inflow: " << inflow << std::endl;
+  //std::cout << "outflow: " << outflow << std::endl;
   return state;
 }
 
@@ -476,7 +475,7 @@ struct update_state_functor{
     // We've got everything we need, lets do the job ...
     Eigen::SparseMatrix<T> ratemat = make_ratemat(state_.size(), sp, from_, to_, count_, spi_, modifier_);
 
-    std::cout << "ratemat in functor: " << ratemat << std::endl;
+    // std::cout << "ratemat in functor: " << ratemat << std::endl;
 
     // 1 convert from Type to T
     //Eigen::SparseMatrix<T> ratemat;
@@ -536,16 +535,16 @@ vector<Type> make_state(
   state = 0;
   lin_state = 0;
 
-  std::cout << "params = " << params << std::endl;
-  std::cout << "state = " << state << std::endl;
-  std::cout << "lin_state = " << lin_state << std::endl;
+  // std::cout << "params = " << params << std::endl;
+  // std::cout << "state = " << state << std::endl;
+  // std::cout << "lin_state = " << lin_state << std::endl;
 
   // 2
   vector<Type> lin_params(params);
-  std::cout << "lin_params = " << lin_params << std::endl;
-  std::cout << "lin_param_count = " << lin_param_count << std::endl;
-  std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
-  std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
+  // std::cout << "lin_params = " << lin_params << std::endl;
+  // std::cout << "lin_param_count = " << lin_param_count << std::endl;
+  // std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
+  // std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
 
   // 3
   int start = 0;
@@ -555,12 +554,12 @@ vector<Type> make_state(
     }
     start += lin_param_count[i];
   }
-  std::cout << "lin_params after = " << lin_params << std::endl;
+  // std::cout << "lin_params after = " << lin_params << std::endl;
 
   // 4
-  std::cout << "df_state_count = " << df_state_count << std::endl;
-  std::cout << "df_state_idx = " << df_state_idx << std::endl;
-  std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
+  // std::cout << "df_state_count = " << df_state_count << std::endl;
+  // std::cout << "df_state_idx = " << df_state_idx << std::endl;
+  // std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
   //std::cout << "--------------------" << std::endl;
 
   start = 0;
@@ -578,10 +577,10 @@ vector<Type> make_state(
                                linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols, do_hazard);
 
-  std::cout << "testing linear state update========================" << std::endl;
-  std::cout << "linear state before update: " << lin_state << std::endl;
+  //std::cout << "testing linear state update========================" << std::endl;
+  //std::cout << "linear state before update: " << lin_state << std::endl;
   vector<Type> test_lin_state_update = f(lin_state);
-  std::cout << "linear functor update: " << test_lin_state_update << std::endl;
+  //std::cout << "linear functor update: " << test_lin_state_update << std::endl;
 
   matrix<Type> jacob = autodiff::jacobian(f, lin_state);
   //std::cout << "jacobian = " << std::endl << jacob << std::endl;
@@ -724,16 +723,17 @@ Type objective_function<Type>::operator() ()
   //DATA_IVECTOR(tv_method);
 
   //DATA_IVECTOR(par_accum_indices);
+  DATA_IVECTOR(outflow_row_count);
+  DATA_IVECTOR(outflow_col_count);
+  DATA_IVECTOR(outflow_rows);
+  DATA_IVECTOR(outflow_cols);
+
+  DATA_INTEGER(do_make_state);
 
   DATA_IVECTOR(linearized_outflow_row_count);
   DATA_IVECTOR(linearized_outflow_col_count);
   DATA_IVECTOR(linearized_outflow_rows);
   DATA_IVECTOR(linearized_outflow_cols);
-
-  DATA_IVECTOR(outflow_row_count);
-  DATA_IVECTOR(outflow_col_count);
-  DATA_IVECTOR(outflow_rows);
-  DATA_IVECTOR(outflow_cols);
 
   DATA_VECTOR(lin_param_vals);
   DATA_IVECTOR(lin_param_count);
