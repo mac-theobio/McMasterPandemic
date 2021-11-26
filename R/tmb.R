@@ -21,7 +21,9 @@ init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE,
-                       do_make_state = FALSE,
+                       do_make_state = TRUE,
+                       max_iters_eig_pow_meth = 8000,
+                       tol_eig_pow_meth = 1e-6,
                        ...) {
     check_spec_ver_archived()
     name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
@@ -106,6 +108,7 @@ init_model <- function(params, state = NULL,
                 %>% mutate(init_tv_mult = replace(Value,
                                                   which(is.na(Value)),
                                                   1))
+                %>% mutate(last_tv_mult = init_tv_mult)
               )
             }
 
@@ -163,7 +166,13 @@ init_model <- function(params, state = NULL,
     model$sum_vector = numeric(0L)
 
     if (spec_ver_eq("0.1.1")) {
+        if(max_iters_eig_pow_meth < 100) {
+          warning("maximum number of iterations for the power method must be at least 100 -- setting max_iters_eig_pow_meth = 100")
+          max_iters_eig_pow_meth = 100L
+        }
         model$do_make_state = do_make_state
+        model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
+        model$tol_eig_pow_meth = tol_eig_pow_meth
         model$disease_free = list(
             state = list(
                 simple = list(),
@@ -173,6 +182,13 @@ init_model <- function(params, state = NULL,
         model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
+        model$initialization_mappings = list(
+          eigen = character(0L),
+          infected = character(0L),
+          susceptible = character(0L))
+        model$initial_population = list(
+          total = character(0L),
+          infected = character(0L))
     }
 
     model$tmb_indices <- list(
@@ -702,7 +718,7 @@ tmb_fun <- function(model) {
                 spi = spi,
                 modifier = modifier
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.2")) {
@@ -728,7 +744,7 @@ tmb_fun <- function(model) {
                 par_accum_indices = par_accum_indices,
                 numIterations = numIters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.4")) {
@@ -749,7 +765,7 @@ tmb_fun <- function(model) {
                 par_accum_indices = par_accum_indices,
                 numIterations = iters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.5")) {
@@ -771,7 +787,7 @@ tmb_fun <- function(model) {
                 do_hazard = do_hazard,
                 numIterations = iters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.6")) {
@@ -795,7 +811,7 @@ tmb_fun <- function(model) {
                 do_hazard = do_hazard,
                 numIterations = iters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_eq("0.1.0")) {
@@ -823,7 +839,7 @@ tmb_fun <- function(model) {
                 do_hazard = do_hazard,
                 numIterations = iters
             ),
-            parameters = list(params = c(params)),
+            parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
     } else if (spec_ver_gt("0.1.0")) {
@@ -834,57 +850,59 @@ tmb_fun <- function(model) {
             data = list(
                 state = c(state),
                 ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                updateidx = c(updateidx),
-                breaks = breaks,
-                count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_val = schedule$tv_val,
-                tv_spi = schedule$tv_spi,
-                tv_spi_unique = sort(unique(schedule$tv_spi)),
+                from = null_to_int0(from),
+                to = null_to_int0(to),
+                count = null_to_int0(count),
+                spi = null_to_int0(spi),
+                modifier = null_to_int0(modifier),
+                updateidx = null_to_int0(c(updateidx)),
+                breaks = null_to_int0(breaks),
+                count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+                tv_val = null_to_num0(schedule$tv_val),
+                tv_spi = null_to_int0(schedule$tv_spi),
+                tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
                 # tv_mult = schedule$Value,  # moved to parameter vector
-                tv_orig = schedule$Type == "rel_orig",
+                tv_orig = null_to_log0(schedule$Type == "rel_orig"),
                 ## tv_method = tv_method,
-                sumidx = sumidx,
-                sumcount = unname(sumcount),
-                summandidx = summandidx,
+                sumidx = null_to_int0(sumidx),
+                sumcount = null_to_int0(unname(sumcount)),
+                summandidx = null_to_int0(summandidx),
 
-                do_make_state = do_make_state,
+                do_make_state = isTRUE(do_make_state),
+                max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+                tol_eig_pow_meth = null_to_0(tol_eig_pow_meth),
 
-                outflow_row_count = outflow$row_count,
-                outflow_col_count = outflow$col_count,
-                outflow_rows = outflow$rows,
-                outflow_cols = outflow$cols,
+                outflow_row_count = null_to_int0(outflow$row_count),
+                outflow_col_count = null_to_int0(outflow$col_count),
+                outflow_rows = null_to_int0(outflow$rows),
+                outflow_cols = null_to_int0(outflow$cols),
 
-                linearized_outflow_row_count = linearized_outflow$row_count,
-                linearized_outflow_col_count = linearized_outflow$col_count,
-                linearized_outflow_rows = linearized_outflow$rows,
-                linearized_outflow_cols = linearized_outflow$cols,
+                linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+                linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+                linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+                linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
 
-                lin_param_vals = linearized_params$lin_param_vals,
-                lin_param_count = linearized_params$lin_param_count,
-                lin_param_idx = linearized_params$lin_param_idx,
+                lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+                lin_param_count = null_to_int0(linearized_params$lin_param_count),
+                lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
 
-                df_state_par_idx = disease_free$df_state_par_idx,
-                df_state_count = disease_free$df_state_count,
-                df_state_idx = disease_free$df_state_idx,
+                df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+                df_state_count = null_to_int0(disease_free$df_state_count),
+                df_state_idx = null_to_int0(disease_free$df_state_idx),
 
-                im_all_drop_eigen_idx = initialization_mapping$all_drop_eigen_idx,
-                im_eigen_drop_infected_idx = initialization_mapping$eigen_drop_infected_idx,
-                im_all_to_infected_idx = initialization_mapping$all_to_infected_idx,
-                im_susceptible_idx = initialization_mapping$susceptible_idx,
+                im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+                im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+                im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+                im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
 
-                ip_total_idx = initial_population$total_idx,
-                ip_infected_idx = initial_population$infected_idx,
+                ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+                ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
 
-                do_hazard = do_hazard,
+                do_hazard = isTRUE(do_hazard),
                 do_hazard_lin = FALSE,
-                numIterations = iters
+                numIterations = int0_to_0(null_to_0(iters))
             ),
-            parameters = list(params = c(params),
+            parameters = list(params = c(unlist(params)),
                               tv_mult = init_tv_mult),
             DLL = DLL
         )

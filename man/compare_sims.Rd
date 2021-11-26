@@ -22,4 +22,5 @@ Exceptions to drop-in replacement:
    the r version counts iterations with skips, but is this informative?)
 4. don't require that the call is identical (obvious i guess, but
    being exhaustive)
+5. don't look for parameter called S0 in classic simulation results
 }

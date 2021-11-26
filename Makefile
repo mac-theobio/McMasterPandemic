@@ -151,9 +151,17 @@ pkgtest:
 pkgcheck:
 	echo "devtools::check('.')" | $(R) --slave
 
-tmbtest:
+test-tmb:
 	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
+
+test-struc:
 	echo "testthat::test_file('tests/testthat/test-struc.R')" | $(R) --slave
+
+test-tmb-make-state:
+	echo "testthat::test_file('tests/testthat/test-tmb-make-state.R')" | $(R) --slave
+
+test-tmb-calibrate:
+	echo "testthat::test_file('tests/testthat/test-tmb-calibrate.R')" | $(R) --slave
 
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp

@@ -42,7 +42,7 @@ make_base_model <- function(...) {
 
       # Update parameters for use with the linearized model
       %>% update_linearized_params('N', 1) # scale population to 1
-      %>% update_linearized_params('E0', 1e-5)
+      %>% update_linearized_params('E0', 1e-5) # perturbation
 
       # Set the disease-free equilibrium of the linearized model
       %>% update_disease_free_state('S', 'S0') # instead of N
@@ -51,7 +51,7 @@ make_base_model <- function(...) {
       %>% update_disease_free_state('E', 'E0')
 
       # Define outflows for the linearized model
-      %>% add_linearized_outflow("S", "S")
+      %>% add_linearized_outflow("^S$", "^S$")
       %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
 
       # Define state mappings used to put the initial state values in

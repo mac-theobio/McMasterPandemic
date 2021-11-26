@@ -14,7 +14,7 @@
 //          2: eigen vector is all zeros in CalcEigenVector;
 //          3: mixed signs in eigen vector in CalcEigenVector;
 
-static int tmb_status = 0;
+//static int tmb_status = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function round
@@ -60,17 +60,19 @@ vector<Type> OutFlow(
     result(i) = 0.0;
 
   int startRow = 0;
+  int startCol = 0;
   for (int k=0; k<outflow_row_count.size(); k++) { // groups
     for (int i=startRow; i<startRow+outflow_row_count(k); i++) { // rows in a group
        int row = outflow_rows[i] - 1;
-
-       int startCol = 0;
        for (int j=startCol; j<startCol+outflow_col_count(k); j++) { // cols in a row
+         //std::cout << "k = " << k << ", i = " << i << ", j = " << j << std::endl;
          int col = outflow_cols[j] - 1;
+         //std::cout << "row = " << row << ", col = " << col << std::endl;
+         //std::cout << "ratemat coef = " << mat.coeff(row, col) << std::endl;
          result[row] += mat.coeff(row, col);
        }
-       startCol += outflow_cols(k);
     }
+    startCol += outflow_col_count(k);
     startRow += outflow_row_count(k);
   }
 
@@ -102,13 +104,13 @@ template<class Type>
 vector<Type> CalcEigenVector(
     const matrix<Type>& jacobian,
     const vector<Type>& state,
-    int iterations = 800,
-    Type tolerance = 0.001)
+    int iterations = 8000,
+    Type tolerance = 0.000001)
 {
-  if (iterations<101)
-    iterations = 101;	// this is the minimum
+  if (iterations<100)
+    iterations = 100;	// this is the minimum
 
-  int n = state.size();
+  // int n = state.size();
 
   //std::cout<< "n = " << n << std::endl;
   //std::cout<< "jacob = " << jacobian.rows() << ", " << jacobian.cols() << std::endl;
@@ -137,6 +139,8 @@ vector<Type> CalcEigenVector(
       else {
         diff = vec-prevec;
 
+        // FIXME: parameter dependent branching??
+        //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
         if (Norm(diff) < tolerance) {
           //std::cout<< "diff = " << diff << std::endl;
           break;
@@ -148,28 +152,28 @@ vector<Type> CalcEigenVector(
   }
 
   if (i==iterations) {
-    tmb_status = 1; 	// doesn't not converge
+    //tmb_status = 1; 	// doesn't not converge
     return vec;
   }
 
   // check if the signs are the same
-  for (i=0; i<vec.size(); i++)
-    if (vec[i]!=0) break;
+  //for (i=0; i<vec.size(); i++)
+  //  if (vec[i]!=0) break;
 
-  if (i==vec.size()) {
-    tmb_status = 2; 	// eigen vector is all zeros
-    return vec;
-  }
+  //if (i==vec.size()) {
+  //  tmb_status = 2; 	// eigen vector is all zeros
+  //  return vec;
+  //}
 
-  for (int j=i+1; j<vec.size(); j++)
-    if (vec[j-1]*vec[j]<0) {
-      tmb_status = 3;     // mixed signs in eigen vector
-      return vec;
-    }
+  //for (int j=i+1; j<vec.size(); j++)
+  //  if (vec[j-1]*vec[j]<0) {
+  //    tmb_status = 3;     // mixed signs in eigen vector
+  //    return vec;
+  //  }
 
   // flip the sign
-  if (vec[i]<00)
-    vec = -vec;
+  //if (vec[i]<00)
+  //  vec = -vec;
 
   return vec;
 }
@@ -283,6 +287,8 @@ void update_ratemat(
       if (modifier[j] & 0b001)
         x = 1-x;
       else if (modifier[j] & 0b010)
+        // FIXME: parameter dependent branching??
+        //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
         if (x > 1e-5) {
           x = 1/x;
         }
@@ -329,6 +335,9 @@ Eigen::SparseMatrix<Type> calc_flowmat(
 
     vector<Type> s_tilde(vec.size());
     for (int i=0; i<vec.size(); i++)
+
+      // FIXME: parameter dependent branching??
+      //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
       if (r[i]==0) // shall it be something like "abs(r[i])<0.00001" ?
         s_tilde[i] = 0.0;
       else
@@ -396,13 +405,15 @@ vector<Type> do_step(
 {
   // Calculate flow matrix
   Eigen::SparseMatrix<Type> flows = calc_flowmat(ratemat, state, do_hazard);
+  //std::cout << "Flow:" << std::endl;
+  //std::cout << flows << std::endl;
   vector<Type> inflow = colSums(flows);
   //remove_cols(flows, par_accum_indices);
   //vector<Type> outflow = rowSums(flows); // remove some columns before doing so
   vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
   state = state - outflow + inflow;
-  //std::cout << "inflow: " << inflow << std::endl;
-  //std::cout << "outflow: " << outflow << std::endl;
+  // std::cout << "inflow: " << inflow << std::endl;
+  // std::cout << "outflow: " << outflow << std::endl;
   return state;
 }
 
@@ -482,7 +493,7 @@ struct update_state_functor{
     //ratemat = ratemat_.template cast<T>();
 
     // 2 do all the calculations in T
-    vector<T> updated_state = do_step(state_, ratemat, // par_accum_indices_,
+    vector<T> updated_state = do_step(state_, ratemat,
                                       linearized_outflow_row_count_, linearized_outflow_col_count_,
                                       linearized_outflow_rows_, linearized_outflow_cols_,
                                       do_hazard_);
@@ -522,13 +533,16 @@ vector<Type> make_state(
   const vector<int>& im_eigen_drop_infected_idx,
   const vector<int>& im_all_to_infected_idx,
   const vector<int>& im_susceptible_idx,
-  int  ip_total_idx,
-  int  ip_infected_idx
+  int ip_total_idx,
+  int ip_infected_idx,
+  int max_iters_eig_pow_meth,
+  Type tol_eig_pow_meth
 )
 {
   //std::cout << " ==== make_state ====" << std::endl;
 
-  // 1
+  // 1 -- Initialize two state vectors,
+  //      one for full model and one for linearized model
   vector<Type> state(n_states);
   vector<Type> lin_state(n_states);
 
@@ -539,14 +553,16 @@ vector<Type> make_state(
   // std::cout << "state = " << state << std::endl;
   // std::cout << "lin_state = " << lin_state << std::endl;
 
-  // 2
+  // 2 -- Copy the parameters so they can be modified
+  //      for the linearized model
   vector<Type> lin_params(params);
   // std::cout << "lin_params = " << lin_params << std::endl;
   // std::cout << "lin_param_count = " << lin_param_count << std::endl;
   // std::cout << "lin_param_idx = " << lin_param_idx << std::endl;
   // std::cout << "lin_param_vals = " << lin_param_vals << std::endl;
 
-  // 3
+  // 3 -- Replace some elements of parameters for the
+  //      linearized model
   int start = 0;
   for (int i=0; i<lin_param_count.size(); i++) {
     for (int j=start; j<start+lin_param_count[i]; j++) {
@@ -556,7 +572,8 @@ vector<Type> make_state(
   }
   // std::cout << "lin_params after = " << lin_params << std::endl;
 
-  // 4
+  // 4 -- Replace some elements of state for the
+  //      linearized model
   // std::cout << "df_state_count = " << df_state_count << std::endl;
   // std::cout << "df_state_idx = " << df_state_idx << std::endl;
   // std::cout << "df_state_par_idx = " << df_state_par_idx << std::endl;
@@ -571,7 +588,7 @@ vector<Type> make_state(
   }
   //std::cout << "lin_state after = " << lin_state << std::endl;
 
-  // 5
+  // 5 -- Compute the Jacobian for the linearized model
   update_state_functor<Type> f(lin_params, from, to, count, spi, modifier,
                                sumidx, sumcount, summandidx,
                                linearized_outflow_row_count, linearized_outflow_col_count,
@@ -588,7 +605,8 @@ vector<Type> make_state(
   int nRows = jacob.rows();
   int nCols = jacob.cols();
 
-  // 6
+  // 6 -- Remove rows and columns from the Jacobian
+  //      and the state for the linearized model
   // Make a copy and append one nRows at the end.
   int n = im_all_drop_eigen_idx.size();
   vector<int> tmp_im_all_drop_eigen_idx(n+1);
@@ -635,11 +653,13 @@ vector<Type> make_state(
   //std::cout << "trimmed jacobian = " << std::endl << trimmed_jacob << std::endl;
   //std::cout << "trimmed lin_state = " << std::endl << trimmed_lin_state << std::endl;
 
-  // 7
-  vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, 5000);
+  // 7 -- Compute eigenvector
+  vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, max_iters_eig_pow_meth, tol_eig_pow_meth);
   //std::cout << "eigenvec = " << eigenvec << std::endl;
 
-  if (tmb_status) return state; // There is an error in the computation so far
+  // FIXME: parameter dependent branching??
+  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
+  //if (tmb_status) return state; // There is an error in the computation so far
 
   // 8
   n = im_eigen_drop_infected_idx.size();
@@ -729,6 +749,8 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(outflow_cols);
 
   DATA_INTEGER(do_make_state);
+  DATA_INTEGER(max_iters_eig_pow_meth);
+  DATA_SCALAR(tol_eig_pow_meth);
 
   DATA_IVECTOR(linearized_outflow_row_count);
   DATA_IVECTOR(linearized_outflow_col_count);
@@ -788,11 +810,13 @@ Type objective_function<Type>::operator() ()
   //std::cout << "ip_total_idx = " << ip_total_idx << std::endl;
   //std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
 
+  //REPORT(tmb_status);
+
   // make state vector from params vector
-  // if (state.size()==0) // call make_state only if state doesn't exist
+  if (do_make_state) {
     state = make_state(
       params,
-      state.size(), // there should be a better way to give n_states a value
+      state.size(),
       lin_param_count,
       lin_param_idx,
       lin_param_vals,
@@ -817,10 +841,16 @@ Type objective_function<Type>::operator() ()
       im_all_to_infected_idx,
       im_susceptible_idx,
       ip_total_idx,
-      ip_infected_idx
-  );
+      ip_infected_idx,
+      max_iters_eig_pow_meth,
+      tol_eig_pow_meth
+    );
+    // std::cout << "tmb-constructed initial state  = " << state << std::endl;
+  }
 
-  if (tmb_status) return 0; // There is an error in the computation so far
+  // FIXME: parameter dependent branching??
+  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
+  //if (tmb_status) return 0; // There is an error in the computation so far
 
   // Concatenate state and params
   vector<Type> sp(state.size()+params.size()+sumidx.size());
@@ -844,7 +874,9 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-  if (tmb_status) return 0; // There is an error in the computation so far
+  // FIXME: parameter dependent branching??
+  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
+  //if (tmb_status) return 0; // There is an error in the computation so far
 
   int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
@@ -879,7 +911,9 @@ Type objective_function<Type>::operator() ()
   //j = matrix<Type>::Random(3,3);
   //vector<Type> eigenvec = CalcEigenVector(j, state, 5000);
 
-  if (tmb_status) return 0; // There is an error in the computation so far
+  //if (tmb_status) {
+  //  return 0; // There is an error in the computation so far
+  //}
 
   //REPORT(j);
   //REPORT(eigenvec);
@@ -888,12 +922,17 @@ Type objective_function<Type>::operator() ()
   int start = 0;
   for (int i=0; i<numIterations; i++) {
 
+    //std::cout << "iteration: " << i << std::endl;
     state = do_step(state, ratemat, // par_accum_indices,
                     outflow_row_count, outflow_col_count,
                     outflow_rows, outflow_cols,
                     do_hazard);
 
-    if (tmb_status) return 0; // There is an error in the computation so far
+    // FIXME: parameter dependent branching??
+    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
+    //if (tmb_status) {
+    //  return 0; // There is an error in the computation so far
+    //}
 
     sp.block(0, 0, stateSize, 1) = state;
 
@@ -921,7 +960,11 @@ Type objective_function<Type>::operator() ()
     //std::cout << "sp_110 = " << sp[110] << std::endl;
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
 
-    if (tmb_status) return 0; // There is an error in the computation so far
+    // FIXME: parameter dependent branching??
+    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
+    //if (tmb_status) {
+    //  return 0; // There is an error in the computation so far
+    //}
 
     // concatenate state vectors at each time step so they can be returned
     concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
@@ -942,8 +985,6 @@ Type objective_function<Type>::operator() ()
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
   REPORT(concatenated_ratemat_nonzeros);
-
-  REPORT(tmb_status);
 
   return state.sum();
 }

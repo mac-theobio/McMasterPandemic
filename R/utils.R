@@ -644,6 +644,9 @@ state_round <- function(x) {
     round(x)
 }
 
+#' @export
+norm_vec = function(x) x/sum(x)
+
 do_variant <- function(x) {
     ## should be a pars list
     check <- attr(x, "do_variant")

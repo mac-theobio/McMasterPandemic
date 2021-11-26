@@ -925,7 +925,15 @@ run_sim <- function(params,
     end_date <- as.Date(end_date)
     if(!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)
 
-    if (is.null(flexmodel)) {
+    # update parameters (or the whole model structure)
+    # -- important in calibration situations where the parameters
+    #    are changing each iteration of the optimizer
+    if (!is.null(flexmodel)) {
+      flexmodel$params[] = params
+      if (spec_ver_gt('0.1.0')) {
+        flexmodel$timevar$piece_wise$schedule$last_tv_mult[] = params_timevar$Value
+      }
+    } else {
       flexmodel <- make_base_model(
         params = params,
         state = state,
@@ -936,46 +944,29 @@ run_sim <- function(params,
       )
     }
 
-    #if (is.null(obj_fun)) {
-    # I think we need to always re-make the tmb_fun otherwise
-    # make_state is done for absolutely nothing.
-    # However, when we do make_state on the C++ side we will
-    # want to skip this step -- so probably should depend on
-    # a flexspec version or maybe we need a flag?
-    flexmodel$state = state
-    obj_fun <- tmb_fun(flexmodel)
-    #}
+    if (is.null(state)) {
+      state = flexmodel$state
+    }
 
-    params0 <- params
-    state0 <- state
-
-    full_param_vec = params
-    if(spec_ver_eq('0.1.1')) {
-      if(has_time_varying(flexmodel)) {
-        if(!any(is.na(params_timevar$Value))) {
-          time_pars_no_missing = params_timevar$Value
-        } else {
-          # if we aren't filling missing values, we need to get some
-          # defaults that are contained in the flexmodel
-          time_pars_no_missing = flexmodel$timevar$piece_wise$schedule$init_tv_mult
-        }
-        full_param_vec = c(full_param_vec, time_pars_no_missing)
-      }
+    if(!(spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) | is.null(obj_fun)) {
+      # if not making the state on the c++ side, need to make
+      # a new tmb fun with the new state that has come in
+      # from up the call stack
+      flexmodel$state = state
+      obj_fun <- tmb_fun(flexmodel)
     }
 
     ## simulate trajectories based on new parameters
+    full_param_vec = tmb_params(flexmodel)
     tmb_sims <- obj_fun$simulate(full_param_vec)
-
-    res <- matrix(
-      tmb_sims$concatenated_state_vector,
-      nrow = flexmodel$iters + 1, ncol = length(state),
-      dimnames = list(1:(flexmodel$iters + 1), names(state)),
-      byrow = TRUE
+    res = (tmb_sims
+      %>% getElement("concatenated_state_vector")
+      %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
     )
     res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
 
     # look for foi -- TODO: formalize the definition of foi so that we
-    #                       can reliably check
+    #                       can reliably check -- this is too model-specific
     foi = (flexmodel$tmb_indices$updateidx
       %>% names
       %>% strsplit("_to_")
@@ -997,10 +988,15 @@ run_sim <- function(params,
       })
       %>% as.data.frame
     )
+
+    params0 <- params
+    state0 = state
+    if (spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) {
+      # if the initial state came from tmb ...
+      state0[] = tmb_sims$concatenated_state_vector[seq_along(state)]
+    }
+
     res = cbind(res, foi)
-    # foi_off <- which(names(flexmodel$tmb_indices$updateidx) == "S_to_E")
-    # foi_indices <- seq(from = foi_off, by = foi_off, length.out = flexmodel$iters + 1)
-    # res$foi <- tmb_sims$concatenated_ratemat_nonzeros[foi_indices]
   } else {
 
       call <- match.call()

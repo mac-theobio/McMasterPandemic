@@ -11,7 +11,9 @@ init_model(
   end_date = NULL,
   params_timevar = NULL,
   do_hazard = TRUE,
-  do_make_state = FALSE,
+  do_make_state = TRUE,
+  max_iters_eig_pow_meth = 8000,
+  tol_eig_pow_meth = 1e-06,
   ...
 )
 }

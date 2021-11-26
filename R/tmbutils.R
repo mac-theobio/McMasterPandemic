@@ -15,6 +15,70 @@ alt_group = function(x) {
   "(" %+% paste0(x, collapse = "|") %+% ")"
 }
 
+# null-safe coercion ----------------------------
+
+# Used in tmb_fun -- needs work, but this is a
+# good approach generally
+
+#' @export
+null_to_char0 = function(x) {
+  if(is.null(x)) return(character(0L))
+  as.character(x)
+}
+
+#' @export
+null_to_int0 = function(x) {
+  if(is.null(x)) return(integer(0L))
+  as.integer(x)
+}
+
+#' @export
+null_to_num0 = function(x) {
+  if(is.null(x)) return(numeric(0L))
+  as.numeric(x)
+}
+
+#' @export
+null_to_log0 = function(x) {
+  if(is.null(x)) return(logical(0L))
+  as.logical(x)
+}
+
+#' @export
+null_to_charNA = function(x) {
+  if(is.null(x)) return(as.character(NA))
+  as.character(x)
+}
+
+#' @export
+null_to_intNA = function(x) {
+  if(is.null(x)) return(as.integer(NA))
+  as.integer(x)
+}
+
+#' @export
+null_to_numNA = function(x) {
+  if(is.null(x)) return(as.numeric(NA))
+  as.numeric(x)
+}
+
+#' @export
+null_to_logNA = function(x) {
+  if(is.null(x)) return(as.logical(NA))
+  as.logical(x)
+}
+
+#' @export
+null_to_0 = function(x) {
+  if(is.null(x)) return(0L)
+  as.integer(x)
+}
+
+#' @export
+int0_to_0 = function(x) {
+  if(length(x) == 0L) return(0L)
+  as.integer(x)
+}
 
 # utilities for rate functions ----------------------------
 
@@ -66,6 +130,7 @@ find_pos_grep <- function(tags, x) {
   )
 }
 
+# FIXME: this is not being used anywhere
 check_in_rate_fun = function(pf) {
   stopifnot(inherits(get("model", envir = pf), 'flexmodel'))
   f = get("formula", envir = pf)
@@ -95,6 +160,14 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
+#' @rdname parse_formula
+#' @export
+rateform_as_char = function(x) {
+  y = as.character(x)
+  if(inherits(x, "formula")) y = y[[2L]]
+  y
+}
+
 #' Parse a Flexmodel Formula
 #'
 #' @param x one-sided formula, character vector, or struc object describing
@@ -102,20 +175,27 @@ pwise = function(from, to, mat) {
 #' @return depends on the spec version (TODO: add detail once we converge)
 #' @export
 parse_formula = function(x) {
-  y = as.character(x)
-  if(inherits(x, "formula")) y = y[[2L]]
-  pf = function(y) {
-    (y
-     %>% strsplit(split = "\\+") %>% getElement(1L)
-     %>% strsplit(split = "\\*")
-    )
-  }
-  return(pf(y))
-  o = lapply(y, pf)
-  if(spec_ver_lt('0.1.0')) {
-    return(o[[1L]])
-  }
-  return(o)
+  (x
+   %>% rateform_as_char
+   %>% strsplit(split = "\\+") %>% getElement(1L)
+   %>% strsplit(split = "\\*")
+  )
+
+
+  #pf = function(y) {
+  #  (y
+  #   %>% strsplit(split = "\\+") %>% getElement(1L)
+  #   %>% strsplit(split = "\\*")
+  #  )
+  #}
+  #return(pf(y))
+
+
+  #o = lapply(y, pf)
+  #if(spec_ver_lt('0.1.0')) {
+  #  return(o[[1L]])
+  #}
+  #return(o)
 }
 
 #' @param x character vector of names to look for in \code{vec} or
@@ -416,12 +496,23 @@ state_mapping_indices = function(
   spec_check(introduced_version = "0.1.1",
              feature = "Disease free state updates")
 
-  susceptible_idx = grep(susceptible_pattern, names(state), perl = TRUE)
+  if(length(susceptible_pattern) == 0L) {
+    susceptible_idx = integer(0L)
+  } else {
+    susceptible_idx = grep(susceptible_pattern, names(state), perl = TRUE)
+  }
 
   eigen = eigen_drop_pattern
   infected = infected_drop_pattern
   all = names(state)
-  index_set = make_nested_indices(all, nlist(eigen, infected), invert = TRUE)
+  if((length(eigen) == 0L) | (length(infected) == 0L)) {
+    index_set = list(
+      x = list(vector('list', 3L)),
+      i = list(vector('list', 3L)),
+      j = list(vector('list', 3L)))
+  } else {
+    index_set = make_nested_indices(all, nlist(eigen, infected), invert = TRUE)
+  }
 
   c(
     (index_set
@@ -505,6 +596,14 @@ linearized_param_indices = function(model) {
 
 ##' @export
 outflow_indices = function(outflow, ratemat) {
+  if(length(outflow) == 0L) {
+    return(list(
+      row_count = integer(),
+      col_count = integer(),
+      rows = integer(),
+      cols = integer()
+    ))
+  }
   indices = lapply(outflow, function(o) {
     list(
       state = grep(o$state_patterns, rownames(ratemat)),
@@ -618,33 +717,119 @@ make_nested_indices = function(x, patterns, invert = FALSE) {
 
 # retrieving information from tmb objective function --------------
 
+#' Extract Parameter Vector to Pass to a TMB Function
+#'
+#' Get all of the parameters from a flexmodel in a vector that is
+#' ready to be passed to a TMB AD objective function, gradient function,
+#' hessian function, simulate function, report function.
+#'
+#' Currently this includes \code{params} and if \code{spec_ver_gt('0.1.0')}
+#' it also includes time-varying multipliers in
+#' \code{model$timevar$piece_wise$schedule$last_tv_mult}.
+#'
+#' @param model flexmodel
 #' @export
-simulate_changing_ratemat_elements = function(model) {
+tmb_params = function(model) {
+  # TODO: when we start using the TMB map argument to only pass parameters
+  # that are allowed to change, we will need to account for this here
+  full_param_vec = model$params
+  if(spec_ver_gt('0.1.0')) {
+    if(has_time_varying(model)) {
+      last_tv_mult = model$timevar$piece_wise$schedule$last_tv_mult
+      if (any(is.na(last_tv_mult)))
+        stop('missing time-varying multipliers need to be replaced for use with TMB')
+      full_param_vec = c(full_param_vec, last_tv_mult)
+    }
+  }
+  full_param_vec
+}
+
+#' @param model flexmodel
+#' @param sim_params parameter vector to pass to a TMB objective function
+#' @export
+changing_ratemat_elements = function(model, sim_params = NULL) {
+  if(is.null(sim_params)) sim_params = tmb_params(model)
+  tmb_fun(model)$simulate(sim_params)$concatenated_ratemat_nonzeros
+}
+
+#' @export
+simulate_changing_ratemat_elements = function(model, sim_params = NULL) {
   updateidx = model$tmb_indices$updateidx
-  ratemat_elements =
-    matrix(tmb_fun(model)$simulate()$concatenated_ratemat_nonzeros,
-           nrow = model$iters + 1L,
-           ncol = length(updateidx),
-           byrow = TRUE)
+  ratemat_elements = (model
+    %>% changing_ratemat_elements(sim_params)
+    %>% matrix(nrow = model$iters + 1L,
+               ncol = length(updateidx),
+               byrow = TRUE)
+  )
+
   colnames(ratemat_elements) = names(updateidx)
   as.data.frame(ratemat_elements)
 }
 
 #' @export
-simulate_state_vector = function(model) {
-  matrix(tmb_fun(model)$simulate()$concatenated_state_vector,
-         nrow = model$iters + 1L,
-         ncol = length(model$state),
-         byrow = TRUE) %>% as.data.frame %>% setNames(names(model$state))
+concatenated_state_vector = function(model, sim_params = NULL) {
+  if(is.null(sim_params)) sim_params = tmb_params(model)
+  tmb_fun(model)$simulate(sim_params)$concatenated_state_vector
 }
 
 #' @export
-initial_state_vector = function(model) {
-  (model
-   %>% simulate_state_vector
-   %>% `[`(1, ) # get first row
-   %>% unlist
+structure_state_vector = function(x, iters, state_nms) {
+  matrix(
+    x,
+    nrow = iters + 1L,
+    ncol = length(state_nms),
+    dimnames = list(1:(iters + 1), state_nms),
+    byrow = TRUE
   )
+}
+
+#' @export
+simulate_state_vector = function(model, sim_params = NULL) {
+  (model
+   %>% concatenated_state_vector(sim_params)
+   %>% structure_state_vector(model$iters, names(model$state))
+   %>% as.data.frame
+  )
+}
+
+#' @export
+initial_state_vector = function(model, sim_params = NULL) {
+  (model
+   %>% concatenated_state_vector(sim_params)
+   %>% head(length(model$state))
+   %>% setNames(names(model$state))
+  )
+}
+
+#' @export
+final_state_vector = function(model, sim_params = NULL) {
+  (model
+   %>% concatenated_state_vector(sim_params)
+   %>% tail(length(model$state))
+   %>% setNames(names(model$state))
+  )
+}
+
+#' @export
+penultimate_state_vector = function(model, sim_params = NULL) {
+  (model
+   %>% concatenated_state_vector(sim_params)
+   %>% tail(2 * length(model$state))
+   %>% head(length(model$state))
+   %>% setNames(names(model$state))
+  )
+}
+
+#' @export
+final_state_ratio = function(model, sim_params = NULL) {
+  last_two = (model
+   %>% concatenated_state_vector(sim_params)
+   %>% tail(2 * length(model$state))
+  )
+  n = length(model$state)
+  setNames(
+    head(last_two, n) / tail(last_two, n),
+    names(model$state))
 }
 
 # benchmarking and comparison in tests
@@ -659,6 +844,7 @@ initial_state_vector = function(model) {
 #'    the r version counts iterations with skips, but is this informative?)
 #' 4. don't require that the call is identical (obvious i guess, but
 #'    being exhaustive)
+#' 5. don't look for parameter called S0 in classic simulation results
 #'
 #' @param classic_sim result of `run_sim` without using TMB
 #' @param tmb_sim result of `run_sim` using TMB
@@ -666,6 +852,8 @@ initial_state_vector = function(model) {
 #' @importFrom testthat testthat_tolerance
 #' @export
 compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) {
+  params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
+  attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
   attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
   attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
   for(a in names(attributes(classic_sim))) {
