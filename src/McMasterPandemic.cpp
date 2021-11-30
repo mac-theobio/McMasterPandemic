@@ -999,7 +999,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(do_make_state);
   DATA_INTEGER(max_iters_eig_pow_meth);
   DATA_SCALAR(tol_eig_pow_meth);
-  DATA_SCALAR(haz_eps);  // TODO: not being used, but should be
+  // DATA_SCALAR(haz_eps);  // TODO: not being used, but should be
 
   DATA_IVECTOR(linearized_outflow_row_count);
   DATA_IVECTOR(linearized_outflow_col_count);
