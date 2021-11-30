@@ -21,9 +21,13 @@ init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE,
+                       do_hazard_lin = FALSE,
+                       do_approx_hazard = FALSE,
+                       do_approx_hazard_lin = TRUE,
                        do_make_state = TRUE,
                        max_iters_eig_pow_meth = 8000,
                        tol_eig_pow_meth = 1e-6,
+                       haz_eps = 1e-6,
                        ...) {
     check_spec_ver_archived()
     name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
@@ -34,14 +38,19 @@ init_model <- function(params, state = NULL,
 
     if(is.null(state)) state = make_state(params = params)
 
-    # need to do this before we ruin the pansim structure
+    # TODO: this is here to compare with tmb-computed rate matrices,
+    # but in the future when tmb is truly flexible this will not work.
+    # what we need is a make_ratemat for model$rates
     ratemat = make_ratemat(state, params, sparse = TRUE)
 
     # TODO: keep an eye on this -- i think that the
     # flex framework should _not_ use parameter
     # lists and rather stick to numeric vectors, but
     # not totally sure
+    # -- also should use get_attr and put_attr from utils.R
+    pattr = attributes(params)
     params = setNames(unlist(params), names(params))
+    attributes(params) = c(attributes(params), pattr)
 
     model <- list(
         state = state,
@@ -166,6 +175,9 @@ init_model <- function(params, state = NULL,
     model$sum_vector = numeric(0L)
 
     if (spec_ver_eq("0.1.1")) {
+        model$do_hazard_lin <- do_hazard_lin
+        model$do_approx_hazard = do_approx_hazard
+        model$do_approx_hazard_lin = do_approx_hazard_lin
         if(max_iters_eig_pow_meth < 100) {
           warning("maximum number of iterations for the power method must be at least 100 -- setting max_iters_eig_pow_meth = 100")
           max_iters_eig_pow_meth = 100L
@@ -173,6 +185,7 @@ init_model <- function(params, state = NULL,
         model$do_make_state = do_make_state
         model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
         model$tol_eig_pow_meth = tol_eig_pow_meth
+        model$haz_eps = haz_eps
         model$disease_free = list(
             state = list(
                 simple = list(),
@@ -899,7 +912,11 @@ tmb_fun <- function(model) {
                 ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
 
                 do_hazard = isTRUE(do_hazard),
-                do_hazard_lin = FALSE,
+                do_hazard_lin = isTRUE(do_hazard_lin),
+                do_approx_hazard = isTRUE(do_approx_hazard),
+                do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+                haz_eps = haz_eps,
+
                 numIterations = int0_to_0(null_to_0(iters))
             ),
             parameters = list(params = c(unlist(params)),
