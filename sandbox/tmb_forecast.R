@@ -79,16 +79,64 @@ options(macpan_pfun_method = "grep")
 ## FIXME: can use_flex be '(!is.null(flexmodel))'
 ##  instead?
 
-if (FALSE) {
+## FIXME: SCW; fix case for params_timevar = NULL
+
+## FIXME: assign class to result properly
+
 tmb_sim <- forecast_sim(
-    params = model_params,
-    state = state,
+    p = NULL,
+    opt_pars = list(),
+    base_params = model_params,
     start_date = start_date,
     end_date = end_date,
-      params_timevar = params_timevar,
-      condense = FALSE,
-      step_args = list(do_hazard = TRUE),
-      use_flex = TRUE,
-      flexmodel = model
-    )
+    time_args = list(params_timevar = params_timevar),
+    sim_args = list(
+        step_args = list(do_hazard = TRUE),
+        use_flex = TRUE,
+        condense = FALSE,
+        flexmodel = model)
+)
+
+
+test_sim <- function(use_flex = TRUE, obs_disp = NA) {
+  arg_list <- list(
+      p = NULL,
+      opt_pars = list(),
+      base_params = model_params,
+      start_date = start_date,
+      end_date = end_date,
+      time_args = list(params_timevar = params_timevar),
+      sim_args = list(
+          step_args = list(do_hazard = TRUE),
+          use_flex = use_flex,
+          condense = FALSE,
+          flexmodel = model)
+  )
+  if (!is.na(obs_disp)) {
+    arg_list$base_params <- c(arg_list$base_params,
+                              list(obs_disp = obs_disp))
+
+    arg_list <- c(arg_list, list(stoch = c(obs=TRUE)))
+  }
+  do.call(forecast_sim, arg_list)
 }
+
+t1 <- test_sim() ## no stoch
+t3 <- test_sim(use_flex=FALSE)
+all.equal(t1, t3)  ## yay!
+t2 <- test_sim(obs_disp = 100)
+
+library(ggplot2)
+(ggplot(t2, aes(date, value, colour = var))
+  + geom_line()
+  + geom_line(data=t1, lty=2, lwd=3, alpha=0.8)
+)
+
+library(rbenchmark)
+b1 <- benchmark(test_sim(), test_sim(use_flex = FALSE),
+          replications = 10)
+## forecast_ensemble: not yet (needs calibrated model as input *or*
+##  we need to change the interface)
+
+
+
