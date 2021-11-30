@@ -89,7 +89,6 @@ make_base_model <- function(...) {
 make_vaccination_model = function(..., do_variant = FALSE) {
 
   spec_check("0.1.0", "model structure")
-  #stopifnot(spec_ver_gt('0.6.0.')) # TODO: upgrade vax models to use 0.1.1
 
   args = list(...)
   unpack(args)
@@ -115,6 +114,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   (dose_to = c(asymp_cat, rep("V", 5)))
   (accum = c("X", "V"))
   (non_accum = base::setdiff(epi_states, accum))
+  (non_accum_non_S = non_accum[-1])
 
   # Specify structure of the force of infection calculation
   Istate = (c('Ia', 'Ip', 'Im', 'Is')
@@ -138,8 +138,8 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       row_times = 1, col_times = 5)
   } else {
     vax_trans_red = struc_block(vec(
-      '1',
-      '1',
+      '(1 - variant_prop) + (variant_advantage) * (variant_prop)',
+      '(1 - variant_prop) + (variant_advantage) * (variant_prop)',
       '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
       '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
       '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)'),
@@ -220,6 +220,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
         "^" %+% alt_group(non_accum) %_% alt_group(vax_cat))
 
       # Update parameters for use with the linearized model
+      # -- confirmed correct (TODO: check if params are missing? variant-related?)
       %>% update_linearized_params('N', 1) # scale population to 1
       %>% update_linearized_params('E0', 1e-5)
       %>% update_linearized_params('vax_doses_per_day', 0)
@@ -227,14 +228,19 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       %>% update_linearized_params('vax_response_rate_R', 0)
 
       # Set the disease-free equilibrium of the linearized model
-      %>% update_disease_free_state('S_unvax', 'N')
+      # FIXME: make this S0 instead of N -- shouldn't really matter,
+      #        but just to be sure...
+      %>% update_disease_free_state('S_unvax', 'S0')
 
       # Perturb the disease-free equilibrium of the linearized model
       %>% update_disease_free_state('E_unvax', 'E0')
 
-      # Define outflows for the linearized model (FIXME: copied from basic model)
-      %>% add_linearized_outflow("S", "S")
-      %>% add_linearized_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
+      # Define outflows for the linearized model
+      # -- confirmed that this is producing the correct indices
+      %>% add_linearized_outflow("^S", "^S") # S_pos, S_pos
+      %>% add_linearized_outflow(
+        "^" %+% alt_group(non_accum_non_S) %_% alt_group(vax_cat), # notS_pos
+        "^" %+% alt_group(non_accum)       %_% alt_group(vax_cat)) # p_states
 
       # Define state mappings used to put the initial state values in
       # the correct positions of the initial state vector
@@ -242,15 +248,17 @@ make_vaccination_model = function(..., do_variant = FALSE) {
 
         # regular expression to find states to drop before computing
         # the eigenvector of the linearized system
+        # -- generated indices are correct
         eigen_drop_pattern = '^(X|V)',
 
         # regular expression to find states to drop from the eigenvector
         # before distributing individuals among infected compartments
+        # -- generated indices are correct
         infected_drop_pattern = '^(S|D|R)',
 
         # regular expression to find states in the initial population
         # of susceptibles
-        initial_susceptible_pattern = '^S_unvax$' # or is it just '^S'
+        initial_susceptible_pattern = '^S_unvax$'
       )
 
       # Set the total number of individuals and the total number of

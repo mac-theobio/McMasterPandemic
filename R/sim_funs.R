@@ -931,9 +931,15 @@ run_sim <- function(params,
     if (!is.null(flexmodel)) {
       flexmodel$params[] = params
       if (spec_ver_gt('0.1.0')) {
-        flexmodel$timevar$piece_wise$schedule$last_tv_mult[] = params_timevar$Value
+        # FIXME: inefficient brute-force reordering
+        s = arrange(flexmodel$timevar$piece_wise$schedule, Symbol, Date)
+        ptv = arrange(params_timevar, Symbol, Date)
+        s$last_tv_mult = ptv$Value
+        flexmodel$timevar$piece_wise$schedule = arrange(s, breaks, tv_spi)
       }
     } else {
+      # FIXME: can't assume base model
+      #        -- at least throw error if the model has structure
       flexmodel <- make_base_model(
         params = params,
         state = state,
@@ -1253,11 +1259,12 @@ run_sim <- function(params,
     attr(res, "start_date") <- start_date
     attr(res, "end_date") <- end_date
     attr(res, "call") <- call
-    attr(res, "params_timevar") <- params_timevar
     if(use_flex) {
       attr(res, "flexmodel") <- flexmodel
       attr(res, "ad_fun") <- obj_fun
+
     }
+    attr(res, "params_timevar") <- params_timevar
     ## attr(res,"final_state") <- state
     class(res) <- c("pansim", "data.frame")
 
@@ -1419,7 +1426,8 @@ make_state <- function(N = params[["N"]],
             if (vaxify) {
                 evec <- get_evec(params,
                     testify = testify,
-                    do_hazard = TRUE
+                    # FIXME: expose this with default TRUE
+                    do_hazard = getOption("MP_vax_make_state_with_hazard")
                 )
             } else {
                 evec <- get_evec(params, testify = testify)

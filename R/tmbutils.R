@@ -322,8 +322,12 @@ has_time_varying <- function(x) {
     feature = "Time-varying parameters",
     introduced_version = "0.0.3"
   )
-  if(inherits(x, 'flexmodel')) x = x$params
-  "tv_param_indices" %in% names(attributes(x))
+  if(inherits(x, 'flexmodel')) {
+    # more reliable test than looking at parameter attributes
+    return(length(x$timevar$piece_wise$schedule$Value) > 0L)
+  } else {
+    return("tv_param_indices" %in% names(attributes(x)))
+  }
 }
 
 ##' @export
@@ -732,7 +736,7 @@ make_nested_indices = function(x, patterns, invert = FALSE) {
 tmb_params = function(model) {
   # TODO: when we start using the TMB map argument to only pass parameters
   # that are allowed to change, we will need to account for this here
-  full_param_vec = model$params
+  full_param_vec = c(unlist(model$params))
   if(spec_ver_gt('0.1.0')) {
     if(has_time_varying(model)) {
       last_tv_mult = model$timevar$piece_wise$schedule$last_tv_mult
@@ -845,6 +849,9 @@ final_state_ratio = function(model, sim_params = NULL) {
 #' 4. don't require that the call is identical (obvious i guess, but
 #'    being exhaustive)
 #' 5. don't look for parameter called S0 in classic simulation results
+#'    (FIXME: this one might not be necessary anymore)
+#' 6. don't require the ordering of params_timevar rows to be the same
+#'    (FIXME: this should probably be handled in run_sim itself)
 #'
 #' @param classic_sim result of `run_sim` without using TMB
 #' @param tmb_sim result of `run_sim` using TMB
@@ -856,6 +863,15 @@ compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) 
   attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
   attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
   attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
+
+  # FIXME: this should probably be handled in run_sim itself
+  params_timevar = attr(tmb_sim, "params_timevar")
+  if(!is.null(params_timevar)) {
+    attr(tmb_sim, "params_timevar") = arrange(params_timevar, Date, Symbol)
+    attr(attr(tmb_sim, "params_timevar"), "row.names") = NULL
+    attr(attr(classic_sim, "params_timevar"), "row.names") = NULL
+  }
+
   for(a in names(attributes(classic_sim))) {
     expect_equal(attr(tmb_sim, a), attr(classic_sim, a), tolerance = tolerance)
   }
@@ -898,6 +914,36 @@ time_wrap = function(expr1, expr2, units = 'secs') {
   list(dff1, dff2, as.numeric(dff2)/as.numeric(dff1))
 }
 
+#' @export
+compare_sims_cbind = function(classic_sim, tmb_sim, index) {
+  stopifnot(length(index) == 1L)
+  x = cbind(unlist(classic_sim[,index]),
+        unlist(tmb_sim[,index]))
+  colnames(x) = c('classic', 'tmb') %_% names(classic_sim[index])
+  x
+}
+
+#' @export
+compare_sims_plot = function(...) {
+  x = compare_sims_cbind(...)
+  ss = sub('^classic_', '', colnames(x))
+  plot(x[,1], type = 'l', main = ss[[1L]][1])
+  lines(x[,2], col = 'red', lty = 2)
+}
+
+#' @export
+compare_sims_diffmat = function(classic_sim, tmb_sim, state, op = `-`) {
+  op(
+    as.matrix(classic_sim[,names(state)]),
+    as.matrix(tmb_sim[,names(state)]))
+}
+
+#' @export
+compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) {
+  all.equal(unlist(tmb_sim), unlist(classic_sim), tolerance)
+  TRUE
+}
+
 ##' Set Spec Version
 ##'
 ##' Set the spec version and optionally compile a
@@ -933,4 +979,29 @@ set_spec_version = function(v, cpp_path = NULL) {
     compile(cpp)
     dyn.load(dynlib(dll))
   }
+}
+
+
+# converting between classic and tmb params_timevar -------
+#   this is annoying:
+#   macpan_ontario orders by Symbol then Date
+#   macpan.cpp orders by breaks then spi (which is roughly Date then Symbol)
+#' @export
+timevar_order_indices = function(schedule) {
+  # FIXME: need to do something different if rel_orig/rel_prev are both used?
+
+  # arrange classic method
+  schedule = arrange(schedule, Symbol, Date)
+  schedule$classic_row_num = seq_len(nrow(schedule))
+
+  # arrange tmb method
+  schedule = arrange(schedule, breaks, tv_spi)
+  schedule$classic_order = order(schedule$classic_row_num)
+  schedule$tmb_row_num = seq_len(nrow(schedule))
+
+  # arrange back to classic
+  schedule = arrange(schedule, Symbol, Date)
+  schedule$tmb_order = order(schedule$tmb_row_num)
+
+  select(schedule, classic_order, tmb_order)
 }
