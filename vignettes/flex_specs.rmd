@@ -12,8 +12,7 @@ editor_options:
     wrap: 72
 ---
 
-[![Live
-Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_specs)
+[![Live Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_specs)
 
 [McMasterPandemic](https://github.com/mac-theobio/McMasterPandemic) is a
 modelling tool that was rapidly developed to provide timely insights
@@ -83,6 +82,7 @@ will not change.
 -   [0.0.5 -- Hazard simulation](#v0.0.5)
 -   [0.0.6 -- Updates of time-varying parameters from the initial
     parameters on the `C++` side](#v0.0.6)
+-   [0.1.0 -- Model structure](#v0.1.0)
 
 ## Experimental Versions
 
@@ -90,7 +90,6 @@ The specs for the following versions are being actively developed and
 modified. These versions also serve as a roadmap. Note that version
 numbers of experimental versions can change without warning.
 
--   [0.1.0 -- Model structure](#v0.1.0)
 -   [0.1.1 -- Make state and calibrate time-varying
     multipliers](#v0.1.1)
 -   [0.1.2 -- Log-linear exogenous time-variation of
@@ -221,7 +220,8 @@ Weiguang and Ben.
 
 $$
 \log(u) = \log(u_0) + Xv
-$$ where $u$ is a vector of length $T$, the number of time steps, $u_0$
+$$ 
+where $u$ is a vector of length $T$, the number of time steps, $u_0$
 is a scalar parameter, $v$ is a vector of length $D < T$ that
 parameterizes the model of time variation, and $X$ is a $T$-by-$D$
 matrix of constant columns (e.g. indicator variables, spline bases).
@@ -229,15 +229,18 @@ Note that logs of vectors are taken element-wise.
 
 $$
 \log(u_t) = \log(u_0) + \sum_{i=1}^Dx_{ti}v_i
-$$ $$
+$$ 
+$$
 u_t = u_0 \prod_{i=1}^D\exp\left(x_{ti}v_i\right)
-$$ For example:
+$$ 
+For example:
 
 -   $D=2$ breakpoints
 -   $v_1 = v_2 = \log\left(\frac{1}{2}\right) \approx -0.69$
 -   $x_{ti} = \begin{cases} 1, & t \ge t_i \\ 0, & \text{otherwise} \end{cases}$
 
-In this case we have the following time variation of $u$. $$
+In this case we have the following time variation of $u$. 
+$$
 u_t = 
 \begin{cases} 
 u_0, & t < t_1 \\
@@ -365,7 +368,7 @@ And for completeness, in case it is useful, we also provide index vectors for dr
 ## v0.1.0 {#v0.1.0}
 
 [![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.1.0)
 
@@ -397,7 +400,8 @@ model can be given by the following `struc` objects.
 
 Start by getting a set of vaccination parameters and state variables.
 
-```{r, echo=FALSE, message=FALSE}
+```{r pkgs, echo=FALSE, message=FALSE}
+options(MP_flex_spec_version = "0.1.0")
 library(McMasterPandemic)
 library(dplyr)
 ```
@@ -405,7 +409,7 @@ library(dplyr)
 Create a symbolic vector of I-state variables, with 4 base states by 5
 vaccination categories = 20 variables.
 
-```{r}
+```{r struc1}
 base_params <- read_params("PHAC.csv")
 vax_params <- expand_params_vax(
   params = base_params,
@@ -422,7 +426,7 @@ as.matrix(Istate)
 Create a vector of base transmission rates associated with each of the 4
 base I-states.
 
-```{r}
+```{r trans_rates}
 baseline_trans_rates =
   struc(
   'Ca',
@@ -435,7 +439,7 @@ as.matrix(baseline_trans_rates)
 
 Create a 5-by-5 block matrix of vaccine efficacies
 
-```{r}
+```{r vax_eff}
 vax_trans_red = struc_block(struc(
   '1',
   '1',
@@ -446,10 +450,12 @@ vax_trans_red = struc_block(struc(
 as.matrix(vax_trans_red)
 ```
 
+<!-- FIXME/wishlist: nice if we could do this as a more compact/abstract vector operation? -->
+
 And finally the force of infection vector, which looks like we really
 need to introduce the capability for common factors.
 
-```{r}
+```{r kron}
 foi = kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
 foi
 ```
@@ -458,7 +464,7 @@ foi
 
 Start with a basic example model.
 
-```{r}
+```{r sir1}
 params <- read_params("ICU1.csv")
 state <- make_state(params = params)
 M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -472,7 +478,7 @@ Then we define sums of state variables and parameter vectors. Here we
 add the sum of the `I` states and of the `ICU` states using regular
 expressions and just a list of state names.
 
-```{r}
+```{r add_summaries}
 test_model = (test_model
   %>% add_state_param_sum(sum = "Isum", summands = "^I[a-z]")
   %>% add_state_param_sum(sum = "ICUsum", summands = c("ICUs", "ICUd"))
@@ -483,8 +489,8 @@ Then we can just proceed as we normally would, but with the option to
 refer to these sums (this is not meant to reflect real epidemiology, but
 to illustrate the interface).
 
-```{r}
-set_spec_version('0.1.0', '../inst/tmb')
+```{r add_rates}
+options(MP_flex_spec_version = "0.0.2")
 test_model = (test_model
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma) * (1 / Isum))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
@@ -561,23 +567,30 @@ Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color
 
 ### Mathematical Description (0.0.5)
 
-Define the sums of the rows of the rate matrix. $$
+Define the sums of the rows of the rate matrix. 
+$$
 r_i = \sum_{j=1}^n M_{ij}
-$$ Define the elements of a vector of exponentiated row sums $$
+$$ 
+Define the elements of a vector of exponentiated row sums 
+$$
 \rho_i = \exp(-r_i)
 $$
 
-Define the elements of a normalized state vector. $$
+Define the elements of a normalized state vector.
+$$
 \tilde{s}_i = \begin{cases}
 0 & r_i = 0 \\
 \frac{s_i}{r_i} & \text{otherwise}
 \end{cases}
-$$ With these definitions we can define the modified flow matrix. $$
+$$ 
+With these definitions we can define the modified flow matrix. 
+$$
 F_{ij} = \begin{cases}
 M_{ij}\tilde{s}_i(1-\rho_i) & i \ne j \\
 0 & \text{otherwise}
 \end{cases}
-$$ This modified flow matrix can now be used in the same way as the
+$$ 
+This modified flow matrix can now be used in the same way as the
 unmodified flow matrix to produce state variable updates following spec
 version 0.0.2.
 
@@ -693,6 +706,7 @@ simulation.
 An example model with time variation can be defined as follows.
 
 ```{r, eval=FALSE}
+options(MP_flex_spec_version = "0.0.3")
 params = read_params('ICU1.csv')
 state = make_state(params = params)
 model = (
@@ -752,6 +766,7 @@ These indices and counts can be used to update the `spi` vector at each
 simulation step. Here is an example in `R`.
 
 ```{r}
+options(MP_flex_spec_version = "0.0.3")
 tvi_spi = c(1L, 3L, 6L, 10L, 14L, 19L)
 n_breaks = c(3L, 3L, 2L, 2L, 2L, 2L)
 t_breaks = c(
@@ -802,6 +817,7 @@ for(t in 1:30) {
   # ...
 }
 ```
+
 
 Each row in this output is a time step and each column is the `spi`
 index for a particular factor. Notice that only six columns change
@@ -893,7 +909,8 @@ iteration is given by the following.
 
 $$
 s \to s - f_{\text{out}} + f_{\text{in}}
-$$ Here is a summary of the stages of a single simulation step under
+$$ 
+Here is a summary of the stages of a single simulation step under
 this model.
 
 1.  Update the rate matrix following [version 0.0.1](#v0.0.1)
@@ -915,6 +932,7 @@ state names (e.g. `r c("X", "N", "P", "V")`). For example, one way to
 provide such a vector to an existing model would be the following.
 
 ```{r, eval=FALSE}
+options(MP_flex_spec_version = "0.0.2")
 model = add_parallel_accumulators(model, c("X", "N", "P", "V"))
 ```
 
@@ -1014,6 +1032,7 @@ state-dependence of a single non-zero rate matrix element. The standard
 `McMasterPandemic` introductory example model can be defined as follows.
 
 ```{r, eval=FALSE}
+options(MP_flex_spec_version = "0.0.1")
 params = read_params('ICU1.csv')
 state = make_state(params = params)
 model = (
