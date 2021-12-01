@@ -172,6 +172,9 @@ src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 vignettes/flex_specs.html: vignettes/flex_specs.rmd
 	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
 
+vignettes/flex_intro.html: vignettes/flex_intro.rmd
+	echo "rmarkdown::render('vignettes/flex_intro.rmd')" | $(R) --slave
+
 cleanobjects:
 	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so
 

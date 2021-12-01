@@ -41,7 +41,15 @@ init_model <- function(params, state = NULL,
     # TODO: this is here to compare with tmb-computed rate matrices,
     # but in the future when tmb is truly flexible this will not work.
     # what we need is a make_ratemat for model$rates
-    ratemat = make_ratemat(state, params, sparse = TRUE)
+    if(inherits(state, "pansim") & inherits(params, "pansim")) {
+      ratemat = make_ratemat(state, params, sparse = TRUE)
+    } else {
+      ratemat = Matrix::Matrix(
+        0,
+        nrow = length(state), ncol = length(state),
+        dimnames = list(from = names(state), to = names(state))
+      )
+    }
 
     # TODO: keep an eye on this -- i think that the
     # flex framework should _not_ use parameter

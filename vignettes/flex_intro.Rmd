@@ -1,0 +1,139 @@
+---
+title: "Flexible and Fast Modelling with McMasterPandemic"
+output: html_document
+---
+
+[![Live
+Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_intro)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(McMasterPandemic)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+## Hello World: Simulating an SIR Model
+
+```{r}
+sir_model = (
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow("S|I|R", "S|I|R")
+  %>% add_tmb_indices
+)
+sir_model
+```
+
+```{r}
+sir_model$ratemat = as.matrix(sir_model$ratemat)
+(sir_model
+    %>% simulate_state_vector
+    %>% mutate(time = row_number())
+    %>% pivot_longer(!time)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = time, y = state, colour = epi_cat))
+  )
+```
+
+```{r}
+(sir_model
+    %>% simulate_changing_ratemat_elements
+    %>% mutate(time = row_number())
+    %>% rename(`force of infection` = S_to_I)
+    %>% ggplot
+     +  geom_line(aes(x = time, y = `force of infection`))
+  )
+```
+
+## Structure: Two-Strain SIR
+
+```{r}
+
+strains = c("wild", "variant")
+
+two_strain_model = (
+  init_model(
+    params = c(
+      gamma = 1e-1,       # per-infected recovery rate
+      beta_wild = 5e-9,   # per-contact transmission rate for wild type
+      beta_variant = 6e-9 # per-contact transmission rate for variant
+    ),
+    state = c(
+      S = 20000, 
+      I_wild = 50, I_variant = 50,
+      R_wild = 0,   R_variant = 0
+    ),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% vec_rate(
+    rep("S", length(strains)),
+    "I" %_% strains, 
+     vec("beta" %_% strains) * struc("S") * vec("I" %_% strains)
+  )
+  %>% rep_rate("I", "R", ~ (gamma))
+  %>% add_outflow("^(S|I_|R_)", "^(S|I_|R_)")
+  %>% add_tmb_indices
+)
+```
+
+```{r}
+two_strain_model$ratemat = as.matrix(two_strain_model$ratemat)
+regex = "^(S|I|R)(_*)(.*)"
+(two_strain_model
+    %>% simulate_state_vector
+    %>% mutate(time = row_number())
+    %>% pivot_longer(!time)
+    %>% rename(state = value)
+    %>% mutate(strain  = sub(pattern = regex, replacement = "\\3", name))
+    %>% mutate(epi_cat = sub(pattern = regex, replacement = "\\1", name))
+    %>% ggplot
+     +  geom_line(aes(x = time, y = state, colour = epi_cat, linetype = strain))
+  )
+```
+
+```{r}
+(two_strain_model
+    %>% simulate_changing_ratemat_elements
+    %>% mutate(time = row_number())
+    %>% pivot_longer(starts_with("S_to_I"))
+    %>% mutate(name = sub("S_to_I_", "", name))
+    %>% rename(`force of infection` = value)
+    %>% rename(strain = name)
+    %>% ggplot
+     +  geom_line(aes(x = time, y = `force of infection`, colour = strain))
+  )
+```
+
+## Canned Models
+
+### Base MacPan COVID Model -- `make_base_model`
+
+### Vaccination and Variant COVID Model -- `make_vaccination_model`
+
+## Hooking up to Standard MacPan Tools
+
+### Hooking up to `run_sim`
+
+### Hooking up to `calibrate`
+
+### Hooking up to `forecast`

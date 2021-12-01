@@ -53,6 +53,15 @@ mat = function(...) {
   struc(matrix(x, nrow, ncol, byrow = TRUE))
 }
 
+#' @export
+cross = function(x, y, sep = "_") {
+  struc(matrix(
+    McMasterPandemic:::expand_names(x, y, sep),
+    nrow = length(x),
+    ncol = length(y)
+  ))
+}
+
 #' @rdname struc
 #' @param x object to convert to a struc object
 #' @export
