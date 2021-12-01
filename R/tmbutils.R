@@ -748,6 +748,14 @@ tmb_params = function(model) {
   full_param_vec
 }
 
+#' @export
+simulation_dates = function(model) {
+  seq.Date(
+    as.Date(model$start_date),
+    as.Date(model$end_date),
+    by = 1)
+}
+
 #' @param model flexmodel
 #' @param sim_params parameter vector to pass to a TMB objective function
 #' @export
@@ -757,7 +765,7 @@ changing_ratemat_elements = function(model, sim_params = NULL) {
 }
 
 #' @export
-simulate_changing_ratemat_elements = function(model, sim_params = NULL) {
+simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
   updateidx = model$tmb_indices$updateidx
   ratemat_elements = (model
     %>% changing_ratemat_elements(sim_params)
@@ -767,7 +775,16 @@ simulate_changing_ratemat_elements = function(model, sim_params = NULL) {
   )
 
   colnames(ratemat_elements) = names(updateidx)
-  as.data.frame(ratemat_elements)
+  ratemat_elements = as.data.frame(ratemat_elements)
+  if(add_dates) {
+    ratemat_elements = (model
+                  %>% simulation_dates
+                  %>% data.frame
+                  %>% setNames("Date")
+                  %>% cbind(ratemat_elements)
+    )
+  }
+  ratemat_elements
 }
 
 #' @export
@@ -788,12 +805,21 @@ structure_state_vector = function(x, iters, state_nms) {
 }
 
 #' @export
-simulate_state_vector = function(model, sim_params = NULL) {
-  (model
+simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE) {
+  state_sims = (model
    %>% concatenated_state_vector(sim_params)
    %>% structure_state_vector(model$iters, names(model$state))
    %>% as.data.frame
   )
+  if(add_dates) {
+    state_sims = (model
+      %>% simulation_dates
+      %>% data.frame
+      %>% setNames("Date")
+      %>% cbind(state_sims)
+    )
+  }
+  state_sims
 }
 
 #' @export

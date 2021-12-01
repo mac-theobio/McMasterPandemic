@@ -44,7 +44,7 @@ init_model <- function(params, state = NULL,
     if(inherits(state, "pansim") & inherits(params, "pansim")) {
       ratemat = make_ratemat(state, params, sparse = TRUE)
     } else {
-      ratemat = Matrix::Matrix(
+      ratemat = matrix(
         0,
         nrow = length(state), ncol = length(state),
         dimnames = list(from = names(state), to = names(state))

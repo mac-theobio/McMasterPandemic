@@ -41,24 +41,21 @@ sir_model
 ```
 
 ```{r}
-sir_model$ratemat = as.matrix(sir_model$ratemat)
 (sir_model
-    %>% simulate_state_vector
-    %>% mutate(time = row_number())
-    %>% pivot_longer(!time)
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
     %>% rename(state = value, epi_cat = name)
     %>% ggplot
-     +  geom_line(aes(x = time, y = state, colour = epi_cat))
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
   )
 ```
 
 ```{r}
 (sir_model
-    %>% simulate_changing_ratemat_elements
-    %>% mutate(time = row_number())
+    %>% simulate_changing_ratemat_elements(add_dates = TRUE)
     %>% rename(`force of infection` = S_to_I)
     %>% ggplot
-     +  geom_line(aes(x = time, y = `force of infection`))
+     +  geom_line(aes(x = Date, y = `force of infection`))
   )
 ```
 
@@ -97,30 +94,27 @@ two_strain_model = (
 ```
 
 ```{r}
-two_strain_model$ratemat = as.matrix(two_strain_model$ratemat)
 regex = "^(S|I|R)(_*)(.*)"
 (two_strain_model
-    %>% simulate_state_vector
-    %>% mutate(time = row_number())
-    %>% pivot_longer(!time)
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
     %>% rename(state = value)
     %>% mutate(strain  = sub(pattern = regex, replacement = "\\3", name))
     %>% mutate(epi_cat = sub(pattern = regex, replacement = "\\1", name))
     %>% ggplot
-     +  geom_line(aes(x = time, y = state, colour = epi_cat, linetype = strain))
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat, linetype = strain))
   )
 ```
 
 ```{r}
 (two_strain_model
-    %>% simulate_changing_ratemat_elements
-    %>% mutate(time = row_number())
+    %>% simulate_changing_ratemat_elements(add_dates = TRUE)
     %>% pivot_longer(starts_with("S_to_I"))
     %>% mutate(name = sub("S_to_I_", "", name))
     %>% rename(`force of infection` = value)
     %>% rename(strain = name)
     %>% ggplot
-     +  geom_line(aes(x = time, y = `force of infection`, colour = strain))
+     +  geom_line(aes(x = Date, y = `force of infection`, colour = strain))
   )
 ```
 
