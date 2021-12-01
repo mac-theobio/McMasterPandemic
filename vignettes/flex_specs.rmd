@@ -484,6 +484,7 @@ refer to these sums (this is not meant to reflect real epidemiology, but
 to illustrate the interface).
 
 ```{r}
+set_spec_version('0.1.0', '../inst/tmb')
 test_model = (test_model
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma) * (1 / Isum))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
