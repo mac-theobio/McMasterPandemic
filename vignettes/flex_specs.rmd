@@ -12,8 +12,7 @@ editor_options:
     wrap: 72
 ---
 
-[![Live
-Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_specs)
+[![Live Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_specs)
 
 [McMasterPandemic](https://github.com/mac-theobio/McMasterPandemic) is a
 modelling tool that was rapidly developed to provide timely insights
@@ -397,7 +396,7 @@ model can be given by the following `struc` objects.
 
 Start by getting a set of vaccination parameters and state variables.
 
-```{r, echo=FALSE, message=FALSE}
+```{r pkgs, echo=FALSE, message=FALSE}
 library(McMasterPandemic)
 library(dplyr)
 ```
@@ -405,7 +404,7 @@ library(dplyr)
 Create a symbolic vector of I-state variables, with 4 base states by 5
 vaccination categories = 20 variables.
 
-```{r}
+```{r struc1}
 base_params <- read_params("PHAC.csv")
 vax_params <- expand_params_vax(
   params = base_params,
@@ -422,7 +421,7 @@ as.matrix(Istate)
 Create a vector of base transmission rates associated with each of the 4
 base I-states.
 
-```{r}
+```{r trans_rates}
 baseline_trans_rates =
   struc(
   'Ca',
@@ -435,7 +434,7 @@ as.matrix(baseline_trans_rates)
 
 Create a 5-by-5 block matrix of vaccine efficacies
 
-```{r}
+```{r vax_eff}
 vax_trans_red = struc_block(struc(
   '1',
   '1',
@@ -446,10 +445,12 @@ vax_trans_red = struc_block(struc(
 as.matrix(vax_trans_red)
 ```
 
+<!-- FIXME/wishlist: nice if we could do this as a more compact/abstract vector operation? -->
+
 And finally the force of infection vector, which looks like we really
 need to introduce the capability for common factors.
 
-```{r}
+```{r kron}
 foi = kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
 foi
 ```
@@ -458,7 +459,7 @@ foi
 
 Start with a basic example model.
 
-```{r}
+```{r sir1}
 params <- read_params("ICU1.csv")
 state <- make_state(params = params)
 M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -472,7 +473,7 @@ Then we define sums of state variables and parameter vectors. Here we
 add the sum of the `I` states and of the `ICU` states using regular
 expressions and just a list of state names.
 
-```{r}
+```{r add_summaries}
 test_model = (test_model
   %>% add_state_param_sum(sum = "Isum", summands = "^I[a-z]")
   %>% add_state_param_sum(sum = "ICUsum", summands = c("ICUs", "ICUd"))
@@ -483,7 +484,7 @@ Then we can just proceed as we normally would, but with the option to
 refer to these sums (this is not meant to reflect real epidemiology, but
 to illustrate the interface).
 
-```{r}
+```{r add_rates}
 test_model = (test_model
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma) * (1 / Isum))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
