@@ -1,0 +1,137 @@
+Loading McMasterPandemic
+Testing McMasterPandemic
+✓ |  OK F W S | Context
+✓ |  19       | ageify [8.9 s]
+x |  25 1   1 | very basic simulation [3.8 s]
+──────────────────────────────────────────────────────────────────────────
+Error (test-basic.R:85:5): time-varying example
+Error: invalid graphics state
+Backtrace:
+ 1. base::suppressWarnings(print(plot(resICU_t))) test-basic.R:85:4
+ 4. ggplot2:::print.ggplot(plot(resICU_t))
+ 5. grid::grid.newpage()
+ 6. grDevices:::recordPalette()
+
+Skip (test-basic.R:247:1): mle prediction
+Reason: empty test
+──────────────────────────────────────────────────────────────────────────
+✓ |   6       | calibrate [13.2 s]
+x |   0 1 1   | exp [0.1 s]
+──────────────────────────────────────────────────────────────────────────
+Warning (test-exp.R:13:1): (code run outside of `test_that()`)
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::rExp(params = pp, return_val = "sim") test-exp.R:13:0
+
+Error (test-exp.R:17:1): (code run outside of `test_that()`)
+Error: figure margins too large
+Backtrace:
+ 1. graphics::matplot(...) test-exp.R:17:0
+ 3. graphics::plot.default(...)
+ 4. graphics::plot.new()
+──────────────────────────────────────────────────────────────────────────
+✓ |   1       | expandify
+✓ |  18     1 | methods [6.6 s]
+──────────────────────────────────────────────────────────────────────────
+Skip (test-methods.R:14:5): Jacobian/r/etc
+Reason: hard-to-replicate negative state issue, issue see #38
+──────────────────────────────────────────────────────────────────────────
+✓ |   3       | plots
+✓ |   2       | rda [0.4 s]
+✓ |   6       | simfuns [0.2 s]
+x |   0 1     | snapshots
+──────────────────────────────────────────────────────────────────────────
+Error (test-snapshots.R:5:1): (code run outside of `test_that()`)
+Error: edition %in% c(1L, 2L) is not TRUE
+Backtrace:
+ 1. readr::local_edition(3) test-snapshots.R:5:0
+ 2. readr:::edition_set(edition)
+ 3. base::stopifnot(edition %in% c(1L, 2L))
+──────────────────────────────────────────────────────────────────────────
+✓ |  15   10 1 | testify [2.8 s]
+──────────────────────────────────────────────────────────────────────────
+Warning (test-testify.R:35:5): make_state from scratch
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. testthat::expect_equal(names(make_state(params = pp)), names(state_testified)) test-testify.R:35:4
+ 4. McMasterPandemic::make_state(params = pp)
+ 5. McMasterPandemic::get_evec(params, testify = testify) /Users/papsti/McMasterPandemic/R/sim_funs.R:1330:16
+ 6. McMasterPandemic::rExp(p, return_val = "eigenvector", ...) /Users/papsti/McMasterPandemic/R/afuns.R:41:4
+
+Warning (test-testify.R:44:5): make_ratemat from scratch (ignore testify in state)
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::make_state(params = pp) test-testify.R:44:4
+ 2. McMasterPandemic::get_evec(params, testify = testify) /Users/papsti/McMasterPandemic/R/sim_funs.R:1330:16
+ 3. McMasterPandemic::rExp(p, return_val = "eigenvector", ...) /Users/papsti/McMasterPandemic/R/afuns.R:41:4
+
+Warning (test-testify.R:94:1): (code run outside of `test_that()`)
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = pp, ratemat_args = list(testing_time = "sample")) test-testify.R:94:0
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Warning (test-testify.R:100:1): (code run outside of `test_that()`)
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::make_state(pp[["N"]], pp[["E0"]], params = pp) test-testify.R:100:0
+ 2. McMasterPandemic::get_evec(params, testify = testify) /Users/papsti/McMasterPandemic/R/sim_funs.R:1330:16
+ 3. McMasterPandemic::rExp(p, return_val = "eigenvector", ...) /Users/papsti/McMasterPandemic/R/afuns.R:41:4
+
+Warning (test-testify.R:141:5): time-varying test intensity
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(...) test-testify.R:141:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Skip (test-testify.R:156:1): testing with susceptibles only
+Reason: empty test
+
+Warning (test-testify.R:190:5): testify + sampling time
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = pp, ratemat_args = list(testing_time = "report")) test-testify.R:190:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Warning (test-testify.R:195:5): testify + sampling time
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = pp, ratemat_args = list(testing_time = "sample")) test-testify.R:195:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Warning (test-testify.R:211:5): testify + alternative weights models
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = pp, ratemat_args = list(testing_time = "report")) test-testify.R:211:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Warning (test-testify.R:215:5): testify + alternative weights models
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = ppw1, ratemat_args = list(testing_time = "report")) test-testify.R:215:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+
+Warning (test-testify.R:219:5): testify + alternative weights models
+CHECK: may not be working properly for testify?
+Backtrace:
+ 1. McMasterPandemic::run_sim(params = ppw2, ratemat_args = list(testing_time = "report")) test-testify.R:219:4
+ 2. McMasterPandemic::expand_stateval_testing(state, params = params) /Users/papsti/McMasterPandemic/R/sim_funs.R:936:8
+ 3. McMasterPandemic::rExp(params, testify = TRUE, return_val = "eigenvector") /Users/papsti/McMasterPandemic/R/testify.R:152:8
+──────────────────────────────────────────────────────────────────────────
+✓ |   7       | invlink_trans
+✓ |   3       | zzzDE
+⠏ |   0       | DEoptim
+══ Results ═══════════════════════════════════════════════════════════════
+Duration: 38.1 s
+
+── Skipped tests  ────────────────────────────────────────────────────────
+• empty test (2)
+• hard-to-replicate negative state issue, issue see #38 (1)
+
+[ FAIL 3 | WARN 11 | SKIP 3 | PASS 105 ]

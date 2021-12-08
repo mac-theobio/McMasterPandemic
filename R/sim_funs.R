@@ -862,7 +862,7 @@ deprecate_timepars_warning <- FALSE
 ##' @inheritParams do_step
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
-##' @param params_timevar four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero), \code{rel_prev} (relative to previous value), possibly others to be determined. If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.
+##' @param params_timevar four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero); \code{rel_prev} (relative to previous value); or \code{abs} (absolute value at specified time). If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.
 ##' @param dt time step for \code{\link{do_step}}
 ##' @param ratemat_args additional arguments to pass to \code{\link{make_ratemat}}
 ##' @param step_args additional arguments to pass to \code{\link{do_step}}
@@ -961,6 +961,125 @@ run_sim <- function(params,
       flexmodel$state = state
       obj_fun <- tmb_fun(flexmodel)
     }
+    M <- make_M()
+
+    state0 <- state
+    params0 <- params ## save baseline (time-0) values
+    ## no explicit switches, and (no process error) or (process error for full time);
+    ## we will be able to run the whole sim directly
+    if (is.null(params_timevar) && (!stoch[["proc"]] || is.null(stoch_start))) {
+        switch_times <- NULL
+    } else {
+        if (is.null(params_timevar)) {
+            ## starting times for process/obs error specified, but no other time-varying parameters;
+            ##  we need an empty data frame with the right structure so we can append the process-error switch times
+            params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Value = numeric(0), Type = character(0))
+        } else {
+            ## check column names
+            names(params_timevar) <- capitalize(names(params_timevar))
+            if (identical(
+                names(params_timevar),
+                c("Date", "Symbol", "Relative_value")
+            )) {
+                if (!deprecate_timepars_warning) {
+                    warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
+                    deprecate_timepars_warning <- TRUE
+                }
+                names(params_timevar)[3] <- "Value"
+                params_timevar <- data.frame(params_timevar, Type = "rel_orig")
+            }
+            npt <- names(params_timevar)
+            if (!identical(
+                npt,
+                c("Date", "Symbol", "Value", "Type")
+            )) {
+                stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
+            }
+            params_timevar$Date <- as.Date(params_timevar$Date)
+            ## tryCatch(
+            ##     params_timevar$Date <- as.Date(params_timevar$Date),
+            ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
+            params_timevar <- params_timevar[order(params_timevar$Date), ]
+        }
+        ## append process-observation switch to timevar
+        if (stoch[["proc"]] && !is.null(stoch_start)) {
+            params_timevar <- rbind(
+                params_timevar,
+                dfs(
+                    Date = stoch_start[["proc"]],
+                    Symbol = "proc_disp", Value = 1, Type = "rel_orig"
+                )
+            )
+            params[["proc_disp"]] <- -1 ## special value: signal no proc error
+        }
+        switch_dates <- params_timevar[["Date"]]
+        ## match specified times with time sequence
+        switch_times <- match(switch_dates, date_vec)
+        if (any(is.na(switch_times))) {
+            bad <- which(is.na(switch_times))
+            stop("non-matching dates in params_timevar: ", paste(switch_dates[bad], collapse = ","))
+        }
+        if (any(switch_times == length(date_vec))) {
+            ## drop switch times on final day
+            warning("dropped switch times on final day")
+            switch_times <- switch_times[switch_times < length(date_vec)]
+        }
+    } ## steps
+
+    if (is.null(switch_times)) {
+        res <- thin(
+            ndt = ndt,
+            do.call(
+                run_sim_range,
+                nlist(params,
+                    state,
+                    nt = nt * ndt,
+                    dt = dt / ndt,
+                    M,
+                    use_ode,
+                    ratemat_args,
+                    step_args
+                )
+            )
+        )
+    } else {
+        t_cur <- 1
+        ## want to *include* end date
+        switch_times <- switch_times + 1
+        ## add beginning and ending time
+        times <- c(1, unique(switch_times), nt + 1)
+        resList <- list()
+        ## for switch time indices
+        for (i in seq(length(times) - 1)) {
+            recompute_M <- FALSE
+            for (j in which(switch_times == times[i])) {
+                ## reset all changing params
+                s <- params_timevar[j, "Symbol"]
+                v <- params_timevar[j, "Value"]
+                t <- params_timevar[j, "Type"]
+                if (t == "abs") {
+                  if (length(unique(params[[s]])) > 1) {
+                    stop("attempting to replace a vector-valued parameter with a scalar value")
+                  }
+                  params[[s]] <- v
+                } else {
+                  old_param <- switch(t,
+                      ## this should work even if params0[[s]] is a vector
+                      rel_orig = params0[[s]],
+                      rel_prev = params[[s]],
+                      stop("unknown time_params type ", t)
+                  )
+                  params[[s]] <- old_param * v
+                }
+                if (s == "proc_disp") {
+                    state <- round(state)
+                }
+                if (verbose) {
+                    cat(sprintf(
+                        "changing value of %s from original %f to %f at time step %d\n",
+                        s, params0[[s]], params[[s]], i
+                    ))
+                }
 
     ## simulate trajectories based on new parameters
     full_param_vec = tmb_params(flexmodel)

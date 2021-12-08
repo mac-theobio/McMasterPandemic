@@ -1,4 +1,5 @@
 ## This is McMaster pandemic
+## https://github.com/bbolker/McMasterPandemic
 
 current: target
 -include target.mk
