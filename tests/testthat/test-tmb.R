@@ -28,70 +28,124 @@ library(lubridate)
 ## see https://canmod.net/misc/flex_specs for more on
 ## spec versioning.
 ## ------------------------------------------------------------------
-set_spec_version("0.0.1", "../../inst/tmb/")
 
-params <- read_params("ICU1.csv")
-state <- McMasterPandemic::make_state(params = params)
-M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
-test_model <- (
-    init_model(params, state)
-        %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
-        %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
-        %>% add_rate("Ia", "R", ~ (gamma_a))
-        %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
-        %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
-        %>% add_rate("Im", "R", ~ (gamma_m))
-        %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-        %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-        %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
-        %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
-        %>% add_rate("ICUs", "H2", ~ (psi1))
-        %>% add_rate("ICUd", "D", ~ (psi2))
-        %>% add_rate("H2", "R", ~ (psi3))
-        %>% add_rate("H", "R", ~ (rho))
-        %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-        %>% add_rate("S", "E", ~
-        (Ia) * (beta0) * (1 / N) * (Ca) +
-            (Ip) * (beta0) * (1 / N) * (Cp) +
-            (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
-            (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-        %>% add_tmb_indices()
-)
+test_that("spec v0.0.1 rate matrices match make_ratemat", {
+    set_spec_version("0.0.1", "../../inst/tmb/")
 
-dd <- tmb_fun(test_model)
+    params <- read_params("ICU1.csv")
+    state <- McMasterPandemic::make_state(params = params)
+    M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
+    test_model <- (
+        init_model(params, state)
+            %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
+            %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+            %>% add_rate("Ia", "R", ~ (gamma_a))
+            %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+            %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+            %>% add_rate("Im", "R", ~ (gamma_m))
+            %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+            %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+            %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+            %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+            %>% add_rate("ICUs", "H2", ~ (psi1))
+            %>% add_rate("ICUd", "D", ~ (psi2))
+            %>% add_rate("H2", "R", ~ (psi3))
+            %>% add_rate("H", "R", ~ (rho))
+            %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+            %>% add_rate("S", "E", ~
+            (Ia) * (beta0) * (1 / N) * (Ca) +
+                (Ip) * (beta0) * (1 / N) * (Cp) +
+                (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
+                (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+            %>% add_tmb_indices()
+    )
 
-tmb_sparse_ratemat <- dd$report()$ratemat
-r_dense_ratemat <- as.matrix(M)
-tmb_dense_ratemat <- as.matrix(tmb_sparse_ratemat)
-r_sparse_ratemat <- M
-dimnames(tmb_sparse_ratemat) <- dimnames(r_sparse_ratemat) <- dimnames(tmb_dense_ratemat) <- dimnames(r_dense_ratemat) <- NULL
+    dd <- tmb_fun(test_model)
 
-test_that("rate matrix types match", {
+    tmb_sparse_ratemat <- dd$report()$ratemat
+    r_dense_ratemat <- as.matrix(M)
+    tmb_dense_ratemat <- as.matrix(tmb_sparse_ratemat)
+    r_sparse_ratemat <- M
+    dimnames(tmb_sparse_ratemat) <- dimnames(r_sparse_ratemat) <- dimnames(tmb_dense_ratemat) <- dimnames(r_dense_ratemat) <- NULL
+
     expect_equal(
         class(tmb_sparse_ratemat),
         class(r_sparse_ratemat)
     )
-})
 
-test_that("rate matrix dimensions match", {
     expect_equal(
         tmb_sparse_ratemat@Dim,
         r_sparse_ratemat@Dim
     )
-})
 
-test_that("matrix elements are equal", {
     expect_equal(
         tmb_dense_ratemat,
         r_dense_ratemat
     )
 })
 
+test_that("spec v0.0.2 simulations match run_sim", {
 
-set_spec_version("0.0.2", "../../inst/tmb/")
-params <- read_params("ICU1.csv")
-test_model <- (
-    init_model(params)
+    set_spec_version("0.0.2", "../../inst/tmb/")
+    params <- read_params("ICU1.csv")
+    state <- McMasterPandemic::make_state(params = params)
+    test_model <- (
+        init_model(params)
+            %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
+            %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+            %>% add_rate("Ia", "R", ~ (gamma_a))
+            %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+            %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+            %>% add_rate("Im", "R", ~ (gamma_m))
+            %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+            %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+            %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+            %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+            %>% add_rate("ICUs", "H2", ~ (psi1))
+            %>% add_rate("ICUd", "D", ~ (psi2))
+            %>% add_rate("H2", "R", ~ (psi3))
+            %>% add_rate("H", "R", ~ (rho))
+            %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+            %>% add_rate("S", "E", ~
+            (Ia) * (beta0) * (1 / N) * (Ca) +
+                (Ip) * (beta0) * (1 / N) * (Cp) +
+                (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
+                (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+            %>% add_parallel_accumulators(c("X", "N", "P", "V"))
+            %>% add_tmb_indices()
+    )
+
+    dd <- tmb_fun(test_model)
+
+    tmb_traj <- (test_model$state
+        %>% c(dd$report()$concatenated_state_vector)
+        %>% matrix(length(state), 4, dimnames = list(names(state), 1:4))
+        %>% t()
+        %>% as.data.frame()
+    )
+    r_traj <- run_sim_range(
+        params = params, state = test_model$state, nt = 4,
+        step_args = list(do_hazard = FALSE)
+    )[, names(test_model$state)]
+
+    expect_equal(tmb_traj, r_traj)
+})
+
+test_that("spec v0.0.4 simulations with time varying parameters match run_sim", {
+    set_spec_version("0.0.4", "../../inst/tmb/")
+    params <- read_params("ICU1.csv")
+    tv_dat <- data.frame(
+        Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
+        Symbol = c("beta0", "beta0", "beta0"),
+        Value = c(0.5, 0.1, 0.05),
+        Type = c("rel_prev", "rel_orig", "rel_prev")
+    )
+
+    test_model <- (init_model(
+        params,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = tv_dat
+    )
         %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
         %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
         %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -114,169 +168,108 @@ test_model <- (
             (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
         %>% add_parallel_accumulators(c("X", "N", "P", "V"))
         %>% add_tmb_indices()
-)
-
-dd <- tmb_fun(test_model)
-
-tmb_traj <- (test_model$state
-    %>% c(dd$report()$concatenated_state_vector)
-    %>% matrix(length(state), 4, dimnames = list(names(state), 1:4))
-    %>% t()
-    %>% as.data.frame()
-)
-r_traj <- run_sim_range(
-    params = params, state = test_model$state, nt = 4,
-    step_args = list(do_hazard = FALSE)
-)[, names(test_model$state)]
-
-test_that("simulated state trajectories are equal", {
-    expect_equal(tmb_traj, r_traj)
-})
-
-
-
-
-set_spec_version("0.0.4", "../../inst/tmb/")
-params <- read_params("ICU1.csv")
-tv_dat <- data.frame(
-    Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
-    Symbol = c("beta0", "beta0", "beta0"),
-    Value = c(0.5, 0.1, 0.05),
-    Type = c("rel_prev", "rel_orig", "rel_prev")
-)
-
-test_model <- (init_model(
-    params,
-    start_date = "2021-09-09", end_date = "2021-10-09",
-    params_timevar = tv_dat
-)
-    %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
-    %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
-    %>% add_rate("Ia", "R", ~ (gamma_a))
-    %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
-    %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
-    %>% add_rate("Im", "R", ~ (gamma_m))
-    %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-    %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-    %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
-    %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
-    %>% add_rate("ICUs", "H2", ~ (psi1))
-    %>% add_rate("ICUd", "D", ~ (psi2))
-    %>% add_rate("H2", "R", ~ (psi3))
-    %>% add_rate("H", "R", ~ (rho))
-    %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-    %>% add_rate("S", "E", ~
-    (Ia) * (beta0) * (1 / N) * (Ca) +
-        (Ip) * (beta0) * (1 / N) * (Cp) +
-        (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
-        (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-    %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-    %>% add_tmb_indices()
-)
-
-dd <- tmb_fun(test_model)
-
-tmb_traj <- (test_model$state
-    %>% c(dd$report()$concatenated_state_vector)
-    %>% matrix(length(test_model$state), test_model$iters + 1,
-        dimnames = list(names(test_model$state), 1:(test_model$iters + 1))
     )
-    %>% t()
-    %>% as.data.frame()
-)
 
-r_traj <- run_sim(
-    params = params,
-    state = test_model$state,
-    start_date = test_model$start_date,
-    end_date = test_model$end_date,
-    params_timevar = tv_dat,
-    condense = FALSE,
-    step_args = list(do_hazard = FALSE)
-)[, names(test_model$state)] %>%
-    as.data.frame()
+    dd <- tmb_fun(test_model)
 
-row.names(r_traj) <- row.names(tmb_traj) <- NULL
-
-test_that("simulated state trajectories are equal", {
-    expect_equal(tmb_traj, r_traj)
-})
-
-
-
-
-set_spec_version("0.0.5", "../../inst/tmb/")
-params <- read_params("ICU1.csv")
-
-tv_dat <- data.frame(
-    Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
-    Symbol = c("beta0", "beta0", "beta0"),
-    Value = c(0.5, 0.1, 0.05),
-    Type = c("rel_prev", "rel_orig", "rel_prev")
-)
-
-
-test_model <- (init_model(
-    params,
-    start_date = "2021-09-09", end_date = "2021-10-09",
-    params_timevar = tv_dat
-)
-    %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
-    %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
-    %>% add_rate("Ia", "R", ~ (gamma_a))
-    %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
-    %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
-    %>% add_rate("Im", "R", ~ (gamma_m))
-    %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-    %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-    %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
-    %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
-    %>% add_rate("ICUs", "H2", ~ (psi1))
-    %>% add_rate("ICUd", "D", ~ (psi2))
-    %>% add_rate("H2", "R", ~ (psi3))
-    %>% add_rate("H", "R", ~ (rho))
-    %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-    %>% add_rate("S", "E", ~
-    (Ia) * (beta0) * (1 / N) * (Ca) +
-        (Ip) * (beta0) * (1 / N) * (Cp) +
-        (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
-        (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-    %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-    %>% add_tmb_indices()
-)
-
-dd <- tmb_fun(test_model)
-
-tmb_traj <- (dd$report()$concatenated_state_vector
-    %>% matrix(length(test_model$state), test_model$iters + 1,
-        dimnames = list(names(test_model$state), 1:(test_model$iters + 1))
+    tmb_traj <- (test_model$state
+        %>% c(dd$report()$concatenated_state_vector)
+        %>% matrix(length(test_model$state), test_model$iters + 1,
+            dimnames = list(names(test_model$state), 1:(test_model$iters + 1))
+        )
+        %>% t()
+        %>% as.data.frame()
     )
-    %>% t()
-    %>% as.data.frame()
-)
 
-r_traj <- run_sim(
-    params = params,
-    state = test_model$state,
-    start_date = test_model$start_date,
-    end_date = test_model$end_date,
-    params_timevar = tv_dat,
-    condense = FALSE,
-    step_args = list(do_hazard = TRUE)
-)[, names(test_model$state)] %>%
-    as.data.frame()
+    r_traj <- run_sim(
+        params = params,
+        state = test_model$state,
+        start_date = test_model$start_date,
+        end_date = test_model$end_date,
+        params_timevar = tv_dat,
+        condense = FALSE,
+        step_args = list(do_hazard = FALSE)
+    )[, names(test_model$state)] %>%
+        as.data.frame()
 
-row.names(r_traj) <- row.names(tmb_traj) <- NULL
+    row.names(r_traj) <- row.names(tmb_traj) <- NULL
 
-test_that("simulated state trajectories are equal", {
     expect_equal(tmb_traj, r_traj)
 })
 
-test_that("mock objective function is correct", {
+test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff is working", {
+
+    set_spec_version("0.0.5", "../../inst/tmb/")
+    params <- read_params("ICU1.csv")
+    state = make_state(params = params)
+
+    tv_dat <- data.frame(
+        Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
+        Symbol = c("beta0", "beta0", "beta0"),
+        Value = c(0.5, 0.1, 0.05),
+        Type = c("rel_prev", "rel_orig", "rel_prev")
+    )
+
+
+    test_model <- (init_model(
+        params,
+        start_date = "2021-09-09", end_date = "2021-10-09",
+        params_timevar = tv_dat
+    )
+        %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
+        %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+        %>% add_rate("Ia", "R", ~ (gamma_a))
+        %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+        %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+        %>% add_rate("Im", "R", ~ (gamma_m))
+        %>% add_rate("Is", "H", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+        %>% add_rate("Is", "ICUs", ~ (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+        %>% add_rate("Is", "ICUd", ~ (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+        %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+        %>% add_rate("ICUs", "H2", ~ (psi1))
+        %>% add_rate("ICUd", "D", ~ (psi2))
+        %>% add_rate("H2", "R", ~ (psi3))
+        %>% add_rate("H", "R", ~ (rho))
+        %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+        %>% add_rate("S", "E", ~
+        (Ia) * (beta0) * (1 / N) * (Ca) +
+            (Ip) * (beta0) * (1 / N) * (Cp) +
+            (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
+            (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+        %>% add_parallel_accumulators(c("X", "N", "P", "V"))
+        %>% add_tmb_indices()
+    )
+
+    dd <- tmb_fun(test_model)
+
+    tmb_traj <- (dd$report()$concatenated_state_vector
+        %>% matrix(length(test_model$state), test_model$iters + 1,
+            dimnames = list(names(test_model$state), 1:(test_model$iters + 1))
+        )
+        %>% t()
+        %>% as.data.frame()
+    )
+
+    r_traj <- run_sim(
+        params = params,
+        state = test_model$state,
+        start_date = test_model$start_date,
+        end_date = test_model$end_date,
+        params_timevar = tv_dat,
+        condense = FALSE,
+        step_args = list(do_hazard = TRUE)
+    )[, names(test_model$state)] %>%
+        as.data.frame()
+
+    row.names(r_traj) <- row.names(tmb_traj) <- NULL
+
+    # simulated state trajectories are equal
+    expect_equal(tmb_traj, r_traj)
+
+    # mock objective function is correct
     expect_equal(sum(tmb_traj[31, ]), dd$fn(dd$par))
-})
 
-test_that("tmb-computed gradient equals numerical gradient", {
+    # tmb-computed gradient equals numerical gradient
 
     ## numerical differentiation settings:
     ## used defaults from `?grad` with one exception: d = 0.1, not 0.0001.
@@ -298,9 +291,9 @@ test_that("tmb-computed gradient equals numerical gradient", {
     expect_equal(tmb_gradient, numeric_gradient,
         tolerance = 1e-5
     )
-})
 
-test_that("use_flex flag does not change results", {
+
+    # use_flex flag does not change results
     tmb_sim <- run_sim(
         params, state = state,
         start_date = "2021-09-10",
@@ -310,7 +303,6 @@ test_that("use_flex flag does not change results", {
         step_args = list(do_hazard = TRUE),
         use_flex = TRUE
     )
-
     r_sim <- run_sim(
         params = params, state = state,
         start_date = "2021-09-10",
@@ -320,11 +312,10 @@ test_that("use_flex flag does not change results", {
         step_args = list(do_hazard = TRUE),
         use_flex = FALSE
     )
-
     compare_sims(r_sim, tmb_sim)
 })
 
-test_that('time-varying parameters are correctly updated on C++ side', {
+test_that('spec v0.0.6 time-varying parameters are correctly updated on C++ side', {
     set_spec_version("0.0.6", "../../inst/tmb/")
     params <- read_params("ICU1.csv")
     state <- make_state(params = params)
@@ -373,7 +364,8 @@ test_that('time-varying parameters are correctly updated on C++ side', {
     compare_sims(r_sim, tmb_sim)
 })
 
-test_that('it remains ok to _not_ use time-varying parameters', {
+test_that('spec v0.0.6 that it remains ok to _not_ use time-varying parameters', {
+    set_spec_version("0.0.6", "../../inst/tmb/")
     params <- read_params("ICU1.csv")
     state <- make_state(params = params)
     M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -398,7 +390,7 @@ test_that('it remains ok to _not_ use time-varying parameters', {
     compare_sims(r_sim, tmb_sim)
 })
 
-test_that('tmb outflow can be set to match exponential simulation', {
+test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', {
     set_spec_version('0.1.1', '../../inst/tmb')
 
     params <- read_params("ICU1.csv")

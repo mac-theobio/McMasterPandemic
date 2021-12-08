@@ -284,9 +284,13 @@ run_sim_break <- function(params,
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
 
     ## Do not need to make_state on the R-side when using
-    ## recent versions of the flexmodel/tmb approach
+    ## appropriate versions of the flexmodel/tmb approach
     flexmodel = sim_args$flexmodel
-    if(isTRUE(sim_args$use_flex) & (!is.null(flexmodel)) & isTRUE(flexmodel$do_make_state) & spec_ver_gt('0.1.0')) {
+    if(isTRUE(sim_args$use_flex) &
+       (!is.null(flexmodel)) &
+       isTRUE(flexmodel$do_make_state) &
+       spec_ver_gt('0.1.0')
+     ) {
        sim_args = c(
            sim_args,
            nlist(params, state = sim_args$flexmodel$state))

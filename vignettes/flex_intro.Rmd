@@ -118,6 +118,38 @@ regex = "^(S|I|R)(_*)(.*)"
   )
 ```
 
+## SEIRD Model
+
+This is the [Mac Theo Bio Model](https://github.com/mac-theobio/mac-theobio.github.io/blob/master/seird.jpg).
+
+```{r}
+seird_model = (
+  init_model(
+    params = c(
+      beta_I = 1e-5,
+      beta_D = 1e-6,
+      T_E = 1e-7,
+      T_I = 1e-8,
+      f = 0.5,
+      T_D = 1e-4
+    ),
+    state = c(S = 20000, E = 50, I = 50, R = 0, D = 0, Gone = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "E", ~ (beta_I) * (S) * (I) + (beta_D) * (S) * (D))
+  %>% add_rate("E", "I", ~ (T_E))
+  %>% add_rate("I", "R", ~ (T_I) * (1 - f))
+  %>% add_rate("I", "D", ~ (T_I) * (f))
+  %>% add_rate("D", "Gone", ~ (T_D))
+  %>% add_outflow(".*", ".*")
+  %>% add_tmb_indices
+)
+seird_model
+```
+
 ## Canned Models
 
 ### Base MacPan COVID Model -- `make_base_model`

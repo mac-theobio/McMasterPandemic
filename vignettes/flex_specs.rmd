@@ -83,6 +83,8 @@ will not change.
 -   [0.0.6 -- Updates of time-varying parameters from the initial
     parameters on the `C++` side](#v0.0.6)
 -   [0.1.0 -- Model structure](#v0.1.0)
+-   [0.1.1 -- Make state and calibrate time-varying
+    multipliers](#v0.1.1)
 
 ## Experimental Versions
 
@@ -90,12 +92,9 @@ The specs for the following versions are being actively developed and
 modified. These versions also serve as a roadmap. Note that version
 numbers of experimental versions can change without warning.
 
--   [0.1.1 -- Make state and calibrate time-varying
-    multipliers](#v0.1.1)
--   [0.1.2 -- Log-linear exogenous time-variation of
-    parameters](#v0.1.2)
--   [0.2.0 -- Condensation and calibration](#v0.2.0)
--   [0.2.1 -- ODE simulation](#v0.2.1)
+-   [0.2.0 -- Condensation and calibration on the `C++` side](#v0.2.0)
+-   [0.2.1 -- Log-linear exogenous time-variation of
+    parameters](#v0.2.1)
 -   [0.2.2 -- Stochasticity](#v0.2.2)
 -   [0.3.0 -- Endogenous time-variation of parameters](#v0.3.0)
 -   [0.4.0 -- Time steps not equal to one](#0.4.0)
@@ -122,34 +121,39 @@ Here we describe what we are working towards. This will change regularly, but th
 
 ### Mathematical Description (1.0.0)
 
-#### State Variable Simulation
+#### Objective Function
 
-Top-level algorithm:
+Every evaluation of the objective function triggers the following steps.
 
-1. Make state
-2. Update sums of state variables and parameters
-3. Make rate matrix
-4. Add initial state to the report
-5. Add initial structural (i.e. non-zero) elements of the rate matrix to the report
-6. Run the simulation loop for `end_date - start_date` iterations, where the date difference is taken in units of days (e.g. `"2021-10-12" - "2021-10-10" = 2`)
-7. Compute and return the objective function
-
-Make state algorithm:
-
-Simulation loop algorithm:
-
-1. Update the state vector
-2. Update the time-varying parameters
-3. Update sums of state variables and parameters
-4. Update rate matrix
-5. Add updated state variable to the report
-6. Add updated structural (i.e. non-zero) elements of the rate matrix to the report
-
-Update time-varying parameters algorithm:
-
-1. 
-
-Objective function algorithm:
+* Get data and parameters from R
+* Inverse-transform parameters on transformed scales [v0.2.0](#v0.2.0)
+* Make initial state vector [v0.1.1](#v0.1.1)
+    * Initialize two state vectors -- one for the full model and one for the linearized model
+    * Copy parameters so they can be used for the linearized model
+    * Replace some elements of the parameters for the linearized model
+    * Replace some elements of state for the linearized model
+    * Compute the Jacobian for the linearized model using automatic differentiation
+    * Remove rows and columns from the Jacobian and the state for the linearized model
+    * Compute eigenvector of the Jacobian using a power method
+    * Normalize a subset (associated with infected compartments only) of the eigenvector to have elements that sum to one
+    * Distribute infected individuals among compartments in the initial state vector
+    * Distribute susceptible individuals among compartments in the initial state vector
+* Concatenate state, params, and sums into a vector, sp, containing all quantities on which rates can depend [v0.0.1](#v0.0.1)
+* Update sums of state variables and parameters [v0.1.0](#v0.1.0)
+* Copy sp [v0.0.6](#v0.0.6)
+* Make rate matrix from sp [v0.0.2](#v0.0.2)
+* Add initial state to the report [v0.0.2](#v0.0.2)
+* Add initial structural (i.e. non-zero) elements of the rate matrix to the report [v0.0.5](#v0.0.5)
+* Run the simulation loop for `end_date - start_date` iterations, where the date difference is taken in units of days (e.g. `"2021-10-12" - "2021-10-10" = 2`) [v0.0.2](#v0.0.2)
+    * Update the state vector [v0.0.2](#v0.0.2)
+    * Update the time-varying parameters [v0.0.4](#v0.0.4)
+    * Update sums of state variables and parameters [v0.1.0](#v0.1.0)
+    * Update rate matrix [v0.0.1](#v0.0.1)
+    * Add updated state variable to the report [v0.0.2](#v0.0.2)
+    * Add updated structural (i.e. non-zero) elements of the rate [v0.0.5](#v0.0.5) matrix to the report
+* Condense the `concatenated_state_vector` [v0.2.0](#v0.2.0)
+* Compute the negative binomial negative log likelihood [v0.2.0](#v0.2.0)
+* Subtract log priors from the negative log likelihood, and return [v0.2.0](#v0.2.0)
 
 ## v0.4.0
 
@@ -185,27 +189,9 @@ Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental
 
 ### New Capabilities (0.2.1)
 
-ODE (i.e. exponential) simulation.
-
-## v0.2.0 {#v0.2.0}
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.2.0)
-
-Condensation and calibration.
-
-## v0.1.2 {#v0.1.2}
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.1.2)
-
 Log-linear exogenous time-variation of parameters.
 
-### Mathematical Description (0.1.2)
+### Mathematical Description (0.2.1)
 
 Such parameters have their own parameters that determine a model of
 time-variation. These latter parameters get transformed to produce a
@@ -249,10 +235,145 @@ u_0, & t < t_1 \\
 \end{cases}
 $$
 
-## v0.1.1 {#v0.1.1}
+## v0.2.0 {#v0.2.0}
 
 [![Lifecycle
 Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.2.0)
+
+Condensation and calibration on the `C++` side.
+
+### Mathematical Description (0.2.0)
+
+#### Condensation
+
+Condensation is the process of summarizing the `concatenated_state_vector` so that it can be compared with available data. This comparison is done quantitatively through a negative log-likelihood function that measures how different the condensed `concatenated_state_vector` is from the data. The user can add any of the following variables to the condensed dataset.
+
+1. Any state variable
+2. Element-wise sum of any set of state variables
+3. Any time-varying rate matrix element
+4. Element-wise product of any two variables of type 1-3
+5. Element-wise Sum of any variable of type 4
+6. Lag-1 differences of any variables of type 1-5
+7. Convolutions of any variables of type 1-5 with a gamma-density kernel (see section below on computing convolutions)
+
+The following are computed in classic MacPan.
+
+1. All the S boxes
+2. The sum over all the S boxes
+3. The sum over all the E boxes
+4. The sum over all the I boxes
+5. The sum over all the H and H2 boxes
+6. The sum over all the ICUs and ICUd boxes
+7. The sum over all R boxes
+8. The lag-1 difference of the total of all X boxes (with NA at the beginning) -- called `hosp`
+9. The sum over all X boxes
+10. The lag-1 difference of the total of all D boxes (with NA at the beginning) -- called `death`
+11. The sum over all D boxes
+12. All the foi columns
+13. Incidence:
+    * compute foi times S box for each epi category
+    * compute row sums over the resulting columns
+    * compute the convolution (see section below on computing convolutions) of all of these columns (including the row sums column) -- called `report`
+
+#### Computing Convolutions
+
+The convolution is based on a gamma-density kernel. 
+
+The shape parameter of this gamma density depends on `params['c_delay_cv']`.
+$$
+\text{shape} = \frac{1}{\text{c_delay_cv}^2}
+$$
+The scale parameter depends on `params['c_delay_mean']` and the shape
+$$
+\text{scale} = \text{(c_delay_mean)} \text{(c_delay_cv)}^2
+$$
+Compute the vector $\gamma$ using the [TMB `pgamma` function](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga3bd06a324f89b21694aac26bfe1aef45), which takes a vector `q` and scalar `shape` and `scale` arguments.
+$$
+\gamma = \text{pgamma}(q, \text{shape}, \text{scale})
+$$
+
+where $q$ is a constant integer vector that gets passed in through the `DATA` macro.
+
+Note that in classic MacPan `q` is computed as follows. 
+```{r eval = FALSE}
+1:ceiling(qgamma(0.95, shape, scale))
+```
+But we are avoiding this because it will introduce a discontinuity that could cause automatic differentiation to fail. This difference between refactored and classic MacPan only has the potential to cause numerical differences whenever `params['c_delay_cv']` and `params['c_delay_mean']` are varying -- typically because they are in `opt_pars` -- but I have not yet seen any examples where this is the case. To guarantee matched results at least for the initial parameter vector one should set `q` as follows on the R-side.
+```{r eval = FALSE}
+q = 1:ceiling(qgamma(0.95, 1/params[["c_delay_cv"]]^2, params[["c_delay_mean"]] * params[["c_delay_cv"]]^2))`
+```
+
+The delay kernel for the convolution is a numeric vector given by the following expression.
+$$
+\kappa_i = (\text{c_prop})\frac{\delta_i}{\sum_j\delta_j}
+$$
+where $\delta_j = \gamma_{j+1} - \gamma_j$ and $\text{c_prop}$ is a scalar in the parameter vector.
+
+The convolution, $z$, of the time series of any state variable, $x$, is given by the following.
+$$
+z_{i+m-1} = \sum_{j = 1}^m \kappa_{m-j+1} x_{i+j-1}
+$$
+where $i = 1,...,n-m$, $m$ is the length of $\kappa$, and $n$ is the number of time steps (length of the input vector $x$). Note that the first $m-1$ elements of $z$ remain undefined and so they do not need to be stored on the C++-side because these $m-1$ missing values can be added on the R-side.
+
+#### Condensation Algorithm
+
+TODO: in collaboration with Weiguang
+
+At a high level condensation is comprised of a transformation of `concatenated_state_vector` into `condensed_state_vector`, which is typically smaller. The condensation algorithm has seven phases, corresponding to the seven types of variables that can be added to `condensed_state_vector`.
+
+#### Negative Binomial Negative Log Likelihood
+
+We compare the negative binomial negative log likelihood with `observed_vector` as data and `condensed_state_vector` as predictions. Apologies that the word 'negative' is being used in two different ways -- the first refers to the negative binomial distribution, and the second to the fact that we are multiplying the log likelihood by negative one. In R we would write this as follows.
+```{r eval = FALSE}
+-1 * dnbinom(observed_vector, mu = condensed_state_vector, size = nb_disp, log = TRUE)
+```
+In TMB, [this negative binomial density function](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351) should be used for this (I think ... how does `size` on the R-side correspond to `var` in TMB?).
+
+The first three arguments to this function are vectors of the same size.
+
+* `observed_vector` is an observed data stream that is provided by the user
+* `condensed_state_vector` is described in detail above
+* `nb_disp` is a vector of dispersion parameters, which is composed of values passed in through `PARAMETER` macros (see below for a description of how `nb_disp` is constructed)
+
+The sum of these negative log likelihood values gives a loss function to be returned to the user.
+
+TODO: how to handle clamping when we leave the support of the density? concerned about discontinuities.
+
+#### Dispersion Parameters
+
+We require an additional set of parameters to model negative binomial dispersion, `nb_disp`. The user has two options.
+
+1. one dispersion parameter to be used in every element of `nb_disp`
+2. one dispersion parameter is passed in for every variable in `condensed_state_vector`
+
+#### Optional Prior Distribution Penalties
+
+The user is allowed to specify a prior distribution for any element of `params`, `tv_mult`, or `nb_disp`. Initially only univariate normal prior distributions will be allowed, but this should be built to be extensible allowing for other distributions to be added in the future.
+
+For each parameter with a prior, the user specifies the distribution (initially `normal` will be the only choice), and a parameter vector for the arguments of the corresponding density function. At each evaluation of the optimizer the log of the prior densities are subtracted from the negative log-likelihood function.
+
+The [TMB normal density function](https://kaskr.github.io/adcomp/dnorm_8hpp_source.html) should be used. We should be extensible to allow future developers to add other distributions from [here](https://kaskr.github.io/adcomp/group__R__style__distribution.html).
+
+#### Optional Inverse Parameter Transformations
+
+The user is allowed to express any value of `params`, `tv_mult`, or `nb_disp` on one of several transformed scales. The corresponding inverse transformation is applied immediately as the parameter is read through the appropriate macro on the TMB-side. The user should be allowed to specify one of the following transformations.
+
+* `log10`
+* `log`
+* `logit`
+
+The corresponding inverse transformations that would be applied after the macros are the following.
+
+* `10^x`
+* `exp(x)`
+* `1/(1+exp(-x))`
+
+## v0.1.1 {#v0.1.1}
+
+[![Lifecycle
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.1.1)
 
@@ -284,7 +405,7 @@ In previous spec versions, the `C++` side needs to get the initial state vector 
 What follows is a detailed description of the procedure, which makes reference to new items in the data structure (see Data Structure below).
 
 0. We first check to see if a state vector has been passed -- if not, do the following steps to create a new state vector
-1. Initialize two state vectors with all zeros (note that this is in contrast to the current situation where `state` is passed in -- now `n_states` will be passed in as an integer giving the number of state variables)
+1. Initialize two state vectors with all zeros
     * `state` -- initializing state vector for the full non-linearized model
     * `lin_state` -- initializing state vector for the linearized model
 2. Make a copy (`lin_params`) of the parameter vector (`params`)
@@ -303,7 +424,13 @@ What follows is a detailed description of the procedure, which makes reference t
 10. Update `state[all_to_infected_idx] = eig_infected * param[infected_idx]` (`infected_idx` can be found in `model$tmb_indices$initial_population`)
 11. Update `state[susceptible_idx] = (1/susceptible_idx.size()) * (param[total_idx] - param[infected_idx])` (`infected_idx` and `total_idx` can be found in `model$tmb_indices$initial_population`)
 
-Future optimization: we should cache the eigenvector in the ADFun so that fewer iterations are required in the power method and avoid needing to make `lin_state` from scratch every update of the parameters.
+1. Let all elements of the state vector for the full model, $s$, and linearized model, $\hat{s}$, be zero: $s_i = \hat{s}_i = 0$
+2. Make two copies of the parameter vector -- one for the full model, $\theta$, and linearized model, $\hat{\theta}$
+3. Update a set of the parameters in $\hat{\theta}$ with values that will remain constant even if the parameter vector $\theta$ is updated
+4. Update a set of the state variables in $\hat{s}$ with a set of parameter values in $\hat{\theta}$
+5. Create a function of the state vector 
+5. Compute the Jacobian matrix of a function of the state vector -- using automatic differentiation --   with respect to the state vector  on a function that updates $\hat{s}$ with the following steps
+
 
 #### Calibrate Time Varying Multipliers
 
@@ -314,6 +441,7 @@ Future optimization: we should cache the eigenvector in the ADFun so that fewer 
 #### Generalization of Outflow Vector
 
 Objects of class `flexmodel` contains a new element called `tmb_indices$outflow`, with the following elements
+
 - `row_count` -- 
 - `col_count` --
 - `rows` -- 

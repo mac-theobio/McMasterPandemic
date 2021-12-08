@@ -1,8 +1,9 @@
 library(McMasterPandemic)
 library(dplyr)
 library(testthat)
+library(lubridate)
 
-test_that('foi can be expressed as model structure', {
+test_that('v0.1.0 foi can be expressed as model structure', {
 
   set_spec_version("0.1.0", "../../inst/tmb/")
 
@@ -75,7 +76,7 @@ test_that('foi can be expressed as model structure', {
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that('simple models still work when structure is allowed', {
+test_that('v0.1.0 simple models still work when structure is allowed', {
 
   set_spec_version("0.1.0", "../../inst/tmb/")
 
@@ -124,7 +125,7 @@ test_that('simple models still work when structure is allowed', {
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("simple vaccination model in TMB matches and is faster than existing R model", {
+test_that("v0.1.0 simple vaccination model in TMB matches and is faster than existing R model", {
 
   set_spec_version("0.1.0", "../../inst/tmb/")
   options(macpan_pfun_method = "grep")
@@ -140,7 +141,7 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
     model_type = "twodose",
     unif = FALSE
   )
-
+  vax_params = expand_params_S0(vax_params, 1-1e-5)
   test_model <- make_vaccination_model(
     params = vax_params, state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
@@ -172,7 +173,7 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("vax_prop_first_dose can be != 1", {
+test_that("v0.1.0 vax_prop_first_dose can be != 1", {
   set_spec_version("0.1.0", "../../inst/tmb/")
   options(macpan_pfun_method = "grep")
 
@@ -232,7 +233,7 @@ test_that("vax_prop_first_dose can be != 1", {
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("time-varying parameters can be used with a vaccination model", {
+test_that("v0.1.0 time-varying parameters can be used with a vaccination model", {
 
   set_spec_version("0.1.0", "../../inst/tmb/")
 
@@ -290,96 +291,243 @@ test_that("time-varying parameters can be used with a vaccination model", {
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("variants and vaccination model", {
-  if(FALSE) {
-    spec_version <- "0.1.0"
-    print(spec_version)
-    options(MP_flex_spec_version = spec_version)
+test_that("v0.1.1 toy symbolic matrix multiplication examples give correct results", {
+  a = struc_block(struc("(a) * (1-b) + (1-a) * (1-b)"),
+                  row_times = 1, col_times = 3)
+  b = struc(letters[3:4])
+  c = vec(LETTERS[1:6])
+  set.seed(1)
+  e = runif(10) %>% as.list %>% setNames(c(letters[1:4], LETTERS[1:6]))
 
-    test_files <- "../../inst/tmb/"
+  r1 = struc_eval(kronecker(a, t(b)) %*% c, e)
+  r2 = struc_eval(a, e) %x% t(struc_eval(b, e)) %*% struc_eval(c, e)
 
-    cpp <- file.path(test_files, spec_version, "macpan.cpp")
-    dll <- tools::file_path_sans_ext(cpp)
-    options(MP_flex_spec_dll = basename(dll))
-    options(MP_flex_spec_dll = "McMasterPandemic")
+  expect_equal(r1, r2)
+})
 
-    compile(cpp)
-    dyn.load(dynlib(dll))
+test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
+  set_spec_version("0.1.1", "../../inst/tmb/")
+  options(macpan_pfun_method = "grep")
+
+  base_params <- read_params("PHAC.csv")
+  vax_params <- expand_params_vax(
+    params = base_params,
+    vax_doses_per_day = 1e4,
+    model_type = "twodose"
+  )
+  model_params <- expand_params_variant(
+    vax_params,
+    variant_prop = 0.5,
+    variant_advantage = 1.5,
+    variant_vax_efficacy_dose1 = 0.3,
+    variant_vax_efficacy_dose2 = 0.8
+  ) %>% expand_params_S0(1 - 1e-5)
+
+  state = make_state(params = model_params)
+
+  (epi_states = c(attr(state, "epi_cat")))
+  (asymp_cat = c("S", "E", "Ia", "Ip", "R"))
+  (vax_cat = c(attr(state, "vax_cat")))
+  (dose_from = rep(asymp_cat, 2))
+  (dose_to = c(asymp_cat, rep("V", 5)))
+  (accum = c("X", "V"))
+  (non_accum = base::setdiff(epi_states, accum))
+  (non_accum_non_S = non_accum[-1])
+
+  # Specify structure of the force of infection calculation
+  Istate = (c('Ia', 'Ip', 'Im', 'Is')
+            %>% McMasterPandemic:::expand_names(vax_cat)
+            %>% vec
+  )
+
+  vax_trans_red = struc_block(vec(
+    '1',
+    '1',
+    '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+    '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+    '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)'),
+    row_times = 1, col_times = 5)
+  baseline_trans_rates =
+    vec(
+      'Ca',
+      'Cp',
+      '(1 - iso_m) * (Cm)',
+      '(1 - iso_s) * (Cs)') *
+    struc('(beta0) * (1/N)')
 
 
-    options(macpan_pfun_method = "grep")
-    # from macpan_ontario
-    library(McMasterPandemic)
+  e = c(as.list(state), as.list(model_params))
 
-    start_date <- "2021-02-01"
-    end_date <- "2021-09-01"
-    params_timevar = data.frame(
-      Date = c("2021-04-20"),
-      Symbol = c("beta0"),
-      Value = c(0.5),
-      Type = c("rel_orig")
-    )
+  r1 = struc_eval(kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate, e)
+  r2 = struc_eval(vax_trans_red, e) %x% t(struc_eval(baseline_trans_rates, e)) %*% struc_eval(Istate, e)
 
-    ## initialize params
-    base_params <- read_params("PHAC.csv")
+  expect_equal(r1, r2)
+})
 
+test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
+  set_spec_version("0.1.1", "../../inst/tmb/")
+  options(macpan_pfun_method = "grep")
+  options(MP_use_state_rounding = FALSE)
+  options(MP_vax_make_state_with_hazard = FALSE)
 
-    base_sim <- run_sim(
-      params = base_params,
-      start_date = start_date,
-      end_date = end_date
-    )
+  start_date <- "2021-02-01"
+  end_date <- "2021-09-01"
 
-    vax_params <- expand_params_vax(
-      params = base_params,
-      model_type = "twodose"
-    )
-    model_params <- expand_params_variant(
-      vax_params,
-      variant_prop = 1e-7,
-      variant_advantage = 1.5,
-      variant_vax_efficacy_dose1 = 0.3,
-      variant_vax_efficacy_dose2 = 0.8
-    )
+  params_timevar = data.frame(
+    Date = as.Date(c("2021-04-20", "2021-06-20", "2021-08-20", "2021-05-03", "2021-07-08")),
+    Symbol = c("beta0", "beta0", "beta0", "Ca", "Ca"),
+    Value = c(0.5, 0.1, 2.2, 0.2, 0.01),
+    Type = c("rel_orig")
+  ) %>% arrange(Symbol, Date)
 
-    state = make_state(params = model_params)
+  base_params <- read_params("PHAC.csv")
+  vax_params <- expand_params_vax(
+    params = base_params,
+    vax_doses_per_day = 1e4,
+    model_type = "twodose"
+  )
+  model_params <- expand_params_variant(
+    vax_params,
+    variant_prop = 0.5,
+    variant_advantage = 1.5,
+    variant_vax_efficacy_dose1 = 0.3,
+    variant_vax_efficacy_dose2 = 0.8
+  ) %>% expand_params_S0(1 - 1e-5)
 
-    base_state <- make_state(params = base_params)
+  state = make_state(params = model_params)
 
-    vax_state <- expand_state_vax(
-      x = base_state,
-      model_type = "twodose",
-      unif = FALSE
-    )
+  model = make_vaccination_model(
+    params = model_params,
+    state = state,
+    start_date = start_date, end_date = end_date,
+    do_hazard = TRUE,
+    do_approx_hazard = FALSE,
+    do_make_state = TRUE,
+    max_iters_eig_pow_meth = 100,
+    tol_eig_pow_meth = 1e-6,
+    params_timevar = params_timevar,
+    do_variant = TRUE)
 
-    model = make_vaccination_model(
-      params = model_params, state = state,
+  time_wrap(
+    tmb_sim <- run_sim(
+      params = model_params,
+      state = state,
       start_date = start_date, end_date = end_date,
       params_timevar = params_timevar,
-      step_args = list(do_hazard = TRUE),
-      do_variant = TRUE)
-
-    r_sim = run_sim(
-      params = model_params, state = state,
-      start_date = start_date, end_date = end_date,
-      condense = FALSE,
-      step_args = list(do_hazard = TRUE)
-    )
-
-
-    tmb_sim <- run_sim(
-      params = model_params, state = state,
-      start_date = start_date, end_date = end_date,
       condense = FALSE,
       step_args = list(do_hazard = TRUE),
-      flexmodel = model,
-      use_flex = TRUE
+      use_flex = TRUE,
+      flexmodel = model
+    ),
+    r_sim <- run_sim(
+      params = model_params,
+      state = state,
+      start_date = start_date, end_date = end_date,
+      params_timevar = params_timevar,
+      condense = FALSE,
+      step_args = list(do_hazard = TRUE),
+      use_flex = FALSE
     )
+  )
 
-    expect_lt(tmb_speed, r_speed)
-    testthat_tolerance(1e-7)
-    compare_sims(r_sim, tmb_sim)
-    all.equal(r_sim[[3]], tmb_sim[[3]])
-    abline(a = 0, b = 1)
+  # useful diagnostics if tests start failing
+  if(FALSE) {
+    compare_sims_cbind(r_sim, tmb_sim, "Ia_unvax")
+    compare_sims_plot(r_sim, tmb_sim, "Ia_unvax")
   }
+
+  compare_sims(r_sim, tmb_sim, tolerance = 1e-9)
+
+  # test state construction on c++ side matches r-side version
+  expect_equal(c(state), initial_state_vector(model))
+
+})
+
+test_that("v0.1.1 vax/variants model simulation matches run_sim with many break points", {
+
+  # > reports_all$var %>% unique
+  # [1] "report"
+  # > reports_all$date %>% range
+  # [1] "2020-02-04" "2021-11-28"
+  # > est_date
+  # [1] "2021-08-30"
+
+  # calibration params used to produce an (initial?) set of
+  # base parameters using read_params target argument
+
+  set_spec_version("0.1.1", "../../inst/tmb/")
+  options(macpan_pfun_method = "grep")
+  options(MP_use_state_rounding = FALSE)
+  options(MP_vax_make_state_with_hazard = FALSE)
+
+  # From macpan_ontario -----------------------------
+
+  # key dates
+  start_date <- as.Date("2020-09-15")
+  end_date <- as.Date("2021-11-28")
+  start_date_offset <- 60
+  date_vec <- lubridate:::as_date(start_date:end_date)
+  est_date = as.Date("2021-08-30")
+  break_dates = structure(c(18520, 18538, 18589, 18626, 18641, 18685, 18705,
+                            18725, 18789, 18808, 18824, 18857, 18871), class = "Date")
+  bd = as.Date("2021-09-01")
+  first_vax_date = as.Date("2020-12-14")
+
+  # optimization parameters --------------
+  opt_pars = list(time_params = 1.3)
+
+  # simulation arguments ----------
+  sim_args   = list(ndt = 1, step_args = list(do_hazard = TRUE))
+  # optimizer arguments -----------
+  # mle2_control = list(maxit = 1e3,
+  #                     reltol = calibration_params[["reltol"]],
+  #                     ## here beta and gamma are nelder-mead parameters,
+  #                     ## not macpan model parameters!!!
+  #                     beta = 0.5,
+  #                     gamma = 2
+  # )
+
+  # load data that came from macpan ontario
+  load("../../inst/testdata/ontario_flex_test.rda")
+
+  # make flex vaccination model -----------
+  model = make_vaccination_model(
+    params = model_params,
+    state = NULL,
+    start_date = start_date - days(start_date_offset),
+    end_date = end_date, # start_date,#  end_date = '2021-02-05',
+    do_hazard = TRUE,
+    do_hazard_lin = FALSE,
+    do_approx_hazard = FALSE,
+    do_approx_hazard_lin = FALSE,
+    do_make_state = FALSE,
+    max_iters_eig_pow_meth = 100,
+    tol_eig_pow_meth = 1e-8,
+    params_timevar = params_timevar,
+    do_variant = TRUE)
+
+  time_wrap(
+    tmb_sim <- run_sim(
+      params = model_params,
+      start_date = start_date - days(start_date_offset), end_date = end_date,
+      params_timevar = params_timevar,
+      condense = FALSE,
+      step_args = list(do_hazard = TRUE),
+      use_flex = TRUE,
+      flexmodel = model
+    ),
+
+    # FIXME: silence warning -- dropped switch times on final day
+    r_sim <- run_sim(
+      params = model_params,
+      start_date = start_date - days(start_date_offset), end_date = end_date,
+      params_timevar = params_timevar,
+      condense = FALSE,
+      step_args = list(do_hazard = TRUE),
+      use_flex = FALSE
+    )
+  )
+
+  compare_sims(r_sim, tmb_sim)
+
 })

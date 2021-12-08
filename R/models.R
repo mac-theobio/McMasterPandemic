@@ -225,6 +225,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       %>% update_linearized_params('E0', 1e-5)
       %>% update_linearized_params('vax_doses_per_day', 0)
       %>% update_linearized_params('vax_response_rate', 0)
+      # FIXME: vax_response_rate_R isn't necessary because it is regex-matched by vax_response_rate
       %>% update_linearized_params('vax_response_rate_R', 0)
 
       # Set the disease-free equilibrium of the linearized model

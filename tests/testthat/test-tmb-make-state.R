@@ -85,3 +85,38 @@ test_that('make state works with a time-varying parameter', {
   )
   compare_sims(r_sim, tmb_sim)
 })
+
+test_that('make state matches vax/variant model without hazard intialization', {
+  set_spec_version("0.1.1", "../../inst/tmb/")
+  options(macpan_pfun_method = "grep")
+  options(MP_use_state_rounding = FALSE)
+  options(MP_vax_make_state_with_hazard = FALSE)
+  base_params <- read_params("PHAC.csv")
+  vax_params <- expand_params_vax(
+    params = base_params,
+    model_type = "twodose"
+  )
+  model_params <- expand_params_variant(
+    vax_params,
+    variant_prop = 1e-7,
+    variant_advantage = 1.5,
+    variant_vax_efficacy_dose1 = 0.3,
+    variant_vax_efficacy_dose2 = 0.8
+  ) %>% expand_params_S0(1 - 1e-5)
+
+  model = make_vaccination_model(
+    params = model_params,
+    state = NULL,
+    start_date = "2000-01-01", end_date = "2000-01-01",
+    do_hazard = TRUE,
+    do_hazard_lin = FALSE,
+    do_approx_hazard = FALSE,
+    do_approx_hazard_lin = FALSE,
+    do_make_state = TRUE,
+    max_iters_eig_pow_meth = 100,
+    do_variant = TRUE)
+
+  expect_equal(
+    initial_state_vector(model),
+    c(make_state(params = model_params)))
+})

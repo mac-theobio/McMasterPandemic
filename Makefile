@@ -155,7 +155,7 @@ test-tmb:
 	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
 
 test-tmb-struc:
-	echo "testthat::test_file('tests/testthat/test-struc.R')" | $(R) --slave
+	echo "testthat::test_file('tests/testthat/test-tmb-struc.R')" | $(R) --slave
 
 test-tmb-make-state:
 	echo "testthat::test_file('tests/testthat/test-tmb-make-state.R')" | $(R) --slave
@@ -164,7 +164,7 @@ test-tmb-calibrate:
 	echo "testthat::test_file('tests/testthat/test-tmb-calibrate.R')" | $(R) --slave
 
 test-tmb-timevar:
-	echo "testthat::test_file('tests/testthat/test-tmb-calibrate.R')" | $(R) --slave
+	echo "testthat::test_file('tests/testthat/test-tmb-timevar.R')" | $(R) --slave
 
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp

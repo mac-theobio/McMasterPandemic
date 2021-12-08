@@ -7,11 +7,10 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 
-test_that('simple models calibrate the same regardless of engine', {
+test_that('v0.1.0 simple models calibrate the same regardless of engine', {
   set_spec_version("0.1.0", "../../inst/tmb/")
 
   params <- read_params("ICU1.csv")
-  #state <- make_state(params = params)
   start_date = "2021-05-10"
   end_date = "2021-12-10"
   tv_dat <- data.frame(
@@ -20,7 +19,6 @@ test_that('simple models calibrate the same regardless of engine', {
     Value = c(0.1, 0.5, 0.9),
     Type = c("rel_orig", "rel_orig", "rel_orig")
   )
-
 
   model <- make_base_model(params, start_date = start_date, end_date = end_date,
                            params_timevar = tv_dat,
@@ -57,7 +55,6 @@ test_that('simple models calibrate the same regardless of engine', {
                   %>% select(date, value, var)
                   %>% na.omit()
   )
-  head(report_data)
   if(FALSE) plot(report_data$value, type = "l")
 
   params[["beta0"]] = 0.5
@@ -82,7 +79,6 @@ test_that('simple models calibrate the same regardless of engine', {
         step_args = list(do_hazard = TRUE),
         use_flex = TRUE,
         flexmodel = model
-        #obj_fun = tmb_fun(model)
       )
     )
   )
@@ -90,7 +86,7 @@ test_that('simple models calibrate the same regardless of engine', {
   expect_equal(fitted_tmb$mle2@details, fitted_r$mle2@details)
 })
 
-test_that('simple models can calibrate time varying multipliers', {
+test_that('v0.1.1 simple models can calibrate time varying multipliers', {
 
   # TODO: to make this pass, we need to engage R-based make_state ... I think
   #       https://github.com/mac-theobio/McMasterPandemic/issues/124
@@ -173,19 +169,171 @@ test_that('simple models can calibrate time varying multipliers', {
   expect_equal(fitted_r$mle2@vcov, fitted_tmb$mle2@vcov)
 })
 
-if(FALSE) {
+test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
 
-  ## make synthetic data to fit to
-
-  spec_version = "0.1.0"
+  spec_version = "0.1.1"
   options(MP_flex_spec_version = spec_version)
-  cpp <- file.path(test_files, spec_version, "macpan.cpp")
-  dll <- tools::file_path_sans_ext(cpp)
-  options(MP_flex_spec_dll = basename(dll))
 
   start_date <- "2020-02-01"
   end_date <- "2020-09-01"
   options(macpan_pfun_method = "grep")
+  options(MP_use_state_rounding = FALSE)
+  options(MP_vax_make_state_with_hazard = FALSE)
+  params <- read_params("ICU1.csv")
+  state <- make_state(params = params)
+  vax_params <- expand_params_vax(
+    params = params,
+    model_type = "twodose"
+  )
+  vax_state <- expand_state_vax(
+    x = state,
+    model_type = "twodose",
+    unif = FALSE
+  )
+
+  ## set up time-varying parameters
+  params_timevar <- data.frame(
+    Date = c(as.Date(start_date) + 30,
+             as.Date(start_date) + 60),
+    Symbol = c("vax_prop_first_dose", "beta0"),
+    Value = rep(0.5, 2),
+    Type = rep("rel_orig", 2)
+  )
+
+  ## generate reports from sim
+  synth_reports <- (run_sim(
+      params = vax_params,
+      start_date = start_date,
+      end_date = end_date,
+      # do the same thing with the switch to second doses as above, but now also cut the original transmission rate to 50% of its value 60 days after the simulation start date
+      params_timevar = params_timevar
+    )
+    ## reshape into the correct format for input data passed to calibrate()
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit()
+  )
+
+  ## set up optimization parameters
+  ## (base parameter values)
+  opt_pars <- list(
+    params = c(beta0 = 0.6) ## set initial guess for beta0
+  )
+
+  state_nms =
+    c("S_unvax", "E_unvax", "Ia_unvax", "Ip_unvax", "Im_unvax", "Is_unvax",
+    "H_unvax", "H2_unvax", "ICUs_unvax", "ICUd_unvax", "D_unvax",
+    "R_unvax", "X_unvax", "V_unvax", "S_vaxdose1", "E_vaxdose1",
+    "Ia_vaxdose1", "Ip_vaxdose1", "Im_vaxdose1", "Is_vaxdose1", "H_vaxdose1",
+    "H2_vaxdose1", "ICUs_vaxdose1", "ICUd_vaxdose1", "D_vaxdose1",
+    "R_vaxdose1", "X_vaxdose1", "V_vaxdose1", "S_vaxprotect1", "E_vaxprotect1",
+    "Ia_vaxprotect1", "Ip_vaxprotect1", "Im_vaxprotect1", "Is_vaxprotect1",
+    "H_vaxprotect1", "H2_vaxprotect1", "ICUs_vaxprotect1", "ICUd_vaxprotect1",
+    "D_vaxprotect1", "R_vaxprotect1", "X_vaxprotect1", "V_vaxprotect1",
+    "S_vaxdose2", "E_vaxdose2", "Ia_vaxdose2", "Ip_vaxdose2", "Im_vaxdose2",
+    "Is_vaxdose2", "H_vaxdose2", "H2_vaxdose2", "ICUs_vaxdose2",
+    "ICUd_vaxdose2", "D_vaxdose2", "R_vaxdose2", "X_vaxdose2", "V_vaxdose2",
+    "S_vaxprotect2", "E_vaxprotect2", "Ia_vaxprotect2", "Ip_vaxprotect2",
+    "Im_vaxprotect2", "Is_vaxprotect2", "H_vaxprotect2", "H2_vaxprotect2",
+    "ICUs_vaxprotect2", "ICUd_vaxprotect2", "D_vaxprotect2", "R_vaxprotect2",
+    "X_vaxprotect2", "V_vaxprotect2")
+
+  options(warn = 2)
+  test_model <- make_vaccination_model(
+    params = expand_params_S0(vax_params, 1-1e-5),
+    state = setNames(numeric(length(state_nms)), state_nms),
+    params_timevar = params_timevar,
+    start_date = start_date, end_date = end_date,
+    step_args = list(do_hazard = TRUE)
+  )
+
+  simulate_timings = time_wrap(
+    sims_tmb <- run_sim(
+      params = test_model$params,
+      state = NULL,
+      params_timevar = params_timevar,
+      start_date = start_date, end_date = end_date,
+      condense = FALSE,
+      use_flex = TRUE,
+      flexmodel = test_model,
+      obj_fun = tmb_fun(test_model)
+    ),
+    sims_r <- run_sim(
+      params = vax_params,
+      state = NULL,
+      params_timevar = params_timevar,
+      start_date = start_date, end_date = end_date,
+      condense = FALSE,
+      use_flex = FALSE
+    )
+  )
+  attributes(sims_r) = attributes(sims_tmb) = NULL
+  expect_equal(sims_r, sims_tmb)
+
+  calibrate_timings = time_wrap(
+    fitted_mod_tmb <- calibrate(
+      base_params = test_model$params,
+      data = synth_reports,
+      opt_pars = opt_pars,
+      debug = TRUE,
+      time_args = list(
+        params_timevar = params_timevar
+      ),
+      sim_args = list(
+        ndt = 1,
+        step_args = list(do_hazard = TRUE),
+        use_flex = TRUE,
+        flexmodel = test_model,
+        obj_fun = tmb_fun(test_model)
+      )
+    ),
+    fitted_mod <- calibrate(
+      base_params = vax_params,
+      data = synth_reports,
+      opt_pars = opt_pars,
+      debug = TRUE,
+      time_args = list(
+        params_timevar = params_timevar
+      ),
+      sim_args = list(
+        ndt = 1,
+        step_args = list(do_hazard = TRUE)
+      )
+    )
+  )
+
+  calibrate(
+    base_params = test_model$params,
+    data = synth_reports,
+    opt_pars = opt_pars,
+    debug = TRUE,
+    time_args = list(
+      params_timevar = params_timevar
+    ),
+    sim_args = list(
+      ndt = 1,
+      step_args = list(do_hazard = TRUE),
+      use_flex = TRUE,
+      flexmodel = test_model,
+      obj_fun = tmb_fun(test_model)
+    )
+  )
+
+  expect_equal(fitted_mod$mle2@coef, fitted_mod_tmb$mle2@coef)
+  expect_equal(fitted_mod$mle2@min, fitted_mod_tmb$mle2@min)
+  expect_equal(fitted_mod$mle2@vcov, fitted_mod_tmb$mle2@vcov)
+})
+
+test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
+
+  spec_version = "0.1.1"
+  options(MP_flex_spec_version = spec_version)
+
+  start_date <- "2020-02-01"
+  end_date <- "2020-09-01"
+  options(macpan_pfun_method = "grep")
+  options(MP_use_state_rounding = FALSE)
+  options(MP_vax_make_state_with_hazard = FALSE)
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
   vax_params <- expand_params_vax(
@@ -224,16 +372,16 @@ if(FALSE) {
   ## set up optimization parameters
   ## (base parameter values)
   opt_pars <- list(
-    params = c(beta0 = 0.6) ## set initial guess for beta0
-    #time_params = c(0.8) ## initial guess for change in beta0 on the one and only break date (guess 80% of the base value)
+    params = c(beta0 = 0.6), ## set initial guess for beta0
+    time_params = c(0.8) ## initial guess for change in beta0 on the one and only break date (guess 80% of the base value)
   )
   ## (time-varying relative values: insert an NA wherever you want a parameter to be calibrated)
   params_timevar_calib <- (params_timevar
                            %>% mutate(Value = ifelse(Symbol == "beta0",
-                                                     NA,  # tmb does not have this capability
+                                                     NA,
                                                      Value))
   )
-  ## fit!
+
   r_strt = Sys.time()
   fitted_mod <- calibrate(
     base_params = vax_params,
@@ -241,20 +389,17 @@ if(FALSE) {
     opt_pars = opt_pars,
     debug = TRUE,
     time_args = list(
-      params_timevar = params_timevar_calib #-- tmb can't yet handle optimizing changed parameters
+      params_timevar = params_timevar_calib
     ),
     sim_args = list(
       ndt = 1,
       step_args = list(do_hazard = TRUE)
-    ) ## there are both the defaults currently but i'm putting them here to emphasize that for the vaxified model's current implementation,
-    ## we need ndt = 1 because the vax rate is specified as doses *per day*, implicitly assuming that the simulation algorithm takes daily steps
-    ## and we need do_hazard = TRUE to avoid accidentally stepping into negative state space when vaccination occurs relatively quickly
+    )
   )
-  r_nd = Sys.time()
-  r_speed = as.numeric(r_nd - r_strt)
 
   test_model <- make_vaccination_model(
-    params = vax_params, state = vax_state,
+    params = expand_params_S0(vax_params, 1-1e-5),
+    state = vax_state,
     params_timevar = params_timevar,
     start_date = start_date, end_date = end_date,
     step_args = list(do_hazard = TRUE)
@@ -262,12 +407,12 @@ if(FALSE) {
 
   tmb_strt = Sys.time()
   fitted_mod_tmb <- calibrate(
-    base_params = vax_params,
+    base_params = expand_params_S0(vax_params, 1-1e-5),
     data = synth_reports,
-    debug = TRUE,
     opt_pars = opt_pars,
+    debug = TRUE,
     time_args = list(
-      params_timevar = params_timevar#_calib -- tmb can't yet handle optimizing changed parameters
+      params_timevar = params_timevar_calib
     ),
     sim_args = list(
       ndt = 1,
@@ -275,15 +420,10 @@ if(FALSE) {
       use_flex = TRUE,
       flexmodel = test_model,
       obj_fun = tmb_fun(test_model)
-    ) ## there are both the defaults currently but i'm putting them here to emphasize that for the vaxified model's current implementation,
-    ## we need ndt = 1 because the vax rate is specified as doses *per day*, implicitly assuming that the simulation algorithm takes daily steps
-    ## and we need do_hazard = TRUE to avoid accidentally stepping into negative state space when vaccination occurs relatively quickly
+    )
   )
-  tmb_nd = Sys.time()
-  tmb_speed = as.numeric(tmb_nd - tmb_strt)
-  r_speed / tmb_speed
 
-  fitted_mod
-  fitted_mod_tmb
-
-}
+  expect_equal(fitted_mod$mle2@coef, fitted_mod_tmb$mle2@coef)
+  expect_equal(fitted_mod$mle2@min, fitted_mod_tmb$mle2@min)
+  expect_equal(fitted_mod$mle2@vcov, fitted_mod_tmb$mle2@vcov)
+})

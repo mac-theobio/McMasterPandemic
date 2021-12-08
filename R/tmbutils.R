@@ -160,12 +160,9 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
-#' @rdname parse_formula
 #' @export
-rateform_as_char = function(x) {
-  y = as.character(x)
-  if(inherits(x, "formula")) y = y[[2L]]
-  y
+block = function(from, to, mat) {
+  stop('Blockwise rate specification is not implemented')
 }
 
 #' Parse a Flexmodel Formula
@@ -198,6 +195,14 @@ parse_formula = function(x) {
   #return(o)
 }
 
+#' @rdname parse_formula
+#' @export
+rateform_as_char = function(x) {
+  y = as.character(x)
+  if(inherits(x, "formula")) y = y[[2L]]
+  y
+}
+
 #' @param x character vector of names to look for in \code{vec} or
 #' \code{names(vec)}
 #' @param vec character vector or object with names
@@ -209,8 +214,6 @@ find_vec_indices <- function(x, vec) {
     %>% apply(1, which)
   )
 }
-
-
 
 # getting information about rates and sums ----------------------
 
@@ -541,17 +544,17 @@ state_mapping_indices = function(
 disease_free_indices = function(model) {
   unpack(model)
 
-  df_state_par_idx = (disease_free$state$simple
+  df_state_par_idx = (disease_free
     %>% lapply(`[`, 'params_to_use')
     %>% unlist(use.names = FALSE)
     %>% find_vec_indices(params)
   )
-  df_state_count = (disease_free$state$simple
+  df_state_count = (disease_free
     %>% lapply(`[[`, 'states_to_update')
     %>% lapply(length)
     %>% unlist
   )
-  df_state_idx = (disease_free$state$simple
+  df_state_idx = (disease_free
     %>% lapply(`[`, 'states_to_update')
     %>% unlist(use.names = FALSE)
     %>% find_vec_indices(state)
@@ -716,6 +719,10 @@ make_nested_indices = function(x, patterns, invert = FALSE) {
     x = setNames(x_list, nms) %>% drop_null_elements,
     i = setNames(i_list, nms) %>% drop_null_elements,
     j = setNames(j_list, nms) %>% drop_null_elements)
+}
+
+lin_state_timevar_params = function(schedule) {
+  stop('function lin_state_timevar_params is under construction')
 }
 
 

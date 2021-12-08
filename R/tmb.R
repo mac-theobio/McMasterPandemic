@@ -41,7 +41,7 @@ init_model <- function(params, state = NULL,
     # TODO: this is here to compare with tmb-computed rate matrices,
     # but in the future when tmb is truly flexible this will not work.
     # what we need is a make_ratemat for model$rates
-    if(inherits(state, "pansim") & inherits(params, "pansim")) {
+    if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
       ratemat = make_ratemat(state, params, sparse = TRUE)
     } else {
       ratemat = matrix(
@@ -194,12 +194,7 @@ init_model <- function(params, state = NULL,
         model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
         model$tol_eig_pow_meth = tol_eig_pow_meth
         model$haz_eps = haz_eps
-        model$disease_free = list(
-            state = list(
-                simple = list(),
-                state_mappings = list()
-            )
-        )
+        model$disease_free = list()
         model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
@@ -231,7 +226,6 @@ init_model <- function(params, state = NULL,
 
     structure(model, class = "flexmodel")
 }
-
 
 # rate and associated functions ---------------------
 #
@@ -276,8 +270,8 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
             pfun,
             c(x[c("from", "to")], list(mat = M)))
         if(nrow(x$ratemat_indices) > 1L) {
-            stop('you are referring to more than one element of the rate ',
-                 'matrix.\ntry using rep_rate instead of rate')
+            stop('More than one element of the rate matrix is being ',
+                 'referred to.\nTry using rep_rate instead of rate.')
         }
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
@@ -423,6 +417,8 @@ vec_rate = function(model, from, to, formula,
 
 #' Specify Matrix of Rates
 #'
+#' Not implemented
+#'
 #' @family flexmodels
 #' @export
 mat_rate = function() {
@@ -559,8 +555,8 @@ linearized_params = function(model, param_pattern, value) {
 ##' @family flexmodels
 ##' @export
 update_disease_free_state = function(model, state_pattern, param_pattern) {
-    model$disease_free$state$simple = c(
-        model$disease_free$state$simple,
+    model$disease_free = c(
+        model$disease_free,
         list(disease_free_state(model, state_pattern, param_pattern)))
     return(model)
 }
