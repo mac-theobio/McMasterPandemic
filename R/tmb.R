@@ -38,9 +38,6 @@ init_model <- function(params, state = NULL,
 
     if(is.null(state)) state = make_state(params = params)
 
-    # TODO: this is here to compare with tmb-computed rate matrices,
-    # but in the future when tmb is truly flexible this will not work.
-    # what we need is a make_ratemat for model$rates
     if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
       ratemat = make_ratemat(state, params, sparse = TRUE)
     } else {
