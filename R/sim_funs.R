@@ -861,7 +861,7 @@ deprecate_timepars_warning <- FALSE
 ##' @inheritParams do_step
 ##' @param start_date starting date (Date or character, any sensible D-M-Y format)
 ##' @param end_date ending date (ditto)
-##' @param params_timevar four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero), \code{rel_prev} (relative to previous value), possibly others to be determined. If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.
+##' @param params_timevar four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero); \code{rel_prev} (relative to previous value); or \code{abs} (absolute value at specified time). If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.
 ##' @param dt time step for \code{\link{do_step}}
 ##' @param ratemat_args additional arguments to pass to \code{\link{make_ratemat}}
 ##' @param step_args additional arguments to pass to \code{\link{do_step}}
@@ -1054,13 +1054,20 @@ run_sim <- function(params,
                 s <- params_timevar[j, "Symbol"]
                 v <- params_timevar[j, "Value"]
                 t <- params_timevar[j, "Type"]
-                old_param <- switch(t,
-                    ## this should work even if params0[[s]] is a vector
-                    rel_orig = params0[[s]],
-                    rel_prev = params[[s]],
-                    stop("unknown time_params type ", t)
-                )
-                params[[s]] <- old_param * v
+                if (t == "abs") {
+                  if (length(unique(params[[s]])) > 1) {
+                    stop("attempting to replace a vector-valued parameter with a scalar value")
+                  }
+                  params[[s]] <- v
+                } else {
+                  old_param <- switch(t,
+                      ## this should work even if params0[[s]] is a vector
+                      rel_orig = params0[[s]],
+                      rel_prev = params[[s]],
+                      stop("unknown time_params type ", t)
+                  )
+                  params[[s]] <- old_param * v
+                }
                 if (s == "proc_disp") {
                     state <- round(state)
                 }
