@@ -6,8 +6,8 @@ library(dplyr)
 library(semver)
 
 test_that("make state matches classic macpan without state rounding", {
-  set_spec_version('0.1.1', '../../inst/tmb')
-  options(MP_use_state_rounding = FALSE)
+  reset_spec_version()
+  tmb_mode()
 
   params <- ("ICU1.csv"
     %>% read_params
@@ -27,11 +27,8 @@ test_that("make state matches classic macpan without state rounding", {
 })
 
 test_that('make state works with a time-varying parameter', {
-  # TODO: to make this pass, we need to engage R-based make_state ... I think
-  #       https://github.com/mac-theobio/McMasterPandemic/issues/124
-
-  set_spec_version('0.1.1', '../../inst/tmb')
-  options(MP_use_state_rounding = FALSE)
+  reset_spec_version()
+  tmb_mode()
 
   params <- ("ICU1.csv"
              %>% read_params
@@ -87,10 +84,11 @@ test_that('make state works with a time-varying parameter', {
 })
 
 test_that('make state matches vax/variant model without hazard intialization', {
-  set_spec_version("0.1.1", "../../inst/tmb/")
+
+  reset_spec_version()
   options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
+  tmb_mode()
+
   base_params <- read_params("PHAC.csv")
   vax_params <- expand_params_vax(
     params = base_params,
@@ -119,4 +117,33 @@ test_that('make state matches vax/variant model without hazard intialization', {
   expect_equal(
     initial_state_vector(model),
     c(make_state(params = model_params)))
+})
+
+test_that('make state matches vax/variant model with realistic parameters', {
+  reset_spec_version()
+  tmb_mode()
+  options(macpan_pfun_method = "grep")
+
+  # Need to take more than 100 steps for the
+  # eigenvector to converge in rExp
+  options(MP_rexp_steps_default = 150)
+
+  load("../../inst/testdata/ontario_flex_test.rda")
+
+  start_date = min(params_timevar$Date)
+  end_date = start_date
+
+  r_state = make_state(params = model_params)
+  mm = make_vaccination_model(
+    params = model_params,
+    state = r_state,
+    start_date = start_date,
+    end_date = end_date,
+    params_timevar = params_timevar,
+    do_hazard = TRUE,
+    do_variant = TRUE
+  )
+  mm$do_approx_hazard_lin = FALSE
+  tmb_state = initial_state_vector(mm)
+  expect_equal(c(r_state), c(tmb_state))
 })

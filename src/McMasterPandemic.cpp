@@ -249,7 +249,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
         x = 1-x;
       else if (modifier[j] & 0b010)
         //x = (1 - exp(-x / haz_eps_doub)) / (x + haz_eps_doub);
-        if (x > 1e-8) {
+        if (x > 1e-12) {
            x = 1/x;
         }
       prod *= x;
@@ -296,7 +296,7 @@ void update_ratemat(
         // FIXME: parameter dependent branching??
         //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
         //x = (1 - exp(-x / haz_eps_doub)) / (x + haz_eps_doub);
-        if (x > 1e-8) {
+        if (x > 1e-12) {
           x = 1/x;
         }
       prod *= x;
@@ -766,12 +766,10 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(count_of_tv_at_breaks);
   DATA_IVECTOR(tv_spi);
   DATA_IVECTOR(tv_spi_unique);
-  //DATA_VECTOR(tv_val);
-  //DATA_VECTOR(tv_mult);  // moved to parameter vector
   DATA_IVECTOR(tv_orig);
+  DATA_IVECTOR(tv_abs);
   //DATA_IVECTOR(tv_method);
 
-  //DATA_IVECTOR(par_accum_indices);
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
   DATA_IVECTOR(outflow_rows);
@@ -813,6 +811,12 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(do_hazard_lin);
   DATA_INTEGER(do_approx_hazard_lin);
 
+  // The order of these PARAMETER_VECTOR macros
+  // is important because it defines the order with
+  // which non-fixed parameters are passed to the
+  // objective function on the R side. From ?MakeADFun:
+  // "The order of the PARAMETER_ macros defines the order
+  // of parameters in the final objective function"
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
@@ -843,7 +847,7 @@ Type objective_function<Type>::operator() ()
   //std::cout << "ip_infected_idx = " << ip_infected_idx << std::endl;
 
   //REPORT(tmb_status);
-;
+
 
   // make state vector from params vector
   if (do_make_state) {
@@ -886,15 +890,13 @@ Type objective_function<Type>::operator() ()
   //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
   //if (tmb_status) return 0; // There is an error in the computation so far
 
-  // Concatenate state and params
+  // Initialize the vectors that contain state, parameters,
+  // and sums of these quantities
   vector<Type> sp(state.size()+params.size()+sumidx.size());
   vector<Type> place_holder(sumidx.size());
   sp << state, params, place_holder;
-
+  vector<Type> sp_orig(sp); // sp_orig does not contain sums
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
-
-  // make a copy of sp
-  vector<Type> sp_orig(sp);
 
   //std::cout << "sp = " << sp << std::endl;
   //std::cout << "sp_orig = " << sp_orig << std::endl;
@@ -905,6 +907,8 @@ Type objective_function<Type>::operator() ()
   for (int i=0; i<count.size(); i++)
     count_integral[i+1] = count_integral[i] + count[i];
 
+
+  //std::cout << "vax_doses_per_day before make_ratemat" << sp[14] << std::endl;
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
@@ -976,14 +980,17 @@ Type objective_function<Type>::operator() ()
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
         //std::cout << "j: " << j << std::endl;
-        if (tv_orig[j]) {
+        if (tv_abs[j]) { // type == 'abs'
+          sp[tv_spi[j]-1] = tv_mult[j];
+        }
+        else if (tv_orig[j]) { // type == 'rel_orig'
           //std::cout << "sp_orig: "  << sp_orig[tv_spi[j]-1] << std::endl;
           //std::cout << "tv_spi: " << tv_spi[j] << std::endl;
           //std::cout << "tv_mult: "  << tv_mult[j] << std::endl;
           sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
           //std::cout << "sp: " << sp[tv_spi[j]-1] << std::endl;
         }
-        else {
+        else { // type == 'rel_prev'
           sp[tv_spi[j]-1] *= tv_mult[j];
         }
       }
@@ -1001,6 +1008,7 @@ Type objective_function<Type>::operator() ()
     //  std::cout << j << " idx = " << sumidx[j] << " sum = " << sp[sumidx[j]-1] << std::endl;
     //}
     //std::cout << "sp_110 = " << sp[110] << std::endl;
+    //std::cout << "vax_doses_per_day before update make_ratemat" << sp[14] << std::endl;
     update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
 
     // FIXME: parameter dependent branching??

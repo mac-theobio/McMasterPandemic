@@ -27,6 +27,7 @@ during simulation and calibration using TMB
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{init_model}()},

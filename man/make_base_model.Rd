@@ -19,9 +19,20 @@ constant parameter variation (TODO: direct to other help pages)}
     \item{\code{do_hazard}}{should hazard simulation steps be used?
 (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 if \code{spec_ver_gt('0.0.4')}}
+    \item{\code{do_hazard_lin}}{like \code{do_hazard} but for the
+linearized model that is used to construct the initial state
+variable -- only used when \code{do_make_state == TRUE}}
+    \item{\code{do_approx_hazard}}{like \code{do_approx_hazard} but for
+the linearized model that is used to construct the initial
+state (experimental)}
     \item{\code{do_make_state}}{should state be remade on the c++ size?
 (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 if \code{spec_ver_gt('0.1.0')}}
+    \item{\code{max_iters_eig_pow_meth}}{maximum number of iterations
+to use in computing the eigenvector for initial state
+construction}
+    \item{\code{tol_eig_pow_meth}}{tolerance for determining convergence
+of the power method used in initial state construction}
   }}
 }
 \description{
@@ -29,6 +40,7 @@ Represent a Standard Unstructured Model as a flexmodel
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},

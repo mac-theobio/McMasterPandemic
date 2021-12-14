@@ -10,8 +10,9 @@ test_that('v0.1.0 foi can be expressed as model structure', {
   params <- read_params("ICU1.csv")
 
   mm = (init_model(
-    params,
-    start_date = "2021-09-09", end_date = "2021-10-09",
+    params = params,
+    state = make_state(params = params),
+    start_date = "2021-09-10", end_date = "2021-10-10",
   )
     # force of infection (FOI)
     %>% add_rate("S", "E",
@@ -60,8 +61,8 @@ test_that('v0.1.0 foi can be expressed as model structure', {
     start_date = "2021-09-10",
     end_date = "2021-10-10",
     condense = FALSE,
-    step_args = list(do_hazard = TRUE, flexmodel = mm),
-    use_flex = TRUE
+    step_args = list(do_hazard = TRUE),
+    flexmodel = mm
   )
 
   r_sim <- run_sim(
@@ -70,10 +71,9 @@ test_that('v0.1.0 foi can be expressed as model structure', {
     end_date = "2021-10-10",
     condense = FALSE,
     step_args = list(do_hazard = TRUE),
-    use_flex = FALSE
   )
 
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that('v0.1.0 simple models still work when structure is allowed', {
@@ -91,6 +91,7 @@ test_that('v0.1.0 simple models still work when structure is allowed', {
 
   mm = make_base_model(
     params,
+    state = make_state(params = params),
     start_date = "2021-09-10",
     end_date = "2021-10-10",
     params_timevar = tv_dat,
@@ -292,6 +293,7 @@ test_that("v0.1.0 time-varying parameters can be used with a vaccination model",
 })
 
 test_that("v0.1.1 toy symbolic matrix multiplication examples give correct results", {
+  reset_spec_version()
   a = struc_block(struc("(a) * (1-b) + (1-a) * (1-b)"),
                   row_times = 1, col_times = 3)
   b = struc(letters[3:4])
@@ -306,7 +308,8 @@ test_that("v0.1.1 toy symbolic matrix multiplication examples give correct resul
 })
 
 test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
-  set_spec_version("0.1.1", "../../inst/tmb/")
+  #set_spec_version("0.1.1", "../../inst/tmb/")
+  reset_spec_version()
   options(macpan_pfun_method = "grep")
 
   base_params <- read_params("PHAC.csv")
@@ -365,10 +368,12 @@ test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
 })
 
 test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
-  set_spec_version("0.1.1", "../../inst/tmb/")
+  #set_spec_version("0.1.1", "../../inst/tmb/")
+  reset_spec_version()
+  tmb_mode()
   options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
+  #options(MP_use_state_rounding = FALSE)
+  #options(MP_vax_make_state_with_hazard = FALSE)
 
   start_date <- "2021-02-01"
   end_date <- "2021-09-01"
@@ -455,10 +460,13 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
   # calibration params used to produce an (initial?) set of
   # base parameters using read_params target argument
 
-  set_spec_version("0.1.1", "../../inst/tmb/")
+  #options(MP_flex_spec_dll = "McMasterPandemic")
+  #options(MP_flex_spec_version = "0.1.1")
+  #set_spec_version("0.1.1", "../../inst/tmb/")
+  reset_spec_version()
+  tmb_mode()
   options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
+  options(MP_rexp_steps_default = 150)
 
   # From macpan_ontario -----------------------------
 
@@ -493,41 +501,52 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
   # make flex vaccination model -----------
   model = make_vaccination_model(
     params = model_params,
-    state = NULL,
+    state = make_state(params = model_params),
     start_date = start_date - days(start_date_offset),
-    end_date = end_date, # start_date,#  end_date = '2021-02-05',
+    end_date = end_date + days(1),
+    params_timevar = params_timevar,
     do_hazard = TRUE,
     do_hazard_lin = FALSE,
     do_approx_hazard = FALSE,
     do_approx_hazard_lin = FALSE,
-    do_make_state = FALSE,
-    max_iters_eig_pow_meth = 100,
-    tol_eig_pow_meth = 1e-8,
-    params_timevar = params_timevar,
+    do_make_state = TRUE,
+    max_iters_eig_pow_meth = 1000,
+    tol_eig_pow_meth = 1e-12,
     do_variant = TRUE)
+
+  # (model
+  #   %>% get_rates_with_vars("vax_doses_per_day")
+  #   %>% lapply(getElement, 'formula')
+  # )
+  (model
+    %>% get_rates_with_vars("vax")
+    %>% lapply(getElement, 'factors')
+    %>% bind_rows
+    %>% getElement("var")
+    %>% unique
+  )
+  # c(model$state, model$params, model$sum_vector)[vars_interacting_with_vax_doses_per_day]
+  # model$timevar$piece_wise$schedule %>% slice_min(Date)
 
   time_wrap(
     tmb_sim <- run_sim(
       params = model_params,
-      start_date = start_date - days(start_date_offset), end_date = end_date,
+      start_date = model$start_date,
+      end_date = model$end_date,
       params_timevar = params_timevar,
       condense = FALSE,
       step_args = list(do_hazard = TRUE),
-      use_flex = TRUE,
       flexmodel = model
     ),
-
-    # FIXME: silence warning -- dropped switch times on final day
     r_sim <- run_sim(
       params = model_params,
-      start_date = start_date - days(start_date_offset), end_date = end_date,
+      start_date = model$start_date,
+      end_date = model$end_date,
       params_timevar = params_timevar,
       condense = FALSE,
-      step_args = list(do_hazard = TRUE),
-      use_flex = FALSE
+      step_args = list(do_hazard = TRUE)
     )
   )
 
-  compare_sims(r_sim, tmb_sim)
-
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })

@@ -283,6 +283,24 @@ get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 #' @export
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
+#' @export
+get_rate_vars = function(model) {
+  (model
+   %>% get_rate_factors
+   %>% lapply(getElement, "var")
+  )
+}
+
+#' @export
+get_rates_with_vars = function(model, var_pattern) {
+  ii = (model
+    %>% get_rate_vars
+    %>% lapply(grepl, pattern = var_pattern)
+    %>% lapply(any)
+    %>% sapply(isTRUE)
+  )
+  get_rates(model)[ii]
+}
 
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
@@ -310,12 +328,7 @@ rate_summary = function(model, include_formula = FALSE) {
 
 #' @export
 get_rates = function(model) {
-  from = flex_from(model)
-  to = flex_to(model)
-  mapply(function(from, to) {
-    model$ratemat[from, to]
-  }, from = from, to = to,
-  SIMPLIFY = TRUE)
+  model$rates
 }
 
 ##' @param x parameter vector or flexmodel
@@ -404,16 +417,6 @@ get_indices_per_rate = function(model, i) {
   list(spi = spi[start:end],
        modifier = modifier[start:end],
        start = start, end = end)
-}
-
-#' @export
-check_rates = function(model, eps = 1e-5) {
-  (data.frame(get_rates(test_model), compute_rates(test_model))
-   %>% setNames(c('get', 'compute'))
-   %>% mutate(diff = abs(get - compute))
-   %>% mutate(bads = (diff > eps) | is.nan(compute) | is.na(get))
-   %>% filter(bads)
-  )
 }
 
 #' @export
@@ -889,26 +892,28 @@ final_state_ratio = function(model, sim_params = NULL) {
 #' @param classic_sim result of `run_sim` without using TMB
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
+#' @param compare_attr compare attributes or just the simulations themselves
 #' @importFrom testthat testthat_tolerance
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) {
-  params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
-  attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
-  attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
-  attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
+compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance(), compare_attr = TRUE) {
+  if(compare_attr) {
+    params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
+    attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
+    attr(tmb_sim, 'row.names') = attr(classic_sim, 'row.names') = NULL
+    attr(tmb_sim, 'call') = attr(classic_sim, 'call') = NULL
 
-  # FIXME: this should probably be handled in run_sim itself
-  params_timevar = attr(tmb_sim, "params_timevar")
-  if(!is.null(params_timevar)) {
-    attr(tmb_sim, "params_timevar") = arrange(params_timevar, Date, Symbol)
-    attr(attr(tmb_sim, "params_timevar"), "row.names") = NULL
-    attr(attr(classic_sim, "params_timevar"), "row.names") = NULL
+    # FIXME: this should probably be handled in run_sim itself
+    params_timevar = attr(tmb_sim, "params_timevar")
+    if(!is.null(params_timevar)) {
+      attr(tmb_sim, "params_timevar") = arrange(params_timevar, Date, Symbol)
+      attr(attr(tmb_sim, "params_timevar"), "row.names") = NULL
+      attr(attr(classic_sim, "params_timevar"), "row.names") = NULL
+    }
+
+    for(a in names(attributes(classic_sim))) {
+      expect_equal(attr(tmb_sim, a), attr(classic_sim, a), tolerance = tolerance)
+    }
   }
-
-  for(a in names(attributes(classic_sim))) {
-    expect_equal(attr(tmb_sim, a), attr(classic_sim, a), tolerance = tolerance)
-  }
-
   attributes(classic_sim) <- attributes(tmb_sim) <- NULL
   expect_equal(tmb_sim, classic_sim, tolerance = tolerance)
   TRUE
@@ -977,7 +982,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
   TRUE
 }
 
-##' Set Spec Version
+##' Set and Reset Spec Version
 ##'
 ##' Set the spec version and optionally compile a
 ##' specific c++ file associated with this version.
@@ -987,6 +992,10 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 ##' object files will be created in this
 ##' directory.
 ##'
+##' \code{reset_spec_version} returns specs
+##' being assumed and c++ file being used to
+##' factory-fresh settings.
+##'
 ##' @param v character string with spec version
 ##' @param cpp_path string containing path
 ##' to a directory containing a file called
@@ -994,11 +1003,16 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 ##' to construct the objective function --
 ##' the default is \code{NULL}, which will
 ##' make use of the packaged source file
+##' @param use_version_directories is cpp_path
+##' organized by sub-directories with names
+##' given by the spec version number? (as
+##' they are in \code{inst/tmb})
 ##' \code{McMasterPandemic.cpp}
 ##'
+##' @rdname set_spec_version
 ##' @importFrom tools file_path_sans_ext
 ##' @export
-set_spec_version = function(v, cpp_path = NULL) {
+set_spec_version = function(v, cpp_path = NULL, use_version_directories = TRUE) {
   spec_version <- as.character(unlist(v))[1]
   print(spec_version)
   options(MP_flex_spec_version = spec_version)
@@ -1006,12 +1020,35 @@ set_spec_version = function(v, cpp_path = NULL) {
   if(is.null(cpp_path)) {
     options(MP_flex_spec_dll = "McMasterPandemic")
   } else {
-    cpp <- file.path(cpp_path, spec_version, "macpan.cpp")
+    sub_dir = ifelse(use_version_directories, spec_version, '')
+    cpp <- file.path(cpp_path, sub_dir, "macpan.cpp")
     dll <- file_path_sans_ext(cpp)
     options(MP_flex_spec_dll = basename(dll))
     compile(cpp)
     dyn.load(dynlib(dll))
   }
+}
+
+#' @rdname set_spec_version
+#' @export
+reset_spec_version = function() {
+  flex_version <- readLines(
+    system.file("tmb/recommended_spec_version",
+                package = "McMasterPandemic"))
+  options(MP_flex_spec_version = flex_version)
+  options(MP_flex_spec_dll = "McMasterPandemic")
+}
+
+##' TMB Mode
+##'
+##' Set options so that R engine runs in a manner
+##' that is compatible with the TMB engine
+##'
+##' @export
+tmb_mode = function() {
+  options(
+    MP_use_state_rounding = FALSE,
+    MP_vax_make_state_with_hazard = FALSE)
 }
 
 
