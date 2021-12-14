@@ -1,10 +1,14 @@
 options(repos = "https://cran.rstudio.com")
 install.packages("remotes")
-install.packages("tinytex")
+#install.packages("tinytex")
 install.packages("devtools")
 install.packages("roxygen2")
-install.packages("styler")
-install.packages("lintr")
+#install.packages("styler")
+#install.packages("lintr")
+
+install.packages('Matrix')
+install.packages('RcppEigen')
+install.packages('TMB')
 
 ## These are required under https://hub.docker.com/r/rocker/rstudio
 ## install.packages('Hmisc')
