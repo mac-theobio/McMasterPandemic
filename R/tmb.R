@@ -50,8 +50,15 @@ init_model <- function(params, state = NULL,
     }
 
     if(is.null(state)) {
-      # inefficient! should just directly make a zero'd state vector
+      # inefficient! should just directly make a zero'd state vector.
+      # trying to be more efficient:
+      #  - tried setting use_eigvec = FALSE, but this failed for some reason (bug??)
+      #  - for now we can do this ugly thing of turning down the number of power
+      #    method steps and then restoring
+      n_steps = getOption("MP_rexp_steps_default")
+      options(MP_rexp_steps_default = 1)
       state = make_state(params = params)
+      options(MP_rexp_steps_default = n_steps)
       state[] = 0
     }
 
