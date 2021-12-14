@@ -14,13 +14,16 @@ RUN apt-get update && \
 RUN cd /home && \
     git clone https://github.com/mac-theobio/McMasterPandemic.git
 
-WORKDIR /home/McMasterPandemic
-
 RUN echo "force layer construction"
+
+WORKDIR /home/McMasterPandemic
 
 RUN make dependencies
 
+RUN git fetch origin tmb
+
+RUN git checkout tmb
+
 RUN echo "PATH=\"$HOME/bin:$PATH\"" >> /root/.bashrc && \
     . /root/.bashrc && \
-    make build-package && \
-    make install
+    make install BUILDARGS="--no-build-vignettes "
