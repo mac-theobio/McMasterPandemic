@@ -932,10 +932,6 @@ tmb_fun <- function(model) {
                 # tv_mult = schedule$Value,  # moved to parameter vector
                 tv_orig = null_to_log0(schedule$Type == "rel_orig"),
                 tv_abs = null_to_log0(schedule$Type == "abs"),
-                ## tv_method = tv_method,
-                step_zero_tv_count = step_zero_tv_count,
-                step_zero_tv_idx = step_zero_tv_idx,
-                step_zero_tv_vals = step_zero_tv_vals,
 
                 sumidx = null_to_int0(sumidx),
                 sumcount = null_to_int0(unname(sumcount)),

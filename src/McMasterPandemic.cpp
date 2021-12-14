@@ -769,9 +769,6 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
   //DATA_IVECTOR(tv_method);
-  DATA_IVECTOR(step_zero_tv_count);
-  DATA_IVECTOR(step_zero_tv_idx);
-  DATA_VECTOR(step_zero_tv_vals);
 
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
@@ -901,20 +898,6 @@ Type objective_function<Type>::operator() ()
   vector<Type> sp_orig(sp); // sp_orig does not contain sums
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
 
-  // replace time varying parameters with breaks on day one
-  // int step_zero_tv_start = 0;
-  // for (int i=0; i<step_zero_tv_count.size(); i++) {
-  //   for (int j=step_zero_tv_start; j<step_zero_tv_start+step_zero_tv_count[i]; j++) {
-  //     sp[step_zero_tv_idx[j]-1] = step_zero_tv_vals[i];
-  //   }
-  //   step_zero_tv_start += step_zero_tv_count[i];
-  // }
-  //for (int j=0; j<breaks.size(); j++) {
-  //  if (breaks[j] == 0) {
-  //    sp[tv_spi[j]-1] *= tv_mult[j];
-  //  }
-  //}
-
   //std::cout << "sp = " << sp << std::endl;
   //std::cout << "sp_orig = " << sp_orig << std::endl;
 
@@ -997,17 +980,17 @@ Type objective_function<Type>::operator() ()
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
         //std::cout << "j: " << j << std::endl;
-        if (tv_abs[j]) {
+        if (tv_abs[j]) { // type == 'abs'
           sp[tv_spi[j]-1] = tv_mult[j];
         }
-        else if (tv_orig[j]) {
+        else if (tv_orig[j]) { // type == 'rel_orig'
           //std::cout << "sp_orig: "  << sp_orig[tv_spi[j]-1] << std::endl;
           //std::cout << "tv_spi: " << tv_spi[j] << std::endl;
           //std::cout << "tv_mult: "  << tv_mult[j] << std::endl;
           sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
           //std::cout << "sp: " << sp[tv_spi[j]-1] << std::endl;
         }
-        else {
+        else { // type == 'rel_prev'
           sp[tv_spi[j]-1] *= tv_mult[j];
         }
       }
