@@ -20,6 +20,7 @@ Add parallel accumulators to a compartmental model.
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},
