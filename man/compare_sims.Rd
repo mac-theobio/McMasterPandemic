@@ -4,7 +4,12 @@
 \alias{compare_sims}
 \title{Compare TMB-based and classic MacPan Simulations}
 \usage{
-compare_sims(classic_sim, tmb_sim, tolerance = testthat_tolerance())
+compare_sims(
+  classic_sim,
+  tmb_sim,
+  tolerance = testthat_tolerance(),
+  compare_attr = TRUE
+)
 }
 \arguments{
 \item{classic_sim}{result of `run_sim` without using TMB}
@@ -12,6 +17,8 @@ compare_sims(classic_sim, tmb_sim, tolerance = testthat_tolerance())
 \item{tmb_sim}{result of `run_sim` using TMB}
 
 \item{tolerance}{numerical tolerance}
+
+\item{compare_attr}{compare attributes or just the simulations themselves}
 }
 \description{
 Exceptions to drop-in replacement:
@@ -23,4 +30,7 @@ Exceptions to drop-in replacement:
 4. don't require that the call is identical (obvious i guess, but
    being exhaustive)
 5. don't look for parameter called S0 in classic simulation results
+   (FIXME: this one might not be necessary anymore)
+6. don't require the ordering of params_timevar rows to be the same
+   (FIXME: this should probably be handled in run_sim itself)
 }

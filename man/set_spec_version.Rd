@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmbutils.R
 \name{set_spec_version}
 \alias{set_spec_version}
-\title{Set Spec Version}
+\alias{reset_spec_version}
+\title{Set and Reset Spec Version}
 \usage{
-set_spec_version(v, cpp_path = NULL)
+set_spec_version(v, cpp_path = NULL, use_version_directories = TRUE)
+
+reset_spec_version()
 }
 \arguments{
 \item{v}{character string with spec version}
@@ -14,7 +17,12 @@ to a directory containing a file called
 \code{macpan.cpp}, which is to be used
 to construct the objective function --
 the default is \code{NULL}, which will
-make use of the packaged source file
+make use of the packaged source file}
+
+\item{use_version_directories}{is cpp_path
+organized by sub-directories with names
+given by the spec version number? (as
+they are in \code{inst/tmb})
 \code{McMasterPandemic.cpp}}
 }
 \description{
@@ -26,4 +34,8 @@ The user need to have write permissions to
 \code{cpp_path}, because object and shared
 object files will be created in this
 directory.
+
+\code{reset_spec_version} returns specs
+being assumed and c++ file being used to
+factory-fresh settings.
 }

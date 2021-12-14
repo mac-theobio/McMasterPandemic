@@ -11,9 +11,22 @@
 ##' @param do_hazard should hazard simulation steps be used?
 ##' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 ##' if \code{spec_ver_gt('0.0.4')}
+##' @param do_hazard_lin like \code{do_hazard} but for the
+##' linearized model that is used to construct the initial state
+##' variable -- only used when \code{do_make_state == TRUE}
+##' @param do_approx_hazard approximate the hazard transformation
+##' by a smooth function (experimental)
+##' @param do_approx_hazard like \code{do_approx_hazard} but for
+##' the linearized model that is used to construct the initial
+##' state (experimental)
 ##' @param do_make_state should state be remade on the c++ size?
 ##' (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 ##' if \code{spec_ver_gt('0.1.0')}
+##' @param max_iters_eig_pow_meth maximum number of iterations
+##' to use in computing the eigenvector for initial state
+##' construction
+##' @param tol_eig_pow_meth tolerance for determining convergence
+##' of the power method used in initial state construction
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
@@ -36,12 +49,20 @@ init_model <- function(params, state = NULL,
              "for state variables and parameters")
     }
 
-    if(is.null(state)) state = make_state(params = params)
+    if(is.null(state)) {
+      # inefficient! should just directly make a zero'd state vector.
+      # trying to be more efficient:
+      #  - tried setting use_eigvec = FALSE, but this failed for some reason (bug??)
+      #  - for now we can do this ugly thing of turning down the number of power
+      #    method steps and then restoring
+      n_steps = getOption("MP_rexp_steps_default")
+      options(MP_rexp_steps_default = 1)
+      state = make_state(params = params)
+      options(MP_rexp_steps_default = n_steps)
+      state[] = 0
+    }
 
-    # TODO: this is here to compare with tmb-computed rate matrices,
-    # but in the future when tmb is truly flexible this will not work.
-    # what we need is a make_ratemat for model$rates
-    if(inherits(state, "pansim") & inherits(params, "pansim")) {
+    if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
       ratemat = make_ratemat(state, params, sparse = TRUE)
     } else {
       ratemat = matrix(
@@ -68,7 +89,8 @@ init_model <- function(params, state = NULL,
         name_regex = name_regex
     )
 
-    if (spec_ver_gt("0.0.1")) {
+    if (spec_ver_btwn("0.0.1", "0.1.1")) {
+        # parallel accumulator declaration now handled by outflow
         model$parallel_accumulators <- character(0L)
     }
 
@@ -139,10 +161,12 @@ init_model <- function(params, state = NULL,
                     old_val <- params[schedule$Symbol[i]]
                 } else if (schedule$Type[i] == "rel_prev") {
                     old_val <- schedule$tv_val[i - 1]
+                } else if (schedule$Type[i] == "abs") {
+                    old_val <- 1
                 } else {
                     stop(
                         "Unrecognized break-point type.\n",
-                        "Only rel_orig and rel_prev are allowed"
+                        "Only rel_orig, rel_prev, and abs are allowed"
                     )
                 }
                 schedule$tv_val[i] <- old_val * schedule$Value[i]
@@ -194,12 +218,7 @@ init_model <- function(params, state = NULL,
         model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
         model$tol_eig_pow_meth = tol_eig_pow_meth
         model$haz_eps = haz_eps
-        model$disease_free = list(
-            state = list(
-                simple = list(),
-                state_mappings = list()
-            )
-        )
+        model$disease_free = list()
         model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
@@ -210,6 +229,14 @@ init_model <- function(params, state = NULL,
         model$initial_population = list(
           total = character(0L),
           infected = character(0L))
+
+        which_step_zero_tv = which(
+          model$timevar$piece_wise$breaks == 0L)
+        model$timevar$piece_wise$step_zero_tv_idx =
+          model$timevar$piece_wise$schedule$tv_spi[which_step_zero_tv]
+        model$timevar$piece_wise$step_zero_tv_vals =
+          model$timevar$piece_wise$schedule$tv_val[which_step_zero_tv]
+        model$timevar$piece_wise$step_zero_tv_count = rep(1, length(which_step_zero_tv))
     }
 
     model$tmb_indices <- list(
@@ -231,7 +258,6 @@ init_model <- function(params, state = NULL,
 
     structure(model, class = "flexmodel")
 }
-
 
 # rate and associated functions ---------------------
 #
@@ -276,8 +302,8 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
             pfun,
             c(x[c("from", "to")], list(mat = M)))
         if(nrow(x$ratemat_indices) > 1L) {
-            stop('you are referring to more than one element of the rate ',
-                 'matrix.\ntry using rep_rate instead of rate')
+            stop('More than one element of the rate matrix is being ',
+                 'referred to.\nTry using rep_rate instead of rate.')
         }
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
@@ -423,6 +449,8 @@ vec_rate = function(model, from, to, formula,
 
 #' Specify Matrix of Rates
 #'
+#' Not implemented
+#'
 #' @family flexmodels
 #' @export
 mat_rate = function() {
@@ -514,23 +542,42 @@ add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
     return(model)
 }
 
+##' Add Outflows
+##'
+##' Add outflows corresponding to inflows specified by
+##' \code{add_rate}, \code{rep_rate}, and \code{vec_rate}.
+##'
+##' By default all inflows will have corresponding outflows.
+##' To define outflows from specific states, pass a regular
+##' expression to \code{state_patterns} that identifies these
+##' states. To restrict outflows to those going to specific
+##' states, use regular expressions to define these states.
+##'
 ##' @family flexmodels
 ##' @export
-add_outflow = function(model, state_patterns, flow_state_patterns) {
-    model$outflow = append(
-        model$outflow,
-        list(outflow(model, state_patterns, flow_state_patterns)))
-    return(model)
+add_outflow = function(
+  model,
+  state_patterns = '.+',
+  flow_state_patterns = '.+') {
+
+  model$outflow = append(
+    model$outflow,
+    list(outflow(model, state_patterns, flow_state_patterns)))
+  return(model)
 }
 
 ##' @family flexmodels
 ##' @export
-outflow = function(model, state_patterns, flow_state_patterns) {
-    spec_check(
-      introduced_version = '0.1.1',
-      feature = 'Flexible restriction of outflows'
-    )
-    nlist(state_patterns, flow_state_patterns)
+outflow = function(
+  model,
+  state_patterns = '.+',
+  flow_state_patterns = '.+') {
+
+  spec_check(
+    introduced_version = '0.1.1',
+    feature = 'Flexible restriction of outflows'
+  )
+  nlist(state_patterns, flow_state_patterns)
 }
 
 ##' @family flexmodels
@@ -559,8 +606,8 @@ linearized_params = function(model, param_pattern, value) {
 ##' @family flexmodels
 ##' @export
 update_disease_free_state = function(model, state_pattern, param_pattern) {
-    model$disease_free$state$simple = c(
-        model$disease_free$state$simple,
+    model$disease_free = c(
+        model$disease_free,
         list(disease_free_state(model, state_pattern, param_pattern)))
     return(model)
 }
@@ -884,7 +931,8 @@ tmb_fun <- function(model) {
                 tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
                 # tv_mult = schedule$Value,  # moved to parameter vector
                 tv_orig = null_to_log0(schedule$Type == "rel_orig"),
-                ## tv_method = tv_method,
+                tv_abs = null_to_log0(schedule$Type == "abs"),
+
                 sumidx = null_to_int0(sumidx),
                 sumcount = null_to_int0(unname(sumcount)),
                 summandidx = null_to_int0(summandidx),

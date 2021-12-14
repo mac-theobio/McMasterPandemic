@@ -15,6 +15,7 @@ object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},

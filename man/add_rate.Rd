@@ -26,6 +26,7 @@ depends on the parameters and state variables.
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},

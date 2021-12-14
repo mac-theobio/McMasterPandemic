@@ -19,6 +19,7 @@ Repeat a Rate for Several Rate Matrix Elements
 }
 \seealso{
 Other flexmodels: 
+\code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{add_tmb_indices}()},

@@ -12,7 +12,7 @@ install.packages("lintr")
 
 remotes::install_deps(".", dependencies = "Depends", upgrade = TRUE)
 remotes::install_github("bbolker/bbmle")
-remotes::install_girhub("johndharrison/semver")
+remotes::install_github("johndharrison/semver")
 
 tinytex::install_tinytex()
 tinytex::tlmgr_install("koma-script")
