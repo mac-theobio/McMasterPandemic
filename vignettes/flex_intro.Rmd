@@ -118,6 +118,83 @@ regex = "^(S|I|R)(_*)(.*)"
   )
 ```
 
+##The SIRV model
+
+```{r}
+
+sirv_model = (
+  init_model(
+    params = c(
+      gamma = 1e-2, # per-infected recovery rate
+      beta = 2e-9,  # per-contact transmission rate
+      v = 1e-5),
+    params_timevar = data.frame(Date = c("2020-01-05", "2020-01-10"), Symbol = c("v", "v"),  Value = c(0.1, 2), Type = c("rel_orig", "rel_orig")),
+    state = c(S = 20000, I = 100, R = 0, V = 0),
+    start_date = "2020-01-01",
+    end_date = "2020-05-01",
+    do_hazard = FALSE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_rate("S", "V", ~  (v) * (S))
+  %>% add_outflow("S|I|R|V", "S|I|R|V")
+  %>% add_tmb_indices
+)
+
+(sirv_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+
+```
+
+
+##Variolation model
+
+```{r}
+kinds = c("mild", "severe")
+variolation_model <- (
+  init_model(
+    params = c(
+      rho = 0.1, #probability of mild infection
+      gamma_mild = 1e-1,       # per-infected recovery rate
+      beta_mild = 5e-9,   # per-contact transmission rate for wild type
+      gamma_severe = 2e-1,
+      beta_severe = 6e-9 # per-contact transmission rate for variant
+    ),
+    params_timevar = data.frame(Date = c("2020-01-05", "2020-01-07"), Symbol = c("rho", "beta_mild"),  Value = c(0.9, 3), Type = c("abs", "rel_orig")),    state = c(
+      S = 20000, 
+      I_severe = 50, I_mild = 50,
+      R_mild = 0,   R_severe = 0
+    ),
+    start_date = "2020-01-01",
+    end_date = "2020-05-01",
+    do_hazard = FALSE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I_mild", ~ (beta_mild) * (S) * (rho)* (I_mild) + (beta_mild) * (S) * (rho)* (I_severe))
+  %>% add_rate("S", "I_severe", ~ (beta_mild) * (S) * (1-rho)* (I_mild) + (beta_mild) * (S) * (1-rho)* (I_severe))
+  %>% add_rate("I_mild", "R_mild", ~ (gamma_severe))
+  %>% add_rate("I_severe", "R_severe", ~ (gamma_mild))
+  %>% add_outflow("(S|I_mild|R_mild|I_severe|R_severe)", "(S|I_mild|R_mild|I_severe|R_severe)")
+  %>% add_tmb_indices
+)
+
+(variolation_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+
+```
+
+``
 ## SEIRD Model
 
 This is the [Mac Theo Bio Model](https://github.com/mac-theobio/mac-theobio.github.io/blob/master/seird.jpg).
