@@ -89,7 +89,8 @@ init_model <- function(params, state = NULL,
         name_regex = name_regex
     )
 
-    if (spec_ver_gt("0.0.1")) {
+    if (spec_ver_btwn("0.0.1", "0.1.1")) {
+        # parallel accumulator declaration now handled by outflow
         model$parallel_accumulators <- character(0L)
     }
 
@@ -541,23 +542,42 @@ add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
     return(model)
 }
 
+##' Add Outflows
+##'
+##' Add outflows corresponding to inflows specified by
+##' \code{add_rate}, \code{rep_rate}, and \code{vec_rate}.
+##'
+##' By default all inflows will have corresponding outflows.
+##' To define outflows from specific states, pass a regular
+##' expression to \code{state_patterns} that identifies these
+##' states. To restrict outflows to those going to specific
+##' states, use regular expressions to define these states.
+##'
 ##' @family flexmodels
 ##' @export
-add_outflow = function(model, state_patterns, flow_state_patterns) {
-    model$outflow = append(
-        model$outflow,
-        list(outflow(model, state_patterns, flow_state_patterns)))
-    return(model)
+add_outflow = function(
+  model,
+  state_patterns = '.+',
+  flow_state_patterns = '.+') {
+
+  model$outflow = append(
+    model$outflow,
+    list(outflow(model, state_patterns, flow_state_patterns)))
+  return(model)
 }
 
 ##' @family flexmodels
 ##' @export
-outflow = function(model, state_patterns, flow_state_patterns) {
-    spec_check(
-      introduced_version = '0.1.1',
-      feature = 'Flexible restriction of outflows'
-    )
-    nlist(state_patterns, flow_state_patterns)
+outflow = function(
+  model,
+  state_patterns = '.+',
+  flow_state_patterns = '.+') {
+
+  spec_check(
+    introduced_version = '0.1.1',
+    feature = 'Flexible restriction of outflows'
+  )
+  nlist(state_patterns, flow_state_patterns)
 }
 
 ##' @family flexmodels
