@@ -917,6 +917,7 @@ run_sim <- function(params,
                     flexmodel = NULL,
                     obj_fun = NULL) {
 
+  if (!is.null(flexmodel) | !is.null(obj_fun)) use_flex = TRUE
   if (use_flex) {
     ## tmb/c++ computational approach (experimental)
     ## (https://canmod.net/misc/flex_specs)
@@ -930,7 +931,10 @@ run_sim <- function(params,
     #    are changing each iteration of the optimizer
     if (!is.null(flexmodel)) {
       flexmodel$params[] = params
-      if (spec_ver_gt('0.1.0')) {
+      if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
+        if (is.null(params_timevar)) {
+          params_timevar = flexmodel$timevar$piece_wise$schedule
+        }
         # FIXME: inefficient brute-force reordering
         s = arrange(flexmodel$timevar$piece_wise$schedule, Symbol, Date)
         ptv = arrange(params_timevar, Symbol, Date)

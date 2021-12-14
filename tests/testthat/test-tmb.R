@@ -90,7 +90,7 @@ test_that("spec v0.0.2 simulations match run_sim", {
     params <- read_params("ICU1.csv")
     state <- McMasterPandemic::make_state(params = params)
     test_model <- (
-        init_model(params)
+        init_model(params, state = state)
             %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
             %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
             %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -143,6 +143,7 @@ test_that("spec v0.0.4 simulations with time varying parameters match run_sim", 
 
     test_model <- (init_model(
         params,
+        state = make_state(params = params),
         start_date = "2021-09-09", end_date = "2021-10-09",
         params_timevar = tv_dat
     )
@@ -213,6 +214,7 @@ test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff
 
     test_model <- (init_model(
         params,
+        state = make_state(params = params),
         start_date = "2021-09-09", end_date = "2021-10-09",
         params_timevar = tv_dat
     )

@@ -823,6 +823,17 @@ expand_params_variant <- function(params,
 ##'
 ##' @export
 expand_params_S0 = function(params, S0) {
+    if(is.atomic(params)) {
+        if(!is.na(params["S0"])) {
+            params["S0"] = S0
+            return(params)
+        }
+    } else {
+        if(!is.null(params[["S0"]])) {
+            params[["S0"]] = S0
+            return(params)
+        }
+    }
     saved_attr = attributes(params)
     params = c(params, S0)
     saved_attr$description = c(saved_attr$description, "Initial proportion of individuals in S boxes")

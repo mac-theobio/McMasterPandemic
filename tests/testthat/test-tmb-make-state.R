@@ -120,3 +120,32 @@ test_that('make state matches vax/variant model without hazard intialization', {
     initial_state_vector(model),
     c(make_state(params = model_params)))
 })
+
+test_that('make state matches vax/variant model with realistic parameters', {
+  reset_spec_version()
+  tmb_mode()
+  options(macpan_pfun_method = "grep")
+
+  # Need to take more than 100 steps for the
+  # eigenvector to converge in rExp
+  options(MP_rexp_steps_default = 150)
+
+  load("../../inst/testdata/ontario_flex_test.rda")
+
+  start_date = min(params_timevar$Date)
+  end_date = start_date
+
+  r_state = make_state(params = model_params)
+  mm = make_vaccination_model(
+    params = model_params,
+    state = r_state,
+    start_date = start_date,
+    end_date = end_date,
+    params_timevar = params_timevar,
+    do_hazard = TRUE,
+    do_variant = TRUE
+  )
+  mm$do_approx_hazard_lin = FALSE
+  tmb_state = initial_state_vector(mm)
+  expect_equal(c(r_state), c(tmb_state))
+})

@@ -7,7 +7,7 @@
 mat_rate()
 }
 \description{
-Specify Matrix of Rates
+Not implemented
 }
 \seealso{
 Other flexmodels: 

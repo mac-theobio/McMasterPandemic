@@ -20,7 +20,9 @@ test_that('v0.1.0 simple models calibrate the same regardless of engine', {
     Type = c("rel_orig", "rel_orig", "rel_orig")
   )
 
-  model <- make_base_model(params, start_date = start_date, end_date = end_date,
+  model <- make_base_model(params,
+                           state = make_state(params = params),
+                           start_date = start_date, end_date = end_date,
                            params_timevar = tv_dat,
                            do_hazard = TRUE)
 
@@ -88,10 +90,8 @@ test_that('v0.1.0 simple models calibrate the same regardless of engine', {
 
 test_that('v0.1.1 simple models can calibrate time varying multipliers', {
 
-  # TODO: to make this pass, we need to engage R-based make_state ... I think
-  #       https://github.com/mac-theobio/McMasterPandemic/issues/124
-
-  set_spec_version('0.1.1', '../../inst/tmb')
+  reset_spec_version()
+  tmb_mode()
   options(MP_use_state_rounding = FALSE)
 
   params <- ("ICU1.csv"
@@ -107,6 +107,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
     Type = c("rel_orig", "rel_orig", "rel_orig")
   )
   model <- make_base_model(params,
+                           state = make_state(params = params),
                            start_date = start_date, end_date = end_date,
                            params_timevar = tv_dat,
                            do_hazard = TRUE,
@@ -125,7 +126,6 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
     params_timevar = tv_dat_filled,
     step_args = list(do_hazard = TRUE),
     condense = TRUE,
-    use_flex = TRUE,
     flexmodel = model
   )
 
@@ -142,6 +142,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
       data = report_data,
       time_args = list(params_timevar = tv_dat),
       base_params = params,
+      debug = TRUE,
       opt_pars = list(params = c(beta0 = params[["beta0"]]),
                       time_params = c(0.5)),
       sim_args = list(
@@ -153,6 +154,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
       data = report_data,
       time_args = list(params_timevar = tv_dat),
       base_params = params,
+      debug = TRUE,
       opt_pars = list(params = c(beta0 = params[["beta0"]]),
                       time_params = c(0.5)),
       sim_args = list(
@@ -171,14 +173,13 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
 
 test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
 
-  spec_version = "0.1.1"
-  options(MP_flex_spec_version = spec_version)
+  reset_spec_version()
+  tmb_mode()
+  options(macpan_pfun_method = "grep")
+  options(MP_rexp_steps_default = 150)
 
   start_date <- "2020-02-01"
   end_date <- "2020-09-01"
-  options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
   vax_params <- expand_params_vax(
@@ -238,37 +239,38 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
     "ICUs_vaxprotect2", "ICUd_vaxprotect2", "D_vaxprotect2", "R_vaxprotect2",
     "X_vaxprotect2", "V_vaxprotect2")
 
-  options(warn = 2)
   test_model <- make_vaccination_model(
-    params = expand_params_S0(vax_params, 1-1e-5),
-    state = setNames(numeric(length(state_nms)), state_nms),
+    params = vax_params,
+    state = make_state(params = vax_params),
     params_timevar = params_timevar,
     start_date = start_date, end_date = end_date,
-    step_args = list(do_hazard = TRUE)
+    do_hazard = TRUE,
+    do_hazard_lin = FALSE,
+    do_approx_hazard = FALSE,
+    do_approx_hazard_lin = FALSE,
+    do_make_state = TRUE,
+    max_iters_eig_pow_meth = 1000,
+    tol_eig_pow_meth = 1e-12
   )
 
   simulate_timings = time_wrap(
     sims_tmb <- run_sim(
       params = test_model$params,
-      state = NULL,
       params_timevar = params_timevar,
       start_date = start_date, end_date = end_date,
+      step_args = list(do_hazard = TRUE),
       condense = FALSE,
-      use_flex = TRUE,
-      flexmodel = test_model,
-      obj_fun = tmb_fun(test_model)
+      flexmodel = test_model
     ),
     sims_r <- run_sim(
       params = vax_params,
-      state = NULL,
       params_timevar = params_timevar,
       start_date = start_date, end_date = end_date,
-      condense = FALSE,
-      use_flex = FALSE
+      step_args = list(do_hazard = TRUE),
+      condense = FALSE
     )
   )
-  attributes(sims_r) = attributes(sims_tmb) = NULL
-  expect_equal(sims_r, sims_tmb)
+  compare_sims(sims_r, sims_tmb, compare_attr = FALSE)
 
   calibrate_timings = time_wrap(
     fitted_mod_tmb <- calibrate(
@@ -283,8 +285,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
         ndt = 1,
         step_args = list(do_hazard = TRUE),
         use_flex = TRUE,
-        flexmodel = test_model,
-        obj_fun = tmb_fun(test_model)
+        flexmodel = test_model
       )
     ),
     fitted_mod <- calibrate(
@@ -326,14 +327,14 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
 
 test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
 
-  spec_version = "0.1.1"
-  options(MP_flex_spec_version = spec_version)
+  reset_spec_version()
+  tmb_mode()
+  options(macpan_pfun_method = "grep")
+  options(MP_rexp_steps_default = 150)
 
   start_date <- "2020-02-01"
   end_date <- "2020-09-01"
-  options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
+
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
   vax_params <- expand_params_vax(
@@ -363,10 +364,10 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
     # do the same thing with the switch to second doses as above, but now also cut the original transmission rate to 50% of its value 60 days after the simulation start date
     params_timevar = params_timevar
   )
-  ## reshape into the correct format for input data passed to calibrate()
-  %>% mutate(value=round(report), var="report")
-  %>% select(date, value, var)
-  %>% na.omit()
+    ## reshape into the correct format for input data passed to calibrate()
+    %>% mutate(value=round(report), var="report")
+    %>% select(date, value, var)
+    %>% na.omit()
   )
 
   ## set up optimization parameters
@@ -382,7 +383,6 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
                                                      Value))
   )
 
-  r_strt = Sys.time()
   fitted_mod <- calibrate(
     base_params = vax_params,
     data = synth_reports,
@@ -398,16 +398,15 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
   )
 
   test_model <- make_vaccination_model(
-    params = expand_params_S0(vax_params, 1-1e-5),
+    params = vax_params,
     state = vax_state,
     params_timevar = params_timevar,
     start_date = start_date, end_date = end_date,
     step_args = list(do_hazard = TRUE)
   )
 
-  tmb_strt = Sys.time()
   fitted_mod_tmb <- calibrate(
-    base_params = expand_params_S0(vax_params, 1-1e-5),
+    base_params = test_model$params,
     data = synth_reports,
     opt_pars = opt_pars,
     debug = TRUE,
@@ -418,8 +417,7 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
       ndt = 1,
       step_args = list(do_hazard = TRUE),
       use_flex = TRUE,
-      flexmodel = test_model,
-      obj_fun = tmb_fun(test_model)
+      flexmodel = test_model
     )
   )
 

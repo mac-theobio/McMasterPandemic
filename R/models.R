@@ -8,30 +8,35 @@ make_base_model <- function(...) {
 
   spec_check("0.0.5", "run_sim with TMB")
 
-  model <- (init_model(...)
-            %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
-            %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
-            %>% add_rate("Ia", "R", ~ (gamma_a))
-            %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
-            %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
-            %>% add_rate("Im", "R", ~ (gamma_m))
-            %>% add_rate("Is", "H", ~
-                           (1 - nonhosp_mort) * (phi1) * (gamma_s))
-            %>% add_rate("Is", "ICUs", ~
-                           (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
-            %>% add_rate("Is", "ICUd", ~
-                           (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
-            %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
-            %>% add_rate("ICUs", "H2", ~ (psi1))
-            %>% add_rate("ICUd", "D", ~ (psi2))
-            %>% add_rate("H2", "R", ~ (psi3))
-            %>% add_rate("H", "R", ~ (rho))
-            %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-            %>% add_rate("S", "E", ~
-                           (Ia) * (beta0) * (1 / N) * (Ca) +
-                           (Ip) * (beta0) * (1 / N) * (Cp) +
-                           (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
-                           (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
+  model = init_model(...)
+  if (spec_ver_gt('0.1.0')) {
+    model$params = expand_params_S0(model$params, 1-1e-5)
+  }
+  model = (model
+
+    %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
+    %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
+    %>% add_rate("Ia", "R", ~ (gamma_a))
+    %>% add_rate("Ip", "Im", ~ (mu) * (gamma_p))
+    %>% add_rate("Ip", "Is", ~ (1 - mu) * (gamma_p))
+    %>% add_rate("Im", "R", ~ (gamma_m))
+    %>% add_rate("Is", "H", ~
+                   (1 - nonhosp_mort) * (phi1) * (gamma_s))
+    %>% add_rate("Is", "ICUs", ~
+                   (1 - nonhosp_mort) * (1 - phi1) * (1 - phi2) * (gamma_s))
+    %>% add_rate("Is", "ICUd", ~
+                   (1 - nonhosp_mort) * (1 - phi1) * (phi2) * (gamma_s))
+    %>% add_rate("Is", "D", ~ (nonhosp_mort) * (gamma_s))
+    %>% add_rate("ICUs", "H2", ~ (psi1))
+    %>% add_rate("ICUd", "D", ~ (psi2))
+    %>% add_rate("H2", "R", ~ (psi3))
+    %>% add_rate("H", "R", ~ (rho))
+    %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
+    %>% add_rate("S", "E", ~
+                   (Ia) * (beta0) * (1 / N) * (Ca) +
+                   (Ip) * (beta0) * (1 / N) * (Cp) +
+                   (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
+                   (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
   )
   if(spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
@@ -155,8 +160,11 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   Ip_to_Im_rates = vec(              mu ) * gamma_p
   Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
-
-  model = (init_model(...)
+  model = init_model(...)
+  if (spec_ver_gt('0.1.0')) {
+    model$params = expand_params_S0(model$params, 1-1e-5)
+  }
+  model = (model
 
     # Flow within vaccination categories,
     # with constant rates across categories
@@ -221,16 +229,14 @@ make_vaccination_model = function(..., do_variant = FALSE) {
 
       # Update parameters for use with the linearized model
       # -- confirmed correct (TODO: check if params are missing? variant-related?)
-      %>% update_linearized_params('N', 1) # scale population to 1
-      %>% update_linearized_params('E0', 1e-5)
-      %>% update_linearized_params('vax_doses_per_day', 0)
-      %>% update_linearized_params('vax_response_rate', 0)
-      # FIXME: vax_response_rate_R isn't necessary because it is regex-matched by vax_response_rate
-      %>% update_linearized_params('vax_response_rate_R', 0)
+      %>% update_linearized_params('^N$', 1) # scale population to 1
+      %>% update_linearized_params('^E0$', 1e-5)
+      %>% update_linearized_params('^vax_doses_per_day$', 0)
+      %>% update_linearized_params('^vax_response_rate$', 0)
+      %>% update_linearized_params('^vax_response_rate_R$', 0)
+      # FIXED: vax_response_rate_R isn't necessary because it is regex-matched by vax_response_rate
 
       # Set the disease-free equilibrium of the linearized model
-      # FIXME: make this S0 instead of N -- shouldn't really matter,
-      #        but just to be sure...
       %>% update_disease_free_state('S_unvax', 'S0')
 
       # Perturb the disease-free equilibrium of the linearized model

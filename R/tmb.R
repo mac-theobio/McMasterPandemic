@@ -11,9 +11,22 @@
 ##' @param do_hazard should hazard simulation steps be used?
 ##' (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 ##' if \code{spec_ver_gt('0.0.4')}
+##' @param do_hazard_lin like \code{do_hazard} but for the
+##' linearized model that is used to construct the initial state
+##' variable -- only used when \code{do_make_state == TRUE}
+##' @param do_approx_hazard approximate the hazard transformation
+##' by a smooth function (experimental)
+##' @param do_approx_hazard like \code{do_approx_hazard} but for
+##' the linearized model that is used to construct the initial
+##' state (experimental)
 ##' @param do_make_state should state be remade on the c++ size?
 ##' (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 ##' if \code{spec_ver_gt('0.1.0')}
+##' @param max_iters_eig_pow_meth maximum number of iterations
+##' to use in computing the eigenvector for initial state
+##' construction
+##' @param tol_eig_pow_meth tolerance for determining convergence
+##' of the power method used in initial state construction
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
@@ -36,7 +49,11 @@ init_model <- function(params, state = NULL,
              "for state variables and parameters")
     }
 
-    if(is.null(state)) state = make_state(params = params)
+    if(is.null(state)) {
+      # inefficient! should just directly make a zero'd state vector
+      state = make_state(params = params)
+      state[] = 0
+    }
 
     if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
       ratemat = make_ratemat(state, params, sparse = TRUE)
@@ -136,10 +153,12 @@ init_model <- function(params, state = NULL,
                     old_val <- params[schedule$Symbol[i]]
                 } else if (schedule$Type[i] == "rel_prev") {
                     old_val <- schedule$tv_val[i - 1]
+                } else if (schedule$Type[i] == "abs") {
+                    old_val <- 1
                 } else {
                     stop(
                         "Unrecognized break-point type.\n",
-                        "Only rel_orig and rel_prev are allowed"
+                        "Only rel_orig, rel_prev, and abs are allowed"
                     )
                 }
                 schedule$tv_val[i] <- old_val * schedule$Value[i]
@@ -202,6 +221,14 @@ init_model <- function(params, state = NULL,
         model$initial_population = list(
           total = character(0L),
           infected = character(0L))
+
+        which_step_zero_tv = which(
+          model$timevar$piece_wise$breaks == 0L)
+        model$timevar$piece_wise$step_zero_tv_idx =
+          model$timevar$piece_wise$schedule$tv_spi[which_step_zero_tv]
+        model$timevar$piece_wise$step_zero_tv_vals =
+          model$timevar$piece_wise$schedule$tv_val[which_step_zero_tv]
+        model$timevar$piece_wise$step_zero_tv_count = rep(1, length(which_step_zero_tv))
     }
 
     model$tmb_indices <- list(
@@ -877,7 +904,12 @@ tmb_fun <- function(model) {
                 tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
                 # tv_mult = schedule$Value,  # moved to parameter vector
                 tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+                tv_abs = null_to_log0(schedule$Type == "abs"),
                 ## tv_method = tv_method,
+                step_zero_tv_count = step_zero_tv_count,
+                step_zero_tv_idx = step_zero_tv_idx,
+                step_zero_tv_vals = step_zero_tv_vals,
+
                 sumidx = null_to_int0(sumidx),
                 sumcount = null_to_int0(unname(sumcount)),
                 summandidx = null_to_int0(summandidx),

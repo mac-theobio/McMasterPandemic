@@ -85,7 +85,9 @@ rmult <- function(k, r) {
 ##' rExp(pp,return_val="eigenvector")
 ##' rExp(pp,return_val="eigenvector",testify=TRUE)
 ##' @export
-rExp <- function(params, steps = 100, ndt = 1,
+rExp <- function(params,
+                 steps = getOption("MP_rexp_steps_default"),
+                 ndt = 1,
                  do_hazard = FALSE,
                  state = NULL,
                  testify = has_testing(params = params),
