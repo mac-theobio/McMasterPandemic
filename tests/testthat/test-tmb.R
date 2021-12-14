@@ -393,7 +393,7 @@ test_that('spec v0.0.6 that it remains ok to _not_ use time-varying parameters',
 })
 
 test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', {
-    set_spec_version('0.1.1', '../../inst/tmb')
+    reset_spec_version()
 
     params <- read_params("ICU1.csv")
 

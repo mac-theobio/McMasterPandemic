@@ -293,6 +293,7 @@ test_that("v0.1.0 time-varying parameters can be used with a vaccination model",
 })
 
 test_that("v0.1.1 toy symbolic matrix multiplication examples give correct results", {
+  reset_spec_version()
   a = struc_block(struc("(a) * (1-b) + (1-a) * (1-b)"),
                   row_times = 1, col_times = 3)
   b = struc(letters[3:4])
@@ -307,7 +308,8 @@ test_that("v0.1.1 toy symbolic matrix multiplication examples give correct resul
 })
 
 test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
-  set_spec_version("0.1.1", "../../inst/tmb/")
+  #set_spec_version("0.1.1", "../../inst/tmb/")
+  reset_spec_version()
   options(macpan_pfun_method = "grep")
 
   base_params <- read_params("PHAC.csv")
@@ -366,10 +368,12 @@ test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
 })
 
 test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
-  set_spec_version("0.1.1", "../../inst/tmb/")
+  #set_spec_version("0.1.1", "../../inst/tmb/")
+  reset_spec_version()
+  tmb_mode()
   options(macpan_pfun_method = "grep")
-  options(MP_use_state_rounding = FALSE)
-  options(MP_vax_make_state_with_hazard = FALSE)
+  #options(MP_use_state_rounding = FALSE)
+  #options(MP_vax_make_state_with_hazard = FALSE)
 
   start_date <- "2021-02-01"
   end_date <- "2021-09-01"
