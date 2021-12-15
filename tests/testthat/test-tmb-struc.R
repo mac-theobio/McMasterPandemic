@@ -552,20 +552,20 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
     )
   )
 
-  fitted_mod_r <- calibrate(
-    base_params = model$params,
-    data = fitdat,
-    opt_pars = opt_pars,
-    start_date_offset = start_date_offset,
-    debug = TRUE,
-    time_args = list(
-      params_timevar = params_timevar
-    ),
-    mle2_control = mle2_control,
-    sim_args = list(
-      ndt = 1,
-      step_args = list(do_hazard = TRUE)
-    )
-  )
+  # fitted_mod_r <- calibrate(
+  #   base_params = model$params,
+  #   data = fitdat,
+  #   opt_pars = opt_pars,
+  #   start_date_offset = start_date_offset,
+  #   debug = TRUE,
+  #   time_args = list(
+  #     params_timevar = params_timevar
+  #   ),
+  #   mle2_control = mle2_control,
+  #   sim_args = list(
+  #     ndt = 1,
+  #     step_args = list(do_hazard = TRUE)
+  #   )
+  # )
 
 })

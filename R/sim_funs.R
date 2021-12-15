@@ -930,7 +930,7 @@ run_sim <- function(params,
     # -- important in calibration situations where the parameters
     #    are changing each iteration of the optimizer
     if (!is.null(flexmodel)) {
-      flexmodel$params[] = expand_params_S0(params, 1-1e-5)
+      flexmodel$params = expand_params_S0(params, 1-1e-5)
       if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
         if (is.null(params_timevar)) {
           params_timevar = flexmodel$timevar$piece_wise$schedule
