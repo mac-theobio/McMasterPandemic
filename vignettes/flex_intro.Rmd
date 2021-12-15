@@ -34,7 +34,7 @@ sir_model = (
   )
   %>% add_rate("S", "I", ~ (beta) * (S) * (I))
   %>% add_rate("I", "R", ~ (gamma))
-  %>% add_outflow("S|I|R", "S|I|R")
+  %>% add_outflow()
   %>% add_tmb_indices
 )
 sir_model
@@ -88,7 +88,7 @@ two_strain_model = (
      vec("beta" %_% strains) * struc("S") * vec("I" %_% strains)
   )
   %>% rep_rate("I", "R", ~ (gamma))
-  %>% add_outflow("^(S|I_|R_)", "^(S|I_|R_)")
+  %>% add_outflow()
   %>% add_tmb_indices
 )
 ```
@@ -117,6 +117,7 @@ regex = "^(S|I|R)(_*)(.*)"
      +  geom_line(aes(x = Date, y = `force of infection`, colour = strain))
   )
 ```
+
 
 ## SEIRD Model
 
@@ -148,6 +149,107 @@ seird_model = (
   %>% add_tmb_indices
 )
 seird_model
+```
+
+## Sums of State Variables and Parameters
+
+```{r}
+sir_model = (
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow()
+  %>% add_tmb_indices
+)
+sir_model
+```
+
+## Outflows
+
+```{r echo = FALSE, eval = FALSE}
+plot_sir = function(model) {
+  (model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+}
+```
+
+```{r echo = FALSE, eval = FALSE}
+(
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_tmb_indices
+  %>% plot_sir
+)
+```
+
+```{r echo = FALSE, eval = FALSE}
+(
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0, A = 100),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = FALSE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("S", "A", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow("S", "I")
+  %>% add_outflow("I", "R")
+  %>% add_tmb_indices
+  %>% plot_sir
+)
+```
+
+```{r echo = FALSE, eval = FALSE}
+sir_model = (
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow()
+  %>% add_tmb_indices
+)
+sir_model
 ```
 
 ## Canned Models
