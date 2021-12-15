@@ -18,11 +18,11 @@ RUN echo "force layer construction"
 
 WORKDIR /home/McMasterPandemic
 
-RUN make dependencies
-
 RUN git fetch origin tmb
 
 RUN git checkout tmb
+
+RUN make dependencies
 
 RUN echo "PATH=\"$HOME/bin:$PATH\"" >> /root/.bashrc && \
     . /root/.bashrc && \
