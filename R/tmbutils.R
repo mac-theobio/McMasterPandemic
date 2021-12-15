@@ -834,6 +834,12 @@ simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE) {
 
 #' @export
 initial_state_vector = function(model, sim_params = NULL) {
+  # FIXME: minor performance optimization could be made
+  # here by restricting the number of iterations temporarily
+  # so that the full simulation is not run just to get the
+  # first value -- i thnk all that is needed is this (but
+  # need to test):
+  # model$iters = 1
   (model
    %>% concatenated_state_vector(sim_params)
    %>% head(length(model$state))

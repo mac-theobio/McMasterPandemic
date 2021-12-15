@@ -368,12 +368,10 @@ test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
 })
 
 test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
-  #set_spec_version("0.1.1", "../../inst/tmb/")
+
   reset_spec_version()
   tmb_mode()
   options(macpan_pfun_method = "grep")
-  #options(MP_use_state_rounding = FALSE)
-  #options(MP_vax_make_state_with_hazard = FALSE)
 
   start_date <- "2021-02-01"
   end_date <- "2021-09-01"
@@ -460,9 +458,6 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
   # calibration params used to produce an (initial?) set of
   # base parameters using read_params target argument
 
-  #options(MP_flex_spec_dll = "McMasterPandemic")
-  #options(MP_flex_spec_version = "0.1.1")
-  #set_spec_version("0.1.1", "../../inst/tmb/")
   reset_spec_version()
   tmb_mode()
   options(macpan_pfun_method = "grep")
@@ -482,18 +477,19 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
   first_vax_date = as.Date("2020-12-14")
 
   # optimization parameters --------------
-  opt_pars = list(time_params = 1.3)
+  opt_pars = list(time_params = 0.1)
 
   # simulation arguments ----------
   sim_args   = list(ndt = 1, step_args = list(do_hazard = TRUE))
+
   # optimizer arguments -----------
-  # mle2_control = list(maxit = 1e3,
-  #                     reltol = calibration_params[["reltol"]],
-  #                     ## here beta and gamma are nelder-mead parameters,
-  #                     ## not macpan model parameters!!!
-  #                     beta = 0.5,
-  #                     gamma = 2
-  # )
+  mle2_control = list(maxit = 1e3,
+                      reltol = 1e-8, #calibration_params[["reltol"]],
+                      ## here beta and gamma are nelder-mead parameters,
+                      ## not macpan model parameters!!!
+                      beta = 0.5,
+                      gamma = 2
+  )
 
   # load data that came from macpan ontario
   load("../../inst/testdata/ontario_flex_test.rda")
@@ -513,20 +509,6 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
     max_iters_eig_pow_meth = 1000,
     tol_eig_pow_meth = 1e-12,
     do_variant = TRUE)
-
-  # (model
-  #   %>% get_rates_with_vars("vax_doses_per_day")
-  #   %>% lapply(getElement, 'formula')
-  # )
-  (model
-    %>% get_rates_with_vars("vax")
-    %>% lapply(getElement, 'factors')
-    %>% bind_rows
-    %>% getElement("var")
-    %>% unique
-  )
-  # c(model$state, model$params, model$sum_vector)[vars_interacting_with_vax_doses_per_day]
-  # model$timevar$piece_wise$schedule %>% slice_min(Date)
 
   time_wrap(
     tmb_sim <- run_sim(
@@ -549,4 +531,41 @@ test_that("v0.1.1 vax/variants model simulation matches run_sim with many break 
   )
 
   compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
+
+
+  options(MP_rexp_steps_default = 100)
+
+  fitted_mod_tmb <- calibrate(
+    base_params = model$params,
+    data = fitdat,
+    opt_pars = opt_pars,
+    start_date_offset = start_date_offset,
+    debug = TRUE,
+    time_args = list(
+      params_timevar = params_timevar
+    ),
+    mle2_control = mle2_control,
+    sim_args = list(
+      ndt = 1,
+      step_args = list(do_hazard = TRUE),
+      flexmodel = model
+    )
+  )
+
+  fitted_mod_r <- calibrate(
+    base_params = model$params,
+    data = fitdat,
+    opt_pars = opt_pars,
+    start_date_offset = start_date_offset,
+    debug = TRUE,
+    time_args = list(
+      params_timevar = params_timevar
+    ),
+    mle2_control = mle2_control,
+    sim_args = list(
+      ndt = 1,
+      step_args = list(do_hazard = TRUE)
+    )
+  )
+
 })

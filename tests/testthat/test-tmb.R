@@ -449,3 +449,25 @@ test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', 
 
     expect_equal(norm_vec(r_final_state), norm_vec(tmb_final_state))
 })
+
+test_that("flex models made with null state can be used", {
+    reset_spec_version()
+    tmb_mode()
+    params = read_params("PHAC.csv")
+    model = make_base_model(
+        params = params,
+        start_date = "1900-01-01",
+        end_date = "1900-02-01")
+    tmb_sims = run_sim(
+        params = params,
+        start_date = model$start_date,
+        end_date = model$end_date,
+        flexmodel = model
+    )
+    r_sims = run_sim(
+        params = params,
+        start_date = model$start_date,
+        end_date = model$end_date
+    )
+    compare_sims(r_sims, tmb_sims)
+})

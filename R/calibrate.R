@@ -789,7 +789,9 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                       DE_cores = getOption("mc.cores", 2)) {
     start_time <- proc.time()
 
-    if (!is.null(sim_args$flexmodel)) sim_args$use_flex = TRUE
+    if (!is.null(sim_args$flexmodel)) {
+        sim_args$use_flex = TRUE
+    }
 
     if (isTRUE(sim_args$use_flex)) {
         spec_check("0.0.6", "calibration with TMB")

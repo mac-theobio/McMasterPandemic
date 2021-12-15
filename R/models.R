@@ -81,7 +81,11 @@ make_base_model <- function(...) {
       %>% initial_population(total = 'N', infected = 'E0')
     )
   }
-  add_tmb_indices(model)
+  model = add_tmb_indices(model)
+  if (spec_ver_gt('0.1.0')) {
+    model = update_initial_state(model, silent = TRUE)
+  }
+  model
 }
 
 
@@ -274,5 +278,9 @@ make_vaccination_model = function(..., do_variant = FALSE) {
     )
   }
 
-  add_tmb_indices(model)
+  model = add_tmb_indices(model)
+  if (spec_ver_gt('0.1.0')) {
+    model = update_initial_state(model, silent = TRUE)
+  }
+  model
 }

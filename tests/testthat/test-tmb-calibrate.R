@@ -7,8 +7,9 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 
-test_that('v0.1.0 simple models calibrate the same regardless of engine', {
-  set_spec_version("0.1.0", "../../inst/tmb/")
+test_that('simple models calibrate the same regardless of engine', {
+  reset_spec_version()
+  tmb_mode()
 
   params <- read_params("ICU1.csv")
   start_date = "2021-05-10"
@@ -26,28 +27,25 @@ test_that('v0.1.0 simple models calibrate the same regardless of engine', {
                            params_timevar = tv_dat,
                            do_hazard = TRUE)
 
-  obj <- tmb_fun(model)
-
   tmb_sim <- run_sim(
-    params = params, state = model$state,
+    params = model$params,
+    state = model$state,
     start_date = start_date,
     end_date = end_date,
     params_timevar = tv_dat,
     step_args = list(do_hazard = TRUE),
     condense = TRUE,
-    use_flex = TRUE,
-    flexmodel = model,
-    obj_fun = obj
+    flexmodel = model
   )
 
   r_sim <- run_sim(
-    params = params, state = model$state,
+    params = model$params,
+    state = model$state,
     start_date = start_date,
     end_date = end_date,
     params_timevar = tv_dat,
     step_args = list(do_hazard = TRUE),
-    condense = TRUE,
-    use_flex = FALSE
+    condense = TRUE
   )
 
   compare_sims(r_sim, tmb_sim)
@@ -172,7 +170,6 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
 })
 
 test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
-
   reset_spec_version()
   tmb_mode()
   options(macpan_pfun_method = "grep")
@@ -300,23 +297,6 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
         ndt = 1,
         step_args = list(do_hazard = TRUE)
       )
-    )
-  )
-
-  calibrate(
-    base_params = test_model$params,
-    data = synth_reports,
-    opt_pars = opt_pars,
-    debug = TRUE,
-    time_args = list(
-      params_timevar = params_timevar
-    ),
-    sim_args = list(
-      ndt = 1,
-      step_args = list(do_hazard = TRUE),
-      use_flex = TRUE,
-      flexmodel = test_model,
-      obj_fun = tmb_fun(test_model)
     )
   )
 

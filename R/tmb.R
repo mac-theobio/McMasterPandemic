@@ -984,3 +984,15 @@ tmb_fun <- function(model) {
     }
     return(dd)
 }
+
+##' @export
+update_initial_state = function(model, silent = FALSE) {
+  spec_check(introduced_version = '0.1.1',
+             feature = 'Update initial state vector with C++ make_state')
+  if (!model$do_make_state) {
+    if (!silent) warning('this model does not have the ability to update its own state')
+    return(model)
+  }
+  model$state[] = initial_state_vector(model)
+  model
+}
