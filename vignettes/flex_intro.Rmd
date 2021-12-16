@@ -1,5 +1,5 @@
 ---
-title: "Flexible and Fast Modelling with McMasterPandemic"
+title: "Flexible and Fast Modelling with McMasterPandemic -- Examples"
 output: html_document
 ---
 
@@ -20,19 +20,21 @@ library(ggplot2)
 ## Hello World: Simulating an SIR Model
 
 ```{r}
+state = c(S = 20000, I = 100, R = 0)
 sir_model = (
   init_model(
     params = c(
-      gamma = 1e-1, # per-infected recovery rate
-      beta = 5e-9   # per-contact transmission rate
+      gamma = 0.06,
+      beta = 0.15,
+      N = sum(state)
     ),
-    state = c(S = 20000, I = 100, R = 0),
+    state = state,
     start_date = "2000-01-01",
-    end_date = "2000-02-01",
+    end_date = "2000-05-01",
     do_hazard = TRUE,
     do_make_state = FALSE
   )
-  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
   %>% add_rate("I", "R", ~ (gamma))
   %>% add_outflow()
   %>% add_tmb_indices
@@ -64,28 +66,29 @@ sir_model
 ```{r}
 
 strains = c("wild", "variant")
-
+state = c(
+  S = 20000, 
+  I_wild = 49, I_variant = 1,
+  R_wild = 0,   R_variant = 0
+)
 two_strain_model = (
   init_model(
     params = c(
-      gamma = 1e-1,       # per-infected recovery rate
-      beta_wild = 5e-9,   # per-contact transmission rate for wild type
-      beta_variant = 6e-9 # per-contact transmission rate for variant
+      gamma = 0.06,       
+      beta_wild = 0.15,   
+      beta_variant = 0.25,
+      N = sum(state)
     ),
-    state = c(
-      S = 20000, 
-      I_wild = 50, I_variant = 50,
-      R_wild = 0,   R_variant = 0
-    ),
+    state = state,
     start_date = "2000-01-01",
-    end_date = "2000-02-01",
+    end_date = "2000-05-01",
     do_hazard = TRUE,
     do_make_state = FALSE
   )
   %>% vec_rate(
-    rep("S", length(strains)),
+    "S",
     "I" %_% strains, 
-     vec("beta" %_% strains) * struc("S") * vec("I" %_% strains)
+     vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains)
   )
   %>% rep_rate("I", "R", ~ (gamma))
   %>% add_outflow()
@@ -121,24 +124,36 @@ regex = "^(S|I|R)(_*)(.*)"
 ## The SIRV model
 
 ```{r}
+state = c(S = 20000, I = 100, R = 0, V = 0)
+params = c(
+      gamma = 0.06,
+      beta = 0.15,
+      v = 0, # initial vaccination rate
+      N = sum(state)
+    )
+
+# roll out the vaccine by bumping the 
+# vaccination rate twice
+params_timevar = data.frame(
+  Date = c("2020-02-01", "2020-03-01"), 
+  Symbol = c("v", "v"),  
+  Value = c(0.01, 0.1), 
+  Type = c("abs", "abs"))
 
 sirv_model = (
   init_model(
-    params = c(
-      gamma = 1e-2, # per-infected recovery rate
-      beta = 2e-9,  # per-contact transmission rate
-      v = 1e-5),
-    params_timevar = data.frame(Date = c("2020-01-05", "2020-01-10"), Symbol = c("v", "v"),  Value = c(0.1, 2), Type = c("rel_orig", "rel_orig")),
-    state = c(S = 20000, I = 100, R = 0, V = 0),
+    params = params,
+    state = state,
+    params_timevar = params_timevar,
     start_date = "2020-01-01",
     end_date = "2020-05-01",
-    do_hazard = FALSE,
+    do_hazard = TRUE,
     do_make_state = FALSE
   )
-  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("S", "I", ~ (beta) * (1/N) * (I))
   %>% add_rate("I", "R", ~ (gamma))
-  %>% add_rate("S", "V", ~  (v) * (S))
-  %>% add_outflow("S|I|R|V", "S|I|R|V")
+  %>% add_rate("S", "V", ~  (v))
+  %>% add_outflow()
   %>% add_tmb_indices
 )
 
@@ -148,6 +163,7 @@ sirv_model = (
     %>% rename(state = value, epi_cat = name)
     %>% ggplot
      +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+     +  geom_vline(aes(xintercept = as.Date(Date)), data = params_timevar, colour = 'lightgrey')
   )
 
 ```
@@ -156,31 +172,74 @@ sirv_model = (
 ## Variolation model
 
 ```{r}
-kinds = c("mild", "severe")
+state = c(
+  S = 20000, 
+  I_severe = 50, I_mild = 50,
+  R_mild = 0,   R_severe = 0
+)
+params = c(
+  nu = 0.0105, # birth rate
+  mu = 0.0105, # death rate
+  delta = 1/7, # waning immunity rate
+  gamma_mild = 1/(3.3 + 9),  # recovery rate of mild cases
+  gamma_severe = 1/(3.3 + 14), # recovery rate of severe cases
+  beta_mild = 0.15,  # transmission rate of infections leading to mild cases
+  beta_severe = 0.3, # transmission rate of infections leading to severe cases
+  m = 0.6 # probability of developing mild illness
+)
+
+# model structure
+severity = c("mild", "severe")
+beta_vec = vec("beta" %_% severity)
+I_vec = vec("I" %_% severity)
+foi = sum(beta_vec * I_vec * struc("1/N")) * vec("m", "1-m")
+
 variolation_model <- (
   init_model(
-    params = c(
-      rho = 0.1, #probability of mild infection
-      gamma_mild = 1e-1,       # per-infected recovery rate
-      beta_mild = 5e-9,   # per-contact transmission rate for wild type
-      gamma_severe = 2e-1,
-      beta_severe = 6e-9 # per-contact transmission rate for variant
-    ),
-    params_timevar = data.frame(Date = c("2020-01-05", "2020-01-07"), Symbol = c("rho", "beta_mild"),  Value = c(0.9, 3), Type = c("abs", "rel_orig")),    state = c(
-      S = 20000, 
-      I_severe = 50, I_mild = 50,
-      R_mild = 0,   R_severe = 0
-    ),
+    params = params,
+    state = state,
     start_date = "2020-01-01",
-    end_date = "2020-05-01",
-    do_hazard = FALSE,
+    end_date = "2020-03-01",
+    do_hazard = TRUE,
     do_make_state = FALSE
   )
-  %>% add_rate("S", "I_mild", ~ (beta_mild) * (S) * (rho)* (I_mild) + (beta_mild) * (S) * (rho)* (I_severe))
-  %>% add_rate("S", "I_severe", ~ (beta_mild) * (S) * (1-rho)* (I_mild) + (beta_mild) * (S) * (1-rho)* (I_severe))
-  %>% add_rate("I_mild", "R_mild", ~ (gamma_severe))
-  %>% add_rate("I_severe", "R_severe", ~ (gamma_mild))
-  %>% add_outflow("(S|I_mild|R_mild|I_severe|R_severe)", "(S|I_mild|R_mild|I_severe|R_severe)")
+  %>% add_state_param_sum("N", any_var(state))
+  
+  # births and deaths 
+  # (FIXME: this only works if nu = mu.
+  # but nu=mu is as good as not having
+  # any demographics at all, so not useful.
+  # we need a concept of asymmetric outflows 
+  # so that births can exceed deaths, or
+  # vice versa)
+  %>% rep_rate(
+    names(state),
+    "S",
+    ~ (nu)
+  )
+  
+  # infection
+  %>% vec_rate(
+    "S",
+    "I" %_% severity, 
+     foi
+  )
+  
+  # waning immunity
+  %>% rep_rate(
+    "R" %_% severity,
+    "S",
+    ~ (delta)
+  )
+  
+  # recovery
+  %>% vec_rate(
+    "I" %_% severity,
+    "R" %_% severity,
+    vec("gamma" %_% severity)
+  )
+  
+  %>% add_outflow()
   %>% add_tmb_indices
 )
 
@@ -194,63 +253,57 @@ variolation_model <- (
 
 ```
 
-``
 ## SEIRD Model
 
 This is the [Mac Theo Bio Model](https://github.com/mac-theobio/mac-theobio.github.io/blob/master/seird.jpg).
 
 ```{r}
+state = c(S = 20000, E = 50, I = 50, R = 0, D = 0, Null = 0)
+params = c(
+  # transmission rates of susceptibles from live and dead individuals
+  beta_I = 5,
+  beta_D = 2,
+  
+  # average times in various boxes
+  T_E = 10,
+  T_I = 14,
+  T_D = 10,
+  
+  # probability of death given infection
+  f = 0.5
+)
 seird_model = (
   init_model(
-    params = c(
-      beta_I = 1e-5,
-      beta_D = 1e-6,
-      T_E = 1e-7,
-      T_I = 1e-8,
-      f = 0.5,
-      T_D = 1e-4
-    ),
-    state = c(S = 20000, E = 50, I = 50, R = 0, D = 0, Gone = 0),
+    params = params, 
+    state = state,
     start_date = "2000-01-01",
-    end_date = "2000-02-01",
+    end_date = "2000-03-01",
     do_hazard = TRUE,
     do_make_state = FALSE
   )
-  %>% add_rate("S", "E", ~ (beta_I) * (S) * (I) + (beta_D) * (S) * (D))
-  %>% add_rate("E", "I", ~ (T_E))
-  %>% add_rate("I", "R", ~ (T_I) * (1 - f))
-  %>% add_rate("I", "D", ~ (T_I) * (f))
-  %>% add_rate("D", "Gone", ~ (T_D))
-  %>% add_outflow(".*", ".*")
-  %>% add_tmb_indices
-)
-seird_model
-```
-
-## Sums of State Variables and Parameters
-
-```{r}
-sir_model = (
-  init_model(
-    params = c(
-      gamma = 1e-1, # per-infected recovery rate
-      beta = 5e-9   # per-contact transmission rate
-    ),
-    state = c(S = 20000, I = 100, R = 0),
-    start_date = "2000-01-01",
-    end_date = "2000-02-01",
-    do_hazard = TRUE,
-    do_make_state = FALSE
-  )
-  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
-  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_state_param_sum("N", any_var(state))
+  %>% add_rate("S", "E", ~ (beta_I) * (1/N) * (I) + (beta_D) * (1/N) * (D))
+  %>% add_rate("E", "I", ~ (1/T_E))
+  %>% add_rate("I", "R", ~ (1/T_I) * (1 - f))
+  %>% add_rate("I", "D", ~ (1/T_I) * (f))
+  %>% add_rate("D", "Null", ~ (1/T_D))
   %>% add_outflow()
   %>% add_tmb_indices
 )
-sir_model
+(seird_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
 ```
 
-## Outflows
+## Outflows and Accumulators
+
+Up until now we have been assuming that all inflows are associated with a corresponding outflow. The number of individuals that go into a box must exactly balance numbers of individuals that come out of other boxes into this one. There are situations however where one wants to keep track of the number of individuals that have ever entered a particular box. To do this we set up accumulator boxes that have no corresponding outflow, and whose inflows are identical to those of other boxes.
+
+TODO: unfinished
 
 ```{r echo = FALSE, eval = FALSE}
 plot_sir = function(model) {

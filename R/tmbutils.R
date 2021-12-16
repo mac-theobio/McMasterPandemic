@@ -11,8 +11,22 @@
 `%+%` = function(x, y) paste(x, y, sep = "")
 
 ##' Regex Alternation Group
-alt_group = function(x) {
-  "(" %+% paste0(x, collapse = "|") %+% ")"
+##'
+##' @export
+alt_group = function(x, exact = FALSE) {
+  x = "(" %+% paste0(x, collapse = "|") %+% ")"
+  if (exact) {
+    "^" %+% x %+% "$"
+  }
+  x
+}
+
+##' @export
+any_var = function(x) {
+  if (!is.character(x)) {
+    x = names(x)
+  }
+  alt_group(x, TRUE)
 }
 
 # null-safe coercion ----------------------------
@@ -149,6 +163,8 @@ cross = function(from, to, mat) {
 }
 
 pwise = function(from, to, mat) {
+  if (length(from) == 1L) {from = rep(from, length(to))}
+  if (length(to) == 1L) {to = rep(to, length(from))}
   from_pos = find_pos_grep(from, rownames(mat))
   to_pos = find_pos_grep(to, colnames(mat))
   if(length(from_pos) != length(to_pos)) {
