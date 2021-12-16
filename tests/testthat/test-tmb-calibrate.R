@@ -482,7 +482,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
     ))
 
   if (rerun_r_engine_calibrations) {
-
+    # takes a really long time so best to avoid it
     fitted_model_r <- calibrate(
       base_params  = model_params
       , data       = fitdat
@@ -502,8 +502,9 @@ test_that("macpan ontario calibration example works the same regardless of engin
       , debug = TRUE
       , debug_plot = FALSE
     )
+    save(fitted_model_r, "../../inst/testdata/ontario_flex_test_better_fit.rda")
   } else {
-    load("../../inst/testdata/ontario_flex_test_better_fit.Rdata")
+    load("../../inst/testdata/ontario_flex_test_better_fit.rda")
   }
   # [[1]]
   # Time difference of 4.138171 secs
