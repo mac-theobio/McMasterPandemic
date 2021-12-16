@@ -471,3 +471,51 @@ test_that("flex models made with null state can be used", {
     )
     compare_sims(r_sims, tmb_sims)
 })
+
+test_that("simple sir models produce correct simulations", {
+    S0 = 20000
+    I0 = 100
+    R0 = 0
+    sir_model = (
+        init_model(
+            params = c(
+                N = S0 + I0,
+                gamma = 0.06, # per-infected recovery rate
+                beta = 0.15   # per-contact transmission rate
+            ),
+            state = c(S = S0, I = I0, R = R0),
+            start_date = "2000-01-01",
+            end_date = "2000-05-01",
+            do_hazard = FALSE,
+            do_make_state = FALSE
+        )
+        %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
+        %>% add_rate("I", "R", ~ (gamma))
+        %>% add_outflow(".+", ".+")
+        %>% add_tmb_indices
+    )
+
+    i <- 1
+    lenSim <- 122
+    S <-  E <-  I <-  R <- D <- numeric(lenSim)
+    S[1] <- 20000
+    I[1] <- 100
+    N <- S[1] + I[1]
+    R[1] <- 0
+    gamma <- 0.06
+    beta<- 0.15
+
+    while (i <= lenSim - 1){
+        S[i+1] <- S[i] - (beta) * (S[i]) * (I[i])/N
+        I[i+1] <- I[i] - gamma * I[i] + (beta) * (S[i]) * (I[i])/N
+        R[i+1] <- R[i]  + gamma * I[i]
+        i <- i + 1
+    }
+
+    sim <- data.frame("S" = S, "I" = I, "R" = R, "t" = 1:lenSim)
+    macpan_sim <- simulate_state_vector(sir_model)
+
+    expect_equal(macpan_sim$S, sim$S)
+    expect_equal(macpan_sim$I, sim$I)
+    expect_equal(macpan_sim$R, sim$R)
+})
