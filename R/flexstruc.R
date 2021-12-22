@@ -119,6 +119,11 @@ get_dim = function(x) {
   dim(x)
 }
 
+#' @export
+num_prod = function(x) {
+  sapply(expand_struc(x)@l, nrow)
+}
+
 #' Test if 1-by-1
 #'
 #' @param x struc object
@@ -126,7 +131,7 @@ get_dim = function(x) {
 #' @export
 is_1by1 = function(x) {
             all(dim(x) == 1L)
-          }
+}
 
 #' Test if struc Objects have the Same Dimensions
 #'
@@ -260,10 +265,12 @@ setMethod("*", c(e1 = 'struc', e2 = 'struc'),
             if(!same_dims(e1, e2)) {
               if(is_1by1(e1)) {
                 big = expand_struc(e2)
-                small = e1
+                # small always gets expanded to fix bug below
+                small = expand_struc(e1)
               } else if(is_1by1(e2)) {
                 big = expand_struc(e1)
-                small = e2
+                # small always gets expanded to fix bug below
+                small = expand_struc(e2)
               } else {
                 stop('if dims are different, one operand needs to be 1-by-1')
               }
@@ -271,6 +278,10 @@ setMethod("*", c(e1 = 'struc', e2 = 'struc'),
               big = expand_struc(e1)
               small = expand_struc(e2)
             }
+            # FIXED: this used to fail silently if small is 1-by-1 with more than
+            #        one product.
+            #        work around was to use kronecker instead of * ...
+            #        not sure why this worked
             contract_struc(resolve(big * small))
           }
 )

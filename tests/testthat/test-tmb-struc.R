@@ -3,15 +3,17 @@ library(dplyr)
 library(testthat)
 library(lubridate)
 
-test_that('v0.1.0 foi can be expressed as model structure', {
-
-  set_spec_version("0.1.0", "../../inst/tmb/")
+test_that('foi can be expressed as model structure', {
+  reset_spec_version()
+  tmb_mode()
 
   params <- read_params("ICU1.csv")
 
   mm = (init_model(
     params = params,
     state = make_state(params = params),
+    do_make_state = FALSE,
+    do_hazard = TRUE,
     start_date = "2021-09-10", end_date = "2021-10-10",
   )
     # force of infection (FOI)
@@ -51,7 +53,7 @@ test_that('v0.1.0 foi can be expressed as model structure', {
 
     # accumulators
     %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
-    %>% add_parallel_accumulators("X")
+    %>% add_outflow('.+', all_except("X"))
 
     %>% add_tmb_indices()
   )
@@ -76,9 +78,10 @@ test_that('v0.1.0 foi can be expressed as model structure', {
   compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
-test_that('v0.1.0 simple models still work when structure is allowed', {
+test_that('simple models still work when structure is allowed', {
 
-  set_spec_version("0.1.0", "../../inst/tmb/")
+  reset_spec_version()
+  tmb_mode()
 
   params <- read_params("ICU1.csv")
 
@@ -95,7 +98,7 @@ test_that('v0.1.0 simple models still work when structure is allowed', {
     start_date = "2021-09-10",
     end_date = "2021-10-10",
     params_timevar = tv_dat,
-    step_args = list(do_hazard = TRUE)
+    do_hazard = TRUE, do_make_state = FALSE
   )
 
   # change beta0, which is time-varying, so that
@@ -110,8 +113,7 @@ test_that('v0.1.0 simple models still work when structure is allowed', {
     end_date = "2021-10-10",
     params_timevar = tv_dat,
     condense = FALSE,
-    step_args = list(do_hazard = TRUE, flexmodel = mm),
-    use_flex = TRUE
+    flexmodel = mm
   )
 
   r_sim <- run_sim(
@@ -120,16 +122,15 @@ test_that('v0.1.0 simple models still work when structure is allowed', {
     end_date = "2021-10-10",
     params_timevar = tv_dat,
     condense = FALSE,
-    step_args = list(do_hazard = TRUE),
-    use_flex = FALSE
+    step_args = list(do_hazard = TRUE)
   )
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("v0.1.0 simple vaccination model in TMB matches and is faster than existing R model", {
-
-  set_spec_version("0.1.0", "../../inst/tmb/")
+test_that("simple vaccination model in TMB matches and is faster than existing R model", {
   options(macpan_pfun_method = "grep")
+  reset_spec_version()
+  tmb_mode()
 
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
@@ -146,7 +147,8 @@ test_that("v0.1.0 simple vaccination model in TMB matches and is faster than exi
   test_model <- make_vaccination_model(
     params = vax_params, state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
-    step_args = list(do_hazard = TRUE)
+    do_make_state = FALSE,
+    do_hazard = TRUE
   )
 
   tmb_strt = Sys.time()
@@ -174,8 +176,9 @@ test_that("v0.1.0 simple vaccination model in TMB matches and is faster than exi
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("v0.1.0 vax_prop_first_dose can be != 1", {
-  set_spec_version("0.1.0", "../../inst/tmb/")
+test_that("vax_prop_first_dose can be != 1", {
+  reset_spec_version()
+  tmb_mode()
   options(macpan_pfun_method = "grep")
 
   params <- read_params("ICU1.csv")
@@ -204,7 +207,8 @@ test_that("v0.1.0 vax_prop_first_dose can be != 1", {
     params = vax_params, state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
     params_timevar = params_timevar,
-    step_args = list(do_hazard = TRUE)
+    do_hazard = TRUE,
+    do_make_state = FALSE
   )
 
   tmb_strt = Sys.time()
@@ -214,8 +218,7 @@ test_that("v0.1.0 vax_prop_first_dose can be != 1", {
     condense = FALSE,
     params_timevar = params_timevar,
     step_args = list(do_hazard = TRUE),
-    flexmodel = test_model,
-    use_flex = TRUE
+    flexmodel = test_model
   )
   tmb_nd = Sys.time()
   r_strt = Sys.time()
@@ -234,11 +237,12 @@ test_that("v0.1.0 vax_prop_first_dose can be != 1", {
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("v0.1.0 time-varying parameters can be used with a vaccination model", {
+test_that("time-varying parameters can be used with a vaccination model", {
 
-  set_spec_version("0.1.0", "../../inst/tmb/")
-
+  reset_spec_version()
+  tmb_mode()
   options(macpan_pfun_method = "grep")
+
   params <- read_params("ICU1.csv")
   state <- make_state(params = params)
   vax_params <- expand_params_vax(
@@ -272,8 +276,7 @@ test_that("v0.1.0 time-varying parameters can be used with a vaccination model",
     condense = FALSE,
     params_timevar = params_timevar,
     step_args = list(do_hazard = TRUE),
-    flexmodel = test_model,
-    use_flex = TRUE
+    flexmodel = test_model
   )
   tmb_nd = Sys.time()
   r_strt = Sys.time()
@@ -292,7 +295,7 @@ test_that("v0.1.0 time-varying parameters can be used with a vaccination model",
   compare_sims(r_sim, tmb_sim)
 })
 
-test_that("v0.1.1 toy symbolic matrix multiplication examples give correct results", {
+test_that("toy symbolic matrix multiplication examples give correct results", {
   reset_spec_version()
   a = struc_block(struc("(a) * (1-b) + (1-a) * (1-b)"),
                   row_times = 1, col_times = 3)
@@ -307,8 +310,43 @@ test_that("v0.1.1 toy symbolic matrix multiplication examples give correct resul
   expect_equal(r1, r2)
 })
 
-test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
-  #set_spec_version("0.1.1", "../../inst/tmb/")
+test_that("symbolic expansion gives correct results", {
+
+  expect_equal(
+    struc('(a) + (b)') * struc('(c) + (d)'),
+    struc('(a) * (c) + (b) * (c) + (a) * (d) + (b) * (d)')
+  )
+
+  expect_equal(
+    vec('(a) + (b)', '(c) + (d)') * vec('(e) + (f)', '(g) + (h)'),
+    vec('(a) * (e) + (b) * (e) + (a) * (f) + (b) * (f)',
+        '(c) * (g) + (d) * (g) + (c) * (h) + (d) * (h)')
+  )
+
+  expect_equal(
+    struc('(a) + (b)') * vec('c', 'd', 'e'),
+    vec('(c) * (a) + (c) * (b)',
+        '(d) * (a) + (d) * (b)',
+        '(e) * (a) + (e) * (b)')
+  )
+
+  expect_equal(
+    struc('(a) * (x) * (y) + (b) * (z)') * vec('c', '(d) * (w)', 'e'),
+    vec('(c) * (a) * (x) * (y) + (c) * (b) * (z)',
+        '(d) * (w) * (a) * (x) * (y) + (d) * (w) * (b) * (z)',
+        '(e) * (a) * (x) * (y) + (e) * (b) * (z)')
+  )
+
+  expect_equal(
+    kronecker(struc('(a) + (b)'), vec('c', 'd')),
+    vec('(a) * (c) + (b) * (c)',
+        '(a) * (d) + (b) * (d)')
+  )
+
+})
+
+test_that("vax/variant foi algebraic manipulations are correct", {
+
   reset_spec_version()
   options(macpan_pfun_method = "grep")
 
@@ -367,7 +405,7 @@ test_that("v0.1.1 vax/variant foi algebraic manipulations are correct", {
   expect_equal(r1, r2)
 })
 
-test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
+test_that("variants and vaccination model simulation matches run_sim", {
 
   reset_spec_version()
   tmb_mode()
@@ -446,7 +484,7 @@ test_that("v0.1.1 variants and vaccination model simulation matches run_sim", {
 
 })
 
-test_that("v0.1.1 vax/variants model simulation matches run_sim with many break points", {
+test_that("vax/variants model simulation matches run_sim with many break points", {
 
   # > reports_all$var %>% unique
   # [1] "report"

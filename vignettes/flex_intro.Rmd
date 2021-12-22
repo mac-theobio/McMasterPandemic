@@ -189,31 +189,27 @@ params = c(
 )
 
 # model structure
+all_states = names(state)
 severity = c("mild", "severe")
 beta_vec = vec("beta" %_% severity)
 I_vec = vec("I" %_% severity)
-foi = sum(beta_vec * I_vec * struc("1/N")) * vec("m", "1-m")
+foi = kronecker(vec("m", "1-m"), sum(beta_vec * I_vec * struc("1/N")))
 
 variolation_model <- (
   init_model(
     params = params,
     state = state,
     start_date = "2020-01-01",
-    end_date = "2020-03-01",
-    do_hazard = TRUE,
+    end_date = "2020-04-01",
+    do_hazard = FALSE,
     do_make_state = FALSE
   )
   %>% add_state_param_sum("N", any_var(state))
   
   # births and deaths 
-  # (FIXME: this only works if nu = mu.
-  # but nu=mu is as good as not having
-  # any demographics at all, so not useful.
-  # we need a concept of asymmetric outflows 
-  # so that births can exceed deaths, or
-  # vice versa)
+  # (FIXME: this only works if nu = mu)
   %>% rep_rate(
-    names(state),
+    all_states,
     "S",
     ~ (nu)
   )

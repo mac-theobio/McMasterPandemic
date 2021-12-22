@@ -13,20 +13,41 @@
 ##' Regex Alternation Group
 ##'
 ##' @export
-alt_group = function(x, exact = FALSE) {
+alt_group = function(x, exact = FALSE, negate = FALSE) {
   x = "(" %+% paste0(x, collapse = "|") %+% ")"
+  if (negate) {
+    x = "(?!(?:" %+% x %+% ")$).*"
+  }
   if (exact) {
-    "^" %+% x %+% "$"
+    x = "^" %+% x %+% "$"
+  }
+  x
+}
+
+names_or_values = function(x) {
+  if (!is.character(x)) {
+    x = names(x)
   }
   x
 }
 
 ##' @export
+all_in = names_or_values
+
+##' @export
 any_var = function(x) {
-  if (!is.character(x)) {
-    x = names(x)
-  }
-  alt_group(x, TRUE)
+  (x
+   %>% names_or_values
+   %>% alt_group(exact = TRUE)
+  )
+}
+
+##' @export
+all_except = function(x) {
+  (x
+   %>% names_or_values
+   %>% alt_group(exact = TRUE, negate = TRUE)
+  )
 }
 
 # null-safe coercion ----------------------------
@@ -231,6 +252,74 @@ find_vec_indices <- function(x, vec) {
   )
 }
 
+combine_rates = function(rates) {
+  rate = list()
+  rate$from = rates[[1]]$from
+  rate$to = rates[[1]]$to
+  rate$formula = (rates
+    %>% lapply(getElement, "formula")
+    %>% lapply(rateform_as_char)
+    %>% lapply(unlist)
+    %>% c(list(sep = " + "))
+    %>% do.call(what = "paste")
+  )
+  factors = lapply(rates, getElement, "factors")
+  prod_indx = (factors
+   %>% lapply(getElement, "prod_indx")
+   %>% lapply(as.integer)
+  )
+  max_prod_indx = c(0, (rates[-length(rates)]
+    %>% lapply(getElement, "factors")
+    %>% lapply(getElement, "prod_indx")
+    %>% lapply(as.integer)
+    %>% lapply(max)
+    %>% unlist(use.names = FALSE)
+    %>% cumsum
+  ))
+  rate$factors = bind_rows(factors)
+  rate$factors$prod_indx = (`+`
+    %>% mapply(max_prod_indx, prod_indx, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    %>% unlist
+  )
+  rate$factors$prod_indx = as.character(rate$factors$prod_indx)
+  rate$ratemat_indices = rates[[1]]$ratemat_indices
+  lapply_any = function(name) {
+    (rates
+      %>% lapply(getElement, name)
+      %>% unlist
+      %>% any
+    )
+  }
+  rate$state_dependent = lapply_any("state_dependent")
+  rate$time_varying = lapply_any("time_varying")
+  rate$sum_dependent = lapply_any("sum_dependent")
+  structure(rate, class = "rate-struct")
+}
+
+# reduce rates that act on a single from-to state pair
+# to a single total rate
+reduce_rates = function(rates) {
+  repeated_transitions = (rates
+   %>% names
+   %>% table
+   %>% `>`(1L)
+   %>% which
+   %>% names
+  )
+  if (length(repeated_transitions) == 0L) return(rates)
+  if (getOption("MP_warn_repeated_rates")) {
+    warning("More than one rate was specified for at least one from-to state pair")
+  }
+  combined_rates = (repeated_transitions
+    %>% lapply(function(name) rates[names(rates) %in% name])
+    %>% lapply(combine_rates)
+    %>% setNames(repeated_transitions)
+  )
+  rates[names(rates) %in% repeated_transitions] = NULL
+  rates = c(rates, combined_rates)
+  rates
+}
+
 # getting information about rates and sums ----------------------
 
 #' @export
@@ -334,9 +423,8 @@ rate_summary = function(model, include_formula = FALSE) {
   if(include_formula) {
     summary$formula = (model
       %>% get_rate_info('formula')
-      # TODO: this probably won't work for structured formulae
-      %>% lapply(getElement, 2L)
-      %>% as.character
+      %>% lapply(rateform_as_char)
+      %>% unlist
     )
   }
   summary
@@ -594,9 +682,9 @@ initialization_mapping_indices = function(model) {
   unpack(model)
   state_mapping_indices(
     state,
-    initialization_mappings$eigen,
-    initialization_mappings$infected,
-    initialization_mappings$susceptible)
+    initialization_mapping$eigen,
+    initialization_mapping$infected,
+    initialization_mapping$susceptible)
 }
 
 ##' @export
@@ -632,8 +720,8 @@ outflow_indices = function(outflow, ratemat) {
   }
   indices = lapply(outflow, function(o) {
     list(
-      state = grep(o$state_patterns, rownames(ratemat)),
-      flow = grep(o$flow_state_patterns, colnames(ratemat))
+      state = grep(o$state_patterns, rownames(ratemat), perl = TRUE),
+      flow = grep(o$flow_state_patterns, colnames(ratemat), perl = TRUE)
     )
   })
   n = length(indices)

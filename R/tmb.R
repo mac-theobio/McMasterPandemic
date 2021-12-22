@@ -222,7 +222,7 @@ init_model <- function(params, state = NULL,
         model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
-        model$initialization_mappings = list(
+        model$initialization_mapping = list(
           eigen = character(0L),
           infected = character(0L),
           susceptible = character(0L))
@@ -675,7 +675,7 @@ add_state_mappings = function(
     # concepts whereas initial_susceptible_pattern and
     # infected_drop_pattern are 'general' concepts)
     #model$disease_free$state$patterns =
-    model$initialization_mappings =
+    model$initialization_mapping =
         list(eigen = eigen_drop_pattern,
              infected = infected_drop_pattern,
              susceptible = initial_susceptible_pattern)
@@ -703,6 +703,11 @@ add_state_mappings = function(
 ##' @family flexmodels
 ##' @export
 add_tmb_indices <- function(model) {
+
+    # reduce rates so that there is only one rate
+    # for each from-to pair
+    model$rates = reduce_rates(model$rates)
+
     model$tmb_indices <- tmb_indices(model)
     return(model)
 }

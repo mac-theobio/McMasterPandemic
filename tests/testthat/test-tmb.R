@@ -519,3 +519,28 @@ test_that("simple sir models produce correct simulations", {
     expect_equal(macpan_sim$I, sim$I)
     expect_equal(macpan_sim$R, sim$R)
 })
+
+test_that("one may specify different rates for the same flow", {
+    reset_spec_version()
+    tmb_mode()
+    options(MP_warn_repeated_rates = TRUE)
+    model_rep = model_one = (init_model(
+            params = c(alpha = 0.1),
+            state = c(A = 100, B = 0),
+            start_date = "2000-01-01",
+            end_date = "2000-02-01",
+            do_hazard = FALSE, do_make_state = FALSE
+        )
+          %>% add_rate("A", "B", ~ (alpha))
+          %>% add_outflow()
+    )
+    expect_warning(model_rep <- (model_rep
+      %>% add_rate("A", "B", ~ (alpha))
+      %>% add_tmb_indices()
+    ))
+    model_one$params = c(alpha = 0.2)
+    model_one = add_tmb_indices(model_one)
+    expect_equal(
+        simulate_state_vector(model_one),
+        simulate_state_vector(model_rep))
+})

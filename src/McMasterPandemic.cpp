@@ -211,7 +211,7 @@ Eigen::SparseMatrix<Type> make_ratemat(
     const vector<int>& spi,
     const vector<int>& modifier)
 {
-  const double haz_eps_doub = 1e-12;
+  //const double haz_eps_doub = 1e-12;
   Eigen::SparseMatrix<Type> result(size, size);
 
   int start = 0;
@@ -258,7 +258,7 @@ void update_ratemat(
     const vector<int>& modifier,
     const vector<int>& updateidx)
 {
-  const double haz_eps_doub = 1e-12;
+  //const double haz_eps_doub = 1e-12;
   for (int i=0; i<updateidx.size(); i++) {
     int idx = updateidx[i] - 1;
     int row = from[idx] - 1;

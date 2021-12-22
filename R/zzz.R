@@ -14,7 +14,8 @@
         MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
         MP_use_state_rounding = TRUE,
         MP_vax_make_state_with_hazard = TRUE,
-        MP_rexp_steps_default = 100
+        MP_rexp_steps_default = 100,
+        MP_warn_repeated_rates = FALSE
     )
 }
 
