@@ -720,8 +720,8 @@ outflow_indices = function(outflow, ratemat) {
   }
   indices = lapply(outflow, function(o) {
     list(
-      state = grep(o$state_patterns, rownames(ratemat), perl = TRUE),
-      flow = grep(o$flow_state_patterns, colnames(ratemat), perl = TRUE)
+      state = grep(o$from, rownames(ratemat), perl = TRUE),
+      flow = grep(o$to, colnames(ratemat), perl = TRUE)
     )
   })
   n = length(indices)

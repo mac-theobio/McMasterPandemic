@@ -530,14 +530,14 @@ parallel_accumulators <- function(model, state_patterns) {
 
 ##' @family flexmodels
 ##' @export
-add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
+add_linearized_outflow = function(model, from, to) {
     spec_check(
       introduced_version = '0.1.1',
       feature = 'Flexible restriction of outflows in the linearized model'
     )
     model$linearized_outflow = append(
         model$linearized_outflow,
-        list(outflow(model, state_patterns, flow_state_patterns)))
+        list(outflow(model, from, to)))
     return(model)
 }
 
@@ -546,22 +546,22 @@ add_linearized_outflow = function(model, state_patterns, flow_state_patterns) {
 ##' Add outflows corresponding to inflows specified by
 ##' \code{add_rate}, \code{rep_rate}, and \code{vec_rate}.
 ##'
-##' By default all inflows will have corresponding outflows.
-##' To define outflows from specific states, pass a regular
-##' expression to \code{state_patterns} that identifies these
-##' states. To restrict outflows to those going to specific
-##' states, use regular expressions to define these states.
+##' By default, this function will set outflows for all
+##' corresponding inflows. To define outflows \code{from}
+##' specific states \code{to} other specific states, pass
+##' regular expressions to the \code{from} and \code{to}
+##' arguments to identify these states.
 ##'
 ##' @family flexmodels
 ##' @export
 add_outflow = function(
   model,
-  state_patterns = '.+',
-  flow_state_patterns = '.+') {
+  from = '.+',
+  to = '.+') {
 
   model$outflow = append(
     model$outflow,
-    list(outflow(model, state_patterns, flow_state_patterns)))
+    list(outflow(model, from, to)))
   return(model)
 }
 
@@ -569,14 +569,14 @@ add_outflow = function(
 ##' @export
 outflow = function(
   model,
-  state_patterns = '.+',
-  flow_state_patterns = '.+') {
+  from = '.+',
+  to = '.+') {
 
   spec_check(
     introduced_version = '0.1.1',
     feature = 'Flexible restriction of outflows'
   )
-  nlist(state_patterns, flow_state_patterns)
+  nlist(from, to)
 }
 
 ##' @family flexmodels
@@ -667,7 +667,7 @@ add_state_mappings = function(
       feature = 'Mapping between different vectors containing state information'
     )
 
-    # TODO: pull state_patterns out of disease_free, because it
+    # TODO: pull outflow_to out of disease_free, because it
     # makes more sense as a general concept -- especially with
     # initial_susceptible_pattern -- and maybe in the future
     # it would be good to put things like vaccination categories

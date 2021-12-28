@@ -140,7 +140,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
       data = report_data,
       time_args = list(params_timevar = tv_dat),
       base_params = params,
-      debug = TRUE,
+      debug = FALSE,
       opt_pars = list(params = c(beta0 = params[["beta0"]]),
                       time_params = c(0.5)),
       sim_args = list(
@@ -152,7 +152,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
       data = report_data,
       time_args = list(params_timevar = tv_dat),
       base_params = params,
-      debug = TRUE,
+      debug = FALSE,
       opt_pars = list(params = c(beta0 = params[["beta0"]]),
                       time_params = c(0.5)),
       sim_args = list(
@@ -275,7 +275,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
       base_params = test_model$params,
       data = synth_reports,
       opt_pars = opt_pars,
-      debug = TRUE,
+      debug = FALSE,
       time_args = list(
         params_timevar = params_timevar
       ),
@@ -290,7 +290,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
       base_params = vax_params,
       data = synth_reports,
       opt_pars = opt_pars,
-      debug = TRUE,
+      debug = FALSE,
       time_args = list(
         params_timevar = params_timevar
       ),
@@ -368,7 +368,7 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
     base_params = vax_params,
     data = synth_reports,
     opt_pars = opt_pars,
-    debug = TRUE,
+    debug = FALSE,
     time_args = list(
       params_timevar = params_timevar_calib
     ),
@@ -390,7 +390,7 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
     base_params = test_model$params,
     data = synth_reports,
     opt_pars = opt_pars,
-    debug = TRUE,
+    debug = FALSE,
     time_args = list(
       params_timevar = params_timevar_calib
     ),
@@ -477,7 +477,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
       )
       , start_date_offset = start_date_offset
       , use_DEoptim = FALSE
-      , debug = TRUE
+      , debug = FALSE
       , debug_plot = FALSE
     ))
 
@@ -499,7 +499,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
       )
       , start_date_offset = start_date_offset
       , use_DEoptim = FALSE
-      , debug = TRUE
+      , debug = FALSE
       , debug_plot = FALSE
     )
     save(fitted_model_r, "../../inst/testdata/ontario_flex_test_better_fit.rda")
