@@ -526,11 +526,12 @@ vector<Type> make_state(
 )
 {
 
+  int n_make_state_steps = 100;
+
   // 1 -- Initialize two state vectors,
   //      one for full model and one for linearized model
   vector<Type> state(n_states);
   vector<Type> lin_state(n_states);
-
   state = 0;
   lin_state = 0;
 
@@ -564,9 +565,6 @@ vector<Type> make_state(
                                linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols,
                                do_hazard, do_approx_hazard);
-
-  // FIXME: test_lin_state_update not used??
-  vector<Type> test_lin_state_update = f(lin_state);
 
   matrix<Type> jacob = autodiff::jacobian(f, lin_state);
 
@@ -662,7 +660,6 @@ vector<Type> make_state(
   eig_infected /= eig_infected.sum();
 
   // 10 -- distribute infected individuals among compartments in the initial state vector
-
   for (int i=0; i<im_all_to_infected_idx.size(); i++)
     state[im_all_to_infected_idx[i]-1] = eig_infected[i] * params[ip_infected_idx-1];
 
@@ -670,9 +667,6 @@ vector<Type> make_state(
   for (int i=0; i<im_susceptible_idx.size(); i++)
     state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
 
-  //state = round_vec(state);
-
-  //vector<Type> rounded_state = state.array().round();
   return state;
 }
 
@@ -685,7 +679,6 @@ Type objective_function<Type>::operator() ()
 
   // Get data and parameters from R
   DATA_VECTOR(state);
-  //DATA_SPARSE_MATRIX(ratemat);
   DATA_IVECTOR(from);
   DATA_IVECTOR(to);
   DATA_IVECTOR(count);
@@ -698,7 +691,6 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_spi_unique);
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
-  //DATA_IVECTOR(tv_method);
 
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
