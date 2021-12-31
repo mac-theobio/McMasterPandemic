@@ -245,6 +245,11 @@ rateform_as_char = function(x) {
 #' @param vec character vector or object with names
 find_vec_indices <- function(x, vec) {
   if(!is.character(vec)) vec = names(vec)
+  missing_variables = x[!x %in% vec]
+  if(length(missing_variables) > 0L) {
+    stop("the following variables were used but not found in the model:\n",
+         paste0(missing_variables, collapse = "\n"))
+  }
   (x
     %>% as.character()
     %>% outer(vec, "==")

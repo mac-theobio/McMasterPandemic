@@ -544,3 +544,35 @@ test_that("one may specify different rates for the same flow", {
         simulate_state_vector(model_one),
         simulate_state_vector(model_rep))
 })
+
+test_that("an informative error is returned if variables are missing", {
+    tv = data.frame(
+        Date = "2000-02-01",
+        Symbol = "a",
+        Value = 1,
+        Type = 'abs'
+    )
+    msg = "the following variables were used but not found in the model"
+    expect_error(
+        init_model(
+            params = c(b = 1),
+            state = c(X = 0),
+            start_date = "2000-01-01",
+            end_date = "2000-03-01",
+            params_timevar = tv
+        ),
+        regexp = msg
+    )
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-01"
+            )
+            %>% add_rate("X", "Y", ~ (b) + (c))
+        ),
+        regexp = msg
+    )
+})
