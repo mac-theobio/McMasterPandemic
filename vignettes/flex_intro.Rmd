@@ -11,10 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, message=FALSE}
+library(ggplot2)
 library(McMasterPandemic)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
+library(lubridate)
 ```
 
 ## Hello World: Simulating an SIR Model
@@ -293,6 +294,116 @@ seird_model = (
     %>% ggplot
      +  geom_line(aes(x = Date, y = state, colour = epi_cat))
   )
+```
+
+## Covid SEIR
+
+The BC covid modelling group uses this [compartmental model](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008274) for their inference and forecasting work.  This model can be expressed in McMasterPandemic with the following.
+
+```{r fig.height=8, fig.width=8}
+foi =  (
+    vec(c("1", "f")) 
+  * struc("beta") 
+  * struc("1/N") 
+  * (struc("(I) + (E2)") + (struc("f") * struc("(Id) + (E2d)")))
+)
+params = c(
+  N = 5100000,
+  D = 5,
+  k1 = 0.2,
+  k2 = 1,
+  q = 0.05,
+  ud = 0.1,
+  ur = 0.02,
+  psir = 0.3,
+  shape = 1.73,
+  scale = 9.85,
+  beta = 0.433,
+  f = 1
+)
+state = c(
+  S = 849999,
+  E1 = 0.53,
+  E2 = 0.13,
+  I = 0.67,
+  Q = 0,
+  R = 0,
+  Sd = 4249993,
+  E1d = 2.67,
+  E2d = 0.67,
+  Id = 3.33,
+  Qd = 0,
+  Rd = 0
+)
+base_states = names(state)[1:6]
+dist_states = base_states %+% "d"
+strats = c("", "d") # distancing strategies
+ramp_period = seq(from = ymd(20210315), to = ymd(20210322), by = 1)
+time_ratio = rev((seq_along(ramp_period) - 1) / (length(ramp_period) - 1))
+f2 = 0.22
+params_timevar = data.frame(
+  Date = ramp_period,
+  Symbol = rep("f", length(ramp_period)),
+  Value = f2 + time_ratio * (1 - f2),
+  Type = rep("abs", length(ramp_period))
+)
+model = (
+  init_model(
+    params = params,
+    state = state,
+    start_date = "2021-02-01",
+    end_date = "2021-06-01",
+    do_make_state = FALSE,
+    do_hazard = TRUE,
+    params_timevar = params_timevar
+  )
+  
+  # flow between distancing strategies
+  %>% rep_rate(base_states, dist_states, ~ (ud))
+  %>% rep_rate(dist_states, base_states, ~ (ur))
+  
+  # force of infection
+  %>% vec_rate(
+    "S"  %+% strats, 
+    "E1" %+% strats, 
+    foi
+  )
+  
+  # flow within distancing strategies
+  %>% rep_rate(
+    "E1" %+% strats,
+    "E2" %+% strats,
+    ~ (k1)
+  )
+  %>% rep_rate(
+    "E2" %+% strats,
+    "I"  %+% strats,
+    ~ (k2)
+  )
+  %>% rep_rate(
+    "I" %+% strats,
+    "Q" %+% strats,
+    ~ (q)
+  )
+  %>% rep_rate(
+    expand_names(c("I", "Q"), strats, ""),
+    expand_names(c("R", "R"), strats, ""),
+    ~ (1/D)
+  )
+  
+  # add outflow for all inflows
+  %>% add_outflow()
+  
+  # compute indices to be passed to the tmb engine
+  %>% add_tmb_indices()
+)
+(model
+  %>% simulate_state_vector(add_dates = TRUE)
+  %>% pivot_longer(!Date)
+  %>% ggplot()
+   +  facet_wrap(~ name, scales = 'free', ncol = 2)
+   +  geom_line(aes(Date, value))
+)
 ```
 
 ## Outflows and Accumulators

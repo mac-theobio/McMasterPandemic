@@ -112,6 +112,13 @@ still reference them.
 
 # Version Descriptions
 
+## v2.0.0
+
+[![Lifecycle
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+Here we describe a generalization of McMasterPandemic so that it can leverage different engines from a common interface.
+
 ## v1.0.0
 
 [![Lifecycle
@@ -154,6 +161,72 @@ Every evaluation of the objective function triggers the following steps.
 * Condense the `concatenated_state_vector` [v0.2.0](#v0.2.0)
 * Compute the negative binomial negative log likelihood [v0.2.0](#v0.2.0)
 * Subtract log priors from the negative log likelihood, and return [v0.2.0](#v0.2.0)
+
+### Data Structure (1.0.0)
+
+state
+from
+to
+count
+spi
+modifier
+updateidx
+breaks
+count_of_tv_at_breaks
+tv_spi
+tv_spi_unique
+tv_orig
+tv_abs
+
+outflow_row_count
+outflow_col_count
+outflow_rows
+outflow_cols
+
+do_make_state
+max_iters_eig_pow_meth
+tol_eig_pow_meth
+
+linearized_outflow_row_count
+linearized_outflow_col_count
+linearized_outflow_rows
+linearized_outflow_cols
+
+lin_param_vals
+lin_param_count
+lin_param_idx
+
+df_state_par_idx
+df_state_count
+df_state_idx
+
+im_all_drop_eigen_idx
+im_eigen_drop_infected_idx
+im_all_to_infected_idx
+im_susceptible_idx
+
+ip_total_idx
+ip_infected_idx
+
+sumidx
+sumcount
+summandidx
+
+numIterations
+do_hazard
+do_approx_hazard
+do_hazard_lin
+do_approx_hazard_lin
+
+  // The order of these PARAMETER_VECTOR macros
+  // is important because it defines the order with
+  // which non-fixed parameters are passed to the
+  // objective function on the R side. From ?MakeADFun:
+  // "The order of the PARAMETER_ macros defines the order
+  // of parameters in the final objective function"
+params
+tv_mult
+
 
 ## v0.4.0
 
@@ -1048,7 +1121,7 @@ this model.
     columns associated with parallel accumulators
 5.  Produce a new state by subtracting the outflows and adding the
     inflows
-6.  Save every $k$th state vector to be returned
+6.  Save every updated state vector
 
 ### User Interface (0.0.2)
 
@@ -1064,9 +1137,7 @@ options(MP_flex_spec_version = "0.0.2")
 model = add_parallel_accumulators(model, c("X", "N", "P", "V"))
 ```
 
-The user must also be able to specify the number of state vector updates
-and the frequency (i.e. $k$ defined above in the Mathematical
-Description) with which state vectors are saved.
+The user must specify the number of state vector updates.
 
 ### Data Structure (0.0.2)
 
@@ -1090,8 +1161,6 @@ state vector updates.
     flows matrix, identifying the states that are parallel accumulators
 
 -   The number of state vector updates to simulate
-
--   State saving frequency
 
 ## v0.0.1 {#v0.0.1}
 

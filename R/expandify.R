@@ -2,6 +2,7 @@
 ## to expand states with subcategories (age, vaccine status)
 
 ## x_y, with x varying faster
+##' @export
 expand_names <- function(x, y, sep = "_") {
     unlist(lapply(y, function(a) paste(x, a, sep = sep)))
 }
