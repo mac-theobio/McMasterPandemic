@@ -167,6 +167,9 @@ test-tmb-calibrate:
 test-tmb-timevar:
 	echo "testthat::test_file('tests/testthat/test-tmb-timevar.R')" | $(R) --slave
 
+test-tmb-forecast:
+	echo "testthat::test_file('tests/testthat/test-tmb-forecast.R')" | $(R) --slave
+
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
 
