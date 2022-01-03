@@ -795,7 +795,8 @@ tmb_fun <- function(model) {
     check_spec_ver_archived()
     DLL = getOption('MP_flex_spec_dll')
 
-    ## unpack model structure
+    model = update_tmb_indices(model)
+
     unpack(model)
     unpack(tmb_indices)
     unpack(make_ratemat_indices)
@@ -804,7 +805,7 @@ tmb_fun <- function(model) {
     }
 
 
-    ## make ad functions
+    ## make ad functions for different spec versions
     if (spec_ver_eq("0.0.1")) {
         dd <- MakeADFun(
             data = list(
