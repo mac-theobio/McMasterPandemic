@@ -770,6 +770,12 @@ tmb_indices <- function(model) {
         indices$sum_indices = sum_indices(model$sums, model$state, model$params)
     }
     if (spec_ver_eq("0.1.1")) {
+        if ((length(model$outflow) == 0L) & getOption("MP_warn_no_outflow")) {
+          warning("model does not contain any outflow.\n",
+                  "use add_outflow to balance inflows with outflows.\n",
+                  "silence this warning with options(MP_warn_no_outflow = FALSE)")
+        }
+
         indices$disease_free = disease_free_indices(model)
         indices$linearized_params = linearized_param_indices(model)
         indices$outflow = outflow_indices(model$outflow, model$ratemat)

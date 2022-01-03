@@ -653,3 +653,23 @@ test_that("informative error is thrown if no rates are specified", {
         regexp = msg
     )
 })
+
+
+test_that("informative error is thrown if no rates are specified", {
+    reset_spec_version()
+    tmb_mode()
+    msg = "model does not contain any outflow"
+    expect_warning(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 10, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-02"
+            )
+            %>% add_rate("X", "Y", ~ (a))
+            %>% update_tmb_indices
+        ),
+        regexp = msg
+    )
+})
