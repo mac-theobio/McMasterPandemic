@@ -635,3 +635,21 @@ test_that("invalid state and parameter sum specification returns informative err
         regexp = msg3
     )
 })
+
+test_that("informative error is thrown if no rates are specified", {
+    reset_spec_version()
+    tmb_mode()
+    msg = "no rates have been added to this model"
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-02"
+            )
+            %>% update_tmb_indices()
+        ),
+        regexp = msg
+    )
+})

@@ -738,6 +738,10 @@ add_tmb_indices = function(model) {
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
+    if (length(model$rates) == 0L) {
+      stop("no rates have been added to this model.\n",
+           "please use one of add_rate, rep_rate, or vec_rate")
+    }
 
     if (spec_ver_eq("0.1.0")) {
         sp <- c(model$state, model$params, model$sum_vector)
