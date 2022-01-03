@@ -55,7 +55,7 @@ test_that('foi can be expressed as model structure', {
     %>% add_rate("Is", "X", ~ (1 - nonhosp_mort) * (phi1) * (gamma_s))
     %>% add_outflow('.+', all_except("X"))
 
-    %>% add_tmb_indices()
+    %>% update_tmb_indices()
   )
 
   tmb_sim <- run_sim(

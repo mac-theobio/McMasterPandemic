@@ -4,33 +4,34 @@
 \alias{add_outflow}
 \title{Add Outflows}
 \usage{
-add_outflow(model, state_patterns = ".+", flow_state_patterns = ".+")
+add_outflow(model, from = ".+", to = ".+")
 }
 \description{
 Add outflows corresponding to inflows specified by
 \code{add_rate}, \code{rep_rate}, and \code{vec_rate}.
 }
 \details{
-By default all inflows will have corresponding outflows.
-To define outflows from specific states, pass a regular
-expression to \code{state_patterns} that identifies these
-states. To restrict outflows to those going to specific
-states, use regular expressions to define these states.
+By default, this function will set outflows for all
+corresponding inflows. To define outflows \code{from}
+specific states \code{to} other specific states, pass
+regular expressions to the \code{from} and \code{to}
+arguments to identify these states.
 }
 \seealso{
 Other flexmodels: 
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
-\code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},
 \code{\link{initial_population}()},
 \code{\link{make_base_model}()},
+\code{\link{make_omicron_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},
 \code{\link{rep_rate}()},
 \code{\link{state_param_sum}()},
 \code{\link{tmb_fun}()},
+\code{\link{update_tmb_indices}()},
 \code{\link{vec_rate}()}
 }
 \concept{flexmodels}

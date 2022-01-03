@@ -186,5 +186,5 @@ make_omicron_model = function(..., do_variant = FALSE) {
     )
   }
 
-  add_tmb_indices(model)
+  update_tmb_indices(model)
 }

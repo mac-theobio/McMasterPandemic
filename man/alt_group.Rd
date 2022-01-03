@@ -4,7 +4,7 @@
 \alias{alt_group}
 \title{Regex Alternation Group}
 \usage{
-alt_group(x)
+alt_group(x, exact = FALSE, negate = FALSE)
 }
 \description{
 Regex Alternation Group

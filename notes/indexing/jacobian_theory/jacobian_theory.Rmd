@@ -1,0 +1,25 @@
+# Jacobian Theory
+
+The state updating function, which takes the state vector, $x$, and returns a new value of the $i$th state variable is given by the following expression.
+$$
+f_i(x) = \sum_{k} M_{ki} x_k + 
+\left[1 - \sum_{k\in\Omega_i}M_{ik}\right] x_i
+$$
+
+The first term are the inflows and the second the outflows. This expression is linear in $x$, unless any of the elements in the rate matrix $M$ depend on $x$.
+
+Differentiating $f_i$ with respect to the $j$th state variable is given by.
+$$
+\frac{\partial f_i(x)}{\partial x_j} = 
+M_{ij} + \delta_{ij}\left[1 - \sum_{k\in\Omega_i}M_{ik}\right]
++ \sum_kx_k\frac{\partial M_{ki}}{\partial x_j}
+- x_i\sum_{k\in\Omega_i}\frac{\partial M_{ik}}{\partial x_j}
+$$
+
+If all elements of $M$ are independent of $x$, the last two terms are zero and we can then express the updating function in the following way.
+
+$$
+f_i(x) = \sum_k \frac{\partial f_i(x)}{\partial x_j} x_k
+$$
+
+

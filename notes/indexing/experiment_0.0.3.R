@@ -42,7 +42,7 @@ test_model = (init_model(
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
                  (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 
 sp = c(test_model$state, test_model$params)

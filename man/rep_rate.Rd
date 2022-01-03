@@ -22,15 +22,16 @@ Other flexmodels:
 \code{\link{add_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
-\code{\link{add_tmb_indices}()},
 \code{\link{init_model}()},
 \code{\link{initial_population}()},
 \code{\link{make_base_model}()},
+\code{\link{make_omicron_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},
 \code{\link{state_param_sum}()},
 \code{\link{tmb_fun}()},
+\code{\link{update_tmb_indices}()},
 \code{\link{vec_rate}()}
 }
 \concept{flexmodels}

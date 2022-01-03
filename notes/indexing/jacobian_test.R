@@ -62,7 +62,7 @@ model <- (init_model(params, state,
                          (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
           %>% add_outflow("^S$", "^S$")
           %>% add_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
-          %>% add_tmb_indices
+          %>% update_tmb_indices
 )
 
 simulate_changing_ratemat_elements(model)
@@ -157,7 +157,7 @@ if(spec_ver_lt('0.1.1')) {
            %>% initial_population(total = 'N', infected = 'E0')
   )
 }
-add_tmb_indices(model)
+update_tmb_indices(model)
 
 
 
@@ -189,7 +189,7 @@ model$tmb_indices
 model$outflow
 model$linearized_outflow
 
-model2 = model %>% update_disease_free_state('^I(a|p|m|s)', '^Ca') %>% add_tmb_indices()
+model2 = model %>% update_disease_free_state('^I(a|p|m|s)', '^Ca') %>% update_tmb_indices()
 names(model2$state)
 names(model2$params)
 model2$tmb_indices$disease_free$df_state_par_idx
@@ -197,7 +197,7 @@ model2$tmb_indices$disease_free$df_state_count
 model2$tmb_indices$disease_free$df_state_idx
 model2$disease_free$state$simple
 
-model2 = model %>% update_linearized_params('^C(a|p|m|s)', 10) %>% add_tmb_indices()
+model2 = model %>% update_linearized_params('^C(a|p|m|s)', 10) %>% update_tmb_indices()
 names(model2$params)
 model2$tmb_indices$disease_free$df_param_vals
 model2$tmb_indices$disease_free$df_param_count

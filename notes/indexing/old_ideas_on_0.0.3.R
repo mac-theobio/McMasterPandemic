@@ -45,7 +45,7 @@ m = (
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
                  (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 
 dd = lapply(unname(time_varying_rates(m)), '[[', 'factors') %>%

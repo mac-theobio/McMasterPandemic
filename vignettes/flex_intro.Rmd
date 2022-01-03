@@ -38,7 +38,7 @@ sir_model = (
   %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
   %>% add_rate("I", "R", ~ (gamma))
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 sir_model
 ```
@@ -93,7 +93,7 @@ two_strain_model = (
   )
   %>% rep_rate("I", "R", ~ (gamma))
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 ```
 
@@ -155,7 +155,7 @@ sirv_model = (
   %>% add_rate("I", "R", ~ (gamma))
   %>% add_rate("S", "V", ~  (v))
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 
 (sirv_model
@@ -237,7 +237,7 @@ variolation_model <- (
   )
   
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 
 (variolation_model
@@ -285,7 +285,7 @@ seird_model = (
   %>% add_rate("I", "D", ~ (1/T_I) * (f))
   %>% add_rate("D", "Null", ~ (1/T_D))
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 (seird_model
     %>% simulate_state_vector(add_dates = TRUE)
@@ -395,7 +395,7 @@ model = (
   %>% add_outflow()
   
   # compute indices to be passed to the tmb engine
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 (model
   %>% simulate_state_vector(add_dates = TRUE)
@@ -439,7 +439,7 @@ plot_sir = function(model) {
   )
   %>% add_rate("S", "I", ~ (beta) * (S) * (I))
   %>% add_rate("I", "R", ~ (gamma))
-  %>% add_tmb_indices
+  %>% update_tmb_indices
   %>% plot_sir
 )
 ```
@@ -462,7 +462,7 @@ plot_sir = function(model) {
   %>% add_rate("I", "R", ~ (gamma))
   %>% add_outflow("S", "I")
   %>% add_outflow("I", "R")
-  %>% add_tmb_indices
+  %>% update_tmb_indices
   %>% plot_sir
 )
 ```
@@ -483,7 +483,7 @@ sir_model = (
   %>% add_rate("S", "I", ~ (beta) * (S) * (I))
   %>% add_rate("I", "R", ~ (gamma))
   %>% add_outflow()
-  %>% add_tmb_indices
+  %>% update_tmb_indices
 )
 sir_model
 ```

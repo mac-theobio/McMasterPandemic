@@ -56,7 +56,7 @@ test_model <- (init_model(
                (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
 %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-%>% add_tmb_indices()
+%>% update_tmb_indices()
 )
 
 from = test_model$tmb_indices$make_ratemat_indices$from

@@ -699,9 +699,9 @@ add_state_mappings = function(
 
 # compute indices and pass them to the tmb/c++ side ---------------------
 
-##' Add TMB Indices
+##' Update TMB Indices
 ##'
-##' Add, to a compartmental model, indices used to access appropriate values
+##' Add or update indices used to access appropriate values
 ##' during simulation and calibration using TMB
 ##'
 ##' \describe{
@@ -717,7 +717,7 @@ add_state_mappings = function(
 ##' @param another compartmental model with indices for TMB
 ##' @family flexmodels
 ##' @export
-add_tmb_indices <- function(model) {
+update_tmb_indices <- function(model) {
 
     # reduce rates so that there is only one rate
     # for each from-to pair
@@ -725,6 +725,13 @@ add_tmb_indices <- function(model) {
 
     model$tmb_indices <- tmb_indices(model)
     return(model)
+}
+
+##' @inheritParams update_tmb_indices
+##' @rdname update_tmb_indices
+##' @export
+add_tmb_indices = function(model) {
+  stop("add_tmb_indices is no longer allowed. please use update_tmb_indices")
 }
 
 ##' @family flexmodels

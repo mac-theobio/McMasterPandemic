@@ -1,0 +1,216 @@
+---
+title: "Speedup Comparisons"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Theoretical Considerations
+
+Split up the code executed for a particular MacPan job into three sets:
+
+1. The code that has already been refactored in C++ (e.g. sharcnet round 1)
+2. The code that we would like to refactor in C++ (e.g. sharcnet round 2)
+3. The code that we will not refactor (e.g. plotting, index construction, argument checking)
+
+Let $r_i$ be the non-refactored run-time of the code in set $i$, and $c_i$ be the refactored run-time.
+
+The total run-time before refactoring is,
+$$
+t_0 = r_1 + r_2 + r_3
+$$
+after the first sharcnet round is
+$$
+t_1 = c_1 + r_2 + r_3
+$$
+and after the second round is
+$$
+t_2 = c_1 + c_2 + r_3
+$$
+
+Three dimensionless measures of this system are:
+
+* Realized speedup: $\tau_i = \frac{t_0}{t_i}$
+* Naive speedup: $\alpha_i = \frac{r_i}{c_i}$
+* Code fraction: $\rho_i = \frac{r_i}{t_0}$
+
+The realized speedups can be expressed as:
+
+$$
+\tau_1 = \frac{1}{\frac{\rho_1}{\alpha_1} + 1 - \rho_1}
+$$
+and 
+$$
+\tau_2 = \frac{1}{\frac{\rho_1}{\alpha_1} + \frac{\rho_2}{\alpha_2} + 1 - \rho_1 - \rho_2}
+$$
+The first of these is [Amdahl's Law](https://en.wikipedia.org/wiki/Amdahl%27s_law).
+
+For many examples after the first round, we have found realized speedups $\tau_1 \approx 6$ and naive speedups $\alpha_1 \approx 60$. Rearranging Amdahl's Law we can use these numbers to estimate the fraction of the program that was rewritten in terms of the dimensionless time scale, $\rho_1$.
+
+$$
+\rho_1 = \frac{\frac{1}{\tau_1} - 1}{\frac{1}{\alpha_1} - 1} \approx 0.85
+$$
+
+We can now make projections for the speedups we can expect in round 2, under various assumptions. If we assume equal naive speedups in the two rounds, $\alpha_1 = \alpha_2 = \alpha$, then we can plot the realized speedup as a function of the fraction of the code that we refactor.
+
+$$
+\tau_2 = \frac{1}{\frac{1 - \rho_3}{\alpha} + \rho_3}
+$$
+
+```{r, echo = FALSE}
+alpha_1 = 60
+tau_1 = 6
+rho_1 = ((1/tau_1) - 1) / ((1/alpha_1) - 1)
+
+rho_3 = seq(0, 1 - rho_1, length = 100)
+rho_2 = seq(0, 1 - rho_1, length = 100)
+tau_2 = 1 / (((1 - rho_3) / alpha_1) + rho_3)
+tau_2 = 1 / (((rho_1 + rho_2) / alpha_1) + 1 - rho_1 - rho_2)
+
+plot(rho_2, tau_2, type = 'l', xlab = "Fraction Refactored in Round 2 (rho_2)", ylab = "Speedup after Round 2 (tau_2)", las = 1, ylim = c(0, alpha_1))
+abline(h = c(alpha_1, tau_1), lty = 2)
+```
+
+## Benchmarks
+
+### Hardware Overview
+
+```
+Model Name:	MacBook Pro
+Model Identifier:	MacBookPro16,2
+Processor Name:	Quad-Core Intel Core i7
+Processor Speed:	2.3 GHz
+Number of Processors:	1
+Total Number of Cores:	4
+L2 Cache (per Core):	512 KB
+L3 Cache:	8 MB
+Hyper-Threading Technology:	Enabled
+Memory:	32 GB
+```
+
+### Summarized Results
+
+### Detailed Results
+
+#### Simulating the Basic Model
+
+#### Simulating the Basic Model with a Breakpoint at each Step
+
+#### Calibrating the Basic Model
+
+#### Calibrating Time-Varying Parameters in the Basic Model
+
+#### Calibrating Time-Varying Parameters in the Breakpoint Model
+
+#### Simulating the Vax-Var Model
+
+#### Simulating the Vax-Var-Break Model
+
+#### Calibrating the Vax-Var Model
+
+```{r eval = FALSE}
+start_date <- "2020-02-01"
+end_date <- "2020-09-01"
+options(macpan_pfun_method = "grep")
+options(MP_use_state_rounding = FALSE)
+options(MP_vax_make_state_with_hazard = FALSE)
+
+params <- read_params("ICU1.csv")
+state <- make_state(params = params)
+vax_params <- expand_params_vax(
+  params = params,
+  model_type = "twodose"
+)
+vax_state <- expand_state_vax(
+  x = state,
+  model_type = "twodose",
+  unif = FALSE
+)
+params_timevar <- data.frame(
+  Date = c(as.Date(start_date) + 30,
+           as.Date(start_date) + 60),
+  Symbol = c("vax_prop_first_dose", "beta0"),
+  Value = rep(0.5, 2),
+  Type = rep("rel_orig", 2)
+)
+
+synth_reports <- (run_sim(
+    params = vax_params,
+    start_date = start_date,
+    end_date = end_date,
+    params_timevar = params_timevar
+  )
+  %>% mutate(value=round(report), var="report")
+  %>% select(date, value, var)
+  %>% na.omit()
+)
+
+opt_pars <- list(params = c(beta0 = 0.6))
+
+test_model <- make_vaccination_model(
+  params = expand_params_S0(vax_params, 1-1e-5),
+  state = vax_state,
+  params_timevar = params_timevar,
+  start_date = start_date, end_date = end_date,
+  step_args = list(do_hazard = TRUE)
+)
+
+time_wrap(
+  fitted_mod_tmb <- calibrate(
+    base_params = expand_params_S0(vax_params, 1-1e-5),
+    data = synth_reports,
+    opt_pars = opt_pars,
+    debug = TRUE,
+    time_args = list(
+      params_timevar = params_timevar
+    ),
+    sim_args = list(
+      ndt = 1,
+      step_args = list(do_hazard = TRUE),
+      use_flex = TRUE,
+      flexmodel = test_model,
+      obj_fun = tmb_fun(test_model)
+    )
+  ),
+  fitted_mod <- calibrate(
+    base_params = vax_params,
+    data = synth_reports,
+    opt_pars = opt_pars,
+    debug = TRUE,
+    time_args = list(
+      params_timevar = params_timevar
+    ),
+    sim_args = list(
+      ndt = 1,
+      step_args = list(do_hazard = TRUE)
+    )
+  )
+)
+
+expect_equal(fitted_mod$mle2@coef, fitted_mod_tmb$mle2@coef)
+expect_equal(fitted_mod$mle2@min, fitted_mod_tmb$mle2@min)
+expect_equal(fitted_mod$mle2@vcov, fitted_mod_tmb$mle2@vcov)
+```
+
+```
+TMB: Time difference of 7.78079 secs
+R: Time difference of 1741.036 secs
+Realized Speedup: 223.7608
+
+Coefficients:
+      params.beta0 log_nb_disp.report 
+         0.9994531         18.0142768 
+Log-likelihood: -264.88 
+
+expect_equal(fitted_mod$mle2@coef, fitted_mod_tmb$mle2@coef) # PASS
+expect_equal(fitted_mod$mle2@min, fitted_mod_tmb$mle2@min)   # PASS
+expect_equal(fitted_mod$mle2@vcov, fitted_mod_tmb$mle2@vcov) # PASS
+```
+
+#### Calibrating the Vax-Var-Break Model
+
+#### Calibrating the Ontario Model
+
+#### Forecasting the Ontario Model

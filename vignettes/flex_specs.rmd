@@ -164,59 +164,59 @@ Every evaluation of the objective function triggers the following steps.
 
 ### Data Structure (1.0.0)
 
-state
-from
-to
-count
-spi
-modifier
-updateidx
-breaks
-count_of_tv_at_breaks
-tv_spi
-tv_spi_unique
-tv_orig
-tv_abs
+`state`
+`from`
+`to`
+`count`
+`spi`
+`modifier`
+`updateidx`
+`breaks`
+`count_of_tv_at_breaks`
+`tv_spi`
+`tv_spi_unique`
+`tv_orig`
+`tv_abs`
 
-outflow_row_count
-outflow_col_count
-outflow_rows
-outflow_cols
+`outflow_row_count`
+`outflow_col_count`
+`outflow_rows`
+`outflow_cols`
 
-do_make_state
-max_iters_eig_pow_meth
-tol_eig_pow_meth
+`do_make_state`
+`max_iters_eig_pow_meth`
+`tol_eig_pow_meth`
 
-linearized_outflow_row_count
-linearized_outflow_col_count
-linearized_outflow_rows
-linearized_outflow_cols
+`linearized_outflow_row_count`
+`linearized_outflow_col_count`
+`linearized_outflow_rows`
+`linearized_outflow_cols`
 
-lin_param_vals
-lin_param_count
-lin_param_idx
+`lin_param_vals`
+`lin_param_count`
+`lin_param_idx`
 
-df_state_par_idx
-df_state_count
-df_state_idx
+`df_state_par_idx`
+`df_state_count`
+`df_state_idx`
 
-im_all_drop_eigen_idx
-im_eigen_drop_infected_idx
-im_all_to_infected_idx
-im_susceptible_idx
+`im_all_drop_eigen_idx`
+`im_eigen_drop_infected_idx`
+`im_all_to_infected_idx`
+`im_susceptible_idx`
 
-ip_total_idx
-ip_infected_idx
+`ip_total_idx`
+`ip_infected_idx`
 
-sumidx
-sumcount
-summandidx
+`sumidx`
+`sumcount`
+`summandidx`
 
-numIterations
-do_hazard
-do_approx_hazard
-do_hazard_lin
-do_approx_hazard_lin
+`numIterations`
+`do_hazard`
+`do_approx_hazard`
+`do_hazard_lin`
+`do_approx_hazard_lin`
 
   // The order of these PARAMETER_VECTOR macros
   // is important because it defines the order with
@@ -224,9 +224,8 @@ do_approx_hazard_lin
   // objective function on the R side. From ?MakeADFun:
   // "The order of the PARAMETER_ macros defines the order
   // of parameters in the final objective function"
-params
-tv_mult
-
+`params`
+`tv_mult`
 
 ## v0.4.0
 
@@ -714,7 +713,7 @@ test_model = (test_model
                  (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                  (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 ```
 
@@ -943,7 +942,7 @@ model = (
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
                  (Is) * (beta0) * (1/N) * (Cs) * (1-iso_s))
   %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 ```
 
@@ -1256,7 +1255,7 @@ model = (
                  (Ip) * (beta0) * (1/N) * (Cp) +
                  (Im) * (beta0) * (1/N) * (Cm) * (1-iso_m) +
                  (Is) * (beta0) * (1/N) * (Cs) * (1-iso_m))
-  %>% add_tmb_indices()
+  %>% update_tmb_indices()
 )
 ```
 

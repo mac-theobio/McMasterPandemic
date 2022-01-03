@@ -57,7 +57,7 @@ test_that("spec v0.0.1 rate matrices match make_ratemat", {
                 (Ip) * (beta0) * (1 / N) * (Cp) +
                 (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                 (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-            %>% add_tmb_indices()
+            %>% update_tmb_indices()
     )
 
     dd <- tmb_fun(test_model)
@@ -112,7 +112,7 @@ test_that("spec v0.0.2 simulations match run_sim", {
                 (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                 (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
             %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-            %>% add_tmb_indices()
+            %>% update_tmb_indices()
     )
 
     dd <- tmb_fun(test_model)
@@ -168,7 +168,7 @@ test_that("spec v0.0.4 simulations with time varying parameters match run_sim", 
             (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
             (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
         %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-        %>% add_tmb_indices()
+        %>% update_tmb_indices()
     )
 
     dd <- tmb_fun(test_model)
@@ -239,7 +239,7 @@ test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff
             (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
             (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
         %>% add_parallel_accumulators(c("X", "N", "P", "V"))
-        %>% add_tmb_indices()
+        %>% update_tmb_indices()
     )
 
     dd <- tmb_fun(test_model)
@@ -440,7 +440,7 @@ test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', 
                                (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
               %>% add_outflow("^S$", "^S$")
               %>% add_outflow("^(E|I|H|ICU|D|R)", "^(S|E|I|H|ICU|D|R)")
-              %>% add_tmb_indices
+              %>% update_tmb_indices
     )
 
     # trim off S, D, & R -- for eigenvector calculation 'by hand'
@@ -492,7 +492,7 @@ test_that("simple sir models produce correct simulations", {
         %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
         %>% add_rate("I", "R", ~ (gamma))
         %>% add_outflow(".+", ".+")
-        %>% add_tmb_indices
+        %>% update_tmb_indices
     )
 
     i <- 1
@@ -536,16 +536,18 @@ test_that("one may specify different rates for the same flow", {
     )
     expect_warning(model_rep <- (model_rep
       %>% add_rate("A", "B", ~ (alpha))
-      %>% add_tmb_indices()
+      %>% update_tmb_indices()
     ))
     model_one$params = c(alpha = 0.2)
-    model_one = add_tmb_indices(model_one)
+    model_one = update_tmb_indices(model_one)
     expect_equal(
         simulate_state_vector(model_one),
         simulate_state_vector(model_rep))
 })
 
 test_that("an informative error is returned if variables are missing", {
+    reset_spec_version()
+    tmb_mode()
     tv = data.frame(
         Date = "2000-02-01",
         Symbol = "a",
@@ -591,6 +593,8 @@ test_that("an informative error is returned if variables are missing", {
 })
 
 test_that("invalid state and parameter sum specification returns informative error msg", {
+    reset_spec_version()
+    tmb_mode()
     msg1 = "sums cannot be named after state variables or parameters"
     msg2 = "sum_name must be character-valued"
     msg3 = "can only specify one sum at a time"
