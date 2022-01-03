@@ -462,7 +462,7 @@ mat_rate = function() {
 
 # sums of state variables and parameters ---------------------
 
-#' @param sum name of sum of state variables and parameters
+#' @param sum_name name of sum of state variables and parameters
 #' @param summands character vector of regular expressions for identifying
 #' state variables and parameters to sum together
 #' @param state pansim_state object
@@ -470,13 +470,28 @@ mat_rate = function() {
 #' @return indices of summands
 #' @family flexmodels
 #' @export
-state_param_sum = function(sum, summands, state, params) {
+state_param_sum = function(sum_name, summands, state, params) {
     spec_check('0.1.0', 'sums of state variables and parameters')
+    if (!is.character(sum_name)) stop("sum_name must be character-valued")
+    if (length(sum_name) != 1L) {
+      stop("can only specify one sum at a time, ",
+           "but sum_name was a vector with ", length(sum_name),
+           " elements.")
+    }
     sp = c(state, params)
+    if (sum_name %in% names(sp)) {
+      stop("sums cannot be named after state variables ",
+           "or parameters.")
+    }
     summands = (summands
         %>% lapply(grep, names(sp), value = TRUE)
         %>% unlist
     )
+    if (length(summands) == 0L) {
+      stop("regular expressions did not match any ",
+           "state variables or parameters to sum ",
+           "and store as ", sum_name)
+    }
     ii = find_vec_indices(summands, sp)
     val = sum(sp[ii])
     list(
@@ -490,9 +505,9 @@ state_param_sum = function(sum, summands, state, params) {
 #' @param model flexmodel
 #' @family flexmodels
 #' @export
-add_state_param_sum = function(model, sum, summands) {
-    model$sums[[sum]] = state_param_sum(
-        sum, summands, model$state, model$params)
+add_state_param_sum = function(model, sum_name, summands) {
+    model$sums[[sum_name]] = state_param_sum(
+        sum_name, summands, model$state, model$params)
 
     # assumes that order of sums doesn't change!
     model$sum_vector = get_sum_initial_value(model) %>% unlist

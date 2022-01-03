@@ -553,6 +553,7 @@ test_that("an informative error is returned if variables are missing", {
         Type = 'abs'
     )
     msg = "the following variables were used but not found in the model"
+    msg2 = "regular expressions did not match any state variables or parameters to sum."
     expect_error(
         init_model(
             params = c(b = 1),
@@ -574,5 +575,59 @@ test_that("an informative error is returned if variables are missing", {
             %>% add_rate("X", "Y", ~ (b) + (c))
         ),
         regexp = msg
+    )
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-01"
+            )
+            %>% add_state_param_sum("Zsum", "Z")
+        ),
+        regexp = msg2
+    )
+})
+
+test_that("invalid state and parameter sum specification returns informative error msg", {
+    msg1 = "sums cannot be named after state variables or parameters"
+    msg2 = "sum_name must be character-valued"
+    msg3 = "can only specify one sum at a time"
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-01"
+            )
+            %>% add_state_param_sum("X", "X")
+        ),
+        regexp = msg1
+    )
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-01"
+            )
+            %>% add_state_param_sum(1, "X")
+        ),
+        regexp = msg2
+    )
+    expect_error(
+        (
+            init_model(
+                params = c(a = 1),
+                state = c(X = 0, Y = 0),
+                start_date = "2000-01-01",
+                end_date = "2000-01-01"
+            )
+            %>% add_state_param_sum(c("X", "Y"), "X")
+        ),
+        regexp = msg3
     )
 })
