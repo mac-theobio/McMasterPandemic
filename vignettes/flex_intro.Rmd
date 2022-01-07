@@ -122,6 +122,92 @@ regex = "^(S|I|R)(_*)(.*)"
   )
 ```
 
+## Erlang SEIR
+
+David, Jonathan, and David describe the [Erlang SEIR model](https://epubs.siam.org/doi/pdf/10.1137/18M1186411) in continuous time. Here is a discrete time version of it.
+```{r}
+n = 4 # number of I states
+m = 6 # number of E states
+erlang_seir = (init_model(
+  # FIXME: only working for no demography (so mu = 0 for now)
+  params = c(mu = 0, beta = 1.5, m = m, n = n,
+             gamma = 1.2, sigma = 0.1),
+  state = c(
+    S = 1-1e-3,
+    setNames(rep(0, m), "E" %_% 1:m),
+    I_1 = 1e-3,
+    setNames(rep(0, n-1), "I" %_% 2:n),
+    R = 0,
+    D = 0,
+    . = 1),
+  start_date = "2000-01-01",
+  end_date = "2000-04-01",
+  do_make_state = FALSE,
+  do_hazard = TRUE
+)
+  %>% add_state_param_sum("I", "^I_[0-9]+")
+
+  # birth
+  %>% add_rate(".", "S", ~ (mu))
+
+  # death
+  %>% rep_rate(
+    from = c("S", "E" %_% 1:m, "I" %_% 1:n, "R"), 
+    to = "D",
+    formula = ~ (mu))
+  
+  # infection
+  %>% add_rate("S", "E_1", ~ (beta) * (I))
+
+  # become infectious
+  %>% add_rate("E" %_% m, "I_1", ~ (m) * (sigma))
+
+  # sojourn through exposed compartments
+  %>% rep_rate(
+    "E" %_% 1:(m-1),
+    "E" %_% 2:m,
+    ~ (m) * (sigma)
+  )
+
+  # sojourn through infectious compartments
+  %>% rep_rate(
+    "I" %_% 1:(n-1),
+    "I" %_% 2:n,
+    ~ (n) * (gamma)
+  )
+
+  # recovery
+  %>% add_rate("I" %_% n, "R", ~ (n) * (gamma))
+
+  # nothing flows out of . because it is a dummy
+  # state used to generate flows that are not per-capita
+  %>% add_outflow("[^.]")
+  %>% update_tmb_indices
+)
+
+(erlang_seir
+  %>% simulate_state_vector(add_dates = TRUE)
+  %>% select(-., -D)
+  %>% pivot_longer(-Date, names_to = "State", values_to = "Count")
+  %>% mutate(State = sub("_[0-9]+", "", State))
+  %>% group_by(Date, State)
+  %>% summarise(Count = sum(Count))
+  %>% ungroup
+  %>% ggplot() + geom_line(aes(Date, Count, colour = State))
+)
+
+# check to make sure that the population density
+# remains constant at one
+(erlang_seir
+  %>% simulate_state_vector(add_dates = FALSE)
+  %>% select(-., -D)
+  %>% rowSums
+  %>% sapply(all.equal, 1L)
+  %>% sapply(isTRUE)
+  %>% all
+)
+```
+
 ## The SIRV model
 
 ```{r}
