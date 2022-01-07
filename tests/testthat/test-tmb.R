@@ -303,7 +303,16 @@ test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff
         params_timevar = tv_dat,
         condense = FALSE,
         step_args = list(do_hazard = TRUE),
-        use_flex = TRUE
+        use_flex = TRUE,
+        flexmodel = make_base_model(
+          params = params,
+          state = state,
+          start_date = "2021-09-10",
+          end_date = "2021-10-10",
+          params_timevar = tv_dat,
+          do_make_state = FALSE,
+          do_hazard = TRUE
+        )
     )
     r_sim <- run_sim(
         params = params, state = state,
@@ -351,7 +360,8 @@ test_that('spec v0.0.6 time-varying parameters are correctly updated on C++ side
         params_timevar = tv_dat,
         condense = FALSE,
         step_args = list(do_hazard = TRUE, flexmodel = mm),
-        use_flex = TRUE
+        use_flex = TRUE,
+        flexmodel = mm
     )
 
     r_sim <- run_sim(
@@ -378,7 +388,15 @@ test_that('spec v0.0.6 that it remains ok to _not_ use time-varying parameters',
         end_date = "2021-10-10",
         condense = TRUE,
         step_args = list(do_hazard = TRUE),
-        use_flex = TRUE
+        use_flex = TRUE,
+        flexmodel = make_base_model(
+          params = params,
+          state = state,
+          start_date = "2021-09-10",
+          end_date = "2021-10-10",
+          do_make_state = FALSE,
+          do_hazard = TRUE
+        )
     )
 
     r_sim <- run_sim(
@@ -654,7 +672,6 @@ test_that("informative error is thrown if no rates are specified", {
     )
 })
 
-
 test_that("informative error is thrown if no rates are specified", {
     reset_spec_version()
     tmb_mode()
@@ -672,4 +689,26 @@ test_that("informative error is thrown if no rates are specified", {
         ),
         regexp = msg
     )
+})
+
+test_that("start_date <= end_date in flex models", {
+  expect_error(
+    init_model(
+      params = read_params("ICU1.csv"),
+      start_date = "2000-01-02",
+      end_date = "2000-01-01"
+    ),
+    regexp = "start_date must be less than or equal to end_date"
+  )
+})
+
+test_that("an error is thrown when params is not params_pansim and state is not provided", {
+  expect_error(
+    init_model(
+      params = c(S = 0),
+      start_date = "2000-01-01",
+      end_date = "2000-01-02"
+    ),
+    regexp = "an initial state vector is required, because"
+  )
 })

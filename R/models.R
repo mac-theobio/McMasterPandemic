@@ -115,17 +115,24 @@ make_vaccination_model = function(..., do_variant = FALSE) {
     )
   }
 
+  # ---------------------------
   # problem dimensions
-  (epi_states = c(attr(state, "epi_cat")))
-  (asymp_cat = c("S", "E", "Ia", "Ip", "R"))
-  (vax_cat = c(attr(state, "vax_cat")))
+  # ---------------------------
+  (epi_states = c(attr(state, "epi_cat"))) # 14 base epidemiological categories
+  (asymp_cat = c("S", "E", "Ia", "Ip", "R")) # 5 asymptomatic categories
+  (vax_cat = c(attr(state, "vax_cat"))) # 5 vaccination categories/layers
+  (accum = c("X", "V")) # two base parallel accumulator states
+  (non_accum = base::setdiff(epi_states, accum)) # 12 base non-parallel accumulator states
+  (non_accum_non_S = non_accum[-1]) # 11 base non-susceptible/non-accumulator states
+
+  # dosing transitions across vaccination layers
   (dose_from = rep(asymp_cat, 2))
   (dose_to = c(asymp_cat, rep("V", 5)))
-  (accum = c("X", "V"))
-  (non_accum = base::setdiff(epi_states, accum))
-  (non_accum_non_S = non_accum[-1])
 
+  # ---------------------------
   # Specify structure of the force of infection calculation
+  # ---------------------------
+
   Istate = (c('Ia', 'Ip', 'Im', 'Is')
     %>% expand_names(vax_cat)
     %>% vec

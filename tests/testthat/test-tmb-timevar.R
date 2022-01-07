@@ -134,12 +134,6 @@ test_that('time variation works for vax models', {
   start_date = min(params_timevar$Date)
   end_date = max(params_timevar$Date) + days(1)
 
-  # (params_timevar
-  #   %>% ggplot2::ggplot(ggplot2::aes(x = Date, y = Value))
-  #    + ggplot2::geom_line()
-  #    + ggplot2::facet_wrap(~Symbol, scales = "free_y")
-  # )
-
   r_sim <- run_sim(
     params = model_params,
     start_date = start_date,
@@ -238,4 +232,50 @@ test_that('time variation works for a mix of types', {
     Value = c(0.5, 0.1, 0.05),
     Type = c("rel_prev", "abs", "rel_orig")
   ) %>% test_fun
+})
+
+test_that("breakpoints outside of the simulation range cause a warning", {
+  reset_spec_version()
+  tmb_mode()
+  options(macpan_pfun_method = "grep")
+
+  start_date <- "2021-02-02"
+  end_date <- "2021-02-05"
+
+  params_timevar = data.frame(
+    Date = as.Date(c("2021-02-02", "2021-02-03", "2021-02-05")),
+    Symbol = c("beta0", "beta0", "beta0"),
+    Value = c(0.5, 0.1, 2.2),
+    Type = c("rel_orig")
+  ) %>% arrange(Symbol, Date)
+
+  base_params <- read_params("PHAC.csv")
+  vax_params <- expand_params_vax(
+    params = base_params,
+    vax_doses_per_day = 1e4,
+    model_type = "twodose"
+  )
+  model_params <- expand_params_variant(
+    vax_params,
+    variant_prop = 0.5,
+    variant_advantage = 1.5,
+    variant_vax_efficacy_dose1 = 0.3,
+    variant_vax_efficacy_dose2 = 0.8
+  ) %>% expand_params_S0(1 - 1e-5)
+
+  expect_warning(
+    make_vaccination_model(
+      params = model_params,
+      state = NULL,
+      start_date = start_date, end_date = end_date,
+      do_hazard = TRUE,
+      do_approx_hazard = FALSE,
+      do_make_state = TRUE,
+      max_iters_eig_pow_meth = 100,
+      tol_eig_pow_meth = 1e-6,
+      params_timevar = params_timevar,
+      do_variant = TRUE),
+    regexp = "some time-varying parameters will not change"
+  )
+
 })

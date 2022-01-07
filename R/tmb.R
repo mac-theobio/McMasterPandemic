@@ -49,16 +49,20 @@ init_model <- function(params, state = NULL,
              "for state variables and parameters")
     }
 
-    if(is.null(state)) {
+    if (is.null(state)) {
+      if (!inherits(params, "params_pansim")) {
+        stop("an initial state vector is required, because\n",
+             "params is not of class params_pansim")
+      }
       # inefficient! should just directly make a zero'd state vector.
       # trying to be more efficient:
       #  - tried setting use_eigvec = FALSE, but this failed for some reason (bug??)
       #  - for now we can do this ugly thing of turning down the number of power
       #    method steps and then restoring
-      n_steps = getOption("MP_rexp_steps_default")
+      n_steps_default = getOption("MP_rexp_steps_default")
       options(MP_rexp_steps_default = 1)
       state = make_state(params = params)
-      options(MP_rexp_steps_default = n_steps)
+      options(MP_rexp_steps_default = n_steps_default)
       state[] = 0
     }
 
@@ -103,6 +107,9 @@ init_model <- function(params, state = NULL,
             %>% difftime(model$start_date, units = 'days')
             %>% as.integer
         )
+        if (model$iters < 0) {
+          stop("start_date must be less than or equal to end_date")
+        }
     } else {
         if ((!is.null(start_date)) | (!is.null(end_date))) {
             spec_check(introduced_version = "0.0.3",
@@ -185,6 +192,21 @@ init_model <- function(params, state = NULL,
                 breaks = as.integer(names(count_of_tv_at_breaks)),
                 count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
             )
+
+            if (getOption("MP_warn_bad_breaks")) {
+              good_dates = between(
+                model$timevar$piece_wise$schedule$Date,
+                model$start_date,
+                model$end_date - 1
+              )
+              if (!all(good_dates)) {
+                warning("some time-varying parameters will not change at every\n",
+                        "specified date because some parameter changes only take\n",
+                        "effect outside of the simulation dates.\n",
+                        "to silence this warning use:\n",
+                        "options(MP_warn_bad_breaks = FALSE)")
+              }
+            }
         } ## >v0.0.3
     } else {
         model$timevar = list(

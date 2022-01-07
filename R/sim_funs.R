@@ -922,6 +922,15 @@ run_sim <- function(params,
     ## tmb/c++ computational approach (experimental)
     ## (https://canmod.net/misc/flex_specs)
 
+    if (is.null(flexmodel)) {
+      stop("to use the flex approach you need to specify the flexmodel argument")
+    }
+
+    ## always regenerate the objective function -- #164
+    ##   this is not a performance burden, and bad things can happen
+    ##   when the flexmodel and obj_fun are out of sync
+    obj_fun = tmb_fun(flexmodel)
+
     start_date <- as.Date(start_date)
     end_date <- as.Date(end_date)
     if(!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)

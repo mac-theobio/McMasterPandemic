@@ -526,7 +526,7 @@ vector<Type> make_state(
 )
 {
 
-  int n_make_state_steps = 100;
+  // int n_make_state_steps = 100;
 
   // 1 -- Initialize two state vectors,
   //      one for full model and one for linearized model

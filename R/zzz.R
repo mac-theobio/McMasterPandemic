@@ -16,7 +16,8 @@
         MP_vax_make_state_with_hazard = TRUE,
         MP_rexp_steps_default = 100,
         MP_warn_repeated_rates = FALSE,
-        MP_warn_no_outflow = TRUE
+        MP_warn_no_outflow = TRUE,
+        MP_warn_bad_breaks = TRUE
     )
 }
 

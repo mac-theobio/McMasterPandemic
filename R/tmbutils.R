@@ -946,7 +946,7 @@ initial_state_vector = function(model, sim_params = NULL) {
   # FIXME: minor performance optimization could be made
   # here by restricting the number of iterations temporarily
   # so that the full simulation is not run just to get the
-  # first value -- i thnk all that is needed is this (but
+  # first value -- i think all that is needed is this (but
   # need to test):
   # model$iters = 1
   (model
@@ -985,6 +985,12 @@ final_state_ratio = function(model, sim_params = NULL) {
   setNames(
     head(last_two, n) / tail(last_two, n),
     names(model$state))
+}
+
+#' @export
+initial_ratemat = function(model, sim_params = NULL) {
+  if(is.null(sim_params)) sim_params = tmb_params(model)
+  tmb_fun(model)$simulate(sim_params)$ratemat
 }
 
 # benchmarking and comparison in tests

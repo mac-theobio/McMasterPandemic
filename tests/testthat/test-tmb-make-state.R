@@ -4,6 +4,7 @@ library(TMB)
 library(tools)
 library(dplyr)
 library(semver)
+library(lubridate)
 
 test_that("make state matches classic macpan without state rounding", {
   reset_spec_version()
@@ -139,11 +140,9 @@ test_that('make state matches vax/variant model with realistic parameters', {
     state = r_state,
     start_date = start_date,
     end_date = end_date,
-    params_timevar = params_timevar,
     do_hazard = TRUE,
     do_variant = TRUE
   )
-  mm$do_approx_hazard_lin = FALSE
   tmb_state = initial_state_vector(mm)
   expect_equal(c(r_state), c(tmb_state))
 })
