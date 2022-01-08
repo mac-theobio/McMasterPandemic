@@ -39,6 +39,8 @@ params$waning_dose1 = 0.01
 params$waning_dose2 = 0.01
 params$waning_dose3 = 0.01
 
+params$leakiness = 1 ## back to original model (in theory)
+
 do_variant = McMasterPandemic:::do_variant(params)
 
 epi_states = c(
@@ -78,7 +80,9 @@ baseline_trans_rates =
     '(1 - iso_m) * (Cm)',
     '(1 - iso_s) * (Cs)') *
   struc('(beta0) * (1/N)')
+
 if(!do_variant) {
+   ## transmission reduction due to vaccine
   vax_trans_red = struc_block(vec(
     '1',
     '1',
@@ -88,7 +92,18 @@ if(!do_variant) {
     '(1 - vax_efficacy_dose2)',
     '(1 - vax_efficacy_dose3)'),
     row_times = 1, col_times = 7)
+  ## proportion of pop protected by the vaccine (when there is some non-leakiness)
+  vax_protection = struc_block(vec(
+     '0',
+     '0',
+     '(1 - leakiness) * vax_efficacy_dose1',
+     '(1 - leakiness) * vax_efficacy_dose1',
+     '(1 - leakiness) * vax_efficacy_dose2',
+     '(1 - leakiness) * vax_efficacy_dose2',
+     '(1 - leakiness) * vax_efficacy_dose3'),
+     row_times = 1, col_times = 7)
 } else {
+   ## transmission reduction due to vaccine
   vax_trans_red = struc_block(vec(
     '(1 - variant_prop) + (variant_advantage) * (variant_prop)',
     '(1 - variant_prop) + (variant_advantage) * (variant_prop)',
@@ -98,6 +113,17 @@ if(!do_variant) {
     '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
     '(1 - vax_efficacy_dose3) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)'),
     row_times = 1, col_times = 7)
+  ## proportion of pop protected by the vaccine (when there is some non-leakiness)
+  ## FIXME: ASK STEVE HOW TO WRITE THIS WITH SCALAR MULTIPLICATION OF 1-LEAKINESS
+  vax_protection = struc_block(vec(
+     '0',
+     '0',
+     '(1 - leakiness) * (1-vax_efficacy_dose1 * (1 - variant_prop) + variant_vax_efficacy_dose1 * (variant_advantage) * (variant_prop))',
+     '(1 - leakiness) * (vax_efficacy_dose1 * (1 - variant_prop) + variant_vax_efficacy_dose1 * (variant_advantage) * (variant_prop))',
+     '(1 - leakiness) * (vax_efficacy_dose2 * (1 - variant_prop) + variant_vax_efficacy_dose2 * (variant_advantage) * (variant_prop))',
+     '(1 - leakiness) * (vax_efficacy_dose2 * (1 - variant_prop) +  variant_vax_efficacy_dose2 * (variant_advantage) * (variant_prop))',
+     '(1 - leakiness) * (vax_efficacy_dose3 * (1 - variant_prop) + variant_vax_efficacy_dose3 * (variant_advantage) * (variant_prop))'),
+     row_times = 1, col_times = 7)
 }
 
 waning = vec(
@@ -158,6 +184,19 @@ model = (init_model(
      "S" %_% vax_cat,
      "E" %_% vax_cat,
      kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
+   )
+
+   # Non-leakiness in vaccine protection (when leakiness =/= 1)
+   # %>% vec_rate(
+   #    "S" %_% vax_cat,
+   #    "S" %_% vax_cat,
+   #    kronecker(leakiness*vax_protection, t(baseline_trans_rates)) %*% Istate
+   # )
+
+   %>% vec_rate(
+      "S" %_% vax_cat,
+      "R" %_% vax_cat,
+      kronecker(vax_protection, t(baseline_trans_rates)) %*% Istate
    )
 
    # Sums across vaccination categories
