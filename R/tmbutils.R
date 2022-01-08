@@ -50,6 +50,17 @@ all_except = function(x) {
   )
 }
 
+# constructing vectors ---------------------
+
+#' @export
+layered_zero_state = function(...) {
+  state_nms = (list(...)
+   %>% lapply(as.character)
+   %>% Reduce(f = expand_names)
+  )
+  setNames(rep(0, length(state_nms)), state_nms)
+}
+
 # null-safe coercion ----------------------------
 
 # Used in tmb_fun -- needs work, but this is a
@@ -200,6 +211,20 @@ pwise = function(from, to, mat) {
 #' @export
 block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
+}
+
+#' @export
+check_from_to = function(from, to, state_nms) {
+  bads = c(
+    from[!from %in% state_nms],
+    to[!to %in% state_nms]
+  )
+  if (length(bads) > 0L) {
+    stop(
+      "the following states involved in flows are not in the model:\n",
+      paste0(bads, collapse = ', ')
+    )
+  }
 }
 
 #' Parse a Flexmodel Formula
