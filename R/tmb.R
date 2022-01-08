@@ -314,6 +314,12 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
          | is(formula, 'struc')
         )
     )
+    if (!from %in% names(state)) {
+      stop("state variable ", from, " used but not found in the model")
+    }
+    if (!to %in% names(state)) {
+      stop("state variable ", to, " used but not found in the model")
+    }
 
     product_list <- function(x) {
         x$factors <- (x$formula
@@ -394,8 +400,6 @@ add_rate <- function(model, from, to, formula) {
 #' Repeat a Rate for Several Rate Matrix Elements
 #'
 #' @param model flexmodel
-#' @param indices two-column matrix of indices with column names "from_pos"
-#' and "to_pos", locaing elements of the rate matrix in model
 #' @param formula formula or length-1 character vector
 #' @family flexmodels
 #' @export
@@ -410,6 +414,7 @@ rep_rate = function(model, from, to, formula,
     stopifnot(inherits(model, "flexmodel"))
 
     unpack(model)
+    #check_from_to(from, to, names(state))
     indices = map_fun(from, to, model$ratemat)
 
     if(!inherits(indices, "matrix")) {
@@ -448,7 +453,7 @@ vec_rate = function(model, from, to, formula,
                     mapping = c("pairwise", "blockwise")) {
 
     unpack(model)
-
+    #check_from_to(from, to, names(state))
     map_fun = switch(
         match.arg(mapping),
         pairwise = pwise,
