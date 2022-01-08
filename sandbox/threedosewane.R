@@ -34,10 +34,10 @@ params$vax_alpha_dose3 = 0.5
 params$vax_mu_dose3 = 1
 params$vax_efficacy_dose3 = 0.95
 params$variant_vax_efficacy_dose3 = 0.9
-params$waning_unvax = 0.01
-params$waning_dose1 = 0.01
-params$waning_dose2 = 0.01
-params$waning_dose3 = 0.01
+params$chal_waning_unvax = 0.01
+params$chal_waning_dose1 = 0.01
+params$chal_waning_dose2 = 0.01
+params$chal_waning_dose3 = 0.01
 
 params$leakiness = 1 ## back to original model (in theory)
 
@@ -126,8 +126,8 @@ if(!do_variant) {
      row_times = 1, col_times = 7)
 }
 
-waning = vec(
-  'waning' %_% c(
+chal_waning = vec(
+  'chal_waning' %_% c(
     "unvax", "unvax", "dose1", "dose1", "dose2", "dose2", "dose3"
   )
 )
@@ -223,11 +223,11 @@ model = (init_model(
      dose_to   %_% 'vaxdose3',
      ~ (1 - vax_prop_first_and_second_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect2_N)) # new
 
-   # Waning immunity
+   # Waning challenge immunity (from infection challenge)
    %>% vec_rate(
      "R" %_% vax_cat,
      "S" %_% vax_cat,
-     waning
+     chal_waning
    ) # new
 
    # definitely need a better syntax here
