@@ -31,15 +31,21 @@ params <- expand_params_variant(
 params$vax_prop_first_dose = 0.7
 params$vax_prop_second_dose = 0.2
 params$vax_alpha_dose3 = 0.5
+params$vax_alpha_dose3wane = 0.5 # 8th layer
 params$vax_mu_dose3 = 1
+params$vax_mu_dose3wane = 1 # 8th layer
 params$vax_efficacy_dose3 = 0.95
+params$vax_efficacy_dose3wane = 0.5 # 8th layer
 params$variant_vax_efficacy_dose3 = 0.9
+params$variant_vax_efficacy_dose3wane = 0.5 # 8th layer
 params$chal_waning_unvax = 0.01
 params$chal_waning_dose1 = 0.01
 params$chal_waning_dose2 = 0.01
 params$chal_waning_dose3 = 0.01
+params$vax_wane_rate = 0.1
+params$vax_wane_rate_R = 0.1
 
-params$leakiness = 1 ## back to original model (in theory)
+params$leakiness = 0.5 ## back to original model (in theory)
 
 do_variant = McMasterPandemic:::do_variant(params)
 
@@ -52,7 +58,8 @@ vax_cat = c(
   "unvax",
   "vaxdose1", "vaxprotect1",
   "vaxdose2", "vaxprotect2",
-  "vaxdose3", "vaxprotect3"
+  "vaxdose3", "vaxprotect3",
+  "vaxwane3"
 )
 attr(params, "vax_cat") = vax_cat
 (accum = c("X", "V")) # two base parallel accumulator states
@@ -74,7 +81,7 @@ Istate = (c('Ia', 'Ip', 'Im', 'Is')
           %>% vec
 )
 Istate_vax = (c('Ia', 'Ip', 'Im', 'Is')
-  %>% expand_names(vax_cat[3:7])
+  %>% expand_names(vax_cat[3:8])
   %>% vec
 )
 baseline_trans_rates =
@@ -94,18 +101,18 @@ if(!do_variant) {
     '(1 - vax_efficacy_dose1)',
     '(1 - vax_efficacy_dose2)',
     '(1 - vax_efficacy_dose2)',
-    '(1 - vax_efficacy_dose3)'),
-    row_times = 1, col_times = 7)
+    '(1 - vax_efficacy_dose3)',
+    '(1 - vax_efficacy_dose3wane)'),
+    row_times = 1, col_times = 8)
   ## proportion of pop protected by the vaccine (when there is some non-leakiness)
   vax_protection = struc_block(vec(
-     '0',
-     '0',
      '(1 - leakiness) * (vax_efficacy_dose1)',
      '(1 - leakiness) * (vax_efficacy_dose1)',
      '(1 - leakiness) * (vax_efficacy_dose2)',
      '(1 - leakiness) * (vax_efficacy_dose2)',
-     '(1 - leakiness) * (vax_efficacy_dose3)'),
-     row_times = 1, col_times = 7)
+     '(1 - leakiness) * (vax_efficacy_dose3)',
+     '(1 - leakiness) * (vax_efficacy_dose3wane)'),
+     row_times = 1, col_times = 6)
 } else {
    ## transmission reduction due to vaccine
   vax_trans_red = struc_block(vec(
@@ -115,20 +122,20 @@ if(!do_variant) {
     '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
     '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
     '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
-    '(1 - vax_efficacy_dose3) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)'),
-    row_times = 1, col_times = 7)
+    '(1 - vax_efficacy_dose3) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)',
+    '(1 - vax_efficacy_dose3wane) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose3wane) * (variant_advantage) * (variant_prop)'),
+    row_times = 1, col_times = 8)
   ## proportion of pop protected by the vaccine (when there is some non-leakiness)
   ## FIXME: ASK STEVE HOW TO WRITE THIS WITH SCALAR MULTIPLICATION OF 1-LEAKINESS
   vax_protection_vec = struc('1 - leakiness') * vec(
-     #'0',
-     #'0',
      '(vax_efficacy_dose1) * (1 - variant_prop) + (variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
      '(vax_efficacy_dose1) * (1 - variant_prop) + (variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
      '(vax_efficacy_dose2) * (1 - variant_prop) + (variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
      '(vax_efficacy_dose2) * (1 - variant_prop) + (variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
-     '(vax_efficacy_dose3) * (1 - variant_prop) + (variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)'
+     '(vax_efficacy_dose3) * (1 - variant_prop) + (variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)',
+     '(vax_efficacy_dose3wane) * (1 - variant_prop) + (variant_vax_efficacy_dose3wane) * (variant_advantage) * (variant_prop)'
   )
-  vax_protection = struc_block(vax_protection_vec, row_times = 1, col_times = 5)
+  vax_protection = struc_block(vax_protection_vec, row_times = 1, col_times = 6)
 }
 
 chal_waning = vec(
@@ -137,8 +144,8 @@ chal_waning = vec(
   )
 )
 
-alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2", "vax_alpha_dose2", "vax_alpha_dose3")
-mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2",    "vax_mu_dose2",    "vax_mu_dose3")
+alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2", "vax_alpha_dose2", "vax_alpha_dose3", "vax_alpha_dose3wane")
+mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2",    "vax_mu_dose2",    "vax_mu_dose3",    "vax_mu_dose3wane")
 sigma   = struc("sigma")
 gamma_p = struc("gamma_p")
 E_to_Ia_rates  = vec(           alpha ) * sigma
@@ -180,9 +187,11 @@ model = (init_model(
    %>% add_rate("R_vaxdose1", "R_vaxprotect1",  ~ (vax_response_rate_R))
    %>% add_rate("R_vaxdose2", "R_vaxprotect2",  ~ (vax_response_rate_R))
    %>% add_rate("R_vaxdose3", "R_vaxprotect3",  ~ (vax_response_rate_R)) # new
+   %>% add_rate("R_vaxprotect3", "R_vaxwane3",  ~ (vax_wane_rate_R)) # new (8th layer)
    %>% add_rate("S_vaxdose1", "S_vaxprotect1",  ~ (vax_response_rate))
    %>% add_rate("S_vaxdose2", "S_vaxprotect2",  ~ (vax_response_rate))
    %>% add_rate("S_vaxdose3", "S_vaxprotect3",  ~ (vax_response_rate)) # new
+   %>% add_rate("S_vaxprotect3", "S_vaxwane3",  ~ (vax_wane_rate)) # new (8th layer)
 
    # Forces of Infection
    %>% vec_rate(
@@ -199,8 +208,8 @@ model = (init_model(
    # )
 
    %>% vec_rate(
-      "S" %_% vax_cat[3:7],
-      "R" %_% vax_cat[3:7],
+      "S" %_% vax_cat[3:8],
+      "R" %_% vax_cat[3:8],
       kronecker(vax_protection, t(baseline_trans_rates)) %*% Istate_vax
    )
 
