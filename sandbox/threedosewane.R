@@ -73,6 +73,10 @@ Istate = (c('Ia', 'Ip', 'Im', 'Is')
           %>% expand_names(vax_cat)
           %>% vec
 )
+Istate_vax = (c('Ia', 'Ip', 'Im', 'Is')
+  %>% expand_names(vax_cat[3:7])
+  %>% vec
+)
 baseline_trans_rates =
   vec(
     'Ca',
@@ -96,11 +100,11 @@ if(!do_variant) {
   vax_protection = struc_block(vec(
      '0',
      '0',
-     '(1 - leakiness) * vax_efficacy_dose1',
-     '(1 - leakiness) * vax_efficacy_dose1',
-     '(1 - leakiness) * vax_efficacy_dose2',
-     '(1 - leakiness) * vax_efficacy_dose2',
-     '(1 - leakiness) * vax_efficacy_dose3'),
+     '(1 - leakiness) * (vax_efficacy_dose1)',
+     '(1 - leakiness) * (vax_efficacy_dose1)',
+     '(1 - leakiness) * (vax_efficacy_dose2)',
+     '(1 - leakiness) * (vax_efficacy_dose2)',
+     '(1 - leakiness) * (vax_efficacy_dose3)'),
      row_times = 1, col_times = 7)
 } else {
    ## transmission reduction due to vaccine
@@ -115,15 +119,16 @@ if(!do_variant) {
     row_times = 1, col_times = 7)
   ## proportion of pop protected by the vaccine (when there is some non-leakiness)
   ## FIXME: ASK STEVE HOW TO WRITE THIS WITH SCALAR MULTIPLICATION OF 1-LEAKINESS
-  vax_protection = struc_block(vec(
-     '0',
-     '0',
-     '(1 - leakiness) * (1-vax_efficacy_dose1 * (1 - variant_prop) + variant_vax_efficacy_dose1 * (variant_advantage) * (variant_prop))',
-     '(1 - leakiness) * (vax_efficacy_dose1 * (1 - variant_prop) + variant_vax_efficacy_dose1 * (variant_advantage) * (variant_prop))',
-     '(1 - leakiness) * (vax_efficacy_dose2 * (1 - variant_prop) + variant_vax_efficacy_dose2 * (variant_advantage) * (variant_prop))',
-     '(1 - leakiness) * (vax_efficacy_dose2 * (1 - variant_prop) +  variant_vax_efficacy_dose2 * (variant_advantage) * (variant_prop))',
-     '(1 - leakiness) * (vax_efficacy_dose3 * (1 - variant_prop) + variant_vax_efficacy_dose3 * (variant_advantage) * (variant_prop))'),
-     row_times = 1, col_times = 7)
+  vax_protection_vec = struc('1 - leakiness') * vec(
+     #'0',
+     #'0',
+     '(vax_efficacy_dose1) * (1 - variant_prop) + (variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+     '(vax_efficacy_dose1) * (1 - variant_prop) + (variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
+     '(vax_efficacy_dose2) * (1 - variant_prop) + (variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
+     '(vax_efficacy_dose2) * (1 - variant_prop) + (variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)',
+     '(vax_efficacy_dose3) * (1 - variant_prop) + (variant_vax_efficacy_dose3) * (variant_advantage) * (variant_prop)'
+  )
+  vax_protection = struc_block(vax_protection_vec, row_times = 1, col_times = 5)
 }
 
 chal_waning = vec(
@@ -194,9 +199,9 @@ model = (init_model(
    # )
 
    %>% vec_rate(
-      "S" %_% vax_cat,
-      "R" %_% vax_cat,
-      kronecker(vax_protection, t(baseline_trans_rates)) %*% Istate
+      "S" %_% vax_cat[3:7],
+      "R" %_% vax_cat[3:7],
+      kronecker(vax_protection, t(baseline_trans_rates)) %*% Istate_vax
    )
 
    # Sums across vaccination categories
@@ -242,7 +247,6 @@ model = (init_model(
    %>% update_linearized_params('^vax_doses_per_day$', 0)
    %>% update_linearized_params('^vax_response_rate$', 0)
    %>% update_linearized_params('^vax_response_rate_R$', 0)
-   # FIXED: vax_response_rate_R isn't necessary because it is regex-matched by vax_response_rate
 
    # Set the disease-free equilibrium of the linearized model
    %>% update_disease_free_state('S_unvax', 'S0')
