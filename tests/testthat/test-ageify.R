@@ -307,10 +307,13 @@ test_that("diagonal contacts yield identical epidemics in each age group (with a
     expect_true(all(check_equality_across_ages(drop_agg_reports(res_ud))))
 })
 
-test_that("Mistry error using old names",
-          expect_error(mk_mistry_Nvec(province = "Alberta"),
-                       "please use two-letter abbreviations")
-          )
+test_that(
+    "Mistry error using old names",
+    expect_error(
+        mk_mistry_Nvec(province = "Alberta"),
+        "please use two-letter abbreviations"
+    )
+)
 test_that("Mistry contact parameters are properly initialized", {
     ## using original age groups
     Nvec <- mk_mistry_Nvec(province = "AB")

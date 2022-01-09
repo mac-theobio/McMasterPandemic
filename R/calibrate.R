@@ -282,12 +282,25 @@ run_sim_break <- function(params,
         stop("probably using outdated time_args() specification")
     }
     ## FIXME: dots are necessary to swallow extra args when forecasting. Why??
-    sim_args <- c(
-        sim_args,
-        nlist(params,
-            state = make_state(params = params)
+
+    ## Do not need to make_state on the R-side when using
+    ## appropriate versions of the flexmodel/tmb approach
+    flexmodel = sim_args$flexmodel
+    if(isTRUE(sim_args$use_flex) &
+       (!is.null(flexmodel)) &
+       isTRUE(flexmodel$do_make_state) &
+       spec_ver_gt('0.1.0')
+     ) {
+       sim_args = c(
+           sim_args,
+           nlist(params, state = sim_args$flexmodel$state))
+    } else {
+        sim_args <- c(
+            sim_args,
+            nlist(params, state = make_state(params = params))
         )
-    )
+    }
+
     if (length(time_args) == 1 && is.null(names(time_args))) {
         ## HACK:: namedrop() problems in mle2????
         names(time_args) <- "break_dates"
@@ -775,6 +788,28 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
                       DE_upr = NULL,
                       DE_cores = getOption("mc.cores", 2)) {
     start_time <- proc.time()
+
+    if (!is.null(sim_args$flexmodel)) {
+        sim_args$use_flex = TRUE
+    }
+
+    if (isTRUE(sim_args$use_flex)) {
+        spec_check("0.0.6", "calibration with TMB")
+        if (is.null(sim_args$flexmodel)) {
+            sim_args$flexmodel <- make_base_model(
+                params = base_params,
+                state = make_state(params = base_params),
+                start_date = start_date,
+                end_date = end_date,
+                params_timevar = time_args$params_timevar,
+                step_args = sim_args$step_args
+            )
+        }
+        if (is.null(sim_args$obj_fun)) {
+            sim_args$obj_fun <- tmb_fun(sim_args$flexmodel)
+        }
+    }
+
     v <- na.omit(data$value)
     if (any(abs(v - round(v)) > 1e-9)) {
         stop("need integer values in reported data (to match dnbinom)")

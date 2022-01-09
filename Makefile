@@ -111,7 +111,7 @@ dtest:
 lpackage:
 	R CMD INSTALL .
 
-package: 
+package:
 	sudo R CMD INSTALL .
 
 newpackage: pull package
@@ -123,12 +123,14 @@ newpackage: pull package
 R=R
 # -> you can do    R=R-devel  make ....
 PACKAGE=McMasterPandemic
-# get VERSION from glmmTMB/DESCRIPTION  
+# get VERSION from glmmTMB/DESCRIPTION
 ## ("::" = expand only  once, but doesn't work in make <= 3.81)
 VERSION := $(shell sed -n '/^Version: /s///p' ./DESCRIPTION)
+SPECVERSION := $(shell cat inst/tmb/recommended_spec_version)
 
 testversion:
 	echo "${VERSION}"
+	echo "${SPECVERSION}"
 
 Ignore += McMasterPandemic*.tar.gz
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
@@ -150,6 +152,38 @@ pkgtest:
 pkgcheck:
 	echo "devtools::check('.')" | $(R) --slave
 
+test-tmb:
+	echo "testthat::test_file('tests/testthat/test-tmb.R')" | $(R) --slave
+
+test-tmb-struc:
+	echo "testthat::test_file('tests/testthat/test-tmb-struc.R')" | $(R) --slave
+
+test-tmb-make-state:
+	echo "testthat::test_file('tests/testthat/test-tmb-make-state.R')" | $(R) --slave
+
+test-tmb-calibrate:
+	echo "testthat::test_file('tests/testthat/test-tmb-calibrate.R')" | $(R) --slave
+
+test-tmb-timevar:
+	echo "testthat::test_file('tests/testthat/test-tmb-timevar.R')" | $(R) --slave
+
+test-tmb-forecast:
+	echo "testthat::test_file('tests/testthat/test-tmb-forecast.R')" | $(R) --slave
+
+test-tmb-all: test-tmb test-tmb-struc test-tmb-make-state test-tmb-calibrate test-tmb-timevar test-tmb-forecast
+
+src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
+	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
+
+vignettes/flex_specs.html: vignettes/flex_specs.rmd
+	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
+
+vignettes/flex_intro.html: vignettes/flex_intro.rmd
+	echo "rmarkdown::render('vignettes/flex_intro.rmd')" | $(R) --slave
+
+cleanobjects:
+	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so
+
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
 
@@ -159,9 +193,12 @@ dependencies:
 	Rscript misc/dependencies.R
 
 ## FIXME: depend on ??
+## added $(BUILDARGS) so that this is possible:
+## make install BUILDARGS="--no-build-vignettes"
 build-package: $(TARBALL)
 $(TARBALL): ./NAMESPACE
-	$(R) CMD build .
+	$(info spec version: $(SPECVERSION))
+	$(R) CMD build $(BUILDARGS) .
 	mv $@ ..
 
 install: $(TARBALL)
@@ -172,7 +209,7 @@ install: $(TARBALL)
 
 ## Looks cool; clashes with current Bolker rules.
 Ignore += maker
-maker: 
+maker:
 	git clone https://github.com/ComputationalProteomicsUnit/maker.git
 ## -include maker/Makefile
 
@@ -197,7 +234,7 @@ makestuff/Makefile:
 	git clone $(msrepo)/makestuff
 	ls $@
 
-localstuff: 
+localstuff:
 	ln -s ../makestuff .
 	ls $@
 

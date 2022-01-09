@@ -158,6 +158,7 @@ calc_variant_adjustment <- function(params,
 ##' @param state state vector
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
+##' @importFrom fastmatrix kronecker.prod
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
 make_beta <- function(state, params, full = TRUE) {
@@ -872,6 +873,7 @@ deprecate_timepars_warning <- FALSE
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @param use_ode integrate via ODE rather than discrete step?
 ##' @param ode_args additional arguments to \code{\link[deSolve]{ode}}
+##' @param use_flex use \code{flexmodel} approach (experimental)
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
@@ -910,7 +912,112 @@ run_sim <- function(params,
                     use_ode = FALSE,
                     condense = TRUE,
                     condense_args = NULL,
-                    verbose = FALSE) {
+                    verbose = FALSE,
+                    use_flex = FALSE,
+                    flexmodel = NULL,
+                    obj_fun = NULL) {
+
+  if (!is.null(flexmodel) | !is.null(obj_fun)) use_flex = TRUE
+  if (use_flex) {
+    ## tmb/c++ computational approach (experimental)
+    ## (https://canmod.net/misc/flex_specs)
+
+    if (is.null(flexmodel)) {
+      stop("to use the flex approach you need to specify the flexmodel argument")
+    }
+
+    ## always regenerate the objective function -- #164
+    ##   this is not a performance burden, and bad things can happen
+    ##   when the flexmodel and obj_fun are out of sync
+    obj_fun = tmb_fun(flexmodel)
+
+    start_date <- as.Date(start_date)
+    end_date <- as.Date(end_date)
+    if(!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)
+
+    # update parameters (or the whole model structure)
+    # -- important in calibration situations where the parameters
+    #    are changing each iteration of the optimizer
+    if (!is.null(flexmodel)) {
+      flexmodel$params = expand_params_S0(params, 1-1e-5)
+      if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
+        if (is.null(params_timevar)) {
+          params_timevar = flexmodel$timevar$piece_wise$schedule
+        }
+        # FIXME: inefficient brute-force reordering
+        s = arrange(flexmodel$timevar$piece_wise$schedule, Symbol, Date)
+        ptv = arrange(params_timevar, Symbol, Date)
+        s$last_tv_mult = ptv$Value
+        flexmodel$timevar$piece_wise$schedule = arrange(s, breaks, tv_spi)
+      }
+    } else {
+      # FIXME: can't assume base model
+      #        -- at least throw error if the model has structure
+      flexmodel <- make_base_model(
+        params = params,
+        state = state,
+        start_date = start_date,
+        end_date = end_date,
+        params_timevar = params_timevar,
+        step_args = step_args
+      )
+    }
+
+    if (is.null(state)) {
+      state = flexmodel$state
+    }
+
+    if(!(spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) | is.null(obj_fun)) {
+      # if not making the state on the c++ side, need to make
+      # a new tmb fun with the new state that has come in
+      # from up the call stack
+      flexmodel$state = state
+      obj_fun <- tmb_fun(flexmodel)
+    }
+
+    ## simulate trajectories based on new parameters
+    full_param_vec = tmb_params(flexmodel)
+    tmb_sims <- obj_fun$simulate(full_param_vec)
+    res = (tmb_sims
+      %>% getElement("concatenated_state_vector")
+      %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
+    )
+    res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
+
+    # look for foi -- TODO: formalize the definition of foi so that we
+    #                       can reliably check -- this is too model-specific
+    foi = (flexmodel$tmb_indices$updateidx
+      %>% names
+      %>% strsplit("_to_")
+      %>% lapply(function(x) {
+        # vax_cat may not exist and therefore be a blank string
+        vax_cat = sub("^E(_|$)", "", x[2])
+        setNames(
+          startsWith(x[1], "S") & startsWith(x[2], "E"),
+          ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
+      })
+      %>% unlist
+      %>% which
+      %>% lapply(function(foi_off) {
+        tmb_sims$concatenated_ratemat_nonzeros[
+          seq(from = foi_off,
+              by = length(flexmodel$tmb_indices$updateidx),
+              length.out = flexmodel$iters + 1)
+        ]
+      })
+      %>% as.data.frame
+    )
+
+    params0 <- params
+    state0 = state
+    if (spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) {
+      # if the initial state came from tmb ...
+      state0[] = tmb_sims$concatenated_state_vector[seq_along(state)]
+    }
+
+    res = cbind(res, foi)
+  } else {
+
     call <- match.call()
 
     if (is.na(sum(params[["N"]]))) stop("no population size specified; set params[['N']]")
@@ -922,18 +1029,18 @@ run_sim <- function(params,
     start_date <- as.Date(start_date)
     end_date <- as.Date(end_date)
     if (!is.null(stoch_start)) {
-        stoch_start <- setNames(as.Date(stoch_start), names(stoch_start))
+      stoch_start <- setNames(as.Date(stoch_start), names(stoch_start))
     }
     if (length(stoch_start) == 1) stoch_start <- c(obs = stoch_start, proc = stoch_start)
     date_vec <- seq(start_date, end_date, by = dt)
     nt <- length(date_vec)
     step_args <- c(step_args, list(stoch_proc = stoch[["proc"]]))
     drop_last <- function(x) {
-        x[seq(nrow(x) - 1), ]
+      x[seq(nrow(x) - 1), ]
     }
     if (is.null(state)) state <- make_state(params = params, testify = FALSE)
     if (has_testing(params = params)) {
-        state <- expand_stateval_testing(state, params = params)
+      state <- expand_stateval_testing(state, params = params)
     }
 
     if (has_vax(params) && ndt != 1) stop("the model with vaccination only works with ndt = 1")
@@ -944,19 +1051,19 @@ run_sim <- function(params,
     ## (2) does this imply that testify/testing stuff should be refactored/go elsewhere?
     ## (3) this is reminiscent of the expand/don't-expand hoops that we go through in the eigenvector/state calculation
     make_M <- function() {
-        M <- make_ratemat(state = state, params = params)
-        if (has_testing(params = params)) {
-            if (!is.null(ratemat_args$testify)) {
-                warning("'testify' no longer needs to be passed in ratemat_args")
-            }
-            testing_time <- ratemat_args$testing_time
-            if (is.null(testing_time)) {
-                warning("setting testing time to 'sample'")
-                testing_time <- "sample"
-            }
-            M <- testify(M, params, testing_time = testing_time)
+      M <- make_ratemat(state = state, params = params)
+      if (has_testing(params = params)) {
+        if (!is.null(ratemat_args$testify)) {
+          warning("'testify' no longer needs to be passed in ratemat_args")
         }
-        return(M)
+        testing_time <- ratemat_args$testing_time
+        if (is.null(testing_time)) {
+          warning("setting testing time to 'sample'")
+          testing_time <- "sample"
+        }
+        M <- testify(M, params, testing_time = testing_time)
+      }
+      return(M)
     }
     M <- make_M()
 
@@ -965,82 +1072,82 @@ run_sim <- function(params,
     ## no explicit switches, and (no process error) or (process error for full time);
     ## we will be able to run the whole sim directly
     if (is.null(params_timevar) && (!stoch[["proc"]] || is.null(stoch_start))) {
-        switch_times <- NULL
+      switch_times <- NULL
     } else {
-        if (is.null(params_timevar)) {
-            ## starting times for process/obs error specified, but no other time-varying parameters;
-            ##  we need an empty data frame with the right structure so we can append the process-error switch times
-            params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Value = numeric(0), Type = character(0))
-        } else {
-            ## check column names
-            names(params_timevar) <- capitalize(names(params_timevar))
-            if (identical(
-                names(params_timevar),
-                c("Date", "Symbol", "Relative_value")
-            )) {
-                if (!deprecate_timepars_warning) {
-                    warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
-                    deprecate_timepars_warning <- TRUE
-                }
-                names(params_timevar)[3] <- "Value"
-                params_timevar <- data.frame(params_timevar, Type = "rel_orig")
-            }
-            npt <- names(params_timevar)
-            if (!identical(
-                npt,
-                c("Date", "Symbol", "Value", "Type")
-            )) {
-                stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
-            }
-            params_timevar$Date <- as.Date(params_timevar$Date)
-            ## tryCatch(
-            ##     params_timevar$Date <- as.Date(params_timevar$Date),
-            ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
-            params_timevar <- params_timevar[order(params_timevar$Date), ]
+      if (is.null(params_timevar)) {
+        ## starting times for process/obs error specified, but no other time-varying parameters;
+        ##  we need an empty data frame with the right structure so we can append the process-error switch times
+        params_timevar <- dfs(Date = as.Date(character(0)), Symbol = character(0), Value = numeric(0), Type = character(0))
+      } else {
+        ## check column names
+        names(params_timevar) <- capitalize(names(params_timevar))
+        if (identical(
+          names(params_timevar),
+          c("Date", "Symbol", "Relative_value")
+        )) {
+          if (!deprecate_timepars_warning) {
+            warning("specifying params_timevar with Relative_value is deprecated: auto-converting (reported once per session)")
+            deprecate_timepars_warning <- TRUE
+          }
+          names(params_timevar)[3] <- "Value"
+          params_timevar <- data.frame(params_timevar, Type = "rel_orig")
         }
-        ## append process-observation switch to timevar
-        if (stoch[["proc"]] && !is.null(stoch_start)) {
-            params_timevar <- rbind(
-                params_timevar,
-                dfs(
-                    Date = stoch_start[["proc"]],
-                    Symbol = "proc_disp", Value = 1, Type = "rel_orig"
-                )
-            )
-            params[["proc_disp"]] <- -1 ## special value: signal no proc error
+        npt <- names(params_timevar)
+        if (!identical(
+          npt,
+          c("Date", "Symbol", "Value", "Type")
+        )) {
+          stop("params_timevar: has wrong names: ", paste(npt, collapse = ", "))
         }
-        switch_dates <- params_timevar[["Date"]]
-        ## match specified times with time sequence
-        switch_times <- match(switch_dates, date_vec)
-        if (any(is.na(switch_times))) {
-            bad <- which(is.na(switch_times))
-            stop("non-matching dates in params_timevar: ", paste(switch_dates[bad], collapse = ","))
-        }
-        if (any(switch_times == length(date_vec))) {
-            ## drop switch times on final day
-            warning("dropped switch times on final day")
-            switch_times <- switch_times[switch_times < length(date_vec)]
-        }
+        params_timevar$Date <- as.Date(params_timevar$Date)
+        ## tryCatch(
+        ##     params_timevar$Date <- as.Date(params_timevar$Date),
+        ##     error=function(e) stop("Date column of params_timevar must be a Date, or convertible via as.Date"))
+        params_timevar <- params_timevar[order(params_timevar$Date), ]
+      }
+      ## append process-observation switch to timevar
+      if (stoch[["proc"]] && !is.null(stoch_start)) {
+        params_timevar <- rbind(
+          params_timevar,
+          dfs(
+            Date = stoch_start[["proc"]],
+            Symbol = "proc_disp", Value = 1, Type = "rel_orig"
+          )
+        )
+        params[["proc_disp"]] <- -1 ## special value: signal no proc error
+      }
+      switch_dates <- params_timevar[["Date"]]
+      ## match specified times with time sequence
+      switch_times <- match(switch_dates, date_vec)
+      if (any(is.na(switch_times))) {
+        bad <- which(is.na(switch_times))
+        stop("non-matching dates in params_timevar: ", paste(switch_dates[bad], collapse = ","))
+      }
+      if (any(switch_times == length(date_vec))) {
+        ## drop switch times on final day
+        warning("dropped switch times on final day")
+        switch_times <- switch_times[switch_times < length(date_vec)]
+      }
     } ## steps
 
     if (is.null(switch_times)) {
-        res <- thin(
-            ndt = ndt,
-            do.call(
-                run_sim_range,
-                nlist(params,
-                    state,
-                    nt = nt * ndt,
-                    dt = dt / ndt,
-                    M,
-                    use_ode,
-                    ratemat_args,
-                    step_args
-                )
-            )
+      res <- thin(
+        ndt = ndt,
+        do.call(
+          run_sim_range,
+          nlist(params,
+                state,
+                nt = nt * ndt,
+                dt = dt / ndt,
+                M,
+                use_ode,
+                ratemat_args,
+                step_args
+          )
         )
+      )
     } else {
-        t_cur <- 1
+      t_cur <- 1
         ## want to *include* end date
         switch_times <- switch_times + 1
         ## add beginning and ending time
@@ -1078,58 +1185,60 @@ run_sim <- function(params,
                     ))
                 }
 
-                if (!s %in% "beta0") { ## also testing rates?
-                    recompute_M <- TRUE
-                }
-                ## FIXME: so far still assuming that params only change foi
-                ## if we change another parameter we will have to recompute M
-            }
-            if (recompute_M) {
-                M <- make_M()
-            }
+                  if (!s %in% "beta0") { ## also testing rates?
+                      recompute_M <- TRUE
+                  }
+                  ## FIXME: so far still assuming that params only change foi
+                  ## if we change another parameter we will have to recompute M
+              }
+              if (recompute_M) {
+                  M <- make_M()
+              }
 
-            resList[[i]] <- drop_last(
-                thin(
-                    ndt = ndt,
-                    do.call(
-                        run_sim_range,
-                        nlist(params,
-                            state,
-                            nt = (times[i + 1] - times[i] + 1) * ndt,
-                            dt = dt / ndt,
-                            M,
-                            use_ode,
-                            ratemat_args,
-                            step_args,
-                            ode_args
-                        )
-                    )
-                )
-            )
-            state <- attr(resList[[i]], "state")
-            t_cur <- times[i]
-        }
-        ## combine
-        res <- do.call(rbind, resList)
-        ## add last row
-        ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
-    }
-    ## drop internal stuff
-    ## res <- res[,setdiff(names(res),c("t","foi"))]
-    res <- dfs(date = seq(start_date, end_date, by = dt), res)
-    res <- res[, !names(res) %in% "t"] ## we never want the internal time vector
+              resList[[i]] <- drop_last(
+                  thin(
+                      ndt = ndt,
+                      do.call(
+                          run_sim_range,
+                          nlist(params,
+                              state,
+                              nt = (times[i + 1] - times[i] + 1) * ndt,
+                              dt = dt / ndt,
+                              M,
+                              use_ode,
+                              ratemat_args,
+                              step_args,
+                              ode_args
+                          )
+                      )
+                  )
+              )
+              state <- attr(resList[[i]], "state")
+              t_cur <- times[i]
+          }
+          ## combine
+          res <- do.call(rbind, resList)
+          ## add last row
+          ## res <- rbind(res, attr(resList[[length(resList)]],"state"))
+      }
+      ## drop internal stuff
+      ## res <- res[,setdiff(names(res),c("t","foi"))]
+      res <- dfs(date = seq(start_date, end_date, by = dt), res)
+      res <- res[, !names(res) %in% "t"] ## we never want the internal time vector
+    } # not use_flex
+
     ## condense here
     if (condense) {
-        ## FIXME: will it break anything if we call condense with 'params'
-        ## (modified by time-varying stuff) instead of params0? Let's find out!
-        res <- do.call(condense.pansim, c(
-            list(res,
-                params = params0,
-                cum_reports = FALSE,
-                het_S = has_zeta(params0)
-            ),
-            condense_args
-        ))
+      ## FIXME: will it break anything if we call condense with 'params'
+      ## (modified by time-varying stuff) instead of params0? Let's find out!
+      res <- do.call(condense.pansim, c(
+          list(res,
+              params = params0,
+              cum_reports = FALSE,
+              het_S = has_zeta(params0)
+          ),
+          condense_args
+      ))
     }
     if (stoch[["obs"]]) {
         if (has_zeta(params)) params[["obs_disp_hetS"]] <- NA ## hard-code skipping obs noise
@@ -1157,6 +1266,7 @@ run_sim <- function(params,
         res[seq(nrow(res) - m_rows + 1, nrow(res)), -1] <- m
     }
     ## add cum reports *after* adding obs error
+    ## TODO: how do reports and deaths interact with flexmodel/tmb approach?
     if ("report" %in% names(res)) res$cumRep <- cumsum(ifelse(!is.na(unname(unlist(res$report))), unname(unlist(res$report)), 0))
     if ("death" %in% names(res)) res$D <- cumsum(ifelse(!is.na(res$death), res$death, 0))
 
@@ -1169,6 +1279,11 @@ run_sim <- function(params,
     attr(res, "start_date") <- start_date
     attr(res, "end_date") <- end_date
     attr(res, "call") <- call
+    if(use_flex) {
+      attr(res, "flexmodel") <- flexmodel
+      attr(res, "ad_fun") <- obj_fun
+
+    }
     attr(res, "params_timevar") <- params_timevar
     ## attr(res,"final_state") <- state
     class(res) <- c("pansim", "data.frame")
@@ -1331,7 +1446,8 @@ make_state <- function(N = params[["N"]],
             if (vaxify) {
                 evec <- get_evec(params,
                     testify = testify,
-                    do_hazard = TRUE
+                    # FIXME: expose this with default TRUE
+                    do_hazard = getOption("MP_vax_make_state_with_hazard")
                 )
             } else {
                 evec <- get_evec(params, testify = testify)
@@ -1374,7 +1490,7 @@ make_state <- function(N = params[["N"]],
             ##     -> -u*(A+B) +B =0 -> u = B/(A+B)
             ## FIXME: get_evec() should work for S!
             ufrac <- with(as.list(params), omega / ((testing_intensity * W_asymp) + omega))
-            S_values <- round((N - sum(E_values)) * c(ufrac, 1 - ufrac))
+            S_values <- state_round((N - sum(E_values)) * c(ufrac, 1 - ufrac))
         } else if (ageify || vaxify) {
             ## aggregate over states
             istart <- condense_state(E_values)

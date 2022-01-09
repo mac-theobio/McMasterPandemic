@@ -1,0 +1,589 @@
+---
+title: "Flexible and Fast Modelling with McMasterPandemic -- Examples"
+output: html_document
+---
+
+[![Live
+Version](https://img.shields.io/static/v1.svg?label=Updated&message=`r Sys.Date()`&color=blue)](https://canmod.net/misc/flex_intro)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(ggplot2)
+library(McMasterPandemic)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+```
+
+## Hello World: Simulating an SIR Model
+
+```{r}
+state = c(S = 20000, I = 100, R = 0)
+sir_model = (
+  init_model(
+    params = c(
+      gamma = 0.06,
+      beta = 0.15,
+      N = sum(state)
+    ),
+    state = state,
+    start_date = "2000-01-01",
+    end_date = "2000-05-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+sir_model
+```
+
+```{r}
+(sir_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+```
+
+```{r}
+(sir_model
+    %>% simulate_changing_ratemat_elements(add_dates = TRUE)
+    %>% rename(`force of infection` = S_to_I)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = `force of infection`))
+  )
+```
+
+## Structure: Two-Strain SIR
+
+```{r}
+
+strains = c("wild", "variant")
+state = c(
+  S = 20000, 
+  I_wild = 49, I_variant = 1,
+  R_wild = 0,   R_variant = 0
+)
+two_strain_model = (
+  init_model(
+    params = c(
+      gamma = 0.06,       
+      beta_wild = 0.15,   
+      beta_variant = 0.25,
+      N = sum(state)
+    ),
+    state = state,
+    start_date = "2000-01-01",
+    end_date = "2000-05-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% vec_rate(
+    "S",
+    "I" %_% strains, 
+     vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains)
+  )
+  %>% rep_rate("I", "R", ~ (gamma))
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+```
+
+```{r}
+regex = "^(S|I|R)(_*)(.*)"
+(two_strain_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value)
+    %>% mutate(strain  = sub(pattern = regex, replacement = "\\3", name))
+    %>% mutate(epi_cat = sub(pattern = regex, replacement = "\\1", name))
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat, linetype = strain))
+  )
+```
+
+```{r}
+(two_strain_model
+    %>% simulate_changing_ratemat_elements(add_dates = TRUE)
+    %>% pivot_longer(starts_with("S_to_I"))
+    %>% mutate(name = sub("S_to_I_", "", name))
+    %>% rename(`force of infection` = value)
+    %>% rename(strain = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = `force of infection`, colour = strain))
+  )
+```
+
+## Erlang SEIR
+
+David, Jonathan, and David describe the [Erlang SEIR model](https://epubs.siam.org/doi/pdf/10.1137/18M1186411) in continuous time. Here is a discrete time version of it.
+```{r}
+n = 4 # number of I states
+m = 6 # number of E states
+erlang_seir = (init_model(
+  # FIXME: only working for no demography (so mu = 0 for now)
+  params = c(mu = 0, beta = 1.5, m = m, n = n,
+             gamma = 1.2, sigma = 0.1),
+  state = c(
+    S = 1-1e-3,
+    setNames(rep(0, m), "E" %_% 1:m),
+    I_1 = 1e-3,
+    setNames(rep(0, n-1), "I" %_% 2:n),
+    R = 0,
+    D = 0,
+    . = 1),
+  start_date = "2000-01-01",
+  end_date = "2000-04-01",
+  do_make_state = FALSE,
+  do_hazard = TRUE
+)
+  %>% add_state_param_sum("I", "^I_[0-9]+")
+
+  # birth
+  %>% add_rate(".", "S", ~ (mu))
+
+  # death
+  %>% rep_rate(
+    from = c("S", "E" %_% 1:m, "I" %_% 1:n, "R"), 
+    to = "D",
+    formula = ~ (mu))
+  
+  # infection
+  %>% add_rate("S", "E_1", ~ (beta) * (I))
+
+  # become infectious
+  %>% add_rate("E" %_% m, "I_1", ~ (m) * (sigma))
+
+  # sojourn through exposed compartments
+  %>% rep_rate(
+    "E" %_% 1:(m-1),
+    "E" %_% 2:m,
+    ~ (m) * (sigma)
+  )
+
+  # sojourn through infectious compartments
+  %>% rep_rate(
+    "I" %_% 1:(n-1),
+    "I" %_% 2:n,
+    ~ (n) * (gamma)
+  )
+
+  # recovery
+  %>% add_rate("I" %_% n, "R", ~ (n) * (gamma))
+
+  # nothing flows out of . because it is a dummy
+  # state used to generate flows that are not per-capita
+  %>% add_outflow("[^.]")
+  %>% update_tmb_indices
+)
+
+(erlang_seir
+  %>% simulate_state_vector(add_dates = TRUE)
+  %>% select(-., -D)
+  %>% pivot_longer(-Date, names_to = "State", values_to = "Count")
+  %>% mutate(State = sub("_[0-9]+", "", State))
+  %>% group_by(Date, State)
+  %>% summarise(Count = sum(Count))
+  %>% ungroup
+  %>% ggplot() + geom_line(aes(Date, Count, colour = State))
+)
+
+# check to make sure that the population density
+# remains constant at one
+(erlang_seir
+  %>% simulate_state_vector(add_dates = FALSE)
+  %>% select(-., -D)
+  %>% rowSums
+  %>% sapply(all.equal, 1L)
+  %>% sapply(isTRUE)
+  %>% all
+)
+```
+
+## The SIRV model
+
+```{r}
+state = c(S = 20000, I = 100, R = 0, V = 0)
+params = c(
+      gamma = 0.06,
+      beta = 0.15,
+      v = 0, # initial vaccination rate
+      N = sum(state)
+    )
+
+# roll out the vaccine by bumping the 
+# vaccination rate twice
+params_timevar = data.frame(
+  Date = c("2020-02-01", "2020-03-01"), 
+  Symbol = c("v", "v"),  
+  Value = c(0.01, 0.1), 
+  Type = c("abs", "abs"))
+
+sirv_model = (
+  init_model(
+    params = params,
+    state = state,
+    params_timevar = params_timevar,
+    start_date = "2020-01-01",
+    end_date = "2020-05-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (1/N) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_rate("S", "V", ~  (v))
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+
+(sirv_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+     +  geom_vline(aes(xintercept = as.Date(Date)), data = params_timevar, colour = 'lightgrey')
+  )
+
+```
+
+
+## Variolation model
+
+```{r}
+state = c(
+  S = 20000, 
+  I_severe = 50, I_mild = 50,
+  R_mild = 0,   R_severe = 0
+)
+params = c(
+  nu = 0.0105, # birth rate
+  mu = 0.0105, # death rate
+  delta = 1/7, # waning immunity rate
+  gamma_mild = 1/(3.3 + 9),  # recovery rate of mild cases
+  gamma_severe = 1/(3.3 + 14), # recovery rate of severe cases
+  beta_mild = 0.15,  # transmission rate of infections leading to mild cases
+  beta_severe = 0.3, # transmission rate of infections leading to severe cases
+  m = 0.6 # probability of developing mild illness
+)
+
+# model structure
+all_states = names(state)
+severity = c("mild", "severe")
+beta_vec = vec("beta" %_% severity)
+I_vec = vec("I" %_% severity)
+foi = kronecker(vec("m", "1-m"), sum(beta_vec * I_vec * struc("1/N")))
+
+variolation_model <- (
+  init_model(
+    params = params,
+    state = state,
+    start_date = "2020-01-01",
+    end_date = "2020-04-01",
+    do_hazard = FALSE,
+    do_make_state = FALSE
+  )
+  %>% add_state_param_sum("N", any_var(state))
+  
+  # births and deaths 
+  # (FIXME: this only works if nu = mu)
+  %>% rep_rate(
+    all_states,
+    "S",
+    ~ (nu)
+  )
+  
+  # infection
+  %>% vec_rate(
+    "S",
+    "I" %_% severity, 
+     foi
+  )
+  
+  # waning immunity
+  %>% rep_rate(
+    "R" %_% severity,
+    "S",
+    ~ (delta)
+  )
+  
+  # recovery
+  %>% vec_rate(
+    "I" %_% severity,
+    "R" %_% severity,
+    vec("gamma" %_% severity)
+  )
+  
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+
+(variolation_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+
+```
+
+## SEIRD Model
+
+This is the [Mac Theo Bio Model](https://github.com/mac-theobio/mac-theobio.github.io/blob/master/seird.jpg).
+
+```{r}
+state = c(S = 20000, E = 50, I = 50, R = 0, D = 0, Null = 0)
+params = c(
+  # transmission rates of susceptibles from live and dead individuals
+  beta_I = 5,
+  beta_D = 2,
+  
+  # average times in various boxes
+  T_E = 10,
+  T_I = 14,
+  T_D = 10,
+  
+  # probability of death given infection
+  f = 0.5
+)
+seird_model = (
+  init_model(
+    params = params, 
+    state = state,
+    start_date = "2000-01-01",
+    end_date = "2000-03-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_state_param_sum("N", any_var(state))
+  %>% add_rate("S", "E", ~ (beta_I) * (1/N) * (I) + (beta_D) * (1/N) * (D))
+  %>% add_rate("E", "I", ~ (1/T_E))
+  %>% add_rate("I", "R", ~ (1/T_I) * (1 - f))
+  %>% add_rate("I", "D", ~ (1/T_I) * (f))
+  %>% add_rate("D", "Null", ~ (1/T_D))
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+(seird_model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+```
+
+## Covid SEIR
+
+The BC covid modelling group uses this [compartmental model](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008274) for their inference and forecasting work.  This model can be expressed in McMasterPandemic with the following.
+
+```{r fig.height=8, fig.width=8}
+foi =  (
+    vec(c("1", "f")) 
+  * struc("beta") 
+  * struc("1/N") 
+  * (struc("(I) + (E2)") + (struc("f") * struc("(Id) + (E2d)")))
+)
+params = c(
+  N = 5100000,
+  D = 5,
+  k1 = 0.2,
+  k2 = 1,
+  q = 0.05,
+  ud = 0.1,
+  ur = 0.02,
+  psir = 0.3,
+  shape = 1.73,
+  scale = 9.85,
+  beta = 0.433,
+  f = 1
+)
+state = c(
+  S = 849999,
+  E1 = 0.53,
+  E2 = 0.13,
+  I = 0.67,
+  Q = 0,
+  R = 0,
+  Sd = 4249993,
+  E1d = 2.67,
+  E2d = 0.67,
+  Id = 3.33,
+  Qd = 0,
+  Rd = 0
+)
+base_states = names(state)[1:6]
+dist_states = base_states %+% "d"
+strats = c("", "d") # distancing strategies
+ramp_period = seq(from = ymd(20210315), to = ymd(20210322), by = 1)
+time_ratio = rev((seq_along(ramp_period) - 1) / (length(ramp_period) - 1))
+f2 = 0.22
+params_timevar = data.frame(
+  Date = ramp_period,
+  Symbol = rep("f", length(ramp_period)),
+  Value = f2 + time_ratio * (1 - f2),
+  Type = rep("abs", length(ramp_period))
+)
+model = (
+  init_model(
+    params = params,
+    state = state,
+    start_date = "2021-02-01",
+    end_date = "2021-06-01",
+    do_make_state = FALSE,
+    do_hazard = TRUE,
+    params_timevar = params_timevar
+  )
+  
+  # flow between distancing strategies
+  %>% rep_rate(base_states, dist_states, ~ (ud))
+  %>% rep_rate(dist_states, base_states, ~ (ur))
+  
+  # force of infection
+  %>% vec_rate(
+    "S"  %+% strats, 
+    "E1" %+% strats, 
+    foi
+  )
+  
+  # flow within distancing strategies
+  %>% rep_rate(
+    "E1" %+% strats,
+    "E2" %+% strats,
+    ~ (k1)
+  )
+  %>% rep_rate(
+    "E2" %+% strats,
+    "I"  %+% strats,
+    ~ (k2)
+  )
+  %>% rep_rate(
+    "I" %+% strats,
+    "Q" %+% strats,
+    ~ (q)
+  )
+  %>% rep_rate(
+    expand_names(c("I", "Q"), strats, ""),
+    expand_names(c("R", "R"), strats, ""),
+    ~ (1/D)
+  )
+  
+  # add outflow for all inflows
+  %>% add_outflow()
+  
+  # compute indices to be passed to the tmb engine
+  %>% update_tmb_indices()
+)
+(model
+  %>% simulate_state_vector(add_dates = TRUE)
+  %>% pivot_longer(!Date)
+  %>% ggplot()
+   +  facet_wrap(~ name, scales = 'free', ncol = 2)
+   +  geom_line(aes(Date, value))
+)
+```
+
+## Outflows and Accumulators
+
+Up until now we have been assuming that all inflows are associated with a corresponding outflow. The number of individuals that go into a box must exactly balance numbers of individuals that come out of other boxes into this one. There are situations however where one wants to keep track of the number of individuals that have ever entered a particular box. To do this we set up accumulator boxes that have no corresponding outflow, and whose inflows are identical to those of other boxes.
+
+TODO: unfinished
+
+```{r echo = FALSE, eval = FALSE}
+plot_sir = function(model) {
+  (model
+    %>% simulate_state_vector(add_dates = TRUE)
+    %>% pivot_longer(!Date)
+    %>% rename(state = value, epi_cat = name)
+    %>% ggplot
+     +  geom_line(aes(x = Date, y = state, colour = epi_cat))
+  )
+}
+```
+
+```{r echo = FALSE, eval = FALSE}
+(
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% update_tmb_indices
+  %>% plot_sir
+)
+```
+
+```{r echo = FALSE, eval = FALSE}
+(
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0, A = 100),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = FALSE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("S", "A", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow("S", "I")
+  %>% add_outflow("I", "R")
+  %>% update_tmb_indices
+  %>% plot_sir
+)
+```
+
+```{r echo = FALSE, eval = FALSE}
+sir_model = (
+  init_model(
+    params = c(
+      gamma = 1e-1, # per-infected recovery rate
+      beta = 5e-9   # per-contact transmission rate
+    ),
+    state = c(S = 20000, I = 100, R = 0),
+    start_date = "2000-01-01",
+    end_date = "2000-02-01",
+    do_hazard = TRUE,
+    do_make_state = FALSE
+  )
+  %>% add_rate("S", "I", ~ (beta) * (S) * (I))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% add_outflow()
+  %>% update_tmb_indices
+)
+sir_model
+```
+
+## Canned Models
+
+### Base MacPan COVID Model -- `make_base_model`
+
+### Vaccination and Variant COVID Model -- `make_vaccination_model`
+
+## Hooking up to Standard MacPan Tools
+
+### Hooking up to `run_sim`
+
+### Hooking up to `calibrate`
+
+### Hooking up to `forecast`

@@ -1,29 +1,48 @@
 library(TMB)
-compile("do_step.cpp")
-dyn.load(dynlib("do_step"))
+compile("TMB_do_step.cpp")
+#dyn.load(dynlib("/lib/libRmath"))
+dyn.load(dynlib("TMB_do_step"))
 library(McMasterPandemic)
 
 p <- read_params("ICU1.csv")
 s <- make_state(params = p)
-s0 <- c(s)
-init <- s0[1]
 M <- make_ratemat(state = s, params = p, sparse=TRUE)
-## note that attributes mess up MakeADFun - need to strip them with c()
-## before passing to MakeADFun
-dd <- MakeADFun(data = list(state = s0,
-                            ratemat = M,
-                            inf_ind = grep("I[a-z]", names(s)),
-                            transm_ind = which(names(p) == "beta0"),
-                            ## fragile! assumes same order as state
-                            transm_wt_ind = grep("C[a-z]", names(p)),
-                            foi_ind = c(which(rownames(M) == "S"),
-                                        which(colnames(M) == "E"))
 
+print(p)
+print(M)
+M1 = M*c(s)
+print(M1)
+
+# Make the C++ function interface identical to do_step() in sim_funs.R
+# NOTE: attributes mess up MakeADFun - need to strip them with c()
+# before passing to MakeADFun
+
+print("***** Before calling MakeADFun ...")
+print(as.numeric(Sys.time())*1000000, digits=19)
+dd <- MakeADFun(data = list(state = c(s),
+                            ratemat = M,
+                            dt = 1,
+                            do_hazard = TRUE,
+                            stoch_proc = FALSE,
+                            do_exponential = FALSE,
+                            testwt_scale = "Noooo!"
+                            #inf_ind = grep("I[a-z]", names(s)),
+                            #transm_ind = which(names(p) == "beta0"),
+                            ## fragile! assumes same order as state
+                            #transm_wt_ind = grep("C[a-z]", names(p)),
+                            #foi_ind = c(which(rownames(M) == "S"),
+                            #            which(colnames(M) == "E"))
                             ),
                 parameters = list(params=c(p)))
-dd$fn(p)
-identical(s0[1], init)
-s == dd$report()$state ## new state
+
+
+print("***** Before calling cpp ...")
+print(as.numeric(Sys.time())*1000000, digits=19)
+#dd$fn(p)	# This doesn't call the C++ function
+print("***** After calling cpp ...")
+print(as.numeric(Sys.time())*1000000, digits=19)
+
+s == dd$report()$state ## new state (this triggers the calling of the c++ function)
 
 ## it's probably possible to update data etc.
 ## by messing around with objects in the environment, e.g.

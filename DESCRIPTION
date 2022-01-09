@@ -1,7 +1,7 @@
 Package: McMasterPandemic
 Title: Pandemic Model
 Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.20
+Version: 0.0.20.1
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
@@ -9,7 +9,7 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
 		   person("Matthew So", role="ctb"))
-Depends: R (>= 4.0.0)
+Depends: R (>= 4.0.0), TMB, RcppEigen
 Imports:
 	lattice,
 	Matrix,
@@ -35,7 +35,8 @@ Imports:
 	forcats, 
 	foreach, 
 	readr, 
-	stringr
+	stringr,
+	semver
 Suggests:
 	knitr,
 	testthat,
@@ -48,6 +49,8 @@ Suggests:
 	rmarkdown,
 	tidyverse,
 	anytime
+LinkingTo:
+  TMB, RcppEigen
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 License: GPL

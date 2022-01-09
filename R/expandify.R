@@ -2,6 +2,7 @@
 ## to expand states with subcategories (age, vaccine status)
 
 ## x_y, with x varying faster
+##' @export
 expand_names <- function(x, y, sep = "_") {
     unlist(lapply(y, function(a) paste(x, a, sep = sep)))
 }
@@ -84,7 +85,7 @@ condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed
         %>% pivot_wider(
             names_from = "subcat",
             values_from = "value"
-            )
+        )
         ## drop observation number
         %>% select(-obs_number)
     ) -> x
@@ -93,10 +94,10 @@ condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed
     x <- repair_names_age(x)
 
     x <- switch(return_type,
-                tibble = x,
-                named_vector = tibble_row_to_named_vec(x),
-                unnamed_vector = unname(unlist(x))
-                )
+        tibble = x,
+        named_vector = tibble_row_to_named_vec(x),
+        unnamed_vector = unname(unlist(x))
+    )
 
     return(x)
 }
@@ -513,7 +514,7 @@ make_vaxrate <- function(state, params) {
         x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
         vax_rate$dose1 <- x
 
-        x <- (1-params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]] / asymp_vaxprotect1_N
+        x <- (1 - params[["vax_prop_first_dose"]]) * params[["vax_doses_per_day"]] / asymp_vaxprotect1_N
         x[is.nan(x)] <- 0 ## replace NaN with 0, which occurs when asymp_unvax_N is 0
         vax_rate$dose2 <- x
     }
@@ -546,40 +547,40 @@ add_updated_vaxrate <- function(state, params, ratemat) {
 
     ## update unvax -> vaxdose1 block (& vaxprotect1 -> vaxdose2 block)
     if (!has_age(params)) {
-      ## set up block diagonal matrix for vaccine allocation step within each age group
-      vax_block_dose1 <- matrix(0,
-                                nrow = length(epi_states),
-                                ncol = length(epi_states),
-                                dimnames = list(epi_states, epi_states)
-      )
-      if (model_type == "twodose") vax_block_dose2 <- vax_block_dose1
-
-      ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
-      for (state_cat in asymp_cat) {
-        ## unvax to vaxdose1
-        index <- pfun(
-          paste0(state_cat),
-          paste0(state_cat),
-          vax_block_dose1
+        ## set up block diagonal matrix for vaccine allocation step within each age group
+        vax_block_dose1 <- matrix(0,
+            nrow = length(epi_states),
+            ncol = length(epi_states),
+            dimnames = list(epi_states, epi_states)
         )
-        vax_block_dose1[index] <- vax_rate$dose1
-        if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+        if (model_type == "twodose") vax_block_dose2 <- vax_block_dose1
 
-        ## accumulator (not present e.g. when we do rExp in make_state)
-        if ("V" %in% epi_states) {
-          index <- pfun(
-            paste0(state_cat),
-            paste0("V"),
-            vax_block_dose1
-          )
-          vax_block_dose1[index] <- vax_rate$dose1
-          if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+        ## for every epi state getting vaccinated (non-symptomatic states), assign vax rate between matching epi states, and add rate for flow into vax accumulator compartment
+        for (state_cat in asymp_cat) {
+            ## unvax to vaxdose1
+            index <- pfun(
+                paste0(state_cat),
+                paste0(state_cat),
+                vax_block_dose1
+            )
+            vax_block_dose1[index] <- vax_rate$dose1
+            if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+
+            ## accumulator (not present e.g. when we do rExp in make_state)
+            if ("V" %in% epi_states) {
+                index <- pfun(
+                    paste0(state_cat),
+                    paste0("V"),
+                    vax_block_dose1
+                )
+                vax_block_dose1[index] <- vax_rate$dose1
+                if (model_type == "twodose") vax_block_dose2[index] <- vax_rate$dose2
+            }
         }
-      }
 
-      ## convert vax_block to Matrix::Matrix object for subset assignement
-      vax_block_dose1 <- Matrix::Matrix(vax_block_dose1)
-      if (model_type == "twodose") vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
+        ## convert vax_block to Matrix::Matrix object for subset assignement
+        vax_block_dose1 <- Matrix::Matrix(vax_block_dose1)
+        if (model_type == "twodose") vax_block_dose2 <- Matrix::Matrix(vax_block_dose2)
 
         ## just once, without ages
         from_regex <- vax_cat[1] ## unvax
@@ -621,11 +622,11 @@ add_updated_vaxrate <- function(state, params, ratemat) {
             ] <- diag(dose1_rate, nrow = block_size, ncol = block_size, names = FALSE)
 
             ## add flows into vax accumulator compartment
-            if("V" %in% epi_states){
-              ratemat[
-                grepl(from_regex, dimnames(ratemat)$from),
-                grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
-              ] <- rep(as.numeric(dose1_rate), block_size)
+            if ("V" %in% epi_states) {
+                ratemat[
+                    grepl(from_regex, dimnames(ratemat)$from),
+                    grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
+                ] <- rep(as.numeric(dose1_rate), block_size)
             }
 
             if (model_type == "twodose") {
@@ -645,15 +646,15 @@ add_updated_vaxrate <- function(state, params, ratemat) {
                 block_size <- 5
 
                 ratemat[
-                  grepl(from_regex, dimnames(ratemat)$from),
-                  grepl(to_regex, dimnames(ratemat)$to)
+                    grepl(from_regex, dimnames(ratemat)$from),
+                    grepl(to_regex, dimnames(ratemat)$to)
                 ] <- diag(dose2_rate, nrow = block_size, ncol = block_size, names = FALSE)
 
-                if("V" %in% epi_states){
-                  ratemat[
-                    grepl(from_regex, dimnames(ratemat)$from),
-                    grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
-                  ] <- rep(as.numeric(dose2_rate), block_size)
+                if ("V" %in% epi_states) {
+                    ratemat[
+                        grepl(from_regex, dimnames(ratemat)$from),
+                        grepl(paste0("^V_", to_regex_suffix), dimnames(ratemat)$to)
+                    ] <- rep(as.numeric(dose2_rate), block_size)
                 }
             }
         }
@@ -816,4 +817,29 @@ expand_params_variant <- function(params,
     class(params) <- "params_pansim"
 
     return(params)
+}
+
+##' @param params parameter list (e.g. read in with \code{read_params()})
+##' @param S0 initial proportion of individuals in susceptible compartments
+##'
+##' @export
+expand_params_S0 = function(params, S0) {
+    if(is.atomic(params)) {
+        if(!is.na(params["S0"])) {
+            params["S0"] = S0
+            return(params)
+        }
+    } else {
+        if(!is.null(params[["S0"]])) {
+            params[["S0"]] = S0
+            return(params)
+        }
+    }
+    saved_attr = attributes(params)
+    params = c(params, S0)
+    saved_attr$description = c(saved_attr$description, "Initial proportion of individuals in S boxes")
+    saved_attr$names = c(saved_attr$names, "S0")
+    attributes(params) = saved_attr
+
+    params
 }

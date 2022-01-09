@@ -24,19 +24,19 @@ calc_conv <- function(i, params) {
         )
     )
     ret <- as.numeric(stats::filter(i, kern, sides = 1))
-    # ret <- as.data.frame(as.numeric(stats::filter(i, kern, sides = 1)))
-    # ## if parameters are ageified, keep age-stratified reports in output too
-    # if (has_age(params)) {
-    #     state_suffixes <- sub(
-    #         "^incidence", "",
-    #         grep("^incidence_", names(i), value = TRUE)
-    #     )
-    #     names(ret) <- paste0("report", state_suffixes)
-    #     ## add total reports
-    #     ret$report <- rowSums(ret)
-    # } else {
-    #     names(ret) <- c("report")
-    # }
+    ## ret <- as.data.frame(as.numeric(stats::filter(i, kern, sides = 1)))
+    ## ## if parameters are ageified, keep age-stratified reports in output too
+    ## if (has_age(params)) {
+    ##     state_suffixes <- sub(
+    ##         "^incidence", "",
+    ##         grep("^incidence_", names(i), value = TRUE)
+    ##     )
+    ##     names(ret) <- paste0("report", state_suffixes)
+    ##     ## add total reports
+    ##     ret$report <- rowSums(ret)
+    ## } else {
+    ##     names(ret) <- c("report")
+    ## }
 
     return(ret)
 }
@@ -64,7 +64,7 @@ calc_reports <- function(x, params, add_cumrep = FALSE) {
 
     ## calculate reports (including across age and vax strata, if present)
     report <- (incidence
-      %>% mutate(across(everything(), calc_conv, params = params)))
+        %>% mutate(across(everything(), calc_conv, params = params)))
     names(report) <- sub("incidence", "report", names(incidence))
 
     ret <- dfs(incidence, report)
@@ -133,7 +133,9 @@ prep_res_for_plotting <- function(res,
         res <- res %>% filter(!(state %in% drop_states))
     }
     ## r cmd check also doesn't understand this dplyr verb
-    where <- function(x){NULL}
+    where <- function(x) {
+        NULL
+    }
     return(res)
 }
 
@@ -585,9 +587,9 @@ summary.pansim <- function(object, ...) {
     unpack(object)
     res <- data.frame(
         peak_ICU_date = date[which.max(ICU)],
-        peak_ICU_val = round(max(ICU)),
+        peak_ICU_val = state_round(max(ICU)),
         peak_H_date = date[which.max(H)],
-        peak_H_val = round(max(H))
+        peak_H_val = state_round(max(H))
     )
     ## FIXME: report time-varying R0
     if (!is.null(p)) {
@@ -797,9 +799,9 @@ summary.fit_pansim <- function(object, ...) {
 ##' @export
 update.fit_pansim <- function(object, newparams = NULL, ...) {
     if (!is.null(newparams)) {
-      ## substitute named elements of newparams into the parameters/coefficients of the fit
-      ## these are stored in object$mle2@coef [for fitted parameters]
-      ## f_args$base_params
+        ## substitute named elements of newparams into the parameters/coefficients of the fit
+        ## these are stored in object$mle2@coef [for fitted parameters]
+        ## f_args$base_params
     }
     cc <- object$call
     L <- list(...)
@@ -1118,5 +1120,12 @@ vcov.fit_pansim <- function(object, ...) {
 }
 
 ##' @export
-is.nan.data.frame <- function(x)
-    do.call(cbind, lapply(x, is.nan))
+is.nan.data.frame <- function(x) {
+      do.call(cbind, lapply(x, is.nan))
+}
+
+##' @export
+print.flexmodel = function(x) {
+    print(rate_summary(x))
+    invisible(x)
+}

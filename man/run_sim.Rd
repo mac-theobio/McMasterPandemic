@@ -20,7 +20,10 @@ run_sim(
   use_ode = FALSE,
   condense = TRUE,
   condense_args = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  use_flex = FALSE,
+  flexmodel = NULL,
+  obj_fun = NULL
 )
 }
 \arguments{
@@ -32,7 +35,7 @@ run_sim(
 
 \item{end_date}{ending date (ditto)}
 
-\item{params_timevar}{four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero), \code{rel_prev} (relative to previous value), possibly others to be determined. If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.}
+\item{params_timevar}{four-column data frame containing columns 'Date'; 'Symbol' (parameter name/symbol); 'Value'; and 'Type' (\code{rel_orig} (relative to value at time zero); \code{rel_prev} (relative to previous value); or \code{abs} (absolute value at specified time). If a 'Relative_value' column is present, it is renamed to 'Value' and 'Type' is set to \code{rel_orig} for back-compatibility.}
 
 \item{dt}{time step for \code{\link{do_step}}}
 
@@ -55,6 +58,8 @@ run_sim(
 \item{condense_args}{arguments to pass to \code{\link{condense}} (before adding observation error)}
 
 \item{verbose}{print messages (e.g. about time-varying parameters)?}
+
+\item{use_flex}{use \code{flexmodel} approach (experimental)}
 }
 \description{
 Run pandemic simulation

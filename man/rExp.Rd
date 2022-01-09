@@ -9,7 +9,7 @@ used to calculate either r (technically r0) or eigenvector (for distributing ini
 \usage{
 rExp(
   params,
-  steps = 100,
+  steps = getOption("MP_rexp_steps_default"),
   ndt = 1,
   do_hazard = FALSE,
   state = NULL,
