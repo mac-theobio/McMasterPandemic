@@ -163,7 +163,18 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   }
 
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
-  mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
+
+  ##
+  if(!do_variant){
+    mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
+  } else {
+    ## variant-based mild-illness probability adjustment in vaccinated individuals
+    mu      = c("mu",    "mu",
+                "(1 - variant_prop) * (vax_mu_dose1) + (variant_prop) * (variant_vax_mu_dose1)",
+                "(1 - variant_prop) * (vax_mu_dose1) + (variant_prop) * (variant_vax_mu_dose1)",
+                "(1 - variant_prop) * (vax_mu_dose2) + (variant_prop) * (variant_vax_mu_dose2)")
+  }
+
   sigma   = struc("sigma")
   gamma_p = struc("gamma_p")
   E_to_Ia_rates  = vec(           alpha ) * sigma

@@ -10,9 +10,6 @@ rep_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 \item{model}{flexmodel}
 
 \item{formula}{formula or length-1 character vector}
-
-\item{indices}{two-column matrix of indices with column names "from_pos"
-and "to_pos", locaing elements of the rate matrix in model}
 }
 \description{
 Repeat a Rate for Several Rate Matrix Elements
