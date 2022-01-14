@@ -9,7 +9,9 @@ expand_params_variant(
   variant_prop = 0.01,
   variant_advantage = 1.5,
   variant_vax_efficacy_dose1 = 0.3,
-  variant_vax_efficacy_dose2 = 0.8
+  variant_vax_efficacy_dose2 = 0.8,
+  variant_vax_mu_dose1 = NULL,
+  variant_vax_mu_dose2 = NULL
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ expand_params_variant(
 \item{variant_vax_efficacy_dose1}{one-dose vaccine efficacy against variant (only used in vaxified model)}
 
 \item{variant_vax_efficacy_dose2}{two-dose vaccine efficacy against variant (only used in vaxified model)}
+
+\item{variant_vax_mu_dose1}{probability that an individual protected by one vaccine dose has a mild variant infection (if NULL, assume the same probability as for the resident strain)}
+
+\item{variant_vax_mu_dose2}{probability that an individual protected by two vaccine doses has a mild variant infection (if NULL, assume the same probability as for the resident strain)}
 }
 \description{
 Expand parameter list to include variant strain

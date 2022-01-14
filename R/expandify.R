@@ -765,6 +765,8 @@ expand_params_desc_variant <- function(params_desc) {
     params_desc[["variant_advantage"]] <- "Transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50% more transmissible variant would have variant_advantage = 1.5."
     params_desc[["variant_vax_efficacy_dose1"]] <- "One-dose vaccine efficacy against variant (only used in vaxified model)"
     params_desc[["variant_vax_efficacy_dose2"]] <- "Two-dose vaccine efficacy against variant (only used in vaxified model)"
+    params_desc[["variant_vax_mu_dose1"]] <- "Probabibility that an individual protected by one dose of vaccine has a mild variant infection"
+    params_desc[["variant_vax_mu_dose2"]] <- "Probabibility that an individual protected by two doses of vaccine has a mild variant infection"
 
     return(params_desc)
 }
@@ -776,6 +778,8 @@ expand_params_desc_variant <- function(params_desc) {
 ##' @param variant_advantage transmissibility advantage of variant compared to current dominant strain (as a multiplicative factor), e.g., a 50\% more transmissible variant would have \code{variant_advantage = 1.5}.
 ##' @param variant_vax_efficacy_dose1 one-dose vaccine efficacy against variant (only used in vaxified model)
 ##' @param variant_vax_efficacy_dose2 two-dose vaccine efficacy against variant (only used in vaxified model)
+##' @param variant_vax_mu_dose1 probability that an individual protected by one vaccine dose has a mild variant infection (if NULL, assume the same probability as for the resident strain)
+##' @param variant_vax_mu_dose2 probability that an individual protected by two vaccine doses has a mild variant infection (if NULL, assume the same probability as for the resident strain)
 ##'
 ##' @examples
 ##' params <- read_params("PHAC.csv")
@@ -785,7 +789,9 @@ expand_params_variant <- function(params,
                                   variant_prop = 0.01,
                                   variant_advantage = 1.5,
                                   variant_vax_efficacy_dose1 = 0.3,
-                                  variant_vax_efficacy_dose2 = 0.8) {
+                                  variant_vax_efficacy_dose2 = 0.8,
+                                  variant_vax_mu_dose1 = NULL,
+                                  variant_vax_mu_dose2 = NULL) {
 
     ## grab existing parameter descriptions
     params_desc <- attr(params, "description")
@@ -793,13 +799,20 @@ expand_params_variant <- function(params,
     ## convert to list
     params <- as.list(params)
 
+    ## fill in values no change in severity in vaccinated individuals due to an
+    ## invading variant (for backcompatibility)
+    if(is.null(variant_vax_mu_dose1)) variant_vax_mu_dose1 <- params$vax_mu_dose1
+    if(is.null(variant_vax_mu_dose2)) variant_vax_mu_dose2 <- params$vax_mu_dose2
+
     ## perform updates
     ##
     par_list <- c(
         "variant_prop",
         "variant_advantage",
         "variant_vax_efficacy_dose1",
-        "variant_vax_efficacy_dose2"
+        "variant_vax_efficacy_dose2",
+        "variant_vax_mu_dose1",
+        "variant_vax_mu_dose2"
     )
 
     for (par in par_list) {
