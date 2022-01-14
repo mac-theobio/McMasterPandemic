@@ -645,6 +645,13 @@ add_state_param_sum = function(model, sum_name, summands) {
     model
 }
 
+
+# condensation -----------------------------------
+
+add_condensation = function(model, ...) {
+  stop("not implemented")
+}
+
 # parallel accumulators ---------------------
 
 ##' Add Parallel Accumulators
