@@ -356,6 +356,9 @@ reduce_rates = function(rates) {
 get_rate_info = function(model, what) lapply(model$rates, '[[', what)
 
 #' @export
+get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
+
+#' @export
 get_rate_from = function(model) get_rate_info(model, 'from')
 
 #' @export
@@ -378,6 +381,9 @@ get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
 
 #' @export
 get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
+
+#' @export
+get_factr_formula = function(model) get_factr_info(model, 'formula')
 
 #' @export
 get_n_products = function(model) {
@@ -417,6 +423,9 @@ get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 
 #' @export
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
+
+#' @export
+get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
 
 #' @export
 get_rate_vars = function(model) {
@@ -505,15 +514,42 @@ sum_dependent_rates = function(model) {
   model$rates[i]
 }
 
+#' @export
 compute_rates = function(model) {
   (model
    %>% get_rate_info("formula")
+   %>% eval_formulas(get_var_list(model))
+   %>% setNames(names(model$rates))
+  )
+}
+
+#' @export
+compute_factrs = function(model) {
+  (model
+   %>% get_factr_info("formula")
+   %>% eval_formulas(get_var_list(model))
+   %>% setNames(names(model$factrs))
+  )
+}
+
+#' @export
+eval_formulas = function(formula_list, var_list) {
+  (formula_list
    %>% lapply(function(x) ifelse(inherits(x, 'formula'), as.character(x[2]), x))
    %>% sapply(as.character)
    %>% struc
-   %>% struc_eval(c(as.list(model$params), as.list(model$state), as.list(model$sum_vector)))
+   %>% struc_eval(var_list)
    %>% c()
-   %>% setNames(names(model$rates))
+  )
+}
+
+#' @export
+get_var_list = function(model) {
+  c(
+    as.list(model$params),
+    as.list(model$state),
+    as.list(model$sum_vector),
+    as.list(model$factr_vector)
   )
 }
 
@@ -523,6 +559,14 @@ compute_rate_from_indices = function(model, i) {
   to = model$tmb_indices$make_ratemat_indices$to[i]
   count = model$tmb_indices$make_ratemat_indices$count[i]
   sp = c(model$state, model$param, model$sum_vector)
+  factr_algo(spi, sp, modifier)
+}
+
+compute_factr_from_indices = function(model, i) {
+  stop("not implemented")
+}
+
+factr_algo = function(spi, sp, modifier) {
   result = 0
   prod = 1.0
   for (j in seq_along(spi)) {
@@ -598,27 +642,41 @@ sum_indices = function(sums, state, params) {
 }
 
 ##' @export
+factr_indices = function(factrs, state_param_sums) {
+  if (length(factrs) == 0L) {
+    indices = list(
+      spi_factr = integer(0L),
+      count = integer(0L),
+      spi = integer(0L),
+      modifier = integer(0L)
+    )
+    return(indices)
+  }
+  sp = state_param_sums
+  spi_factr = (factrs
+    %>% seq_along
+    %>% `+`(length(sp))
+  )
+  spi <- get_var_indx(factrs)
+  count <- get_var_counts(factrs)
+  modifier <- get_var_modifiers(factrs)
+  names(spi) = names(count)  = names(count) = NULL
+  indices <- list(
+    spi_factr = spi_factr,
+    count = count,
+    spi = spi,
+    modifier = modifier
+  )
+  return(indices)
+}
+
+##' @export
 ratemat_indices <- function(rates, state_params) {
   sp <- state_params
   ratemat_indices <- sapply(rates, `[[`, "ratemat_indices")
-  spi <- {
-    lapply(rates, function(y) {
-      y$factors$var_indx
-    }) %>% unlist()
-  }
-  count <- sapply(rates, function(y) {
-    nrow(y$factors)
-  })
-  modifier <- (rates
-               %>% unname
-               %>% lapply("[[", "factors")
-               %>% bind_rows(.id = "rate_indx")
-               %>% mutate(new_rate = as.logical(c(0, diff(as.numeric(rate_indx)))))
-               %>% mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx)))))
-               %>% mutate(add = new_prod & (!new_rate))
-               %>% mutate(modifier = 4 * add + 2 * invrs + compl)
-               %>% `$`("modifier")
-  )
+  spi <- get_var_indx(rates)
+  count <- get_var_counts(rates)
+  modifier <- get_var_modifiers(rates)
   names(spi) <- colnames(ratemat_indices) <- names(count) <- NULL
   indices <- list(
     from = ratemat_indices[1, ],
@@ -628,6 +686,34 @@ ratemat_indices <- function(rates, state_params) {
     modifier = modifier
   )
   return(indices)
+}
+
+get_var_indx = function(l) {
+  {
+    lapply(l, function(y) {
+      y$factors$var_indx
+    }) %>% unlist()
+  }
+}
+
+get_var_counts = function(l) {
+  sapply(l, function(y) {
+    nrow(y$factors)
+  })
+}
+
+get_var_modifiers = function(l) {
+  # an 'item' is either a rate or (common) factr
+  (l
+   %>% unname
+   %>% lapply("[[", "factors")
+   %>% bind_rows(.id = "item_indx")
+   %>% mutate(new_item = as.logical(c(0, diff(as.numeric(item_indx)))))
+   %>% mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx)))))
+   %>% mutate(add = new_prod & (!new_item))
+   %>% mutate(modifier = 4 * add + 2 * invrs + compl)
+   %>% `$`("modifier")
+  )
 }
 
 ##' @family flexmodels

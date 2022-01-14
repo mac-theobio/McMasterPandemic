@@ -712,3 +712,149 @@ test_that("an error is thrown when params is not params_pansim and state is not 
     regexp = "an initial state vector is required, because"
   )
 })
+
+test_that("pre-defined factors give the same answer as defining the rate with raw factors", {
+
+  mm = init_model(
+    params = c(a = 0.5, b = 0.25, c = 0.1),
+    state = c(X = 1, Y = 2),
+    start_date = "2000-01-01",
+    end_date = "2000-02-05",
+    do_make_state = TRUE
+  )
+
+  mm1 = (mm
+    %>% add_rate("X", "Y", ~ (a) * (c) * (X) + (c) * (b) * (Y))
+    %>% add_outflow %>% update_tmb_indices
+  )
+
+  mm2 = (mm
+    %>% add_factr("alpha", ~ (a) * (X) + (b) * (Y))
+    %>% add_rate("X", "Y", ~ (alpha) * (c))
+    %>% add_outflow %>% update_tmb_indices
+  )
+
+  expect_equal(
+    simulate_state_vector(mm1),
+    simulate_state_vector(mm2)
+  )
+
+  mm = init_model(
+      params = c(beta = 0.5, N = 100),
+      state = c(S = 99, I = 1),
+      start_date = "2000-01-01",
+      end_date = "2000-01-05",
+      do_make_state = FALSE
+    )
+
+  mm1 = (mm
+    %>% add_factr("foi", ~ (beta) * (1/N) * (I))
+    %>% add_rate("S", "I", ~ (foi))
+    %>% add_outflow
+    %>% update_tmb_indices
+  )
+
+  mm2 = (mm
+    %>% add_rate("S", "I", ~ (beta) * (1/N) * (I))
+    %>% add_outflow
+    %>% update_tmb_indices
+  )
+
+  expect_equal(
+    simulate_state_vector(mm1),
+    simulate_state_vector(mm2)
+  )
+
+})
+
+test_that("vector-valued pre-defined factors give consistent results", {
+  strains = c("wild", "variant")
+  state = c(
+    S = 20000,
+    I_wild = 49, I_variant = 1,
+    R_wild = 0,   R_variant = 0
+  )
+  two_strain_model =
+    init_model(
+      params = c(
+        gamma = 0.06,
+        beta_wild = 0.15,
+        beta_variant = 0.25,
+        N = sum(state)
+      ),
+      state = state,
+      start_date = "2000-01-01",
+      end_date = "2000-01-02",
+      do_hazard = TRUE,
+      do_make_state = FALSE
+    )
+
+  two_strains_factr = (two_strain_model
+    %>% vec_factr(
+      "foi" %_% strains,
+      vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains))
+    %>% vec_rate("S", "I" %_% strains, vec("foi" %_% strains))
+    %>% rep_rate("I", "R", ~ (gamma))
+    %>% add_outflow()
+    %>% update_tmb_indices
+  )
+
+  two_strains_no_factr = (two_strain_model
+    %>% vec_rate(
+      "S",
+      "I" %_% strains,
+      vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains)
+    )
+    %>% rep_rate("I", "R", ~ (gamma))
+    %>% add_outflow()
+    %>% update_tmb_indices
+  )
+
+
+  sims_factrs = simulate_state_vector(two_strains_factr)
+  sims_no_factrs = simulate_state_vector(two_strains_no_factr)
+  expect_equal(
+    sims_factrs,
+    sims_no_factrs
+  )
+})
+
+
+
+# start = 0
+# result = 0
+# n = 2
+# i = 0
+# idx = 9
+# prod = 1
+# j = 0
+# x = sp(6)
+# prod = 1 * x = sp(6)
+# j = 1
+# x = sp(8)
+# x = 1/sp(8)
+# prod = sp(6) * (1/sp(8))
+# j = 2
+# x = sp(1)
+# prod = sp(6) * (1/sp(8)) * sp(1)
+# result = prod = sp(6) * (1/sp(8)) * sp(1)
+# start = 0 + 3
+# sp(idx) = sp(9) = result = sp(6) * (1/sp(8)) * sp(1)
+# result = 0
+# i = 1
+# idx = 10
+# prod = 1
+# j = 3
+# x = sp(7)
+# prod = 1 * x = sp(7)
+# j = 4
+# x = sp(8)
+# x = 1/sp(8)
+# prod = sp(7) * (1/sp(8))
+# j = 5
+# x = sp(2)
+# prod = sp(7) * (1/sp(8)) * sp(2)
+# result = sp(7) * (1/sp(8)) * sp(2)
+# start = 3 + 3 = 6
+# sp(11) = sp(7) * (1/sp(8)) * sp(2)
+# result = 0

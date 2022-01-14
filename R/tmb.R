@@ -149,7 +149,7 @@ init_model <- function(params, state = NULL,
               %>% arrange(breaks, tv_spi)
             )
 
-            if(spec_ver_eq("0.1.1")) {
+            if(spec_ver_gt("0.1.0")) {
               schedule = (schedule
                 %>% mutate(init_tv_mult = replace(Value,
                                                   which(is.na(Value)),
@@ -228,7 +228,7 @@ init_model <- function(params, state = NULL,
     if (spec_ver_gt("0.0.6")) model$sums = list()
     model$sum_vector = numeric(0L)
 
-    if (spec_ver_eq("0.1.1")) {
+    if (spec_ver_gt("0.1.0")) {
         model$do_hazard_lin <- do_hazard_lin
         model$do_approx_hazard = do_approx_hazard
         model$do_approx_hazard_lin = do_approx_hazard_lin
@@ -261,6 +261,9 @@ init_model <- function(params, state = NULL,
         model$timevar$piece_wise$step_zero_tv_count = rep(1, length(which_step_zero_tv))
     }
 
+    if (spec_ver_gt("0.1.1")) model$factrs = list()
+    model$factr_vector = numeric(0L)
+
     model$tmb_indices <- list(
         make_ratemat_indices = list(
             from = integer(0L),
@@ -275,6 +278,12 @@ init_model <- function(params, state = NULL,
             sumidx = integer(0L),
             sumcount = integer(0L),
             summandidx = integer(0L)
+        ),
+        factr_indices = list(
+          spi_factr = integer(0L),
+          count = integer(0L),
+          spi = integer(0L),
+          modifier = integer(0L)
         )
     )
 
@@ -300,9 +309,8 @@ init_model <- function(params, state = NULL,
 ##' @param ratemat rate matrix
 ##' @family flexmodels
 ##' @export
-rate <- function(from, to, formula, state, params, sums, ratemat) {
+rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
     ## TODO: test for formula structure
-    ## TODO: test that from and to are available in the state vector
     M <- ratemat
     stopifnot(
         is.character(from),
@@ -335,7 +343,7 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
         }
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
-            c(state, params, sums))
+            c(state, params, sums, factrs))
 
         missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
         if(length(missing_vars) > 0L) {
@@ -389,7 +397,7 @@ rate <- function(from, to, formula, state, params, sums, ratemat) {
 add_rate <- function(model, from, to, formula) {
     unpack(model)
     added_rate <- (from
-      %>% rate(to, formula, state, params, sum_vector, ratemat)
+      %>% rate(to, formula, state, params, sum_vector, factr_vector, ratemat)
       %>% list
       %>% setNames(paste(from, to, sep = "_to_"))
     )
@@ -437,7 +445,7 @@ rep_rate = function(model, from, to, formula,
     to = colnames(ratemat)[indices[,'to_pos']]
 
     lst = mapply(rate, from, to,
-        MoreArgs = nlist(formula, state, params, sums, ratemat),
+        MoreArgs = nlist(formula, state, params, sums, factrs = factr_vector, ratemat),
         SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
     model$rates <- c(rates, setNames(lst, nms))
@@ -465,7 +473,7 @@ vec_rate = function(model, from, to, formula,
     to = colnames(ratemat)[indices[,'to_pos']]
 
     lst = mapply(rate, from, to, as.character(formula),
-                 MoreArgs = nlist(state, params, sums, ratemat),
+                 MoreArgs = nlist(state, params, sums, factrs = factr_vector, ratemat),
                  SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
     model$rates <- c(rates, setNames(lst, nms))
@@ -485,6 +493,99 @@ mat_rate = function() {
          "in the meantime you can specify vector-valued rates with vec_rate\n",
          "see this document for potentially more information on priorities:\n",
          options("MP_flex_spec_doc_site")[[1]])
+}
+
+
+
+# factr and associated functions ----------------------
+
+#' @export
+factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
+  ## TODO: test for formula structure
+  stopifnot(
+    (  inherits(formula, "formula")
+       | is.character(formula)
+       | is(formula, 'struc')
+    )
+  )
+
+  product_list <- function(x) {
+    factor_table = McMasterPandemic:::factor_table
+    find_vec_indices = McMasterPandemic:::find_vec_indices
+    spec_check(
+      introduced_version = "0.1.2",
+      feature = "common factors (i.e. factr)"
+    )
+    x$factors <- (x$formula
+                  %>% parse_formula
+                  %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
+    )
+
+    x$factors$var_indx <- find_vec_indices(
+      x$factors$var,
+      c(state, params, sums, factrs))
+
+    missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
+    if(length(missing_vars) > 0L) {
+      stop("The following variables were used to define the model,\n",
+           "but they could not be found in the state, parameter or sum ",
+           "vectors:\n",
+           paste0(missing_vars, collapse = "\n"))
+    }
+
+    x$state_dependent <- any(x$factors$var_indx <= length(state))
+    if (has_time_varying(params)) {
+      x$factors$tv <- x$factors$var %in%
+        names(attributes(params)$tv_param_indices)
+      x$time_varying <- any(x$factors$tv)
+    } else {
+      x$time_varying = FALSE
+    }
+
+    x$sum_dependent = any(x$factors$var_indx > (length(state) + length(params)))
+    x
+  }
+
+  structure(
+    product_list(list(factr_nm = factr_nm, formula = formula)),
+    class = "factr-struct"
+  )
+}
+
+#' @export
+add_factr <- function(model, factr_nm, formula) {
+  unpack(model)
+
+  added_factr <- (factr_nm
+                 %>% factr(formula,
+                           state, params,
+                           sum_vector, factr_vector)
+                 %>% list
+                 %>% setNames(factr_nm)
+  )
+
+  added_factr[[factr_nm]]$initial_value = eval_formulas(list(formula), get_var_list(model))
+  model$factrs <- c(model$factrs, added_factr)
+
+  model$factr_vector = get_factr_initial_value(model) %>% unlist
+  return(model)
+}
+
+#' @export
+vec_factr = function(model, factr_nms, formula) {
+
+  unpack(model)
+  lst = mapply(factr, factr_nms, as.character(formula),
+               MoreArgs = nlist(state, params, sums, factrs = factr_vector),
+               SIMPLIFY = FALSE, USE.NAMES = FALSE)
+
+  for(i in seq_along(lst)) {
+    lst[[i]]$initial_value = eval_formulas(list(lst[[i]]$formula), get_var_list(model))
+  }
+  model$factrs <- c(factrs, setNames(lst, factr_nms))
+
+  model$factr_vector = get_factr_initial_value(model) %>% unlist
+  return(model)
 }
 
 # sums of state variables and parameters ---------------------
@@ -533,6 +634,9 @@ state_param_sum = function(sum_name, summands, state, params) {
 #' @family flexmodels
 #' @export
 add_state_param_sum = function(model, sum_name, summands) {
+    if (length(model$factrs) != 0L) {
+      stop("cannot add any more state-param sums after (common) factrs have been added")
+    }
     model$sums[[sum_name]] = state_param_sum(
         sum_name, summands, model$state, model$params)
 
@@ -796,7 +900,7 @@ tmb_indices <- function(model) {
     if (spec_ver_gt("0.0.6")) {
         indices$sum_indices = sum_indices(model$sums, model$state, model$params)
     }
-    if (spec_ver_eq("0.1.1")) {
+    if (spec_ver_gt("0.1.0")) {
         if ((length(model$outflow) == 0L) & getOption("MP_warn_no_outflow")) {
           warning("model does not contain any outflow.\n",
                   "use add_outflow to balance inflows with outflows.\n",
@@ -810,6 +914,11 @@ tmb_indices <- function(model) {
             model$linearized_outflow, model$ratemat)
         indices$initialization_mapping = initialization_mapping_indices(model)
         indices$initial_population = initial_population_indices(model)
+    }
+    if (spec_ver_gt("0.1.1")) {
+      indices$factr_indices = factr_indices(
+        model$factrs,
+        c(model$state, model$params, model$sum_vector))
     }
     return(indices)
 }
@@ -974,7 +1083,7 @@ tmb_fun <- function(model) {
             parameters = list(params = c(unlist(params))),
             DLL = DLL
         )
-    } else if (spec_ver_gt("0.1.0")) {
+    } else if (spec_ver_eq("0.1.1")) {
         unpack(sum_indices)
         init_tv_mult = integer(0L)
         if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
@@ -1003,7 +1112,7 @@ tmb_fun <- function(model) {
 
                 do_make_state = isTRUE(do_make_state),
                 max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
-                tol_eig_pow_meth = null_to_0(tol_eig_pow_meth),
+                tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
 
                 outflow_row_count = null_to_int0(outflow$row_count),
                 outflow_col_count = null_to_int0(outflow$col_count),
@@ -1043,8 +1152,82 @@ tmb_fun <- function(model) {
                               tv_mult = init_tv_mult),
             DLL = DLL
         )
+    } else if (spec_ver_gt("0.1.1")) {
+      unpack(sum_indices)
+      init_tv_mult = integer(0L)
+      if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+      dd <- MakeADFun(
+        data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = null_to_int0(from),
+          to = null_to_int0(to),
+          count = null_to_int0(count),
+          spi = null_to_int0(spi),
+          modifier = null_to_int0(modifier),
+          updateidx = null_to_int0(c(updateidx)),
+          breaks = null_to_int0(breaks),
+          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+          tv_val = null_to_num0(schedule$tv_val),
+          tv_spi = null_to_int0(schedule$tv_spi),
+          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+          # tv_mult = schedule$Value,  # moved to parameter vector
+          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+          tv_abs = null_to_log0(schedule$Type == "abs"),
+
+          sumidx = null_to_int0(sumidx),
+          sumcount = null_to_int0(unname(sumcount)),
+          summandidx = null_to_int0(summandidx),
+
+          factr_spi = null_to_int0(factr_indices$spi_factr),
+          factr_count = null_to_int0(factr_indices$count),
+          factr_spi_compute = null_to_int0(factr_indices$spi),
+          factr_modifier = null_to_int0(factr_indices$modifier),
+
+          do_make_state = isTRUE(do_make_state),
+          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+
+          outflow_row_count = null_to_int0(outflow$row_count),
+          outflow_col_count = null_to_int0(outflow$col_count),
+          outflow_rows = null_to_int0(outflow$rows),
+          outflow_cols = null_to_int0(outflow$cols),
+
+          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+
+          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+          lin_param_count = null_to_int0(linearized_params$lin_param_count),
+          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+
+          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+          df_state_count = null_to_int0(disease_free$df_state_count),
+          df_state_idx = null_to_int0(disease_free$df_state_idx),
+
+          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+          do_hazard = isTRUE(do_hazard),
+          do_hazard_lin = isTRUE(do_hazard_lin),
+          do_approx_hazard = isTRUE(do_approx_hazard),
+          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+          haz_eps = haz_eps,
+
+          numIterations = int0_to_0(null_to_0(iters))
+        ),
+        parameters = list(params = c(unlist(params)),
+                          tv_mult = init_tv_mult),
+        DLL = DLL
+      )
     } else {
-        stop("This feature is not supported by your installation of MacPan")
+        stop("Construction of TMB functions is not supported by your installation of MacPan")
     }
     return(dd)
 }

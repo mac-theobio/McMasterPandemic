@@ -9,6 +9,7 @@
 #include <map>
 #include <sys/time.h>
 #include <TMB.hpp>
+#include <cppad/local/cond_exp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Status of TMB calculations.
@@ -79,7 +80,7 @@ vector<Type> OutFlow(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Helper function Norm
+// Helper function
 template<class Type>
 Type Norm(
     const vector<Type>& vec
@@ -104,7 +105,6 @@ vector<Type> CalcEigenVector(
   //if (iterations<100)
   //  iterations = 100;	// this is the minimum
 
-  // Remove first and last two rows and columns from jacobian matrix and state vector
   matrix<Type> mat = jacobian;
   vector<Type> vec = state;
   vector<Type> prevec(1);
@@ -123,11 +123,17 @@ vector<Type> CalcEigenVector(
       }
       else {
         diff = vec-prevec;
+        //std::cout << "iteration = " << i << std::endl;
+        //std::cout << "norm = " << Norm(diff) << std::endl;
+        //std::cout << "tolerance = " << tolerance << std::endl;
 
         // FIXME: parameter dependent branching??
         //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-        if (Norm(diff) < tolerance) {
+        // Type one = 1;
+        // Type zero = 0;
+        // std::cout << "cond exp = " << CppAD::CondExpLt(Norm(diff), tolerance, one, zero) << std::endl;
 
+        if (Norm(diff) < tolerance) {
           break;
         }
         else
@@ -227,13 +233,15 @@ Eigen::SparseMatrix<Type> make_ratemat(
         result.coeffRef(row,col) += prod;
         prod = 1;
       }
-      if (modifier[j] & 0b001)
+      if (modifier[j] & 0b001) {
         x = 1-x;
-      else if (modifier[j] & 0b010)
+      }
+      else if (modifier[j] & 0b010) {
         //x = (1 - exp(-x / haz_eps_doub)) / (x + haz_eps_doub);
         if (x > 1e-12) {
            x = 1/x;
         }
+      }
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
@@ -272,15 +280,17 @@ void update_ratemat(
         ratemat->coeffRef(row,col) += prod;
         prod = 1;
       }
-      if (modifier[j] & 0b001)
+      if (modifier[j] & 0b001) {
         x = 1-x;
-      else if (modifier[j] & 0b010)
+      }
+      else if (modifier[j] & 0b010) {
         // FIXME: parameter dependent branching??
         //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
         //x = (1 - exp(-x / haz_eps_doub)) / (x + haz_eps_doub);
         if (x > 1e-12) {
           x = 1/x;
         }
+      }
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
@@ -385,6 +395,70 @@ void update_sum_in_sp(
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Helper function update_factr_in_sp
+template<class Type>
+void update_factr_in_sp(
+    vector<Type>& sp,
+    const vector<int>& factr_spi,
+    const vector<int>& factr_count,
+    const vector<int>& factr_spi_compute,
+    const vector<int>& factr_modifier)
+{
+
+  int start = 0;
+//^\s*std::cout << "start = " << start << std::endl;
+  int n = factr_count.size();
+//^\s*std::cout << "n = " << n << std::endl;
+  for (int i=0; i<n; i++) {
+    Type result = 0.0;
+//^\s*std::cout << "result = " << result << std::endl;
+//^\s*std::cout << "i = " << i << std::endl;
+    int idx = factr_spi[i] - 1;
+//^\s*std::cout << "idx = " << idx << std::endl;
+    //std::cout << "sp before = " << std::endl;
+    //std::cout << sp << std::endl;
+    // sp(idx) = 0.0;
+    Type prod = 1.0;
+    for (int j=start; j<start+factr_count[i]; j++) {
+//^\s*std::cout << "j = " << j << std::endl;
+      //std::cout << "idx_compute[" << j << "] = " << factr_spi_compute[j]-1 << std::endl;
+      Type x = sp(factr_spi_compute[j]-1);
+//^\s*std::cout << "x = " << x << std::endl;
+      //std::cout << "initial x = " << x << std::endl;
+      //std::cout << "modifier = " << factr_modifier[j] << std::endl;
+      if (factr_modifier[j] & 0b100) {
+        //result.coeffRef(row,col) += prod;
+        result += prod;
+        prod = 1;
+      }
+      if (factr_modifier[j] & 0b001) {
+        x = 1-x;
+      } else if (factr_modifier[j] & 0b010) {
+        //x = (1 - exp(-x / haz_eps_doub)) / (x + haz_eps_doub);
+        if (x > 1e-12) {
+          x = 1/x;
+        }
+      }
+//^\s*std::cout << "x = " << x << std::endl;
+      //std::cout << "x before prod = " << x << std::endl;
+      prod *= x;
+//^\s*std::cout << "prod = " << prod << std::endl;
+    }
+    //result.coeffRef(row,col) += prod;
+    result +=  prod;
+//^\s*std::cout << "result = " << result << std::endl;
+    start += factr_count[i];
+//^\s*std::cout << "start = " << start << std::endl;
+    //std::cout << "result =  " << result << std::endl;
+    //std::cout << "final sp = " << sp[idx] << std::endl;
+    //std::cout << "sp after  = " << std::endl;
+    //std::cout << sp << std::endl;
+    sp[idx] = result;
+//^\s*std::cout << "sp[idx] = " << sp[idx] << std::endl;
+  }
+}
+
 template<class Type>
 vector<Type> do_step(
     vector<Type> state,
@@ -421,6 +495,10 @@ struct update_state_functor{
   vector<int> sumidx_;
   vector<int> sumcount_;
   vector<int> summandidx_;
+  vector<int> factr_spi_;
+  vector<int> factr_count_;
+  vector<int> factr_spi_compute_;
+  vector<int> factr_modifier_;
   // vector<int> par_accum_indices_;
   vector<int> linearized_outflow_row_count_;
   vector<int> linearized_outflow_col_count_;
@@ -440,6 +518,10 @@ struct update_state_functor{
     vector<int> sumidx,
     vector<int> sumcount,
     vector<int> summandidx,
+    vector<int> factr_spi,
+    vector<int> factr_count,
+    vector<int> factr_spi_compute,
+    vector<int> factr_modifier,
     // vector<int> par_accum_indices,
     vector<int> linearized_outflow_row_count,
     vector<int> linearized_outflow_col_count,
@@ -449,6 +531,10 @@ struct update_state_functor{
     int do_approx_hazard) : params_(params), from_(from), to_(to), count_(count),
                      spi_(spi), modifier_(modifier), sumidx_(sumidx), sumcount_(sumcount),
                      summandidx_(summandidx), // par_accum_indices_(par_accum_indices),
+                     factr_spi_(factr_spi),
+                     factr_count_(factr_count),
+                     factr_spi_compute_(factr_spi_compute),
+                     factr_modifier_(factr_modifier),
                      linearized_outflow_row_count_(linearized_outflow_row_count),
                      linearized_outflow_col_count_(linearized_outflow_col_count),
                      linearized_outflow_rows_(linearized_outflow_rows),
@@ -469,11 +555,20 @@ struct update_state_functor{
        params[i] = (T) params_[i];
 
     // Concatenate state and params
-    vector<T> sp(state_.size()+params.size()+sumidx_.size());
+    vector<T> sp(state_.size()+params.size()+sumidx_.size()+factr_spi_.size());
     vector<T> place_holder(sumidx_.size());
-    sp << state_, params, place_holder;
+    vector<T> place_holder_factr(factr_spi_.size());
+
+    sp << state_, params, place_holder, place_holder_factr;
 
     update_sum_in_sp(sp, sumidx_, sumcount_, summandidx_);
+    update_factr_in_sp(
+      sp,
+      factr_spi_,
+      factr_count_,
+      factr_spi_compute_,
+      factr_modifier_
+    );
 
     // We've got everything we need, lets do the job ...
     Eigen::SparseMatrix<T> ratemat = make_ratemat(state_.size(), sp, from_, to_, count_, spi_, modifier_);
@@ -509,6 +604,10 @@ vector<Type> make_state(
   const vector<int>& sumidx,
   const vector<int>& sumcount,
   const vector<int>& summandidx,
+  const vector<int>& factr_spi,
+  const vector<int>& factr_count,
+  const vector<int>& factr_spi_compute,
+  const vector<int>& factr_modifier,
   const vector<int>& linearized_outflow_row_count,
   const vector<int>& linearized_outflow_col_count,
   const vector<int>& linearized_outflow_rows,
@@ -562,6 +661,9 @@ vector<Type> make_state(
   // 5 -- Compute the Jacobian for the linearized model
   update_state_functor<Type> f(lin_params, from, to, count, spi, modifier,
                                sumidx, sumcount, summandidx,
+                               factr_spi, factr_count,
+                               factr_spi_compute,
+                               factr_modifier,
                                linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols,
                                do_hazard, do_approx_hazard);
@@ -727,6 +829,11 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(sumcount);
   DATA_IVECTOR(summandidx);
 
+  DATA_IVECTOR(factr_spi);
+  DATA_IVECTOR(factr_count);
+  DATA_IVECTOR(factr_spi_compute);
+  DATA_IVECTOR(factr_modifier);
+
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
   DATA_INTEGER(do_approx_hazard);
@@ -763,6 +870,10 @@ Type objective_function<Type>::operator() ()
       sumidx,
       sumcount,
       summandidx,
+      factr_spi,
+      factr_count,
+      factr_spi_compute,
+      factr_modifier,
       linearized_outflow_row_count,
       linearized_outflow_col_count,
       linearized_outflow_rows,
@@ -787,11 +898,16 @@ Type objective_function<Type>::operator() ()
 
   // Initialize the vectors that contain state, parameters,
   // and sums of these quantities
-  vector<Type> sp(state.size()+params.size()+sumidx.size());
+  vector<Type> sp(state.size()+params.size()+sumidx.size()+factr_spi.size());
   vector<Type> place_holder(sumidx.size());
-  sp << state, params, place_holder;
+  vector<Type> place_holder_factr(factr_spi.size());
+  sp << state, params, place_holder, place_holder_factr;
   vector<Type> sp_orig(sp); // sp_orig does not contain sums
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
+  update_factr_in_sp(
+    sp,
+    factr_spi, factr_count,
+    factr_spi_compute, factr_modifier);
 
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
@@ -830,6 +946,12 @@ Type objective_function<Type>::operator() ()
   int start = 0;
   for (int i=0; i<numIterations; i++) {
 
+    //std::cout << "sp:" << std::endl;
+    //std::cout << sp << std::endl;
+
+    //std::cout << "ratemat:" << std::endl;
+    //std::cout << ratemat << std::endl;
+
     state = do_step(state, ratemat,
                     outflow_row_count, outflow_col_count,
                     outflow_rows, outflow_cols,
@@ -865,8 +987,14 @@ Type objective_function<Type>::operator() ()
     // expressions of other state variables and parameters
 
     update_sum_in_sp(sp, sumidx, sumcount, summandidx);
-
-    update_ratemat(&ratemat, sp, from, to, count_integral, spi, modifier, updateidx);
+    update_factr_in_sp(
+      sp, factr_spi,
+      factr_count,
+      factr_spi_compute,
+      factr_modifier);
+    update_ratemat(
+      &ratemat, sp, from, to, count_integral,
+      spi, modifier, updateidx);
 
     // FIXME: parameter dependent branching??
     //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
