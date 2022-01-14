@@ -4,7 +4,7 @@
 \alias{rate}
 \title{Define Rate for Single Element of Rate Matrix}
 \usage{
-rate(from, to, formula, state, params, sums, ratemat)
+rate(from, to, formula, state, params, sums, factrs, ratemat)
 }
 \arguments{
 \item{from}{from state}

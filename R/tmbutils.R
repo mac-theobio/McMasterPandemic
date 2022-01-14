@@ -1274,13 +1274,38 @@ reset_spec_version = function() {
 ##' TMB Mode
 ##'
 ##' Set options so that R engine runs in a manner
-##' that is compatible with the TMB engine
+##' that is comparable with the TMB engine
 ##'
 ##' @export
 tmb_mode = function() {
   options(
     MP_use_state_rounding = FALSE,
     MP_vax_make_state_with_hazard = FALSE)
+}
+
+##' R Mode
+##'
+##' Set options so that TMB engine runs in a manner
+##' that is comparable with the R engine
+##'
+##' @export
+r_mode = function() {
+  options(
+    MP_tmb_models_match_r = TRUE
+  )
+}
+
+##' Compare R and TMB Engines
+##'
+##' Set options so that the TMB and R engines
+##' can be compared.
+##'
+##' This is useful for testing.
+##'
+##' @export
+r_tmb_comparable = function() {
+  r_mode()
+  tmb_mode()
 }
 
 

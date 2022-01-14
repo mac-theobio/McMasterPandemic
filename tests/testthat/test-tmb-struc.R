@@ -408,7 +408,7 @@ test_that("vax/variant foi algebraic manipulations are correct", {
 test_that("variants and vaccination model simulation matches run_sim", {
 
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   start_date <- "2021-02-01"
@@ -497,7 +497,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # base parameters using read_params target argument
 
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
 

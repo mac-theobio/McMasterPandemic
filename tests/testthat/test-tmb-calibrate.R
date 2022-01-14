@@ -412,7 +412,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
   rerun_r_engine_calibrations = FALSE
   run_simulation_comparison = FALSE
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   load("../../inst/testdata/ontario_flex_test_better.Rdata")

@@ -125,7 +125,7 @@ test_that("time variation on the first two steps matches in r and tmb engines", 
 
 test_that('time variation works for vax models', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
 
@@ -236,7 +236,7 @@ test_that('time variation works for a mix of types', {
 
 test_that("breakpoints outside of the simulation range cause a warning", {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   start_date <- "2021-02-02"

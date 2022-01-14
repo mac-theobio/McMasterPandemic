@@ -8,10 +8,10 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   rerun_r_engine_forecasts = FALSE
   run_simulation_comparison = FALSE
   reset_spec_version()
-  tmb_mode()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   options(MP_warn_bad_breaks = FALSE)
+  r_tmb_comparable()
   load("../../inst/testdata/ontario_flex_test_better.Rdata")
 
   model = make_vaccination_model(

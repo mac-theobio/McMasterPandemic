@@ -88,7 +88,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
 
   reset_spec_version()
   options(macpan_pfun_method = "grep")
-  tmb_mode()
+  r_tmb_comparable()
 
   base_params <- read_params("PHAC.csv")
   vax_params <- expand_params_vax(
@@ -122,7 +122,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
 
 test_that('make state matches vax/variant model with realistic parameters', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   # Need to take more than 100 steps for the
