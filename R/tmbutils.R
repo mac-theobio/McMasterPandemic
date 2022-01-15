@@ -1,3 +1,7 @@
+# test functions ------------------------------------------------
+
+is_len1_char = function(x) (length(x) == 1L) & is.character(x)
+
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator

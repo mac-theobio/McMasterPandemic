@@ -64,6 +64,8 @@ init_model <- function(params, state = NULL,
       state = make_state(params = params)
       options(MP_rexp_steps_default = n_steps_default)
       state[] = 0
+    } else if (is.character(state)) {
+      state = setNames(rep(0, length(state)), state)
     }
 
     if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
@@ -82,7 +84,7 @@ init_model <- function(params, state = NULL,
     # not totally sure
     # -- also should use get_attr and put_attr from utils.R
     pattr = attributes(params)
-    params = setNames(unlist(params), names(params))
+    params = setNames(unlist(params), names(params))  # FIXME: will silently fail for nested lists
     attributes(params) = c(attributes(params), pattr)
 
     model <- list(
@@ -263,6 +265,13 @@ init_model <- function(params, state = NULL,
 
     if (spec_ver_gt("0.1.1")) model$factrs = list()
     model$factr_vector = numeric(0L)
+
+    # condensation -- spec_ver_gt("0.1.2)
+    model$condensation = list(
+      include = list(),
+      # ordered list of condensation steps
+      steps = list()
+    )
 
     model$tmb_indices <- list(
         make_ratemat_indices = list(
@@ -510,8 +519,8 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
   )
 
   product_list <- function(x) {
-    factor_table = McMasterPandemic:::factor_table
-    find_vec_indices = McMasterPandemic:::find_vec_indices
+    factor_table = factor_table
+    find_vec_indices = find_vec_indices
     spec_check(
       introduced_version = "0.1.2",
       feature = "common factors (i.e. factr)"
@@ -648,9 +657,37 @@ add_state_param_sum = function(model, sum_name, summands) {
 
 # condensation -----------------------------------
 
-add_condensation = function(model, ...) {
-  stop("not implemented")
+# condensation algorithm
+# 0. name rates -- this could be useful more generally
+# 1. add named expressions giving element wise sums and products of
+#    state variables and named varying rates
+# 2. add
+
+include_condense_state = function(model, state_pattern) {
+  stopifnot(is_len1_char(state_pattern))
+  model$condensation$include$state_patterns = c(
+    model$condensation$include$state_patterns,
+    list(state_pattern)
+  )
 }
+include_condense_rate = function(model, rate_names, from_pattern, to_pattern) {
+  stopifnot(is_len1_char(from_pattern))
+  stopifnot(is_len1_char(to_pattern))
+  model$condensation$include$from_patterns = c(
+    model$condensation$include$from_patterns,
+    list(from_pattern)
+  )
+  model$condensation$include$to_patterns = c(
+    model$condensation$include$to_patterns,
+    list(to_pattern)
+  )
+}
+
+add_condense_expr = function(model, formula) {}
+
+add_condense_diff = function(model, diff_names, var_pattern) {}
+add_condense_conv = function(model, conv_names, var_pattern) {}
+
 
 # parallel accumulators ---------------------
 
