@@ -820,41 +820,36 @@ test_that("vector-valued pre-defined factors give consistent results", {
 })
 
 
+test_that("sim_report expressions give correct results", {
+  strains = c("wild", "variant")
+  state = c(
+    S = 20000,
+    I_wild = 49, I_variant = 1,
+    R_wild = 0,   R_variant = 0
+  )
+  two_strain_model =
+    init_model(
+      params = c(
+        gamma = 0.06,
+        beta_wild = 0.15,
+        beta_variant = 0.25,
+        N = sum(state)
+      ),
+      state = state,
+      start_date = "2000-01-01",
+      end_date = "2000-01-02",
+      do_hazard = TRUE,
+      do_make_state = FALSE
+    )
 
-# start = 0
-# result = 0
-# n = 2
-# i = 0
-# idx = 9
-# prod = 1
-# j = 0
-# x = sp(6)
-# prod = 1 * x = sp(6)
-# j = 1
-# x = sp(8)
-# x = 1/sp(8)
-# prod = sp(6) * (1/sp(8))
-# j = 2
-# x = sp(1)
-# prod = sp(6) * (1/sp(8)) * sp(1)
-# result = prod = sp(6) * (1/sp(8)) * sp(1)
-# start = 0 + 3
-# sp(idx) = sp(9) = result = sp(6) * (1/sp(8)) * sp(1)
-# result = 0
-# i = 1
-# idx = 10
-# prod = 1
-# j = 3
-# x = sp(7)
-# prod = 1 * x = sp(7)
-# j = 4
-# x = sp(8)
-# x = 1/sp(8)
-# prod = sp(7) * (1/sp(8))
-# j = 5
-# x = sp(2)
-# prod = sp(7) * (1/sp(8)) * sp(2)
-# result = sp(7) * (1/sp(8)) * sp(2)
-# start = 3 + 3 = 6
-# sp(11) = sp(7) * (1/sp(8)) * sp(2)
-# result = 0
+  model = (two_strain_model
+     %>% vec_factr(
+      "foi" %_% strains,
+      vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains))
+     %>% vec_rate("S", "I" %_% strains, vec("foi" %_% strains))
+     %>% rep_rate("I", "R", ~ (gamma))
+     %>% add_sim_report_expr('report', ~ (I_wild) + (I_variant))
+     %>% add_outflow
+     %>% update_tmb_indices
+  )
+})

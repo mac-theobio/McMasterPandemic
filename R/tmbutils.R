@@ -2,6 +2,8 @@
 
 is_len1_char = function(x) (length(x) == 1L) & is.character(x)
 
+is_len1_int = function(x) (length(x) == 1L) & is.integer(x)
+
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
@@ -51,6 +53,33 @@ all_except = function(x) {
   (x
    %>% names_or_values
    %>% alt_group(exact = TRUE, negate = TRUE)
+  )
+}
+
+##' @export
+initial_sim_report_names = function(model) {
+  c(
+    names(model$state),
+    names(which_time_varying_rates(model)),
+    names(model$sum_vector),
+    names(model$factr_vector)
+  )
+}
+
+##' @export
+intermediate_sim_report_names = function(model) {
+  c(
+    initial_sim_report_names(model),
+    names(model$sim_report_exprs)
+  )
+}
+
+##' @export
+final_sim_report_names = function(model) {
+  c(
+    intermediate_sim_report_names(model),
+    names(model$n_lag),
+    names(model$conv)
   )
 }
 
@@ -674,6 +703,31 @@ factr_indices = function(factrs, state_param_sums) {
   return(indices)
 }
 
+#' @export
+sim_report_expr_indices = function(exprs, init_sim_report_nms) {
+  if (length(exprs) == 0L) {
+    indices = list(
+      sri_output = integer(0L),
+      sr_count = integer(0L),
+      sri = integer(0L),
+      sr_modifier = integer(0L)
+    )
+    return(indices)
+  }
+  sri_output = seq_along(exprs) + length(init_sim_report_nms)
+  sri <- get_var_indx(exprs)
+  sr_count <- get_var_counts(exprs)
+  sr_modifier <- get_var_modifiers(exprs)
+  names(sri) = names(sr_count)  = names(sr_modifier) = NULL
+  indices <- list(
+    sri_output = sri_output,
+    sr_count = sr_count,
+    sri = sri,
+    sr_modifier = sr_modifier
+  )
+  return(indices)
+}
+
 ##' @export
 ratemat_indices <- function(rates, state_params) {
   sp <- state_params
@@ -951,7 +1005,6 @@ make_nested_indices = function(x, patterns, invert = FALSE) {
 lin_state_timevar_params = function(schedule) {
   stop('function lin_state_timevar_params is under construction')
 }
-
 
 # retrieving information from tmb objective function --------------
 

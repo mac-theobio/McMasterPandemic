@@ -411,32 +411,41 @@ Development sequence that would lead us to a solution:
   - `concatenated_sums` -- these are the items in `sp` corresponding to sums of states and parameters (see `update_sum_in_sp`)
   - `concatenated_factrs` -- these are the items in `sp` corresponding to so called factrs (see `update_factr_in_sp`)
 
-2. After the simulation loop create a matrix (or appropriately indexed vector if that is more efficient) with rows that correspond to time steps and columns that correspond to each variable stored in `concatenated_state_vector`, `concatenated_ratemat_nonzeros`, `concatenated_sums`, `concatenated_factrs` -- call this matrix (or vector) `sp_condense`
+2. After the simulation loop create a matrix (call this matrix `sim_report`) with rows that correspond to time steps and columns that correspond to each variable stored in the following.
+  - `concatenated_state_vector`
+  - `concatenated_ratemat_nonzeros`
+  - `concatenated_sums`
+  - `concatenated_factrs`
 
-3. Loop over the rows (i.e. time steps) of `sp_condense` and at each iteration do the following three sets of operations and add the results as columns in `sp_condense`:
-  - a) compute the same set of user-defined expressions containing sums and products of the columns in `sp_condense`
-  - b) compute lag-n operations of a user-defined set of the columns of `sp_condense`
-  - c) compute convolutions of a user-defined set of the columns of `sp_condense`
+3. Loop over the rows (i.e. time steps) of `sim_report` and at each iteration do the following three sets of operations and add the results as columns in `sim_report`:
+  - a) compute the same set of user-defined expressions containing sums and products of the columns in `sim_report`
+  - b) compute lag-n operations of a user-defined set of the columns of `sim_report`
+  - c) compute convolutions of a user-defined set of the columns of `sim_report`
 
 Note that development steps 1-2 require no new user input, although step 3 requires the following input.
 
 * Sum/product expressions
-  - `count_condense` -- vector the same length as the number of columns added in step 3a giving the number of `sp_condense` columns to use as input for each new column (note that input columns can be used more than once -- see `count` vector)
-  - `spi_condense` -- indices into the columns of `sp_condense` to use as input (see `spi` vector)
-  - `modifier_condense` -- TODO (similar to `modifier`)
+  - `condense_count` -- vector the same length as the number of columns added in step 3a giving the number of `sim_report` columns to use as input for each new column (note that input columns can be used more than once -- see `count` vector)
+  - `condense_sri` -- indices into the columns of `sim_report` to use as input (see `spi` vector)
+  - `condense_modifier` -- TODO (similar to `modifier`)
 * Lag-n operations
-  - `lag_spi` -- indices into the columns of `sp_condense` to use as input to lag-n operations
+  - `lag_sri` -- indices into the columns of `sim_report` to use as input to lag-n operations
   - `lag_order` -- vector same length as `lag_spi` containing the order (i.e. the "n" in lag-n) of the lag for each lag-n operation
 * Convolutions
-  - `conv_spi` -- indices into the columns of `sp_condense` to use as input to convolution operations
+  - `conv_spi` -- indices into the columns of `sim_report` to use as input to convolution operations
   - `conv_c_prop_i` -- vector same length as `conv_spi` giving indices into `params` for extracting the parameters of the convolutions
 
-Add `sp_condense` to the report. On the R-side we could start using `sp_condense` where we currently use `concatenated_*` vectors, and eventually we could drop them.
+Add `sim_report` to the report. On the R-side we could start using `sim_report` where we currently use `concatenated_*` vectors, and eventually we could drop them.
 
 
-##### First Attempt
-
-At a high level condensation is comprised of a transformation of `concatenated_state_vector` into `condensed_state_vector`, which is typically smaller. The condensation algorithm has seven phases, corresponding to the seven types of variables that can be added to `condensed_state_vector`.
+```{r eval=FALSE} 
+condense_indices = list(
+          sri_output = integer(0L),
+          sr_count = integer(0L),
+          sri = integer(0L),
+          sr_modifier = integer(0L)
+        )
+```
 
 
 

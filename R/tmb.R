@@ -263,7 +263,10 @@ init_model <- function(params, state = NULL,
         model$timevar$piece_wise$step_zero_tv_count = rep(1, length(which_step_zero_tv))
     }
 
-    if (spec_ver_gt("0.1.1")) model$factrs = list()
+    if (spec_ver_gt("0.1.1")) {
+      model$factrs = list()
+      model$sim_report_exprs = list()
+    }
     model$factr_vector = numeric(0L)
 
     # condensation -- spec_ver_gt("0.1.2)
@@ -293,6 +296,12 @@ init_model <- function(params, state = NULL,
           count = integer(0L),
           spi = integer(0L),
           modifier = integer(0L)
+        ),
+        condense_indices = list(
+          sri_output = integer(0L),
+          sr_count = integer(0L),
+          sri = integer(0L),
+          sr_modifier = integer(0L)
         )
     )
 
@@ -657,36 +666,117 @@ add_state_param_sum = function(model, sum_name, summands) {
 
 # condensation -----------------------------------
 
-# condensation algorithm
-# 0. name rates -- this could be useful more generally
-# 1. add named expressions giving element wise sums and products of
-#    state variables and named varying rates
-# 2. add
+#' @export
+sim_report_expr = function(expr_nm, formula, init_sim_report_nms) {
+  stopifnot(
+    (  inherits(formula, "formula")
+       | is.character(formula)
+       | is(formula, 'struc')
+    )
+  )
 
-include_condense_state = function(model, state_pattern) {
-  stopifnot(is_len1_char(state_pattern))
-  model$condensation$include$state_patterns = c(
-    model$condensation$include$state_patterns,
-    list(state_pattern)
+  product_list <- function(x) {
+    factor_table = factor_table
+    find_vec_indices = find_vec_indices
+    spec_check(
+      introduced_version = "0.1.2",
+      feature = "simulation reports"
+    )
+    x$factors <- (x$formula
+                  %>% parse_formula
+                  %>% lapply(factor_table) %>% bind_rows(.id = "prod_indx")
+    )
+
+    x$factors$var_indx <- find_vec_indices(
+      x$factors$var,
+      init_sim_report_nms)
+
+    # TODO -- add this check copied from factr back for sim_report_expr
+    # missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
+    #if(length(missing_vars) > 0L) {
+    #  stop("The following variables were used to define the model,\n",
+    #       "but they could not be found in the state, parameter or sum ",
+    #       "vectors:\n",
+    #       paste0(missing_vars, collapse = "\n"))
+    #}
+
+    # This stuff about dependence shouldn't matter for sim_report_expr
+    # because everything changes with time -- that's kind of the point
+    #
+    # x$state_dependent <- any(x$factors$var_indx <= length(state))
+    # if (has_time_varying(params)) {
+    #   x$factors$tv <- x$factors$var %in%
+    #     names(attributes(params)$tv_param_indices)
+    #   x$time_varying <- any(x$factors$tv)
+    # } else {
+    #   x$time_varying = FALSE
+    # }
+    # x$sum_dependent = any(x$factors$var_indx > (length(state) + length(params)))
+
+    x
+  }
+
+  structure(
+    product_list(list(expr_nm = expr_nm, formula = formula)),
+    class = "sim-report-expr-struct"
+  )
+
+}
+
+#' @export
+add_sim_report_expr = function(model, expr_nm, formula) {
+  unpack(model)
+
+  added_expr <- (expr_nm
+    %>% sim_report_expr(
+      formula,
+      initial_sim_report_names(model)
+    )
+    %>% list
+    %>% setNames(expr_nm)
+  )
+
+  # I don't think we need any initialization of these values
+  # TODO -- verify this
+  # added_expr[[expr_nm]]$initial_value = eval_formulas(list(formula), get_var_list(model))
+  model$sim_report_exprs = c(model$sim_report_exprs, added_expr)
+  # model$factr_vector = get_factr_initial_value(model) %>% unlist
+
+  return(model)
+}
+
+
+add_n_lag = function(model, n_lag_names, var_pattern, delay_n) {
+  stopifnot(is_len1_int(delay_n))
+  stopifnot(is_len1_char(var_pattern))
+  stopifnot(is.character(n_lag_names))
+  added_n_lag = list(
+    n_lag_names = n_lag_names,
+    var_pattern = var_pattern,
+    delay_n = delay_n
+  )
+  model$n_lag = c(
+    model$n_lag,
+    list(added_n_lag)
   )
 }
-include_condense_rate = function(model, rate_names, from_pattern, to_pattern) {
-  stopifnot(is_len1_char(from_pattern))
-  stopifnot(is_len1_char(to_pattern))
-  model$condensation$include$from_patterns = c(
-    model$condensation$include$from_patterns,
-    list(from_pattern)
+
+add_conv = function(model, conv_names, var_pattern) {
+
+  # TODO -- add parameter names pointing to parameters of
+  #         the convolutions (e.g. c_prop)
+
+  stopifnot(is_len1_char(var_pattern))
+  stopifnot(is.character(conv_names))
+  added_conv = list(
+    conv_names = conv_names,
+    var_pattern = var_pattern
   )
-  model$condensation$include$to_patterns = c(
-    model$condensation$include$to_patterns,
-    list(to_pattern)
+  model$conv = c(
+    model$conv,
+    list(added_conv)
   )
 }
-
-add_condense_expr = function(model, formula) {}
-
-add_condense_diff = function(model, diff_names, var_pattern) {}
-add_condense_conv = function(model, conv_names, var_pattern) {}
 
 
 # parallel accumulators ---------------------
@@ -962,7 +1052,12 @@ tmb_indices <- function(model) {
     if (spec_ver_gt("0.1.1")) {
       indices$factr_indices = factr_indices(
         model$factrs,
-        c(model$state, model$params, model$sum_vector))
+        c(model$state, model$params, model$sum_vector)
+      )
+      indices$sim_report_expr_indices = sim_report_expr_indices(
+        model$sim_report_exprs,
+        initial_sim_report_names(model)
+      )
     }
     return(indices)
 }
