@@ -745,37 +745,41 @@ add_sim_report_expr = function(model, expr_nm, formula) {
   return(model)
 }
 
-
-add_n_lag = function(model, n_lag_names, var_pattern, delay_n) {
+#' @export
+add_lag_diff = function(
+  model, var_pattern,
+  delay_n = 1) {
   stopifnot(is_len1_int(delay_n))
   stopifnot(is_len1_char(var_pattern))
-  stopifnot(is.character(n_lag_names))
-  added_n_lag = list(
-    n_lag_names = n_lag_names,
+  added_lag_diff = list(
     var_pattern = var_pattern,
     delay_n = delay_n
   )
-  model$n_lag = c(
-    model$n_lag,
-    list(added_n_lag)
+  model$lag_diff = c(
+    model$lag_diff,
+    list(added_lag_diff)
   )
+  model
 }
 
-add_conv = function(model, conv_names, var_pattern) {
-
-  # TODO -- add parameter names pointing to parameters of
-  #         the convolutions (e.g. c_prop)
+#' @export
+add_conv = function(
+  model, var_pattern,
+  c_prop = "c_prop",
+  c_delay_cv = "c_delay_cv",
+  c_delay_mean = "c_delay_mean") {
 
   stopifnot(is_len1_char(var_pattern))
-  stopifnot(is.character(conv_names))
+
   added_conv = list(
-    conv_names = conv_names,
-    var_pattern = var_pattern
+    var_pattern = var_pattern,
+    conv_pars = nlist(c_prop, c_delay_cv, c_delay_mean)
   )
   model$conv = c(
     model$conv,
     list(added_conv)
   )
+  model
 }
 
 
@@ -1058,6 +1062,8 @@ tmb_indices <- function(model) {
         model$sim_report_exprs,
         initial_sim_report_names(model)
       )
+      indices$lag_diff = lag_diff_indices(model)
+      indices$conv = conv_indices(model)
     }
     return(indices)
 }
@@ -1358,6 +1364,19 @@ tmb_fun <- function(model) {
           do_approx_hazard = isTRUE(do_approx_hazard),
           do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
           haz_eps = haz_eps,
+
+          sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+          sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+          sri = null_to_int0(sim_report_expr_indices$sri),
+          sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+
+          lag_diff_sri = null_to_int0(lag_diff$sri),
+          lag_diff_order = null_to_int0(lag_diff$order),
+
+          conv_sri = null_to_int0(conv$sri),
+          conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+          conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+          conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
 
           numIterations = int0_to_0(null_to_0(iters))
         ),

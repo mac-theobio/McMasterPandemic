@@ -833,7 +833,10 @@ test_that("sim_report expressions give correct results", {
         gamma = 0.06,
         beta_wild = 0.15,
         beta_variant = 0.25,
-        N = sum(state)
+        N = sum(state),
+        c_prop = 1e-1,
+        c_delay_cv = 2.5e-1,
+        c_delay_mean = 1.1
       ),
       state = state,
       start_date = "2000-01-01",
@@ -849,6 +852,9 @@ test_that("sim_report expressions give correct results", {
      %>% vec_rate("S", "I" %_% strains, vec("foi" %_% strains))
      %>% rep_rate("I", "R", ~ (gamma))
      %>% add_sim_report_expr('report', ~ (I_wild) + (I_variant))
+     %>% add_sim_report_expr('recov', ~ (S) * (S_to_I_wild) + (S) * (S_to_I_variant))
+     %>% add_lag_diff("^report$")
+     %>% add_conv("^recov$")
      %>% add_outflow
      %>% update_tmb_indices
   )

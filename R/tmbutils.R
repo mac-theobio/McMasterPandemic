@@ -2,7 +2,9 @@
 
 is_len1_char = function(x) (length(x) == 1L) & is.character(x)
 
-is_len1_int = function(x) (length(x) == 1L) & is.integer(x)
+is_len1_int = function(x) {
+  (length(x) == 1L) & isTRUE(all.equal(x, as.integer(x)))
+}
 
 # constructing names and strings ----------------------
 
@@ -78,7 +80,7 @@ intermediate_sim_report_names = function(model) {
 final_sim_report_names = function(model) {
   c(
     intermediate_sim_report_names(model),
-    names(model$n_lag),
+    names(model$lag_diff),
     names(model$conv)
   )
 }
@@ -657,6 +659,7 @@ rate_matrix_lookup = function(ratemat) {
   )
 }
 
+
 # computing indices for tmb ----------------------
 
 ##' @export
@@ -726,6 +729,43 @@ sim_report_expr_indices = function(exprs, init_sim_report_nms) {
     sr_modifier = sr_modifier
   )
   return(indices)
+}
+
+#' @export
+lag_diff_indices = function(model) {
+  indices_for_one_pattern = function(pattern_input) {
+    nms = intermediate_sim_report_names(model)
+    indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
+    data.frame(
+      sri = indices,
+      order = rep(pattern_input$delay_n, length(indices))
+    )
+  }
+  (model$lag_diff
+    %>% lapply(indices_for_one_pattern)
+    %>% Reduce(f = rbind)
+    %>% as.list
+  )
+}
+
+#' @export
+conv_indices = function(model) {
+  indices_for_one_pattern = function(pattern_input) {
+    nms = intermediate_sim_report_names(model)
+    indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
+    conv_par_indices = lapply(pattern_input$conv_pars, find_vec_indices, model$params)
+    data.frame(
+      sri = indices,
+      c_prop_idx = rep(conv_par_indices$c_prop, length(indices)),
+      c_delay_cv_idx = rep(conv_par_indices$c_delay_cv, length(indices)),
+      c_delay_mean_idx = rep(conv_par_indices$c_delay_mean, length(indices))
+    )
+  }
+  (model$conv
+    %>% lapply(indices_for_one_pattern)
+    %>% Reduce(f = rbind)
+    %>% as.list
+  )
 }
 
 ##' @export
