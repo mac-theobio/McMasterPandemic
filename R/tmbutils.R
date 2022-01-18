@@ -1039,18 +1039,39 @@ structure_state_vector = function(x, iters, state_nms) {
 }
 
 #' @export
-simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE) {
+simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE,
+                                 format = c('wide', 'long', 'ggplot')) {
+  format = match.arg(format)
   state_sims = (model
    %>% concatenated_state_vector(sim_params)
    %>% structure_state_vector(model$iters, names(model$state))
    %>% as.data.frame
   )
-  if(add_dates) {
+  if(add_dates | format == 'ggplot') {
     state_sims = (model
       %>% simulation_dates
       %>% data.frame
       %>% setNames("Date")
       %>% cbind(state_sims)
+    )
+    if (format %in% c('long', 'ggplot')) {
+      state_sims = pivot_longer(
+        state_sims, !Date,
+        names_to = 'Compartment',
+        values_to = 'State'
+      )
+    }
+  } else if(format == 'long') {
+    state_sims = pivot_longer(
+      state_sims,
+      names_to = 'Compartment',
+      values_to = 'State'
+    )
+  }
+  if (format == 'ggplot') {
+    state_sims = (state_sims
+      %>% ggplot
+       +  geom_line(aes(x = Date, y = State, colour = Compartment))
     )
   }
   state_sims

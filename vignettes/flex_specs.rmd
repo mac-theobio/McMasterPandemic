@@ -322,13 +322,13 @@ Condensation and calibration on the `C++` side.
 
 Condensation is the process of summarizing the `concatenated_state_vector` so that it can be compared with available data. This comparison is done quantitatively through a negative log-likelihood function that measures how different the condensed `concatenated_state_vector` is from the data. The user can add any of the following variables to the condensed dataset.
 
-1. Any state variable
-2. Element-wise sum of any set of state variables
-3. Any time-varying rate matrix element
-4. Element-wise product of any two variables of type 1-3
-5. Element-wise Sum of any variable of type 4
-6. Lag-1 differences of any variables of type 1-5
-7. Convolutions of any variables of type 1-5 with a gamma-density kernel (see section below on computing convolutions)
+1. Any state variable -- already computed in `state` and stored in `concatenated_state_vector`
+2. Element-wise sum of any set of state variables -- already computed in `sp` but not stored
+3. Any time-varying rate matrix element -- already computed in `ratemat` and stored in `concatenated_ratemat_nonzeros`
+4. Element-wise product of any two variables of type 1-3 -- not computed
+5. Element-wise sum of any variable of type 4 -- not computed
+6. Lag-n differences of any variables of type 1-5 -- not computed
+7. Convolutions of any variables of type 1-5 with a gamma-density kernel (see section below on computing convolutions) -- not computed
 
 The following are computed in classic MacPan.
 
@@ -393,7 +393,52 @@ where $i = 1,...,n-m$, $m$ is the length of $\kappa$, and $n$ is the number of t
 
 TODO: in collaboration with Weiguang
 
+Start with notes on what is done and what is not done
+
+1. Any state variable -- already computed in `state` and stored in `concatenated_state_vector`
+2. Element-wise sum of any set of state variables -- already computed in `sp` but not stored
+3. Any time-varying rate matrix element -- already computed in `ratemat` and stored in `concatenated_ratemat_nonzeros`
+4. Element-wise product of any two variables of type 1-3 -- not computed
+5. Element-wise sum of any variable of type 4 -- not computed
+6. Lag-n differences of any variables of type 1-5 -- not computed
+7. Convolutions of any variables of type 1-5 with a gamma-density kernel (see section below on computing convolutions) -- not computed
+
+Also note that items 4 and 5 could be computed together using machinery that could be modified from the `update_factr_in_sp` machinery (note further that the `update_factr_in_sp` machinery has already been modified from the `make_ratemat` machinery).
+
+Development sequence that would lead us to a solution:
+
+1. Create two new concatenated vectors that store the history of the simulations and put these in the report:
+  - `concatenated_sums` -- these are the items in `sp` corresponding to sums of states and parameters (see `update_sum_in_sp`)
+  - `concatenated_factrs` -- these are the items in `sp` corresponding to so called factrs (see `update_factr_in_sp`)
+
+2. After the simulation loop create a matrix (or appropriately indexed vector if that is more efficient) with rows that correspond to time steps and columns that correspond to each variable stored in `concatenated_state_vector`, `concatenated_ratemat_nonzeros`, `concatenated_sums`, `concatenated_factrs` -- call this matrix (or vector) `sp_condense`
+
+3. Loop over the rows (i.e. time steps) of `sp_condense` and at each iteration do the following three sets of operations and add the results as columns in `sp_condense`:
+  - a) compute the same set of user-defined expressions containing sums and products of the columns in `sp_condense`
+  - b) compute lag-n operations of a user-defined set of the columns of `sp_condense`
+  - c) compute convolutions of a user-defined set of the columns of `sp_condense`
+
+Note that development steps 1-2 require no new user input, although step 3 requires the following input.
+
+* Sum/product expressions
+  - `count_condense` -- vector the same length as the number of columns added in step 3a giving the number of `sp_condense` columns to use as input for each new column (note that input columns can be used more than once -- see `count` vector)
+  - `spi_condense` -- indices into the columns of `sp_condense` to use as input (see `spi` vector)
+  - `modifier_condense` -- TODO (similar to `modifier`)
+* Lag-n operations
+  - `lag_spi` -- indices into the columns of `sp_condense` to use as input to lag-n operations
+  - `lag_order` -- vector same length as `lag_spi` containing the order (i.e. the "n" in lag-n) of the lag for each lag-n operation
+* Convolutions
+  - `conv_spi` -- indices into the columns of `sp_condense` to use as input to convolution operations
+  - `conv_c_prop_i` -- vector same length as `conv_spi` giving indices into `params` for extracting the parameters of the convolutions
+
+Add `sp_condense` to the report. On the R-side we could start using `sp_condense` where we currently use `concatenated_*` vectors, and eventually we could drop them.
+
+
+##### First Attempt
+
 At a high level condensation is comprised of a transformation of `concatenated_state_vector` into `condensed_state_vector`, which is typically smaller. The condensation algorithm has seven phases, corresponding to the seven types of variables that can be added to `condensed_state_vector`.
+
+
 
 #### Negative Binomial Negative Log Likelihood
 
