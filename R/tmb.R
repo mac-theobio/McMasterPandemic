@@ -751,9 +751,16 @@ add_lag_diff = function(
   delay_n = 1) {
   stopifnot(is_len1_int(delay_n))
   stopifnot(is_len1_char(var_pattern))
-  added_lag_diff = list(
-    var_pattern = var_pattern,
-    delay_n = delay_n
+  var_matches = grep(var_pattern
+    , intermediate_sim_report_names(model)
+    , perl = TRUE
+    , value = TRUE
+  )
+  output_names = "lag" %_% delay_n %_% "diff" %_% var_matches
+  added_lag_diff = nlist(
+    var_pattern,
+    delay_n,
+    output_names
   )
   model$lag_diff = c(
     model$lag_diff,
@@ -771,9 +778,17 @@ add_conv = function(
 
   stopifnot(is_len1_char(var_pattern))
 
+  var_matches = grep(var_pattern
+    , intermediate_sim_report_names(model)
+    , perl = TRUE
+    , value = TRUE
+  )
+  output_names = "conv" %_% var_matches
+
   added_conv = list(
     var_pattern = var_pattern,
-    conv_pars = nlist(c_prop, c_delay_cv, c_delay_mean)
+    conv_pars = nlist(c_prop, c_delay_cv, c_delay_mean),
+    output_names = output_names
   )
   model$conv = c(
     model$conv,

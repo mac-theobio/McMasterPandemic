@@ -80,8 +80,8 @@ intermediate_sim_report_names = function(model) {
 final_sim_report_names = function(model) {
   c(
     intermediate_sim_report_names(model),
-    names(model$lag_diff),
-    names(model$conv)
+    unlist(lapply(model$lag_diff, getElement, "output_names")),
+    unlist(lapply(model$conv, getElement, "output_names"))
   )
 }
 
