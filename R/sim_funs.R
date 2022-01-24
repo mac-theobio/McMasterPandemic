@@ -1297,7 +1297,7 @@ run_sim <- function(params,
     if (isTRUE(any(res[state_names] < -sqrt(.Machine$double.eps)))) {
         state_vars <- (res %>% select(state_names))
         below_zero_lines <- (rowSums(state_vars < -sqrt(.Machine$double.eps)) > 0)
-        browser()
+
         warning(
             "End of run_sim check: One or more state variables is negative at some time, below -sqrt(.Machine$double.eps). Check following message for details \n ",
             paste(utils::capture.output(print(res[below_zero_lines, ])), collapse = "\n")
