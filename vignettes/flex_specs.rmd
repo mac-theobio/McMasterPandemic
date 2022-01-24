@@ -92,6 +92,7 @@ The specs for the following versions are being actively developed and
 modified. These versions also serve as a roadmap. Note that version
 numbers of experimental versions can change without warning.
 
+-   [0.1.2 -- Common factors](#v0.2.1)
 -   [0.2.0 -- Condensation and calibration on the `C++` side](#v0.2.0)
 -   [0.2.1 -- Log-linear exogenous time-variation of
     parameters](#v0.2.1)
@@ -495,6 +496,28 @@ The corresponding inverse transformations that would be applied after the macros
 * `10^x`
 * `exp(x)`
 * `1/(1+exp(-x))`
+
+## v0.1.2 {#v0.1.2}
+
+[![Lifecycle
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+
+### New Capabilities (0.1.2)
+
+Save common factors when building rate expressions
+
+### Mathematical Description (0.1.2)
+
+Expressions involving sums and products of state variables and parameters, as well as their complements and inverses, can be saved in a vector, $\phi$. The elements of $\phi$ can then be used in expressions that define elements of the rate matrix.
+
+### Data Structure (0.1.2)
+
+Four new integer vectors:
+
+* `factr_spi` -- 1-based index into the elements of the `sp` vector that will contain the common factor
+* `factr_count` -- vector the same length as `factr_spi` containing the number of elements in `sp` used to compute the common factor
+* `factr_spi_compute` -- vector with `sum(factr_count)` elements giving the indices into the elements of the `sp` vector for extracting the elements used to compute the new factor
+* `factr_modifier` -- vector with `sum(factr_count)` elements describing the operations to be performed for generating the common factor (see v0.0.1 for details on modifier vectors)
 
 ## v0.1.1 {#v0.1.1}
 
