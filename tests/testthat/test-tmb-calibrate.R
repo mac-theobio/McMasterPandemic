@@ -520,3 +520,132 @@ test_that("macpan ontario calibration example works the same regardless of engin
   expect_equal(fitted_model_r$mle2@min, fitted_model_tmb$mle2@min)
   expect_equal(fitted_model_r$mle2@vcov, fitted_model_tmb$mle2@vcov)
 })
+
+test_that("tmb engine calibrates correctly to multiple data streams", {
+
+  library(McMasterPandemic)
+  library(lubridate)
+  library(tidyr)
+  library(dplyr)
+
+  refit_no_flex_model = TRUE # slow if TRUE
+
+  reset_spec_version()
+  tmb_mode()
+
+  params1 <- read_params("PHAC.csv")
+
+  # update default parameters for the Yukon case
+  #   beta0 -- baseline transmission rate
+  #   N -- population of Yukon
+  #   mu -- proportion of cases that are mild
+  #   phi1 -- proportion of hospitalization cases that are not in the ICU
+  params1[c("beta0", "N", "mu", "phi1")] <- c(0.1, 42507, 0.95, 0.98)
+
+  # initial state of the simulation
+  state1 <- make_state(params=params1)
+
+  # start and end dates
+  sdate <- as.Date("2021-11-01")
+  edate <- as.Date("2022-01-19")
+  initial_date = as.Date("2021-08-03")
+  start_date_offset = as.integer(sdate - initial_date)
+
+  # read and process data
+  covid_data <- ("report_data_yukon_h_and_i.csv"
+                 %>% read.csv
+                 %>% mutate(date = as.Date(date))
+                 %>% filter(date >= ymd(20210803))
+                 %>% filter(between(as.Date(date), sdate, edate))
+                 %>% select(date, report, death, hosp, ICU)
+                 %>% pivot_longer(names_to = "var", -date)
+                 %>% mutate(value=round(value))
+  )
+
+  # establish schedule of time variation of parameters
+  params_timevar = data.frame(
+    Date = ymd(
+      20211115, # nov 15
+      20211215, # dec 15
+      20220101  # jan 01
+    ),
+    Symbol = "beta0",
+    Value = NA,
+    Type = "abs"
+  )
+
+  # declare parameters to be fitted
+  #   - two types of parameters: params and time_params
+  #   - params is a named vector with names referring to
+  #     the parameter to be optimized
+  #   - optionally change the scale on which optimization occur
+  #     by prefixing these names with log_ or logit_
+  #   - values of this vector are initial values fed to the
+  #     optimizer
+  #   - time_params is a vector of values in the order of
+  #     of the params_timevar schedule above
+  opt_pars <- list(
+    params = c(
+
+      # baseline transmission rate
+      # (fit on log scale to avoid negative rates)
+      log_beta0 = log(params1[["beta0"]]),
+
+      # proportion of cases that are mild
+      # (fit on logit scale to keep proprotions between zero and one)
+      logit_mu = qlogis(params1[["mu"]]),
+
+      # proportion of hospitalizations that are not in the ICU
+      # (fit on logit scale to keep proprotions between zero and one)
+      logit_phi1 = qlogis(params1[["phi1"]])
+    ),
+
+    # time varying transmissions rates
+    # (see params_time_var above for schedule of changes in these rates)
+    # (fit on log scale to avoid negative rates)
+    log_time_params = rep(
+      log(params1[["beta0"]]),
+      nrow(params_timevar)
+    )
+  )
+
+  mm = make_base_model(
+    params = params1,
+    start_date = sdate - start_date_offset,
+    end_date = edate,
+    params_timevar = params_timevar,
+    do_make_state = TRUE,
+    do_hazard = TRUE
+  )
+  sim_args_flex = list(flexmodel = mm)
+  sim_args = list()
+
+  # fit the models
+  if (refit_no_flex_model) {
+    fit_no_flex <- calibrate(
+      data = covid_data,
+      time_args = list(params_timevar = params_timevar),
+      start_date_offset = start_date_offset,
+      base_params = params1,
+      opt_pars = opt_pars,
+      debug = FALSE,
+      sim_args = sim_args
+    )
+    save(fit_no_flex, file = '../../inst/testdata/yukon_no_flex.rda')
+  } else {
+    load('../../inst/testdata/yukon_no_flex.rda')
+  }
+  fit_flex <- calibrate(
+    data = covid_data,
+    time_args = list(params_timevar = params_timevar),
+    start_date_offset = start_date_offset,
+    base_params = params1,
+    opt_pars = opt_pars,
+    debug = FALSE,
+    sim_args = sim_args_flex
+  )
+
+  expect_equal(fit_no_flex$mle2@coef, fit_flex$mle2@coef)
+  expect_equal(fit_no_flex$mle2@min, fit_flex$mle2@min)
+  expect_equal(fit_no_flex$mle2@vcov, fit_flex$mle2@vcov)
+})
