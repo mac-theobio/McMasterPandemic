@@ -754,11 +754,20 @@ conv_indices = function(model) {
     nms = intermediate_sim_report_names(model)
     indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
     conv_par_indices = lapply(pattern_input$conv_pars, find_vec_indices, model$params)
+    init_c_delay_cv = model$params[pattern_input$conv_pars$c_delay_cv]
+    init_c_delay_mean = model$params[pattern_input$conv_pars$c_delay_mean]
+    init_c_prop = model$params[pattern_input$conv_pars$c_prop]
+    qmax = qgamma(
+      0.95,
+      1/init_c_delay_cv^2,
+      init_c_delay_mean * init_c_delay_cv^2
+    )
     data.frame(
       sri = indices,
       c_prop_idx = rep(conv_par_indices$c_prop, length(indices)),
       c_delay_cv_idx = rep(conv_par_indices$c_delay_cv, length(indices)),
-      c_delay_mean_idx = rep(conv_par_indices$c_delay_mean, length(indices))
+      c_delay_mean_idx = rep(conv_par_indices$c_delay_mean, length(indices)),
+      qmax = rep(qmax, length(indices))
     )
   }
   (model$conv

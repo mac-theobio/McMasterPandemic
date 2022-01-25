@@ -1378,7 +1378,7 @@ tmb_fun <- function(model) {
           do_hazard_lin = isTRUE(do_hazard_lin),
           do_approx_hazard = isTRUE(do_approx_hazard),
           do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
-          haz_eps = haz_eps,
+          # haz_eps = haz_eps,
 
           sri_output = null_to_int0(sim_report_expr_indices$sri_output),
           sr_count = null_to_int0(sim_report_expr_indices$sr_count),
@@ -1392,6 +1392,7 @@ tmb_fun <- function(model) {
           conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
           conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
           conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+          conv_qmax = null_to_int0(conv$qmax),
 
           numIterations = int0_to_0(null_to_0(iters))
         ),
