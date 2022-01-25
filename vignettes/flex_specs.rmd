@@ -92,7 +92,7 @@ The specs for the following versions are being actively developed and
 modified. These versions also serve as a roadmap. Note that version
 numbers of experimental versions can change without warning.
 
--   [0.1.2 -- Common factors](#v0.2.1)
+-   [0.1.2 -- Common factors](#v0.1.2)
 -   [0.2.0 -- Condensation and calibration on the `C++` side](#v0.2.0)
 -   [0.2.1 -- Log-linear exogenous time-variation of
     parameters](#v0.2.1)

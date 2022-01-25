@@ -1386,7 +1386,7 @@ tmb_fun <- function(model) {
           sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
 
           lag_diff_sri = null_to_int0(lag_diff$sri),
-          lag_diff_order = null_to_int0(lag_diff$order),
+          lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
 
           conv_sri = null_to_int0(conv$sri),
           conv_c_prop_idx = null_to_int0(conv$c_prop_idx),

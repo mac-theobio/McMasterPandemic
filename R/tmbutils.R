@@ -738,7 +738,7 @@ lag_diff_indices = function(model) {
     indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
     data.frame(
       sri = indices,
-      order = rep(pattern_input$delay_n, length(indices))
+      delay_n = rep(pattern_input$delay_n, length(indices))
     )
   }
   (model$lag_diff
@@ -1364,7 +1364,6 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 ##' @export
 set_spec_version = function(v, cpp_path = NULL, use_version_directories = TRUE) {
   spec_version <- as.character(unlist(v))[1]
-  print(spec_version)
   options(MP_flex_spec_version = spec_version)
 
   if(is.null(cpp_path)) {
@@ -1377,6 +1376,7 @@ set_spec_version = function(v, cpp_path = NULL, use_version_directories = TRUE) 
     compile(cpp)
     dyn.load(dynlib(dll))
   }
+  print(spec_version)
 }
 
 #' @rdname set_spec_version
