@@ -573,14 +573,6 @@ What follows is a detailed description of the procedure, which makes reference t
 10. Update `state[all_to_infected_idx] = eig_infected * param[infected_idx]` (`infected_idx` can be found in `model$tmb_indices$initial_population`)
 11. Update `state[susceptible_idx] = (1/susceptible_idx.size()) * (param[total_idx] - param[infected_idx])` (`infected_idx` and `total_idx` can be found in `model$tmb_indices$initial_population`)
 
-1. Let all elements of the state vector for the full model, $s$, and linearized model, $\hat{s}$, be zero: $s_i = \hat{s}_i = 0$
-2. Make two copies of the parameter vector -- one for the full model, $\theta$, and linearized model, $\hat{\theta}$
-3. Update a set of the parameters in $\hat{\theta}$ with values that will remain constant even if the parameter vector $\theta$ is updated
-4. Update a set of the state variables in $\hat{s}$ with a set of parameter values in $\hat{\theta}$
-5. Create a function of the state vector 
-5. Compute the Jacobian matrix of a function of the state vector -- using automatic differentiation --   with respect to the state vector  on a function that updates $\hat{s}$ with the following steps
-
-
 #### Calibrate Time Varying Multipliers
 
 
