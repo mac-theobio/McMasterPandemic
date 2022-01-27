@@ -1025,7 +1025,7 @@ Type objective_function<Type>::operator() ()
 
     //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
 
-    Type c_prop = params(conv_c_prop_idx[k]+1);
+    Type c_prop = params(conv_c_prop_idx[k]-1);
     Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
     Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
 
