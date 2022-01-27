@@ -295,9 +295,14 @@ run_sim_break <- function(params,
            sim_args,
            nlist(params, state = sim_args$flexmodel$state))
     } else {
+        if(isTRUE(sim_args$flexmodel$classic_macpan_model)) {
+            sim_args_state = make_state(params = params)
+        } else {
+            sim_args_state = sim_args$flexmodel$state
+        }
         sim_args <- c(
             sim_args,
-            nlist(params, state = make_state(params = params))
+            nlist(params, state = sim_args_state)
         )
     }
 

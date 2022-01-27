@@ -386,6 +386,7 @@ seird_model = (
 
 The BC covid modelling group uses this [compartmental model](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008274) for their inference and forecasting work.  This model can be expressed in McMasterPandemic with the following.
 
+*DISCLAIMER: This is not meant to illustrate a realistic forecast, but rather to illustrate how the basic model structure can be expressed in McMasterPandemic*
 ```{r fig.height=8, fig.width=8}
 foi =  (
     vec(c("1", "f")) 
@@ -489,6 +490,197 @@ model = (
   %>% ggplot()
    +  facet_wrap(~ name, scales = 'free', ncol = 2)
    +  geom_line(aes(Date, value))
+)
+```
+
+## BC Covid Omicron
+
+The BC group also developed a model with two strains for the Omicron wave of Covid-19.
+
+*DISCLAIMER: This is not meant to illustrate a realistic forecast, but rather to illustrate how the basic model structure can be expressed in McMasterPandemic*
+
+```{r make_init_omicron, echo=FALSE}
+
+make_init = function(params,
+                     N=5.07e6, vaxlevel = 0.8,
+                      port_wane = 0.04,
+                      past_infection = 0.1,
+                      incres = 300,
+                      incmut = 10) {
+  params_list = as.list(params)
+  ff=6/7 # fudge factor . hard to get incidence right since it depends on other parameters too (2/3)
+  Vtot = vaxlevel*N*(1-port_wane) # allocate to V, Ev, Iv
+  Wtot = vaxlevel*N*port_wane # allocate to W, Ew, Iw
+  # some have had covid. but they might also have been vaccinated.
+  # set up Rs
+  R0 = N*past_infection*(1-vaxlevel)  # past infections, but not vaccinated
+  Rv0 = N*past_infection*(vaxlevel) * (1-port_wane) # recovered, vaxd and not waned
+  Rw0 = N*past_infection*(vaxlevel) * port_wane # rec, vaxd, waned
+  # set up Es : resident
+  Ertot = ff*incres/params_list$sigma # total Er
+  Ervw = vaxlevel*params_list$ve*Ertot # vaccinated
+  Erw0 = Ervw * port_wane # waned
+  Erv0 = Ervw *(1-port_wane) # not waned.  these two add to Ervwboth
+  Er0 = (1-vaxlevel*params_list$epsilon_r)*Ertot # unvaccinated
+  # set up Es : mutant
+  Emtot = ff*incmut/params_list$sigma # total Er
+  Emvw = vaxlevel*params_list$ve*Emtot # vaccinated
+  Emw0 = Emvw * port_wane # waned
+  Emv0 = Emvw *(1-port_wane) # not waned.  these two add to Ervwboth
+  Em0 = (1-vaxlevel*params_list$epsilon_m)*Emtot # unvaccinated
+  # set up Is. for now just make them 2x Es since they last twice as long
+  Ir0=ff*2*Er0; Irv0 = ff*2*Erv0; Irw0 = ff*2*Erw0
+  Im0 = ff*2*Em0; Imv0=ff*2*Emv0; Imw0= ff*2*Emw0
+
+  # set up V0, W0
+  # first line plus Rv0 adds to the V total but we have to leave room for the E, I
+  V0 = N*(1-past_infection)*vaxlevel*(1-port_wane) -
+    (Erv0+Irv0+Emv0+Imv0)*(1-port_wane)
+  W0 = N*(1-past_infection)*vaxlevel*(port_wane) -
+    ( Erw0+Irw0+Emw0+Imw0)*(port_wane)
+  # set up S
+  initmost = c(Er=Er0, Em =Em0, Ir=Ir0, Im=Im0, R=R0,
+               V=V0, Erv=Erv0, Emv=Emv0, Irv = Irv0,  Imv=Imv0, Rv=Rv0,
+               W=W0, Erw=Erw0, Emw=Emw0, Irw = Irw0,  Imw=Imw0, Rw=Rw0)
+  state = c(S=N-sum(initmost), initmost)
+  return(state)
+}
+```
+```{r omicron, fig.height=8, fig.width=8}
+params = c(
+  sigma=1/3, # incubation period (3 days) (to fixed)
+  gamma=1/(5), #recovery rate (fixed)
+  nu =0.007, #vax rate: 0.7% per day (fixed)
+  mu=1/(82*365), # 1/life expectancy (fixed)
+  w1 = 1/(3*365),# waning rate from R to S (fixed)
+  w2 = 1/(3*365), # waning rate from Rv to V (fixed)
+  w3 = 1/(3*365),# waning rate Rw to W (fixed)
+  ve=1, # I think this should be 1. it is not really efficacy  ( fixed)
+  beta_r=0.72, #transmission rate (to estimate) (0.35)
+  beta_m=0.8*2.2, #transmission rate (to estimate)(*1.9)
+  epsilon_r = (1-0.8), # % this should be 1-ve
+  epsilon_m = (1-0.6), # % escape capacity #(fixed)
+  b= 0.006, # booster rate  (fixed)
+  beff = 0.7, # booster efficacy
+  wf=0.2, # protection for newly recoverd #0.2
+  N=5e6,
+  E0=5,
+  S0=1-1e-5,
+  c=1
+)
+
+# dimensions of model structure
+vax_states = c("unvax", "onedose", "boost")
+variant_states = c("delta", "omicron")
+epi_states = c("S", "E" %_% variant_states, "I" %_% variant_states, "R")
+
+# vectors representing variant model structure
+I_delta   = vec("I" %_% "delta"   %_% vax_states)
+I_omicron = vec("I" %_% "omicron" %_% vax_states)
+E_delta   = vec("E" %_% "delta"   %_% vax_states)
+E_omicron = vec("E" %_% "omicron" %_% vax_states)
+
+# initial state vector
+state = layered_zero_state(epi_states, vax_states)
+all_states = names(state)
+state[] = unname(make_init(params))
+print(state)
+
+two_strain_bc = (init_model(
+    params = params,
+    state = state,
+    start_date = "2022-01-01",
+    end_date = "2022-05-01",
+    do_make_state = FALSE,
+    do_hazard = TRUE
+  )
+
+  # sum over every vax status to get
+  # total numbers in I boxes for each
+  # variant
+  %>% add_state_param_sum("I_delta", "I_delta_")
+  %>% add_state_param_sum("I_omicron", "I_omicron_")
+
+  # R to S boxes for every vax status
+  #   -- waning
+  %>% vec_rate(
+    from = "R" %_% vax_states,
+    to   = "S" %_% vax_states,
+    vec('w1', 'w2', 'w3')
+  )
+
+  # S_delta to E_delta for every vax status
+  #   -- delta force of infection
+  %>% vec_rate(
+    from = "S"             %_% vax_states,
+    to   = "E" %_% "delta" %_% vax_states,
+    struc("(c) * (beta_r) * (1/N) * (I_delta)") * vec("1", "epsilon_r", "epsilon_r")
+  )
+
+  # S_omicron to E_omicron for every vax status
+  #   -- omicron force of infection
+  %>% vec_rate(
+    from = "S"               %_% vax_states,
+    to   = "E" %_% "omicron" %_% vax_states,
+    struc("(c) * (beta_m) * (1/N) * (I_omicron)") * vec("1", "epsilon_m", "epsilon_m")
+  )
+
+  # R to E_delta for every vax status
+  #   -- delta force of infection of recovered individuals
+  %>% rep_rate(
+    from = "R"             %_% vax_states,
+    to   = "E" %_% "delta" %_% vax_states,
+    ~ (wf) * (epsilon_r) * (c) * (beta_r) * (1/N) * (I_delta)
+  )
+
+  # R to E_omicron for every vax status
+  #   -- omicron force of infection of recovered individuals
+  %>% rep_rate(
+    from = "R"               %_% vax_states,
+    to   = "E" %_% "omicron" %_% vax_states,
+    ~ (wf) * (epsilon_m) * (c) * (beta_m) * (1/N) * (I_omicron)
+  )
+
+  # E to I for all variant-vax combinations
+  %>% rep_rate(
+    from = "E" %_% expand_names(variant_states, vax_states),
+    to   = "I" %_% expand_names(variant_states, vax_states),
+    ~ (sigma)
+  )
+
+  # recovery for all variant-vax combinations
+  %>% rep_rate(
+    from = "I" %_% expand_names(variant_states, vax_states),
+    to   = "R" %_% rep(vax_states, each = length(variant_states)),
+    ~ (gamma)
+  )
+
+  # demographics
+  %>% rep_rate(
+    from = all_states,
+    to   = "S_unvax",
+    ~ (mu)
+  )
+
+  # vaccination
+  %>% add_rate(from = "S_unvax",   to = "S_onedose", ~ (nu) * (ve))
+  %>% add_rate(from = "S_onedose", to = "S_boost",   ~ (b)  * (ve))
+
+  %>% add_outflow
+  %>% update_tmb_indices
+)
+
+category_pattern = "^(S|E|I|R)(_omicron|_delta)?_(unvax|onedose|boost)$"
+(two_strain_bc
+  %>% simulate_state_vector(add_date = TRUE, format = 'long')
+  %>% mutate(`Epi Status` = sub(category_pattern, '\\1\\2', Compartment, perl = TRUE))
+  %>% mutate(`Vaccination Status` = sub(category_pattern, '\\3', Compartment, perl = TRUE))
+  %>% arrange(`Epi Status`, `Vaccination Status`)
+  %>% mutate(Compartment = factor(Compartment, all_states))
+  %>% ggplot()
+   +  facet_wrap(
+     ~ Compartment, ncol = 3, scales = 'free', dir = 'v')
+   +  geom_line(aes(Date, State))
 )
 ```
 

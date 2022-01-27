@@ -986,6 +986,12 @@ run_sim <- function(params,
 
     # look for foi -- TODO: formalize the definition of foi so that we
     #                       can reliably check -- this is too model-specific
+
+    #regmatches(
+    #  names(flexmodel$tmb_indices$updateidx),
+    #  regexec("^S_?(.*)(_to_)E_?(.*)$", names(flexmodel$tmb_indices$updateidx))
+    #)
+
     foi = (flexmodel$tmb_indices$updateidx
       %>% names
       %>% strsplit("_to_")

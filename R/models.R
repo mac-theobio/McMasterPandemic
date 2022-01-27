@@ -85,6 +85,7 @@ make_base_model <- function(...) {
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
   }
+  model$classic_macpan_model = TRUE
   model
 }
 
@@ -300,5 +301,6 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
   }
+  model$classic_macpan_model = TRUE
   model
 }
