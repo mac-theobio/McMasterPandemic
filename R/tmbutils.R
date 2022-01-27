@@ -10,6 +10,10 @@
 #' @export
 `%+%` = function(x, y) paste(x, y, sep = "")
 
+wrap_exact = function(x) {
+  "^" %+% x %+% "$"
+}
+
 ##' Regex Alternation Group
 ##'
 ##' @export
@@ -623,6 +627,10 @@ rate_matrix_lookup = function(ratemat) {
     )
   )
 }
+
+
+
+
 
 # computing indices for tmb ----------------------
 

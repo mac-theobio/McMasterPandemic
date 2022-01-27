@@ -2,7 +2,6 @@ Sys.setenv(R_TESTS="")
 
 library(testthat)
 library(McMasterPandemic)
-library(TMB)
 library(tools)
 library(dplyr)
 library(semver)
