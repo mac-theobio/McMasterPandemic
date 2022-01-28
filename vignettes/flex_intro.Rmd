@@ -16,6 +16,7 @@ library(McMasterPandemic)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(equatiomatic)
 ```
 
 ## Hello World: Simulating an SIR Model

@@ -92,7 +92,8 @@ init_model <- function(params, state = NULL,
         params = params,
         ratemat = ratemat,
         rates = list(),
-        name_regex = name_regex
+        name_regex = name_regex,
+        spec_ver = as.character(spec_version())
     )
 
     if (spec_ver_btwn("0.0.1", "0.1.1")) {

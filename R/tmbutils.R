@@ -18,6 +18,30 @@ is_len1_int = function(x) {
 #' @export
 `%+%` = function(x, y) paste(x, y, sep = "")
 
+#' @export
+is_empty = function(x) {
+  x = as.character(x)
+  is.na(x) | (nchar(x) == 0L) | is.nan(x)
+}
+
+#' @export
+omit_empty = function(x) x[!is_empty(x)]
+
+#' @export
+index_sep = function(x, i, sep = "_") {
+  (x
+   %>% strsplit("_")
+   %>% lapply(function(x) {
+     ifelse(
+       length(x) == 0L,
+       '',
+       paste0(omit_empty(x[i]), collapse = "_")
+     )
+   })
+   %>% unlist
+  )
+}
+
 ##' Regex Alternation Group
 ##'
 ##' @export
@@ -84,6 +108,110 @@ final_sim_report_names = function(model) {
     unlist(lapply(model$conv, getElement, "output_names"))
   )
 }
+
+##' @export
+make_latex_symbols = function(nms) {
+  greek_letters = c(
+    "alpha",
+    "beta",
+    "gamma", "Gamma",
+    "delta", "Delta",
+    "epsilon", "varepsilon",
+    "zeta",
+    "eta",
+    "theta", "vartheta", "Theta",
+    "iota",
+    "kappa",
+    "lambda", "Lambda",
+    "mu",
+    "nu",
+    "xi", "Xi",
+    "pi", "Pi",
+    "rho", "varrho",
+    "sigma", "Sigma",
+    "tau",
+    "upsilon", "Upsilon",
+    "phi", "varphi", "Phi",
+    "chi",
+    "psi", "Psi",
+    "omega", "Omega"
+  )
+
+  # 1. split into two parts, the second of which becomes a subscript
+  #    -- splitting mechanisms checked in this order
+  #    a) first underscore
+  #    b) letters followed by one or more numbers
+  #    c) case change that is not in greek_letters or items in user-defined
+  #       word_patterns
+  #    e) do not split
+  #
+  # 2. figure out if the first part is a greek letter, and if so escape for use
+  #    with latex
+  #
+
+  pats = list(
+    lu = '^([a-z]+)([A-Z]+)(.*)$',
+    ul = '^([A-Z]+)([a-z]+)(.*)$',
+    nm = '^([A-z]+)([0-9]+)(.*)$')
+  nms_first = nms
+  nms_second = rep('', length(nms))
+  for(i in seq_along(pats)) {
+    l = grepl(pats[[i]], nms, perl = TRUE)
+    nms_first[l] = sub(pats[[i]], '\\1', nms[l], perl = TRUE)
+    nms_second[l] = sub(pats[[i]], '\\2\\3', nms[l], perl = TRUE)
+  }
+  l = grepl('^(\\w+)_', nms)
+  nms_first[l] = index_sep(nms[l], 1)
+  nms_second[l] = index_sep(nms[l], -1)
+
+  is_greek = nms_first %in% greek_letters
+  nms_first[is_greek] = "\\" %+% nms_first[is_greek]
+
+  is_symb_word = (nchar(nms_first) > 1L) & !is_greek
+  is_subscr_word = nchar(nms_second) > 1L
+  nms_first[is_symb_word] = "\\text{" %+% nms_first[is_symb_word] %+% "}"
+  nms_second[is_subscr_word] = "\\text{" %+% nms_second[is_subscr_word] %+% "}"
+
+  latex_vars = nms_first
+  empty_second = is_empty(nms_second)
+  latex_vars[!empty_second] = nms_first[!empty_second] %_% nms_second[!empty_second]
+  latex_vars
+}
+
+
+#' @export
+make_latex_rates = function(model) {
+  (get_rate_factors(model)
+   %>% bind_rows(.id = "rate")
+   %>% separate(rate, c("from", "to"), '_to_') # fragile
+   %>% mutate(latex_var = make_latex_symbols(var))
+   %>% mutate(latex_var = ifelse(compl, "1-" %+% latex_var, latex_var))
+   %>% mutate(latex_var = ifelse(invrs, "1/" %+% latex_var, latex_var))
+   %>% mutate(latex_var = "(" %+% latex_var %+% ")")
+   %>% group_by(latex_var, from, to)
+   %>% mutate(multiplicity = n())
+   %>% ungroup()
+   %>% group_by(from, to)
+   %>% mutate(is_common_fact = (max(prod_indx) != 1L) & (multiplicity == max(prod_indx)))
+   %>% ungroup()
+   %>% group_by(prod_indx, from, to)
+   %>% summarise(
+     latex = paste0(latex_var[!is_common_fact], collapse = ""),
+     latex_common_fact = paste0(latex_var[is_common_fact], collapse = "")
+   )
+   %>% ungroup
+   %>% group_by(from, to)
+   %>% summarise(
+     left = ifelse(is_empty(latex_common_fact[1]), "", "\\left("),
+     right = ifelse(is_empty(latex_common_fact[1]), "", "\\right)"),
+     latex = latex_common_fact[1] %+% left %+% paste0(latex, collapse = "+") %+% right
+   )
+   %>% ungroup
+   %>% select(-left, -right)
+  )
+}
+
+
 
 # constructing vectors ---------------------
 
@@ -483,7 +611,7 @@ get_rates_with_vars = function(model, var_pattern) {
 
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
-rate_summary = function(model, include_formula = FALSE) {
+rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
   summary = data.frame(
     from = get_rate_info(model, "from") %>% unlist,
     to = get_rate_info(model, "to") %>% unlist,
@@ -501,6 +629,15 @@ rate_summary = function(model, include_formula = FALSE) {
       %>% unlist
     )
   }
+
+  if(include_latex) {
+    summary = inner_join(
+      summary,
+      make_latex_rates(model),
+      by = c("from", "to")
+    )
+  }
+
   summary
 }
 
@@ -757,11 +894,12 @@ conv_indices = function(model) {
     init_c_delay_cv = model$params[pattern_input$conv_pars$c_delay_cv]
     init_c_delay_mean = model$params[pattern_input$conv_pars$c_delay_mean]
     init_c_prop = model$params[pattern_input$conv_pars$c_prop]
-    qmax = qgamma(
-      0.95,
-      1/init_c_delay_cv^2,
-      init_c_delay_mean * init_c_delay_cv^2
-    )
+    qmax = length(make_delay_kernel(init_c_prop, init_c_delay_mean, init_c_delay_cv)) + 1L
+    #qmax = qgamma(
+    #  0.95,
+    #  1/init_c_delay_cv^2,
+    #  init_c_delay_mean * init_c_delay_cv^2
+    #)
     data.frame(
       sri = indices,
       c_prop_idx = rep(conv_par_indices$c_prop, length(indices)),

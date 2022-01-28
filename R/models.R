@@ -81,6 +81,17 @@ make_base_model <- function(...) {
       %>% initial_population(total = 'N', infected = 'E0')
     )
   }
+
+  if (spec_ver_gt('0.1.2')) {
+    model = (model
+      %>% add_state_param_sum("Htotal", "^H2?$")
+      %>% add_state_param_sum("ICU", "^ICU(s|d)$")
+      %>% add_sim_report_expr("Incidence", ~ (S_to_E) * (S))
+      %>% add_lag_diff("^(X|D)$")
+      %>% add_conv("^Incidence$")
+    )
+  }
+
   model = update_tmb_indices(model)
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)

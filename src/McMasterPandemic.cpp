@@ -1,7 +1,17 @@
-// This version implements spec 0.1.1 in https://canmod.net/misc/flex_specs
+// This version implements spec 0.2.0 in https://canmod.net/misc/flex_specs
 
 // search for printouts that are not commented out: ^\s*std::cout
 // search for printouts that are commented out: ^\s*//\s*std::cout
+
+// Spec 0.2.0
+// Here is the order of columns that should go in the matrix:
+// 1 State variables
+// 2 Changing rate matrix elements (there is one such element in this model)
+// 3 Sums
+// 4 Factrs
+// 5 Element-wise expressions involving the first four items
+// 6 Lag-n differences of the first five items
+// 7 Convolutions of the first five items
 
 #include <iostream>
 #include <string>
@@ -714,7 +724,7 @@ vector<Type> make_state(
 
     // Copy the upper-left sub-matrix
     trimmed_jacob = jacob.block(0, 0, nRows-n+1, nCols-n+1);
-    trimmed_lin_state = lin_state.block(0, 0, trimmed_lin_state.size(), 1);
+    trimmed_lin_state = lin_state.segment(0, trimmed_lin_state.size());
   }
 
   // 7 -- Compute eigenvector
@@ -755,7 +765,7 @@ vector<Type> make_state(
         empty_idx++;
       }
 
-    eig_infected = eigenvec.block(0, 0, eig_infected.size(), 1);
+    eig_infected = eigenvec.segment(0, eig_infected.size());
   }
 
   // 9 -- Normalize `eig_infected` to have elements that sum to one
@@ -776,6 +786,8 @@ vector<Type> make_state(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
+  std::cout << " =========== inside TMB ===========" << std::endl;
+
   // Joint negative log-likelihood (stub)
   //Type jnll= 0;
 
@@ -840,6 +852,24 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(do_hazard_lin);
   DATA_INTEGER(do_approx_hazard_lin);
 
+  DATA_IVECTOR(sr_count); 	// condense_count
+  DATA_IVECTOR(sri)		// condense_sri
+  DATA_IVECTOR(sr_modifier); 	// condense_modifier
+
+  DATA_IVECTOR(lag_diff_sri);
+  DATA_IVECTOR(lag_diff_delay_n);
+
+  DATA_IVECTOR(conv_sri);
+  DATA_IVECTOR(conv_c_prop_idx);
+  DATA_IVECTOR(conv_c_delay_cv_idx);
+  DATA_IVECTOR(conv_c_delay_mean_idx);
+  DATA_IVECTOR(conv_qmax);
+
+  // used for testing convolution code only
+  //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
+  //conv_qmax(0) = 6;
+  //numIterations = 35;
+
   // The order of these PARAMETER_VECTOR macros
   // is important because it defines the order with
   // which non-fixed parameters are passed to the
@@ -896,6 +926,25 @@ Type objective_function<Type>::operator() ()
   //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
   //if (tmb_status) return 0; // There is an error in the computation so far
 
+  // spec v0.2.0
+  int stateSize = state.size();
+  int tvElementsNum = updateidx.size();
+  int sumSize = sumidx.size();
+  int factrSize = factr_spi.size();
+  int extraExprNum = sr_count.size();
+  int lagNum = lag_diff_sri.size();
+  int convNum = conv_sri.size();
+
+  //std::cout << "extraExprNum = " << extraExprNum << std::endl;
+  //std::cout << "lagNum = " << lagNum << std::endl;
+  //std::cout << "convNum = " << convNum << std::endl;
+
+  matrix<Type> simulation_history(numIterations+1, \
+    stateSize+tvElementsNum+sumSize+factrSize+extraExprNum+lagNum+convNum);
+  simulation_history.setZero();
+
+  simulation_history.block(0, 0, 1, stateSize) = state.transpose();
+
   // Initialize the vectors that contain state, parameters,
   // and sums of these quantities
   vector<Type> sp(state.size()+params.size()+sumidx.size()+factr_spi.size());
@@ -903,11 +952,19 @@ Type objective_function<Type>::operator() ()
   vector<Type> place_holder_factr(factr_spi.size());
   sp << state, params, place_holder, place_holder_factr;
   vector<Type> sp_orig(sp); // sp_orig does not contain sums
+
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
+  if (sumSize>0)
+    simulation_history.block(0, stateSize+tvElementsNum, 1, sumSize) = \
+      sp.segment(stateSize+params.size(), sumSize).transpose();
+
   update_factr_in_sp(
     sp,
     factr_spi, factr_count,
     factr_spi_compute, factr_modifier);
+  if (factrSize>0)
+    simulation_history.block(0, stateSize+tvElementsNum+sumSize, 1, factrSize) = \
+      sp.segment(stateSize+params.size()+sumSize, factrSize).transpose();
 
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
@@ -922,26 +979,81 @@ Type objective_function<Type>::operator() ()
   //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
   //if (tmb_status) return 0; // There is an error in the computation so far
 
-  int stateSize = state.size();
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
   vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
-  concatenated_state_vector.block(0, 0, stateSize, 1) = state;
+  concatenated_state_vector.segment(0, stateSize) = state;
 
   for (int j=0; j<updateidx.size(); j++) {
     int idx = updateidx[j] - 1;
     int row = from[idx] - 1;
     int col = to[idx] - 1;
     concatenated_ratemat_nonzeros[j] = ratemat.coeff(row,col);
+    simulation_history(0, stateSize+j) = ratemat.coeff(row,col);
   }
 
   //if (tmb_status) {
   //  return 0; // There is an error in the computation so far
   //}
 
+  // Item #5 Element-wise sum of any variable of type 4 (similar to factr calculation)
+  if (extraExprNum>0) {
+    vector<int> sr_output_idx(extraExprNum);
+    for (int k=0; k<extraExprNum; k++) {
+      sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+k+1; // 1-based indexing
+    }
+
+    vector<Type> sh_row = simulation_history.row(0).transpose();
+
+    update_factr_in_sp(sh_row, //simulation_history.row(i+1),
+                       sr_output_idx,
+                       sr_count,
+                       sri,
+                       sr_modifier);
+
+    simulation_history.row(0) = sh_row.transpose();
+  }
+
+  // Item #7 preparation --- calculating kappa so that we don't need to
+  // repeatedly calculate it in the simulation
+  vector<vector<Type> > kappa(conv_sri.size());
+  for (int k=0; k<conv_sri.size(); k++) {
+    if (conv_qmax[k]<2) continue; // 2 is the mininum
+
+    //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
+
+    Type c_prop = params(conv_c_prop_idx[k]+1);
+    Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
+    Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
+
+    //std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
+    //std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
+
+    Type shape = 1.0/(c_delay_cv*c_delay_cv);
+    Type scale = c_delay_mean/shape;
+
+    vector<Type> delta(conv_qmax[k]-1);
+
+    //std::cout << "shape=" << shape << std::endl;
+    //std::cout << "scale=" << scale << std::endl;
+
+    Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
+    for (int q=1; q<conv_qmax[k]; q++) {
+      //std::cout << pre_gamma << std::endl;
+      Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
+      delta(q-1) = cur_gamma - pre_gamma;
+      pre_gamma = cur_gamma;
+    }
+
+    kappa[k] = c_prop*delta/delta.sum();
+    //std::cout << "kappa = " << kappa[k] << std::endl;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Simulation loop through "numIterations" time steps
   int nextBreak = 0;
   int start = 0;
   for (int i=0; i<numIterations; i++) {
@@ -963,9 +1075,10 @@ Type objective_function<Type>::operator() ()
     //  return 0; // There is an error in the computation so far
     //}
 
-    sp.block(0, 0, stateSize, 1) = state;
+    sp.segment(0, stateSize) = state;
+    simulation_history.block(i+1, 0, 1, stateSize) = state.transpose();
 
-    // update sp (state+params) and rate matrix
+    // update sp (params)
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
         if (tv_abs[j]) { // type == 'abs'
@@ -987,11 +1100,21 @@ Type objective_function<Type>::operator() ()
     // expressions of other state variables and parameters
 
     update_sum_in_sp(sp, sumidx, sumcount, summandidx);
+
+    if (sumSize>0)
+      simulation_history.block(i+1, stateSize+tvElementsNum, 1, sumSize) = \
+        sp.segment(stateSize+params.size(), sumSize).transpose();
+
     update_factr_in_sp(
       sp, factr_spi,
       factr_count,
       factr_spi_compute,
       factr_modifier);
+
+    if (factrSize>0)
+      simulation_history.block(i+1, stateSize+tvElementsNum+sumSize, 1, factrSize) = \
+        sp.segment(stateSize+params.size()+sumSize, factrSize).transpose();
+
     update_ratemat(
       &ratemat, sp, from, to, count_integral,
       spi, modifier, updateidx);
@@ -1003,7 +1126,7 @@ Type objective_function<Type>::operator() ()
     //}
 
     // concatenate state vectors at each time step so they can be returned
-    concatenated_state_vector.block((i+1)*stateSize, 0, stateSize, 1) = state;
+    concatenated_state_vector.segment((i+1)*stateSize, stateSize) = state;
 
     // concatenate changing rate matrix elements at each time step so they can be returned
     int offset = (i+1)*updateidx.size();
@@ -1012,12 +1135,96 @@ Type objective_function<Type>::operator() ()
       int row = from[idx] - 1;
       int col = to[idx] - 1;
       concatenated_ratemat_nonzeros[offset+j] = ratemat.coeff(row,col);
+      simulation_history(i+1, stateSize+j) = ratemat.coeff(row,col);
+    }
+
+    // Item #5 Element-wise sum of any variable of type 4 (similar to factr calculation)
+    if (extraExprNum>0) {
+      vector<int> sr_output_idx(extraExprNum);
+      for (int k=0; k<extraExprNum; k++) {
+        sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+k+1; // 1-based indexing
+      }
+
+      vector<Type> sh_row = simulation_history.row(i+1).transpose();
+
+      update_factr_in_sp(sh_row, //simulation_history.row(i+1),
+                         sr_output_idx,
+                         sr_count,
+                         sri,
+                         sr_modifier);
+
+      simulation_history.row(i+1) = sh_row.transpose();
+    }
+
+    // The above version calls update_factr_in_sp function to do item #5. It's good
+    // to reuse the code. The downside is that we need to transpose vector twice
+    // and two extra vector assignments.
+    //
+    // Below I copy and edit the body of update_factr_in_sp, which is more efficient
+    // but with a lot of duplicated code.
+    // Note: We need to sp->simulation_history's row.  The version below is not fully tested.
+    /*
+    int start = 0;
+    int n = sr_count.size();
+    for (int k=0; k<n; k++) {
+      Type result = 0.0;
+      Type prod = 1.0;
+      for (int j=start; j<start+sr_count[k]; j++) {
+        Type x = sp(sri[j]-1);
+        if (sr_modifier[j] & 0b100) {
+          result += prod;
+          prod = 1;
+        }
+        if (sr_modifier[j] & 0b001) {
+          x = 1-x;
+        } else if (sr_modifier[j] & 0b010) {
+          if (x > 1e-12) {
+            x = 1/x;
+          }
+        }
+        prod *= x;
+      }
+      result +=  prod;
+      start += sr_count[k];
+      simulation_history(i+1, stateSize+tvElementsNum+sumSize+factrSize+k) = result;
+    }
+    */
+
+    // Item #6 Lag-n differences of any variables of type 1-5
+    for (int k=0; k<lag_diff_sri.size(); k++) {
+      if (i+1>=lag_diff_delay_n[k]) {
+        int col = lag_diff_sri[k]-1;
+        simulation_history(i+1, stateSize+tvElementsNum+sumSize+factrSize+extraExprNum+k) = \
+          simulation_history(i+1, col) - simulation_history(i+1-lag_diff_delay_n[k], col);
+      }
+    }
+
+    // Item #7 Convolutions of any variables of type 1-5 with a gamma-density kernel
+    int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + \
+                         extraExprNum + lag_diff_sri.size();
+    for (int k=0; k<conv_sri.size(); k++) {
+      vector<Type> kernel = kappa[k];
+      Type conv = 0.0;
+      if (i>conv_qmax[k]-4) { // i+2>=qmax-1
+        //std::cout << "========= i = " << i << std::endl;
+        for (int j=0; j<conv_qmax[k]-1; j++) {
+          //std::cout << "x = " << simulation_history(i+1-j, conv_sri[k]) << std::endl;
+          //std::cout << "k = " << kernel(j) << std::endl;
+          conv += simulation_history(i+1-j, conv_sri[k]) * kernel(j);
+          //std::cout << "z = " << conv << std::endl;
+        }
+        simulation_history(i+1, index_to_item7+k) = conv;
+      }
     }
   }
+
+  //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
+  //std::cout << simulation_history << std::endl;
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
   REPORT(concatenated_ratemat_nonzeros);
+  REPORT(simulation_history);
 
   return state.sum();
 }
