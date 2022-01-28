@@ -22,6 +22,18 @@
 #include <cppad/local/cond_exp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
+// To make gdb work, I define the following functions:
+void print(vector<double> x) {
+  std::cout << x;
+}
+void print(matrix<double> x) {
+  std::cout << x;
+}
+void print(array<double> x) {
+  x.print();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Status of TMB calculations.
 // If it is 0, then succeed. Otherwise, it encodes various causes for failure
 //          1: doesn't not converge in CalcEigenVector;
