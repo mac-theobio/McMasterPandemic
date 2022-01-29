@@ -1222,7 +1222,7 @@ Type objective_function<Type>::operator() ()
         for (int j=0; j<conv_qmax[k]-1; j++) {
           //std::cout << "x = " << simulation_history(i+1-j, conv_sri[k]) << std::endl;
           //std::cout << "k = " << kernel(j) << std::endl;
-          conv += simulation_history(i+1-j, conv_sri[k]) * kernel(j);
+          conv += simulation_history(i+1-j, conv_sri[k]-1) * kernel(j);
           //std::cout << "z = " << conv << std::endl;
         }
         simulation_history(i+1, index_to_item7+k) = conv;
