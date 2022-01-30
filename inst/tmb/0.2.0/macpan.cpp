@@ -26,10 +26,21 @@
 void print(vector<double> x) {
   std::cout << x;
 }
+void print(vector<int> x) {
+  std::cout << x;
+}
+
 void print(matrix<double> x) {
   std::cout << x;
 }
+void print(matrix<int> x) {
+  std::cout << x;
+}
+
 void print(array<double> x) {
+  x.print();
+}
+void print(array<int> x) {
   x.print();
 }
 
