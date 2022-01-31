@@ -22,6 +22,29 @@
 #include <cppad/local/cond_exp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
+// To make gdb work, I define the following functions:
+void print(vector<double> x) {
+  std::cout << x;
+}
+void print(vector<int> x) {
+  std::cout << x;
+}
+
+void print(matrix<double> x) {
+  std::cout << x;
+}
+void print(matrix<int> x) {
+  std::cout << x;
+}
+
+void print(array<double> x) {
+  x.print();
+}
+void print(array<int> x) {
+  x.print();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Status of TMB calculations.
 // If it is 0, then succeed. Otherwise, it encodes various causes for failure
 //          1: doesn't not converge in CalcEigenVector;
@@ -1213,7 +1236,7 @@ Type objective_function<Type>::operator() ()
         for (int j=0; j<conv_qmax[k]-1; j++) {
           //std::cout << "x = " << simulation_history(i+1-j, conv_sri[k]) << std::endl;
           //std::cout << "k = " << kernel(j) << std::endl;
-          conv += simulation_history(i+1-j, conv_sri[k]) * kernel(j);
+          conv += simulation_history(i+1-j, conv_sri[k]-1) * kernel(j);
           //std::cout << "z = " << conv << std::endl;
         }
         simulation_history(i+1, index_to_item7+k) = conv;
