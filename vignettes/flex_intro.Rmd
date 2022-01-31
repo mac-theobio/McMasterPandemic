@@ -767,6 +767,21 @@ sir_model = (
 sir_model
 ```
 
+## LaTeX Engine
+
+```{r, results='asis', eval=FALSE}
+library(McMasterPandemic)
+library(dplyr)
+params = read_params("PHAC.csv")
+state = make_state(params = params)
+model = make_base_model(
+  params = params, state = state,
+  start_date = "2000-01-01", end_date = "2000-02-01"
+)
+latex = make_latex_flows(model)
+cat(format("$" %+% latex %+% "$"), sep = "\n\n")
+```
+
 ## Canned Models
 
 ### Base MacPan COVID Model -- `make_base_model`

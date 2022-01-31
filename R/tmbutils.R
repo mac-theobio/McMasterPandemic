@@ -211,7 +211,29 @@ make_latex_rates = function(model) {
   )
 }
 
-
+#' @export
+make_latex_flows = function(model) {
+  rates = rate_summary(model, include_formula = TRUE, include_latex = TRUE)
+  inflow = (rates
+            %>% group_by(to)
+            %>% summarise(flow = '+' %+% paste0(latex, collapse = "+"))
+            %>% ungroup
+            %>% rename(state = to)
+  )
+  outflow = (rates
+             %>% group_by(from)
+             %>% summarise(flow = '-\\left(' %+% paste0(latex, collapse = "+") %+% '\\right)')
+             %>% ungroup
+             %>% rename(state = from)
+  )
+  flows = (bind_rows(inflow, outflow)
+           %>% group_by(state)
+           %>% summarise(flow = paste0(flow, collapse = ''))
+           %>% ungroup
+  )
+  latex_states = make_latex_symbols(flows$state)
+  latex_states %+% "(t+1) = " %+% latex_states %+% "(t)" %+% flows$flow
+}
 
 # constructing vectors ---------------------
 
