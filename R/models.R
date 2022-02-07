@@ -115,17 +115,24 @@ make_vaccination_model = function(..., do_variant = FALSE) {
     )
   }
 
+  # ---------------------------
   # problem dimensions
-  (epi_states = c(attr(state, "epi_cat")))
-  (asymp_cat = c("S", "E", "Ia", "Ip", "R"))
-  (vax_cat = c(attr(state, "vax_cat")))
+  # ---------------------------
+  (epi_states = c(attr(state, "epi_cat"))) # 14 base epidemiological categories
+  (asymp_cat = c("S", "E", "Ia", "Ip", "R")) # 5 asymptomatic categories
+  (vax_cat = c(attr(state, "vax_cat"))) # 5 vaccination categories/layers
+  (accum = c("X", "V")) # two base parallel accumulator states
+  (non_accum = base::setdiff(epi_states, accum)) # 12 base non-parallel accumulator states
+  (non_accum_non_S = non_accum[-1]) # 11 base non-susceptible/non-accumulator states
+
+  # dosing transitions across vaccination layers
   (dose_from = rep(asymp_cat, 2))
   (dose_to = c(asymp_cat, rep("V", 5)))
-  (accum = c("X", "V"))
-  (non_accum = base::setdiff(epi_states, accum))
-  (non_accum_non_S = non_accum[-1])
 
+  # ---------------------------
   # Specify structure of the force of infection calculation
+  # ---------------------------
+
   Istate = (c('Ia', 'Ip', 'Im', 'Is')
     %>% expand_names(vax_cat)
     %>% vec
@@ -156,7 +163,18 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   }
 
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
-  mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
+
+
+  if (!do_variant | getOption("MP_tmb_models_match_r")) {
+    mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
+  } else {
+    ## variant-based mild-illness probability adjustment in vaccinated individuals
+    mu      = c("mu",    "mu",
+                "(1 - variant_prop) * (vax_mu_dose1) + (variant_prop) * (variant_vax_mu_dose1)",
+                "(1 - variant_prop) * (vax_mu_dose1) + (variant_prop) * (variant_vax_mu_dose1)",
+                "(1 - variant_prop) * (vax_mu_dose2) + (variant_prop) * (variant_vax_mu_dose2)")
+  }
+
   sigma   = struc("sigma")
   gamma_p = struc("gamma_p")
   E_to_Ia_rates  = vec(           alpha ) * sigma

@@ -12,11 +12,16 @@
         MP_flex_spec_dll = "McMasterPandemic",
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
         MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
-        MP_use_state_rounding = TRUE,
-        MP_vax_make_state_with_hazard = TRUE,
         MP_rexp_steps_default = 100,
         MP_warn_repeated_rates = FALSE,
-        MP_warn_no_outflow = TRUE
+        MP_warn_no_outflow = TRUE,
+        MP_warn_bad_breaks = TRUE,
+
+        # control how comparable r and tmb engines are
+        # - see r_tmb_comparable
+        MP_use_state_rounding = TRUE,         # FALSE ~ comparable
+        MP_vax_make_state_with_hazard = TRUE, # FALSE ~ comparable
+        MP_tmb_models_match_r = FALSE         # TRUE ~ comparable
     )
 }
 

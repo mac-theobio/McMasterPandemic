@@ -8,5 +8,5 @@ tmb_mode()
 }
 \description{
 Set options so that R engine runs in a manner
-that is compatible with the TMB engine
+that is comparable with the TMB engine
 }
