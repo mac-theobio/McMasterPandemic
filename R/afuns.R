@@ -74,10 +74,11 @@ get_Gbar <- function(p, method = c("analytical", "kernel")) {
 
 ##' compute R0, r, etc. based on kernel computation
 ##' @param params parameter vector
+##' @param winstretch Length of 
 ##' @export
-get_kernel_moments <- function(params) {
+get_kernel_moments <- function(params, winstretch=10) {
     gg <- get_GI_moments(params)
-    nt <- gg[["Gbar"]] * 10
+    nt <- gg[["Gbar"]] * winstretch
     kk <- transKernel(params, do_hazard = FALSE, steps = nt)$foi
     ## FIXME: check agreement between get_GI_moments() and kk ?
     return(kernelMoments(kk))
