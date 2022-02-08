@@ -45,6 +45,7 @@ pop_pred_samp <- function(object,
         min(ev)
     }
 
+
     ## extract var-cov,
     cc_full <- object@fullcoef ## full parameters
     cc <- object@coef ## varying parameters only
@@ -61,6 +62,11 @@ pop_pred_samp <- function(object,
     if (any(is.na(cc))) {
         return(res)
     } ## bail out if coefs are NA
+
+    ## try to avoid complex eigenvalues
+    if (getOption("MP_force_symm_vcov")) {
+        Sigma = (Sigma + t(Sigma)) / 2
+    }
 
     ## try to fix bad covariance matrices
     bad_vcov <- any(is.na(Sigma))
