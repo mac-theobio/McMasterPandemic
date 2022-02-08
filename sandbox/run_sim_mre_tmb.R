@@ -17,9 +17,9 @@ state <- make_state(params=params)
 startdate <- as.Date("2020-01-01")
 enddate <- as.Date("2020-05-01")
 time_pars <- data.frame(Date=as.Date(startdate:enddate),
-								Symbol="beta0",
-								Relative_value=1,
-								stringsAsFactors=FALSE)
+                        Symbol="beta0",
+                        Relative_value=1,
+                        stringsAsFactors=FALSE)
 time_pars = data.frame(
   Date = as.Date(startdate:enddate),
   Symbol = "beta0",
@@ -61,8 +61,8 @@ flex_model = make_base_model(
 (flex_model
   %>% simulate(do_condensation = TRUE)
   %>% ggplot
-   +  facet_wrap(~variable, scales = 'free')
-   +  geom_line(aes(Date, value))
+  +  facet_wrap(~variable, scales = 'free')
+  +  geom_line(aes(Date, value))
 )
 
 (run_sim(params, start_date = flex_model$start_date, end_date = flex_model$end_date, params_timevar = time_pars, condense = TRUE)
@@ -96,14 +96,14 @@ print(plot(modlist$fit))
 
 ## Projecting to Dec 2021 using the default settings
 pp <- predict(modlist$fit,ensembles=FALSE
-	, end_date = "2021-12-01"
-	, keep_vars = c("hosp", "death","report","Rt")
-          )
+              , end_date = "2021-12-01"
+              , keep_vars = c("hosp", "death","report","Rt")
+)
 ## warning about testing time?
 
 print(gg <- ggplot(pp,aes(date,value))
-		+ geom_line()
-		+ facet_wrap(~var,scale="free",nrow=2)
+      + geom_line()
+      + facet_wrap(~var,scale="free",nrow=2)
 )
 
 ## We can see the spikes and Rt does not account for depletion of S
@@ -123,11 +123,11 @@ rel_beta2 <- c(1,rel_beta)
 
 rel_betaf <- data.frame()
 for(i in 1:(length(break_date2)-1)){
-	tempdf <- data.frame(Date = seq.Date(from = break_date2[i], to = break_date2[i+1], by=1)
-			, Symbol = "beta0"
-			, Relative_value = rel_beta2[i]
-	)
-	rel_betaf <- rbind(rel_betaf,tempdf)
+  tempdf <- data.frame(Date = seq.Date(from = break_date2[i], to = break_date2[i+1], by=1)
+                       , Symbol = "beta0"
+                       , Relative_value = rel_beta2[i]
+  )
+  rel_betaf <- rbind(rel_betaf,tempdf)
 }
 
 time_pars = data.frame(
@@ -140,13 +140,13 @@ time_pars = data.frame(
 ## manually  and use timevar to simulate it
 
 pp2 <- run_sim(params=coef(modlist$fit,"all")
-					, state = make_state(params = coef(modlist$fit,"all"))
-					,start_date=min(pp$date)
-					,end_date=max(pp$date)
-					, params_timevar = rel_betaf
-	)
+               , state = make_state(params = coef(modlist$fit,"all"))
+               ,start_date=min(pp$date)
+               ,end_date=max(pp$date)
+               , params_timevar = rel_betaf
+)
 
-pp2 <- run_sim(params=coef(modlist$fit,"all")
+pp3 <- run_sim(params=coef(modlist$fit,"all")
                , state = make_state(params = coef(modlist$fit,"all"))
                ,start_date=min(pp$date)
                ,end_date=max(pp$date)
@@ -154,8 +154,11 @@ pp2 <- run_sim(params=coef(modlist$fit,"all")
 )
 
 pp2 <- (pp2 %>% select(date,hosp,death,report)
-	%>% gather(var,value,-date))
+        %>% gather(var,value,-date))
+pp3 <- (pp3 %>% select(date,hosp,death,report)
+        %>% gather(var,value,-date))
 
+print(gg %+% pp2)
 print(gg %+% pp3)
 
 ## compare modlist$fit params_timevar component with rel_betaf
