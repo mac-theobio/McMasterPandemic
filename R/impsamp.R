@@ -64,8 +64,18 @@ pop_pred_samp <- function(object,
     } ## bail out if coefs are NA
 
     ## try to avoid complex eigenvalues
+    ## FIXME: move up the stack to where
+    ##        these asymmetric covariance
+    ##        matrices are produced
     if (getOption("MP_force_symm_vcov")) {
-        Sigma = (Sigma + t(Sigma)) / 2
+        tSigma = t(Sigma)
+        if (!isTRUE(all.equal(Sigma, tSigma))) {
+            warning(
+                "symmetrizing covariance matrix that is not equal ",
+                "to its transpose, using all.equal with default settings.\n",
+                "use options(MP_force_symm_vcov = FALSE) to skip this step")
+            Sigma = (Sigma + t(Sigma)) / 2
+        }
     }
 
     ## try to fix bad covariance matrices
