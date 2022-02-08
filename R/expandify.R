@@ -832,12 +832,14 @@ expand_params_variant <- function(params,
     return(params)
 }
 
+
 ##' @param params parameter list (e.g. read in with \code{read_params()})
 ##' @param S0 initial proportion of individuals in susceptible compartments
 ##'
 ##' @export
 expand_params_S0 = function(params, S0) {
-    if(is.atomic(params)) {
+    # TODO: refactor using utilities used in expand_params_nb_disp
+    if (is.atomic(params)) {
         if(!is.na(params["S0"])) {
             params["S0"] = S0
             return(params)
@@ -854,5 +856,17 @@ expand_params_S0 = function(params, S0) {
     saved_attr$names = c(saved_attr$names, "S0")
     attributes(params) = saved_attr
 
+    params
+}
+
+##' @export
+expand_params_nb_disp = function(params, observed_variables) {
+    error_dist_params = error_dist_desc = const_named_vector("nb_disp" %_% observed_variables, 1.0)
+    error_dist_desc[] = "Negative binomial dispersion parameter for " %+% observed_variables
+    attr(error_dist_params, "description") <- error_dist_desc
+    params = (params
+        %>% merge_named_vectors(error_dist_params)
+        %>% merge_named_vec_attr(error_dist_params, "description")
+    )
     params
 }

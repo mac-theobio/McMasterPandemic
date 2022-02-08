@@ -22,6 +22,29 @@
 #include <cppad/local/cond_exp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
+// To make gdb work, I define the following functions:
+void print(vector<double> x) {
+  std::cout << x;
+}
+void print(vector<int> x) {
+  std::cout << x;
+}
+
+void print(matrix<double> x) {
+  std::cout << x;
+}
+void print(matrix<int> x) {
+  std::cout << x;
+}
+
+void print(array<double> x) {
+  x.print();
+}
+void print(array<int> x) {
+  x.print();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Status of TMB calculations.
 // If it is 0, then succeed. Otherwise, it encodes various causes for failure
 //          1: doesn't not converge in CalcEigenVector;
@@ -878,7 +901,6 @@ Type objective_function<Type>::operator() ()
   // of parameters in the final objective function"
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
-  //PARAMETER_VECTOR(aux_params);
 
   //REPORT(tmb_status);
 
@@ -1026,7 +1048,7 @@ Type objective_function<Type>::operator() ()
 
     //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
 
-    Type c_prop = params(conv_c_prop_idx[k]+1);
+    Type c_prop = params(conv_c_prop_idx[k]-1);
     Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
     Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
 
@@ -1048,7 +1070,9 @@ Type objective_function<Type>::operator() ()
       delta(q-1) = cur_gamma - pre_gamma;
       pre_gamma = cur_gamma;
     }
-
+    //std::cout << "delta = " << delta << std::endl;
+    //std::cout << "delta sum = " << delta.sum() << std::endl;
+    //std::cout << "c_prop = " << c_prop << std::endl;
     kappa[k] = c_prop*delta/delta.sum();
     //std::cout << "kappa = " << kappa[k] << std::endl;
   }
@@ -1205,13 +1229,14 @@ Type objective_function<Type>::operator() ()
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
       vector<Type> kernel = kappa[k];
+      //std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
       Type conv = 0.0;
       if (i>conv_qmax[k]-4) { // i+2>=qmax-1
         //std::cout << "========= i = " << i << std::endl;
         for (int j=0; j<conv_qmax[k]-1; j++) {
           //std::cout << "x = " << simulation_history(i+1-j, conv_sri[k]) << std::endl;
           //std::cout << "k = " << kernel(j) << std::endl;
-          conv += simulation_history(i+1-j, conv_sri[k]) * kernel(j);
+          conv += simulation_history(i+1-j, conv_sri[k]-1) * kernel(j);
           //std::cout << "z = " << conv << std::endl;
         }
         simulation_history(i+1, index_to_item7+k) = conv;

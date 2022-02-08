@@ -27,6 +27,9 @@
 ##' construction
 ##' @param tol_eig_pow_meth tolerance for determining convergence
 ##' of the power method used in initial state construction
+##' @param data optional observed data frame in long format to
+##' compare with simulated trajectories. must have the following
+##' columns: \code{date}, \code{var}, \code{value}.
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
@@ -41,6 +44,7 @@ init_model <- function(params, state = NULL,
                        max_iters_eig_pow_meth = 8000,
                        tol_eig_pow_meth = 1e-6,
                        haz_eps = 1e-6,
+                       data = NULL,
                        ...) {
     check_spec_ver_archived()
     name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
@@ -277,11 +281,31 @@ init_model <- function(params, state = NULL,
       steps = list()
     )
 
-    model$observed$data = data.frame(
-      date = Date(),
-      var = character(),
-      value = numeric()
-    )
+    if (spec_ver_gt("0.1.2") & !is.null(data)) {
+      stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
+      #allvars = model$condensation_map[final_sim_report_names(model)]
+      obsvars = unique(data$var)
+      #stopifnot(all(obsvars %in% allvars))
+      model$observed$data = data
+      model$observed$error_params = data.frame(
+        Parameter = "nb_disp", # only choice: dispersion
+        Distribution = "nb",   # only choice: negative binomial
+        Variable = obsvars
+      )
+      model$params = expand_params_nb_disp(model$params, obsvars)
+    } else {
+      model$observed$data = data.frame(
+        date = Date(),
+        var = character(),
+        value = numeric()
+      )
+    }
+    #   model$observed$timevar_error = (data.frame(
+    #     Date = model$start_date
+    #   )
+    #   %>% cbind(model$observed$error_params)
+    #   )
+    # }
     model$condensation_map = character(0L)
 
     model$tmb_indices <- list(
@@ -1558,6 +1582,7 @@ update_initial_state = function(model, silent = FALSE) {
 
 #' @export
 update_observed = function(model, data, error_dist) {
+  stop("deprecated ... now in init_model and canned models")
   spec_check(
     introduced_version = '0.2.0',
     feature = 'comparison with observed data'

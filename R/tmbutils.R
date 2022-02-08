@@ -246,6 +246,40 @@ layered_zero_state = function(...) {
   setNames(rep(0, length(state_nms)), state_nms)
 }
 
+#' @export
+const_named_vector = function(nms, cnst) {
+  setNames(rep(cnst[[1]], length(nms)), nms)
+}
+
+#' Merge One Vector into Another by Name
+#'
+#' If an item in \code{u} has the same name as an item
+#' in \code{v} then replace the value in \code{v} with that
+#' in \code{u}, otherwise create a new element in \code{v}.
+#'
+#' @param v named vector or list
+#' @param u named vector of list
+#' @export
+merge_named_vectors = function(v, u) {
+  if (is.null(names(v)) | is.null(names(u)) ) {
+    stop("v and u must be named vectors")
+  }
+  for (nm in names(u)) {
+    v[nm] = u[nm]
+  }
+  return(v)
+}
+
+#' @export
+merge_named_vec_attr = function(v, u, a) {
+  attr_v = attributes(v)
+  attr_u = attributes(u)
+  attr_v[[a]] = merge_named_vectors(attr_v[[a]], attr_u[[a]])
+  attributes(v) = attr_v
+  return(v)
+}
+
+
 # null-safe coercion ----------------------------
 
 # Used in tmb_fun -- needs work, but this is a
@@ -1217,6 +1251,15 @@ lin_state_timevar_params = function(schedule) {
 
 ##' @export
 tmb_observed_data = function(model) {
+  # (model$observed$error_params
+  #  %>% mutate(Param = Parameter %_% Variable)
+  #  %>% mutate(Param_ID = find_vec_indices(
+  #    Param,
+  #    c(model$state, model$params)
+  #  ))
+  #  %>% rename(var = Variable)
+  # )
+
   (model$observed$data
    %>% na.omit
    %>% rename(observed = value)
