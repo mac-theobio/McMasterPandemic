@@ -89,6 +89,15 @@ make_base_model <- function(...) {
       %>% add_sim_report_expr("Incidence", ~ (S_to_E) * (S))
       %>% add_lag_diff("^(X|D)$")
       %>% add_conv("^Incidence$")
+      %>% update_condense_map(c(
+        conv_Incidence = 'report',
+        Incidence = 'incidence',
+        S_to_E = 'foi',
+        Htotal = 'H',
+        ICU = 'ICU',
+        lag_1_diff_X = 'hosp',
+        lag_1_diff_D = 'death'
+      ))
     )
   }
 

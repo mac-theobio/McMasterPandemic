@@ -819,7 +819,7 @@ rate_matrix_lookup = function(ratemat) {
 }
 
 
-# computing indices for tmb ----------------------
+# computing indices and data for tmb ----------------------
 
 ##' @export
 sum_indices = function(sums, state, params) {
@@ -1215,6 +1215,27 @@ lin_state_timevar_params = function(schedule) {
   stop('function lin_state_timevar_params is under construction')
 }
 
+##' @export
+tmb_observed_data = function(model) {
+  (model$observed$data
+   %>% na.omit
+   %>% rename(observed = value)
+   %>% mutate(time_step = find_vec_indices(
+     as.character(date),
+     as.character(simulation_dates(model))
+   ))
+   %>% mutate(history_col_id = find_vec_indices(
+     var,
+     model$condensation_map[final_sim_report_names(model)]
+   ))
+   %>% select(time_step, history_col_id, observed)
+   %>% arrange(time_step, history_col_id)
+  )
+}
+
+
+
+
 # retrieving information from tmb objective function --------------
 
 #' Extract Parameter Vector to Pass to a TMB Function
@@ -1262,6 +1283,12 @@ changing_ratemat_elements = function(model, sim_params = NULL) {
 
 #' @export
 simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
+  if (getOption("MP_force_full_outflow")) {
+    model = add_outflow(model)
+  }
+  if (getOption("MP_auto_tmb_index_update")) {
+    model = update_tmb_indices(model)
+  }
   updateidx = model$tmb_indices$updateidx
   ratemat_elements = (model
     %>% changing_ratemat_elements(sim_params)
@@ -1389,6 +1416,83 @@ final_state_ratio = function(model, sim_params = NULL) {
 initial_ratemat = function(model, sim_params = NULL) {
   if(is.null(sim_params)) sim_params = tmb_params(model)
   tmb_fun(model)$simulate(sim_params)$ratemat
+}
+
+#' @export
+simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
+  if (is.null(sim_params)) sim_params = tmb_params(model)
+  sim_hist = (tmb_fun(model)
+    $  simulate(sim_params)
+    $  simulation_history
+   %>% as.data.frame
+   %>% setNames(final_sim_report_names(model))
+  )
+  if (add_dates) {
+    sim_hist = (model
+      %>% simulation_dates
+      %>% data.frame
+      %>% setNames("Date")
+      %>% cbind(sim_hist)
+    )
+  }
+  sim_hist
+}
+
+#' Condensed set of Simulated Variables
+#'
+#' @export
+simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
+  cond_map = model$condensation_map
+  cond_nms = names(cond_map)
+  if (add_dates) {
+    cond_nms = c("Date", cond_nms)
+    cond_map = c(Date = "Date", cond_map)
+  }
+  sims = simulation_history(model, add_dates = TRUE)[cond_nms]
+  names(sims) = c(cond_map)
+  sims
+}
+
+#' @importFrom tidyr pivot_longer
+#' @export
+simulate.flexmodel = function(
+  object, nsim = 1, seed = NULL,
+  do_condensation = FALSE,
+  format = c('long', 'wide'),
+  add_dates = TRUE,
+  sim_params = NULL, ...) {
+
+  format = match.arg(format)
+  if ((nsim != 1) | !is.null(seed)) {
+    stop(
+      "nsim and seed cannot be set to non-default values yet.\n",
+      "they may become relevant in the future if it becomes possible\n",
+      "to add stochasticity to the simulations"
+    )
+  }
+  if (do_condensation) {
+    sims = simulation_condensed(object, add_dates, sim_params)
+  } else {
+    sims = simulation_history(object, add_dates, sim_params)
+  }
+  if (format == 'long') {
+    sims = pivot_longer(
+      sims, -Date,
+      names_to = "variable",
+      values_to = "value"
+    )
+  } else if (format != 'wide') {
+    stop('format must be either long or wide')
+  }
+  sims
+}
+
+#' Simulated Variables to Compare with Observed Data
+#'
+#' @export
+simulation_fitted = function(model) {
+  obsvars = unique(model$observed$data$var)
+  simulation_condense(model)[obsvars]
 }
 
 # benchmarking and comparison in tests

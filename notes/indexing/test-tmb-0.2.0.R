@@ -8,7 +8,7 @@ params <- read_params("ICU1.csv")
 model = (make_base_model(
     params = params,
     start_date = "2000-01-01",
-    end_date = "2000-01-02",
+    end_date = "2000-03-01",
   )
   #%>% add_sim_report_expr("H_total", ~ (H) + (H2))
   #%>% add_sim_report_expr("ICU", ~ (ICUs) + (ICUd))
@@ -51,11 +51,15 @@ all.equal(
   his$conv_Incidence[!is.na(r_sim$report)],
   r_sim$report[!is.na(r_sim$report)]
 )
-
 plot(
   his$conv_Incidence[!is.na(r_sim$report)],
   r_sim$report[!is.na(r_sim$report)]
 )
+
+cbind(
+  his$conv_Incidence,
+  r_sim$report
+) %>% View
 
 gamma_shape <- 1 / delay_cv^2
 gamma_scale <- delay_mean / gamma_shape

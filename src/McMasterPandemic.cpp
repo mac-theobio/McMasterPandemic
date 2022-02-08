@@ -786,7 +786,7 @@ vector<Type> make_state(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << " =========== inside TMB ===========" << std::endl;
+  //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Joint negative log-likelihood (stub)
   //Type jnll= 0;
@@ -878,6 +878,7 @@ Type objective_function<Type>::operator() ()
   // of parameters in the final objective function"
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
+  //PARAMETER_VECTOR(aux_params);
 
   //REPORT(tmb_status);
 

@@ -33,11 +33,11 @@
 init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
-                       do_hazard = TRUE,
+                       do_hazard = getOption("MP_default_do_hazard"),
                        do_hazard_lin = FALSE,
                        do_approx_hazard = FALSE,
                        do_approx_hazard_lin = TRUE,
-                       do_make_state = TRUE,
+                       do_make_state = getOption("MP_default_do_make_state"),
                        max_iters_eig_pow_meth = 8000,
                        tol_eig_pow_meth = 1e-6,
                        haz_eps = 1e-6,
@@ -276,6 +276,13 @@ init_model <- function(params, state = NULL,
       # ordered list of condensation steps
       steps = list()
     )
+
+    model$observed$data = data.frame(
+      date = Date(),
+      var = character(),
+      value = numeric()
+    )
+    model$condensation_map = character(0L)
 
     model$tmb_indices <- list(
         make_ratemat_indices = list(
@@ -798,8 +805,29 @@ add_conv = function(
   model
 }
 
+#' Specify and Name Variables for Condensation
+#'
+#' The condensed simulation is a (possibly renamed) subset
+#' of the variables in the simulation history. This function
+#' allows one to define this subset and how it is renamed,
+#' by creating a map with the following structure:
+#' \code{c(orig_var_i = "cond_var_1", ..., orig_var_j = "cond_var_n")}.
+#'
+#' @param model flexmodel
+#' @param map named vector with names that are a subset of
+#' the variables in the simulation model
+#' (\code{final_sim_report_names(model)}) and values that
+#' give the names of the variables in the condensed data set
+#' @export
+update_condense_map = function(model, map) {
+  allvars = final_sim_report_names(model)
+  stopifnot(all(names(labels) %in% allvars))
+  model$condensation_map = map
+  model
+}
 
-# parallel accumulators ---------------------
+
+# parallel accumulators (deprecated -- use outflow instead) ---------------------
 
 ##' Add Parallel Accumulators
 ##'
@@ -1074,12 +1102,15 @@ tmb_indices <- function(model) {
         model$factrs,
         c(model$state, model$params, model$sum_vector)
       )
+    }
+    if (spec_ver_gt("0.1.2")) {
       indices$sim_report_expr_indices = sim_report_expr_indices(
         model$sim_report_exprs,
         initial_sim_report_names(model)
       )
       indices$lag_diff = lag_diff_indices(model)
       indices$conv = conv_indices(model)
+      indices$observed = tmb_observed_data(model)
     }
     return(indices)
 }
@@ -1098,7 +1129,16 @@ tmb_fun <- function(model) {
     check_spec_ver_archived()
     DLL = getOption('MP_flex_spec_dll')
 
-    model = update_tmb_indices(model)
+    if (getOption('MP_force_full_outflow')) {
+      # reset outflow if it exists already
+      if (length(model$outflow) > 0L) {
+        model$outflow = list()
+      }
+      model = add_outflow(model)
+    }
+    if (getOption('MP_auto_tmb_index_update')) {
+      model = update_tmb_indices(model)
+    }
 
     unpack(model)
     unpack(tmb_indices)
@@ -1401,6 +1441,99 @@ tmb_fun <- function(model) {
                           tv_mult = init_tv_mult),
         DLL = DLL
       )
+
+    } else if (spec_ver_gt("0.1.1")) {
+      unpack(sum_indices)
+      init_tv_mult = integer(0L)
+      if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+      dd <- MakeADFun(
+        data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = null_to_int0(from),
+          to = null_to_int0(to),
+          count = null_to_int0(count),
+          spi = null_to_int0(spi),
+          modifier = null_to_int0(modifier),
+          updateidx = null_to_int0(c(updateidx)),
+          breaks = null_to_int0(breaks),
+          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+          tv_val = null_to_num0(schedule$tv_val),
+          tv_spi = null_to_int0(schedule$tv_spi),
+          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+          # tv_mult = schedule$Value,  # moved to parameter vector
+          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+          tv_abs = null_to_log0(schedule$Type == "abs"),
+
+          sumidx = null_to_int0(sumidx),
+          sumcount = null_to_int0(unname(sumcount)),
+          summandidx = null_to_int0(summandidx),
+
+          factr_spi = null_to_int0(factr_indices$spi_factr),
+          factr_count = null_to_int0(factr_indices$count),
+          factr_spi_compute = null_to_int0(factr_indices$spi),
+          factr_modifier = null_to_int0(factr_indices$modifier),
+
+          do_make_state = isTRUE(do_make_state),
+          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+
+          outflow_row_count = null_to_int0(outflow$row_count),
+          outflow_col_count = null_to_int0(outflow$col_count),
+          outflow_rows = null_to_int0(outflow$rows),
+          outflow_cols = null_to_int0(outflow$cols),
+
+          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+
+          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+          lin_param_count = null_to_int0(linearized_params$lin_param_count),
+          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+
+          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+          df_state_count = null_to_int0(disease_free$df_state_count),
+          df_state_idx = null_to_int0(disease_free$df_state_idx),
+
+          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+          do_hazard = isTRUE(do_hazard),
+          do_hazard_lin = isTRUE(do_hazard_lin),
+          do_approx_hazard = isTRUE(do_approx_hazard),
+          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+          # haz_eps = haz_eps,
+
+          sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+          sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+          sri = null_to_int0(sim_report_expr_indices$sri),
+          sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+
+          lag_diff_sri = null_to_int0(lag_diff$sri),
+          lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
+
+          conv_sri = null_to_int0(conv$sri),
+          conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+          conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+          conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+          conv_qmax = null_to_int0(conv$qmax),
+
+          obs_time_step = null_to_int0(observed$time_step),
+          obs_history_col_id = null_to_int0(observed$history_col_id),
+          obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+
+          numIterations = int0_to_0(null_to_0(iters))
+        ),
+        parameters = list(params = c(unlist(params)),
+                          tv_mult = init_tv_mult),
+        DLL = DLL
+      )
     } else {
         stop("Construction of TMB functions is not supported by your installation of MacPan")
     }
@@ -1409,8 +1542,10 @@ tmb_fun <- function(model) {
 
 ##' @export
 update_initial_state = function(model, silent = FALSE) {
-  spec_check(introduced_version = '0.1.1',
-             feature = 'Update initial state vector with C++ make_state')
+  spec_check(
+    introduced_version = '0.1.1',
+    feature = 'Update initial state vector with C++ make_state'
+  )
   if (!model$do_make_state) {
     if (!silent) warning('this model does not have the ability to update its own state')
     return(model)
@@ -1418,3 +1553,50 @@ update_initial_state = function(model, silent = FALSE) {
   model$state[] = initial_state_vector(model)
   model
 }
+
+# observed data ---------------------------------
+
+#' @export
+update_observed = function(model, data, error_dist) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = 'comparison with observed data'
+  )
+  stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
+  allvars = model$condensation_map[final_sim_report_names(model)]
+  obsvars = unique(data$var)
+  stopifnot(all(obsvars %in% allvars))
+  model$observed$data = data
+  model$observed$error_params = data.frame(
+    Parameter = "nb_disp", # only choice: dispersion
+    Distribution = "nb",   # only choice: negative binomial
+    Variable = obsvars
+  )
+  model$observed$timevar_error = (data.frame(
+      Date = model$start_date
+    )
+    %>% cbind(model$observed$error_params)
+  )
+  model
+}
+
+#' Update Time Variation Schedule for Error Distributions
+#'
+#' Dataframe with ?? columns:
+#' (1) Date,
+#' (2) Parameter,
+#' (3) Distribution,
+#' (4) Variable.
+#' Currently the only value for \code{Distribution} is \code{nb}
+#' and the only value for \code{Parameter} is \code{nb_disp}
+#'
+#' @export
+update_timevar_error = function(model, timevar_error) {
+  spec_check(
+    introduced_version = "10.0.0", # future!
+    feature = "time variation of error distribution parameters"
+  )
+  model$timevar_error = timevar_error
+  model
+}
+

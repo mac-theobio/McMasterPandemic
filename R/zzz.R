@@ -5,8 +5,6 @@
         )
     )[1]
     options(
-        MP_badsum_action = "warning",
-        MP_badsum_tol = 1e-12,
 
         # spec version settings
         MP_flex_spec_version = flex_version,
@@ -15,10 +13,24 @@
 
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
         MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
+
+        # default behaviour of classic macpan engine
+        MP_badsum_action = "warning",
+        MP_badsum_tol = 1e-12,
         MP_rexp_steps_default = 100,
+
+        # warnings associated with flex model structure
         MP_warn_repeated_rates = FALSE,
         MP_warn_no_outflow = TRUE,
         MP_warn_bad_breaks = TRUE,
+
+        # init_model defaults
+        MP_default_do_hazard = TRUE,
+        MP_default_do_make_state = TRUE,
+
+        # tmb_fun behaviour
+        MP_force_full_outflow = FALSE,
+        MP_auto_tmb_index_update = TRUE,
 
         # control how comparable r and tmb engines are
         # - see r_tmb_comparable
