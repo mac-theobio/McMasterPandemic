@@ -1251,14 +1251,18 @@ lin_state_timevar_params = function(schedule) {
 
 ##' @export
 tmb_observed_data = function(model) {
-  # (model$observed$error_params
-  #  %>% mutate(Param = Parameter %_% Variable)
-  #  %>% mutate(Param_ID = find_vec_indices(
-  #    Param,
-  #    c(model$state, model$params)
-  #  ))
-  #  %>% rename(var = Variable)
-  # )
+  error_params_with_ids = (model$observed$error_params
+   %>% mutate(Param = Parameter %_% Variable)
+   %>% mutate(param_id = find_vec_indices(
+     Param,
+     c(model$state, model$params)
+   ))
+   %>% rename(var = Variable)
+   %>% group_by(var)
+   %>% mutate(n_error_params = n())
+   %>% ungroup
+   %>% select(var, param_id, n_error_params)
+  )
 
   (model$observed$data
    %>% na.omit
@@ -1267,11 +1271,12 @@ tmb_observed_data = function(model) {
      as.character(date),
      as.character(simulation_dates(model))
    ))
+   %>% left_join(error_params_with_ids, by = "var")
    %>% mutate(history_col_id = find_vec_indices(
      var,
      model$condensation_map[final_sim_report_names(model)]
    ))
-   %>% select(time_step, history_col_id, observed)
+   %>% select(time_step, history_col_id, observed, n_error_params)
    %>% arrange(time_step, history_col_id)
   )
 }

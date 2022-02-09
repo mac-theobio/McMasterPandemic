@@ -299,6 +299,11 @@ init_model <- function(params, state = NULL,
         var = character(),
         value = numeric()
       )
+      model$observed$error_params = data.frame(
+        Parameter = character(),
+        Distribtion = character(),
+        Variable = character()
+      )
     }
     #   model$observed$timevar_error = (data.frame(
     #     Date = model$start_date
