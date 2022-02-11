@@ -74,8 +74,8 @@ pop_pred_samp <- function(object,
                 "symmetrizing covariance matrix that is not equal ",
                 "to its transpose, using all.equal with default settings.\n",
                 "use options(MP_force_symm_vcov = FALSE) to skip this step")
-            Sigma = (Sigma + t(Sigma)) / 2
         }
+        Sigma = (Sigma + t(Sigma)) / 2
     }
 
     ## try to fix bad covariance matrices
