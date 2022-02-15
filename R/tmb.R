@@ -32,6 +32,7 @@
 ##' columns: \code{date}, \code{var}, \code{value}.
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
+##' @importFrom lubridate Date
 ##' @export
 init_model <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
@@ -287,7 +288,15 @@ init_model <- function(params, state = NULL,
       obsvars = unique(data$var)
       #stopifnot(all(obsvars %in% allvars))
       model$observed$data = data
-      model$observed$error_params = data.frame(
+
+      # in the future, the user should be able to provide this
+      # loss_params data themselves. would open up the
+      # possibility to add error distributions other than
+      # the negative binomial, including distributions with
+      # more than one parameter (in addition to the location
+      # parameter that is determined by the simulations).
+      # right now the c++ side assumes only negative binomial.
+      model$observed$loss_params = data.frame(
         Parameter = "nb_disp", # only choice: dispersion
         Distribution = "nb",   # only choice: negative binomial
         Variable = obsvars
@@ -299,7 +308,7 @@ init_model <- function(params, state = NULL,
         var = character(),
         value = numeric()
       )
-      model$observed$error_params = data.frame(
+      model$observed$loss_params = data.frame(
         Parameter = character(),
         Distribtion = character(),
         Variable = character()
@@ -308,7 +317,7 @@ init_model <- function(params, state = NULL,
     #   model$observed$timevar_error = (data.frame(
     #     Date = model$start_date
     #   )
-    #   %>% cbind(model$observed$error_params)
+    #   %>% cbind(model$observed$loss_params)
     #   )
     # }
     model$condensation_map = character(0L)
@@ -1382,7 +1391,7 @@ tmb_fun <- function(model) {
                               tv_mult = init_tv_mult),
             DLL = DLL
         )
-    } else if (spec_ver_gt("0.1.1")) {
+    } else if (spec_ver_eq("0.1.2")) {
       unpack(sum_indices)
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
@@ -1553,6 +1562,10 @@ tmb_fun <- function(model) {
           conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
           conv_qmax = null_to_int0(conv$qmax),
 
+          obs_var_id = null_to_int0(observed$variable_id),
+          obs_loss_id = null_to_int0(observed$loss_id),
+          obs_loss_param_count = null_to_int0(observed$loss_param_count),
+          obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
           obs_time_step = null_to_int0(observed$time_step),
           obs_history_col_id = null_to_int0(observed$history_col_id),
           obs_value = observed$observed, # don't need to worry about missing values because they are omitted
@@ -1597,7 +1610,7 @@ update_observed = function(model, data, error_dist) {
   obsvars = unique(data$var)
   stopifnot(all(obsvars %in% allvars))
   model$observed$data = data
-  model$observed$error_params = data.frame(
+  model$observed$loss_params = data.frame(
     Parameter = "nb_disp", # only choice: dispersion
     Distribution = "nb",   # only choice: negative binomial
     Variable = obsvars
@@ -1605,7 +1618,7 @@ update_observed = function(model, data, error_dist) {
   model$observed$timevar_error = (data.frame(
       Date = model$start_date
     )
-    %>% cbind(model$observed$error_params)
+    %>% cbind(model$observed$loss_params)
   )
   model
 }

@@ -888,6 +888,14 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(conv_c_delay_mean_idx);
   DATA_IVECTOR(conv_qmax);
 
+  DATA_IVECTOR(obs_var_id);
+  DATA_IVECTOR(obs_loss_id);
+  DATA_IVECTOR(obs_loss_param_count);
+  DATA_IVECTOR(obs_spi_loss_param);
+  DATA_IVECTOR(obs_time_step);
+  DATA_IVECTOR(obs_history_col_id);
+  DATA_VECTOR(obs_value);
+
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
   //conv_qmax(0) = 6;

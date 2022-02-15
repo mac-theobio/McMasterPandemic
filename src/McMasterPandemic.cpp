@@ -809,7 +809,7 @@ vector<Type> make_state(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  //std::cout << " =========== inside TMB ===========" << std::endl;
+  std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Joint negative log-likelihood (stub)
   //Type jnll= 0;
@@ -887,6 +887,14 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(conv_c_delay_cv_idx);
   DATA_IVECTOR(conv_c_delay_mean_idx);
   DATA_IVECTOR(conv_qmax);
+
+  DATA_IVECTOR(obs_var_id);
+  DATA_IVECTOR(obs_loss_id);
+  DATA_IVECTOR(obs_loss_param_count);
+  DATA_IVECTOR(obs_spi_loss_param);
+  DATA_IVECTOR(obs_time_step);
+  DATA_IVECTOR(obs_history_col_id);
+  DATA_VECTOR(obs_value);
 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
@@ -1046,35 +1054,35 @@ Type objective_function<Type>::operator() ()
   for (int k=0; k<conv_sri.size(); k++) {
     if (conv_qmax[k]<2) continue; // 2 is the mininum
 
-    //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
+    std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
 
     Type c_prop = params(conv_c_prop_idx[k]-1);
     Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
     Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
 
-    //std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
-    //std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
+    std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
+    std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
 
     Type shape = 1.0/(c_delay_cv*c_delay_cv);
     Type scale = c_delay_mean/shape;
 
     vector<Type> delta(conv_qmax[k]-1);
 
-    //std::cout << "shape=" << shape << std::endl;
-    //std::cout << "scale=" << scale << std::endl;
+    std::cout << "shape=" << shape << std::endl;
+    std::cout << "scale=" << scale << std::endl;
 
     Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
     for (int q=1; q<conv_qmax[k]; q++) {
-      //std::cout << pre_gamma << std::endl;
+      std::cout << pre_gamma << std::endl;
       Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
       delta(q-1) = cur_gamma - pre_gamma;
       pre_gamma = cur_gamma;
     }
-    //std::cout << "delta = " << delta << std::endl;
-    //std::cout << "delta sum = " << delta.sum() << std::endl;
-    //std::cout << "c_prop = " << c_prop << std::endl;
+    std::cout << "delta = " << delta << std::endl;
+    std::cout << "delta sum = " << delta.sum() << std::endl;
+    std::cout << "c_prop = " << c_prop << std::endl;
     kappa[k] = c_prop*delta/delta.sum();
-    //std::cout << "kappa = " << kappa[k] << std::endl;
+    std::cout << "kappa = " << kappa[k] << std::endl;
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -1229,7 +1237,7 @@ Type objective_function<Type>::operator() ()
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
       vector<Type> kernel = kappa[k];
-      //std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
+      std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
       Type conv = 0.0;
       if (i>conv_qmax[k]-4) { // i+2>=qmax-1
         //std::cout << "========= i = " << i << std::endl;

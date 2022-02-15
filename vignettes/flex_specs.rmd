@@ -468,6 +468,63 @@ The corresponding inverse transformations that would be applied after the macros
 * `exp(x)`
 * `1/(1+exp(-x))`
 
+#### General Objective Function
+
+Let $l_{\psi_i}(x_i, y_i)$ be a loss function where $x_i$ is a simulated element of the history matrix, $y_i$ is an associated observed data point, and $\psi_i$ is a vector of loss function parameters. Every element $i$ that belongs to the same column of the history matrix has the same value for $\psi_i$, but to simplify notation $\psi$ is sub-scripted by $i$. Let $r_{\phi_j}(\theta_j)$ be an optional regularization function for each parameter $\theta_j$ being optimized, where $\phi_j$ is a vector of regularization function parameters associated with parameter $j$. The objective function is then given by the following.
+
+$$
+L(x, y) = \sum_i l_{\psi_i}(x_i, y_i) + \sum_j r_{\phi_j}(\theta_j)
+$$
+Currently the only objective function that is offered is the negative log negative binomial density, but the infrastructure will be built assuming that other loss functions will be allowed in the future. Similarly the only regularizing function that is available is the negative log normal density.
+
+Note that currently the regularization function terms are out-of-scope.
+
+The objective function, $L$, is returned by the `c++` function `objective_function`.
+
+#### Available Loss Functions
+
+* Negative log negative binomial density
+    * Loss function parameters: dispersion
+    * In TMB use [`dnbinom2`](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351)
+    * The arguments for `dnbinom2` can be computed as follows:
+        * `x` -- observed data
+        * `mu` -- simulated data
+        * `var` -- `mu + mu^2 / disp`, where `disp` is the dispersion parameter
+
+#### Available Regularization Functions (currently out of scope)
+
+* Negative log normal density
+    * Regularization function parameters: mean, standard deviation
+
+### Data Structure (0.2.0)
+
+#### General Objective Function
+
+We will pass the following additional data through to TMB to specify the objective function.
+
+* **Variables**: the following three integer vectors have one element per variable in the objective function and identify what loss function is used for each variable, as well as how many parameters those loss functions require
+    * `obs_var_id` -- id giving the column in the history matrix associated with each variable in the objective function
+    * `obs_loss_id` -- identifier of the loss function being used for each variable (currently only one -- negative log negative binomial density)
+    * `obs_loss_param_count` -- number of loss function parameters associated with each variable
+* **Loss Function Parameters**: the following vector has one element per loss function parameter (these are the $\psi_i$ parameters described above in the general objective function section)
+    * `obs_spi_loss_param` -- index into sp containing the loss function parameters. the number of such parameters is sum(obs_loss_param_count)
+* **Observed Data** the following three vectors have one element for each observed data point, and identify what elements in the history matrix should be compared with each observed value (each element of these vectors corresponds to each $i$ in the description of the general objective function above)
+    * `obs_time_step` -- row in the history matrix
+    * `obs_history_col_id` -- column in the history matrix (match with `obs_var_id` above to determine the `obs_loss_id` and `obs_loss_param_count`)
+    * `obs_value` -- value observed in data to compare with the associated element in the history matrix
+* **Optimized Parameters (not yet in scope)**: the following vectors have one element per parameter that is being optimized
+    * `opt_par_id` -- index into the optimization parameters
+    * `opt_par_trans` -- index identifying a transformation from the following list:
+        * `1 = identity`
+        * `2 = log`
+        * `3 = log10`
+        * `4 = logit`
+        * `5 = inverse`
+    * `opt_par_prior` -- question: how flexible do we need to be with prior distribution families?
+* **Optimized Time-Varying Parameters (not yet in scope)**: similar to optimized parameters but for time varying multipliers
+    * `opt_tv_mult_id`
+    * `opt_tv_mult_trans`
+
 ## v0.1.2 {#v0.1.2}
 
 [![Lifecycle

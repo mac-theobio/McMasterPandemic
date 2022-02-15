@@ -1251,43 +1251,47 @@ lin_state_timevar_params = function(schedule) {
 
 ##' @export
 tmb_observed_data = function(model) {
-  all_error_param_indx = (model$observed$error_params
-   %>% mutate(Param = Parameter %_% Variable)
-   %>% mutate(sp_id = find_vec_indices(
-     Param,
+
+  initial_table = (model$observed$loss_params
+   %>% mutate(loss_id = 1) # only negative binomial (id=1) currently
+   %>% mutate(spi_loss_param = find_vec_indices(
+     Parameter %_% Variable,
      c(model$state, model$params)
    ))
-   %>% rename(var = Variable)
-   %>% mutate(err_id = as.numeric(as.factor(var)))
-   %>% group_by(var, err_id)
-   %>% mutate(n_params = n())
-   %>% ungroup
-   %>% select(var, sp_id, n_params, err_id)
-   %>% arrange(err_id)
+   %>% mutate(variable_id = find_vec_indices(
+     Variable,
+     model$condensation_map[final_sim_report_names(model)]
+   ))
+   %>% select(variable_id, loss_id, spi_loss_param)
   )
-
-  (model$observed$data
+  variables_by_distributions = (initial_table
+    %>% group_by(variable_id, loss_id)
+    %>% summarise(loss_param_count = n())
+    %>% ungroup
+  )
+  parameters = (initial_table
+    %>% select(spi_loss_param)
+  )
+  comparisons = (model$observed$data
    %>% na.omit
    %>% rename(observed = value)
    %>% mutate(time_step = find_vec_indices(
      as.character(date),
      as.character(simulation_dates(model))
    ))
-   %>% left_join(
-     distinct(error_params_with_ids, var, sp_id, err_id, n_params),
-     by = "var"
-   )
    %>% mutate(history_col_id = find_vec_indices(
      var,
      model$condensation_map[final_sim_report_names(model)]
    ))
-   %>% select(time_step, history_col_id, observed, err_id, n_params)
+   %>% select(time_step, history_col_id, observed)
    %>% arrange(time_step, history_col_id)
   )
+  c(
+    as.list(variables_by_distributions),
+    as.list(parameters),
+    as.list(comparisons)
+  )
 }
-
-
-
 
 # retrieving information from tmb objective function --------------
 
