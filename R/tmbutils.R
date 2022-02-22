@@ -1224,7 +1224,7 @@ outflow_indices = function(outflow, ratemat) {
 #' of regular expressions, and return indices into each vector for recovering
 #' other shorter vectors that are lower in the hierarchy.
 #'
-#' @section Motivating Example
+#' @section Motivating Example:
 #'
 #' There are three nested state vectors
 #' a_states -- all states
@@ -1662,7 +1662,7 @@ simulation_fitted = function(model) {
   simulation_condense(model)[obsvars]
 }
 
-# benchmarking and comparison in tests
+# benchmarking and comparison in tests -----------------------
 
 #' Compare TMB-based and classic MacPan Simulations
 #'
@@ -1771,6 +1771,45 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
   all.equal(unlist(tmb_sim), unlist(classic_sim), tolerance)
   TRUE
 }
+
+#' Compare Automatic and Numerical Differentiation
+#'
+#' Compare differences in gradients of loss functions computed using
+#' automatic and numerical differentiation
+#'
+#' @param model flexmodel
+#' @param tolerance numerical tolerance to pass to \code{all.equal} --
+#' if \code{NA}, then a list is returned that can be passed to
+#' \code{all.equal} using \code{do.call}
+#' @param ... additional arguments to pass to \code{numDeriv::grad}
+#'
+#' @return either (1) the return value of \code{all.equal} comparing
+#' gradients using TMB auto differentiation to \code{numDeriv::grad} if
+#' \code{is.numeric(tolerance)},
+#' or (2) a list is returned that can be passed to
+#' \code{all.equal} using \code{do.call} if \code{is.na(tolerance)}
+#'
+#' @importFrom numDeriv grad
+#' @export
+compare_grads = function(model, tolerance = 1e-5,  ...) {
+
+  args = list(...)
+  if (!'method.args' %in% names(args)) {
+    args$method.args = list(
+        eps = 1e-4, d = 0.1,
+        zero.tol = sqrt(.Machine$double.eps / 7e-7), r = 4, v = 2,
+        show.details = FALSE
+      )
+  }
+  dd = tmb_fun(model)
+  current <- numDeriv::grad(dd$fn, dd$par, ...)
+  target <- dd$gr(dd$par)
+  attributes(target) <- attributes(current) <- NULL
+  if (is.na(tolerance)) return(nlist(target, current))
+  all.equal(target, current, tolerance)
+}
+
+# spec versioning -----------------------
 
 ##' Set and Reset Spec Version
 ##'

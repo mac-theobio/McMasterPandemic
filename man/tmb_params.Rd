@@ -17,5 +17,7 @@ hessian function, simulate function, report function.
 \details{
 Currently this includes \code{params} and if \code{spec_ver_gt('0.1.0')}
 it also includes time-varying multipliers in
-\code{model$timevar$piece_wise$schedule$last_tv_mult}.
+\code{model$timevar$piece_wise$schedule$last_tv_mult}. If
+\code{spec_ver_gt('0.1.2')}, only the parameters to be optimized are
+returned.
 }
