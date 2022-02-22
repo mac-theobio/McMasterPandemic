@@ -1,3 +1,8 @@
+# objects ----------------------
+
+valid_prior_families = c('normal')
+valid_trans = c('log', 'log10', 'logit', 'inverse')
+
 # test functions ------------------------------------------------
 
 is_len1_char = function(x) (length(x) == 1L) & is.character(x)
@@ -853,6 +858,50 @@ rate_matrix_lookup = function(ratemat) {
 }
 
 
+
+# utilities for parsing opt_params formulas
+
+parse_opt_param = function(x, params) {
+  stopifnot(is.call(x))
+  stopifnot(as.character(x)[[1]] == '~')
+  stopifnot(length(x) == 3L)
+
+  # separate parameter name from transformation
+  param_nm = as.character(x[[2]])
+  re = "^" %+% alt_group(valid_trans %_% '') %+% "?" %+% alt_group(names(params)) %+% "$"
+  if (!grepl(re, param_nm)) {
+    stop('unrecognized transformation or parameter is not in the model')
+  }
+  trans_nm = sub(re, '\\1', param_nm, perl = TRUE) %>% sub(pattern = '_$', replacement = '', perl = TRUE)
+  param_nm = sub(re, '\\2', param_nm, perl = TRUE)
+
+  # extract prior and starting value information
+  param_spec = x[[3]]
+  prior_family = ''
+  if (is.call(param_spec)) {
+    rhs_func = as.character(param_spec[[1]])
+    if (rhs_func %in% valid_prior_families) {
+      prior_family = rhs_func
+      reg_params = numeric(length(param_spec) - 1)
+      for (i in seq_along(reg_params)) {
+        reg_params[i] = try(eval(param_spec[[i+1]]))
+      }
+    } else {
+      # TODO: worry about eval environments??
+      reg_params = try(eval(param_spec))
+      if (!is.numeric(reg_params)) {
+        stop('unrecognized parameter specification')
+      }
+    }
+  } else {
+    if (!is.numeric(param_spec)) {
+      stop('unrecognized parameter specification')
+    }
+    reg_params = param_spec
+  }
+  nlist(param_nm, trans_nm, prior_family, reg_params)
+}
+
 # computing indices and data for tmb ----------------------
 
 ##' @export
@@ -1293,6 +1342,28 @@ tmb_observed_data = function(model) {
   )
 }
 
+#' @export
+tmb_opt_params = function(model) {
+  # in progress:
+  #  - account for time variation
+
+  param_nms = sapply(model$opt_params, getElement, "param_nm")
+  param_spi = find_vec_indices(param_nms, c(model$state, model$params))
+  trans_nms = sapply(model$opt_params, getElement, "trans_nm")
+  prior_families = sapply(model$opt_params, getElement, "prior_family")
+  count_reg_params = (model$opt_params
+    %>% lapply(getElement, "reg_params")
+    %>% sapply(length)
+  )
+  reg_params = (model$opt_params
+    %>% lapply(getElement, "reg_params")
+    %>% unlist
+  )
+  trans_id = find_vec_indices(trans_nms, c('', valid_trans))
+  prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
+  nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
+}
+
 # retrieving information from tmb objective function --------------
 
 #' Extract Parameter Vector to Pass to a TMB Function
@@ -1303,15 +1374,16 @@ tmb_observed_data = function(model) {
 #'
 #' Currently this includes \code{params} and if \code{spec_ver_gt('0.1.0')}
 #' it also includes time-varying multipliers in
-#' \code{model$timevar$piece_wise$schedule$last_tv_mult}.
+#' \code{model$timevar$piece_wise$schedule$last_tv_mult}. If
+#' \code{spec_ver_gt('0.1.2')}, only the parameters to be optimized are
+#' returned.
+#'
 #'
 #' @param model flexmodel
 #' @export
 tmb_params = function(model) {
-  # TODO: when we start using the TMB map argument to only pass parameters
-  # that are allowed to change, we will need to account for this here
   full_param_vec = c(unlist(model$params))
-  if(spec_ver_gt('0.1.0')) {
+  if (spec_ver_gt('0.1.0')) {
     if(has_time_varying(model)) {
       last_tv_mult = model$timevar$piece_wise$schedule$last_tv_mult
       if (any(is.na(last_tv_mult)))
@@ -1319,7 +1391,45 @@ tmb_params = function(model) {
       full_param_vec = c(full_param_vec, last_tv_mult)
     }
   }
+  if (spec_ver_gt('0.1.2')) {
+    full_param_vec = setNames(
+      full_param_vec[tmb_map_indices(model)],
+      tmb_param_names(model)
+    )
+  }
   full_param_vec
+}
+
+#' @export
+tmb_map_indices = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = 'flex models can use map argument of MakeADFun'
+  )
+  (model
+    $  tmb_indices
+    $  ad_fun_map
+   %>% unlist
+   %>% is.na
+   %>% `!`
+   %>% which
+   %>% unname
+  )
+}
+
+#' @export
+tmb_param_names = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = 'flex models can use map argument of MakeADFun'
+  )
+  (model
+     $  tmb_indices
+     $  ad_fun_map
+    %>% unlist
+    %>% as.character
+    %>% omit_empty
+  )
 }
 
 #' @export

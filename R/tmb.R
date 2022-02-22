@@ -314,12 +314,15 @@ init_model <- function(params, state = NULL,
         Variable = character()
       )
     }
-    #   model$observed$timevar_error = (data.frame(
-    #     Date = model$start_date
-    #   )
-    #   %>% cbind(model$observed$loss_params)
-    #   )
-    # }
+
+    model$opt_params = list()
+    model$tmb_indices$opt_params = list(
+      param_spi = integer(0L),
+      trans_id = integer(0L),
+      count_hyperparameters = integer(0L),
+      reg_params = numeric(0L),
+      prior_family_id = integer(0L)
+    )
     model$condensation_map = character(0L)
 
     model$tmb_indices <- list(
@@ -1048,6 +1051,38 @@ add_state_mappings = function(
     return(model)
 }
 
+#' Update Optimization Parameters
+#'
+#' \code{params ~ value}
+#' \code{trans_param ~ value}
+#' \code{trans_param ~ prior(hyperparameters ...)}
+#' \code{trans_param ~ prior(hyperparameters ..., laplace = TRUE)}
+#'
+#' @export
+update_opt_params = function(model, ...) {
+  model$opt_params = lapply(list(...), parse_opt_param, model$params)
+  model
+}
+
+#' @export
+add_opt_params = function(model, ...) {
+  # TODO: check for inconsistent specifications (e.g. two different priors specified for beta0)
+  model$opt_params = c(
+    model$opt_params,
+    lapply(list(...), parse_opt_param, model$params)
+  )
+  model
+}
+
+
+
+update_opt_vec = function(model, ...) {
+  stop(
+    "this is supposed to allow priors on (struc) vectors ",
+    "and will wrap update_opt_params, but is not yet implemented"
+  )
+}
+
 # compute indices and pass them to the tmb/c++ side ---------------------
 
 ##' Update TMB Indices
@@ -1149,6 +1184,56 @@ tmb_indices <- function(model) {
       indices$lag_diff = lag_diff_indices(model)
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
+      indices$opt_params = tmb_opt_params(model)
+      sc = model$timevar$piece_wise$schedule
+      # opt_param_nms = (model$opt_params
+      #   %>% lapply(getElement, 'param_nm')
+      #   %>% unlist
+      # )
+      opi = (model$opt_params
+        %>% lapply(getElement, 'param_nm')
+        %>% unlist
+        %>% find_vec_indices(model$params)
+        %>% sort
+      )
+      tvpi = (model
+         $  timevar
+         $  piece_wise
+         $  schedule
+         $  Value
+        %>% is.na
+        %>% which
+        %>% sort
+      )
+
+      params_map = factor(
+        rep(NA, length(model$params)),
+        levels = seq_along(opi)
+      )
+      tv_mult_map = factor(
+        rep(NA, nrow(model$timevar$piece_wise$schedule)),
+        levels = seq_along(tvpi)
+      )
+      params_map[opi] = factor(levels(params_map))
+      tv_mult_map[tvpi] = factor(levels(tv_mult_map))
+      # params_map = (model$params
+      #   %>% names
+      #   %>% as.factor
+      #   %>% as.numeric
+      #   %>% as.factor
+      # )
+      # tv_mult_map = with(sc, {
+      #   (Symbol
+      #    %_% breaks
+      #    %>% as.factor
+      #   )
+      # })
+      # params_map[!names(model$params) %in% opt_param_nms] = NA
+      # tv_mult_map[is.na(sc$Value)] = NA
+      indices$ad_fun_map = list(
+        params = params_map,
+        tv_mult = tv_mult_map
+      )
     }
     return(indices)
 }
@@ -1570,10 +1655,17 @@ tmb_fun <- function(model) {
           obs_history_col_id = null_to_int0(observed$history_col_id),
           obs_value = observed$observed, # don't need to worry about missing values because they are omitted
 
+          opt_param_spi = null_to_int0(opt_params$param_spi),
+          opt_trans_id = null_to_int0(opt_params$trans_id),
+          opt_count_reg_params = null_to_int0(opt_params$count_reg_params),
+          opt_reg_params = null_to_num0(opt_params$reg_params),
+          opt_prior_family_id = null_to_int0(opt_params$prior_family_id),
+
           numIterations = int0_to_0(null_to_0(iters))
         ),
         parameters = list(params = c(unlist(params)),
                           tv_mult = init_tv_mult),
+        map = ad_fun_map,
         DLL = DLL
       )
     } else {

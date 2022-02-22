@@ -33,6 +33,9 @@ to use in computing the eigenvector for initial state
 construction}
     \item{\code{tol_eig_pow_meth}}{tolerance for determining convergence
 of the power method used in initial state construction}
+    \item{\code{data}}{optional observed data frame in long format to
+compare with simulated trajectories. must have the following
+columns: \code{date}, \code{var}, \code{value}.}
   }}
 }
 \description{

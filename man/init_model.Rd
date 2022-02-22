@@ -10,14 +10,15 @@ init_model(
   start_date = NULL,
   end_date = NULL,
   params_timevar = NULL,
-  do_hazard = TRUE,
+  do_hazard = getOption("MP_default_do_hazard"),
   do_hazard_lin = FALSE,
   do_approx_hazard = FALSE,
   do_approx_hazard_lin = TRUE,
-  do_make_state = TRUE,
+  do_make_state = getOption("MP_default_do_make_state"),
   max_iters_eig_pow_meth = 8000,
   tol_eig_pow_meth = 1e-06,
   haz_eps = 1e-06,
+  data = NULL,
   ...
 )
 }
@@ -55,6 +56,10 @@ construction}
 
 \item{tol_eig_pow_meth}{tolerance for determining convergence
 of the power method used in initial state construction}
+
+\item{data}{optional observed data frame in long format to
+compare with simulated trajectories. must have the following
+columns: \code{date}, \code{var}, \code{value}.}
 }
 \value{
 flexmodel object representing a compartmental model
