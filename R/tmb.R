@@ -1185,17 +1185,20 @@ tmb_indices <- function(model) {
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
       indices$opt_params = tmb_opt_params(model)
+
       sc = model$timevar$piece_wise$schedule
-      # opt_param_nms = (model$opt_params
-      #   %>% lapply(getElement, 'param_nm')
-      #   %>% unlist
-      # )
+
+      # indices into parameter vector that identify
+      # parameters to be optimized
       opi = (model$opt_params
         %>% lapply(getElement, 'param_nm')
         %>% unlist
         %>% find_vec_indices(model$params)
         %>% sort
       )
+
+      # indices into tv_mult vector that identify
+      # time variation multipliers to be optimized
       tvpi = (model
          $  timevar
          $  piece_wise
@@ -1206,6 +1209,7 @@ tmb_indices <- function(model) {
         %>% sort
       )
 
+      # MakeADFun map argument
       params_map = factor(
         rep(NA, length(model$params)),
         levels = seq_along(opi)
@@ -1216,25 +1220,12 @@ tmb_indices <- function(model) {
       )
       params_map[opi] = factor(levels(params_map))
       tv_mult_map[tvpi] = factor(levels(tv_mult_map))
-      # params_map = (model$params
-      #   %>% names
-      #   %>% as.factor
-      #   %>% as.numeric
-      #   %>% as.factor
-      # )
-      # tv_mult_map = with(sc, {
-      #   (Symbol
-      #    %_% breaks
-      #    %>% as.factor
-      #   )
-      # })
-      # params_map[!names(model$params) %in% opt_param_nms] = NA
-      # tv_mult_map[is.na(sc$Value)] = NA
       indices$ad_fun_map = list(
         params = params_map,
         tv_mult = tv_mult_map
       )
     }
+
     return(indices)
 }
 
