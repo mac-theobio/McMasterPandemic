@@ -811,15 +811,18 @@ template<class Type>
 class LossFunc {
 public:
   int id;			// loss id
-  std::vector<Type> params;	// params of loss function 
+  std::vector<Type> params;	// params of loss function
 
   // This member function calculates and returns the loss
   Type run(const Type& observed, const Type& simulated) {
     Type var;
+    Type lll;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
-        var = (simulated + simulated*simulated) / this->params[0];
-        return dnbinom2(observed, simulated, var, 1);
+        var = simulated + ((simulated*simulated) / this->params[0]);
+        lll = -1.0 * dnbinom2(observed, simulated, var, 1);
+        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        return lll;
 
       //case 1: // placeholder for a different loss func
 
@@ -828,7 +831,7 @@ public:
         return 0.0;
     }
   };
-}; 
+};
 
 
 
@@ -836,10 +839,7 @@ public:
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << " =========== inside TMB ===========" << std::endl;
-
-  // Joint negative log-likelihood (stub)
-  //Type jnll= 0;
+  //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
   DATA_VECTOR(state);
@@ -1100,7 +1100,7 @@ Type objective_function<Type>::operator() ()
 
     Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
     for (int q=1; q<conv_qmax[k]; q++) {
-      std::cout << pre_gamma << std::endl;
+      //std::cout << pre_gamma << std::endl;
       Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
       delta(q-1) = cur_gamma - pre_gamma;
       pre_gamma = cur_gamma;
@@ -1113,9 +1113,9 @@ Type objective_function<Type>::operator() ()
   }
 
   // Preparation for the General Objective Function in spec 0.2.0
-  // Build a map of var_id to loss func 
+  // Build a map of var_id to loss func
   int start = 0;
-  std::map<int, LossFunc<Type>> varid2lossfunc;
+  std::map<int, LossFunc<Type> > varid2lossfunc;
   for (int i=0; i<obs_var_id.size(); i++) {
     LossFunc<Type> lf;
     lf.id = obs_loss_id[i] - 1;
@@ -1303,7 +1303,7 @@ Type objective_function<Type>::operator() ()
     sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu);
     //std::cout << "Loss = " << sum_of_loss << std::endl;
   }
-  std::cout << "Loss = " << sum_of_loss << std::endl;
+  //std::cout << "Loss = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
