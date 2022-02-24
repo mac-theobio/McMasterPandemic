@@ -811,15 +811,15 @@ template<class Type>
 class LossFunc {
 public:
   int id;			// loss id
-  std::vector<Type> params;	// params of loss function
+  std::vector<int> spi; 	// index to sp 
 
   // This member function calculates and returns the loss
-  Type run(const Type& observed, const Type& simulated) {
+  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
     Type var;
     Type lll;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
-        var = simulated + ((simulated*simulated) / this->params[0]);
+        var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
         std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
@@ -1039,7 +1039,7 @@ Type objective_function<Type>::operator() ()
 
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
-  vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
+  // vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
@@ -1121,7 +1121,7 @@ Type objective_function<Type>::operator() ()
     lf.id = obs_loss_id[i] - 1;
 
     for (int j=0; j<obs_loss_param_count[i]; j++)
-      lf.params.push_back(sp[obs_spi_loss_param[start+j]-1]);
+      lf.spi.push_back(obs_spi_loss_param[start+j]-1);
     start += obs_loss_param_count[i];
 
     varid2lossfunc[obs_var_id[i]-1] = lf;
@@ -1300,10 +1300,10 @@ Type objective_function<Type>::operator() ()
   for (int i=0; i<obs_value.size(); i++) {
     Type x = obs_value[i];
     Type mu = simulation_history(obs_time_step[i]-1, obs_history_col_id[i]-1);
-    sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu);
+    sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu, sp);
     //std::cout << "Loss = " << sum_of_loss << std::endl;
   }
-  //std::cout << "Loss = " << sum_of_loss << std::endl;
+  std::cout << "Loss = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
