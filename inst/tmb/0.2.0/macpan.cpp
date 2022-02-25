@@ -821,7 +821,7 @@ public:
       case 0: // Negative Binomial Negative Log Likelihood
         var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func
@@ -1039,7 +1039,6 @@ Type objective_function<Type>::operator() ()
 
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
-  // vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
@@ -1131,6 +1130,9 @@ Type objective_function<Type>::operator() ()
   // Simulation loop through "numIterations" time steps
   int nextBreak = 0;
   start = 0;
+  Type sum_of_loss = 0.0;
+  int obs_start = 0;
+
   for (int i=0; i<numIterations; i++) {
 
     //std::cout << "sp:" << std::endl;
@@ -1292,10 +1294,25 @@ Type objective_function<Type>::operator() ()
         simulation_history(i+1, index_to_item7+k) = conv;
       }
     }
+
+    // Calculate the General Objective Function
+    for (int k=obs_start; k<obs_time_step.size(); k++) {
+      if (i+1==obs_time_step[k]-1) {
+        //std::cout << "k= " << k << " [" << obs_time_step[k] << ", " << obs_history_col_id[k] << "]" << std::endl;
+        Type x = obs_value[k];
+        Type mu = simulation_history(obs_time_step[k]-1, obs_history_col_id[k]-1);
+        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp);
+      }
+      else {
+        obs_start = k;
+        break;
+      }
+    }
   }
 
   // After simulation
   // Calculate the General Objective Function
+  /*
   Type sum_of_loss = 0.0;
   for (int i=0; i<obs_value.size(); i++) {
     Type x = obs_value[i];
@@ -1303,6 +1320,7 @@ Type objective_function<Type>::operator() ()
     sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu, sp);
     //std::cout << "Loss = " << sum_of_loss << std::endl;
   }
+  */
   std::cout << "Loss = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
