@@ -456,7 +456,7 @@ The [TMB normal density function](https://kaskr.github.io/adcomp/dnorm_8hpp_sour
 
 #### Optional Inverse Parameter Transformations
 
-The user is allowed to express any value of `params`, `tv_mult`, or `nb_disp` on one of several transformed scales. The corresponding inverse transformation is applied immediately as the parameter is read through the appropriate macro on the TMB-side. The user should be allowed to specify one of the following transformations.
+The user is allowed to express any value of `params` or `tv_mult` on one of several transformed scales. The corresponding inverse transformation is applied immediately as the parameter is read through the appropriate macro on the TMB-side. The user should be allowed to specify one of the following transformations.
 
 * `log10`
 * `log`
@@ -470,31 +470,81 @@ The corresponding inverse transformations that would be applied after the macros
 
 #### General Objective Function
 
-Let $l_{\psi_i}(x_i, y_i)$ be a loss function where $x_i$ is a simulated element of the history matrix, $y_i$ is an associated observed data point, and $\psi_i$ is a vector of loss function parameters. Every element $i$ that belongs to the same column of the history matrix has the same value for $\psi_i$, but to simplify notation $\psi$ is sub-scripted by $i$. Let $r_{\phi_j}(\theta_j)$ be an optional regularization function for each parameter $\theta_j$ being optimized, where $\phi_j$ is a vector of regularization function parameters associated with parameter $j$. The objective function is then given by the following.
+TODO: make handling of transformations consistent. the regularization functions need to be computed on the transformed scale, but the epidemiological simulations need to be treated on the original scale. therefore, it is probably best to compute the priors as soon as the parameters get read in by the `PARAMETER_*` macros, then compute the inverse transformations so that the parameters are on the right scale for the simulations. this way we don't have to undo the inverse transformations just to compute the regularization functions after the simulations.
+
+Let $l_{\psi_i}\left(x_i(\theta); y_i\right)$ be a loss function where $x_i(\theta)$ is a simulated element of the history matrix, $y_i$ is an associated observed data point, and $\psi_i$ is a vector of loss function parameters. Note that we write the simulation values as functions of $\theta$ to indicate their dependence on parameters. Every element $i$ that belongs to the same column of the history matrix has the same value for $\psi_i$, but to simplify notation $\psi$ is sub-scripted by $i$. Let $r_{\phi_j}(\theta_j)$ be an optional regularization function for each parameter $\theta_j$ being optimized, where $\phi_j$ is a vector of regularization function parameters associated with parameter $j$. The objective function is then given by the following.
 
 $$
-L(x, y) = \sum_i l_{\psi_i}(x_i, y_i) + \sum_j r_{\phi_j}(\theta_j)
+L_{\psi, \phi}(\theta; y) = \sum_i l_{\psi_i}\left(x_i(\theta); y_i\right) + \sum_j r_{\phi_j}(\theta_j)
 $$
-Currently the only objective function that is offered is the negative log negative binomial density, but the infrastructure will be built assuming that other loss functions will be allowed in the future. Similarly the only regularizing function that is available is the negative log normal density.
+Currently the only objective function that is offered is the negative log negative binomial density, but the infrastructure we build assumes that other loss functions will be allowed in the future. Similarly the only regularizing function that is available is the negative log normal density.
 
-Note that currently the regularization function terms are out-of-scope.
+Each parameter, $\theta_j$, can be optionally passed into the objective function on a [transformed scale](https://canmod.net/misc/flex_specs#available-parameter-transformations). These transformations allow users to enforce limits on the domain of the parameter space (e.g. a logit transformation will keep parameter values between 0 and 1). The regularization functions are applied on the transformed scale, but the elements of the rate matrix (and therefore the simulations, $x$) are computed using the parameters on their original scale. Therefore, we have the following ordering of operations.
 
-The objective function, $L$, is returned by the `c++` function `objective_function`.
+1. Parameter, $\theta_j$, is passed in to the objective function on the transformed scale, $f(\theta_j)$
+2. The regularization function, $r_{\phi_j}(\theta_j)$, is computed and saved
+3. The inverse transformation is applied to the parameter, $\theta_j$, and the result is used to overwrite the previous value in the `c++` `params` vector
+4. The simulations are made
+5. The objective function, $L$, is computed, and this computation includes adding the saved values of the regularization functions
+6. The objective function, $L$, is returned by the `c++` function `objective_function`
 
 #### Available Loss Functions
 
 * Negative log negative binomial density
     * Loss function parameters: dispersion
-    * In TMB use [`dnbinom2`](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351)
+    * In TMB use [`dnbinom2`](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351) to compute the log negative binomial density
     * The arguments for `dnbinom2` can be computed as follows:
         * `x` -- observed data
         * `mu` -- simulated data
         * `var` -- `mu + mu^2 / disp`, where `disp` is the dispersion parameter
+        * `give_log` -- `1`
 
-#### Available Regularization Functions (currently out of scope)
+#### Available Regularization Functions
 
-* Negative log normal density
-    * Regularization function parameters: mean, standard deviation
+* No regularization
+    * Name to use in `C++`: `flat`
+    * Regularization function parameters: initial value ($\theta_\text{init}$)
+    * $r_{\theta_\text{init}}(\theta) = 0$
+    * The fact that the regularization parameter, $\theta_\text{init}$, has no effect on the regularization function is an unusual special case. When regularization is applied, the 'location' of the regularization function is used as the initial value for the optimization. In the case of no regularization, we are using the regularization parameters to contain the initial value. One interpretation of this regularization parameter is as the 'peak' of a flat prior.
+* Negative log of the normal density
+    * Name to use in `C++`: `normal`
+    * Regularization function parameters: mean ($\bar{\theta}$), standard deviation ($\sigma_\theta$)
+    * $r_{\mu_f, \sigma_f}(\theta) = -\log\left[\mathcal{N}(f(\theta), \mu_f, \sigma_f)\right]$, where $\mathcal{N}$ is the normal density
+    * In TMB the [dnorm](https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga5eb914782c488bd3ec4a50d4e4a73394) function should be used with the following arguments
+        * `x` -- $f(\theta)$ -- value of the parameter on the transformed scale
+        * `mean` -- $\mu_{f(\theta)}$ -- first regularization parameter
+        * `sd` -- $\sigma_{f(\theta)}$ -- second regularization parameter
+        * `give_log` ` -- 1
+
+The first regularization parameter for every regularization function is used as the starting value for the optimizer on the scale of the transformed parameter.
+    
+#### Available Parameter Transformations
+
+* `identity`
+    * index = 1
+    * trans = $f(x) = x$
+    * inverse = $f^{-1}(x) = x$
+* `log`
+    * index = 2
+    * trans = $f(x) = \log(x)$
+    * inverse = $f^{-1}(x) = e^x$
+* `log10`
+    * index = 3
+    * trans = $f(x) = log_{10}(x)$
+    * inverse = $f^{-1}(x) = 10^x$
+* `logit`
+    * index = 4
+    * trans = $f(x) = \log\left[\frac{x}{1-x}\right]$
+    * inverse = $f^{-1}(x) = \frac{1}{1 + e^{-x}}$
+* `cloglog`
+    * index = 5
+    * trans = $f(x) = \log\left[-\log(1-x)\right]$
+    * inverse = $f^{-1}(x) = 1 - \exp\left[-\exp(x)\right]$
+* `inverse`
+    * index = 6
+    * trans = $f(x) = \frac{1}{x}$
+    * inverse = $f^{-1}(x) = \frac{1}{x}$
+
 
 ### Data Structure (0.2.0)
 
@@ -512,18 +562,32 @@ We will pass the following additional data through to TMB to specify the objecti
     * `obs_time_step` -- row in the history matrix
     * `obs_history_col_id` -- column in the history matrix (match with `obs_var_id` above to determine the `obs_loss_id` and `obs_loss_param_count`)
     * `obs_value` -- value observed in data to compare with the associated element in the history matrix
-* **Optimized Parameters (not yet in scope)**: the following vectors have one element per parameter that is being optimized
-    * `opt_par_id` -- index into the optimization parameters
-    * `opt_par_trans` -- index identifying a transformation from the following list:
-        * `1 = identity`
-        * `2 = log`
-        * `3 = log10`
-        * `4 = logit`
-        * `5 = inverse`
-    * `opt_par_prior` -- question: how flexible do we need to be with prior distribution families?
-* **Optimized Time-Varying Parameters (not yet in scope)**: similar to optimized parameters but for time varying multipliers
-    * `opt_tv_mult_id`
-    * `opt_tv_mult_trans`
+* **Optimized Parameters**: the following vectors have one element per parameter that is being optimized
+    * `opt_param_id` -- indices into the `params` vector giving the parameters to be optimized
+    * `opt_trans_id` -- index identifying a transformation -- see above for correspondence between indices and transformations
+    * `opt_count_reg_params` -- number of regularization parameters associated with each parameter to be optimized
+    * `opt_reg_family_id` -- index identifying a family of regularization functions -- currently only two are available (`flat`, `normal`)
+* **Optimized Time-Varying Parameters (not yet in scope)**: similar to optimized parameters but for `tv_mult`
+    * `opt_tv_param_id` -- indices into the `tv_mult` vector giving the time varying multipliers to be optimized
+    * `opt_tv_trans_id` -- index identifying a transformation -- see above for correspondence between indices and transformations
+    * `opt_tv_count_reg_params` -- number of regularization parameters associated with each parameter to be optimized
+    * `opt_tv_reg_family_id` -- index identifying a family of regularization functions -- currently only two are available (`flat`, `normal`)
+
+* **Regularization Parameters**:
+    * `opt_reg_params` -- regularization parameters -- the size of this vector is `opt_count_reg_params.sum()`
+    * `opt_tv_reg_params` -- regularization parameters for `tv_mult` -- the size of this vector is `opt_tv_count_reg_params.sum()`
+
+### Interface (0.2.0)
+
+```{r eval=FALSE, echo=TRUE}
+{opt-trans}_{parameter} ~ {reg-trans}_{baseline-prior-family}({hyperparameter1}, ...)
+```
+
+```{r eval=FALSE, echo=TRUE}
+{opt-trans}_{parameter} ~ {reg-trans}_{time-varying-prior-family}({hyperparameter-vector1}, ...)
+```
+
+
 
 ## v0.1.2 {#v0.1.2}
 
@@ -600,10 +664,6 @@ What follows is a detailed description of the procedure, which makes reference t
 9. Normalize `eig_infected` to have elements that sum to one
 10. Update `state[all_to_infected_idx] = eig_infected * param[infected_idx]` (`infected_idx` can be found in `model$tmb_indices$initial_population`)
 11. Update `state[susceptible_idx] = (1/susceptible_idx.size()) * (param[total_idx] - param[infected_idx])` (`infected_idx` and `total_idx` can be found in `model$tmb_indices$initial_population`)
-
-#### Calibrate Time Varying Multipliers
-
-
 
 ### Data Structure (0.1.1)
 
