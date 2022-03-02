@@ -28,17 +28,17 @@ start_date_offset = as.integer(sdate - initial_date)
 
 # read and process data
 covid_data <- ("sandbox/yukon/report_data_yukon_h_and_i.csv"
-               %>% read.csv
-               %>% mutate(date = as.Date(date))
-               %>% filter(date >= ymd(20210803))
-               %>% filter(between(as.Date(date), sdate, edate))
+   %>% read.csv
+   %>% mutate(date = as.Date(date))
+   %>% filter(date >= ymd(20210803))
+   %>% filter(between(as.Date(date), sdate, edate))
 
-               # report -- new reported cases on that day
-               # hosp -- new hospital admissions on that day
-               %>% select(date, report, hosp)
+   # report -- new reported cases on that day
+   # hosp -- new hospital admissions on that day
+   %>% select(date, report, hosp)
 
-               %>% pivot_longer(names_to = "var", -date)
-               %>% mutate(value=round(value))
+   %>% pivot_longer(names_to = "var", -date)
+   %>% mutate(value=round(value))
 )
 
 head(covid_data, n=12)
@@ -71,7 +71,7 @@ mm = (make_base_model(
     data = covid_data
   )
   %>% update_opt_params(
-    log_E0 ~ log_flat(log(5))
+    log_E0 ~ log_flat(log(5)),
     log_beta0 ~ log_normal(log(1), 1),
     log_mu ~ logit_normal(-0.04499737, 1),
     log_nb_disp_hosp ~ log_flat(0),
