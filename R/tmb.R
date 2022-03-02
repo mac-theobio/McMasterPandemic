@@ -147,88 +147,10 @@ init_model <- function(params, state = NULL,
         )
 
         if (spec_ver_gt("0.0.3")) {
-            schedule <- (params_timevar
-              %>% mutate(Date = as.Date(Date))
-              %>% mutate(breaks = (Date
-                %>% difftime(model$start_date, units = 'days')
-                %>% as.integer
-              ))
-              %>% mutate(tv_spi = find_vec_indices(Symbol, c(state, params)))
-              %>% arrange(breaks, tv_spi)
-            )
-
-            if(spec_ver_gt("0.1.0")) {
-              schedule = (schedule
-                %>% mutate(init_tv_mult = replace(Value,
-                                                  which(is.na(Value)),
-                                                  1))
-                %>% mutate(last_tv_mult = init_tv_mult)
-              )
-            }
-
-            count_of_tv_at_breaks <- c(table(schedule$breaks))
-
-            schedule$tv_val <- NA
-            new_param <- TRUE
-            ns <- nrow(schedule)
-            for (i in 1:ns) {
-                if (new_param | schedule$Type[i] == "rel_orig") {
-                    old_val <- params[schedule$Symbol[i]]
-                } else if (schedule$Type[i] == "rel_prev") {
-                    old_val <- schedule$tv_val[i - 1]
-                } else if (schedule$Type[i] == "abs") {
-                    old_val <- 1
-                } else {
-                    stop(
-                        "Unrecognized break-point type.\n",
-                        "Only rel_orig, rel_prev, and abs are allowed"
-                    )
-                }
-                schedule$tv_val[i] <- old_val * schedule$Value[i]
-                new_param <- schedule$Symbol[i] != schedule$Symbol[min(ns, i + i)]
-            }
-
-            attr(model$params, "tv_param_indices") <- setNames(find_vec_indices(
-                unique(schedule$Symbol),
-                params
-            ), unique(schedule$Symbol))
-
-
-            model$timevar$piece_wise <- list(
-                ## schedule includes tv_spi and tv_val as in spec
-                schedule = schedule,
-                breaks = as.integer(names(count_of_tv_at_breaks)),
-                count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
-            )
-
-            if (getOption("MP_warn_bad_breaks")) {
-              good_dates = between(
-                model$timevar$piece_wise$schedule$Date,
-                model$start_date,
-                model$end_date - 1
-              )
-              if (!all(good_dates)) {
-                warning("some time-varying parameters will not change at every\n",
-                        "specified date because some parameter changes only take\n",
-                        "effect outside of the simulation dates.\n",
-                        "to silence this warning use:\n",
-                        "options(MP_warn_bad_breaks = FALSE)")
-              }
-            }
+          model = update_piece_wise(model, params_timevar)
         } ## >v0.0.3
     } else {
-        model$timevar = list(
-            piece_wise = list(
-                breaks = integer(0L),
-                count_of_tv_at_breaks = integer(0L),
-                schedule = list(
-                    tv_spi = integer(0L),
-                    tv_val = numeric(0L),
-                    Value = numeric(0L),
-                    Type = character(0L)
-                )
-            )
-        )
+        model = initialize_piece_wise(model)
     }
 
     if (spec_ver_gt("0.0.4")) model$do_hazard <- do_hazard
@@ -1060,26 +982,62 @@ add_state_mappings = function(
 #'
 #' @export
 update_opt_params = function(model, ...) {
-  model$opt_params = lapply(list(...), parse_opt_param, model$params)
+  model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
   model
 }
 
 #' @export
 add_opt_params = function(model, ...) {
-  # TODO: check for inconsistent specifications (e.g. two different priors specified for beta0)
+  # TODO: check for inconsistent specifications
+  # (e.g. two different priors specified for beta0)
   model$opt_params = c(
     model$opt_params,
-    lapply(list(...), parse_opt_param, model$params)
+    lapply(list(...), parse_and_resolve_opt_form, model$params)
   )
   model
 }
 
+#' @export
+update_opt_tv_params = function(
+  model,
+  tv_type = c('abs', 'rel_orig', 'rel_prev'),
+  ...
+) {
+  tv_type = match.arg(tv_type, several.ok = TRUE)
+  tvp = (model
+      $  timevar
+      $  piece_wise
+      $  schedule
+     %>% filter (Type %in% tv_type)
+  )
+  model$opt_tv_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
+  model
+}
 
+add_opt_tv_params = function(
+  model,
+  tv_type = c('abs', 'rel_orig', 'rel_prev'),
+  ...
+) {
+  tv_type = match.arg(tv_type, several.ok = TRUE)
+  tvp = (model
+      $  timevar
+      $  piece_wise
+      $  schedule
+     %>% filter (Type %in% tv_type)
+  )
+  model$opt_tv_params = c(
+    model$opt_tv_params,
+    lapply(list(...), parse_and_resolve_opt_form, model$params)
+  )
+  model
+}
 
 update_opt_vec = function(model, ...) {
   stop(
     "this is supposed to allow priors on (struc) vectors ",
-    "and will wrap update_opt_params, but is not yet implemented"
+    "and will wrap update_opt_params, but is not yet implemented. ",
+    "this would allow multivariate priors, for example"
   )
 }
 
@@ -1186,28 +1144,33 @@ tmb_indices <- function(model) {
       indices$observed = tmb_observed_data(model)
       indices$opt_params = tmb_opt_params(model)
 
+      # indices into params vector and tv_mult vector
+      # that identify parameters to be optimized
+      opi = indices$opt_params$index_table$opt_param_id
+      tvpi = indices$opt_params$index_tv_table$opt_tv_mult_id
+
       sc = model$timevar$piece_wise$schedule
 
-      # indices into parameter vector that identify
-      # parameters to be optimized
-      opi = (model$opt_params
-        %>% lapply(getElement, 'param_nm')
-        %>% unlist
-        %>% find_vec_indices(model$params)
-        %>% sort
-      )
-
-      # indices into tv_mult vector that identify
-      # time variation multipliers to be optimized
-      tvpi = (model
-         $  timevar
-         $  piece_wise
-         $  schedule
-         $  Value
-        %>% is.na
-        %>% which
-        %>% sort
-      )
+      # # indices into parameter vector that identify
+      # # parameters to be optimized
+      # opi = (model$opt_params
+      #   %>% lapply(getElement, 'param_nm')
+      #   %>% unlist
+      #   %>% find_vec_indices(model$params)
+      #   %>% sort
+      # )
+      #
+      # # indices into tv_mult vector that identify
+      # # time variation multipliers to be optimized
+      # tvpi = (model
+      #    $  timevar
+      #    $  piece_wise
+      #    $  schedule
+      #    $  Value
+      #   %>% is.na
+      #   %>% which
+      #   %>% sort
+      # )
 
       # MakeADFun map argument
       params_map = factor(
@@ -1557,9 +1520,13 @@ tmb_fun <- function(model) {
       )
 
     } else if (spec_ver_gt("0.1.1")) {
+
       unpack(sum_indices)
+      unpack(opt_params)
+
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+
       dd <- MakeADFun(
         data = list(
           state = c(state),
@@ -1646,11 +1613,18 @@ tmb_fun <- function(model) {
           obs_history_col_id = null_to_int0(observed$history_col_id),
           obs_value = observed$observed, # don't need to worry about missing values because they are omitted
 
-          opt_param_spi = null_to_int0(opt_params$param_spi),
-          opt_trans_id = null_to_int0(opt_params$trans_id),
-          opt_count_reg_params = null_to_int0(opt_params$count_reg_params),
-          opt_reg_params = null_to_num0(opt_params$reg_params),
-          opt_prior_family_id = null_to_int0(opt_params$prior_family_id),
+
+          opt_param_id = null_to_int0(index_table$opt_param_id),
+          opt_trans_id = null_to_int0(index_table$param_trans_id),
+          opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+          opt_reg_params = null_to_num0(hyperparameters),
+          opt_prior_family_id = null_to_int0(index_table$prior_distr_id),
+
+          opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+          opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+          opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+          opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+          opt_tv_prior_family_id = null_to_int0(index_tv_table$prior_distr_id),
 
           numIterations = int0_to_0(null_to_0(iters))
         ),
@@ -1706,23 +1680,99 @@ update_observed = function(model, data, error_dist) {
   model
 }
 
-#' Update Time Variation Schedule for Error Distributions
-#'
-#' Dataframe with ?? columns:
-#' (1) Date,
-#' (2) Parameter,
-#' (3) Distribution,
-#' (4) Variable.
-#' Currently the only value for \code{Distribution} is \code{nb}
-#' and the only value for \code{Parameter} is \code{nb_disp}
-#'
+# time variation updates ------------------
+
 #' @export
-update_timevar_error = function(model, timevar_error) {
+update_piece_wise = function(model, params_timevar) {
   spec_check(
-    introduced_version = "10.0.0", # future!
-    feature = "time variation of error distribution parameters"
+    introduced_version = '0.0.4',
+    feature = 'piece-wise time variation of parameters'
   )
-  model$timevar_error = timevar_error
-  model
+
+  schedule <- (params_timevar
+               %>% mutate(Date = as.Date(Date))
+               %>% mutate(breaks = (Date
+                  %>% difftime(model$start_date, units = 'days')
+                  %>% as.integer
+               ))
+               %>% mutate(tv_spi = find_vec_indices(Symbol, c(model$state, model$params)))
+               %>% arrange(breaks, tv_spi)
+  )
+
+    if(spec_ver_gt("0.1.0")) {
+      schedule = (schedule
+                  %>% mutate(init_tv_mult = replace(Value,
+                                                    which(is.na(Value)),
+                                                    1))
+                  %>% mutate(last_tv_mult = init_tv_mult)
+      )
+    }
+
+    count_of_tv_at_breaks <- c(table(schedule$breaks))
+
+    schedule$tv_val <- NA
+    new_param <- TRUE
+    ns <- nrow(schedule)
+    for (i in 1:ns) {
+      if (new_param | schedule$Type[i] == "rel_orig") {
+        old_val <- model$params[schedule$Symbol[i]]
+      } else if (schedule$Type[i] == "rel_prev") {
+        old_val <- schedule$tv_val[i - 1]
+      } else if (schedule$Type[i] == "abs") {
+        old_val <- 1
+      } else {
+        stop(
+          "Unrecognized break-point type.\n",
+          "Only rel_orig, rel_prev, and abs are allowed"
+        )
+      }
+      schedule$tv_val[i] <- old_val * schedule$Value[i]
+      new_param <- schedule$Symbol[i] != schedule$Symbol[min(ns, i + i)]
+    }
+
+    attr(model$params, "tv_param_indices") <- setNames(find_vec_indices(
+      unique(schedule$Symbol),
+      model$params
+    ), unique(schedule$Symbol))
+
+
+    model$timevar$piece_wise <- list(
+      ## schedule includes tv_spi and tv_val as in spec
+      schedule = schedule,
+      breaks = as.integer(names(count_of_tv_at_breaks)),
+      count_of_tv_at_breaks = unname(count_of_tv_at_breaks)
+    )
+
+    if (getOption("MP_warn_bad_breaks")) {
+      good_dates = between(
+        model$timevar$piece_wise$schedule$Date,
+        model$start_date,
+        model$end_date - 1
+      )
+      if (!all(good_dates)) {
+        warning("some time-varying parameters will not change at every\n",
+                "specified date because some parameter changes only take\n",
+                "effect outside of the simulation dates.\n",
+                "to silence this warning use:\n",
+                "options(MP_warn_bad_breaks = FALSE)")
+      }
+    }
+    model
 }
 
+#' @export
+initialize_piece_wise = function(model) {
+  model$timevar = list(
+    piece_wise = list(
+      breaks = integer(0L),
+      count_of_tv_at_breaks = integer(0L),
+      schedule = list(
+        tv_spi = integer(0L),
+        tv_val = numeric(0L),
+        Value = numeric(0L),
+        Type = character(0L)
+      )
+    )
+  )
+  model
+}

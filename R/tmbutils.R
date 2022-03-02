@@ -1,7 +1,8 @@
 # objects ----------------------
 
-valid_prior_families = c('normal')
-valid_trans = c('log', 'log10', 'logit', 'inverse')
+valid_loss_functions = c('negative_binomial')
+valid_prior_families = c('flat', 'normal')
+valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
 
 # test functions ------------------------------------------------
 
@@ -20,6 +21,7 @@ is_len1_int = function(x) {
 #' Paste with Blank Separator
 #'
 #' Like Python string `+`
+#'
 #' @export
 `%+%` = function(x, y) paste(x, y, sep = "")
 
@@ -32,18 +34,50 @@ is_empty = function(x) {
 #' @export
 omit_empty = function(x) x[!is_empty(x)]
 
+#' Get Substrings by Indices and Separators
+#'
+#' For example \code{index_sep('a_b_c', 2, '_')} equals \code{'b'}.
+#' For example \code{index_sep('a_b_c', c(1, 3), '_')} equals \code{'a_c'}.
+#' For example \code{index_sep('a_b_c', -2, '_')} equals \code{'a_c'}.
+#' For example \code{index_sep('a_b_c', 4, '_')} equals \code{''}.
+#' For example \code{index_sep('a', 1, '_')} equals \code{'a'}.
+#' For example \code{index_sep('a', 2, '_')} equals \code{''}.
+#' For example \code{index_sep(c('a_b', 'c'), 2, '_')} equals \code{c('b', '')}.
+#' For example \code{index_sep('a_b_c', c(3, 1), '_')} equals \code{'c_a'}.
+#'
+#' @param x character vector
+#' @param i integer vector without sign mixing
+#' @param sep length-one character vector
+#' @param complement if \code{TRUE} the indices in \code{i} that are not matched are returned
+#'
 #' @export
 index_sep = function(x, i, sep = "_") {
+  complement = FALSE
+  if (any(i < 0L)) {
+    if (!all(i < 0L)) stop("cannot mix positive and negative indices")
+    complement = TRUE
+    i = -1 * i
+  }
+  stopifnot(length(sep) == 1L)
+  if (complement) {
+    n_separated_items = nchar(x) - nchar(gsub(sep, '', x)) + 1
+    if (length(n_separated_items) > 1L) {
+      stop('cannot use complement method with multiple inputs')
+    }
+    i = setdiff(seq_len(n_separated_items), i)
+  }
   (x
-   %>% strsplit("_")
+   %>% as.character
+   %>% strsplit(sep)
    %>% lapply(function(x) {
      ifelse(
        length(x) == 0L,
        '',
-       paste0(omit_empty(x[i]), collapse = "_")
+       paste0(omit_empty(x[i]), collapse = sep)
      )
    })
    %>% unlist
+   %>% unname
   )
 }
 
@@ -113,6 +147,8 @@ final_sim_report_names = function(model) {
     unlist(lapply(model$conv, getElement, "output_names"))
   )
 }
+
+# flexmodel to latex (experimental) -------------------
 
 ##' @export
 make_latex_symbols = function(nms) {
@@ -284,6 +320,27 @@ merge_named_vec_attr = function(v, u, a) {
   return(v)
 }
 
+ff = function(x) {
+  if (is.atomic(x)) {
+    return(x)
+  }
+  n = length(x) # number of hyperparameters
+  d = lapply(x, dim) %>% unique
+  if (length(d) != 1L) {
+    stop('inconsistent hyperparameter dimensions')
+  }
+  d = unlist(d)
+  if (!is.null(d)) {
+    stop('cannot handle matrix-valued hyperparameters yet')
+  }
+  l = lapply(x, length) %>% unique
+  if (length(l) != 1L) {
+    stop('inconsistent hyperparameter lengths')
+  }
+  l = unlist(l)
+  ii = outer(seq(from = 1, by = l, len = n), seq_len(l) - 1, `+`) %>% c
+  unlist(x)[ii]
+}
 
 # null-safe coercion ----------------------------
 
@@ -859,32 +916,108 @@ rate_matrix_lookup = function(ratemat) {
 
 
 
-# utilities for parsing opt_params formulas
+# utilities for parsing opt_params formulas ------------------
 
-parse_opt_param = function(x, params) {
+#' Parse Fitted Parameter Formula
+#'
+#' \code{trans1_parameter ~ trans2_prior(hyperparameter1, ..., laplace = FALSE)}
+#'
+#' If \code{parameter}
+#'
+#' @param x opt_params formula
+#' @param params parameter vector
+#' @param regex_param_nm should the parameter name be treated as a regular
+#' expression used to produce a vector of parameter names
+#' @export
+parse_opt_param = function(x, params, params_timevar = NULL) {
+
+  # TODO: allow for transformations associated with the regularization function
+  # TODO: allow for vector-valued hyperparameters to be used with time variation
   stopifnot(is.call(x))
   stopifnot(as.character(x)[[1]] == '~')
   stopifnot(length(x) == 3L)
 
-  # separate parameter name from transformation
-  param_nm = as.character(x[[2]])
-  re = "^" %+% alt_group(valid_trans %_% '') %+% "?" %+% alt_group(names(params)) %+% "$"
-  if (!grepl(re, param_nm)) {
-    stop('unrecognized transformation or parameter is not in the model')
+  # string parameter expressions are treated as regex patterns
+  regex_param_nm = is.character(x[[2]])
+
+  # non-regex patterns are split on plus
+  if (!regex_param_nm) {
+    param_nm = (x[2]
+      %>% as.character
+      %>% strsplit("+", fixed = TRUE)
+      %>% lapply(trimws)
+      %>% unlist
+    )
+  } else {
+    param_nm = x[[2]]
   }
-  trans_nm = sub(re, '\\1', param_nm, perl = TRUE) %>% sub(pattern = '_$', replacement = '', perl = TRUE)
-  param_nm = sub(re, '\\2', param_nm, perl = TRUE)
+
+  # separate parameter name from transformation
+  trans_nm = sapply(param_nm, index_sep,  1L, USE.NAMES = FALSE)
+  for (i in seq_along(trans_nm)) {
+    if (trans_nm[i] %in% valid_trans) {
+      param_nm[i] = sapply(param_nm[i], index_sep, -1L, USE.NAMES = FALSE)
+    } else {
+      trans_nm[i] = ""
+    }
+  }
+
+  # expand param_nm into a vector of parameter names that match
+  if (regex_param_nm) {
+    param_nm = grep(param_nm, names(params), value = TRUE, perl = TRUE)
+  }
+
+  # lengths of the parameter vector, p, and the time series, l
+  p = length(param_nm)
+  l = 0
+  if (!is.null(params_timevar)) {
+    l = sapply(param_nm, length_tv_mult_series)
+    if (length(unique(l)) != 1L) {
+      stop("all time varying parameters must have the same series length ",
+           "if they are going to get the same prior")
+    }
+    l = l[1]
+  }
+
+  # cases:
+  #  p = 1, l = 0: baseline prior on one parameter (scalar hyperparameters)
+  #  p = 1, l > 0: tv_mult prior or priors on one parameter (scalar or l-vector hyperparameters)
+  #  p > 1, l = 0: baseline priors on several parameters (scalar or p-vector hyperparameters)
+  #  p > 1, l > 0: tv_mult priors on one parameter (scalar or l-by-p matrix hyperparameters)
+
+  stopifnot(all(param_nm %in% names(params)))
+
+  # re = "^" %+% alt_group(valid_trans %_% '') %+% "?" %+% alt_group(names(params)) %+% "$"
+  # if (!grepl(re, param_nm)) {
+  #   stop('unrecognized transformation or parameter is not in the model')
+  # }
+  # trans_nm = sub(re, '\\1', param_nm, perl = TRUE) %>% sub(pattern = '_$', replacement = '', perl = TRUE)
+  # param_nm = sub(re, '\\2', param_nm, perl = TRUE)
 
   # extract prior and starting value information
   param_spec = x[[3]]
   prior_family = ''
   if (is.call(param_spec)) {
     rhs_func = as.character(param_spec[[1]])
-    if (rhs_func %in% valid_prior_families) {
+    prior_trans = index_sep(rhs_func, 1)
+    if (prior_trans %in% valid_trans) {
+      prior_family = index_sep(rhs_func, -1)
+    } else {
+      prior_trans = ''
       prior_family = rhs_func
-      reg_params = numeric(length(param_spec) - 1)
+    }
+    if (prior_family %in% valid_prior_families) {
+      reg_params = vector("list", p * l)
+      dim(reg_params) = c(l, p)
+      for (i in l) {
+        for(j in p) {
+          reg_params[[i, j]] = try(eval(param_spec[[i+1]]))
+        }
+      }
+      #reg_params = vector("list", length(param_spec) - 1)
       for (i in seq_along(reg_params)) {
-        reg_params[i] = try(eval(param_spec[[i+1]]))
+        reg_params[[i]] = try(eval(param_spec[[i+1]]))
+        reg_params[[i]] = set_hyperparam_dims(reg_params[[i]], l, p, param_nm)
       }
     } else {
       # TODO: worry about eval environments??
@@ -892,14 +1025,331 @@ parse_opt_param = function(x, params) {
       if (!is.numeric(reg_params)) {
         stop('unrecognized parameter specification')
       }
+      reg_params = set_hyperparam_dims(reg_params, l, p, param_nm)
     }
   } else {
     if (!is.numeric(param_spec)) {
       stop('unrecognized parameter specification')
     }
-    reg_params = param_spec
+    reg_params = set_hyperparam_dims(param_spec, l, p, param_nm)
+    prior_family = ''
+    prior_trans = ''
   }
-  nlist(param_nm, trans_nm, prior_family, reg_params)
+  nlist(param_nm, trans_nm, prior_family, prior_trans, reg_params)
+
+}
+
+length_tv_mult_series = function(x) {
+  sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x))
+}
+
+set_hyperparam_dims = function(x, l, p, param_nm) {
+  if (length(x) == 1L) {
+    if (l > 0 & p > 1) {
+      x = matrix(x, l, p)
+    } else if (l > 0) {
+      x = rep(x, l)
+    } else if (p > 1) {
+      x = rep(x, p)
+    }
+  } else {
+    if (l > 0 & p > 1) {
+      if (!all(dim(x) == c(l, p))) {
+        stop("incompatible hyperparameter dimensions")
+      }
+    } else if (l > 0) {
+      if (length(x) != l) {
+        stop("incompatible numbers of hyperparameters")
+      }
+    } else if (p > 1) {
+      if (length(x) != p) {
+        stop("incompatible numbers of hyperparameters")
+      }
+    } else {
+      stop("incompatible numbers of hyperparameters")
+    }
+  }
+  if (is.matrix(x)) {
+    colnames(x) = param_nm
+  }
+  x
+}
+
+parse_and_resolve_opt_form = function(x, params) {
+  pf = parse_opt_form(x)
+  pf$param = resolve_param(pf$param, params)
+  pf
+}
+
+tmb_opt_indices = function(model) {
+
+  # opt_param_spi = null_to_int0(opt_params$param_spi),
+  # opt_trans_id = null_to_int0(opt_params$trans_id),
+  # opt_count_reg_params = null_to_int0(opt_params$count_reg_params),
+  # opt_reg_params = null_to_num0(opt_params$reg_params),
+  # opt_prior_family_id = null_to_int0(opt_params$prior_family_id),
+  #
+  # opt_tv_param_spi = null_to_int0(opt_tv_params$param_spi),
+  # opt_tv_trans_id = null_to_int0(opt_tv_params$trans_id),
+  # opt_tv_count_reg_params = null_to_int0(opt_tv_params$count_reg_params),
+  # opt_tv_reg_params = null_to_num0(opt_tv_params$reg_params),
+  # opt_tv_prior_family_id = null_to_int0(opt_tv_params$prior_family_id),
+
+  opt_tables = (model$opt_params
+   %>% lapply(tmb_opt_form, model$params)
+  )
+  index_table = (opt_tables
+    %>% lapply(getElement, 'd')
+    %>% do.call(what = 'rbind')
+  )
+  hyperparameters = (opt_tables
+    %>% lapply(getElement, 'hyperparams_vec')
+    %>% unlist
+  )
+  opt_tv_tables = (model$opt_tv_params
+    %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
+  )
+  index_tv_table = (opt_tv_tables
+    %>% lapply(getElement, 'd')
+    %>% do.call(what = 'rbind')
+  )
+  hyperparameters_tv = (opt_tv_tables
+    %>% lapply(getElement, 'hyperparams_vec')
+    %>% unlist
+  )
+  nlist(index_table, hyperparameters, index_tv_table, hyperparameters_tv)
+}
+
+
+
+tmb_opt_form = function(pf, params, params_timevar = NULL) {
+  if (is.null(params_timevar)) {
+    if (!all(pf$param$param_nms %in% names(params))) {
+      stop('parameters declared for optimization are missing from the model')
+    }
+  } else {
+    if (!all(pf$param$param_nms %in% filter(params_timevar, is.na(Value))$Symbol)) {
+      stop('time varying multipliers declared for optimization are not scheduled to vary in simulation time')
+    }
+  }
+  fd = get_form_dim(pf, params, params_timevar)
+  hyperparams_vec = (pf$prior$reg_param
+    %>% lapply(hyperparam_to_vec, l = fd$l, p = fd$p)
+    %>% unlist
+    %>% matrix(nrow = fd$h, ncol = max(fd$l, 1) * fd$p, byrow = TRUE)
+    %>% c
+  )
+  init_trans_params = c(pf$prior$reg_param[[1]])
+  param_nms = rep(pf$param$param_nms, each = max(fd$l, 1))
+  param_trans = rep(pf$param$trans, each = max(fd$l, 1))
+  prior_distr = pf$prior$distr
+  d = data.frame(param_nms, param_trans, prior_distr = pf$prior$distr, prior_trans = pf$prior$trans, count_hyperparams = fd$h, init_trans_params)
+  d$prior_trans_id = find_vec_indices(d$prior_trans, c('', valid_trans))
+  d$param_trans_id = find_vec_indices(d$param_trans, c('', valid_trans))
+  d$prior_distr_id = find_vec_indices(d$prior_distr, valid_prior_families)
+  if (is.null(params_timevar)) {
+    d$opt_param_id = find_vec_indices(d$param_nms, params)
+  } else {
+    lookup_tv_vec = (params_timevar
+      %>% mutate(v = ifelse(is.na(Value), Symbol, ''))
+      %>% getElement('v')
+    )
+    d$opt_tv_mult_id =
+      unlist(lapply(
+        unique(param_nms),
+        find_vec_indices,
+        lookup_tv_vec
+      ))
+  }
+  nlist(d, hyperparams_vec)
+}
+get_hyperparam_list = function(reg_params,  n_hyperparams, n_params, n_breaks) {
+  h = n_hyperparams
+  p = n_params
+  l = n_breaks
+  ll = vector("list", max(1, l) * p)
+  dim(ll) = c(max(1, l), p)
+  for (k in seq_len(h)) {
+    hyper_mat = matrix(reg_params[[k]], max(1, l), p)
+    for (i in seq_len(max(1, l))) {
+      for (j in seq_len(p)) {
+        ll[[i, j]] = c(ll[[i, j]], hyper_mat[i, j])
+      }
+    }
+  }
+  ll
+}
+get_form_dim = function(x, params, params_timevar = NULL) {
+  param_nm = x$param$param_nms
+  # lengths of the parameter vector, p, and the time series, l
+  h = x$prior$reg_params %>% length
+  p = length(param_nm)
+  l = 0
+  if (!is.null(params_timevar)) {
+    l = sapply(param_nm, length_tv_mult_series)
+    if (length(unique(l)) != 1L) {
+      stop("all time varying parameters must have the same series length ",
+           "if they are going to get the same prior")
+    }
+    l = l[1]
+  }
+  l = unname(l)
+  lapply(x$prior$reg_params, valid_dim_hyperparam, l, p)
+  nlist(h, p, l)
+}
+dim_hyperparam = function(x) {
+  if (is.null(dim(x))) {
+    y = c(length(x), 1)
+  } else {
+    y = dim(x)
+  }
+  if (length(y) != 2) stop('only matrices, vectors, and scalar hyperparameters are allowed')
+  y
+}
+valid_dim_hyperparam = function(x, l, p) {
+  dh = dim_hyperparam(x)
+  if (!any(
+    isTRUE(all.equal(dh, c(l, p))),
+    isTRUE(all.equal(dh, c(1, 1))),
+    isTRUE(all.equal(dh, c(p, 1))) & (l == 0L),
+    isTRUE(all.equal(dh, c(l, 1))) & (p == 1L)
+  )) {
+    stop('inconsistent hyperparameter dimensions')
+  }
+  NULL
+}
+hyperparam_to_vec = function(hyperparam, l, p) {
+  hyperparam = (hyperparam
+                %>% matrix(max(1, l), p)
+                %>% t
+                %>% c
+  )
+  hyperparam
+}
+resolve_param = function(x, params) {
+  if (inherits(x, 'param_regex')) {
+    param_nms = grep(x$regex, names(params), perl = TRUE, value = TRUE)
+    trans = rep(x$trans, length(param_nms))
+  } else {
+    param_nms = x
+    if (inherits(param_nms, 'param_vector')){
+      param_nms = unclass(param_nms)
+    }
+    if (!is.character(param_nms)) {
+      stop('unable to resolve parameter optimization specification')
+    }
+    trans = index_sep(param_nms, 1)
+    which_have_trans = trans %in% valid_trans
+    trans = ifelse(which_have_trans, trans, '')
+
+    param_nms = ifelse(which_have_trans, Vectorize(index_sep)(param_nms, -1), param_nms)
+  }
+  nlist(param_nms, trans)
+}
+#' Recursive function to parse a formula containing sums of names
+parse_name_sum = function(x) {
+  y = character(0L)
+  if (is.call(x)) {
+    if (as.character(x[[1]]) != '+') {
+      stop('"+" is the only operator/function allowed when summing, but "',
+           as.character(x[[1]]), '" was used')
+    }
+    y = c(parse_name_sum(x[[2]]), parse_name_sum(x[[3]]))
+    return(y)
+  } else if (is.name(x)) {
+    return(as.character(x))
+  } else {
+    stop('parameters must be expressed as valid R names (e.g. not character strings) ',
+         'when summing parameters on the left-hand-side. if you are trying to ',
+         'programmatically create formulas, you should instead programmatically ',
+         'create the results of parsing the formula')
+  }
+}
+#' Recursive function to parse a formula containing parameter
+#' optimization specifications
+#'
+#' trans1_param ~ trans2_prior(hyperparameters, ...)
+#'
+#' trans1_param can be:
+#'   (1) a symbol/name (or sum of symbols)
+#'   (2) an expression that evaluates (in the environment of the formula)
+#'       to a character vector
+#'   (3) a literal length-1 character vector
+#'
+#' if trans1_param is a symbol:
+#' trans1 = name of a valid parameter transformation, giving the scale
+#'          on which the optimizer treats the parameter(s)
+#' param = name of a parameter in the parameter vector
+#'
+#' if trans1_param is an expression
+#'
+parse_opt_form = function(x, e = NULL) {
+  if (is.call(x)) {
+    func = parse_opt_form(x[[1]], e)
+    if (func == '~') {
+      if (!is.null(e)) {
+        # note that this message will display wrongly if someone
+        # calls this function directly with an environment,
+        # but this should be ok given that we are not going to
+        # export this function
+        stop('one may not use more than one tilde in optimization formulas')
+      }
+      # capture the environment of the formula so that it can
+      # be recursively passed down, and used when/if eval is called
+      e = environment(x)
+      if (is.character(x[[2]])) {
+        trans = index_sep(x[[2]], 1)
+        if (trans %in% valid_trans) {
+          regex = index_sep(x[[2]], -1)
+        } else {
+          regex = x[[2]]
+          trans = ''
+        }
+        param = structure(nlist(regex, trans), class = 'param_regex')
+      } else {
+        param = parse_opt_form(x[[2]], e)
+        if (!inherits(param, 'param_sum')) {
+          param = structure(param, class = 'param_vector')
+        }
+      }
+      prior = parse_opt_form(x[[3]], e)
+      if (is.numeric(prior)) {
+        stop('need to specify a prior distribution or initial value for the optimizer')
+      }
+      if (inherits(prior, 'param_sum')) {
+        stop('summing prior distributions is not allowed')
+      }
+      return(nlist(param, prior))
+    } else if (func == '+') {
+      return(structure(parse_name_sum(x), class = 'param_vector'))
+    } else {
+      trans = index_sep(func, 1)
+      if (trans %in% valid_trans) {
+        distr = index_sep(func, -1)
+      } else {
+        distr = func
+        trans = ''
+      }
+      if (distr %in% valid_prior_families) {
+        reg_params = lapply(x[-1], parse_opt_form, e)
+        return(structure(nlist(distr, trans, reg_params), class = 'prior'))
+      } else {
+        # if the function of the call is not a valid prior distribution,
+        # assume that we just want to evaluate the call and do so in the
+        # environment of the formula -- is this a good idea? -- could there
+        # be issues if we decide to allow two tildes?
+        return(parse_opt_form(eval(x, e), e))
+      }
+    }
+  } else if (is.name(x)) {
+    return(parse_opt_form(as.character(x), e))
+  } else if (is.character(x)) {
+    return(x)
+  } else if (is.numeric(x)) {
+    return(x)
+  } else {
+    stop('not a valid type')
+  }
 }
 
 # computing indices and data for tmb ----------------------
@@ -1344,13 +1794,18 @@ tmb_observed_data = function(model) {
 
 #' @export
 tmb_opt_params = function(model) {
-  # in progress:
-  #  - account for time variation
+  return(tmb_opt_indices(model))
 
-  param_nms = sapply(model$opt_params, getElement, "param_nm")
-  param_spi = find_vec_indices(param_nms, c(model$state, model$params))
-  trans_nms = sapply(model$opt_params, getElement, "trans_nm")
-  prior_families = sapply(model$opt_params, getElement, "prior_family")
+  param_nms = lapply(model$opt_params, getElement, "param_nm")
+  params_per_formula = sapply(param_nms, length)
+  param_spi = lapply(param_nms, find_vec_indices, c(model$state, model$params))
+  trans_nms = lapply(model$opt_params, getElement, "trans_nm")
+
+  prior_families = lapply(model$opt_params, getElement, "prior_family")
+  reg_params = lapply(model$opt_params, getElement, "reg_params")
+
+  prior_families = rep(unlist(prior_families), params_per_formula)
+
   count_reg_params = (model$opt_params
     %>% lapply(getElement, "reg_params")
     %>% sapply(length)
@@ -1363,6 +1818,7 @@ tmb_opt_params = function(model) {
   prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
   nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
 }
+
 
 # retrieving information from tmb objective function --------------
 
@@ -1398,6 +1854,25 @@ tmb_params = function(model) {
     )
   }
   full_param_vec
+}
+
+#' @export
+tmb_params_init = function(model) {
+  init_trans_params = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_table
+    %>% arrange(opt_param_id)
+    %>% getElement('init_trans_params')
+  )
+  init_trans_tv_mult = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_tv_table
+    %>% arrange(opt_tv_mult_id)
+    %>% getElement('init_trans_params')
+  )
+  unname(c(init_trans_params, init_trans_tv_mult))
 }
 
 #' @export

@@ -811,11 +811,12 @@ template<class Type>
 class LossFunc {
 public:
   int id;			// loss id
-  std::vector<int> spi; 	// index to sp 
+  std::vector<int> spi; 	// index to sp
 
   // This member function calculates and returns the loss
   Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
     Type var;
+    Type lll;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
@@ -1331,7 +1332,7 @@ Type objective_function<Type>::operator() ()
     //std::cout << "Loss = " << sum_of_loss << std::endl;
   }
   */
-  std::cout << "Loss = " << sum_of_loss << std::endl;
+  // std::cout << "Loss = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
