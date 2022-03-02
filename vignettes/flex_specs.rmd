@@ -470,8 +470,6 @@ The corresponding inverse transformations that would be applied after the macros
 
 #### General Objective Function
 
-TODO: make handling of transformations consistent. the regularization functions need to be computed on the transformed scale, but the epidemiological simulations need to be treated on the original scale. therefore, it is probably best to compute the priors as soon as the parameters get read in by the `PARAMETER_*` macros, then compute the inverse transformations so that the parameters are on the right scale for the simulations. this way we don't have to undo the inverse transformations just to compute the regularization functions after the simulations.
-
 Let $l_{\psi_i}\left(x_i(\theta); y_i\right)$ be a loss function where $x_i(\theta)$ is a simulated element of the history matrix, $y_i$ is an associated observed data point, and $\psi_i$ is a vector of loss function parameters. Note that we write the simulation values as functions of $\theta$ to indicate their dependence on parameters. Every element $i$ that belongs to the same column of the history matrix has the same value for $\psi_i$, but to simplify notation $\psi$ is sub-scripted by $i$. Let $r_{\phi_j}(\theta_j)$ be an optional regularization function for each parameter $\theta_j$ being optimized, where $\phi_j$ is a vector of regularization function parameters associated with parameter $j$. The objective function is then given by the following.
 
 $$
