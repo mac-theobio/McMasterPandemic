@@ -816,13 +816,10 @@ public:
   // This member function calculates and returns the loss
   Type run(const Type& observed, const Type& simulated) {
     Type var;
-    Type lll;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         var = simulated + ((simulated*simulated) / this->params[0]);
-        lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
-        return lll;
+        return -1.0 * dnbinom2(observed, simulated, var, 1);
 
       //case 1: // placeholder for a different loss func
 
@@ -936,6 +933,17 @@ Type objective_function<Type>::operator() ()
   // of parameters in the final objective function"
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
+
+  // spec 0.2.0
+  // ----------
+
+  // compute the regularization functions on the
+  // transformed scale
+
+  // inverse transform parameters to be optimized
+  // loop over each parameter to be optimzed
+  // and replace the value in params with the inverse
+  // transformation in params
 
   //REPORT(tmb_status);
 
