@@ -106,10 +106,11 @@ obj_fun$env$data  # items available to be read in to tmb using DATA_* macros
 params_timevar2 = mutate(params_timevar, Value = c(0.8, 0.85, 0.9, 0.95, 0.99))
 mm2 = (mm
   %>% update_piece_wise(params_timevar2)
-  %>% update_opt_tv_params()
+  %>% update_opt_tv_params
+  %>% update_tmb_indices
 )
 obj_fun2 = tmb_fun(mm2)
-mle_fun(
+r_obj_fun = mle_fun(
   unlist(op),
   mm$observed$data,
   start_date = mm2$start_date,
@@ -122,4 +123,17 @@ mle_fun(
     ~ dnorm(params[3], -0.04499737, 1)
   )
 )
-obj_fun2$fn()
+
+# use this test _before_ implementing transformations
+# to get close to r_obj_fun
+tmb_obj_fun_without_trans = obj_fun2$fn()
+print(r_obj_fun)
+print(tmb_obj_fun_without_trans)
+print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
+
+# use this test _after_ implementing transformations
+# to match exactly with r_obj_fun
+# NOTE: using this before implementing transformations
+#       will result in NaN
+#tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_init(mm2))
+#all.equal(r_obj_fun, tmb_obj_fun_with_trans)

@@ -174,13 +174,9 @@ init_model <- function(params, state = NULL,
         model$linearized_params = list()
         model$outflow = list()
         model$linearized_outflow = list()
-        model$initialization_mapping = list(
-          eigen = character(0L),
-          infected = character(0L),
-          susceptible = character(0L))
-        model$initial_population = list(
-          total = character(0L),
-          infected = character(0L))
+
+        model$initialization_mapping = init_initialization_mapping
+        model$initial_population = init_initial_population
 
         which_step_zero_tv = which(
           model$timevar$piece_wise$breaks == 0L)
@@ -195,14 +191,10 @@ init_model <- function(params, state = NULL,
       model$factrs = list()
       model$sim_report_exprs = list()
     }
-    model$factr_vector = numeric(0L)
+    model$factr_vector = init_factr_vector
 
     # condensation -- spec_ver_gt("0.1.2)
-    model$condensation = list(
-      include = list(),
-      # ordered list of condensation steps
-      steps = list()
-    )
+    model$condensation = init_condensation
 
     if (spec_ver_gt("0.1.2") & !is.null(data)) {
       stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
@@ -225,56 +217,14 @@ init_model <- function(params, state = NULL,
       )
       model$params = expand_params_nb_disp(model$params, obsvars)
     } else {
-      model$observed$data = data.frame(
-        date = Date(),
-        var = character(),
-        value = numeric()
-      )
-      model$observed$loss_params = data.frame(
-        Parameter = character(),
-        Distribtion = character(),
-        Variable = character()
-      )
+      model$observed = init_observed
     }
 
     model$opt_params = list()
-    model$tmb_indices$opt_params = list(
-      param_spi = integer(0L),
-      trans_id = integer(0L),
-      count_hyperparameters = integer(0L),
-      reg_params = numeric(0L),
-      prior_family_id = integer(0L)
-    )
-    model$condensation_map = character(0L)
+    model$opt_tv_params = list()
+    model$condensation_map = init_condensation_map
 
-    model$tmb_indices <- list(
-        make_ratemat_indices = list(
-            from = integer(0L),
-            to = integer(0L),
-            count = integer(0L),
-            spi = integer(0L),
-            modifier = integer(0L)
-        ),
-        par_accum_indices = integer(0L),
-        updateidx = integer(0L),
-        sum_indices = list(
-            sumidx = integer(0L),
-            sumcount = integer(0L),
-            summandidx = integer(0L)
-        ),
-        factr_indices = list(
-          spi_factr = integer(0L),
-          count = integer(0L),
-          spi = integer(0L),
-          modifier = integer(0L)
-        ),
-        condense_indices = list(
-          sri_output = integer(0L),
-          sr_count = integer(0L),
-          sri = integer(0L),
-          sr_modifier = integer(0L)
-        )
-    )
+    model$tmb_indices <- init_tmb_indices
 
     structure(model, class = "flexmodel")
 }
@@ -1618,13 +1568,13 @@ tmb_fun <- function(model) {
           opt_trans_id = null_to_int0(index_table$param_trans_id),
           opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
           opt_reg_params = null_to_num0(hyperparameters),
-          opt_prior_family_id = null_to_int0(index_table$prior_distr_id),
+          opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
 
           opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
           opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
           opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
           opt_tv_reg_params = null_to_num0(hyperparameters_tv),
-          opt_tv_prior_family_id = null_to_int0(index_tv_table$prior_distr_id),
+          opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
 
           numIterations = int0_to_0(null_to_0(iters))
         ),

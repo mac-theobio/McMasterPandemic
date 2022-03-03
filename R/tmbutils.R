@@ -4,6 +4,100 @@ valid_loss_functions = c('negative_binomial')
 valid_prior_families = c('flat', 'normal')
 valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
 
+init_initialization_mapping = list(
+  eigen = character(0L),
+  infected = character(0L),
+  susceptible = character(0L)
+)
+
+init_initial_population = list(
+  total = character(0L),
+  infected = character(0L)
+)
+
+init_factr_vector = numeric(0L)
+
+init_condensation = list(
+  include = list(),
+  # ordered list of condensation steps
+  steps = list()
+)
+
+init_condensation_map = character(0L)
+
+init_observed = list(
+  data = data.frame(
+    date = Date(),
+    var = character(),
+    value = numeric()
+  ),
+  loss_params = data.frame(
+    Parameter = character(),
+    Distribtion = character(),
+    Variable = character()
+  )
+)
+
+init_tmb_indices = list(
+  make_ratemat_indices = list(
+    from = integer(0L),
+    to = integer(0L),
+    count = integer(0L),
+    spi = integer(0L),
+    modifier = integer(0L)
+  ),
+  par_accum_indices = integer(0L),
+  updateidx = integer(0L),
+  sum_indices = list(
+    sumidx = integer(0L),
+    sumcount = integer(0L),
+    summandidx = integer(0L)
+  ),
+  factr_indices = list(
+    spi_factr = integer(0L),
+    count = integer(0L),
+    spi = integer(0L),
+    modifier = integer(0L)
+  ),
+  condense_indices = list(
+    sri_output = integer(0L),
+    sr_count = integer(0L),
+    sri = integer(0L),
+    sr_modifier = integer(0L)
+  ),
+  opt_params = list(
+    index_table = data.frame(
+      param_nms = character(0),
+      param_trans = character(0),
+      prior_distr = character(0),
+      prior_trans = character(0),
+      count_hyperparams = integer(0),
+      init_trans_params = numeric(0),
+      prior_trans_id = integer(0),
+      param_trans_id = integer(0),
+      prior_distr_id = integer(0),
+      opt_param_id = integer(0)
+    ),
+    hyperparameters = numeric(0L),
+    index_tv_table = data.frame(
+      param_nms = character(0),
+      param_trans = character(0),
+      prior_distr = character(0),
+      prior_trans = character(0),
+      count_hyperparams = integer(0),
+      init_trans_params = numeric(0),
+      prior_trans_id = integer(0),
+      param_trans_id = integer(0),
+      prior_distr_id = integer(0),
+      opt_tv_mult_id = integer(0)
+    ),
+    hyperparameters_tv = numeric(0L)
+  )
+)
+
+
+
+
 # test functions ------------------------------------------------
 
 is_len1_char = function(x) (length(x) == 1L) & is.character(x)
@@ -1082,45 +1176,38 @@ parse_and_resolve_opt_form = function(x, params) {
 }
 
 tmb_opt_indices = function(model) {
+  indices = init_tmb_indices$opt_params
 
-  # opt_param_spi = null_to_int0(opt_params$param_spi),
-  # opt_trans_id = null_to_int0(opt_params$trans_id),
-  # opt_count_reg_params = null_to_int0(opt_params$count_reg_params),
-  # opt_reg_params = null_to_num0(opt_params$reg_params),
-  # opt_prior_family_id = null_to_int0(opt_params$prior_family_id),
-  #
-  # opt_tv_param_spi = null_to_int0(opt_tv_params$param_spi),
-  # opt_tv_trans_id = null_to_int0(opt_tv_params$trans_id),
-  # opt_tv_count_reg_params = null_to_int0(opt_tv_params$count_reg_params),
-  # opt_tv_reg_params = null_to_num0(opt_tv_params$reg_params),
-  # opt_tv_prior_family_id = null_to_int0(opt_tv_params$prior_family_id),
+  if (length(model$opt_params) > 0L) {
 
-  opt_tables = (model$opt_params
-   %>% lapply(tmb_opt_form, model$params)
-  )
-  index_table = (opt_tables
-    %>% lapply(getElement, 'd')
-    %>% do.call(what = 'rbind')
-  )
-  hyperparameters = (opt_tables
-    %>% lapply(getElement, 'hyperparams_vec')
-    %>% unlist
-  )
-  opt_tv_tables = (model$opt_tv_params
-    %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
-  )
-  index_tv_table = (opt_tv_tables
-    %>% lapply(getElement, 'd')
-    %>% do.call(what = 'rbind')
-  )
-  hyperparameters_tv = (opt_tv_tables
-    %>% lapply(getElement, 'hyperparams_vec')
-    %>% unlist
-  )
-  nlist(index_table, hyperparameters, index_tv_table, hyperparameters_tv)
+    opt_tables = (model$opt_params
+     %>% lapply(tmb_opt_form, model$params)
+    )
+    indices$index_table = (opt_tables
+      %>% lapply(getElement, 'd')
+      %>% do.call(what = 'rbind')
+    )
+    indices$hyperparameters = (opt_tables
+      %>% lapply(getElement, 'hyperparams_vec')
+      %>% unlist
+    )
+  }
+  if (length(model$opt_tv_params) > 0L) {
+
+    opt_tv_tables = (model$opt_tv_params
+      %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
+    )
+    indices$index_tv_table = (opt_tv_tables
+      %>% lapply(getElement, 'd')
+      %>% do.call(what = 'rbind')
+    )
+    indices$hyperparameters_tv = (opt_tv_tables
+      %>% lapply(getElement, 'hyperparams_vec')
+      %>% unlist
+    )
+  }
+  indices
 }
-
-
 
 tmb_opt_form = function(pf, params, params_timevar = NULL) {
   if (is.null(params_timevar)) {
@@ -1319,6 +1406,10 @@ parse_opt_form = function(x, e = NULL) {
       if (inherits(prior, 'param_sum')) {
         stop('summing prior distributions is not allowed')
       }
+      # TODO: check to make sure that param_trans and prior_trans
+      # are identical, and throw an informative error message
+      # describing the missing feature of putting a prior over a
+      # different scale than the parameter in the objective function
       return(nlist(param, prior))
     } else if (func == '+') {
       return(structure(parse_name_sum(x), class = 'param_vector'))
@@ -1858,18 +1949,19 @@ tmb_params = function(model) {
 
 #' @export
 tmb_params_init = function(model) {
+  model = update_tmb_indices(model)
   init_trans_params = (model
      $  tmb_indices
      $  opt_params
      $  index_table
-    %>% arrange(opt_param_id)
+    #%>% arrange(opt_param_id)
     %>% getElement('init_trans_params')
   )
   init_trans_tv_mult = (model
      $  tmb_indices
      $  opt_params
      $  index_tv_table
-    %>% arrange(opt_tv_mult_id)
+    #%>% arrange(opt_tv_mult_id)
     %>% getElement('init_trans_params')
   )
   unname(c(init_trans_params, init_trans_tv_mult))
