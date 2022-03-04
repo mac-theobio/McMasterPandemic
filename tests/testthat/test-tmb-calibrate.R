@@ -156,10 +156,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
       opt_pars = list(params = c(beta0 = params[["beta0"]]),
                       time_params = c(0.5)),
       sim_args = list(
-        step_args = list(do_hazard = TRUE),
-        use_flex = TRUE,
-        flexmodel = model,
-        obj_fun = tmb_fun(model)
+        flexmodel = model
       )
     )
   )

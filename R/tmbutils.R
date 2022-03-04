@@ -106,6 +106,18 @@ is_len1_int = function(x) {
   (length(x) == 1L) & isTRUE(all.equal(x, as.integer(x)))
 }
 
+#' @export
+exists_opt_params = function(model) {
+  (model
+   $  tmb_indices
+   $  ad_fun_map
+   %>% unlist
+   %>% is.na
+   %>% all
+   %>% `!`
+  )
+}
+
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
@@ -1939,10 +1951,12 @@ tmb_params = function(model) {
     }
   }
   if (spec_ver_gt('0.1.2')) {
-    full_param_vec = setNames(
-      full_param_vec[tmb_map_indices(model)],
-      tmb_param_names(model)
-    )
+    if (exists_opt_params(model)) {
+      full_param_vec = setNames(
+        full_param_vec[tmb_map_indices(model)],
+        tmb_param_names(model)
+      )
+    }
   }
   full_param_vec
 }

@@ -150,6 +150,7 @@ init_model <- function(params, state = NULL,
           model = update_piece_wise(model, params_timevar)
         } ## >v0.0.3
     } else {
+        # TODO: move this to an object called init_piece_wise in tmbutils
         model = initialize_piece_wise(model)
     }
 
@@ -223,6 +224,11 @@ init_model <- function(params, state = NULL,
     model$opt_params = list()
     model$opt_tv_params = list()
     model$condensation_map = init_condensation_map
+
+    if (FALSE & spec_ver_gt('0.1.2')) {
+      model$opt_params = initialize_opt_params(model)
+      model$opt_tv_params = initialize_opt_tv_params(model)
+    }
 
     model$tmb_indices <- init_tmb_indices
 
@@ -948,6 +954,48 @@ add_opt_params = function(model, ...) {
 }
 
 #' @export
+initialize_opt_params = function(model) {
+  # list(list( occurs because the result needs to
+  # be a list of parsed formulas and each parsed
+  # formula is itself a list
+  list(list(
+    param = list(
+      param_nms = names(model$params),
+      trans = rep('', length(model$params))
+    ),
+    prior = list(
+      distr = 'flat',
+      trans = '',
+      reg_params = list(c(model$params))
+    )
+  ))
+}
+
+#' @export
+initialize_opt_tv_params = function(model) {
+  sc = model$timevar$piece_wise$schedule
+  nms = unique(sc$Symbol)
+  f = function(nm) {
+    reg_params = (sc
+      %>% filter(Symbol == nm)
+      %>% getElement('init_tv_mult')
+    )
+    list(
+      param = list(
+        param_nms = nm,
+        trans = ''
+      ),
+      prior = list(
+        distr = 'flat',
+        trans = '',
+        reg_params = list(reg_params)
+      )
+    )
+  }
+  lapply(nms, f)
+}
+
+#' @export
 update_opt_tv_params = function(
   model,
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
@@ -1038,12 +1086,15 @@ tmb_indices <- function(model) {
     }
 
     if (spec_ver_eq("0.1.0")) {
+        # TODO: add model$factr here?
         sp <- c(model$state, model$params, model$sum_vector)
     } else {
         sp <- c(model$state, model$params)
     }
 
-    indices <- list(make_ratemat_indices = ratemat_indices(model$rates, sp))
+    indices = init_tmb_indices
+
+    indices$make_ratemat_indices = ratemat_indices(model$rates, sp)
 
     if (spec_ver_gt("0.0.1")) {
         indices$par_accum_indices <-
@@ -1092,7 +1143,10 @@ tmb_indices <- function(model) {
       indices$lag_diff = lag_diff_indices(model)
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
-      indices$opt_params = tmb_opt_params(model)
+
+      if (exists_opt_params(model)) {
+        indices$opt_params = tmb_opt_params(model)
+      }
 
       # indices into params vector and tv_mult vector
       # that identify parameters to be optimized
@@ -1100,27 +1154,6 @@ tmb_indices <- function(model) {
       tvpi = indices$opt_params$index_tv_table$opt_tv_mult_id
 
       sc = model$timevar$piece_wise$schedule
-
-      # # indices into parameter vector that identify
-      # # parameters to be optimized
-      # opi = (model$opt_params
-      #   %>% lapply(getElement, 'param_nm')
-      #   %>% unlist
-      #   %>% find_vec_indices(model$params)
-      #   %>% sort
-      # )
-      #
-      # # indices into tv_mult vector that identify
-      # # time variation multipliers to be optimized
-      # tvpi = (model
-      #    $  timevar
-      #    $  piece_wise
-      #    $  schedule
-      #    $  Value
-      #   %>% is.na
-      #   %>% which
-      #   %>% sort
-      # )
 
       # MakeADFun map argument
       params_map = factor(
@@ -1477,6 +1510,12 @@ tmb_fun <- function(model) {
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
 
+      if(isTRUE(exists_opt_params(model))) {
+        map = ad_fun_map
+      } else {
+        map = list()
+      }
+
       dd <- MakeADFun(
         data = list(
           state = c(state),
@@ -1580,7 +1619,7 @@ tmb_fun <- function(model) {
         ),
         parameters = list(params = c(unlist(params)),
                           tv_mult = init_tv_mult),
-        map = ad_fun_map,
+        map = map,
         DLL = DLL
       )
     } else {
@@ -1716,11 +1755,13 @@ initialize_piece_wise = function(model) {
     piece_wise = list(
       breaks = integer(0L),
       count_of_tv_at_breaks = integer(0L),
-      schedule = list(
-        tv_spi = integer(0L),
-        tv_val = numeric(0L),
+      schedule = data.frame(
+        Date = as.Date(numeric(0L)),
+        Symbol = character(0L),
+        Type = character(0L),
         Value = numeric(0L),
-        Type = character(0L)
+        tv_spi = integer(0L),
+        tv_val = numeric(0L)
       )
     )
   )
