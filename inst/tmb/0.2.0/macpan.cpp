@@ -833,7 +833,78 @@ public:
   };
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// Regularization
+template<class Type>
+Type Regularization(
+  const vector<Type>& params, // either params or tv_mult
+  const vector<int>& param_id,
+  const vector<int>& reg_family_id,
+  const vector<int>& trans_id,
+  const vector<int>& count_reg_params,
+  const vector<Type>& reg_params
+)
+{
+  // Shall we adjust params a bit to make sure positive value is passed to the log function?
+  // const Type EPSILON = 1.0e-8;
 
+  int start = 0;
+  Type result = 0.0;
+  Type transformed;
+
+  for (int j=0; j<param_id.size(); j++) {
+    // Transformation no matter it is flat or not
+ 
+    switch (trans_id[j]) {
+      case 1: // identity
+        transformed = params[param_id[j]-1];
+        break;
+      case 2: // log
+        transformed = log(params[param_id[j]-1]);
+        break;
+      case 3: // log_10
+        transformed = log10(params[param_id[j]-1]);
+        break;
+      case 4: // logit
+        transformed = params[param_id[j]-1];
+        transformed = log(transformed/(1.0-transformed));
+        break;
+      case 5: // cloglog
+        transformed = params[param_id[j]-1];
+        transformed = log(-log(1.0-transformed));
+        break;
+      case 6: // inverse
+        transformed = 1.0/params[param_id[j]-1];
+        break;
+      default: // unrecognized trans_id. Treat it as identity
+        transformed = params[param_id[j]-1];
+        break;
+    }
+
+    // std::cout << "params[" << param_id[j] << "] = " << transformed << std::endl;
+
+    // Based on the regularization type
+    switch (reg_family_id[j]) {
+      case 1: // Flat
+        break;
+
+      case 2: // Normal
+        result += -(dnorm(transformed, reg_params[start], reg_params[start+1], 1));
+        //std::cout << "mean= " << reg_params[start] << ", std= " << reg_params[start+1] << std::endl;
+        //std::cout << "prob= " << dnorm(transformed, reg_params[start], reg_params[start+1], 1) << std::endl;
+        break;
+
+      // case 3: // others ...
+
+      default: // error
+        break;
+    }
+
+    start += count_reg_params[j];
+  }
+
+  return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 template<class Type>
@@ -922,6 +993,24 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(obs_time_step);
   DATA_IVECTOR(obs_history_col_id);
   DATA_VECTOR(obs_value);
+
+  DATA_IVECTOR(opt_param_id);
+  DATA_IVECTOR(opt_trans_id);
+  DATA_IVECTOR(opt_count_reg_params);
+  DATA_VECTOR(opt_reg_params);
+  DATA_IVECTOR(opt_reg_family_id);
+
+  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
+  //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
+  //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
+
+  DATA_IVECTOR(opt_tv_param_id);
+  DATA_IVECTOR(opt_tv_trans_id);
+  DATA_IVECTOR(opt_tv_count_reg_params);
+  DATA_VECTOR(opt_tv_reg_params);
+  DATA_IVECTOR(opt_tv_reg_family_id);
 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
@@ -1333,6 +1422,25 @@ Type objective_function<Type>::operator() ()
   }
   */
   // std::cout << "Loss = " << sum_of_loss << std::endl;
+
+  // Regularization
+  sum_of_loss += Regularization(
+                   params,
+                   opt_param_id,
+                   opt_reg_family_id,
+                   opt_trans_id,
+                   opt_count_reg_params,
+                   opt_reg_params
+                 );
+
+  sum_of_loss += Regularization(
+                   tv_mult,
+                   opt_tv_param_id,
+                   opt_tv_reg_family_id,
+                   opt_tv_trans_id,
+                   opt_tv_count_reg_params,
+                   opt_tv_reg_params
+                 );
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
