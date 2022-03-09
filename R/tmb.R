@@ -1143,10 +1143,7 @@ tmb_indices <- function(model) {
       indices$lag_diff = lag_diff_indices(model)
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
-
-      if (exists_opt_params(model)) {
-        indices$opt_params = tmb_opt_params(model)
-      }
+      indices$opt_params = tmb_opt_params(model)
 
       # indices into params vector and tv_mult vector
       # that identify parameters to be optimized

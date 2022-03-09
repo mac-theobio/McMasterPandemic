@@ -1187,40 +1187,6 @@ parse_and_resolve_opt_form = function(x, params) {
   pf
 }
 
-tmb_opt_indices = function(model) {
-  indices = init_tmb_indices$opt_params
-
-  if (length(model$opt_params) > 0L) {
-
-    opt_tables = (model$opt_params
-     %>% lapply(tmb_opt_form, model$params)
-    )
-    indices$index_table = (opt_tables
-      %>% lapply(getElement, 'd')
-      %>% do.call(what = 'rbind')
-    )
-    indices$hyperparameters = (opt_tables
-      %>% lapply(getElement, 'hyperparams_vec')
-      %>% unlist
-    )
-  }
-  if (length(model$opt_tv_params) > 0L) {
-
-    opt_tv_tables = (model$opt_tv_params
-      %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
-    )
-    indices$index_tv_table = (opt_tv_tables
-      %>% lapply(getElement, 'd')
-      %>% do.call(what = 'rbind')
-    )
-    indices$hyperparameters_tv = (opt_tv_tables
-      %>% lapply(getElement, 'hyperparams_vec')
-      %>% unlist
-    )
-  }
-  indices
-}
-
 tmb_opt_form = function(pf, params, params_timevar = NULL) {
   if (is.null(params_timevar)) {
     if (!all(pf$param$param_nms %in% names(params))) {
@@ -1249,10 +1215,11 @@ tmb_opt_form = function(pf, params, params_timevar = NULL) {
   if (is.null(params_timevar)) {
     d$opt_param_id = find_vec_indices(d$param_nms, params)
   } else {
-    lookup_tv_vec = (params_timevar
+    lookup_tv_table = (params_timevar
       %>% mutate(v = ifelse(is.na(Value), Symbol, ''))
-      %>% getElement('v')
     )
+    lookup_tv_vec = lookup_tv_table$v
+    d$tv_breaks = filter(lookup_tv_table, is.na(Value) & (Symbol == param_nms[1]))$breaks
     d$opt_tv_mult_id =
       unlist(lapply(
         unique(param_nms),
@@ -1897,30 +1864,64 @@ tmb_observed_data = function(model) {
 
 #' @export
 tmb_opt_params = function(model) {
-  return(tmb_opt_indices(model))
+  indices = init_tmb_indices$opt_params
 
-  param_nms = lapply(model$opt_params, getElement, "param_nm")
-  params_per_formula = sapply(param_nms, length)
-  param_spi = lapply(param_nms, find_vec_indices, c(model$state, model$params))
-  trans_nms = lapply(model$opt_params, getElement, "trans_nm")
+  if (length(model$opt_params) > 0L) {
 
-  prior_families = lapply(model$opt_params, getElement, "prior_family")
-  reg_params = lapply(model$opt_params, getElement, "reg_params")
+    opt_tables = (model$opt_params
+      %>% lapply(tmb_opt_form, model$params)
+    )
+    indices$index_table = (opt_tables
+      %>% lapply(getElement, 'd')
+      %>% do.call(what = 'rbind')
+    )
+    indices$hyperparameters = (opt_tables
+      %>% lapply(getElement, 'hyperparams_vec')
+      %>% unlist
+    )
+  }
+  if (length(model$opt_tv_params) > 0L) {
 
-  prior_families = rep(unlist(prior_families), params_per_formula)
-
-  count_reg_params = (model$opt_params
-    %>% lapply(getElement, "reg_params")
-    %>% sapply(length)
-  )
-  reg_params = (model$opt_params
-    %>% lapply(getElement, "reg_params")
-    %>% unlist
-  )
-  trans_id = find_vec_indices(trans_nms, c('', valid_trans))
-  prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
-  nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
+    opt_tv_tables = (model$opt_tv_params
+      %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
+    )
+    indices$index_tv_table = (opt_tv_tables
+      %>% lapply(getElement, 'd')
+      %>% do.call(what = 'rbind')
+    )
+    indices$hyperparameters_tv = (opt_tv_tables
+      %>% lapply(getElement, 'hyperparams_vec')
+      %>% unlist
+    )
+  }
+  indices
 }
+
+# tmb_opt_params = function(model) {
+#   return(tmb_opt_indices(model))
+#
+#   param_nms = lapply(model$opt_params, getElement, "param_nm")
+#   params_per_formula = sapply(param_nms, length)
+#   param_spi = lapply(param_nms, find_vec_indices, c(model$state, model$params))
+#   trans_nms = lapply(model$opt_params, getElement, "trans_nm")
+#
+#   prior_families = lapply(model$opt_params, getElement, "prior_family")
+#   reg_params = lapply(model$opt_params, getElement, "reg_params")
+#
+#   prior_families = rep(unlist(prior_families), params_per_formula)
+#
+#   count_reg_params = (model$opt_params
+#     %>% lapply(getElement, "reg_params")
+#     %>% sapply(length)
+#   )
+#   reg_params = (model$opt_params
+#     %>% lapply(getElement, "reg_params")
+#     %>% unlist
+#   )
+#   trans_id = find_vec_indices(trans_nms, c('', valid_trans))
+#   prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
+#   nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
+# }
 
 
 # retrieving information from tmb objective function --------------
@@ -1968,17 +1969,15 @@ tmb_params_init = function(model) {
      $  tmb_indices
      $  opt_params
      $  index_table
-    #%>% arrange(opt_param_id)
-    %>% getElement('init_trans_params')
+    %>% with(setNames(init_trans_params, param_nms))
   )
   init_trans_tv_mult = (model
      $  tmb_indices
      $  opt_params
      $  index_tv_table
-    #%>% arrange(opt_tv_mult_id)
     %>% getElement('init_trans_params')
   )
-  unname(c(init_trans_params, init_trans_tv_mult))
+  c(init_trans_params, init_trans_tv_mult)
 }
 
 #' @export
