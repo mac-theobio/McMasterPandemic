@@ -7,6 +7,7 @@ transKernel <- function(par, steps = 100, do_hazard = TRUE,
                         ndt = 1) {
     if (ndt > 1) warning("ndt not fully implemented")
     par[["N"]] <- 1 ## ? redundant ?
+	 ## Run a cohort with no susceptibles to document cohort FoI
     state <- make_state(N = 1, E0 = 1, use_eigvec = FALSE)
     return(run_sim_range(par, state,
         nt = steps * ndt,
