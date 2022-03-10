@@ -87,6 +87,8 @@ mm = (make_base_model(
 
 # test gradients ---------------------------
 
+if (FALSE) {
+
 compare_grads(mm, tolerance = 1e-5)
 compare_grads(mm, tolerance = NA)
 
@@ -96,13 +98,15 @@ obj_fun = tmb_fun(mm)
 opt = do.call("optim", obj_fun)
 obj_fun$env$parList(opt$par)
 
+}
+
 # test objective function ---------------------------
 
 op = get_opt_pars(mm$params, vars = c('hosp', 'report'))
 op$params['log_E0'] = log(mm$params['E0'])
 op$params['log_beta0'] = log(mm$params['beta0'])
 op$params['log_mu'] = log(mm$params['mu'])
-obj_fun$env$data  # items available to be read in to tmb using DATA_* macros
+# obj_fun$env$data  # items available to be read in to tmb using DATA_* macros
 
 params_timevar2 = mutate(params_timevar, Value = c(0.8, 0.85, 0.9, 0.95, 0.99))
 mm2 = (mm
@@ -136,8 +140,8 @@ print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
 # to match exactly with r_obj_fun
 # NOTE: using this before implementing transformations
 #       will result in NaN
-#tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_init(mm2))
-#all.equal(r_obj_fun, tmb_obj_fun_with_trans)
+tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_init(mm2))
+all.equal(r_obj_fun, tmb_obj_fun_with_trans)
 
 
 if (FALSE) {
