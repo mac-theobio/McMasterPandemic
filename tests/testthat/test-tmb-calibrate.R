@@ -528,7 +528,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   library(tidyr)
   library(dplyr)
 
-  refit_no_flex_model = TRUE # slow if TRUE
+  refit_no_flex_model = FALSE # slow if TRUE
 
   reset_spec_version()
   tmb_mode()
@@ -552,7 +552,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   start_date_offset = as.integer(sdate - initial_date)
 
   # read and process data
-  covid_data <- ("report_data_yukon_h_and_i.csv"
+  covid_data <- ("../../sandbox/yukon/new_yukon/report_data_yukon_h_and_i.csv"
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
                  %>% filter(date >= ymd(20210803))
