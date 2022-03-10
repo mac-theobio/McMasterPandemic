@@ -24,17 +24,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 // To make gdb work, I define the following functions:
 void print(vector<double> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 void print(vector<int> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 
 void print(matrix<double> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 void print(matrix<int> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 
 void print(array<double> x) {
@@ -806,13 +806,111 @@ vector<Type> make_state(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// General Objective Function in spec 0.2.0
+template<class Type>
+class LossFunc {
+public:
+  int id;			// loss id
+  std::vector<int> spi; 	// index to sp
+
+  // This member function calculates and returns the loss
+  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
+    Type var;
+    Type lll;
+    switch (id) {
+      case 0: // Negative Binomial Negative Log Likelihood
+        var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
+        lll = -1.0 * dnbinom2(observed, simulated, var, 1);
+        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        return lll;
+
+      //case 1: // placeholder for a different loss func
+
+      default:
+        // tmb error
+        return 0.0;
+    }
+  };
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Regularization
+template<class Type>
+Type Regularization(
+  const vector<Type>& params, // either params or tv_mult
+  const vector<int>& param_id,
+  const vector<int>& reg_family_id,
+  const vector<int>& trans_id,
+  const vector<int>& count_reg_params,
+  const vector<Type>& reg_params
+)
+{
+  // Shall we adjust params a bit to make sure positive value is passed to the log function?
+  // const Type EPSILON = 1.0e-8;
+
+  int start = 0;
+  Type result = 0.0;
+  Type transformed;
+
+  for (int j=0; j<param_id.size(); j++) {
+    // Transformation no matter it is flat or not
+ 
+    switch (trans_id[j]) {
+      case 1: // identity
+        transformed = params[param_id[j]-1];
+        break;
+      case 2: // log
+        transformed = log(params[param_id[j]-1]);
+        break;
+      case 3: // log_10
+        transformed = log10(params[param_id[j]-1]);
+        break;
+      case 4: // logit
+        transformed = params[param_id[j]-1];
+        transformed = log(transformed/(1.0-transformed));
+        break;
+      case 5: // cloglog
+        transformed = params[param_id[j]-1];
+        transformed = log(-log(1.0-transformed));
+        break;
+      case 6: // inverse
+        transformed = 1.0/params[param_id[j]-1];
+        break;
+      default: // unrecognized trans_id. Treat it as identity
+        transformed = params[param_id[j]-1];
+        break;
+    }
+
+    // std::cout << "params[" << param_id[j] << "] = " << transformed << std::endl;
+
+    // Based on the regularization type
+    switch (reg_family_id[j]) {
+      case 1: // Flat
+        break;
+
+      case 2: // Normal
+        result += -(dnorm(transformed, reg_params[start], reg_params[start+1], 1));
+        //std::cout << "mean= " << reg_params[start] << ", std= " << reg_params[start+1] << std::endl;
+        //std::cout << "prob= " << dnorm(transformed, reg_params[start], reg_params[start+1], 1) << std::endl;
+        break;
+
+      // case 3: // others ...
+
+      default: // error
+        break;
+    }
+
+    start += count_reg_params[j];
+  }
+
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << " =========== inside TMB ===========" << std::endl;
-
-  // Joint negative log-likelihood (stub)
-  //Type jnll= 0;
+  //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
   DATA_VECTOR(state);
@@ -896,6 +994,24 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(obs_history_col_id);
   DATA_VECTOR(obs_value);
 
+  DATA_IVECTOR(opt_param_id);
+  DATA_IVECTOR(opt_trans_id);
+  DATA_IVECTOR(opt_count_reg_params);
+  DATA_VECTOR(opt_reg_params);
+  DATA_IVECTOR(opt_reg_family_id);
+
+  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
+  //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
+  //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
+
+  DATA_IVECTOR(opt_tv_param_id);
+  DATA_IVECTOR(opt_tv_trans_id);
+  DATA_IVECTOR(opt_tv_count_reg_params);
+  DATA_VECTOR(opt_tv_reg_params);
+  DATA_IVECTOR(opt_tv_reg_family_id);
+
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
   //conv_qmax(0) = 6;
@@ -909,6 +1025,17 @@ Type objective_function<Type>::operator() ()
   // of parameters in the final objective function"
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
+
+  // spec 0.2.0
+  // ----------
+
+  // compute the regularization functions on the
+  // transformed scale
+
+  // inverse transform parameters to be optimized
+  // loop over each parameter to be optimzed
+  // and replace the value in params with the inverse
+  // transformation in params
 
   //REPORT(tmb_status);
 
@@ -1012,7 +1139,6 @@ Type objective_function<Type>::operator() ()
 
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
-  vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
@@ -1054,41 +1180,59 @@ Type objective_function<Type>::operator() ()
   for (int k=0; k<conv_sri.size(); k++) {
     if (conv_qmax[k]<2) continue; // 2 is the mininum
 
-    std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
+    //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
 
     Type c_prop = params(conv_c_prop_idx[k]-1);
     Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
     Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
 
-    std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
-    std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
+    //std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
+    //std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
 
     Type shape = 1.0/(c_delay_cv*c_delay_cv);
     Type scale = c_delay_mean/shape;
 
     vector<Type> delta(conv_qmax[k]-1);
 
-    std::cout << "shape=" << shape << std::endl;
-    std::cout << "scale=" << scale << std::endl;
+    //std::cout << "shape=" << shape << std::endl;
+    //std::cout << "scale=" << scale << std::endl;
 
     Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
     for (int q=1; q<conv_qmax[k]; q++) {
-      std::cout << pre_gamma << std::endl;
+      //std::cout << pre_gamma << std::endl;
       Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
       delta(q-1) = cur_gamma - pre_gamma;
       pre_gamma = cur_gamma;
     }
-    std::cout << "delta = " << delta << std::endl;
-    std::cout << "delta sum = " << delta.sum() << std::endl;
-    std::cout << "c_prop = " << c_prop << std::endl;
+    //std::cout << "delta = " << delta << std::endl;
+    //std::cout << "delta sum = " << delta.sum() << std::endl;
+    //std::cout << "c_prop = " << c_prop << std::endl;
     kappa[k] = c_prop*delta/delta.sum();
-    std::cout << "kappa = " << kappa[k] << std::endl;
+    //std::cout << "kappa = " << kappa[k] << std::endl;
+  }
+
+  // Preparation for the General Objective Function in spec 0.2.0
+  // Build a map of var_id to loss func
+  int start = 0;
+  std::map<int, LossFunc<Type> > varid2lossfunc;
+  for (int i=0; i<obs_var_id.size(); i++) {
+    LossFunc<Type> lf;
+    lf.id = obs_loss_id[i] - 1;
+
+    for (int j=0; j<obs_loss_param_count[i]; j++)
+      lf.spi.push_back(obs_spi_loss_param[start+j]-1);
+    start += obs_loss_param_count[i];
+
+    varid2lossfunc[obs_var_id[i]-1] = lf;
   }
 
   /////////////////////////////////////////////////////////////////////////////
   // Simulation loop through "numIterations" time steps
   int nextBreak = 0;
-  int start = 0;
+  start = 0;
+  Type sum_of_loss = 0.0;
+  int obs_start = 0;
+
   for (int i=0; i<numIterations; i++) {
 
     //std::cout << "sp:" << std::endl;
@@ -1237,7 +1381,7 @@ Type objective_function<Type>::operator() ()
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
       vector<Type> kernel = kappa[k];
-      std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
+      //std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
       Type conv = 0.0;
       if (i>conv_qmax[k]-4) { // i+2>=qmax-1
         //std::cout << "========= i = " << i << std::endl;
@@ -1250,7 +1394,53 @@ Type objective_function<Type>::operator() ()
         simulation_history(i+1, index_to_item7+k) = conv;
       }
     }
+
+    // Calculate the General Objective Function
+    for (int k=obs_start; k<obs_time_step.size(); k++) {
+      if (i+1==obs_time_step[k]-1) {
+        //std::cout << "k= " << k << " [" << obs_time_step[k] << ", " << obs_history_col_id[k] << "]" << std::endl;
+        Type x = obs_value[k];
+        Type mu = simulation_history(obs_time_step[k]-1, obs_history_col_id[k]-1);
+        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp);
+      }
+      else {
+        obs_start = k;
+        break;
+      }
+    }
   }
+
+  // After simulation
+  // Calculate the General Objective Function
+  /*
+  Type sum_of_loss = 0.0;
+  for (int i=0; i<obs_value.size(); i++) {
+    Type x = obs_value[i];
+    Type mu = simulation_history(obs_time_step[i]-1, obs_history_col_id[i]-1);
+    sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu, sp);
+    //std::cout << "Loss = " << sum_of_loss << std::endl;
+  }
+  */
+  // std::cout << "Loss = " << sum_of_loss << std::endl;
+
+  // Regularization
+  sum_of_loss += Regularization(
+                   params,
+                   opt_param_id,
+                   opt_reg_family_id,
+                   opt_trans_id,
+                   opt_count_reg_params,
+                   opt_reg_params
+                 );
+
+  sum_of_loss += Regularization(
+                   tv_mult,
+                   opt_tv_param_id,
+                   opt_tv_reg_family_id,
+                   opt_tv_trans_id,
+                   opt_tv_count_reg_params,
+                   opt_tv_reg_params
+                 );
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
@@ -1260,5 +1450,5 @@ Type objective_function<Type>::operator() ()
   REPORT(concatenated_ratemat_nonzeros);
   REPORT(simulation_history);
 
-  return state.sum();
+  return sum_of_loss;
 }
