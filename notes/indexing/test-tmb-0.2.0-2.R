@@ -131,10 +131,10 @@ r_obj_fun = mle_fun(
 
 # use this test _before_ implementing transformations
 # to get close to r_obj_fun
-tmb_obj_fun_without_trans = obj_fun2$fn()
-print(r_obj_fun)
-print(tmb_obj_fun_without_trans)
-print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
+#tmb_obj_fun_without_trans = obj_fun2$fn()
+#print(r_obj_fun)
+#print(tmb_obj_fun_without_trans)
+#print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
 
 # use this test _after_ implementing transformations
 # to match exactly with r_obj_fun
