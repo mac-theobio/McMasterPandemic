@@ -820,6 +820,9 @@ public:
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
+        if (var<=0.0)
+          Rf_error("std in dnbinom2 is negative!");
+
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
         //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
@@ -840,7 +843,6 @@ Type Regularization(
   const vector<Type>& params, // either params or tv_mult
   const vector<int>& param_id,
   const vector<int>& reg_family_id,
-  const vector<int>& trans_id,
   const vector<int>& count_reg_params,
   const vector<Type>& reg_params
 )
@@ -850,53 +852,21 @@ Type Regularization(
 
   int start = 0;
   Type result = 0.0;
-  Type transformed;
 
   for (int j=0; j<param_id.size(); j++) {
-    // Transformation no matter it is flat or not
- 
-    switch (trans_id[j]) {
-      case 1: // identity
-        transformed = params[param_id[j]-1];
-        break;
-      case 2: // log
-        transformed = log(params[param_id[j]-1]);
-        break;
-      case 3: // log_10
-        transformed = log10(params[param_id[j]-1]);
-        break;
-      case 4: // logit
-        transformed = params[param_id[j]-1];
-        transformed = log(transformed/(1.0-transformed));
-        break;
-      case 5: // cloglog
-        transformed = params[param_id[j]-1];
-        transformed = log(-log(1.0-transformed));
-        break;
-      case 6: // inverse
-        transformed = 1.0/params[param_id[j]-1];
-        break;
-      default: // unrecognized trans_id. Treat it as identity
-        transformed = params[param_id[j]-1];
-        break;
-    }
-
-    // std::cout << "params[" << param_id[j] << "] = " << transformed << std::endl;
-
     // Based on the regularization type
     switch (reg_family_id[j]) {
       case 1: // Flat
         break;
 
       case 2: // Normal
-        result += -(dnorm(transformed, reg_params[start], reg_params[start+1], 1));
-        //std::cout << "mean= " << reg_params[start] << ", std= " << reg_params[start+1] << std::endl;
-        //std::cout << "prob= " << dnorm(transformed, reg_params[start], reg_params[start+1], 1) << std::endl;
+        result += -(dnorm(params[param_id[j]-1], reg_params[start], reg_params[start+1], 1));
         break;
 
       // case 3: // others ...
 
       default: // error
+        Rf_error("Unrecognized regularization type");
         break;
     }
 
@@ -904,6 +874,52 @@ Type Regularization(
   }
 
   return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Inverse transform
+template<class Type>
+void InverseTransformParams(
+  vector<Type>& params, // either params or tv_mult
+  const vector<int>& param_id,
+  const vector<int>& trans_id
+)
+{
+  std::cout << "InverseTransformParams ..." << std::endl;
+  std::cout << param_id << std::endl;
+  std::cout << trans_id << std::endl;
+
+  for (int j=0; j<param_id.size(); j++) {
+    // Transformation no matter it is flat or not
+
+    switch (trans_id[j]) {
+      case 1: // identity
+        //transformed = params[param_id[j]-1];
+        break;
+      case 2: // inverse log
+        params[param_id[j]-1] = exp(params[param_id[j]-1]);
+        std::cout << params[param_id[j]-1] << std::endl;
+        break;
+      case 3: // inverse log_10
+        params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
+        break;
+      case 4: // inverse logit
+        params[param_id[j]-1] = 1.0/(1.0+exp(-params[param_id[j]-1]));
+        break;
+      case 5: // inverse cloglog
+        params[param_id[j]-1] = 1.0 - exp(-exp(params[param_id[j]-1]));
+        break;
+      case 6: // inverse of inverse
+        if (params[param_id[j]-1]<1.0e-8 || params[param_id[j]-1]>-1.0e-8) {
+          Rf_error("zero in inverse trans");
+        }
+        params[param_id[j]-1] = 1.0/params[param_id[j]-1];
+        break;
+      default: // unrecognized trans_id. Treat it as identity
+        Rf_error("Unrecognized parameter transformation type");
+        break;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1000,8 +1016,8 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_reg_params);
   DATA_IVECTOR(opt_reg_family_id);
 
-  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
-  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
   //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
   //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
   //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
@@ -1012,6 +1028,9 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_tv_reg_params);
   DATA_IVECTOR(opt_tv_reg_family_id);
 
+  std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
+  std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
+ 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
   //conv_qmax(0) = 6;
@@ -1026,6 +1045,35 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
+  // Regularization
+  Type regularization = Regularization(
+                          params,
+                          opt_param_id,
+                          opt_reg_family_id,
+                          opt_count_reg_params,
+                          opt_reg_params
+                        );
+
+  regularization += Regularization(
+                      tv_mult,
+                      opt_tv_param_id,
+                      opt_tv_reg_family_id,
+                      opt_tv_count_reg_params,
+                      opt_tv_reg_params
+                    );
+/*
+  InverseTransformParams(
+    params,
+    opt_param_id,
+    opt_trans_id
+  );
+
+  InverseTransformParams(
+    tv_mult,
+    opt_tv_param_id,
+    opt_tv_trans_id
+  );
+*/
   // spec 0.2.0
   // ----------
 
@@ -1410,37 +1458,10 @@ Type objective_function<Type>::operator() ()
     }
   }
 
-  // After simulation
-  // Calculate the General Objective Function
-  /*
-  Type sum_of_loss = 0.0;
-  for (int i=0; i<obs_value.size(); i++) {
-    Type x = obs_value[i];
-    Type mu = simulation_history(obs_time_step[i]-1, obs_history_col_id[i]-1);
-    sum_of_loss += varid2lossfunc[obs_history_col_id[i]-1].run(x, mu, sp);
-    //std::cout << "Loss = " << sum_of_loss << std::endl;
-  }
-  */
-  // std::cout << "Loss = " << sum_of_loss << std::endl;
+  //std::cout << "Loss = " << sum_of_loss << std::endl;
 
   // Regularization
-  sum_of_loss += Regularization(
-                   params,
-                   opt_param_id,
-                   opt_reg_family_id,
-                   opt_trans_id,
-                   opt_count_reg_params,
-                   opt_reg_params
-                 );
-
-  sum_of_loss += Regularization(
-                   tv_mult,
-                   opt_tv_param_id,
-                   opt_tv_reg_family_id,
-                   opt_tv_trans_id,
-                   opt_tv_count_reg_params,
-                   opt_tv_reg_params
-                 );
+  sum_of_loss += regularization;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
