@@ -136,5 +136,5 @@ print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
 # to match exactly with r_obj_fun
 # NOTE: using this before implementing transformations
 #       will result in NaN
-#tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_init(mm2))
+#tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_trans(mm2))
 #all.equal(r_obj_fun, tmb_obj_fun_with_trans)

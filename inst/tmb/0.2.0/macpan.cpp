@@ -820,11 +820,14 @@ public:
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
+        if (simulated<=0.0)
+          Rf_error("negative simulation value being compared with data");
+
         if (var<=0.0)
-          Rf_error("std in dnbinom2 is negative!");
+          Rf_error("negative binomial dispersion is negative");
 
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func
@@ -1030,7 +1033,7 @@ Type objective_function<Type>::operator() ()
 
   std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
   std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
- 
+
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
   //conv_qmax(0) = 6;
@@ -1061,19 +1064,21 @@ Type objective_function<Type>::operator() ()
                       opt_tv_count_reg_params,
                       opt_tv_reg_params
                     );
-/*
+
   InverseTransformParams(
     params,
     opt_param_id,
     opt_trans_id
   );
+  std::cout << "params: " << params << std::endl;
 
   InverseTransformParams(
     tv_mult,
     opt_tv_param_id,
     opt_tv_trans_id
   );
-*/
+  std::cout << "tv_mult: " << tv_mult << std::endl;
+
   // spec 0.2.0
   // ----------
 

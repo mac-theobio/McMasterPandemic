@@ -1962,22 +1962,53 @@ tmb_params = function(model) {
   full_param_vec
 }
 
+#' Parameter Vectors Transformed for TMB
+#'
+#' @params model flexmodel
+#' @param vec_type type of vector to return:
+#' (1) tmb_fun_arg = same length as the argument for TMB objective function,
+#' (2) params = same length as the params element in \code{model}
+#' (3) tv_mult = same length as the \code{model$timevar$piece_wise$schedule$init_tv_mult}
+#'
 #' @export
-tmb_params_init = function(model) {
+tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mult')) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = 'parameter transformations'
+  )
+  vec_type = match.arg(vec_type)
   model = update_tmb_indices(model)
-  init_trans_params = (model
-     $  tmb_indices
-     $  opt_params
-     $  index_table
-    %>% with(setNames(init_trans_params, param_nms))
-  )
-  init_trans_tv_mult = (model
-     $  tmb_indices
-     $  opt_params
-     $  index_tv_table
-    %>% getElement('init_trans_params')
-  )
-  c(init_trans_params, init_trans_tv_mult)
+  if (vec_type != 'tmb_fun_arg') {
+    opt_params = model$tmb_indices$opt_params
+    table = switch(vec_type
+      , params = opt_params$index_table
+      , tv_mult = opt_params$index_tv_table
+    )
+    id = switch(vec_type
+      , params = table$opt_param_id
+      , tv_mult = table$opt_tv_mult_id
+    )
+    vec = switch(vec_type
+      , params = model$params
+      , tv_mult = model$timevar$piece_wise$schedule$init_tv_mult
+    )
+    vec[id] = table$init_trans_params
+    return(vec)
+  } else {
+    init_trans_params = (model
+       $  tmb_indices
+       $  opt_params
+       $  index_table
+      %>% with(setNames(init_trans_params, param_nms))
+    )
+    init_trans_tv_mult = (model
+       $  tmb_indices
+       $  opt_params
+       $  index_tv_table
+      %>% getElement('init_trans_params')
+    )
+    return(c(init_trans_params, init_trans_tv_mult))
+  }
 }
 
 #' @export

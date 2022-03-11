@@ -1504,14 +1504,23 @@ tmb_fun <- function(model) {
       unpack(sum_indices)
       unpack(opt_params)
 
+      # update parameter vectors -----------------
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
 
       if(isTRUE(exists_opt_params(model))) {
+
+        # tell tmb what parameters to put in the objective function
         map = ad_fun_map
+
+        # pass transformed parameters to the objective function
+        params = tmb_params_trans(model, vec_type = 'params')
+        init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+
       } else {
         map = list()
       }
+      # -------------------------------------------
 
       dd <- MakeADFun(
         data = list(

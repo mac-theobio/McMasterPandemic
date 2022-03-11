@@ -72,22 +72,20 @@ mm = (make_base_model(
   )
   %>% update_opt_params(
     log_E0 ~ log_flat(log(5)),
-    log_beta0 ~ log_normal(log(1), 1),
-    log_mu ~ logit_normal(-0.04499737, 1),
+    log_beta0 ~ log_flat(log(1), 1),
+    logit_mu ~ logit_flat(-0.04499737, 1),
     log_nb_disp_hosp ~ log_flat(0),
     log_nb_disp_report ~ log_flat(0)
   )
   %>% update_opt_tv_params(
     tv_type = 'rel_prev',
-    log_beta0 ~ log_flat(1),
-    log_mu ~ log_flat(1)
+    log_beta0 ~ log_flat(0),
+    log_mu ~ log_flat(0)
   )
   %>% update_tmb_indices
 )
 
 # test gradients ---------------------------
-
-if (FALSE) {
 
 compare_grads(mm, tolerance = 1e-5)
 compare_grads(mm, tolerance = NA)
@@ -98,15 +96,8 @@ obj_fun = tmb_fun(mm)
 opt = do.call("optim", obj_fun)
 obj_fun$env$parList(opt$par)
 
-}
 
 # test objective function ---------------------------
-
-op = get_opt_pars(mm$params, vars = c('hosp', 'report'))
-op$params['log_E0'] = log(mm$params['E0'])
-op$params['log_beta0'] = log(mm$params['beta0'])
-op$params['log_mu'] = log(mm$params['mu'])
-# obj_fun$env$data  # items available to be read in to tmb using DATA_* macros
 
 params_timevar2 = mutate(params_timevar, Value = c(0.8, 0.85, 0.9, 0.95, 0.99))
 mm2 = (mm
@@ -115,18 +106,29 @@ mm2 = (mm
   %>% update_tmb_indices
 )
 obj_fun2 = tmb_fun(mm2)
+opt2 = do.call("optim", obj_fun2)
+opt2
+
+op = get_opt_pars(mm$params, vars = c('hosp', 'report'))
+op$params['log_E0'] = opt2$par[1]
+op$params['log_beta0'] = opt2$par[2]
+op$params['logit_mu'] = opt2$par[3]
+op$params = op$params[names(op$params) != 'log_mu']
+op$log_nb_disp['hosp'] = opt2$par[5]
+op$log_nb_disp['report'] = opt2$par[4]
+
 r_obj_fun = mle_fun(
   unlist(op),
-  mm$observed$data,
+  mm2$observed$data,
   start_date = mm2$start_date,
   end_date = mm2$end_date,
   opt_pars = op,
   base_params = mm2$params,
-  time_args = list(params_timevar = params_timevar2),
-  priors = list(
-    ~ dnorm(params[2], 0, 1),
-    ~ dnorm(params[3], -0.04499737, 1)
-  )
+  time_args = list(params_timevar = params_timevar2)
+  #priors = list(
+  #  ~ dnorm(params[2],  0,          1),
+  #  ~ dnorm(params[3], -0.04499737, 1)
+  #)
 )
 
 # use this test _before_ implementing transformations
@@ -140,7 +142,7 @@ r_obj_fun = mle_fun(
 # to match exactly with r_obj_fun
 # NOTE: using this before implementing transformations
 #       will result in NaN
-tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_init(mm2))
+tmb_obj_fun_with_trans = opt2$value
 all.equal(r_obj_fun, tmb_obj_fun_with_trans)
 
 
@@ -156,9 +158,9 @@ if (FALSE) {
      %>% update_tmb_indices
   )
   obj_fun3 = tmb_fun(mm3)
-  opt_with_hess = nlminb(tmb_params_init(mm3), obj_fun3$fn, obj_fun3$gr, obj_fun3$he)
-  opt_wout_hess = optim(tmb_params_init(mm3), obj_fun3$fn, obj_fun3$gr)
-  tmb_params_init(mm3)
+  opt_with_hess = nlminb(tmb_params_trans(mm3), obj_fun3$fn, obj_fun3$gr, obj_fun3$he)
+  opt_wout_hess = optim(tmb_params_trans(mm3), obj_fun3$fn, obj_fun3$gr)
+  tmb_params_trans(mm3)
   obj_fun3$gr()
 
   opt_with_hess$par
@@ -168,7 +170,7 @@ if (FALSE) {
 
   op3 = op
   op3$params = op3$params[2:3]
-  op3$params[] = tmb_params_init(mm3)[1:2]
+  op3$params[] = tmb_params_trans(mm3)[1:2]
   names(op3) = c('params', 'nb_disp')
   names(op3$params) = c('beta0', 'mu')
   op3$nb_disp[] = 1
