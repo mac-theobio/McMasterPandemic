@@ -95,7 +95,7 @@ make_base_model <- function(...) {
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_wane = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -238,7 +238,15 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       dose_to   %_% 'vaxdose2',
       ~ (1 - vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect1_N))
   )
-  if(spec_ver_lt('0.1.1')) {
+  if (do_wane) {
+    model = rep_rate(
+      model,
+      "R" %_% vax_cat,
+      "S" %_% vax_cat,
+      ~ (wane_rate)
+    )
+  }
+  if (spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
     model = add_parallel_accumulators(model, c('V' %_% vax_cat, 'X' %_% vax_cat))
   } else {
