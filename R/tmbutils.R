@@ -1112,7 +1112,7 @@ initial_ratemat = function(model, sim_params = NULL) {
   tmb_fun(model)$simulate(sim_params)$ratemat
 }
 
-# benchmarking and comparison in tests
+# benchmarking and comparison in tests --------------------
 
 #' Compare TMB-based and classic MacPan Simulations
 #'
@@ -1222,6 +1222,8 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
   TRUE
 }
 
+# spec version and global option control ----------------------
+
 ##' Set and Reset Spec Version
 ##'
 ##' Set the spec version and optionally compile a
@@ -1314,6 +1316,17 @@ r_mode = function() {
 r_tmb_comparable = function() {
   r_mode()
   tmb_mode()
+}
+
+##' Get McMasterPandemic Options
+##'
+##' @export
+get_macpan_options = function() {
+  (options()
+   %>% names
+   %>% grep(pattern = "^MP_", value = TRUE)
+   %>% sapply(getOption, simplify = FALSE)
+  )
 }
 
 
