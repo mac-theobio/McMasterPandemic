@@ -91,9 +91,29 @@
 
 
 
+## Data Structure Model
 
+Hypothesis: the model definitions can be thought of as a series of tables that are related by various unique keys, much like a database.
 
+* Compartmental Model
+  * States
+    * state -- primary key
+    * structural layers or dimensions (e.g. vaccination category)
+  * Parameters
+    * parameter -- primary key
+    * structural layers or dimensions (e.g. vaccination category)
+  * Summaries
+    * name -- primary key
+    * type -- sum, intermediate, lag-n difference, convolution
+    * expression -- expression defining the summary in terms of states, parameters, and other summaries
+  * Rates
+    * from -- foreign key to match with State; primary key together with To
+    * to -- foreign key to match with State; primary key together with From
+    * expression -- expression defining the rate in terms of states, parameters, and/or summaries
+    * outflow -- true/false whether these rates induce outflows as well as inflows
+* 
 
+Do we split up different types of parameters?
 
 ## Sub-Model Compatibility
 

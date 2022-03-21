@@ -932,10 +932,10 @@ Type objective_function<Type>::operator() ()
   //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
-  DATA_VECTOR(state);
-  DATA_IVECTOR(from);
-  DATA_IVECTOR(to);
-  DATA_IVECTOR(count);
+  DATA_VECTOR(state); // compartment -> states
+  DATA_IVECTOR(from); // compartment -> rates
+  DATA_IVECTOR(to); // compartment -> rates
+  DATA_IVECTOR(count); // compartment -> rates
   DATA_IVECTOR(spi);
   DATA_IVECTOR(modifier);
   DATA_IVECTOR(updateidx);
@@ -946,6 +946,7 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
 
+  // compartment -> rates
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
   DATA_IVECTOR(outflow_rows);
@@ -1045,7 +1046,7 @@ Type objective_function<Type>::operator() ()
   // objective function on the R side. From ?MakeADFun:
   // "The order of the PARAMETER_ macros defines the order
   // of parameters in the final objective function"
-  PARAMETER_VECTOR(params);
+  PARAMETER_VECTOR(params); // compartment -> parameters
   PARAMETER_VECTOR(tv_mult);
 
   // Regularization

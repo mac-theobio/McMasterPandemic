@@ -102,8 +102,22 @@ init_tmb_indices = list(
 
 is_len1_char = function(x) (length(x) == 1L) & is.character(x)
 
+assert_len1_char = function(x) {
+  nm = deparse(substitute(x))
+  if(!is_len1_char(x)) {
+    stop(nm, ' must be a length-1 character')
+  }
+}
+
 is_len1_int = function(x) {
   (length(x) == 1L) & isTRUE(all.equal(x, as.integer(x)))
+}
+
+assert_len1_int = function(x) {
+  nm = deparse(substitute(x))
+  if(!is_len1_int(x)) {
+    stop(nm, ' must be a length-1 integer')
+  }
 }
 
 #' @export

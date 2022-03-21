@@ -71,9 +71,8 @@ mm = (make_base_model(
     data = covid_data
   )
   %>% update_opt_params(
-    log_E0 ~ log_flat(log(5)),
-    log_beta0 ~ log_flat(log(1), 1),
-    logit_mu ~ logit_flat(-0.04499737, 1),
+    log_beta0 ~ log_flat(log(1)),
+    logit_mu ~ logit_flat(-0.04499737),
     log_nb_disp_hosp ~ log_flat(0),
     log_nb_disp_report ~ log_flat(0)
   )
@@ -85,6 +84,58 @@ mm = (make_base_model(
   %>% update_tmb_indices
 )
 
+# compare objective function values --------------------------
+
+op = list(
+  params = c(log_beta0 = 0, logit_mu = -0.04499737),
+  time_params = c(1, 1, 1, 1),
+  log_nb_disp = c(hosp = 0, report = 0)
+)
+
+mle_fun(
+  unlist(op),
+  mm$observed$data,
+  start_date = mm$start_date,
+  end_date = mm$end_date,
+  opt_pars = op,
+  base_params = mm$params,
+  time_args = list(params_timevar = params_timevar)
+  #priors = list(
+  #  ~ dnorm(params[2],  0,          1),
+  #  ~ dnorm(params[3], -0.04499737, 1)
+  #)
+)
+obj_fun = tmb_fun(mm)
+obj_fun$fn()
+opt = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he)
+
+MASS::mvrnorm(10, opt$par, sdreport(obj_fun, opt$par)$cov.fixed)
+
+
+obj_fun$fn(opt$par)
+obj_fun$gr(opt$par)
+obj_fun$he(opt$par)
+obj_fun$env$
+opt_par = obj_fun$env$parList(opt$par)
+op$params[c('log_beta0', 'logit_mu')] = opt_par$params[c("beta0", "mu")]
+op$time_params[] = opt_par$tv_mult[2:5]
+op$log_nb_disp[c('hosp', 'report')] = opt_par$params[c("nb_disp_hosp", "nb_disp_report")]
+
+mle_fun(
+  unlist(op),
+  mm$observed$data,
+  start_date = mm$start_date,
+  end_date = mm$end_date,
+  opt_pars = op,
+  base_params = mm$params,
+  time_args = list(params_timevar = params_timevar)
+  #priors = list(
+  #  ~ dnorm(params[2],  0,          1),
+  #  ~ dnorm(params[3], -0.04499737, 1)
+  #)
+)
+
+
 # test gradients ---------------------------
 
 compare_grads(mm, tolerance = 1e-5)
@@ -94,7 +145,10 @@ compare_grads(mm, tolerance = NA)
 
 obj_fun = tmb_fun(mm)
 opt = do.call("optim", obj_fun)
+obj_fun$fn(opt$par)
 obj_fun$env$parList(opt$par)
+obj_fun$par
+obj_fun$fn(opt$par)
 
 
 # test objective function ---------------------------

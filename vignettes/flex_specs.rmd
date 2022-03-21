@@ -981,7 +981,7 @@ parameters.
     need-to-update elements proposed in spec 0.0.2 is removed in this
     proposal because the newly introduced *upateidx* provides the
     information needed.
--   *upateidx* (**added**): a vector of indices into vectors *from*,
+-   *updateidx* (**added**): a vector of indices into vectors *from*,
     *to*, and *count* of those elements in the rate matrix that need to
     be updated. It includes the indices of the elements that depend on
     either the state vector (0.0.2), or time-varying parameters (0.0.3
