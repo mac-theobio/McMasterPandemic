@@ -95,7 +95,7 @@ make_base_model <- function(...) {
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE, do_wane = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -165,7 +165,7 @@ make_vaccination_model = function(..., do_variant = FALSE, do_wane = FALSE) {
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
 
 
-  if (!do_variant | getOption("MP_tmb_models_match_r")) {
+  if (!do_variant_mu) { # | getOption("MP_tmb_models_match_r")) {
     mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
   } else {
     ## variant-based mild-illness probability adjustment in vaccinated individuals
