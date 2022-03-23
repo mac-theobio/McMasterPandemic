@@ -320,7 +320,7 @@ void update_ratemat(
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
-    if (ratemat->coeff(row,col)<0.0) 
+    if (ratemat->coeff(row,col)<0.0)
       Rf_warning("Negative rate matrix element.");
   }
 }
@@ -832,7 +832,7 @@ public:
           Rf_error("negative binomial dispersion is negative");
 
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func
@@ -893,9 +893,9 @@ void InverseTransformParams(
   const vector<int>& trans_id
 )
 {
-  std::cout << "InverseTransformParams ..." << std::endl;
-  std::cout << param_id << std::endl;
-  std::cout << trans_id << std::endl;
+  //std::cout << "InverseTransformParams ..." << std::endl;
+  //std::cout << param_id << std::endl;
+  //std::cout << trans_id << std::endl;
 
   for (int j=0; j<param_id.size(); j++) {
     // Transformation no matter it is flat or not
@@ -906,7 +906,7 @@ void InverseTransformParams(
         break;
       case 2: // inverse log
         params[param_id[j]-1] = exp(params[param_id[j]-1]);
-        std::cout << params[param_id[j]-1] << std::endl;
+        //std::cout << params[param_id[j]-1] << std::endl;
         break;
       case 3: // inverse log_10
         params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
@@ -1024,8 +1024,8 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_reg_params);
   DATA_IVECTOR(opt_reg_family_id);
 
-  std::cout << "opt_param_id = " << opt_param_id << std::endl;
-  std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
   //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
   //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
   //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
@@ -1036,8 +1036,8 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_tv_reg_params);
   DATA_IVECTOR(opt_tv_reg_family_id);
 
-  std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
-  std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
+  //std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
+  //std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
@@ -1075,14 +1075,14 @@ Type objective_function<Type>::operator() ()
     opt_param_id,
     opt_trans_id
   );
-  std::cout << "params: " << params << std::endl;
+  //std::cout << "params: " << params << std::endl;
 
   InverseTransformParams(
     tv_mult,
     opt_tv_param_id,
     opt_tv_trans_id
   );
-  std::cout << "tv_mult: " << tv_mult << std::endl;
+  //std::cout << "tv_mult: " << tv_mult << std::endl;
 
   // spec 0.2.0
   // ----------

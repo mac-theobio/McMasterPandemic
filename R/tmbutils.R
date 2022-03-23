@@ -100,7 +100,170 @@ init_tmb_indices = list(
 
 # test functions ------------------------------------------------
 
-is_len1_char = function(x) (length(x) == 1L) & is.character(x)
+check_len_bounds = function(min_length, max_length) {
+  stopifnot(is.integer(min_length) & (is.integer(max_length) | is.infinite(max_length)) & min_length >= 0L & max_length >= min_length)
+}
+
+check_len = function(x) {
+  len = length(x$default)
+  check_len_bounds(x$min_len, len)
+  check_len_bounds(len, x$max_len)
+}
+
+bundle_def = function(..., class) {
+  structure(nlist(...), class = class)
+}
+
+def_vectors = c('logical', 'integer', 'double', 'character', 'list')
+def_numerics = c('integer', 'double')
+def_named_containers = c('nlist', 'dataframe')
+
+make_def_function = function(def_name) {
+  if (def_name %in% def_named_containers) {
+    f = function(...) {
+      l = list(...)
+      stopifnot(!is.null(names(l)))
+      stopifnot(!any(duplicated(names(l))))
+      structure(l, class = 'def' %_% def_name)
+    }
+    return(f)
+  }
+  f = function() {
+    l = as.list(environment())
+    if (!l$optional & l$extra) {
+      stop('extra components must be optional')
+    }
+    if (isFALSE(l$allow_dups)) {
+      if (any(duplicated(l$default))) {
+        stop('must either allow dups or supply an appropriate default if minimum length is greater than one')
+      }
+    }
+    structure(l, class = 'def' %_% def_name)
+  }
+  if (def_name %in% def_vectors) {
+    formals(f) = c(formals(f), alist(min_len = 0L, max_len = 1L, default = vector(def_name, min_len)))
+    if (def_name != 'logical') {
+      formals(f) = c(formals(f), alist(allow_dups = TRUE))
+    }
+  }
+  if (def_name %in% def_numerics) {
+    formals(f) = c(formals(f), alist(min_val = -Inf, max_val = Inf))
+  }
+  if (def_name == 'character') {
+    formals(f) = c(formals(f), alist(pattern = '^.*$'))
+  } else if (def_name == 'formula') {
+    formals(f) = c(formals(f), alist(n_sides = 'any')) # 'one', 'two'
+  } else if (def_name == 'list') {
+    formals(f) = c(formals(f), alist(component_def = make_def_function('character')()))
+  }
+  formals(f) = c(formals(f), alist(optional = FALSE, extra = FALSE))
+  f
+}
+
+def = sapply(c(
+  'logical',
+  'integer',
+  'double',
+  'character',
+  'formula',
+  'struc',
+  'list',
+  'nlist',
+  'dataframe'
+), make_def_function, simplify = FALSE)
+
+def$model = function(name, model_spec_version) {
+  def$nlist(
+    name = def$character(min_len = 1L, max_len = 1L, default = name),
+    model_spec_version = def$character(
+      min_len = 1L, max_len = 1L,
+      pattern = '[0-9]+\\.[0-9]+\\.[0-9]+',
+      default = model_spec_version
+    ),
+    states = def$dataframe(
+      state = def$character(allow_dups = FALSE),
+      description = def$character(allow_dups = FALSE, optional = TRUE),
+      layers = def$character(allow_dups = TRUE, option = TRUE, extra = TRUE)
+    ),
+    parameters = def$dataframe(
+      parameter = def$character(allow_dups = FALSE),
+      description = def$character(allow_dups = FALSE, optional = TRUE),
+      layers = def$character(option = TRUE, extra = TRUE)
+    ),
+    rates = def$dataframe(
+      from = def$character(),
+      to = def$character(),
+      expression = def$character(),
+      outflow = def$logical()
+    ),
+    summaries = def$dataframe(
+      summary = def$character(allow_dups = FALSE),
+      type = def$character(pattern = "^(sum|intermediate|lag_n_diff|conv)$"),
+      expression = def$character()
+    ),
+    structure = def$list(
+      allow_dups = FALSE,
+      component_def = def$struc()
+    )
+  )
+}
+
+check_def = function(x, ...) {
+  UseMethod("check_def")
+}
+
+check_def.def_logical = function(x, ...) {
+  check_len(x)
+}
+
+init_def = function(x, ...) {
+  if (isTRUE(x$extra)) return(NULL)
+  UseMethod("init_def")
+}
+
+init_def.def_logical = function(x, ...) {
+  x$default
+}
+
+init_def.def_integer = function(x, ...) {
+  x$default
+}
+
+init_def.def_double = function(x, ...) {
+  x$default
+}
+
+init_def.def_character = function(x, ...) {
+  x$default
+}
+
+init_def.def_formula = function(x, ...) {
+  if (x$n_sides == 'two') return(. ~ 1)
+  ~ 1
+}
+
+init_def.def_struc = function(x, ...) {
+  struc('1')
+}
+
+init_def.def_list = function(x, ...) {
+  if (x$min_len == 0L) return(list())
+  rep(list(init_def(x$component_def)), x$min_len)
+}
+
+init_def.def_nlist = function(x, ...) {
+  sapply(x, init_def, simplify = FALSE)
+}
+
+init_def.def_dataframe = function(x, ...) {
+  l = sapply(x, init_def, simplify = FALSE)
+  l[sapply(l, is.null)] = NULL
+  as.data.frame(l)
+}
+
+is_len1_char = function(x) {
+  isTRUE((length(x) == 1L) & is.character(x))
+}
 
 assert_len1_char = function(x) {
   nm = deparse(substitute(x))
@@ -110,6 +273,8 @@ assert_len1_char = function(x) {
 }
 
 is_len1_int = function(x) {
+  # not good enough to just check for integer, because
+  # a double may effectively be an integer
   (length(x) == 1L) & isTRUE(all.equal(x, as.integer(x)))
 }
 
@@ -2240,7 +2405,7 @@ simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
     cond_nms = c("Date", cond_nms)
     cond_map = c(Date = "Date", cond_map)
   }
-  sims = simulation_history(model, add_dates = TRUE)[cond_nms]
+  sims = simulation_history(model, add_dates = TRUE, sim_params = sim_params)[cond_nms]
   names(sims) = c(cond_map)
   sims
 }
@@ -2284,8 +2449,41 @@ simulate.flexmodel = function(
 #' @export
 simulation_fitted = function(model) {
   obsvars = unique(model$observed$data$var)
-  simulation_condense(model)[obsvars]
+  simulation_condensed(model)[obsvars]
 }
+
+#' @export
+optim_flexmodel = function(model, ...) {
+  obj_fun = tmb_fun(model)
+  model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
+  model$opt_par = model$opt_obj$par
+  model
+}
+
+#' @export
+nlminb_flexmodel = function(model, ...) {
+  obj_fun = tmb_fun(model)
+  model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
+  model$opt_par = model$opt_obj$par
+  model
+}
+
+#' @export
+fitted.flexmodel = function(model) {
+  stopifnot('opt_par' %in% names(model))
+  obs_var = unique(model$observed$data$var)
+  fits = (model
+          %>% simulate(sim_params = model$opt_par, do_condensation = TRUE)
+          %>% filter(variable %in% c('report', 'hosp'))
+  )
+  comparison_data = (model$observed$data
+                     %>% left_join(
+                       fits, by = c("date" = "Date", "var" = "variable"),
+                       suffix = c('', '_fitted'))
+  )
+  comparison_data
+}
+
 
 # benchmarking and comparison in tests -----------------------
 
