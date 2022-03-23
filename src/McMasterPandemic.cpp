@@ -17,9 +17,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <math.h> 	// isnan() is defined
 #include <sys/time.h>
 #include <TMB.hpp>
 #include <cppad/local/cond_exp.hpp>
+
+const double EPSILON = 1.0e-10; // less than this value is considered as zero
 
 ///////////////////////////////////////////////////////////////////////////////
 // To make gdb work, I define the following functions:
@@ -135,9 +138,6 @@ vector<Type> CalcEigenVector(
     int iterations = 8000,
     Type tolerance = 0.000001)
 {
-  //if (iterations<100)
-  //  iterations = 100;	// this is the minimum
-
   matrix<Type> mat = jacobian;
   vector<Type> vec = state;
   vector<Type> prevec(1);
@@ -147,10 +147,13 @@ vector<Type> CalcEigenVector(
 
   for (i=0; i<iterations; i++) {
     vec = mat*vec;
-    vec /= Norm(vec);
+    Type norm = Norm(vec);
+    if (norm<EPSILON)
+      Rf_error("Divided by zero in CalcEigenVector");
+
+    vec /= norm;
 
     if (i%50==0) {
-
       if (prevec.size() != vec.size()) {
         prevec = vec;
       }
@@ -176,30 +179,17 @@ vector<Type> CalcEigenVector(
   }
 
   if (i==iterations) {
-    //tmb_status = 1; 	// doesn't not converge
+    Rf_warning("It does not converge in calculating eigen vector.");
     return vec;
   }
-
-  // check if the signs are the same
-  //for (i=0; i<vec.size(); i++)
-  //  if (vec[i]!=0) break;
-
-  //if (i==vec.size()) {
-  //  tmb_status = 2; 	// eigen vector is all zeros
-  //  return vec;
-  //}
-
-  //for (int j=i+1; j<vec.size(); j++)
-  //  if (vec[j-1]*vec[j]<0) {
-  //    tmb_status = 3;     // mixed signs in eigen vector
-  //    return vec;
-  //  }
-
-  // flip the sign
-  //if (vec[i]<00)
-  //  vec = -vec;
-
-  return vec;
+  else { // It converges. Lets do a last check on negativity
+    for (i=0; vec.size(); i++)
+      if (vec[i]<0.0) {
+        Rf_warning("Negative eigen vector");
+        break;
+      }
+    return vec;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -278,6 +268,9 @@ Eigen::SparseMatrix<Type> make_ratemat(
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
+    if (result.coeff(row,col)<0)
+      Rf_warning("Negative rate matrix element");
+
     start += count[i];
   }
 
@@ -327,6 +320,8 @@ void update_ratemat(
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
+    if (ratemat->coeff(row,col)<0.0)
+      Rf_warning("Negative rate matrix element.");
   }
 }
 
@@ -496,7 +491,6 @@ template<class Type>
 vector<Type> do_step(
     vector<Type> state,
     Eigen::SparseMatrix<Type> ratemat,
-//    vector<int> par_accum_indices,
     vector<int> outflow_row_count,
     vector<int> outflow_col_count,
     vector<int> outflow_rows,
@@ -509,6 +503,12 @@ vector<Type> do_step(
   vector<Type> inflow = colSums(flows);
   vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
   state = state - outflow + inflow;
+
+  for (int i=0; i<state.size(); i++)
+    if (state[i]<0.0) {
+      Rf_warning("Negative state variable");
+      break;
+    }
 
   return state;
 }
@@ -795,13 +795,18 @@ vector<Type> make_state(
   eig_infected /= eig_infected.sum();
 
   // 10 -- distribute infected individuals among compartments in the initial state vector
-  for (int i=0; i<im_all_to_infected_idx.size(); i++)
+  for (int i=0; i<im_all_to_infected_idx.size(); i++) {
     state[im_all_to_infected_idx[i]-1] = eig_infected[i] * params[ip_infected_idx-1];
-
+    if (state[im_all_to_infected_idx[i]-1]<0.0)
+      Rf_warning("Negative state variable");
+  }
   // 11 -- distribute susceptible individuals among compartments in the initial state vector
-  for (int i=0; i<im_susceptible_idx.size(); i++)
-    state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
-
+  for (int i=0; i<im_susceptible_idx.size(); i++) {
+    state[im_susceptible_idx[i] - 1] = \
+      (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
+    if (state[im_susceptible_idx[i] - 1]<0.0)
+      Rf_warning("Negative state variable");
+  }
   return state;
 }
 
@@ -827,7 +832,7 @@ public:
           Rf_error("negative binomial dispersion is negative");
 
         lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func
@@ -888,9 +893,9 @@ void InverseTransformParams(
   const vector<int>& trans_id
 )
 {
-  std::cout << "InverseTransformParams ..." << std::endl;
-  std::cout << param_id << std::endl;
-  std::cout << trans_id << std::endl;
+  //std::cout << "InverseTransformParams ..." << std::endl;
+  //std::cout << param_id << std::endl;
+  //std::cout << trans_id << std::endl;
 
   for (int j=0; j<param_id.size(); j++) {
     // Transformation no matter it is flat or not
@@ -901,7 +906,7 @@ void InverseTransformParams(
         break;
       case 2: // inverse log
         params[param_id[j]-1] = exp(params[param_id[j]-1]);
-        std::cout << params[param_id[j]-1] << std::endl;
+        //std::cout << params[param_id[j]-1] << std::endl;
         break;
       case 3: // inverse log_10
         params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
@@ -932,10 +937,10 @@ Type objective_function<Type>::operator() ()
   //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
-  DATA_VECTOR(state); // compartment -> states
-  DATA_IVECTOR(from); // compartment -> rates
-  DATA_IVECTOR(to); // compartment -> rates
-  DATA_IVECTOR(count); // compartment -> rates
+  DATA_VECTOR(state);
+  DATA_IVECTOR(from);
+  DATA_IVECTOR(to);
+  DATA_IVECTOR(count);
   DATA_IVECTOR(spi);
   DATA_IVECTOR(modifier);
   DATA_IVECTOR(updateidx);
@@ -946,7 +951,6 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
 
-  // compartment -> rates
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
   DATA_IVECTOR(outflow_rows);
@@ -1020,8 +1024,8 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_reg_params);
   DATA_IVECTOR(opt_reg_family_id);
 
-  std::cout << "opt_param_id = " << opt_param_id << std::endl;
-  std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
   //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
   //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
   //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
@@ -1032,8 +1036,8 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(opt_tv_reg_params);
   DATA_IVECTOR(opt_tv_reg_family_id);
 
-  std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
-  std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
+  //std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
+  //std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
@@ -1046,7 +1050,7 @@ Type objective_function<Type>::operator() ()
   // objective function on the R side. From ?MakeADFun:
   // "The order of the PARAMETER_ macros defines the order
   // of parameters in the final objective function"
-  PARAMETER_VECTOR(params); // compartment -> parameters
+  PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
   // Regularization
@@ -1071,14 +1075,14 @@ Type objective_function<Type>::operator() ()
     opt_param_id,
     opt_trans_id
   );
-  std::cout << "params: " << params << std::endl;
+  //std::cout << "params: " << params << std::endl;
 
   InverseTransformParams(
     tv_mult,
     opt_tv_param_id,
     opt_tv_trans_id
   );
-  std::cout << "tv_mult: " << tv_mult << std::endl;
+  //std::cout << "tv_mult: " << tv_mult << std::endl;
 
   // spec 0.2.0
   // ----------

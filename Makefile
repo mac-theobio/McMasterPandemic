@@ -172,7 +172,7 @@ test-tmb-forecast:
 
 test-tmb-all: test-tmb test-tmb-struc test-tmb-make-state test-tmb-calibrate test-tmb-timevar test-tmb-forecast
 
-src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
+src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version cleanobjects
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
 
 vignettes/flex_specs.html: vignettes/flex_specs.rmd
