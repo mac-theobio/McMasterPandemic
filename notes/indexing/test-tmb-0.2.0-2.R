@@ -5,14 +5,6 @@ library(McMasterPandemic)
 library(lubridate)
 library(tidyr)
 library(dplyr)
-set_spec_version("0.2.0", 'inst/tmb')
-r_mode()
-tmb_mode()
-
-
-load_model_from_file = TRUE
-options(MP_force_symm_vcov = TRUE)
-options(MP_rexp_steps_default = 200)
 
 # construct example ---------------------------
 
@@ -52,11 +44,10 @@ params_timevar = data.frame(
     20211115, # nov 15 beta0
     20211215, # dec 15 beta0
     20211215, # dec 15 mu
-    20211217, # dec 17 mu
     20220101 # jan 01 beta0
   ),
-  Symbol = c("beta0", "beta0", 'mu', 'mu', 'beta0'),
-  Value = c(0.8, NA, NA, NA, NA),
+  Symbol = c("beta0", "beta0", 'mu', 'beta0'),
+  Value = c(NA, NA, NA, NA),
   Type = "rel_prev"
 )
 
@@ -83,6 +74,11 @@ mm = (make_base_model(
   )
   %>% update_tmb_indices
 )
+
+
+nlminb_flexmodel(mm)
+
+
 
 # compare objective function values --------------------------
 

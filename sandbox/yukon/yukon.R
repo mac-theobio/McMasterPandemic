@@ -78,7 +78,6 @@ yukon_model = (yukon_model
   )
 )
 
-View(rate_summary(yukon_model))
 yukon_fit = nlminb_flexmodel(yukon_model)
 
 (yukon_fit
