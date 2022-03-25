@@ -1,0 +1,32 @@
+# ICU base param set 1: Stanford parameters + ICU info + case delay params, PHAC updated July 13,2020,Suggested values
+# Revised 13 July (deaths from severe cases w/o hospital),,,
+Symbol,Value,Parameter,
+beta0,1.00,Baseline (non-intervention) transmission across categories,what is this?
+Ca,0.67,relative asymptomatic transmission (or contact),what is this?
+Cp,1.00,relative presymptomatic transmission (or contact),what is this?
+Cm,1.00,relative mildly symptomatic transmission (or contact),what is this?
+Cs,1.00,relative severely symptomatic transmission (or contact),what is this?
+alpha,0.20,Fraction of cases asymptomatic,0.2
+sigma,0.33,1/time in exposed class,1/3
+gamma_a,0.20,1/time for asymptomatic recovery,1/5
+gamma_m,0.14,1/time for mildly symptomatic recovery,1/7
+gamma_s,0.33,1/time for severely symptomatic transition to hospital/death,1/3
+gamma_p,0.50,1/time in pre-symptomatic class,1/2
+rho,0.33,1/time in hospital (acute care),1/3
+delta,0.66,Fraction of acute-care cases that are fatal,0.66
+mu,0.80,Fraction of symptomatic cases that are mild,0.8
+N,42507.00,Population size,42507
+E0,14.00,Initial number exposed,14
+nonhosp_mort,0.00,probability of mortality without hospitalization,0.0001
+iso_m,0.40,Relative self-isolation/distancing of mild cases,0.4
+iso_s,0.40,Relative self-isolation/distancing of severe cases,0.4
+phi1,0.22,Fraction of hospital cases to ICU,0.22
+phi2,0.50,Fraction of ICU cases dying,0.5
+psi1,0.50,Rate of ICU back to acute care,1/2 days
+psi2,0.50,Rate of ICU to death,1/2 days
+psi3,0.33,Rate of post-ICU to discharge,1/3 days
+c_prop,0.10,fraction of incidence reported as positive tests,0.1
+c_delay_mean,9.00,average delay between incidence and test report,9
+c_delay_cv,0.40,coefficient of variation of testing delay,0.4
+proc_disp,0.00,dispersion parameter for process error (0=demog stoch only),0
+zeta,0.00,phenomenological heterogeneity parameter,0
