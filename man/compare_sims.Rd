@@ -4,12 +4,7 @@
 \alias{compare_sims}
 \title{Compare TMB-based and classic MacPan Simulations}
 \usage{
-compare_sims(
-  classic_sim,
-  tmb_sim,
-  tolerance = testthat_tolerance(),
-  compare_attr = TRUE
-)
+compare_sims(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE)
 }
 \arguments{
 \item{classic_sim}{result of `run_sim` without using TMB}

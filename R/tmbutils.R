@@ -1133,9 +1133,15 @@ initial_ratemat = function(model, sim_params = NULL) {
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
-#' @importFrom testthat testthat_tolerance
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance(), compare_attr = TRUE) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE) {
+  if (is.null(tolerance)) {
+    if (require(testthat)) {
+      tolerance = testthat_tolerance()
+    } else {
+      tolerance = .Machine$double.eps^0.5
+    }
+  }
   if(compare_attr) {
     params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
     attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]

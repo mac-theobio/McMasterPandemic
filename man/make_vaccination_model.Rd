@@ -4,7 +4,12 @@
 \alias{make_vaccination_model}
 \title{Make a Two-Dose Vaccination Model}
 \usage{
-make_vaccination_model(..., do_variant = FALSE)
+make_vaccination_model(
+  ...,
+  do_variant = FALSE,
+  do_variant_mu = FALSE,
+  do_wane = FALSE
+)
 }
 \arguments{
 \item{...}{
