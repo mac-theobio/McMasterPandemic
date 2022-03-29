@@ -1,6 +1,7 @@
 library(McMasterPandemic)
 library(zoo)
 library(tidyverse)
+library(anytime)
 
 ## Copying example from run_sim and modifying it
 
@@ -40,6 +41,14 @@ print(plot(modlist$fit,data=modlist$trimdat))
 print(plot(modlist$fit))
 ## FIXME: may break with testify_eigvec branch?
 
+###############################################
+# isolating cause (look down)
+# https://github.com/mac-theobio/McMasterPandemic/issues/175
+
+# the ndt that is read in comes in as 2.
+# changing to 1 solves the problem
+modlist$fit$forecast_args$sim_args$ndt = 2
+
 ## Projecting to Dec 2021 using the default settings
 pp <- predict(modlist$fit,ensembles=FALSE
 	, end_date = "2021-12-01"
@@ -51,6 +60,10 @@ print(gg <- ggplot(pp,aes(date,value))
 		+ geom_line()
 		+ facet_wrap(~var,scale="free",nrow=2)
 )
+
+# isolating cause (look up)
+# https://github.com/mac-theobio/McMasterPandemic/issues/175
+###############################################
 
 ## We can see the spikes and Rt does not account for depletion of S
 
