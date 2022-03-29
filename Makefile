@@ -182,7 +182,7 @@ vignettes/flex_intro.html: vignettes/flex_intro.rmd
 	echo "rmarkdown::render('vignettes/flex_intro.rmd')" | $(R) --slave
 
 cleanobjects:
-	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so
+	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so || true
 
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;
