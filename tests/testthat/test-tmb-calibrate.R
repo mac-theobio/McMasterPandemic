@@ -110,7 +110,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
                            params_timevar = tv_dat,
                            do_hazard = TRUE,
                            do_make_state = TRUE,
-                           max_iters_eig_pow_meth = 100,
+                           max_iters_eig_pow_meth = 300,
                            tol_eig_pow_meth = 1e-03
   )
 
@@ -245,7 +245,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
     do_approx_hazard_lin = FALSE,
     do_make_state = TRUE,
     max_iters_eig_pow_meth = 1000,
-    tol_eig_pow_meth = 1e-12
+    tol_eig_pow_meth = 1e-4
   )
 
   simulate_timings = time_wrap(

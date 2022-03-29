@@ -444,8 +444,8 @@ test_that("variants and vaccination model simulation matches run_sim", {
     do_hazard = TRUE,
     do_approx_hazard = FALSE,
     do_make_state = TRUE,
-    max_iters_eig_pow_meth = 100,
-    tol_eig_pow_meth = 1e-6,
+    max_iters_eig_pow_meth = 200,
+    tol_eig_pow_meth = 1e-3,
     params_timevar = params_timevar,
     do_variant = TRUE)
 
@@ -499,7 +499,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   reset_spec_version()
   r_tmb_comparable()
   options(macpan_pfun_method = "grep")
-  options(MP_rexp_steps_default = 150)
+  options(MP_rexp_steps_default = 200)
 
   # From macpan_ontario -----------------------------
 
@@ -535,7 +535,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # make flex vaccination model -----------
   model = make_vaccination_model(
     params = model_params,
-    state = make_state(params = model_params),
+    state = NULL,
     start_date = start_date - days(start_date_offset),
     end_date = end_date + days(1),
     params_timevar = params_timevar,
@@ -545,7 +545,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
     do_approx_hazard_lin = FALSE,
     do_make_state = TRUE,
     max_iters_eig_pow_meth = 1000,
-    tol_eig_pow_meth = 1e-12,
+    tol_eig_pow_meth = 1e-4,
     do_variant = TRUE)
 
   time_wrap(
@@ -569,7 +569,6 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   )
 
   compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
-
 
   # options(MP_rexp_steps_default = 100)
   #

@@ -720,7 +720,7 @@ test_that("pre-defined factors give the same answer as defining the rate with ra
     state = c(X = 1, Y = 2),
     start_date = "2000-01-01",
     end_date = "2000-02-05",
-    do_make_state = TRUE
+    do_make_state = FALSE
   )
 
   mm1 = (mm
