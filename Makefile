@@ -175,6 +175,9 @@ test-tmb-all: test-tmb test-tmb-struc test-tmb-make-state test-tmb-calibrate tes
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
 
+cpp-sync-diff:
+	diff inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp
+
 vignettes/flex_specs.html: vignettes/flex_specs.rmd
 	echo "rmarkdown::render('vignettes/flex_specs.rmd')" | $(R) --slave
 
@@ -182,7 +185,7 @@ vignettes/flex_intro.html: vignettes/flex_intro.rmd
 	echo "rmarkdown::render('vignettes/flex_intro.rmd')" | $(R) --slave
 
 cleanobjects:
-	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so
+	rm inst/tmb/*/macpan.o inst/tmb/*/macpan.so || true
 
 clean:
 	find . \( -name "\.#*" -o -name "*~" -o -name ".Rhistory" \) -exec rm {} \;

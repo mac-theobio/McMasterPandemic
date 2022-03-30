@@ -3,6 +3,7 @@
 // search for printouts that are not commented out: ^\s*std::cout
 // search for printouts that are commented out: ^\s*//\s*std::cout
 
+#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
 #include <iostream>
 #include <string>
 #include <vector>
