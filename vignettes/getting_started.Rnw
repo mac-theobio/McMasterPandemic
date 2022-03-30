@@ -135,6 +135,15 @@ The components of $\R_0$ (the reproduction number associated with each infectiou
 knitr::kable(round(t(get_R0(params1, components=TRUE)),2))
 @
 
+\bigskip\noindent
+It is also possible to change parameter settings without editing a
+parameter file, via the \code{fix_pars()} function.  For example:
+
+<<alter parameters>>=
+params2 <- fix_pars(params1, target = c(R0 = 5, Gbar = 5.2))
+knitr::kable(round(t(summary(params2)),2))
+@
+
 \paragraph{Initial conditions}
 
 The initial state must also be set, but it is sufficient to specify
