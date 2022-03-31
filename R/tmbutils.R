@@ -1296,7 +1296,8 @@ reset_spec_version = function() {
 tmb_mode = function() {
   options(
     MP_use_state_rounding = FALSE,
-    MP_vax_make_state_with_hazard = FALSE)
+    MP_vax_make_state_with_hazard = FALSE,
+    MP_force_dgTMatrix = TRUE)
 }
 
 ##' R Mode

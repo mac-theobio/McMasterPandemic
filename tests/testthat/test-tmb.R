@@ -30,7 +30,7 @@ library(lubridate)
 
 test_that("spec v0.0.1 rate matrices match make_ratemat", {
     set_spec_version("0.0.1", "../../inst/tmb/")
-
+    options(MP_force_dgTMatrix = TRUE)
     params <- read_params("ICU1.csv")
     state <- McMasterPandemic::make_state(params = params)
     M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)

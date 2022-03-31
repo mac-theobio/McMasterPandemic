@@ -21,7 +21,8 @@
         # - see r_tmb_comparable
         MP_use_state_rounding = TRUE,         # FALSE ~ comparable
         MP_vax_make_state_with_hazard = TRUE, # FALSE ~ comparable
-        MP_tmb_models_match_r = FALSE         # TRUE ~ comparable
+        MP_tmb_models_match_r = FALSE,         # TRUE ~ comparable
+        MP_force_dgTMatrix = FALSE            # TRUE ~ comparable
     )
 }
 
