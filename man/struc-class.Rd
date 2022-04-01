@@ -3,9 +3,9 @@
 \docType{class}
 \name{struc-class}
 \alias{struc-class}
-\title{Class to Represent Matrix Structure}
+\title{Class to Represent Vector or Matrix Structure}
 \description{
-Class to Represent Matrix Structure
+Class to Represent Vector or Matrix Structure
 }
 \section{Slots}{
 

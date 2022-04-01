@@ -70,61 +70,51 @@ layered_zero_state = function(...) {
 # Used in tmb_fun -- needs work, but this is a
 # good approach generally
 
-#' @export
 null_to_char0 = function(x) {
   if(is.null(x)) return(character(0L))
   as.character(x)
 }
 
-#' @export
 null_to_int0 = function(x) {
   if(is.null(x)) return(integer(0L))
   as.integer(x)
 }
 
-#' @export
 null_to_num0 = function(x) {
   if(is.null(x)) return(numeric(0L))
   as.numeric(x)
 }
 
-#' @export
 null_to_log0 = function(x) {
   if(is.null(x)) return(logical(0L))
   as.logical(x)
 }
 
-#' @export
 null_to_charNA = function(x) {
   if(is.null(x)) return(as.character(NA))
   as.character(x)
 }
 
-#' @export
 null_to_intNA = function(x) {
   if(is.null(x)) return(as.integer(NA))
   as.integer(x)
 }
 
-#' @export
 null_to_numNA = function(x) {
   if(is.null(x)) return(as.numeric(NA))
   as.numeric(x)
 }
 
-#' @export
 null_to_logNA = function(x) {
   if(is.null(x)) return(as.logical(NA))
   as.logical(x)
 }
 
-#' @export
 null_to_0 = function(x) {
   if(is.null(x)) return(0L)
   as.integer(x)
 }
 
-#' @export
 int0_to_0 = function(x) {
   if(length(x) == 0L) return(0L)
   as.integer(x)

@@ -2,10 +2,19 @@
 % Please edit documentation in R/flexstruc.R
 \name{struc}
 \alias{struc}
+\alias{scal}
+\alias{vec}
+\alias{mat}
 \alias{as.struc}
 \title{Construct a struc Object}
 \usage{
 struc(...)
+
+scal(...)
+
+vec(...)
+
+mat(...)
 
 as.struc(x)
 }
@@ -15,8 +24,23 @@ as.struc(x)
 \item{x}{object to convert to a struc object}
 }
 \value{
-struc object
+\code{struc} object -- see \code{\link{struc-class}}
 }
 \description{
-Construct a struc Object
+Create model structure objects (see \code{\link{struc-class}}), which are
+symbolic scalars, vectors, and matrices with elements that are expressions
+involving parameters, state variables.
 }
+\details{
+\code{scal}, \code{vec}, and \code{mat} are similar to \code{struc}, but
+ensure that the resulting \code{struc} objects are scalars, vectors, or
+matrices respectfully.
+
+\code{struc} objects can be created in other ways and symbolically
+manipulated using the functions listed below in the 'see also' section.
+}
+\seealso{
+Other struc_functions: 
+\code{\link{cross}()}
+}
+\concept{struc_functions}
