@@ -183,7 +183,7 @@ vector<Type> CalcEigenVector(
     return vec;
   }
   else { // It converges. Lets do a last check on negativity
-    for (i=0; vec.size(); i++)
+    for (i=0; i<vec.size(); i++)
       if (vec[i]<0.0) {
         Rf_warning("Negative eigen vector");
         break;
