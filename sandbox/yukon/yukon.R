@@ -60,7 +60,7 @@ yukon_model = make_base_model(
     end_date = edate,
     params_timevar = params_timevar,
     do_hazard = TRUE,
-    do_make_state = FALSE,  # use evec on the C++ side or not
+    do_make_state = TRUE,  # use evec on the C++ side or not
     data = covid_data
   )
 
