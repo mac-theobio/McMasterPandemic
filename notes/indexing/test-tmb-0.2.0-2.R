@@ -1,3 +1,5 @@
+### THIS THING IS BROKEN
+
 # negative log likelihood
 
 library(ggplot2)
@@ -5,11 +7,27 @@ library(McMasterPandemic)
 library(lubridate)
 library(tidyr)
 library(dplyr)
+<<<<<<< HEAD
 
 # construct example ---------------------------
 
 params1 <- read_params("PHAC.csv")
 params1[c("N", "phi1")] <- c(42507, 0.98)
+=======
+set_spec_version("0.2.0", 'inst/tmb')
+r_mode()
+tmb_mode()
+
+options(MP_force_symm_vcov = TRUE)
+options(MP_rexp_steps_default = 200)
+
+# construct example ---------------------------
+
+params <- read_params("PHAC.csv")
+params[c("N", "phi1")] <- c(42507, 0.98)
+params1 = params
+
+>>>>>>> tmb
 state1 <- make_state(params=params1)
 
 # start and end dates
@@ -41,17 +59,28 @@ params_timevar = data.frame(
     # estimate a new transmission rate on
     # these dates (i'm no expert but these
     # seemed to "work")
+<<<<<<< HEAD
     20211115, # nov 15 beta0
     20211215, # dec 15 beta0
     20211215, # dec 15 mu
     20220101 # jan 01 beta0
+=======
+    20211115, # nov 15 beta0 -- transmission rate
+    20211215, # dec 15 beta0 -- transmission rate
+    20211215, # dec 15 mu    -- prop mild cases
+    20220101  # jan 01 beta0 -- transmission rate
+>>>>>>> tmb
   ),
   Symbol = c("beta0", "beta0", 'mu', 'beta0'),
   Value = c(NA, NA, NA, NA),
   Type = "rel_prev"
 )
 
+<<<<<<< HEAD
 mm = (make_base_model(
+=======
+yukon_model = make_base_model(
+>>>>>>> tmb
     params = params1,
     state = state1,
     start_date = sdate - start_date_offset,
@@ -61,9 +90,17 @@ mm = (make_base_model(
     do_make_state = FALSE,
     data = covid_data
   )
+<<<<<<< HEAD
   %>% update_opt_params(
     log_beta0 ~ log_flat(log(1)),
     logit_mu ~ logit_flat(-0.04499737),
+=======
+
+yukon_model = (yukon_model
+  %>% update_opt_params(
+    log_beta0 ~ log_flat(0),
+    logit_mu ~ logit_flat(-0.04499737), # set to zero to see if it matters
+>>>>>>> tmb
     log_nb_disp_hosp ~ log_flat(0),
     log_nb_disp_report ~ log_flat(0)
   )
@@ -72,6 +109,7 @@ mm = (make_base_model(
     log_beta0 ~ log_flat(0),
     log_mu ~ log_flat(0)
   )
+<<<<<<< HEAD
   %>% update_tmb_indices
 )
 
@@ -79,6 +117,43 @@ mm = (make_base_model(
 nlminb_flexmodel(mm)
 
 
+=======
+)
+
+
+View(rate_summary(yukon_model))
+yukon_fit = nlminb_flexmodel(yukon_model)
+
+(yukon_fit
+  %>% fitted
+  %>% ggplot()
+   +  facet_wrap( ~ var, scales = 'free')
+   +  geom_point(aes(date, value))
+   +  geom_line(aes(date, value_fitted))
+)
+
+
+.
+
+
+
+
+
+
+
+
+
+obj_fun = tmb_fun(yukon_fit)
+obj_fun$fn(yukon_fit$opt_par)
+obj_fun$gr(yukon_fit$opt_par)
+obj_fun$he(yukon_fit$opt_par)
+
+
+
+
+
+# sh = simulation_history(yukon_fit, sim_params = yukon_fit$opt_par)
+>>>>>>> tmb
 
 # compare objective function values --------------------------
 

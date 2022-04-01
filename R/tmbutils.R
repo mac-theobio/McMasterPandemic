@@ -366,6 +366,10 @@ index_sep = function(x, i, sep = "_") {
   )
 }
 
+wrap_exact = function(x) {
+  "^" %+% x %+% "$"
+}
+
 ##' Regex Alternation Group
 ##'
 ##' @export
@@ -1198,8 +1202,6 @@ rate_matrix_lookup = function(ratemat) {
     )
   )
 }
-
-
 
 # utilities for parsing opt_params formulas ------------------
 
@@ -2502,7 +2504,6 @@ fitted.flexmodel = function(model) {
   comparison_data
 }
 
-
 # benchmarking and comparison in tests -----------------------
 
 #' Compare TMB-based and classic MacPan Simulations
@@ -2524,9 +2525,15 @@ fitted.flexmodel = function(model) {
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
-#' @importFrom testthat testthat_tolerance
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance(), compare_attr = TRUE) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE) {
+  if (is.null(tolerance)) {
+    if (require(testthat)) {
+      tolerance = testthat_tolerance()
+    } else {
+      tolerance = .Machine$double.eps^0.5
+    }
+  }
   if(compare_attr) {
     params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
     attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
@@ -2650,7 +2657,7 @@ compare_grads = function(model, tolerance = 1e-5,  ...) {
   all.equal(target, current, tolerance)
 }
 
-# spec versioning -----------------------
+# spec version and global option control ----------------------
 
 ##' Set and Reset Spec Version
 ##'
@@ -2718,7 +2725,8 @@ reset_spec_version = function() {
 tmb_mode = function() {
   options(
     MP_use_state_rounding = FALSE,
-    MP_vax_make_state_with_hazard = FALSE)
+    MP_vax_make_state_with_hazard = FALSE,
+    MP_force_dgTMatrix = TRUE)
 }
 
 ##' R Mode
@@ -2744,6 +2752,17 @@ r_mode = function() {
 r_tmb_comparable = function() {
   r_mode()
   tmb_mode()
+}
+
+##' Get McMasterPandemic Options
+##'
+##' @export
+get_macpan_options = function() {
+  (options()
+   %>% names
+   %>% grep(pattern = "^MP_", value = TRUE)
+   %>% sapply(getOption, simplify = FALSE)
+  )
 }
 
 

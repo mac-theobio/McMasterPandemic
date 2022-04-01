@@ -8,7 +8,7 @@ library(lubridate)
 
 test_that("an error is thrown when disease-free state is missing when required", {
   expect_error({
-    (init_model(
+    (flexmodel(
       params = c(a = 0.5, b = 0.25, c = 0.1),
       state = c(X = 1, Y = 2),
       start_date = "2000-01-01",
@@ -104,7 +104,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
 
   reset_spec_version()
   options(macpan_pfun_method = "grep")
-  r_tmb_comparable()
+  #r_tmb_comparable()
 
   base_params <- read_params("PHAC.csv")
   vax_params <- expand_params_vax(
@@ -138,7 +138,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
 
 test_that('make state matches vax/variant model with realistic parameters', {
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   # Need to take more than 100 steps for the

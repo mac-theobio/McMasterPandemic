@@ -102,6 +102,7 @@ Hypothesis: the model definitions can be thought of as a series of tables that a
   * Parameters
     * parameter -- primary key
     * structural layers or dimensions (e.g. vaccination category)
+    * default values
   * Summaries
     * name -- primary key
     * type -- sum, intermediate, lag-n difference, convolution

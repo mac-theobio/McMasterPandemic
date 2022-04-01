@@ -125,7 +125,7 @@ regex = "^(S|I|R)(_*)(.*)"
 
 ## Erlang SEIR
 
-David, Jonathan, and David describe the [Erlang SEIR model](https://epubs.siam.org/doi/pdf/10.1137/18M1186411) in continuous time. Here is a discrete time version of it.
+This is the [Erlang SEIR model](https://epubs.siam.org/doi/pdf/10.1137/18M1186411) in continuous time. Here is a discrete time version of it.
 ```{r}
 n = 4 # number of I states
 m = 6 # number of E states

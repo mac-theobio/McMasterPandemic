@@ -1,6 +1,6 @@
 ##' Represent a Standard Unstructured Model as a flexmodel
 ##'
-##' @inheritDotParams init_model
+##' @inheritDotParams flexmodel
 ##' @family flexmodels
 ##' @family canned_models
 ##' @export
@@ -8,7 +8,7 @@ make_base_model <- function(...) {
 
   spec_check("0.0.5", "run_sim with TMB")
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
@@ -112,11 +112,11 @@ make_base_model <- function(...) {
 
 #' Make a Two-Dose Vaccination Model
 #'
-#' @inheritDotParams init_model
+#' @inheritDotParams flexmodel
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -186,7 +186,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
 
 
-  if (!do_variant | getOption("MP_tmb_models_match_r")) {
+  if (!do_variant_mu) { # | getOption("MP_tmb_models_match_r")) {
     mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
   } else {
     ## variant-based mild-illness probability adjustment in vaccinated individuals
@@ -203,7 +203,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   Ip_to_Im_rates = vec(              mu ) * gamma_p
   Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
@@ -259,7 +259,15 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       dose_to   %_% 'vaxdose2',
       ~ (1 - vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect1_N))
   )
-  if(spec_ver_lt('0.1.1')) {
+  if (do_wane) {
+    model = rep_rate(
+      model,
+      "R" %_% vax_cat,
+      "S" %_% vax_cat,
+      ~ (wane_rate)
+    )
+  }
+  if (spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
     model = add_parallel_accumulators(model, c('V' %_% vax_cat, 'X' %_% vax_cat))
   } else {

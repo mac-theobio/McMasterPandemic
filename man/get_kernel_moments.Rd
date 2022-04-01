@@ -4,10 +4,12 @@
 \alias{get_kernel_moments}
 \title{compute R0, r, etc. based on kernel computation}
 \usage{
-get_kernel_moments(params)
+get_kernel_moments(params, winstretch = 10)
 }
 \arguments{
 \item{params}{parameter vector}
+
+\item{winstretch}{Length of window as multiple of analytic estimate}
 }
 \description{
 compute R0, r, etc. based on kernel computation

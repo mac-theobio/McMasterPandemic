@@ -643,8 +643,6 @@ We will pass the following additional data through to TMB to specify the objecti
 {opt-trans}_{parameter} ~ {reg-trans}_{time-varying-prior-family}({hyperparameter-vector1}, ...)
 ```
 
-
-
 ## v0.1.2 {#v0.1.2}
 
 [![Lifecycle

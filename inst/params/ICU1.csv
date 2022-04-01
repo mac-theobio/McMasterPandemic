@@ -20,7 +20,7 @@
 "nonhosp_mort",0,probability of mortality without hospitalization
 "iso_m",0,Relative self-isolation/distancing of mild cases
 "iso_s",0,Relative self-isolation/distancing of severe cases
-"phi1",0.76,Fraction of hospital cases to acute care
+"phi1",0.76,Fraction of hospital cases to ICU
 "phi2",1/2,Fraction of ICU cases dying
 "psi1",1/20,Rate of ICU back to acute care
 "psi2",1/8,Rate of ICU to death
