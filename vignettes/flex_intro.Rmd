@@ -24,7 +24,7 @@ library(equatiomatic)
 ```{r}
 state = c(S = 20000, I = 100, R = 0)
 sir_model = (
-  init_model(
+  flexmodel(
     params = c(
       gamma = 0.06,
       beta = 0.15,
@@ -74,7 +74,7 @@ state = c(
   R_wild = 0,   R_variant = 0
 )
 two_strain_model = (
-  init_model(
+  flexmodel(
     params = c(
       gamma = 0.06,       
       beta_wild = 0.15,   
@@ -129,7 +129,7 @@ This is the [Erlang SEIR model](https://epubs.siam.org/doi/pdf/10.1137/18M118641
 ```{r}
 n = 4 # number of I states
 m = 6 # number of E states
-erlang_seir = (init_model(
+erlang_seir = (flexmodel(
   # FIXME: only working for no demography (so mu = 0 for now)
   params = c(mu = 0, beta = 1.5, m = m, n = n,
              gamma = 1.2, sigma = 0.1),
@@ -229,7 +229,7 @@ params_timevar = data.frame(
   Type = c("abs", "abs"))
 
 sirv_model = (
-  init_model(
+  flexmodel(
     params = params,
     state = state,
     params_timevar = params_timevar,
@@ -284,7 +284,7 @@ I_vec = vec("I" %_% severity)
 foi = kronecker(vec("m", "1-m"), sum(beta_vec * I_vec * struc("1/N")))
 
 variolation_model <- (
-  init_model(
+  flexmodel(
     params = params,
     state = state,
     start_date = "2020-01-01",
@@ -357,7 +357,7 @@ params = c(
   f = 0.5
 )
 seird_model = (
-  init_model(
+  flexmodel(
     params = params, 
     state = state,
     start_date = "2000-01-01",
@@ -436,7 +436,7 @@ params_timevar = data.frame(
   Type = rep("abs", length(ramp_period))
 )
 model = (
-  init_model(
+  flexmodel(
     params = params,
     state = state,
     start_date = "2021-02-01",
@@ -587,7 +587,7 @@ all_states = names(state)
 state[] = unname(make_init(params))
 print(state)
 
-two_strain_bc = (init_model(
+two_strain_bc = (flexmodel(
     params = params,
     state = state,
     start_date = "2022-01-01",
@@ -705,7 +705,7 @@ plot_sir = function(model) {
 
 ```{r echo = FALSE, eval = FALSE}
 (
-  init_model(
+  flexmodel(
     params = c(
       gamma = 1e-1, # per-infected recovery rate
       beta = 5e-9   # per-contact transmission rate
@@ -725,7 +725,7 @@ plot_sir = function(model) {
 
 ```{r echo = FALSE, eval = FALSE}
 (
-  init_model(
+  flexmodel(
     params = c(
       gamma = 1e-1, # per-infected recovery rate
       beta = 5e-9   # per-contact transmission rate
@@ -748,7 +748,7 @@ plot_sir = function(model) {
 
 ```{r echo = FALSE, eval = FALSE}
 sir_model = (
-  init_model(
+  flexmodel(
     params = c(
       gamma = 1e-1, # per-infected recovery rate
       beta = 5e-9   # per-contact transmission rate

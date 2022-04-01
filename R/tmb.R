@@ -150,7 +150,6 @@ flexmodel <- function(params, state = NULL,
           model = update_piece_wise(model, params_timevar)
         } ## >v0.0.3
     } else {
-        # TODO: move this to an object called init_piece_wise in tmbutils
         model = initialize_piece_wise(model)
     }
 
@@ -240,7 +239,8 @@ flexmodel <- function(params, state = NULL,
 #' @rdname flexmodel
 #' @export
 init_model = function(...) {
-  warning("init_model is deprecated. please use flexmodel")
+  warning("\ninit_model is deprecated.\nplease use flexmodel.\n",
+          "the only difference between the two functions is the name.")
   flexmodel(...)
 }
 

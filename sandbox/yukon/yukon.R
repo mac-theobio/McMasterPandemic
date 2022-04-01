@@ -93,6 +93,8 @@ obj_fun$fn(yukon_fit$opt_par) # negative log posterior
 obj_fun$gr(yukon_fit$opt_par) # gradient of the negative log posterior
 obj_fun$he(yukon_fit$opt_par) # hessian of the negative log posterior
 
+compare_grads(yukon_fit)
+
 # full simulation history, including times without observed data,
 # all states, all condensation summaries (e.g. lag_1_diff_X),
 # and all time-varying rate-matrix elements (e.g. S_to_E)

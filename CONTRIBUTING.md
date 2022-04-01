@@ -40,6 +40,13 @@ The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, 
   * Names of loss functions (e.g. negative binomial, gaussian)
   * Topology of flow among states
 
+#### NOTES
+
+* What about summary methods for parameters?
+  * Use case -- compute R0/r/Gbar for an _ensemble_ of mcmc simulations of parameters
+  * In general we might need a many-to-one relationship between parameter sets and compartmental models
+* In general we need to think about ensembles, sampling from parameter distributions, importance sampling, mcmc, etc...
+
 
 ## Engines
 

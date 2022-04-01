@@ -873,7 +873,7 @@ Start with a basic example model.
 params <- read_params("ICU1.csv")
 state <- make_state(params = params)
 M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
-test_model <- init_model(
+test_model <- flexmodel(
     params, state,
     start_date = "2021-09-09", end_date = "2021-10-09"
 )
@@ -1115,7 +1115,7 @@ options(MP_flex_spec_version = "0.0.3")
 params = read_params('ICU1.csv')
 state = make_state(params = params)
 model = (
-  init_model(
+  flexmodel(
     params, state,
     start_date = '2021-08-26', end_date = "2021-09-26",
     timevar_piece_wise = data.frame(
@@ -1437,7 +1437,7 @@ options(MP_flex_spec_version = "0.0.1")
 params = read_params('ICU1.csv')
 state = make_state(params = params)
 model = (
-  init_model(params, state)
+  flexmodel(params, state)
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
   %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -1464,7 +1464,7 @@ model = (
 )
 ```
 
-The first step, `init_model`, in this pipeline initializes the
+The first step, `flexmodel`, in this pipeline initializes the
 compartmental model by specifying objects containing the parameters and
 state variables respectively.
 
