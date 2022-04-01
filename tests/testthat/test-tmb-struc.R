@@ -9,7 +9,7 @@ test_that('foi can be expressed as model structure', {
 
   params <- read_params("ICU1.csv")
 
-  mm = (init_model(
+  mm = (flexmodel(
     params = params,
     state = make_state(params = params),
     do_make_state = FALSE,

@@ -1,6 +1,6 @@
 ##' Represent a Standard Unstructured Model as a flexmodel
 ##'
-##' @inheritDotParams init_model
+##' @inheritDotParams flexmodel
 ##' @family flexmodels
 ##' @family canned_models
 ##' @export
@@ -8,7 +8,7 @@ make_base_model <- function(...) {
 
   spec_check("0.0.5", "run_sim with TMB")
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
@@ -91,7 +91,7 @@ make_base_model <- function(...) {
 
 #' Make a Two-Dose Vaccination Model
 #'
-#' @inheritDotParams init_model
+#' @inheritDotParams flexmodel
 #' @family flexmodels
 #' @family canned_models
 #' @export
@@ -182,7 +182,7 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
   Ip_to_Im_rates = vec(              mu ) * gamma_p
   Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }

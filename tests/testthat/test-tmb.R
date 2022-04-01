@@ -35,7 +35,7 @@ test_that("spec v0.0.1 rate matrices match make_ratemat", {
     state <- McMasterPandemic::make_state(params = params)
     M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
     test_model <- (
-        init_model(params, state)
+        flexmodel(params, state)
             %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
             %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
             %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -89,7 +89,7 @@ test_that("spec v0.0.2 simulations match run_sim", {
     params <- read_params("ICU1.csv")
     state <- McMasterPandemic::make_state(params = params)
     test_model <- (
-        init_model(params, state = state)
+        flexmodel(params, state = state)
             %>% add_rate("E", "Ia", ~ (alpha) * (sigma))
             %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
             %>% add_rate("Ia", "R", ~ (gamma_a))
@@ -140,7 +140,7 @@ test_that("spec v0.0.4 simulations with time varying parameters match run_sim", 
         Type = c("rel_prev", "rel_orig", "rel_prev")
     )
 
-    test_model <- (init_model(
+    test_model <- (flexmodel(
         params,
         state = make_state(params = params),
         start_date = "2021-09-09", end_date = "2021-10-09",
@@ -211,7 +211,7 @@ test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff
     )
 
 
-    test_model <- (init_model(
+    test_model <- (flexmodel(
         params,
         state = make_state(params = params),
         start_date = "2021-09-09", end_date = "2021-10-09",
@@ -428,7 +428,7 @@ test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', 
                                            do_exponential = TRUE))
 
     start_date = ymd(20000101)
-    model <- (init_model(params, state,
+    model <- (flexmodel(params, state,
                          start_date = start_date,
                          end_date = start_date + days(iters - 1),
                          do_hazard = FALSE,
@@ -494,7 +494,7 @@ test_that("simple sir models produce correct simulations", {
     I0 = 100
     R0 = 0
     sir_model = (
-        init_model(
+        flexmodel(
             params = c(
                 N = S0 + I0,
                 gamma = 0.06, # per-infected recovery rate
@@ -541,7 +541,7 @@ test_that("one may specify different rates for the same flow", {
     reset_spec_version()
     tmb_mode()
     options(MP_warn_repeated_rates = TRUE)
-    model_rep = model_one = (init_model(
+    model_rep = model_one = (flexmodel(
             params = c(alpha = 0.1),
             state = c(A = 100, B = 0),
             start_date = "2000-01-01",
@@ -574,7 +574,7 @@ test_that("an informative error is returned if variables are missing", {
     msg = "the following variables were used but not found in the model"
     msg2 = "regular expressions did not match any state variables or parameters to sum."
     expect_error(
-        init_model(
+        flexmodel(
             params = c(b = 1),
             state = c(X = 0),
             start_date = "2000-01-01",
@@ -585,7 +585,7 @@ test_that("an informative error is returned if variables are missing", {
     )
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0, Y = 0),
                 start_date = "2000-01-01",
@@ -597,7 +597,7 @@ test_that("an informative error is returned if variables are missing", {
     )
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0, Y = 0),
                 start_date = "2000-01-01",
@@ -617,7 +617,7 @@ test_that("invalid state and parameter sum specification returns informative err
     msg3 = "can only specify one sum at a time"
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0, Y = 0),
                 start_date = "2000-01-01",
@@ -629,7 +629,7 @@ test_that("invalid state and parameter sum specification returns informative err
     )
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0, Y = 0),
                 start_date = "2000-01-01",
@@ -641,7 +641,7 @@ test_that("invalid state and parameter sum specification returns informative err
     )
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0, Y = 0),
                 start_date = "2000-01-01",
@@ -659,7 +659,7 @@ test_that("informative error is thrown if no rates are specified", {
     msg = "no rates have been added to this model"
     expect_error(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 0),
                 start_date = "2000-01-01",
@@ -677,7 +677,7 @@ test_that("informative error is thrown if no rates are specified", {
     msg = "model does not contain any outflow"
     expect_warning(
         (
-            init_model(
+            flexmodel(
                 params = c(a = 1),
                 state = c(X = 10, Y = 0),
                 start_date = "2000-01-01",
@@ -692,7 +692,7 @@ test_that("informative error is thrown if no rates are specified", {
 
 test_that("start_date <= end_date in flex models", {
   expect_error(
-    init_model(
+    flexmodel(
       params = read_params("ICU1.csv"),
       start_date = "2000-01-02",
       end_date = "2000-01-01"
@@ -703,7 +703,7 @@ test_that("start_date <= end_date in flex models", {
 
 test_that("an error is thrown when params is not params_pansim and state is not provided", {
   expect_error(
-    init_model(
+    flexmodel(
       params = c(S = 0),
       start_date = "2000-01-01",
       end_date = "2000-01-02"
@@ -714,7 +714,7 @@ test_that("an error is thrown when params is not params_pansim and state is not 
 
 test_that("pre-defined factors give the same answer as defining the rate with raw factors", {
 
-  mm = init_model(
+  mm = flexmodel(
     params = c(a = 0.5, b = 0.25, c = 0.1),
     state = c(X = 1, Y = 2),
     start_date = "2000-01-01",
@@ -738,7 +738,7 @@ test_that("pre-defined factors give the same answer as defining the rate with ra
     simulate_state_vector(mm2)
   )
 
-  mm = init_model(
+  mm = flexmodel(
       params = c(beta = 0.5, N = 100),
       state = c(S = 99, I = 1),
       start_date = "2000-01-01",
@@ -774,7 +774,7 @@ test_that("vector-valued pre-defined factors give consistent results", {
     R_wild = 0,   R_variant = 0
   )
   two_strain_model =
-    init_model(
+    flexmodel(
       params = c(
         gamma = 0.06,
         beta_wild = 0.15,

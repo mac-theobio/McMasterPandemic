@@ -30,7 +30,7 @@
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @export
-init_model <- function(params, state = NULL,
+flexmodel <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = TRUE,
@@ -288,6 +288,15 @@ init_model <- function(params, state = NULL,
     )
 
     structure(model, class = "flexmodel")
+}
+
+#' `init_model` is deprecated and identical to `flexmodel`.
+#'
+#' @rdname flexmodel
+#' @export
+init_model = function(...) {
+  warning("init_model is deprecated. please use flexmodel")
+  flexmodel(...)
 }
 
 # rate and associated functions ---------------------
@@ -552,6 +561,25 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
   )
 }
 
+#' Intermediate Factors
+#'
+#' Save intermediate computations so that they can be used
+#' as factors in rate expressions and returned as part
+#' of the simulation history. The definition of a factor
+#' is given here: \url{https://canmod.net/misc/flex_specs#v0.1.0}.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param factr_nm name of the new intermediate factor
+#' @param formula formula (or string) that follows
+#' this spec, \url{https://canmod.net/misc/flex_specs#v0.1.0},
+#' or 1-by-1 \code{\link{struc}} object describing the
+#' intermediate factor
+#'
+#' @seealso See \code{\link{vec_factr}} to add more than
+#' one intermediate factor at the same time.
+#'
+#' @return \code{\link{flexmodel}} object
+#' @family flexmodels
 #' @export
 add_factr <- function(model, factr_nm, formula) {
   unpack(model)
@@ -571,6 +599,19 @@ add_factr <- function(model, factr_nm, formula) {
   return(model)
 }
 
+#' Vectors of Intermediate Factors
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param factr_nms vector of names of the new intermediate factors
+#' @param formula \code{\link{struc}} object describing the
+#' vector of intermediate factors
+#'
+#' @seealso See \code{\link{add_factr}} to add a single
+#' scalar-valued intermediate factor and \code{\link{vec}}
+#' to create a vector-valued \code{\link{struc}} object.
+#'
+#' @return \code{\link{flexmodel}} object
+#'
 #' @export
 vec_factr = function(model, factr_nms, formula) {
 
@@ -590,14 +631,6 @@ vec_factr = function(model, factr_nms, formula) {
 
 # sums of state variables and parameters ---------------------
 
-#' @param sum_name name of sum of state variables and parameters
-#' @param summands character vector of regular expressions for identifying
-#' state variables and parameters to sum together
-#' @param state pansim_state object
-#' @param params pansim_param object
-#' @return indices of summands
-#' @family flexmodels
-#' @export
 state_param_sum = function(sum_name, summands, state, params) {
     spec_check('0.1.0', 'sums of state variables and parameters')
     if (!is.character(sum_name)) stop("sum_name must be character-valued")
@@ -628,14 +661,24 @@ state_param_sum = function(sum_name, summands, state, params) {
         initial_value = val)
 }
 
-#' @rdname state_param_sum
-#' @inheritParams state_param_sum
-#' @param model flexmodel
+#' Sums of States and Parameters
+#'
+#' Save intermediate sums of states and parameters so that
+#' they can be used as factors in rate expressions and
+#' retured as part of the simulation history.
+#'
+#' @param model \code{\link{flexmodel}}
+#' @param sum_name name of sum of state variables and parameters
+#' @param summands character vector of regular expressions for identifying
+#' state variables and parameters to sum together
+#'
+#' @return \code{\link{flexmodel}}
+#'
 #' @family flexmodels
 #' @export
 add_state_param_sum = function(model, sum_name, summands) {
     if (length(model$factrs) != 0L) {
-      stop("cannot add any more state-param sums after (common) factrs have been added")
+      stop("cannot add any more state-param sums after intermediate factrs have been added")
     }
     model$sums[[sum_name]] = state_param_sum(
         sum_name, summands, model$state, model$params)
@@ -674,7 +717,8 @@ parallel_accumulators <- function(model, state_patterns) {
     )
 }
 
-##' @family flexmodels
+
+##' @rdname add_outflow
 ##' @export
 add_linearized_outflow = function(model, from, to) {
     spec_check(
@@ -697,6 +741,18 @@ add_linearized_outflow = function(model, from, to) {
 ##' specific states \code{to} other specific states, pass
 ##' regular expressions to the \code{from} and \code{to}
 ##' arguments to identify these states.
+##'
+##' \code{add_linearized_outflow} is used to specify
+##' outflows in linearized models
+##' (\url{https://canmod.net/misc/flex_specs#v0.1.1}).
+##'
+##' @param model \code{\link{flexmodel}} object
+##' @param from string giving a regular expression for identifying
+##' states from which individuals are flowing
+##' @param to string giving a regular expression for identifying
+##' states to which individuals are flowing
+##'
+##' @return model \code{\link{flexmodel}} object
 ##'
 ##' @family flexmodels
 ##' @export
@@ -800,6 +856,25 @@ initial_population = function(model, total, infected) {
     model
 }
 
+##' Add State Mappings
+##'
+##' Add regular expressions for identifying what states
+##' are included in various stages of the eigenvector-based
+##' method for constructing initial states
+##' (\url{https://canmod.net/misc/flex_specs#v0.1.1})
+##'
+##' @param model \code{\link{flexmodel}} object
+##' @param eigen_drop_pattern regular expression for identifying states
+##' to be dropped before computing the eigenvector of the Jacobian
+##' of the linearized model
+##' @param infected_drop_pattern regular expression for identifying states
+##' to be dropped from the eigenvector so that only 'infected' states
+##' remain
+##' @param initial_susceptible_pattern regular expression for
+##' identifying states associated with susceptible classes
+##'
+##' @return \code{\link{flexmodel}} object
+##'
 ##' @family flexmodels
 ##' @export
 add_state_mappings = function(
