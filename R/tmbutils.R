@@ -1399,6 +1399,7 @@ tmb_opt_form = function(pf, params, params_timevar = NULL) {
     )
     lookup_tv_vec = lookup_tv_table$v
     d$tv_breaks = filter(lookup_tv_table, is.na(Value) & (Symbol == param_nms[1]))$breaks
+    # d$tv_breaks = filter(lookup_tv_table, Symbol == param_nms[1])$breaks
     d$opt_tv_mult_id =
       unlist(lapply(
         unique(param_nms),
@@ -2188,6 +2189,23 @@ tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mul
     )
     return(c(init_trans_params, init_trans_tv_mult))
   }
+}
+
+tmb_params_init = function(model) {
+  model = update_tmb_indices(model)
+  init_trans_params = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_table
+    %>% with(setNames(init_trans_params, param_nms))
+  )
+  init_trans_tv_mult = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_tv_table
+    %>% getElement('init_trans_params')
+  )
+  c(init_trans_params, init_trans_tv_mult)
 }
 
 #' @export

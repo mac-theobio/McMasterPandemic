@@ -1,6 +1,7 @@
 library(McMasterPandemic)
 library(zoo)
 library(tidyverse)
+library(anytime)
 
 ## Copying example from run_sim and modifying it
 
@@ -39,6 +40,8 @@ print(plot(modlist$fit,data=modlist$trimdat))
 ## Not plotting the data exposes the spikes in death and hosp (these are the compartments where we do diff from accumulating boxes
 print(plot(modlist$fit))
 ## FIXME: may break with testify_eigvec branch?
+
+modlist$fit$forecast_args$sim_args$ndt = 1
 
 ## Projecting to Dec 2021 using the default settings
 pp <- predict(modlist$fit,ensembles=FALSE

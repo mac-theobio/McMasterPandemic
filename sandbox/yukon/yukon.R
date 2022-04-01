@@ -60,7 +60,7 @@ yukon_model = make_base_model(
     end_date = edate,
     params_timevar = params_timevar,
     do_hazard = TRUE,
-    do_make_state = FALSE,
+    do_make_state = FALSE,  # use evec on the C++ side or not
     data = covid_data
   )
 
@@ -100,3 +100,13 @@ sim_hist_yukon = simulation_history(
   yukon_fit,
   sim_params = yukon_fit$opt_par
 )
+
+# TODO: need to print out fitted parameters on their original scale
+
+# TODO: extend the end date and simulate into the future
+
+yukon_scenario1 = scenario_builder(yukon_fit, num_days_ahead, future_timevars1, ...)
+yukon_scenario2 = scenario_builder(yukon_fit, num_days_ahead, future_timevars2, ...)
+yukon_scenario3 = scenario_builder(yukon_fit, num_days_ahead, future_timevars3, ...)
+
+sim_future_yukon = simulation_history(yukon_scenario)

@@ -1204,6 +1204,14 @@ tmb_fun <- function(model) {
         unpack(timevar$piece_wise)
     }
 
+    if (isTRUE(model$do_make_state)) {
+      if (isTRUE(length(tmb_indices$disease_free$df_state_idx) == 0L)) {
+        stop('cannot make the initial state because a disease-free state was not supplied. ',
+             'either choose do_make_state = FALSE when initializing the model, ',
+             'or use update_disease_free_state')
+      }
+    }
+
 
     ## make ad functions for different spec versions
     if (spec_ver_eq("0.0.1")) {
@@ -1624,7 +1632,7 @@ tmb_fun <- function(model) {
           numIterations = int0_to_0(null_to_0(iters))
         ),
         parameters = list(params = c(unlist(params)),
-                          tv_mult = init_tv_mult),
+                          tv_mult = null_to_num0(init_tv_mult)),
         map = map,
         DLL = DLL
       )
@@ -1772,4 +1780,52 @@ initialize_piece_wise = function(model) {
     )
   )
   model
+}
+
+# regenerate model --------------------------------
+
+if(FALSE) {
+
+model = yukon_model
+
+model %>% names
+
+arg_names = function(f, include_dots = FALSE, warn_dots = TRUE) {
+  nms = names(formals(f))
+  if (include_dots) return(nms)
+  is_dots = nms == "..."
+  if (warn_dots & any(is_dots)) warning("removing dots")
+  nms[!is_dots]
+}
+
+arg_names_classify = function(f, nms) {
+  arg_nms = arg_names(f, TRUE)
+  args_in_nms = arg_nms %in% nms
+  nms_in_args = nms %in% arg_nms
+  list(
+    args_in_nms = arg_nms[args_in_nms],
+    args_not_in_nms = arg_nms[!args_in_nms],
+    nms_in_args = nms[nms_in_args],
+    nms_not_in_args = nms[!nms_in_args]
+  )
+}
+
+names(model)
+params_timevar = model$timevar$piece_wise$schedule[c("Date", "Symbol", "Value", "Type")]
+data = model$observed$data
+arg_names_classify(init_model, names(model))
+arg_names_classify(add_rate, names(model$rates[[1]]))
+arg_names_classify(add_state_param_sum, names(model$sums[[1]]))
+arg_names_classify(add_factr, names(model))
+arg_names_classify(add_sim_report_expr, names(model))
+arg_names_classify(add_lag_diff, names(model))
+arg_names_classify(add_conv, names(model))
+arg_names_classify(add_linearized_outflow, names(model))
+arg_names_classify(add_outflow, names(model))
+arg_names_classify(update_linearized_params, names(model))
+arg_names_classify(update_disease_free_state, names(model))
+arg_names_classify(initial_population, names(model))
+arg_names_classify(add_state_mappings, names(model))
+arg_names_classify(update_opt_params, names(model))
+arg_names_classify(update_opt_tv_params, names(model))
 }

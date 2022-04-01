@@ -138,3 +138,57 @@ print(all.equal(r_obj_fun, tmb_obj_fun_without_trans))
 #       will result in NaN
 #tmb_obj_fun_with_trans = obj_fun2$fn(tmb_params_trans(mm2))
 #all.equal(r_obj_fun, tmb_obj_fun_with_trans)
+
+
+if (FALSE) {
+
+  mm3 = (mm2
+     %>% update_opt_params(
+       log_beta0 ~ flat(1),
+       log_mu ~ flat(0.956),
+       log_nb_disp_hosp ~ flat(1),
+       log_nb_disp_report ~ flat(1)
+     )
+     %>% update_tmb_indices
+  )
+  obj_fun3 = tmb_fun(mm3)
+  opt_with_hess = nlminb(tmb_params_init(mm3), obj_fun3$fn, obj_fun3$gr, obj_fun3$he)
+  opt_wout_hess = optim(tmb_params_init(mm3), obj_fun3$fn, obj_fun3$gr)
+  tmb_params_init(mm3)
+  obj_fun3$gr()
+
+  opt_with_hess$par
+  opt_wout_hess$par
+  opt_with_hess$objective
+  opt_wout_hess$value
+
+  op3 = op
+  op3$params = op3$params[2:3]
+  op3$params[] = tmb_params_init(mm3)[1:2]
+  names(op3) = c('params', 'nb_disp')
+  names(op3$params) = c('beta0', 'mu')
+  op3$nb_disp[] = 1
+  op3$nb_disp = NULL
+
+
+  tt = time_wrap(
+    cal_r <- calibrate(
+      data = covid_data,
+      time_args = list(params_timevar = params_timevar2),
+      start_date_offset = start_date_offset,
+      base_params = mm3$params,
+      opt_pars = op3,
+      debug = FALSE
+    ),
+    cal_t <- calibrate(
+      data = covid_data,
+      time_args = list(params_timevar = params_timevar2),
+      start_date_offset = start_date_offset,
+      base_params = mm3$params,
+      opt_pars = op3,
+      debug = FALSE,
+      sim_args = list(flexmodel = mm3)
+    )
+  )
+
+}
