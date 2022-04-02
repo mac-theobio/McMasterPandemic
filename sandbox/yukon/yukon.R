@@ -111,4 +111,58 @@ yukon_scenario1 = scenario_builder(yukon_fit, num_days_ahead, future_timevars1, 
 yukon_scenario2 = scenario_builder(yukon_fit, num_days_ahead, future_timevars2, ...)
 yukon_scenario3 = scenario_builder(yukon_fit, num_days_ahead, future_timevars3, ...)
 
-sim_future_yukon = simulation_history(yukon_scenario)
+sim_future_yukon = simulation_history(yukon_scenario1)
+
+
+
+### refitting with simulated hospital occupancy
+
+sim_covid_data <- (sim_hist_yukon
+  %>% transmute(date = Date
+        , report = conv_Incidence
+        , H = Htotal
+      )
+  %>% filter(between(as.Date(date), sdate, edate))
+  %>% pivot_longer(names_to = "var", -date)
+  %>% mutate(value=round(value))
+)
+
+## rebuilding with simulated data that has hospital occupancy
+
+yukon_model = make_base_model(
+  params = params1,
+  state = state1,
+  start_date = sdate - start_date_offset,
+  end_date = edate,
+  params_timevar = params_timevar,
+  do_hazard = TRUE,
+  do_make_state = TRUE,  # use evec on the C++ side or not
+  data = sim_covid_data
+)
+
+yukon_model = (yukon_model
+               %>% update_opt_params(
+                 log_beta0 ~ log_flat(0),
+                 logit_mu ~ logit_flat(-0.04499737), # set to zero to see if it matters
+                 log_nb_disp_H ~ log_flat(0),
+                 log_nb_disp_report ~ log_flat(0)
+               )
+               %>% update_opt_tv_params(
+                 tv_type = 'rel_prev',
+                 log_beta0 ~ log_flat(0),
+                 log_mu ~ log_flat(0)
+               )
+)
+
+yukon_fit = nlminb_flexmodel(yukon_model)
+
+(yukon_fit
+  %>% fitted
+  %>% ggplot()
+  +  facet_wrap( ~ var, scales = 'free')
+  +  geom_point(aes(date, value))
+  +  geom_line(aes(date, value_fitted))
+)
+
+## value_fitted for hospital occupancy is not showing up
+print(yukon_fit %>% fitted)
