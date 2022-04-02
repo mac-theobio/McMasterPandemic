@@ -325,6 +325,29 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
     )
   }
 
+  if (spec_ver_gt('0.1.2')) {
+    foi_vec = vec("S" %_% vax_cat %_% "to" %_% "E" %_% vax_cat)
+    S_vec = vec("S" %_% vax_cat)
+    model = (model
+      %>% add_state_param_sum("Htotal", "^H2?" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("ICU", "^ICU(s|d)" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("XTotal", "^X" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("DTotal", "^D" %_% alt_group(vax_cat))
+      %>% add_sim_report_expr("Incidence", sum(foi_vec * S_vec))
+      %>% add_lag_diff("^(X|D)Total$")
+      %>% add_conv("^Incidence$")
+      %>% update_condense_map(c(
+        XTotal = "X",
+        DTotal = "D",
+        conv_Incidence = 'report',
+        Incidence = 'incidence',
+        Htotal = 'H',
+        ICU = 'ICU',
+        lag_1_diff_XTotal = 'hosp',
+        lag_1_diff_DTotal = 'death'
+    ))
+    )
+  }
   model = update_tmb_indices(model)
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
