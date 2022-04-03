@@ -2494,7 +2494,7 @@ fitted.flexmodel = function(model) {
   obs_var = unique(model$observed$data$var)
   fits = (model
           %>% simulate(sim_params = model$opt_par, do_condensation = TRUE)
-          %>% filter(variable %in% c('report', 'hosp'))
+          %>% filter(variable %in% obs_var)
   )
   comparison_data = (model$observed$data
                      %>% left_join(
