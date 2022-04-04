@@ -2,10 +2,10 @@
 % Please edit documentation in R/flexstruc.R
 \name{kronecker,struc,struc-method}
 \alias{kronecker,struc,struc-method}
-\title{describeIn `struc-class` Kronecker product}
+\title{describeIn struc Kronecker product}
 \usage{
 \S4method{kronecker}{struc,struc}(X, Y)
 }
 \description{
-describeIn `struc-class` Kronecker product
+describeIn struc Kronecker product
 }

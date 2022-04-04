@@ -7,7 +7,7 @@
 struc_block(x, row_times, col_times)
 }
 \arguments{
-\item{x}{struc object representing the block}
+\item{x}{\code{\link{struc-class}} object representing the block}
 
 \item{row_times}{number of times to replicate the block downwards}
 
@@ -19,3 +19,10 @@ struc object
 \description{
 Repeat a Block
 }
+\seealso{
+Other struc_functions: 
+\code{\link{cross_mat}()},
+\code{\link{struc_stretch}()},
+\code{\link{struc}}
+}
+\concept{struc_functions}

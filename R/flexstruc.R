@@ -1,4 +1,7 @@
-#' Class to Represent Vector or Matrix Structure
+#' Class to Represent Scalar, Vector, or Matrix Structure
+#'
+#' The simplest way to create such objects is with the \code{\link{struc}}
+#' function.
 #'
 #' @slot v character vector giving the expressions for each element
 #' of the matrix structure object
@@ -83,9 +86,9 @@ mat = function(...) {
 #' @family struc_functions
 #' @return
 #' @export
-cross = function(x, y, sep = "_") {
+cross_mat = function(x, y, sep = "_") {
   struc(matrix(
-    McMasterPandemic:::expand_names(x, y, sep),
+    expand_names(x, y, sep),
     nrow = length(x),
     ncol = length(y)
   ))
@@ -298,7 +301,7 @@ setMethod('*', c(e1 = 'struc_expanded', e2 = 'struc_expanded'),
             struc_expanded(lapply(l, struc), d = dim(e1))
           })
 
-#' @describeIn `struc-class` Elementwise or scalar multiplication
+#' @describeIn struc Elementwise or scalar multiplication
 #' @export
 setMethod("*", c(e1 = 'struc', e2 = 'struc'),
           function(e1, e2) {
@@ -330,7 +333,7 @@ simple_mult = function(x, y) {
   c(outer(x@v, y@v, paste, sep = ' * '))
 }
 
-#' @describeIn `struc-class` Elementwise or scalar addition
+#' @describeIn struc Elementwise or scalar addition
 #' @export
 setMethod("+", c(e1 = 'struc', e2 = 'struc'),
           function(e1, e2) {
@@ -341,7 +344,7 @@ setMethod("+", c(e1 = 'struc', e2 = 'struc'),
           }
 )
 
-#' @describeIn `struc-class` Matrix multiplication
+#' @describeIn struc Matrix multiplication
 #' @export
 setMethod("%*%", c(x = 'struc', y = 'struc'),
           function(x, y) {
@@ -362,14 +365,14 @@ setMethod("%*%", c(x = 'struc', y = 'struc'),
           }
 )
 
-#' describeIn `struc-class` Kronecker product
+#' describeIn struc Kronecker product
 #' @export
 setMethod("kronecker", c(X = 'struc', Y = 'struc'),
           function(X, Y) {
             struc_stretch(X, nrow(Y), ncol(Y)) * struc_block(Y, nrow(X), ncol(X))
           })
 
-#' @describeIn `struc-class` Matrix or vector transpose
+#' @describeIn struc Matrix or vector transpose
 #' @export
 setMethod("t", c(x = 'struc'),
           function(x) {
@@ -378,7 +381,20 @@ setMethod("t", c(x = 'struc'),
             x
           })
 
-#' @describeIn `struc-class` Sum of vector or matrix elements
+setGeneric('inner',
+           function(x, y, ...) {
+             standardGeneric('inner')
+           })
+
+#' @describeIn struc Inner product of vectors or matrices
+#' @export
+setMethod("inner", c(x = 'struc', y = 'struc'),
+    function(x, y) {
+      stopifnot(same_dims(x, y))
+      sum(x * y)
+})
+
+#' @describeIn struc Sum of vector or matrix elements
 #' @export
 setMethod("sum", c(x = 'struc'),
           function(x, ..., na.rm = FALSE) {
@@ -386,7 +402,7 @@ setMethod("sum", c(x = 'struc'),
             struc(paste(l, collapse = ' + '))
           })
 
-#' @describeIn `struc-class` Product of vector or matrix elements
+#' @describeIn struc Product of vector or matrix elements
 #' @export
 setMethod("prod", c(x = 'struc'),
           # FIXME: does this work right?
@@ -395,35 +411,35 @@ setMethod("prod", c(x = 'struc'),
             struc(paste(l, collapse = ' * '))
           })
 
-#' @describeIn `struc-class` Row sums of matrices
+#' @describeIn struc Row sums of matrices
 #' @export
 setMethod("rowSums", c(x = 'struc'),
           function(x, na.rm = FALSE, dims = 1L) {
             struc(apply(as.matrix(x), 1, function(y) sum(struc(y))@v))
           })
 
-#' @describeIn `struc-class` Column sums of matrices
+#' @describeIn struc Column sums of matrices
 #' @export
 setMethod("colSums", c(x = 'struc'),
           function(x, na.rm = FALSE, dims = 1L) {
             t(struc(apply(as.matrix(x), 2, function(y) sum(struc(y))@v)))
           })
 
-#' @describeIn `struc-class` Dimensions of a matrix
+#' @describeIn struc Dimensions of a matrix
 #' @export
 setMethod("dim", c(x = 'struc'),
           function(x) {
             x@dims
           })
 
-#' @describeIn `struc-class` Number of matrix rows
+#' @describeIn struc Number of matrix rows
 #' @export
 setMethod("nrow", c(x = 'struc'),
           function(x) {
             x@dims[1]
           })
 
-#' @describeIn `struc-class` Number of matrix columns
+#' @describeIn struc Number of matrix columns
 #' @export
 setMethod("ncol", c(x = 'struc'),
           function(x) {
@@ -450,12 +466,14 @@ setMethod("ncol", c(x = 'struc_expanded'),
 
 #' Repeat a Block
 #'
-#' @param x struc object representing the block
+#' @param x \code{\link{struc-class}} object representing the block
 #' @param row_times number of times to replicate the block downwards
 #' @param col_times number of times to replicate the block to the right
 #' @return struc object
+#' @family struc_functions
 #' @export
 struc_block = function(x, row_times, col_times) {
+  stopifnot(is(x, 'struc'))
   x = as.matrix(x)
   x =   matrix(rep(c(  x ), times = col_times), nrow(x), col_times * ncol(x))
   x = t(matrix(rep(c(t(x)), times = row_times), ncol(x), row_times * nrow(x)))
@@ -468,14 +486,21 @@ struc_block = function(x, row_times, col_times) {
 #' @param row_each number of times to replicate each element of the block downwards
 #' @param col_each number of times to replicate each element of the block to the right
 #' @return struc object
+#' @family struc_functions
 #' @export
 struc_stretch = function(x, row_each, col_each) {
+  stopifnot(is(x, 'struc'))
   x = as.matrix(x)
   x =   matrix(rep(c(  x ), each = row_each), row_each * nrow(x), ncol(x))
   x = t(matrix(rep(c(t(x)), each = col_each), col_each * ncol(x), nrow(x)))
   return(struc(x))
 }
 
+#' Numerically Evaluate Struc Object
+#'
+#' @param x \code{\link{struc-class}} object
+#' @param values object coercible to a named list
+#'
 #' @export
 struc_eval = function(x, values) {
   x = as.matrix(x)

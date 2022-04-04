@@ -5,7 +5,6 @@
 ##
 ## Specification Document: https://canmod.net/misc/flex_specs
 
-maximum_spec_version <- "0.1.0"
 archived_spec_versions <- c("0.0.3")
 check_spec_ver_archived <- function() {
     if (getOption("MP_flex_spec_version") %in% archived_spec_versions) {
@@ -28,7 +27,7 @@ check_spec_ver_archived <- function() {
 ##' \code{spec_ver_eq}, \code{spec_ver_gt}, \code{spec_ver_lt}, and
 ##' \code{spec_ver_btwn} return logical values indicating whether or not
 ##' the \code{spec_version} is equal to, greater than, less than or between
-##' a user-specified version
+##' a user-specified version.
 ##'
 ##' @param version string with the version of the spec
 ##' (e.g. \code{"0.0.5"})
@@ -64,6 +63,8 @@ spec_ver_lt <- function(version) {
     parse_version(current_version) < parse_version(version)
 }
 
+##' @param version_left string with the exclusive lower bound of the spec version
+##' @param version_right string with the exclusive upper bound of the spec version
 ##' @rdname spec_version
 ##' @export
 spec_ver_btwn <- function(version_left, version_right) {

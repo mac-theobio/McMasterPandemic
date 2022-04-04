@@ -6,11 +6,23 @@
 \usage{
 vec_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 }
+\arguments{
+\item{model}{\code{\link{flexmodel}} object}
+
+\item{from}{character vector defining states from which flow is coming}
+
+\item{to}{character vector defining states from which flow is going}
+
+\item{formula}{\code{\link{struc-class}} object defining a vector of flows
+for each \code{from-to} pair}
+
+\item{mapping}{experimental -- please choose default for now}
+}
 \description{
 Specify Vector of Rates
 }
 \seealso{
-Other flexmodels: 
+Other flexmodel_definition_functions: 
 \code{\link{add_factr}()},
 \code{\link{add_linearized_outflow}()},
 \code{\link{add_parallel_accumulators}()},
@@ -19,13 +31,16 @@ Other flexmodels:
 \code{\link{add_state_param_sum}()},
 \code{\link{flexmodel}()},
 \code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},
 \code{\link{rep_rate}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()}
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()}
+
+Other rate_functions: 
+\code{\link{add_rate}()},
+\code{\link{mat_rate}()},
+\code{\link{rep_rate}()}
 }
-\concept{flexmodels}
+\concept{flexmodel_definition_functions}
+\concept{rate_functions}

@@ -41,6 +41,8 @@ manipulated using the functions listed below in the 'see also' section.
 }
 \seealso{
 Other struc_functions: 
-\code{\link{cross}()}
+\code{\link{cross_mat}()},
+\code{\link{struc_block}()},
+\code{\link{struc_stretch}()}
 }
 \concept{struc_functions}

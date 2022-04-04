@@ -27,7 +27,7 @@
 ##' construction
 ##' @param tol_eig_pow_meth tolerance for determining convergence
 ##' of the power method used in initial state construction
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @return flexmodel object representing a compartmental model
 ##' @export
 flexmodel <- function(params, state = NULL,
@@ -316,8 +316,8 @@ init_model = function(...) {
 ##' @param params param_pansim object
 ##' @param sums vector of sums of state variables and parameters
 ##' @param ratemat rate matrix
-##' @family flexmodels
-##' @export
+##' @family flexmodel_definition_functions
+
 rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
     ## TODO: test for formula structure
     M <- ratemat
@@ -389,19 +389,20 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
     )
 }
 
-##' Rate Structure
+##' Add Rate
 ##'
 ##' Define how the rate of flow from one compartment to another
 ##' depends on the parameters and state variables.
 ##'
 ##' @param model compartmental model
-##' @param from Name of state where flow is happening from
-##' @param to Name of state where flow is happening to
+##' @param from Name of state from which flow is coming
+##' @param to Name of state to which flow is going
 ##' @param formula Model formula defining dependence of the rate on
 ##' parameters and state variables
 ##' @return another compartmental model with an additional non-zero rate matrix
 ##' element specified
-##' @family flexmodels
+##' @family flexmodel_definition_functions
+##' @family rate_functions
 ##' @export
 add_rate <- function(model, from, to, formula) {
     unpack(model)
@@ -417,8 +418,12 @@ add_rate <- function(model, from, to, formula) {
 #' Repeat a Rate for Several Rate Matrix Elements
 #'
 #' @param model flexmodel
+#' @param from character vector defining states from which flow is coming
+#' @param to character vector defining states from which flow is going
 #' @param formula formula or length-1 character vector
-#' @family flexmodels
+#' @param mapping experimental -- please choose default for now
+#' @family flexmodel_definition_functions
+#' @family rate_functions
 #' @export
 rep_rate = function(model, from, to, formula,
                     mapping = c("pairwise", "blockwise")) {
@@ -464,7 +469,14 @@ rep_rate = function(model, from, to, formula,
 
 #' Specify Vector of Rates
 #'
-#' @family flexmodels
+#' @param model \code{\link{flexmodel}} object
+#' @param from character vector defining states from which flow is coming
+#' @param to character vector defining states from which flow is going
+#' @param formula \code{\link{struc-class}} object defining a vector of flows
+#' for each \code{from-to} pair
+#' @param mapping experimental -- please choose default for now
+#' @family flexmodel_definition_functions
+#' @family rate_functions
 #' @export
 vec_rate = function(model, from, to, formula,
                     mapping = c("pairwise", "blockwise")) {
@@ -494,7 +506,8 @@ vec_rate = function(model, from, to, formula,
 #'
 #' Not implemented
 #'
-#' @family flexmodels
+#' @family flexmodel_definition_functions
+#' @family rate_functions
 #' @export
 mat_rate = function() {
     stop("\nrate specification with matrices is ",
@@ -508,7 +521,6 @@ mat_rate = function() {
 
 # factr and associated functions ----------------------
 
-#' @export
 factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
   ## TODO: test for formula structure
   stopifnot(
@@ -519,8 +531,8 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
   )
 
   product_list <- function(x) {
-    factor_table = McMasterPandemic:::factor_table
-    find_vec_indices = McMasterPandemic:::find_vec_indices
+    factor_table = McMasterPandemic::factor_table
+    find_vec_indices = McMasterPandemic::find_vec_indices
     spec_check(
       introduced_version = "0.1.2",
       feature = "common factors (i.e. factr)"
@@ -579,7 +591,7 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
 #' one intermediate factor at the same time.
 #'
 #' @return \code{\link{flexmodel}} object
-#' @family flexmodels
+#' @family flexmodel_definition_functions
 #' @export
 add_factr <- function(model, factr_nm, formula) {
   unpack(model)
@@ -674,7 +686,7 @@ state_param_sum = function(sum_name, summands, state, params) {
 #'
 #' @return \code{\link{flexmodel}}
 #'
-#' @family flexmodels
+#' @family flexmodel_definition_functions
 #' @export
 add_state_param_sum = function(model, sum_name, summands) {
     if (length(model$factrs) != 0L) {
@@ -694,19 +706,17 @@ add_state_param_sum = function(model, sum_name, summands) {
 ##'
 ##' Add parallel accumulators to a compartmental model.
 ##'
-##' @param model TODO
+##' @param model \code{\link{flexmodel}} object
 ##' @param state_patterns regular expressions for identifying states as
 ##' parallel accumulators
 ##' @return another compartmental model with parallel accumulators specified
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @export
 add_parallel_accumulators <- function(model, state_patterns) {
     model$parallel_accumulators <- parallel_accumulators(model, state_patterns)
     return(model)
 }
 
-##' @family flexmodels
-##' @export
 parallel_accumulators <- function(model, state_patterns) {
     spec_check(introduced_version = "0.0.2", feature = "Parallel accumulators")
     if(spec_ver_gt('0.1.0')) stop('Parallel accumulators are now handled through outflow')
@@ -754,7 +764,7 @@ add_linearized_outflow = function(model, from, to) {
 ##'
 ##' @return model \code{\link{flexmodel}} object
 ##'
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @export
 add_outflow = function(
   model,
@@ -767,8 +777,6 @@ add_outflow = function(
   return(model)
 }
 
-##' @family flexmodels
-##' @export
 outflow = function(
   model,
   from = '.+',
@@ -781,7 +789,18 @@ outflow = function(
   nlist(from, to)
 }
 
-##' @family flexmodels
+##' Update Linearized Model Parameters
+##'
+##' Specify how to update model parameters for use with
+##' linearized models during initial state vector construction.
+##'
+##' @param model \code{\link{flexmodel}} object
+##' @param param_pattern regular expression identifying parameters
+##' that require updating before they can be used in linearized
+##' model simulations
+##' @param value numeric value required to update
+##'
+##' @family flexmodel_definition_functions
 ##' @export
 update_linearized_params = function(model, param_pattern, value) {
     model$linearized_params = c(
@@ -790,8 +809,6 @@ update_linearized_params = function(model, param_pattern, value) {
     return(model)
 }
 
-##' @family flexmodels
-##' @export
 linearized_params = function(model, param_pattern, value) {
     spec_check(introduced_version = "0.1.1",
                feature = "Disease free parameter updates")
@@ -804,7 +821,15 @@ linearized_params = function(model, param_pattern, value) {
     nlist(params_to_update, update_value)
 }
 
-##' @family flexmodels
+##' Update Disease-Free State
+##'
+##' @param model \code{\link{flexmodel}} object
+##' @param state_pattern regular expression for identifying state variables
+##' to be updated when constructing a disease-free state
+##' @param param_pattern regular expression for identifying parameters
+##' to use as disease-free state variables
+##'
+##' @family flexmodel_definition_functions
 ##' @export
 update_disease_free_state = function(model, state_pattern, param_pattern) {
     model$disease_free = c(
@@ -813,8 +838,6 @@ update_disease_free_state = function(model, state_pattern, param_pattern) {
     return(model)
 }
 
-##' @family flexmodels
-##' @export
 disease_free_state = function(model, state_pattern, param_pattern) {
     spec_check(introduced_version = "0.1.1",
                feature = "Disease free state updates")
@@ -846,7 +869,7 @@ disease_free_state = function(model, state_pattern, param_pattern) {
 ##' population -- over all compartments
 ##' @param infected name of a single parameter to represent the initial total size of
 ##' the infected population -- over all infected compartments
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @export
 initial_population = function(model, total, infected) {
     spec_check(
@@ -875,7 +898,7 @@ initial_population = function(model, total, infected) {
 ##'
 ##' @return \code{\link{flexmodel}} object
 ##'
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @export
 add_state_mappings = function(
     model,
@@ -920,8 +943,6 @@ add_state_mappings = function(
 ##' }
 ##'
 ##' @param model compartmental model
-##' @param another compartmental model with indices for TMB
-##' @family flexmodels
 ##' @export
 update_tmb_indices <- function(model) {
 
@@ -933,14 +954,13 @@ update_tmb_indices <- function(model) {
     return(model)
 }
 
-##' @inheritParams update_tmb_indices
 ##' @rdname update_tmb_indices
 ##' @export
 add_tmb_indices = function(model) {
   stop("add_tmb_indices is no longer allowed. please use update_tmb_indices")
 }
 
-##' @family flexmodels
+##' @family flexmodel_definition_functions
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
@@ -1004,7 +1024,6 @@ tmb_indices <- function(model) {
 ##' object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 ##'
 ##' @param model object of class \code{flexmodel}
-##' @family flexmodels
 ##' @importFrom TMB MakeADFun
 ##' @useDynLib McMasterPandemic
 ##' @export
@@ -1307,6 +1326,16 @@ tmb_fun <- function(model) {
     return(dd)
 }
 
+##' Update Initial State
+##'
+##' Update the initial state of a \code{\link{flexmodel}} object
+##' using an eigenvector-based approach to finding a near-disease-free
+##' state
+##'
+##' @param model \code{\link{flexmodel}} object
+##' @param silent warn if the model is not properly defined for
+##' updating the initial state?
+##'
 ##' @export
 update_initial_state = function(model, silent = FALSE) {
   spec_check(introduced_version = '0.1.1',

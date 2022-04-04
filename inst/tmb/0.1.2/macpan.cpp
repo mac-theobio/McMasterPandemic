@@ -1,4 +1,4 @@
-// This version implements spec 0.1.1 in https://canmod.net/misc/flex_specs
+// This version implements spec 0.1.2 in https://canmod.net/misc/flex_specs
 
 // search for printouts that are not commented out: ^\s*std::cout
 // search for printouts that are commented out: ^\s*//\s*std::cout

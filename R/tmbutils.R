@@ -154,6 +154,7 @@ find_operators <- function(x, operator) {
     ), x
   )
 }
+
 factor_table <- function(x) {
   data.frame(
     var = unlist(lapply(x, get_variables)),
@@ -202,7 +203,6 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
-#' @export
 block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
 }
@@ -346,40 +346,114 @@ reduce_rates = function(rates) {
 
 # getting information about rates and sums ----------------------
 
-#' @export
-get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+#' Get From-State Names
+#'
+#' Get vector of from-state names associated with each rate in the model.
+#'
+#' @param model \code{\link{flexmodel}} object
+#'
+#' @family get_flexmodel_info_functions
 
-#' @export
-get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
-
-#' @export
 get_rate_from = function(model) get_rate_info(model, 'from')
 
-#' @export
+#' Get To-State Names
+#'
+#' Get vector of to-state names associated with each rate in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_to = function(model) get_rate_info(model, 'to')
 
-#' @export
-get_rate_ratemat_indices = function(model) get_rate_info(model, 'ratemat_indices')
+#' Get Rate Info
+#'
+#' Get information on the rate associated with a particular state transition.
+#'
+#' @param what character describing the rate (i.e. \code{'state1_to_state2'})
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
 
-#' @export
+get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+
+#' Get Factr Info
+#'
+#' Get information about an intermediate factor
+#'
+#' @param what name of the intermediate factor, as named by
+#' \code{\link{add_factr}} or \code{\link{vec_factr}}
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
+get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
+
+#' Get Rate Formulas
+#'
+#' Get vector of formulas associated with each rate in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_formula = function(model) get_rate_info(model, 'formula')
 
-#' @export
+#' Get Rate Factors
+#'
+#' Get the factor table associated with each rate in the model.
+#' TODO: define the factor table or link to a description.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_factors = function(model) get_rate_info(model, 'factors')
 
-#' @export
+#' Get Rate State Dependence
+#'
+#' Get a logical vector indicating which rates in the model depend on
+#' state variables.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
 
-#' @export
+#' Get Rate Time Variation
+#'
+#' Get a logical vector indicating which rates in the model are
+#' time-varying.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
 
-#' @export
+#' Get Rate Sum Dependence
+#'
+#' Get a logical vector indicating which rates in the model depend
+#' on sums of parameters and state variables.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
 
-#' @export
+#' Get Factr Formula
+#'
+#' Get vector of formulas for defining each intermediate factor in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_factr_formula = function(model) get_factr_info(model, 'formula')
 
-#' @export
+#' Get the Number of Products
+#'
+#' Get a vector giving the number of products (in the multiplication sense)
+#' that are required to compute each rate in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_n_products = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -389,7 +463,15 @@ get_n_products = function(model) {
   )
 }
 
-#' @export
+#' Get Number of Variables
+#'
+#' Get a vector giving the numbers of variables (parameters, state variables,
+#' sums of parameters and state variables, and intermediate factors) required
+#' to compute each rate in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_n_variables = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -398,7 +480,14 @@ get_n_variables = function(model) {
   )
 }
 
-#' @export
+#' Get Number of Factors
+#'
+#' Get the number of factors required to compute each rate in the
+#' model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_n_factors = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -406,22 +495,39 @@ get_n_factors = function(model) {
   )
 }
 
-#' @export
+#' Get Sum Info
+#'
+#' Get information on each sum (of parameters and state variables)
+#' in the model.
+#'
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_sum_info = function(model, what) lapply(model$sums, '[[', what)
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_sum_summands = function(model) get_sum_info(model, 'summands')
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rate_vars = function(model) {
   (model
    %>% get_rate_factors
@@ -429,7 +535,9 @@ get_rate_vars = function(model) {
   )
 }
 
-#' @export
+#' @family get_flexmodel_info_functions
+#' @inheritParams get_rate_from
+
 get_rates_with_vars = function(model, var_pattern) {
   ii = (model
     %>% get_rate_vars
@@ -440,6 +548,16 @@ get_rates_with_vars = function(model, var_pattern) {
   get_rates(model)[ii]
 }
 
+get_rates = function(model) {
+  model$rates
+}
+
+##' Rate Summary
+##'
+##' Summarize the properties of the rates of transition amongst the
+##' compartments in the model.
+##'
+##' @param model a \code{\link{flexmodel}} object
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
 rate_summary = function(model, include_formula = FALSE) {
@@ -463,10 +581,6 @@ rate_summary = function(model, include_formula = FALSE) {
   summary
 }
 
-#' @export
-get_rates = function(model) {
-  model$rates
-}
 
 ##' @param x parameter vector or flexmodel
 ##' @export
@@ -863,7 +977,7 @@ outflow_indices = function(outflow, ratemat) {
   #       outflow.
   #nlist(state_indices, flow_state_indices)
   #all = names(model$state)
-  #lapply(model$outflow, McMasterPandemic:::make_nested_indices, x = all)
+  #lapply(model$outflow, McMasterPandemic::make_nested_indices, x = all)
 }
 
 #' Nested Indices
@@ -872,7 +986,7 @@ outflow_indices = function(outflow, ratemat) {
 #' of regular expressions, and return indices into each vector for recovering
 #' other shorter vectors that are lower in the hierarchy.
 #'
-#' @section Motivating Example
+#' @section Motivating Example:
 #'
 #' There are three nested state vectors
 #' a_states -- all states

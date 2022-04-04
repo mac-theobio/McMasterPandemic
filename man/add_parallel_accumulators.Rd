@@ -7,7 +7,7 @@
 add_parallel_accumulators(model, state_patterns)
 }
 \arguments{
-\item{model}{TODO}
+\item{model}{\code{\link{flexmodel}} object}
 
 \item{state_patterns}{regular expressions for identifying states as
 parallel accumulators}
@@ -19,7 +19,7 @@ another compartmental model with parallel accumulators specified
 Add parallel accumulators to a compartmental model.
 }
 \seealso{
-Other flexmodels: 
+Other flexmodel_definition_functions: 
 \code{\link{add_factr}()},
 \code{\link{add_linearized_outflow}()},
 \code{\link{add_rate}()},
@@ -27,14 +27,11 @@ Other flexmodels:
 \code{\link{add_state_param_sum}()},
 \code{\link{flexmodel}()},
 \code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},
 \code{\link{rep_rate}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()},
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()},
 \code{\link{vec_rate}()}
 }
-\concept{flexmodels}
+\concept{flexmodel_definition_functions}

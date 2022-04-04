@@ -30,3 +30,27 @@ Create and return a nested set of character vectors from a sequence
 of regular expressions, and return indices into each vector for recovering
 other shorter vectors that are lower in the hierarchy.
 }
+\section{Motivating Example}{
+
+
+There are three nested state vectors
+a_states -- all states
+p_states -- excludes accumulators
+e_states -- includes only infected states
+
+There are three index vectors
+i_ap -- indexes a_states to yield p_states
+i_ae -- indexes a_states to yield e_states
+i_pe -- indexes p_states to yield e_states
+
+There are also three inverse index vectors
+j_ap -- indexes a_states to yield setdiff(a_states, p_states)
+j_ae -- indexes a_states to yield setdiff(a_states, e_states)
+j_pe -- indexes p_states to yield setdiff(p_states, e_states)
+
+In general -- assume that y_states are nested in x_states
+i_xy -- indexes x_states to yield y_states
+j_xy -- indexes x_states to yeild setdiff(x_states, y_states)
+i_yx -- doesn't exist because not all x_states are also y_states
+}
+

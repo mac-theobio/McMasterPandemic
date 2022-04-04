@@ -2,9 +2,12 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/mac-theobio/McMasterPandemic/actions)
+
 <!-- badges: end -->
 
-Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Morgan Kain, Michael Li, Irena Papst (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
+Compartmental epidemic models for forecasting and analysis of infectious disease pandemics.  Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
+
+[![Authors](https://img.shields.io/static/v1.svg?label=acknowledgements&message=authors&color=blue)](https://mac-theobio.github.io/McMasterPandemic/authors.html)
 
 ### Documentation
 * See the accompanying [pkgdown](https://mac-theobio.github.io/McMasterPandemic/) site.
@@ -18,6 +21,8 @@ Compartmental epidemic models for forecasting and analysis of infectious disease
 The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) and install locally or use `remotes::install_github("mac-theobio/McMasterPandemic")` to install the package. You will need to first install the developer version of `bbmle` (`remotes::install_github("bbolker/bbmle")`) before installing `McMasterPandemic`, followed by another package that is not on CRAN (`remotes::install_github("johndharrison/semver")`).
 
 ### For developers
+
+[![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
 
 * the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) -- there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see `dockerfile` for details on Debian Linux)
 * as a convenience you can install all of the R and tex package dependencies using `make dependencies` or running `/misc/dependencies.R`
