@@ -2415,6 +2415,9 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
   sim_hist
 }
 
+# FIXME: following two functions do the same thing in slightly different
+# ways!
+
 #' Condensed set of Simulated Variables
 #'
 #' @export
@@ -2429,6 +2432,35 @@ simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
   names(sims) = c(cond_map)
   sims
 }
+
+#' @export
+condense_flexmodel = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = "condensation in c++"
+  )
+  condensed_simulation_history = setNames(
+    simulation_history(model)[names(model$condensation_map)],
+    model$condensation_map
+  )
+
+  # HACK! ultimately we want cumulative reports calculated
+  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
+  # also this assumes no observation error, and doesn't
+  # compute D as cumulative sum of deaths (as is done in run_sim)
+  if ('report' %in% names(condensed_simulation_history)) {
+    condensed_simulation_history$cumRep = cumsum(
+      ifelse(
+        !is.na(unname(unlist(condensed_simulation_history$report))),
+        unname(unlist(condensed_simulation_history$report)),
+        0
+      )
+    )
+  }
+
+  cbind(data.frame(Date = simulation_dates(model), condensed_simulation_history))
+}
+
 
 #' @importFrom tidyr pivot_longer
 #' @export

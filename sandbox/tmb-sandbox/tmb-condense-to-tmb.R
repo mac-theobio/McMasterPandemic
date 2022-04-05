@@ -105,34 +105,6 @@ r_sim[is.na(r_sim)] = 0
 compare_sims(r_sim, new_tmb_sim, compare_attr = FALSE)
 
 
-condense_flexmodel = function(model) {
-  spec_check(
-    introduced_version = '0.2.0',
-    feature = "condensation in c++"
-  )
-  condensed_simulation_history = setNames(
-    simulation_history(model)[names(model$condensation_map)],
-    model$condensation_map
-  )
-
-  # HACK! ultimately we want cumulative reports calculated
-  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
-  # also this assumes no observation error, and doesn't
-  # compute D as cumulative sum of deaths (as is done in run_sim)
-  if ('report' %in% names(condensed_simulation_history)) {
-    condensed_simulation_history$cumRep = cumsum(
-      ifelse(
-        !is.na(unname(unlist(condensed_simulation_history$report))),
-        unname(unlist(condensed_simulation_history$report)),
-        0
-      )
-    )
-  }
-
-  cbind(data.frame(Date = simulation_dates(model), condensed_simulation_history))
-}
-
-
 
 saveRDS(yukon_fit$params_calibrated, "../../sandbox/tmb-sandbox/params_calibrated.rds")
 saveRDS(yukon_fit$params_calibrated_timevar, "../../sandbox/tmb-sandbox/params_calibrated_timevar.rds")
