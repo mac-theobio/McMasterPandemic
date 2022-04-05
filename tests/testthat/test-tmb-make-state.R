@@ -97,7 +97,7 @@ test_that('make state works with a time-varying parameter', {
       use_flex = FALSE
     )
   )
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, na_is_zero = TRUE)
 })
 
 test_that('make state matches vax/variant model without hazard intialization', {

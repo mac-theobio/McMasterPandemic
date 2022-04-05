@@ -97,11 +97,11 @@ r_sim = run_sim(
   condense = TRUE
 )
 
+r_sim[is.na(r_sim)] = 0
 compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 yukon_update = update_params_calibrated(yukon_fit, TRUE)
 
 new_tmb_sim = condense_flexmodel(yukon_update)
-r_sim[is.na(r_sim)] = 0
 compare_sims(r_sim, new_tmb_sim, compare_attr = FALSE)
 
 

@@ -2422,6 +2422,7 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
 #'
 #' @export
 simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
+  stop("use condense_flexmodel instead")
   cond_map = model$condensation_map
   cond_nms = names(cond_map)
   if (add_dates) {
@@ -2458,7 +2459,7 @@ condense_flexmodel = function(model) {
     )
   }
 
-  cbind(data.frame(Date = simulation_dates(model), condensed_simulation_history))
+  cbind(data.frame(date = simulation_dates(model), condensed_simulation_history))
 }
 
 
@@ -2578,14 +2579,19 @@ fitted.flexmodel = function(model) {
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
+#' @param na_is_zero should NAs be replaced with zeros?
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE, na_is_zero = FALSE) {
   if (is.null(tolerance)) {
     if (require(testthat)) {
       tolerance = testthat_tolerance()
     } else {
       tolerance = .Machine$double.eps^0.5
     }
+  }
+  if (na_is_zero) {
+    classic_sim[is.na(classic_sim)] = 0
+    tmb_sim[is.na(tmb_sim)] = 0
   }
   if(compare_attr) {
     params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")

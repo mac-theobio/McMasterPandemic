@@ -486,7 +486,7 @@ test_that("flex models made with null state can be used", {
         start_date = model$start_date,
         end_date = model$end_date
     )
-    compare_sims(r_sims, tmb_sims)
+    compare_sims(r_sims, tmb_sims, na_is_zero = TRUE)
 })
 
 test_that("simple sir models produce correct simulations", {

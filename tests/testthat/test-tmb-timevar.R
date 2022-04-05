@@ -155,7 +155,7 @@ test_that('time variation works for vax models', {
   test_fun = function(do_make_state, tolerance = testthat_tolerance()) {
     mm$do_make_state = do_make_state
     tmb_sim <- run_sim(
-      params = model_params,
+      params = unlist(model_params),
       state = mm$state,
       start_date = mm$start_date,
       end_date = mm$end_date,

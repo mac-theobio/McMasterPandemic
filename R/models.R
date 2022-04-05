@@ -336,22 +336,50 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
     foi_vec = vec("S" %_% vax_cat %_% "to" %_% "E" %_% vax_cat)
     S_vec = vec("S" %_% vax_cat)
     model = (model
+      %>% add_state_param_sum("Stotal", "^S" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Etotal", "^E" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Itotal", "^I(a|s|p|m)" %_% alt_group(vax_cat))
       %>% add_state_param_sum("Htotal", "^H2?" %_% alt_group(vax_cat))
       %>% add_state_param_sum("ICU", "^ICU(s|d)" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("XTotal", "^X" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("DTotal", "^D" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Rtotal", "^R" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Xtotal", "^X" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Dtotal", "^D" %_% alt_group(vax_cat))
+      %>% add_sim_report_expr("Incidence_unvax", ~ (S_unvax_to_E_unvax) * (S_unvax))
+      %>% add_sim_report_expr("Incidence_vaxdose1", ~ (S_vaxdose1_to_E_vaxdose1) * (S_vaxdose1))
+      %>% add_sim_report_expr("Incidence_vaxprotect1", ~ (S_vaxprotect1_to_E_vaxprotect1) * (S_vaxprotect1))
+      %>% add_sim_report_expr("Incidence_vaxdose2", ~ (S_vaxdose2_to_E_vaxdose2) * (S_vaxdose2))
+      %>% add_sim_report_expr("Incidence_vaxprotect2", ~ (S_vaxprotect2_to_E_vaxprotect2) * (S_vaxprotect2))
       %>% add_sim_report_expr("Incidence", sum(foi_vec * S_vec))
-      %>% add_lag_diff("^(X|D)Total$")
-      %>% add_conv("^Incidence$")
+      %>% add_conv("^Incidence")
+      %>% add_lag_diff("^(X|D)total$")
       %>% update_condense_map(c(
-        XTotal = "X",
-        DTotal = "D",
-        conv_Incidence = 'report',
-        Incidence = 'incidence',
+        Stotal = "S",
+        Etotal = "E",
+        Itotal = "I",
         Htotal = 'H',
         ICU = 'ICU',
-        lag_1_diff_XTotal = 'hosp',
-        lag_1_diff_DTotal = 'death'
+        Rtotal = "R",
+        lag_1_diff_Xtotal = 'hosp',
+        Xtotal = "X",
+        lag_1_diff_Dtotal = 'death',
+        Dtotal = "D",
+        S_unvax_to_E_unvax = "foi_unvax",
+        S_vaxdose1_to_E_vaxdose1 = "foi_vaxdose1",
+        S_vaxprotect1_to_E_vaxprotect1 = "foi_vaxprotect1",
+        S_vaxdose2_to_E_vaxdose2 = "foi_vaxdose2",
+        S_vaxprotect2_to_E_vaxprotect2 = "foi_vaxprotect2",
+        Incidence_unvax = "incidence_unvax",
+        Incidence_vaxdose1 = "incidence_vaxdose1",
+        Incidence_vaxprotect1 = "incidence_vaxprotect1",
+        Incidence_vaxdose2 = "incidence_vaxdose2",
+        Incidence_vaxprotect2 = "incidence_vaxprotect2",
+        Incidence = 'incidence',
+        conv_Incidence_unvax = 'report_unvax',
+        conv_Incidence_vaxdose1 = 'report_vaxdose1',
+        conv_Incidence_vaxprotect1 = 'report_vaxprotect1',
+        conv_Incidence_vaxdose2 = 'report_vaxdose2',
+        conv_Incidence_vaxprotect2 = 'report_vaxprotect2',
+        conv_Incidence = 'report'
     ))
     )
   }
