@@ -1084,6 +1084,13 @@ Type objective_function<Type>::operator() ()
   );
   //std::cout << "tv_mult: " << tv_mult << std::endl;
 
+  // dump inverse-transformed parameters and time-varying
+  // multipliers to the R side, as an easy way to
+  // back-transform the parameters off of the scale used
+  // for optimization
+  REPORT(params);
+  REPORT(tv_mult);
+
   // spec 0.2.0
   // ----------
 

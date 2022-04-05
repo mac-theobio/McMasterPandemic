@@ -136,9 +136,11 @@ yukon_model = make_base_model(
   end_date = edate,
   params_timevar = params_timevar,
   do_hazard = TRUE,
-  do_make_state = TRUE,  # use evec on the C++ side or not
+  do_make_state = FALSE,  # use evec on the C++ side or not
   data = sim_covid_data
 )
+
+all.equal(simulation_history(yukon_model)$Htotal, simulation_history(yukon_model)$H + simulation_history(yukon_model)$H2)
 
 yukon_model = (yukon_model
                %>% update_opt_params(
@@ -153,9 +155,9 @@ yukon_model = (yukon_model
                  log_mu ~ log_flat(0)
                )
 )
+simulation_history(yukon_model) # TODO: fails -- fix/test -- can't
 
 yukon_fit = nlminb_flexmodel(yukon_model)
-
 (yukon_fit
   %>% fitted
   %>% ggplot()

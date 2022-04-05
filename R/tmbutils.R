@@ -174,7 +174,7 @@ def = sapply(c(
 
 def$model = function(name, model_spec_version) {
   def$nlist(
-    name = def$character(min_len = 1L, max_len = 1L, default = name),
+    name = def$character(min_len = 1L, max_len = Inf, default = name),
     model_spec_version = def$character(
       min_len = 1L, max_len = 1L,
       pattern = '[0-9]+\\.[0-9]+\\.[0-9]+',
@@ -2472,12 +2472,25 @@ simulation_fitted = function(model) {
   simulation_condensed(model)[obsvars]
 }
 
+update_params_calibrated = function(model) {
+  # TODO: check if opt_par exists
+  obj_fun = tmb_fun(model)
+  report = obj_fun$report(model$opt_par)
+  model$params_calibrated = model$params
+  model$params_calibrated[] = report$params
+  model$params_calibrated_timevar = (model$timevar$piece_wise$schedule
+    %>% select(Date, Symbol, Value, Type)
+    %>% within(Value[is.na(Value)] <- report$tv_mult)
+  )
+  model
+}
+
 #' @export
 optim_flexmodel = function(model, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
-  model
+  update_params_calibrated(model)
 }
 
 #' @export
@@ -2485,7 +2498,7 @@ nlminb_flexmodel = function(model, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
-  model
+  update_params_calibrated(model)
 }
 
 #' @export

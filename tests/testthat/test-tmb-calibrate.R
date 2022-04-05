@@ -208,7 +208,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
     )
     ## reshape into the correct format for input data passed to calibrate()
     %>% mutate(value=round(report), var="report")
-    %>% select(date, value, var)
+    %>% select(date, var, value)
     %>% na.omit()
   )
 
@@ -247,7 +247,8 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
     do_approx_hazard_lin = FALSE,
     do_make_state = TRUE,
     max_iters_eig_pow_meth = 1000,
-    tol_eig_pow_meth = 1e-4
+    tol_eig_pow_meth = 1e-4,
+    data = synth_reports # new
   )
 
   simulate_timings = time_wrap(
@@ -268,6 +269,17 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
     )
   )
   compare_sims(sims_r, sims_tmb, compare_attr = FALSE)
+
+  cal_model = (test_model
+    %>% update_opt_params(
+      beta0 ~ flat(0.6),
+      log_nb_disp_report ~ log_flat(0)
+    )
+  )
+  opt_model = nlminb_flexmodel(cal_model)
+  opt_model$opt_obj$objective
+  opt_model$opt_par
+  fitted_mod_tmb
 
   calibrate_timings = time_wrap(
     fitted_mod_tmb <- calibrate(
@@ -723,6 +735,7 @@ test_that("transformations and priors give the right objective function and grad
   )
 
   yukon_fit = suppressWarnings(nlminb_flexmodel(yukon_model))
+  yukon_fit = suppressWarnings(optim_flexmodel(yukon_model))
 
   obj_fun = tmb_fun(yukon_fit)
   obj_fun$fn(yukon_fit$opt_par) # negative log posterior
