@@ -86,17 +86,24 @@ make_base_model <- function(...) {
     model = (model
       %>% add_state_param_sum("Htotal", "^H2?$")
       %>% add_state_param_sum("ICU", "^ICU(s|d)$")
+      %>% add_state_param_sum("Itotal", "^I(a|p|m|s)$")
       %>% add_sim_report_expr("Incidence", ~ (S_to_E) * (S))
       %>% add_lag_diff("^(X|D)$")
       %>% add_conv("^Incidence$")
       %>% update_condense_map(c(
-        conv_Incidence = 'report',
-        Incidence = 'incidence',
-        S_to_E = 'foi',
+        S = "S",
+        E = "E",
+        Itotal = "I",
         Htotal = 'H',
         ICU = 'ICU',
+        R = 'R',
         lag_1_diff_X = 'hosp',
-        lag_1_diff_D = 'death'
+        X = 'X',
+        lag_1_diff_D = 'death',
+        D = 'D',
+        S_to_E = 'foi',
+        Incidence = 'incidence',
+        conv_Incidence = 'report'
       ))
     )
   }

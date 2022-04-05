@@ -13,6 +13,8 @@
 // 6 Lag-n differences of the first five items
 // 7 Convolutions of the first five items
 
+#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
+#include <Eigen/Eigen>
 #include <iostream>
 #include <string>
 #include <vector>

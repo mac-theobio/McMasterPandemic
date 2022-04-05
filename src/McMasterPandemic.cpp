@@ -13,6 +13,8 @@
 // 6 Lag-n differences of the first five items
 // 7 Convolutions of the first five items
 
+#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
+#include <Eigen/Eigen>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -25,7 +27,7 @@
 const double EPSILON = 1.0e-10; // less than this value is considered as zero
 
 ///////////////////////////////////////////////////////////////////////////////
-// To make gdb work, I define the following functions:
+// To make debugging with gdb work, I define the following functions:
 void print(vector<double> x) {
   std::cout << x << std::endl;
 }
@@ -46,15 +48,6 @@ void print(array<double> x) {
 void print(array<int> x) {
   x.print();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Status of TMB calculations.
-// If it is 0, then succeed. Otherwise, it encodes various causes for failure
-//          1: doesn't not converge in CalcEigenVector;
-//          2: eigen vector is all zeros in CalcEigenVector;
-//          3: mixed signs in eigen vector in CalcEigenVector;
-
-//static int tmb_status = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function round
@@ -753,10 +746,6 @@ vector<Type> make_state(
   // 7 -- Compute eigenvector
   vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, max_iters_eig_pow_meth, tol_eig_pow_meth);
 
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return state; // There is an error in the computation so far
-
   // 8 -- Remove elements of `eigvec` to create `eig_infected`
   n = im_eigen_drop_infected_idx.size();
   vector<int> tmp_im_eigen_drop_infected_idx(n+1);
@@ -1091,19 +1080,6 @@ Type objective_function<Type>::operator() ()
   REPORT(params);
   REPORT(tv_mult);
 
-  // spec 0.2.0
-  // ----------
-
-  // compute the regularization functions on the
-  // transformed scale
-
-  // inverse transform parameters to be optimized
-  // loop over each parameter to be optimzed
-  // and replace the value in params with the inverse
-  // transformation in params
-
-  //REPORT(tmb_status);
-
   // make state vector from params vector
   if (do_make_state) {
     state = make_state(
@@ -1144,10 +1120,6 @@ Type objective_function<Type>::operator() ()
     );
 
   }
-
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return 0; // There is an error in the computation so far
 
   // spec v0.2.0
   int stateSize = state.size();
@@ -1198,10 +1170,6 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return 0; // There is an error in the computation so far
-
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
 
@@ -1216,10 +1184,6 @@ Type objective_function<Type>::operator() ()
     concatenated_ratemat_nonzeros[j] = ratemat.coeff(row,col);
     simulation_history(0, stateSize+j) = ratemat.coeff(row,col);
   }
-
-  //if (tmb_status) {
-  //  return 0; // There is an error in the computation so far
-  //}
 
   // Item #5 Element-wise sum of any variable of type 4 (similar to factr calculation)
   if (extraExprNum>0) {
@@ -1311,12 +1275,6 @@ Type objective_function<Type>::operator() ()
                     outflow_rows, outflow_cols,
                     do_hazard, do_approx_hazard);
 
-    // FIXME: parameter dependent branching?? commenting out for now
-    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-    //if (tmb_status) {
-    //  return 0; // There is an error in the computation so far
-    //}
-
     sp.segment(0, stateSize) = state;
     simulation_history.block(i+1, 0, 1, stateSize) = state.transpose();
 
@@ -1360,12 +1318,6 @@ Type objective_function<Type>::operator() ()
     update_ratemat(
       &ratemat, sp, from, to, count_integral,
       spi, modifier, updateidx);
-
-    // FIXME: parameter dependent branching??
-    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-    //if (tmb_status) {
-    //  return 0; // There is an error in the computation so far
-    //}
 
     // concatenate state vectors at each time step so they can be returned
     concatenated_state_vector.segment((i+1)*stateSize, stateSize) = state;

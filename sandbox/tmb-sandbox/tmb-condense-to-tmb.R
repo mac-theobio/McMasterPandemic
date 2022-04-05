@@ -1,6 +1,9 @@
 library(McMasterPandemic)
 library(tidyr)
 library(dplyr)
+library(lubridate)
+
+r_tmb_comparable()
 
 params <- read_params("PHAC.csv")
 params[c("N", "phi1")] <- c(42507, 0.98)
@@ -58,7 +61,8 @@ yukon_model = make_base_model(
   data = covid_data
 )
 
-yukon_model = (yukon_model
+
+yukon_cal = (yukon_model
                %>% update_opt_params(
                  log_beta0 ~ log_flat(0),
                  logit_mu ~ logit_flat(-0.04499737), # set to zero to see if it matters
@@ -72,7 +76,63 @@ yukon_model = (yukon_model
                )
 )
 
-yukon_fit = suppressWarnings(nlminb_flexmodel(yukon_model))
+yukon_fit = suppressWarnings(nlminb_flexmodel(yukon_cal))
+
+tmb_sim = run_sim(
+  yukon_fit$params_calibrated,
+  NULL,
+  yukon_fit$start_date,
+  yukon_fit$end_date,
+  yukon_fit$params_calibrated_timevar,
+  condense = TRUE,
+  flexmodel = yukon_model
+)
+
+r_sim = run_sim(
+  yukon_fit$params_calibrated,
+  NULL,
+  yukon_fit$start_date,
+  yukon_fit$end_date,
+  yukon_fit$params_calibrated_timevar,
+  condense = TRUE
+)
+
+compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
+yukon_update = update_params_calibrated(yukon_fit, TRUE)
+
+new_tmb_sim = condense_flexmodel(yukon_update)
+r_sim[is.na(r_sim)] = 0
+compare_sims(r_sim, new_tmb_sim, compare_attr = FALSE)
+
+
+condense_flexmodel = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = "condensation in c++"
+  )
+  condensed_simulation_history = setNames(
+    simulation_history(model)[names(model$condensation_map)],
+    model$condensation_map
+  )
+
+  # HACK! ultimately we want cumulative reports calculated
+  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
+  # also this assumes no observation error, and doesn't
+  # compute D as cumulative sum of deaths (as is done in run_sim)
+  if ('report' %in% names(condensed_simulation_history)) {
+    condensed_simulation_history$cumRep = cumsum(
+      ifelse(
+        !is.na(unname(unlist(condensed_simulation_history$report))),
+        unname(unlist(condensed_simulation_history$report)),
+        0
+      )
+    )
+  }
+
+  cbind(data.frame(Date = simulation_dates(model), condensed_simulation_history))
+}
+
+
 
 saveRDS(yukon_fit$params_calibrated, "../../sandbox/tmb-sandbox/params_calibrated.rds")
 saveRDS(yukon_fit$params_calibrated_timevar, "../../sandbox/tmb-sandbox/params_calibrated_timevar.rds")

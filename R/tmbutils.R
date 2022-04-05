@@ -2472,7 +2472,8 @@ simulation_fitted = function(model) {
   simulation_condensed(model)[obsvars]
 }
 
-update_params_calibrated = function(model) {
+#' @export
+update_params_calibrated = function(model, update_default_params = FALSE) {
   # TODO: check if opt_par exists
   obj_fun = tmb_fun(model)
   report = obj_fun$report(model$opt_par)
@@ -2482,6 +2483,13 @@ update_params_calibrated = function(model) {
     %>% select(Date, Symbol, Value, Type)
     %>% within(Value[is.na(Value)] <- report$tv_mult)
   )
+  if (update_default_params) {
+    model$params = model$params_calibrated
+    model = update_piece_wise(model, model$params_calibrated_timevar)
+    model$opt_params = list()
+    model$opt_tv_params = list()
+    model = update_tmb_indices(model)
+  }
   model
 }
 
