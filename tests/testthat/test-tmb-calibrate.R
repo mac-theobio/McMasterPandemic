@@ -50,7 +50,7 @@ test_that('simple models calibrate the same regardless of engine', {
     condense = TRUE
   )
 
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, na_is_zero = TRUE)
 
   report_data <- (r_sim
                   %>% mutate(value = round(report), var = "report")
@@ -70,7 +70,8 @@ test_that('simple models calibrate the same regardless of engine', {
       sim_args = list(
         step_args = list(do_hazard = TRUE),
         use_flex = FALSE
-      )
+      ),
+      debug = TRUE
     ),
     fitted_tmb <- calibrate(
       data = report_data,
@@ -81,7 +82,8 @@ test_that('simple models calibrate the same regardless of engine', {
         step_args = list(do_hazard = TRUE),
         use_flex = TRUE,
         flexmodel = model
-      )
+      ),
+      debug = TRUE
     )
   )
 
