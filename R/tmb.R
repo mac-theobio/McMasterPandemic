@@ -1845,7 +1845,7 @@ initialize_piece_wise = function(model) {
       breaks = integer(0L),
       count_of_tv_at_breaks = integer(0L),
       schedule = data.frame(
-        Date = as.Date(numeric(0L)),
+        Date = as.Date(numeric(0L), origin = "1970-01-01"),
         Symbol = character(0L),
         Type = character(0L),
         Value = numeric(0L),
