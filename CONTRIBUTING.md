@@ -8,7 +8,7 @@ Thank you for contributing to our project.
 
 The simplified current architecture is described by the following diagram.
 
-![](assets/architecture.png)
+![](assets/architecture.svg)
 
 Each box is a layer of functions that call functions in the layers below them.
 
@@ -18,7 +18,7 @@ The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, 
 
 ### Target Architecture Proposal
 
-![](assets/target_architecture.png)
+![](assets/target_architecture.svg)
 
 ### Engine-Client Separation
 
