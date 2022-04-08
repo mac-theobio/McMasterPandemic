@@ -174,7 +174,7 @@ def = sapply(c(
 
 def$model = function(name, model_spec_version) {
   def$nlist(
-    name = def$character(min_len = 1L, max_len = 1L, default = name),
+    name = def$character(min_len = 1L, max_len = Inf, default = name),
     model_spec_version = def$character(
       min_len = 1L, max_len = 1L,
       pattern = '[0-9]+\\.[0-9]+\\.[0-9]+',
@@ -2415,10 +2415,14 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
   sim_hist
 }
 
+# FIXME: following two functions do the same thing in slightly different
+# ways!
+
 #' Condensed set of Simulated Variables
 #'
 #' @export
 simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
+  stop("use condense_flexmodel instead")
   cond_map = model$condensation_map
   cond_nms = names(cond_map)
   if (add_dates) {
@@ -2429,6 +2433,35 @@ simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
   names(sims) = c(cond_map)
   sims
 }
+
+#' @export
+condense_flexmodel = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = "condensation in c++"
+  )
+  condensed_simulation_history = setNames(
+    simulation_history(model)[names(model$condensation_map)],
+    model$condensation_map
+  )
+
+  # HACK! ultimately we want cumulative reports calculated
+  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
+  # also this assumes no observation error, and doesn't
+  # compute D as cumulative sum of deaths (as is done in run_sim)
+  if ('report' %in% names(condensed_simulation_history)) {
+    condensed_simulation_history$cumRep = cumsum(
+      ifelse(
+        !is.na(unname(unlist(condensed_simulation_history$report))),
+        unname(unlist(condensed_simulation_history$report)),
+        0
+      )
+    )
+  }
+
+  cbind(data.frame(date = simulation_dates(model), condensed_simulation_history))
+}
+
 
 #' @importFrom tidyr pivot_longer
 #' @export
@@ -2473,11 +2506,32 @@ simulation_fitted = function(model) {
 }
 
 #' @export
+update_params_calibrated = function(model, update_default_params = FALSE) {
+  # TODO: check if opt_par exists
+  obj_fun = tmb_fun(model)
+  report = obj_fun$report(model$opt_par)
+  model$params_calibrated = model$params
+  model$params_calibrated[] = report$params
+  model$params_calibrated_timevar = (model$timevar$piece_wise$schedule
+    %>% select(Date, Symbol, Value, Type)
+    %>% within(Value[is.na(Value)] <- report$tv_mult)
+  )
+  if (update_default_params) {
+    model$params = model$params_calibrated
+    model = update_piece_wise(model, model$params_calibrated_timevar)
+    model$opt_params = list()
+    model$opt_tv_params = list()
+    model = update_tmb_indices(model)
+  }
+  model
+}
+
+#' @export
 optim_flexmodel = function(model, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
-  model
+  update_params_calibrated(model)
 }
 
 #' @export
@@ -2485,7 +2539,7 @@ nlminb_flexmodel = function(model, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
-  model
+  update_params_calibrated(model)
 }
 
 #' @export
@@ -2525,14 +2579,19 @@ fitted.flexmodel = function(model) {
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
+#' @param na_is_zero should NAs be replaced with zeros?
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE, na_is_zero = FALSE) {
   if (is.null(tolerance)) {
     if (require(testthat)) {
       tolerance = testthat_tolerance()
     } else {
       tolerance = .Machine$double.eps^0.5
     }
+  }
+  if (na_is_zero) {
+    classic_sim[is.na(classic_sim)] = 0
+    tmb_sim[is.na(tmb_sim)] = 0
   }
   if(compare_attr) {
     params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")

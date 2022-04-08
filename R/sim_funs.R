@@ -922,6 +922,7 @@ run_sim <- function(params,
                     obj_fun = NULL) {
 
   if (!is.null(flexmodel) | !is.null(obj_fun)) use_flex = TRUE
+  condense_cpp = FALSE
   if (use_flex) {
     ## tmb/c++ computational approach (experimental)
     ## (https://canmod.net/misc/flex_specs)
@@ -980,52 +981,58 @@ run_sim <- function(params,
     }
 
     ## simulate trajectories based on new parameters
+
     full_param_vec = tmb_params(flexmodel)
     tmb_sims <- obj_fun$simulate(full_param_vec)
-    res = (tmb_sims
-      %>% getElement("concatenated_state_vector")
-      %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
-    )
-    res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
+    if (spec_ver_gt('0.1.2') & condense) {
+      res = condense_flexmodel(flexmodel)
+      condense_cpp = TRUE
+    } else {
+      res = (tmb_sims
+        %>% getElement("concatenated_state_vector")
+        %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
+      )
+      res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
 
-    # look for foi -- TODO: formalize the definition of foi so that we
-    #                       can reliably check -- this is too model-specific
+      # look for foi -- TODO: formalize the definition of foi so that we
+      #                       can reliably check -- this is too model-specific
 
-    #regmatches(
-    #  names(flexmodel$tmb_indices$updateidx),
-    #  regexec("^S_?(.*)(_to_)E_?(.*)$", names(flexmodel$tmb_indices$updateidx))
-    #)
+      #regmatches(
+      #  names(flexmodel$tmb_indices$updateidx),
+      #  regexec("^S_?(.*)(_to_)E_?(.*)$", names(flexmodel$tmb_indices$updateidx))
+      #)
 
-    foi = (flexmodel$tmb_indices$updateidx
-      %>% names
-      %>% strsplit("_to_")
-      %>% lapply(function(x) {
-        # vax_cat may not exist and therefore be a blank string
-        vax_cat = sub("^E(_|$)", "", x[2])
-        setNames(
-          startsWith(x[1], "S") & startsWith(x[2], "E"),
-          ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
-      })
-      %>% unlist
-      %>% which
-      %>% lapply(function(foi_off) {
-        tmb_sims$concatenated_ratemat_nonzeros[
-          seq(from = foi_off,
-              by = length(flexmodel$tmb_indices$updateidx),
-              length.out = flexmodel$iters + 1)
-        ]
-      })
-      %>% as.data.frame
-    )
+      foi = (flexmodel$tmb_indices$updateidx
+        %>% names
+        %>% strsplit("_to_")
+        %>% lapply(function(x) {
+          # vax_cat may not exist and therefore be a blank string
+          vax_cat = sub("^E(_|$)", "", x[2])
+          setNames(
+            startsWith(x[1], "S") & startsWith(x[2], "E"),
+            ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
+        })
+        %>% unlist
+        %>% which
+        %>% lapply(function(foi_off) {
+          tmb_sims$concatenated_ratemat_nonzeros[
+            seq(from = foi_off,
+                by = length(flexmodel$tmb_indices$updateidx),
+                length.out = flexmodel$iters + 1)
+          ]
+        })
+        %>% as.data.frame
+      )
 
+
+      res = cbind(res, foi)
+    }
     params0 <- params
     state0 = state
     if (spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) {
       # if the initial state came from tmb ...
       state0[] = tmb_sims$concatenated_state_vector[seq_along(state)]
     }
-
-    res = cbind(res, foi)
   } else {
 
     call <- match.call()
@@ -1238,7 +1245,7 @@ run_sim <- function(params,
     } # not use_flex
 
     ## condense here
-    if (condense) {
+    if (condense & !isTRUE(condense_cpp)) {
       ## FIXME: will it break anything if we call condense with 'params'
       ## (modified by time-varying stuff) instead of params0? Let's find out!
       res <- do.call(condense.pansim, c(
