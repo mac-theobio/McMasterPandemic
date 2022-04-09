@@ -862,6 +862,11 @@ expand_params_S0 = function(params, S0) {
 ##' @export
 expand_params_nb_disp = function(params, observed_variables) {
     error_dist_params = error_dist_desc = const_named_vector("nb_disp" %_% observed_variables, 1.0)
+    if (is.null(attr(error_dist_params, "description"))) {
+        # handling non-pansim objects
+        # TODO: create method for pansim instead
+        return(merge_named_vectors(params, error_dist_params))
+    }
     error_dist_desc[] = "Negative binomial dispersion parameter for " %+% observed_variables
     attr(error_dist_params, "description") <- error_dist_desc
     params = (params

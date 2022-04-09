@@ -34,6 +34,7 @@ Other flexmodels:
 \code{\link{flexmodel}()},
 \code{\link{make_base_model}()},
 \code{\link{make_omicron_model}()},
+\code{\link{make_sir_model}()},
 \code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},

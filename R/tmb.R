@@ -261,6 +261,7 @@ init_model = function(...) {
 ##' @param params param_pansim object
 ##' @param sums vector of sums of state variables and parameters
 ##' @param ratemat rate matrix
+##' @importFrom dplyr bind_rows
 ##' @family flexmodels
 ##' @export
 rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
@@ -777,13 +778,16 @@ add_conv = function(
 #'
 #' @param model flexmodel
 #' @param map named vector with names that are a subset of
-#' the variables in the simulation model
+#' the variables in the simulation model. if \code{NULL} the
+#' identity map is used that makes all simulation history
+#' variables available without name changes.
 #' (\code{final_sim_report_names(model)}) and values that
 #' give the names of the variables in the condensed data set
 #' @export
-update_condense_map = function(model, map) {
+update_condense_map = function(model, map = NULL) {
   allvars = final_sim_report_names(model)
-  stopifnot(all(names(labels) %in% allvars))
+  if (is.null(map)) map = setNames(allvars, allvars)
+  stopifnot(all(names(map) %in% allvars))
   model$condensation_map = map
   model
 }
@@ -1604,6 +1608,10 @@ tmb_fun <- function(model) {
         map = list()
       }
       # -------------------------------------------
+
+      if (!all(between(observed$time_step, 2, iters + 1))) {
+        stop('observations outside of simulation range')
+      }
 
       dd <- MakeADFun(
         data = list(

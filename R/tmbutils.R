@@ -181,7 +181,7 @@ def$model = function(name, model_spec_version) {
       default = model_spec_version
     ),
     states = def$dataframe(
-      state = def$character(allow_dups = FALSE),
+      state = def$character(min_len = 1L, max_len = Inf, allow_dups = FALSE),
       description = def$character(allow_dups = FALSE, optional = TRUE),
       layers = def$character(allow_dups = TRUE, option = TRUE, extra = TRUE)
     ),
@@ -2422,7 +2422,6 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
 #'
 #' @export
 simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
-  stop("use condense_flexmodel instead")
   cond_map = model$condensation_map
   cond_nms = names(cond_map)
   if (add_dates) {
@@ -2506,7 +2505,7 @@ simulation_fitted = function(model) {
 }
 
 #' @export
-update_params_calibrated = function(model, update_default_params = FALSE) {
+update_params_calibrated = function(model, update_default_params = TRUE) {
   # TODO: check if opt_par exists
   obj_fun = tmb_fun(model)
   report = obj_fun$report(model$opt_par)
@@ -2514,7 +2513,7 @@ update_params_calibrated = function(model, update_default_params = FALSE) {
   model$params_calibrated[] = report$params
   model$params_calibrated_timevar = (model$timevar$piece_wise$schedule
     %>% select(Date, Symbol, Value, Type)
-    %>% within(Value[is.na(Value)] <- report$tv_mult)
+    %>% within(Value[is.na(Value)] <- report$tv_mult[is.na(Value)])
   )
   if (update_default_params) {
     model$params = model$params_calibrated
@@ -2527,19 +2526,19 @@ update_params_calibrated = function(model, update_default_params = FALSE) {
 }
 
 #' @export
-optim_flexmodel = function(model, ...) {
+optim_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model)
+  update_params_calibrated(model, update_default_params)
 }
 
 #' @export
-nlminb_flexmodel = function(model, ...) {
+nlminb_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model)
+  update_params_calibrated(model, update_default_params)
 }
 
 #' @export

@@ -811,17 +811,27 @@ public:
   Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
     Type var;
     Type lll;
+    Type clamping_tolerance = 1e-12;
+    Type clamped_simulated;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
-        var = simulated + ((simulated*simulated) / sp[this->spi[0]]);
+        //std::cout << "obs = " << observed << " sim = " << simulated << std::endl;
+        clamped_simulated = CppAD::CondExpLt(
+          simulated,
+          clamping_tolerance,
+          clamping_tolerance,
+          simulated
+        );
+        var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
+        //std::cout << "var = " << var << std::endl;
         if (simulated<=0.0)
           Rf_error("negative simulation value being compared with data");
 
         if (var<=0.0)
           Rf_error("negative binomial dispersion is negative");
 
-        lll = -1.0 * dnbinom2(observed, simulated, var, 1);
-        //std::cout << "obs = " << observed << "sim = " << simulated << "loss = " << lll << std::endl;
+        lll = -1.0 * dnbinom2(observed, clamped_simulated, var, 1);
+        //std::cout << "obs = " << observed << " sim = " << simulated << " loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func

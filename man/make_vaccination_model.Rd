@@ -58,6 +58,7 @@ Other flexmodels:
 \code{\link{initial_population}()},
 \code{\link{make_base_model}()},
 \code{\link{make_omicron_model}()},
+\code{\link{make_sir_model}()},
 \code{\link{mat_rate}()},
 \code{\link{rate}()},
 \code{\link{rep_rate}()},
@@ -67,7 +68,8 @@ Other flexmodels:
 
 Other canned_models: 
 \code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()}
+\code{\link{make_omicron_model}()},
+\code{\link{make_sir_model}()}
 }
 \concept{canned_models}
 \concept{flexmodels}
