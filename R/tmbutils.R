@@ -300,8 +300,28 @@ exists_opt_params = function(model) {
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
+#'
+#' Paste with an underscore separator, except for length-zero character
+#' strings in the first vector
+#'
+#' @param x character vector
+#' @param y character vector
+#'
 #' @export
-`%_%` = function(x, y) paste(x, y, sep = "_")
+`%_%` = function(x, y) {
+  x = ifelse(nchar(trimws(as.character(x))) == 0L, '', paste(x, '_', sep = ""))
+  paste(x, y, sep = "")
+}
+
+#' Paste with Tilde Separator
+#'
+#' @param x character vector
+#' @param y character vector
+#'
+#' @export
+`%~%` = function(x, y) {
+  paste(x, y, sep = " ~ ")
+}
 
 #' Paste with Blank Separator
 #'
@@ -1258,7 +1278,7 @@ parse_opt_param = function(x, params, params_timevar = NULL) {
   p = length(param_nm)
   l = 0
   if (!is.null(params_timevar)) {
-    l = sapply(param_nm, length_tv_mult_series)
+    l = sapply(param_nm, length_tv_mult_series, params_timevar)
     if (length(unique(l)) != 1L) {
       stop("all time varying parameters must have the same series length ",
            "if they are going to get the same prior")
@@ -1326,7 +1346,7 @@ parse_opt_param = function(x, params, params_timevar = NULL) {
 
 }
 
-length_tv_mult_series = function(x) {
+length_tv_mult_series = function(x, params_timevar) {
   sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x))
 }
 
@@ -1365,6 +1385,32 @@ set_hyperparam_dims = function(x, l, p, param_nm) {
 parse_and_resolve_opt_form = function(x, params) {
   pf = parse_opt_form(x)
   pf$param = resolve_param(pf$param, params)
+  if (length(unique(c(pf$param$trans, pf$prior$trans))) != 1L) {
+    example_bad = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$prior$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    example_good = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$param$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    stop(
+      '\nthe transformation scale used when a parameter is an argument',
+      '\nof an objective function, must be the same transformation used',
+      '\nwhen it is an argument of a prior density function.',
+      '\nfor example one may not optimize the transmission rate on the',
+      '\nlog scale but take the normal prior density over the identity scale.',
+      '\nthis restriction might be lifted in the future, which is the reason',
+      '\nwhy the notation makes it possible to decouple these two types of',
+      '\ntransformations.',
+      '\n\nproblematic example inspired by your input:',
+      '\n', example_bad,
+      '\n\nvalid example inspired by your input:',
+      '\n', example_good
+    )
+  }
   pf
 }
 
@@ -1434,7 +1480,7 @@ get_form_dim = function(x, params, params_timevar = NULL) {
   p = length(param_nm)
   l = 0
   if (!is.null(params_timevar)) {
-    l = sapply(param_nm, length_tv_mult_series)
+    l = sapply(param_nm, length_tv_mult_series, params_timevar)
     if (length(unique(l)) != 1L) {
       stop("all time varying parameters must have the same series length ",
            "if they are going to get the same prior")
@@ -1492,15 +1538,19 @@ resolve_param = function(x, params) {
 
     param_nms = ifelse(which_have_trans, Vectorize(index_sep)(param_nms, -1), param_nms)
   }
+  if (!all(param_nms %in% names(params))) {
+    stop('cannot find opimization parameters in the params vector')
+  }
   nlist(param_nms, trans)
 }
+
 #' Recursive function to parse a formula containing sums of names
 parse_name_sum = function(x) {
   y = character(0L)
   if (is.call(x)) {
     if (as.character(x[[1]]) != '+') {
-      stop('"+" is the only operator/function allowed when summing, but "',
-           as.character(x[[1]]), '" was used')
+      stop('you cannot apply functions or operators to terms in a sum, ',
+           'but ', as.character(x[[1]]), ' was used')
     }
     y = c(parse_name_sum(x[[2]]), parse_name_sum(x[[3]]))
     return(y)
@@ -1567,10 +1617,6 @@ parse_opt_form = function(x, e = NULL) {
       if (inherits(prior, 'param_sum')) {
         stop('summing prior distributions is not allowed')
       }
-      # TODO: check to make sure that param_trans and prior_trans
-      # are identical, and throw an informative error message
-      # describing the missing feature of putting a prior over a
-      # different scale than the parameter in the objective function
       return(nlist(param, prior))
     } else if (func == '+') {
       return(structure(parse_name_sum(x), class = 'param_vector'))

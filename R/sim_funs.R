@@ -931,6 +931,12 @@ run_sim <- function(params,
       stop("to use the flex approach you need to specify the flexmodel argument")
     }
 
+    # HACK: flexmodel approach assumes vector-valued parameters, but
+    # general macpan allows lists and these can cause problems downstream
+    if (spec_ver_gt('0.1.2')) {
+      params = unlist(params)
+    }
+
     ## always regenerate the objective function -- #164
     ##   this is not a performance burden, and bad things can happen
     ##   when the flexmodel and obj_fun are out of sync
@@ -944,7 +950,10 @@ run_sim <- function(params,
     # -- important in calibration situations where the parameters
     #    are changing each iteration of the optimizer
     if (!is.null(flexmodel)) {
-      flexmodel$params = expand_params_S0(params, 1-1e-5)
+      flexmodel$params = (params
+        %>% expand_params_S0(1-1e-5)
+        %>% expand_params_nb_disp(unique(flexmodel$observed$data$var))
+      )
       if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
         if (is.null(params_timevar)) {
           params_timevar = flexmodel$timevar$piece_wise$schedule

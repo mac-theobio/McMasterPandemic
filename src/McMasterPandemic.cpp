@@ -825,10 +825,10 @@ public:
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
         //std::cout << "var = " << var << std::endl;
         if (simulated<=0.0)
-          Rf_error("negative simulation value being compared with data");
+          Rf_warning("negative simulation value being compared with data");
 
         if (var<=0.0)
-          Rf_error("negative binomial dispersion is negative");
+          Rf_warning("negative binomial dispersion is negative");
 
         lll = -1.0 * dnbinom2(observed, clamped_simulated, var, 1);
         //std::cout << "obs = " << observed << " sim = " << simulated << " loss = " << lll << std::endl;

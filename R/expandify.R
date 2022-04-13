@@ -852,7 +852,9 @@ expand_params_S0 = function(params, S0) {
     }
     saved_attr = attributes(params)
     params = c(params, S0)
-    saved_attr$description = c(saved_attr$description, "Initial proportion of individuals in S boxes")
+    if (!is.null(saved_attr$description)) {
+        saved_attr$description = c(saved_attr$description, "Initial proportion of individuals in S boxes")
+    }
     saved_attr$names = c(saved_attr$names, "S0")
     attributes(params) = saved_attr
 
@@ -861,6 +863,7 @@ expand_params_S0 = function(params, S0) {
 
 ##' @export
 expand_params_nb_disp = function(params, observed_variables) {
+    if (length(observed_variables) == 0L) return(params)
     error_dist_params = error_dist_desc = const_named_vector("nb_disp" %_% observed_variables, 1.0)
     if (is.null(attr(error_dist_params, "description"))) {
         # handling non-pansim objects

@@ -24,9 +24,14 @@
         MP_warn_no_outflow = TRUE,
         MP_warn_bad_breaks = TRUE,
 
-        # init_model defaults
+        # flexmodel defaults
         MP_default_do_hazard = TRUE,
+        MP_default_do_hazard_lin = FALSE,
+        MP_default_do_approx_hazard = FALSE,
+        MP_default_do_approx_hazard_lin = FALSE,
         MP_default_do_make_state = TRUE,
+        MP_default_do_sim_constraint = FALSE,
+        MP_default_sim_lower_bound = 1e-12,
 
         # tmb_fun behaviour
         MP_force_full_outflow = FALSE,

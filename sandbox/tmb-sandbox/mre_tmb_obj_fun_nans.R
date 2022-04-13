@@ -12,6 +12,8 @@ library(numDeriv)
 library(lubridate)
 library(tidyr)
 
+set_spec_version('0.2.0', 'inst/tmb')
+
 params <- read_params("PHAC.csv")
 params[c("N", "phi1")] <- c(42507, 0.98)
 params1 = params
@@ -88,3 +90,7 @@ bad_pars = c(params = -1.43421811593977, params = 1.46059475554851, params = 0.3
 
 obj_fun = tmb_fun(yukon_model)
 obj_fun$fn(bad_pars)
+
+
+opt = nlminb_flexmodel(yukon_model, FALSE)
+opt$opt_obj

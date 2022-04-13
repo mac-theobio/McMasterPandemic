@@ -22,6 +22,15 @@
 ##' @param do_make_state should state be remade on the c++ size?
 ##' (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 ##' if \code{spec_ver_gt('0.1.0')}
+##' @param do_sim_constraint should simulated values be smoothly
+##' constrained to be above \code{sim_lower_bound} when computing
+##' negative binomial (maybe others in the future?) loss functions?
+##' the smooth constraint function is
+##' \eqn{y = x + \epsilon * \exp(-x / \epsilon)}, where \eqn{\epsilon}
+##' is \code{sim_lower_bound} and \eqn{x} is the simulated value.
+##' @param sim_lower_bound optional lower bound on the simulated values
+##' when computing negative binomial loss functions (only applicable
+##' when \code{do_sim_constraint} is \code{TRUE}.
 ##' @param max_iters_eig_pow_meth maximum number of iterations
 ##' to use in computing the eigenvector for initial state
 ##' construction
@@ -38,10 +47,12 @@ flexmodel <- function(params, state = NULL,
                        start_date = NULL, end_date = NULL,
                        params_timevar = NULL,
                        do_hazard = getOption("MP_default_do_hazard"),
-                       do_hazard_lin = FALSE,
-                       do_approx_hazard = FALSE,
-                       do_approx_hazard_lin = TRUE,
                        do_make_state = getOption("MP_default_do_make_state"),
+                       do_hazard_lin = getOption("MP_default_do_hazard_lin"),
+                       do_approx_hazard = getOption("MP_default_do_approx_hazard"),
+                       do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
+                       do_sim_constraint = getOption("MP_default_do_sim_constraint"),
+                       sim_lower_bound = getOption("MP_default_sim_lower_bound"),
                        max_iters_eig_pow_meth = 8000,
                        tol_eig_pow_meth = 1e-6,
                        haz_eps = 1e-6,
@@ -218,6 +229,11 @@ flexmodel <- function(params, state = NULL,
       model$params = expand_params_nb_disp(model$params, obsvars)
     } else {
       model$observed = init_observed
+    }
+
+    if (spec_ver_gt('0.1.2')) {
+      model$do_sim_constraint <- do_sim_constraint
+      model$sim_lower_bound <- sim_lower_bound
     }
 
     model$opt_params = list()
@@ -1010,21 +1026,74 @@ add_state_mappings = function(
 
 #' Update Optimization Parameters
 #'
-#' \code{params ~ value}
-#' \code{trans_param ~ value}
-#' \code{trans_param ~ prior(hyperparameters ...)}
-#' \code{trans_param ~ prior(hyperparameters ..., laplace = TRUE)}
 #'
+#' @rdname add_opt_params
 #' @export
 update_opt_params = function(model, ...) {
   model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
   model
 }
 
+#' Optimization Parameters
+#'
+#' Add or update parameters to be optimized/calibrated in a
+#' \code{flexmodel} object.
+#'
+#' @section Formula Syntax:
+#' The left-hand-side of the formula describes the parameters and how they
+#' should be transformed, and the right-hand-side describes the associated
+#' prior distribution.
+#'
+#' The simplest approach is to specify one parameter at a time with the
+#' following syntax:
+#'
+#' \code{trans_param ~ trans_prior(hyperparameters ...)}
+#'
+#' On the left-hand-side the optional transformation, \code{trans}, is
+#' separated by an underscore from the parameter name, \code{param}. For
+#' example one might optimize the transmission rate, \code{beta}, on the
+#' log scale by specifying the left-hand-side as \code{log_beta}. To
+#' optimize \code{beta} on the untransformed scale the left-hand-side
+#' would be simply be \code{beta}. The currently available transformations
+#' are \code{log}, \code{log10}, \code{logit}, \code{cloglog}, \code{inverse}.
+#'
+#' On the right-hand-side the optional transformation, \code{trans}, is
+#' separated from the name of the prior family by an underscore. This
+#' transformation defines the scale on which the prior distribution is over.
+#' Currently the transformation scale passed to the objective function
+#' (on the left-hand-side) must match the transformation scale of the
+#' priot (on the right-hand-side) -- perhaps this restriction will be
+#' lifted one day. The currently available prior families are \code{flat}
+#' (for no regularization) and \code{normal}. These families are
+#' expressed as functions of hyperparameters where the first argument
+#' is a location parameter, which also defines the starting point of the
+#' optimizer.
+#'
+#' \describe{
+#'   \item{\code{flat}}{
+#'     \describe{
+#'       \item{initial}{the 'peak' of a flat function -- important because it sets the initial value of the optimizer.}
+#'     }
+#'   }
+#'   \item{\code{normal}}{
+#'       \describe{
+#'         \item{mean}{mean of the normal distribution, also used as the initial value of the optimizer}
+#'         \item{standard deviation}{standard deviation of the normal distribution}
+#'       }
+#'     }
+#' }
+#'
+#' One may also specify several parameters with the same
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param ... a list of formulas for describing what parameters should
+#' be optimized, whether/how they should be transformed before being
+#' passed to the objective function, and what prior distribution (or
+#' regularization function should be used -- see the section on
+#' the formula syntax for more details.
 #' @export
 add_opt_params = function(model, ...) {
-  # TODO: check for inconsistent specifications
-  # (e.g. two different priors specified for beta0)
+  l = force(list(...))
   model$opt_params = c(
     model$opt_params,
     lapply(list(...), parse_and_resolve_opt_form, model$params)
@@ -1091,6 +1160,7 @@ update_opt_tv_params = function(
   model
 }
 
+#' @export
 add_opt_tv_params = function(
   model,
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
@@ -1711,6 +1781,9 @@ tmb_fun <- function(model) {
           opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
           opt_tv_reg_params = null_to_num0(hyperparameters_tv),
           opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+
+          obs_do_sim_constraint = isTRUE(do_sim_constraint),
+          obs_sim_lower_bound = null_to_num0(sim_lower_bound),
 
           numIterations = int0_to_0(null_to_0(iters))
         ),
