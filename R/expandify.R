@@ -833,6 +833,8 @@ expand_params_variant <- function(params,
 }
 
 
+##' Expand Parameter List to Include Initial Proportion of Susceptibles
+##'
 ##' @param params parameter list (e.g. read in with \code{read_params()})
 ##' @param S0 initial proportion of individuals in susceptible compartments
 ##'

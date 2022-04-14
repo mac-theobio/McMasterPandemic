@@ -2,6 +2,9 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/mac-theobio/McMasterPandemic/actions)
+
+![](https://img.shields.io/static/v1.svg?label=Status&message=Draft&color=blue)
+
 <!-- badges: end -->
 
 Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Weiguang Guan, Morgan Kain, Michael Li, Irena Papst, Steve Walker (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
@@ -18,6 +21,8 @@ Compartmental epidemic models for forecasting and analysis of infectious disease
 The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) and install locally or use `remotes::install_github("mac-theobio/McMasterPandemic")` to install the package. You will need to first install the developer version of `bbmle` (`remotes::install_github("bbolker/bbmle")`) before installing `McMasterPandemic`, followed by another package that is not on CRAN (`remotes::install_github("johndharrison/semver")`).
 
 ### For developers
+
+[![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
 
 See our guide to [contributing](https://github.com/mac-theobio/McMasterPandemic/CONTRIBUTING.md).
 

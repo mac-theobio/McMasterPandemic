@@ -822,7 +822,14 @@ public:
           clamping_tolerance,
           simulated
         );
+
+        // var = mu + mu^2/k
+        // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
+        //   var ~ variance
+        //   mu ~ mean
+        //   k ~ overdispersion parameter
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
+
         //std::cout << "var = " << var << std::endl;
         if (simulated<=0.0)
           Rf_warning("negative simulation value being compared with data");

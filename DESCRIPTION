@@ -15,6 +15,7 @@ Imports:
 	lattice,
 	Matrix,
 	MASS,
+	methods,
 	dplyr,
 	ggplot2,
 	tidyr,

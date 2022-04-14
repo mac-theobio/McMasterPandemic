@@ -54,9 +54,44 @@ The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, 
 
 ## Maintaining C++ Code
 
-We try to be disciplined in how we maintain the C++ code
+We try to be disciplined in how we maintain the `C++` code, in that the correctness of this code can in principle be judged against [this specification document](https://canmod.net/misc/flex_specs).  These specifications are [versioned](https://canmod.net/misc/flex_specs#versioning-and-lifecycle) with the reference implementation for each version located in [inst/tmb](https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb). The currently recommended version is saved in [inst/tmb/recommended_spec_version](https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb/recommended_spec_version).
+
+The package itself can only use one of these reference implementations at a time. The default spec version can be set by copying the appropriate versioned `cpp` file into `src/McMasterPandemic.cpp`, and this can be accomplished using the following [`make`](https://www.gnu.org/software/make/) rule.
+```
+make src/McMasterPandemic.cpp
+```
+This `make` rule copies the currently recommended version into `src/McMasterPandemic.cpp`.
+
+One may also switch the spec version being used during an `R` session by using `set_spec_version` function. For example, if executed from the project root directory the following line will update the spec version and associated `C++` code being used.
+```
+set_spec_version('0.1.0', 'inst/tmb')
+```
+Note that this will also likely trigger compilation of the `C++` code unless the objects, shared objects, and/or DLLs can be found in the same directory as the associated `.cpp` file or some method of caching has been established.  One may find the spec version that they are using at any time with the following function.
+```
+spec_version()
+```
+
+On the `R` side one may also test for a particular spec version using the following family of functions: `spec_ver_eq`, `spec_ver_gt`, `spec_ver_lt`, `spec_ver_btwn`. Similarly, one may assert a certain spec version using the `spec_check` and `feature_check` functions.
 
 
 ## Comparing R and TMB Engines
 
 TODO: describe global options, `tmb_mode`, `R_mode`, etc ...
+
+TODO: describe `compare_*` family of functions ...on 
+
+
+## The `flexmodel` Class
+
+TODO: point to a help file (not yet written) that describes the `flexmodel` class
+
+TODO: describe the `get_*` family of functions and how they should be used to create functions like `rate_summary`
+
+
+## Global Options
+
+To identify McMasterPandemic-specific global options on the `R` side we prefix their names with `MP_`. For example, the `MP_use_state_rounding` option is used to indicate whether the R engine should ever round the state variable. The defaults for all McMasterPandemic-specific options should be set in [R/zzz.R](https://github.com/mac-theobio/McMasterPandemic/blob/tmb/R/zzz.R).
+
+## Package Tests
+
+

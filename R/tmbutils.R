@@ -457,6 +457,28 @@ final_sim_report_names = function(model) {
   )
 }
 
+pad_lag_diffs = function(sims, lag_diff) {
+  if(length(lag_diff) == 0L) return(sims)
+  ff = function(x) {
+    as.data.frame(x[c('delay_n', 'output_names')])
+  }
+  d = bind_rows(lapply(lag_diff, ff))
+  for(i in 1:nrow(d)) {
+    sims[1:as.integer(d[i,'delay_n']), d[i,'output_names']] = NA
+  }
+  sims
+}
+
+pad_convs = function(sims, conv, conv_indices) {
+  if(length(conv) == 0L) return
+  conv_nms = unlist(lapply(conv, getElement, 'output_names'))
+  qmax = conv_indices$qmax
+  for(i in 1:length(conv_nms)) {
+    sims[1:(qmax[i]-2L), conv_nms[i]] = NA
+  }
+  sims
+}
+
 # flexmodel to latex (experimental) -------------------
 
 ##' @export
@@ -656,61 +678,51 @@ ff = function(x) {
 # Used in tmb_fun -- needs work, but this is a
 # good approach generally
 
-#' @export
 null_to_char0 = function(x) {
   if(is.null(x)) return(character(0L))
   as.character(x)
 }
 
-#' @export
 null_to_int0 = function(x) {
   if(is.null(x)) return(integer(0L))
   as.integer(x)
 }
 
-#' @export
 null_to_num0 = function(x) {
   if(is.null(x)) return(numeric(0L))
   as.numeric(x)
 }
 
-#' @export
 null_to_log0 = function(x) {
   if(is.null(x)) return(logical(0L))
   as.logical(x)
 }
 
-#' @export
 null_to_charNA = function(x) {
   if(is.null(x)) return(as.character(NA))
   as.character(x)
 }
 
-#' @export
 null_to_intNA = function(x) {
   if(is.null(x)) return(as.integer(NA))
   as.integer(x)
 }
 
-#' @export
 null_to_numNA = function(x) {
   if(is.null(x)) return(as.numeric(NA))
   as.numeric(x)
 }
 
-#' @export
 null_to_logNA = function(x) {
   if(is.null(x)) return(as.logical(NA))
   as.logical(x)
 }
 
-#' @export
 null_to_0 = function(x) {
   if(is.null(x)) return(0L)
   as.integer(x)
 }
 
-#' @export
 int0_to_0 = function(x) {
   if(length(x) == 0L) return(0L)
   as.integer(x)
@@ -750,6 +762,7 @@ find_operators <- function(x, operator) {
     ), x
   )
 }
+
 factor_table <- function(x) {
   data.frame(
     var = unlist(lapply(x, get_variables)),
@@ -798,7 +811,6 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
-#' @export
 block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
 }
@@ -855,9 +867,9 @@ rateform_as_char = function(x) {
   y
 }
 
-#' @param x character vector of names to look for in \code{vec} or
-#' \code{names(vec)}
-#' @param vec character vector or object with names
+# @param x character vector of names to look for in \code{vec} or
+# \code{names(vec)}
+# @param vec character vector or object with names
 find_vec_indices <- function(x, vec) {
   if(!is.character(vec)) vec = names(vec)
   missing_variables = x[!x %in% vec]
@@ -942,40 +954,114 @@ reduce_rates = function(rates) {
 
 # getting information about rates and sums ----------------------
 
-#' @export
-get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+# Get From-State Names
+#
+# Get vector of from-state names associated with each rate in the model.
+#
+# @param model \code{\link{flexmodel}} object
+#
+# @family get_flexmodel_info_functions
 
-#' @export
-get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
-
-#' @export
 get_rate_from = function(model) get_rate_info(model, 'from')
 
-#' @export
+# Get To-State Names
+#
+# Get vector of to-state names associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_to = function(model) get_rate_info(model, 'to')
 
-#' @export
-get_rate_ratemat_indices = function(model) get_rate_info(model, 'ratemat_indices')
+# Get Rate Info
+#
+# Get information on the rate associated with a particular state transition.
+#
+# @param what character describing the rate (i.e. \code{'state1_to_state2'})
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
 
-#' @export
+get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+
+# Get Factr Info
+#
+# Get information about an intermediate factor
+#
+# @param what name of the intermediate factor, as named by
+# \code{\link{add_factr}} or \code{\link{vec_factr}}
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
+get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
+
+# Get Rate Formulas
+#
+# Get vector of formulas associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_formula = function(model) get_rate_info(model, 'formula')
 
-#' @export
+# Get Rate Factors
+#
+# Get the factor table associated with each rate in the model.
+# TODO: define the factor table or link to a description.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_factors = function(model) get_rate_info(model, 'factors')
 
-#' @export
+# Get Rate State Dependence
+#
+# Get a logical vector indicating which rates in the model depend on
+# state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
 
-#' @export
+# Get Rate Time Variation
+#
+# Get a logical vector indicating which rates in the model are
+# time-varying.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
 
-#' @export
+# Get Rate Sum Dependence
+#
+# Get a logical vector indicating which rates in the model depend
+# on sums of parameters and state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
 
-#' @export
+# Get Factr Formula
+#
+# Get vector of formulas for defining each intermediate factor in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_formula = function(model) get_factr_info(model, 'formula')
 
-#' @export
+# Get the Number of Products
+#
+# Get a vector giving the number of products (in the multiplication sense)
+# that are required to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_products = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -985,7 +1071,15 @@ get_n_products = function(model) {
   )
 }
 
-#' @export
+# Get Number of Variables
+#
+# Get a vector giving the numbers of variables (parameters, state variables,
+# sums of parameters and state variables, and intermediate factors) required
+# to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_variables = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -994,7 +1088,14 @@ get_n_variables = function(model) {
   )
 }
 
-#' @export
+# Get Number of Factors
+#
+# Get the number of factors required to compute each rate in the
+# model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_factors = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -1002,22 +1103,39 @@ get_n_factors = function(model) {
   )
 }
 
-#' @export
+# Get Sum Info
+#
+# Get information on each sum (of parameters and state variables)
+# in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_info = function(model, what) lapply(model$sums, '[[', what)
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_summands = function(model) get_sum_info(model, 'summands')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_vars = function(model) {
   (model
    %>% get_rate_factors
@@ -1025,7 +1143,9 @@ get_rate_vars = function(model) {
   )
 }
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rates_with_vars = function(model, var_pattern) {
   ii = (model
     %>% get_rate_vars
@@ -1036,6 +1156,16 @@ get_rates_with_vars = function(model, var_pattern) {
   get_rates(model)[ii]
 }
 
+get_rates = function(model) {
+  model$rates
+}
+
+##' Rate Summary
+##'
+##' Summarize the properties of the rates of transition amongst the
+##' compartments in the model.
+##'
+##' @param model a \code{\link{flexmodel}} object
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
 rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
@@ -1068,13 +1198,9 @@ rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
   summary
 }
 
-#' @export
-get_rates = function(model) {
-  model$rates
-}
 
-##' @param x parameter vector or flexmodel
-##' @export
+## @param x parameter vector or flexmodel
+## @export
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
@@ -1963,7 +2089,7 @@ outflow_indices = function(outflow, ratemat) {
   #       outflow.
   #nlist(state_indices, flow_state_indices)
   #all = names(model$state)
-  #lapply(model$outflow, McMasterPandemic:::make_nested_indices, x = all)
+  #lapply(model$outflow, McMasterPandemic::make_nested_indices, x = all)
 }
 
 #' Nested Indices
@@ -2296,8 +2422,8 @@ simulation_dates = function(model) {
     by = 1)
 }
 
-#' @param model flexmodel
-#' @param sim_params parameter vector to pass to a TMB objective function
+# @param model flexmodel
+# @param sim_params parameter vector to pass to a TMB objective function
 #' @export
 changing_ratemat_elements = function(model, sim_params = NULL) {
   if(is.null(sim_params)) sim_params = tmb_params(model)
@@ -2458,7 +2584,10 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
       %>% cbind(sim_hist)
     )
   }
-  sim_hist
+  (sim_hist
+    %>% pad_lag_diffs(model$lag_diff)
+    %>% pad_convs(model$conv, model$tmb_indices$conv)
+  )
 }
 
 # FIXME: following two functions do the same thing in slightly different

@@ -3,10 +3,75 @@
 \docType{class}
 \name{struc-class}
 \alias{struc-class}
-\title{Class to Represent Matrix Structure}
-\description{
-Class to Represent Matrix Structure
+\alias{*,struc,struc-method}
+\alias{+,struc,struc-method}
+\alias{\%*\%,struc,struc-method}
+\alias{t,struc-method}
+\alias{inner,struc,struc-method}
+\alias{sum,struc-method}
+\alias{prod,struc-method}
+\alias{rowSums,struc-method}
+\alias{colSums,struc-method}
+\alias{dim,struc-method}
+\alias{nrow,struc-method}
+\alias{ncol,struc-method}
+\title{Class to Represent Scalar, Vector, or Matrix Structure}
+\usage{
+\S4method{*}{struc,struc}(e1, e2)
+
+\S4method{+}{struc,struc}(e1, e2)
+
+\S4method{\%*\%}{struc,struc}(x, y)
+
+\S4method{t}{struc}(x)
+
+\S4method{inner}{struc,struc}(x, y)
+
+\S4method{sum}{struc}(x, ..., na.rm = FALSE)
+
+\S4method{prod}{struc}(x, ..., na.rm = FALSE)
+
+\S4method{rowSums}{struc}(x, na.rm = FALSE, dims = 1L)
+
+\S4method{colSums}{struc}(x, na.rm = FALSE, dims = 1L)
+
+\S4method{dim}{struc}(x)
+
+\S4method{nrow}{struc}(x)
+
+\S4method{ncol}{struc}(x)
 }
+\description{
+The simplest way to create such objects is with the \code{\link{struc}}
+function.
+}
+\section{Methods (by generic)}{
+\itemize{
+\item \code{*}: Elementwise or scalar multiplication
+
+\item \code{+}: Elementwise or scalar addition
+
+\item \code{\%*\%}: Matrix multiplication
+
+\item \code{t}: Matrix or vector transpose
+
+\item \code{inner}: Inner product of vectors or matrices
+
+\item \code{sum}: Sum of vector or matrix elements
+
+\item \code{prod}: Product of vector or matrix elements
+
+\item \code{rowSums}: Row sums of matrices
+
+\item \code{colSums}: Column sums of matrices
+
+\item \code{dim}: Dimensions of a matrix
+
+\item \code{nrow}: Number of matrix rows
+
+\item \code{ncol}: Number of matrix columns
+}}
+
 \section{Slots}{
 
 \describe{

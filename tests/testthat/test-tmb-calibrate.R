@@ -71,7 +71,7 @@ test_that('simple models calibrate the same regardless of engine', {
         step_args = list(do_hazard = TRUE),
         use_flex = FALSE
       ),
-      debug = TRUE
+      debug = FALSE
     ),
     fitted_tmb <- calibrate(
       data = report_data,
@@ -83,7 +83,7 @@ test_that('simple models calibrate the same regardless of engine', {
         use_flex = TRUE,
         flexmodel = model
       ),
-      debug = TRUE
+      debug = FALSE
     )
   )
 
@@ -95,10 +95,13 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
   reset_spec_version()
   tmb_mode()
   options(MP_use_state_rounding = FALSE)
+  r_tmb_comparable()
+  options(MP_rexp_steps_default = 400)
+  options(MP_condense_cpp = TRUE)
 
   params <- ("ICU1.csv"
              %>% read_params
-             %>% expand_params_S0(1 - 1e-5)
+             #%>% expand_params_S0(1 - 1e-5)
   )
   start_date = "2021-05-10"
   end_date = "2021-12-10"
@@ -109,13 +112,13 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
     Type = c("rel_orig", "rel_orig", "rel_orig")
   )
   model <- make_base_model(params,
-                           state = make_state(params = params),
-                           start_date = start_date, end_date = end_date,
-                           params_timevar = tv_dat,
-                           do_hazard = TRUE,
-                           do_make_state = TRUE,
-                           max_iters_eig_pow_meth = 300,
-                           tol_eig_pow_meth = 1e-03
+      state = make_state(params = params),
+      start_date = start_date, end_date = end_date,
+      params_timevar = tv_dat,
+      do_hazard = TRUE,
+      do_make_state = TRUE,
+      max_iters_eig_pow_meth = 300,
+      tol_eig_pow_meth = 1e-04
   )
 
   tv_dat_filled = tv_dat
@@ -131,10 +134,22 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
     flexmodel = model
   )
 
+  r_sim <- run_sim(
+    params = params, state = model$state,
+    start_date = start_date,
+    end_date = end_date,
+    params_timevar = tv_dat_filled,
+    step_args = list(do_hazard = TRUE),
+    condense = TRUE,
+  )
+
+  compare_sims(r_sim, tmb_sim, na_is_zero = FALSE)
+  compare_sims(r_sim, tmb_sim, na_is_zero = TRUE)
+
   report_data <- (tmb_sim
-                  %>% mutate(value = round(report), var = "report")
-                  %>% select(date, value, var)
-                  %>% na.omit()
+    %>% mutate(value = round(report), var = "report")
+    %>% select(date, value, var)
+    %>% na.omit()
   )
 
   params[["beta0"]] = 0.5

@@ -13,24 +13,3 @@ tmb_fun(model)
 Construct an objective function in TMB from a \code{flexmodel}
 object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 }
-\seealso{
-Other flexmodels: 
-\code{\link{add_factr}()},
-\code{\link{add_linearized_outflow}()},
-\code{\link{add_parallel_accumulators}()},
-\code{\link{add_rate}()},
-\code{\link{add_state_mappings}()},
-\code{\link{add_state_param_sum}()},
-\code{\link{flexmodel}()},
-\code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_sir_model}()},
-\code{\link{make_vaccination_model}()},
-\code{\link{mat_rate}()},
-\code{\link{rate}()},
-\code{\link{rep_rate}()},
-\code{\link{update_tmb_indices}()},
-\code{\link{vec_rate}()}
-}
-\concept{flexmodels}

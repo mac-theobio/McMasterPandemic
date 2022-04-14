@@ -993,7 +993,7 @@ run_sim <- function(params,
 
     full_param_vec = tmb_params(flexmodel)
     tmb_sims <- obj_fun$simulate(full_param_vec)
-    if (spec_ver_gt('0.1.2') & condense) {
+    if (spec_ver_gt('0.1.2') & condense & getOption("MP_condense_cpp")) {
       res = condense_flexmodel(flexmodel)
       condense_cpp = TRUE
     } else {
