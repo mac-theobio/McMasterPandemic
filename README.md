@@ -24,7 +24,7 @@ The repository contains an R package and various workflows/analyses. You can for
 
 [![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
 
-See our guide to [contributing](https://github.com/mac-theobio/McMasterPandemic/CONTRIBUTING.md).
+See our guide to [contributing](https://github.com/mac-theobio/McMasterPandemic/blob/tmb-condense/CONTRIBUTING.md).
 
 * the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) -- there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see `dockerfile` for details on Debian Linux)
 * as a convenience you can install all of the R and tex package dependencies using `make dependencies` or running `/misc/dependencies.R`
