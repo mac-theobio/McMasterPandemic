@@ -665,7 +665,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
 
 test_that("transformations and priors give the right objective function and gradients", {
   # construct example ---------------------------
-
+  options(digits = 3, warn = -1)
   params <- read_params("PHAC.csv")
   params[c("N", "phi1")] <- c(42507, 0.98)
   params1 = params
@@ -682,14 +682,14 @@ test_that("transformations and priors give the right objective function and grad
   covid_data <- ("../../sandbox/yukon/report_data_yukon_h_and_i.csv"
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
-                 %>% filter(date >= ymd(20210803))
+                 %>% filter(date >= lubridate::ymd(20210803))
                  %>% filter(between(as.Date(date), sdate, edate))
 
                  # report -- new reported cases on that day
                  # hosp -- new hospital admissions on that day
                  %>% select(date, report, hosp)
 
-                 %>% pivot_longer(names_to = "var", -date)
+                 %>% tidyr::pivot_longer(names_to = "var", -date)
                  %>% mutate(value=round(value))
   )
 
@@ -697,7 +697,7 @@ test_that("transformations and priors give the right objective function and grad
 
   # establish schedule of time variation of parameters
   params_timevar = data.frame(
-    Date = ymd(
+    Date = lubridate::ymd(
       # estimate a new transmission rate on
       # these dates (i'm no expert but these
       # seemed to "work")
@@ -736,13 +736,130 @@ test_that("transformations and priors give the right objective function and grad
                  )
   )
 
-  yukon_fit = suppressWarnings(nlminb_flexmodel(yukon_model))
-  yukon_fit = suppressWarnings(optim_flexmodel(yukon_model))
+  yukon_model
+  yukon_fit = nlminb_flexmodel(yukon_model, FALSE)
 
-  obj_fun = tmb_fun(yukon_fit)
-  obj_fun$fn(yukon_fit$opt_par) # negative log posterior
-  obj_fun$gr(yukon_fit$opt_par) # gradient of the negative log posterior
-  obj_fun$he(yukon_fit$opt_par) # hessian of the negative log posterior
+  obj = tmb_fun(yukon_fit)
+  obj$fn(yukon_fit$opt_par) # negative log posterior
+  obj$gr(yukon_fit$opt_par) # gradient of the negative log posterior
+  obj$he(yukon_fit$opt_par) # hessian of the negative log posterior
+
+  (yukon_fit
+    %>% update_params_calibrated(TRUE)
+    %>% simulation_history
+    %>% View
+  )
 
   expect_true(compare_grads(yukon_fit))
 })
+
+library(McMasterPandemic)
+library(ggplot2)
+library(lubridate)
+state = c(S = 20000, I = 100, R = 0)
+params = c(gamma = 0.06, beta = 0.15)
+start_date = ymd(20000101)
+end_date = ymd(20000501)
+set.seed(2L)
+random_timevar = data.frame(
+  Date = sort(sample(seq(from = start_date, to = end_date, by = 1), 15, replace = TRUE)),
+  Symbol = sample(names(params), 15, replace = TRUE),
+  Value = 0,
+  Type = sample(c('abs', 'rel_orig', 'rel_prev'), 15, replace = TRUE)
+) %>%
+  mutate(Value = params[Symbol] + runif(15, -0.01, 0.01))
+
+
+model = make_sir_model(
+  params, state,
+  params_timevar = random_timevar,
+  start_date = start_date,
+  end_date = end_date
+)
+sims = (model
+  %>% simulation_history
+  %>% tidyr::pivot_longer(-Date, names_to = "var")
+  %>% rename(date = Date)
+  %>% mutate(value = round(value))
+  %>% filter(date > ymd(20000101))
+  %>% filter(var %in% c("S", "I", "R"))
+)
+
+(ggplot(sims)
+  + geom_line(aes(date, value, colour = var))
+)
+
+set.seed(2L)
+calibrate_timevar = (random_timevar
+  %>% within(Value[sample(15, size = 10)] <- NA)
+)
+filter(calibrate_timevar, is.na(Value)) %>% arrange(Symbol, Type)
+
+model_cal = (make_sir_model(
+    params, state,
+    start_date = model$start_date,
+    end_date = model$end_date,
+    params_timevar = calibrate_timevar,
+    data = sims
+  )
+  %>% add_opt_params(
+    log_beta ~ log_flat(0),
+    log_gamma ~ log_flat(0),
+    log_nb_disp_S ~ log_normal(0, 2.5),
+    log_nb_disp_I ~ log_normal(0, 2.5), # regularizing helps achieve convergence
+    log_nb_disp_R ~ log_normal(0, 2.5)
+  )
+  %>% add_opt_tv_params(
+    tv_type = 'abs',
+    log_beta ~ log_flat(0),
+    log_gamma ~ log_flat(0)
+  )
+  %>% add_opt_tv_params(
+    tv_type = 'rel_orig',
+    log_beta ~ log_flat(0),
+    log_gamma ~ log_flat(0)
+  )
+  %>% add_opt_tv_params(
+    tv_type = 'rel_prev',
+    log_gamma ~ log_flat(0)
+  )
+  %>% update_tmb_indices
+)
+model_cal$tmb_indices$ad_fun_map
+model_opt = nlminb_flexmodel(model_cal)
+model_opt$opt_obj
+model_opt$opt_par
+
+model_fit = fitted(model_opt)
+(filter(model_fit, var == "S")
+  %>% ggplot
+   +  geom_point(aes(date, value))
+   +  geom_line(aes(date, value_fitted), colour = 'red')
+)
+
+
+
+ff = function(x) obj$fn(c(model_opt$opt_par[1], x))
+
+x = seq(from = -20, 20, length = 100)
+y = sapply(x, ff)
+plot(x, y, type = "l")
+
+ss = 5
+(model_fit
+  %>% mutate(ll = -dnbinom(value, size = ss, mu = value_fitted, log = TRUE))
+  %>% summarise(sum(ll))
+  %>% unlist
+)
+ff(log(ss))
+
+nb = function(k, m, a) {
+  r = a
+  -log((gamma(r + k) / (factorial(k) * gamma(r))) * ((r / (r + m))^r) * ((m / (r + m))^k))
+}
+nb(10, 10, 4)
+-dnbinom(10, mu = 10, size = 4, log = TRUE)
+
+var(rnbinom(100, size = 1000, mu = 10))
+
+

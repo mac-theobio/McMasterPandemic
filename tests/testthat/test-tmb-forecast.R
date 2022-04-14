@@ -11,7 +11,7 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   options(MP_warn_bad_breaks = FALSE)
-  #r_tmb_comparable()
+  r_tmb_comparable()
   load("../../inst/testdata/ontario_flex_test_better.Rdata")
 
   model = make_vaccination_model(
@@ -51,7 +51,7 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
       step_args = list(do_hazard = TRUE),
       flexmodel = model
     )
-    compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
+    compare_sims(r_sim, tmb_sim, compare_attr = FALSE, na_is_zero = TRUE)
   }
 
   # suppressing warning for now -- nelder-mead complaining

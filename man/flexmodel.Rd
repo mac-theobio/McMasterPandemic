@@ -12,10 +12,12 @@ flexmodel(
   end_date = NULL,
   params_timevar = NULL,
   do_hazard = getOption("MP_default_do_hazard"),
-  do_hazard_lin = FALSE,
-  do_approx_hazard = FALSE,
-  do_approx_hazard_lin = TRUE,
   do_make_state = getOption("MP_default_do_make_state"),
+  do_hazard_lin = getOption("MP_default_do_hazard_lin"),
+  do_approx_hazard = getOption("MP_default_do_approx_hazard"),
+  do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
+  do_sim_constraint = getOption("MP_default_do_sim_constraint"),
+  sim_lower_bound = getOption("MP_default_sim_lower_bound"),
   max_iters_eig_pow_meth = 8000,
   tol_eig_pow_meth = 1e-06,
   haz_eps = 1e-06,
@@ -41,6 +43,10 @@ constant parameter variation (TODO: direct to other help pages)}
 (https://canmod.net/misc/flex_specs#v0.0.5) -- only used
 if \code{spec_ver_gt('0.0.4')}}
 
+\item{do_make_state}{should state be remade on the c++ size?
+(https://canmod.net/misc/flex_specs#v0.1.1) -- only used
+if \code{spec_ver_gt('0.1.0')}}
+
 \item{do_hazard_lin}{like \code{do_hazard} but for the
 linearized model that is used to construct the initial state
 variable -- only used when \code{do_make_state == TRUE}}
@@ -49,9 +55,16 @@ variable -- only used when \code{do_make_state == TRUE}}
 the linearized model that is used to construct the initial
 state (experimental)}
 
-\item{do_make_state}{should state be remade on the c++ size?
-(https://canmod.net/misc/flex_specs#v0.1.1) -- only used
-if \code{spec_ver_gt('0.1.0')}}
+\item{do_sim_constraint}{should simulated values be smoothly
+constrained to be above \code{sim_lower_bound} when computing
+negative binomial (maybe others in the future?) loss functions?
+the smooth constraint function is
+\eqn{y = x + \epsilon * \exp(-x / \epsilon)}, where \eqn{\epsilon}
+is \code{sim_lower_bound} and \eqn{x} is the simulated value.}
+
+\item{sim_lower_bound}{optional lower bound on the simulated values
+when computing negative binomial loss functions (only applicable
+when \code{do_sim_constraint} is \code{TRUE}.}
 
 \item{max_iters_eig_pow_meth}{maximum number of iterations
 to use in computing the eigenvector for initial state

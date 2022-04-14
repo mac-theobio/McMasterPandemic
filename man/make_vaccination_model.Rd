@@ -33,6 +33,15 @@ state (experimental)}
     \item{\code{do_make_state}}{should state be remade on the c++ size?
 (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 if \code{spec_ver_gt('0.1.0')}}
+    \item{\code{do_sim_constraint}}{should simulated values be smoothly
+constrained to be above \code{sim_lower_bound} when computing
+negative binomial (maybe others in the future?) loss functions?
+the smooth constraint function is
+\eqn{y = x + \epsilon * \exp(-x / \epsilon)}, where \eqn{\epsilon}
+is \code{sim_lower_bound} and \eqn{x} is the simulated value.}
+    \item{\code{sim_lower_bound}}{optional lower bound on the simulated values
+when computing negative binomial loss functions (only applicable
+when \code{do_sim_constraint} is \code{TRUE}.}
     \item{\code{max_iters_eig_pow_meth}}{maximum number of iterations
 to use in computing the eigenvector for initial state
 construction}
