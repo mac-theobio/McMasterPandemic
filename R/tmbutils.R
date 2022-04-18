@@ -2242,6 +2242,7 @@ tmb_opt_params = function(model) {
     indices$index_tv_table = (opt_tv_tables
       %>% lapply(getElement, 'd')
       %>% do.call(what = 'rbind')
+      %>% arrange(tv_breaks)
     )
     indices$hyperparameters_tv = (opt_tv_tables
       %>% lapply(getElement, 'hyperparams_vec')
@@ -2353,13 +2354,13 @@ tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mul
        $  tmb_indices
        $  opt_params
        $  index_table
-      %>% with(setNames(init_trans_params, param_nms))
+      %>% with(setNames(init_trans_params, param_trans %_% param_nms))
     )
     init_trans_tv_mult = (model
        $  tmb_indices
        $  opt_params
        $  index_tv_table
-      %>% getElement('init_trans_params')
+      %>% with(setNames(init_trans_params, param_trans %_% param_nms %_% "t" %+% tv_breaks))
     )
     return(c(init_trans_params, init_trans_tv_mult))
   }
@@ -2703,7 +2704,7 @@ update_params_calibrated = function(model, update_default_params = TRUE) {
 #' @export
 optim_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
-  model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
+  model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
   update_params_calibrated(model, update_default_params)
 }
@@ -2711,7 +2712,7 @@ optim_flexmodel = function(model, update_default_params = FALSE, ...) {
 #' @export
 nlminb_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
-  model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
+  model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
   update_params_calibrated(model, update_default_params)
 }
