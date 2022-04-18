@@ -2209,9 +2209,18 @@ tmb_observed_data = function(model) {
    %>% select(time_step, history_col_id, observed)
    %>% arrange(time_step, history_col_id)
   )
+
+  # HACK: simplify things for now while we only have a
+  # single loss function
+  if (nrow(initial_table) == 0L) {
+    initial_table$loss_param_count = integer(0L)
+  } else {
+    initial_table$loss_param_count = 1
+  }
   c(
-    as.list(variables_by_distributions),
-    as.list(parameters),
+    #as.list(variables_by_distributions),
+    #as.list(parameters),
+    as.list(initial_table),
     as.list(comparisons)
   )
 }
