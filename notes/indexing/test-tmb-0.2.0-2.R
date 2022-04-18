@@ -1,7 +1,3 @@
-### THIS THING IS BROKEN
-
-# negative log likelihood
-
 library(ggplot2)
 library(McMasterPandemic)
 library(lubridate)
@@ -112,3 +108,4 @@ all.equal(unname(r_loss), unname(tmb_loss))
 # test gradients ---------------------------
 
 compare_grads(mm_fit, tolerance = 1e-5)
+
