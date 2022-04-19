@@ -808,7 +808,8 @@ public:
   std::vector<int> spi; 	// index to sp
 
   // This member function calculates and returns the loss
-  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
+  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp,
+           int obs_do_sim_constraint, Type obs_sim_lower_bound) {
     Type var;
     Type lll;
     Type clamping_tolerance = 1e-12;
@@ -816,12 +817,16 @@ public:
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         //std::cout << "obs = " << observed << " sim = " << simulated << std::endl;
-        clamped_simulated = CppAD::CondExpLt(
-          simulated,
-          clamping_tolerance,
-          clamping_tolerance,
-          simulated
-        );
+        //clamped_simulated = CppAD::CondExpLt(
+        //  simulated,
+        //  clamping_tolerance,
+        //  clamping_tolerance,
+        //  simulated
+        //);
+        if (obs_do_sim_constraint) // && simulated<obs_sim_lower_bound)
+          clamped_simulated = simulated + obs_sim_lower_bound * exp(-simulated/obs_sim_lower_bound);
+        else
+          clamped_simulated = simulated;
 
         // var = mu + mu^2/k
         // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
@@ -1023,6 +1028,10 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(obs_time_step);
   DATA_IVECTOR(obs_history_col_id);
   DATA_VECTOR(obs_value);
+  DATA_INTEGER(obs_do_sim_constraint);
+  DATA_SCALAR(obs_sim_lower_bound);
+  std::cout << "obs_do_sim_constraint = " << obs_do_sim_constraint << std::endl;
+  std::cout << "obs_sim_lower_bound = " << obs_sim_lower_bound << std::endl;
 
   DATA_IVECTOR(opt_param_id);
   DATA_IVECTOR(opt_trans_id);
@@ -1435,7 +1444,7 @@ Type objective_function<Type>::operator() ()
         //std::cout << "k= " << k << " [" << obs_time_step[k] << ", " << obs_history_col_id[k] << "]" << std::endl;
         Type x = obs_value[k];
         Type mu = simulation_history(obs_time_step[k]-1, obs_history_col_id[k]-1);
-        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp);
+        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp, obs_do_sim_constraint, obs_sim_lower_bound);
       }
       else {
         obs_start = k;
