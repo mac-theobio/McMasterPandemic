@@ -411,17 +411,12 @@ rep_rate = function(model, from, to, formula,
 #'
 #' @family flexmodels
 #' @export
-vec_rate = function(model, from, to, formula,
-                    mapping = c("pairwise", "blockwise")) {
+vec_rate = function(model, from, to, formula) {
 
     unpack(model)
     #check_from_to(from, to, names(state))
-    map_fun = switch(
-        match.arg(mapping),
-        pairwise = pwise,
-        blockwise = block)
 
-    indices = map_fun(from, to, ratemat)
+    indices = pwise(from, to, ratemat)
 
     from = rownames(ratemat)[indices[,'from_pos']]
     to = colnames(ratemat)[indices[,'to_pos']]
