@@ -21,6 +21,10 @@ spec_ver_btwn(version_left, version_right)
 \arguments{
 \item{version}{string with the version of the spec
 (e.g. \code{"0.0.5"})}
+
+\item{version_left}{string with the exclusive lower bound of the spec version}
+
+\item{version_right}{string with the exclusive upper bound of the spec version}
 }
 \value{
 \code{svlist} object with the specification version.
@@ -35,5 +39,5 @@ Specification Document: https://canmod.net/misc/flex_specs.
 \code{spec_ver_eq}, \code{spec_ver_gt}, \code{spec_ver_lt}, and
 \code{spec_ver_btwn} return logical values indicating whether or not
 the \code{spec_version} is equal to, greater than, less than or between
-a user-specified version
+a user-specified version.
 }

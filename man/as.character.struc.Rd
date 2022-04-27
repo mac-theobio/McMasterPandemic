@@ -7,7 +7,7 @@
 \method{as.character}{struc}(x)
 }
 \arguments{
-\item{x}{struc object}
+\item{x}{\code{\link{struc-class}} object}
 }
 \value{
 character vector

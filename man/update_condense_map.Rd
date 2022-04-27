@@ -4,13 +4,15 @@
 \alias{update_condense_map}
 \title{Specify and Name Variables for Condensation}
 \usage{
-update_condense_map(model, map)
+update_condense_map(model, map = NULL)
 }
 \arguments{
 \item{model}{flexmodel}
 
 \item{map}{named vector with names that are a subset of
-the variables in the simulation model
+the variables in the simulation model. if \code{NULL} the
+identity map is used that makes all simulation history
+variables available without name changes.
 (\code{final_sim_report_names(model)}) and values that
 give the names of the variables in the condensed data set}
 }

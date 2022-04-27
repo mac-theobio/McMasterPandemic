@@ -130,3 +130,18 @@ Do we split up different types of parameters?
 * Special-Observed:
 * Exogenous-Observed:
 * Compartment-Temporal: 
+
+
+# Class Structure
+
+General state categorization:
+
+* Each state can be associated with $n$ categories (e.g. vaccination status = one dose, age = old) -- in general categorization = level)
+* For a categorization to count as a layer, each level in the categorization is represented by the same number of states
+
+For example:
+* Two categorizations:  epi cat and vax cat
+* At any time step you can only change levels for a single categorization
+* You also need to be able to make exceptions listing one-by-one
+  * e.g. program to vaccinate upon hospital admission (i.e. change epi cat by moving from infected to hospitalized and vax cat by changing from unvax to one dose immediately)
+  * e.g. 

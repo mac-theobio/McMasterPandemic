@@ -7,7 +7,7 @@
 same_dims(x, y)
 }
 \arguments{
-\item{x, y}{struc objects}
+\item{x, y}{\code{\link{struc}} objects}
 }
 \value{
 TRUE or FALSE
@@ -15,3 +15,8 @@ TRUE or FALSE
 \description{
 Test if struc Objects have the Same Dimensions
 }
+\seealso{
+Other struc_info_functions: 
+\code{\link{is_1by1}()}
+}
+\concept{struc_info_functions}

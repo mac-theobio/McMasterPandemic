@@ -181,7 +181,7 @@ def$model = function(name, model_spec_version) {
       default = model_spec_version
     ),
     states = def$dataframe(
-      state = def$character(allow_dups = FALSE),
+      state = def$character(min_len = 1L, max_len = Inf, allow_dups = FALSE),
       description = def$character(allow_dups = FALSE, optional = TRUE),
       layers = def$character(allow_dups = TRUE, option = TRUE, extra = TRUE)
     ),
@@ -300,8 +300,28 @@ exists_opt_params = function(model) {
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
+#'
+#' Paste with an underscore separator, except for length-zero character
+#' strings in the first vector
+#'
+#' @param x character vector
+#' @param y character vector
+#'
 #' @export
-`%_%` = function(x, y) paste(x, y, sep = "_")
+`%_%` = function(x, y) {
+  x = ifelse(nchar(trimws(as.character(x))) == 0L, '', paste(x, '_', sep = ""))
+  paste(x, y, sep = "")
+}
+
+#' Paste with Tilde Separator
+#'
+#' @param x character vector
+#' @param y character vector
+#'
+#' @export
+`%~%` = function(x, y) {
+  paste(x, y, sep = " ~ ")
+}
 
 #' Paste with Blank Separator
 #'
@@ -435,6 +455,28 @@ final_sim_report_names = function(model) {
     unlist(lapply(model$lag_diff, getElement, "output_names")),
     unlist(lapply(model$conv, getElement, "output_names"))
   )
+}
+
+pad_lag_diffs = function(sims, lag_diff) {
+  if(length(lag_diff) == 0L) return(sims)
+  ff = function(x) {
+    as.data.frame(x[c('delay_n', 'output_names')])
+  }
+  d = bind_rows(lapply(lag_diff, ff))
+  for(i in 1:nrow(d)) {
+    sims[1:as.integer(d[i,'delay_n']), d[i,'output_names']] = NA
+  }
+  sims
+}
+
+pad_convs = function(sims, conv, conv_indices) {
+  if(length(conv) == 0L) return
+  conv_nms = unlist(lapply(conv, getElement, 'output_names'))
+  qmax = conv_indices$qmax
+  for(i in 1:length(conv_nms)) {
+    sims[1:(qmax[i]-2L), conv_nms[i]] = NA
+  }
+  sims
 }
 
 # flexmodel to latex (experimental) -------------------
@@ -636,61 +678,51 @@ ff = function(x) {
 # Used in tmb_fun -- needs work, but this is a
 # good approach generally
 
-#' @export
 null_to_char0 = function(x) {
   if(is.null(x)) return(character(0L))
   as.character(x)
 }
 
-#' @export
 null_to_int0 = function(x) {
   if(is.null(x)) return(integer(0L))
   as.integer(x)
 }
 
-#' @export
 null_to_num0 = function(x) {
   if(is.null(x)) return(numeric(0L))
   as.numeric(x)
 }
 
-#' @export
 null_to_log0 = function(x) {
   if(is.null(x)) return(logical(0L))
   as.logical(x)
 }
 
-#' @export
 null_to_charNA = function(x) {
   if(is.null(x)) return(as.character(NA))
   as.character(x)
 }
 
-#' @export
 null_to_intNA = function(x) {
   if(is.null(x)) return(as.integer(NA))
   as.integer(x)
 }
 
-#' @export
 null_to_numNA = function(x) {
   if(is.null(x)) return(as.numeric(NA))
   as.numeric(x)
 }
 
-#' @export
 null_to_logNA = function(x) {
   if(is.null(x)) return(as.logical(NA))
   as.logical(x)
 }
 
-#' @export
 null_to_0 = function(x) {
   if(is.null(x)) return(0L)
   as.integer(x)
 }
 
-#' @export
 int0_to_0 = function(x) {
   if(length(x) == 0L) return(0L)
   as.integer(x)
@@ -730,6 +762,7 @@ find_operators <- function(x, operator) {
     ), x
   )
 }
+
 factor_table <- function(x) {
   data.frame(
     var = unlist(lapply(x, get_variables)),
@@ -778,7 +811,6 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
-#' @export
 block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
 }
@@ -835,9 +867,9 @@ rateform_as_char = function(x) {
   y
 }
 
-#' @param x character vector of names to look for in \code{vec} or
-#' \code{names(vec)}
-#' @param vec character vector or object with names
+# @param x character vector of names to look for in \code{vec} or
+# \code{names(vec)}
+# @param vec character vector or object with names
 find_vec_indices <- function(x, vec) {
   if(!is.character(vec)) vec = names(vec)
   missing_variables = x[!x %in% vec]
@@ -922,40 +954,114 @@ reduce_rates = function(rates) {
 
 # getting information about rates and sums ----------------------
 
-#' @export
-get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+# Get From-State Names
+#
+# Get vector of from-state names associated with each rate in the model.
+#
+# @param model \code{\link{flexmodel}} object
+#
+# @family get_flexmodel_info_functions
 
-#' @export
-get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
-
-#' @export
 get_rate_from = function(model) get_rate_info(model, 'from')
 
-#' @export
+# Get To-State Names
+#
+# Get vector of to-state names associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_to = function(model) get_rate_info(model, 'to')
 
-#' @export
-get_rate_ratemat_indices = function(model) get_rate_info(model, 'ratemat_indices')
+# Get Rate Info
+#
+# Get information on the rate associated with a particular state transition.
+#
+# @param what character describing the rate (i.e. \code{'state1_to_state2'})
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
 
-#' @export
+get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+
+# Get Factr Info
+#
+# Get information about an intermediate factor
+#
+# @param what name of the intermediate factor, as named by
+# \code{\link{add_factr}} or \code{\link{vec_factr}}
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
+get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
+
+# Get Rate Formulas
+#
+# Get vector of formulas associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_formula = function(model) get_rate_info(model, 'formula')
 
-#' @export
+# Get Rate Factors
+#
+# Get the factor table associated with each rate in the model.
+# TODO: define the factor table or link to a description.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_factors = function(model) get_rate_info(model, 'factors')
 
-#' @export
+# Get Rate State Dependence
+#
+# Get a logical vector indicating which rates in the model depend on
+# state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
 
-#' @export
+# Get Rate Time Variation
+#
+# Get a logical vector indicating which rates in the model are
+# time-varying.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
 
-#' @export
+# Get Rate Sum Dependence
+#
+# Get a logical vector indicating which rates in the model depend
+# on sums of parameters and state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
 
-#' @export
+# Get Factr Formula
+#
+# Get vector of formulas for defining each intermediate factor in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_formula = function(model) get_factr_info(model, 'formula')
 
-#' @export
+# Get the Number of Products
+#
+# Get a vector giving the number of products (in the multiplication sense)
+# that are required to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_products = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -965,7 +1071,15 @@ get_n_products = function(model) {
   )
 }
 
-#' @export
+# Get Number of Variables
+#
+# Get a vector giving the numbers of variables (parameters, state variables,
+# sums of parameters and state variables, and intermediate factors) required
+# to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_variables = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -974,7 +1088,14 @@ get_n_variables = function(model) {
   )
 }
 
-#' @export
+# Get Number of Factors
+#
+# Get the number of factors required to compute each rate in the
+# model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_factors = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -982,22 +1103,39 @@ get_n_factors = function(model) {
   )
 }
 
-#' @export
+# Get Sum Info
+#
+# Get information on each sum (of parameters and state variables)
+# in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_info = function(model, what) lapply(model$sums, '[[', what)
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_summands = function(model) get_sum_info(model, 'summands')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_vars = function(model) {
   (model
    %>% get_rate_factors
@@ -1005,7 +1143,9 @@ get_rate_vars = function(model) {
   )
 }
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rates_with_vars = function(model, var_pattern) {
   ii = (model
     %>% get_rate_vars
@@ -1016,6 +1156,16 @@ get_rates_with_vars = function(model, var_pattern) {
   get_rates(model)[ii]
 }
 
+get_rates = function(model) {
+  model$rates
+}
+
+##' Rate Summary
+##'
+##' Summarize the properties of the rates of transition amongst the
+##' compartments in the model.
+##'
+##' @param model a \code{\link{flexmodel}} object
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
 rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
@@ -1048,13 +1198,9 @@ rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
   summary
 }
 
-#' @export
-get_rates = function(model) {
-  model$rates
-}
 
-##' @param x parameter vector or flexmodel
-##' @export
+## @param x parameter vector or flexmodel
+## @export
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
@@ -1258,7 +1404,7 @@ parse_opt_param = function(x, params, params_timevar = NULL) {
   p = length(param_nm)
   l = 0
   if (!is.null(params_timevar)) {
-    l = sapply(param_nm, length_tv_mult_series)
+    l = sapply(param_nm, length_tv_mult_series, params_timevar)
     if (length(unique(l)) != 1L) {
       stop("all time varying parameters must have the same series length ",
            "if they are going to get the same prior")
@@ -1326,7 +1472,7 @@ parse_opt_param = function(x, params, params_timevar = NULL) {
 
 }
 
-length_tv_mult_series = function(x) {
+length_tv_mult_series = function(x, params_timevar) {
   sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x))
 }
 
@@ -1365,6 +1511,32 @@ set_hyperparam_dims = function(x, l, p, param_nm) {
 parse_and_resolve_opt_form = function(x, params) {
   pf = parse_opt_form(x)
   pf$param = resolve_param(pf$param, params)
+  if (length(unique(c(pf$param$trans, pf$prior$trans))) != 1L) {
+    example_bad = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$prior$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    example_good = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$param$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    stop(
+      '\nthe transformation scale used when a parameter is an argument',
+      '\nof an objective function, must be the same transformation used',
+      '\nwhen it is an argument of a prior density function.',
+      '\nfor example one may not optimize the transmission rate on the',
+      '\nlog scale but take the normal prior density over the identity scale.',
+      '\nthis restriction might be lifted in the future, which is the reason',
+      '\nwhy the notation makes it possible to decouple these two types of',
+      '\ntransformations.',
+      '\n\nproblematic example inspired by your input:',
+      '\n', example_bad,
+      '\n\nvalid example inspired by your input:',
+      '\n', example_good
+    )
+  }
   pf
 }
 
@@ -1434,7 +1606,7 @@ get_form_dim = function(x, params, params_timevar = NULL) {
   p = length(param_nm)
   l = 0
   if (!is.null(params_timevar)) {
-    l = sapply(param_nm, length_tv_mult_series)
+    l = sapply(param_nm, length_tv_mult_series, params_timevar)
     if (length(unique(l)) != 1L) {
       stop("all time varying parameters must have the same series length ",
            "if they are going to get the same prior")
@@ -1492,15 +1664,19 @@ resolve_param = function(x, params) {
 
     param_nms = ifelse(which_have_trans, Vectorize(index_sep)(param_nms, -1), param_nms)
   }
+  if (!all(param_nms %in% names(params))) {
+    stop('cannot find opimization parameters in the params vector')
+  }
   nlist(param_nms, trans)
 }
+
 #' Recursive function to parse a formula containing sums of names
 parse_name_sum = function(x) {
   y = character(0L)
   if (is.call(x)) {
     if (as.character(x[[1]]) != '+') {
-      stop('"+" is the only operator/function allowed when summing, but "',
-           as.character(x[[1]]), '" was used')
+      stop('you cannot apply functions or operators to terms in a sum, ',
+           'but ', as.character(x[[1]]), ' was used')
     }
     y = c(parse_name_sum(x[[2]]), parse_name_sum(x[[3]]))
     return(y)
@@ -1567,10 +1743,6 @@ parse_opt_form = function(x, e = NULL) {
       if (inherits(prior, 'param_sum')) {
         stop('summing prior distributions is not allowed')
       }
-      # TODO: check to make sure that param_trans and prior_trans
-      # are identical, and throw an informative error message
-      # describing the missing feature of putting a prior over a
-      # different scale than the parameter in the objective function
       return(nlist(param, prior))
     } else if (func == '+') {
       return(structure(parse_name_sum(x), class = 'param_vector'))
@@ -1917,7 +2089,7 @@ outflow_indices = function(outflow, ratemat) {
   #       outflow.
   #nlist(state_indices, flow_state_indices)
   #all = names(model$state)
-  #lapply(model$outflow, McMasterPandemic:::make_nested_indices, x = all)
+  #lapply(model$outflow, McMasterPandemic::make_nested_indices, x = all)
 }
 
 #' Nested Indices
@@ -2037,9 +2209,18 @@ tmb_observed_data = function(model) {
    %>% select(time_step, history_col_id, observed)
    %>% arrange(time_step, history_col_id)
   )
+
+  # HACK: simplify things for now while we only have a
+  # single loss function
+  if (nrow(initial_table) == 0L) {
+    initial_table$loss_param_count = integer(0L)
+  } else {
+    initial_table$loss_param_count = 1
+  }
   c(
-    as.list(variables_by_distributions),
-    as.list(parameters),
+    #as.list(variables_by_distributions),
+    #as.list(parameters),
+    as.list(initial_table),
     as.list(comparisons)
   )
 }
@@ -2070,6 +2251,7 @@ tmb_opt_params = function(model) {
     indices$index_tv_table = (opt_tv_tables
       %>% lapply(getElement, 'd')
       %>% do.call(what = 'rbind')
+      %>% arrange(tv_breaks)
     )
     indices$hyperparameters_tv = (opt_tv_tables
       %>% lapply(getElement, 'hyperparams_vec')
@@ -2181,13 +2363,13 @@ tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mul
        $  tmb_indices
        $  opt_params
        $  index_table
-      %>% with(setNames(init_trans_params, param_nms))
+      %>% with(setNames(init_trans_params, param_trans %_% param_nms))
     )
     init_trans_tv_mult = (model
        $  tmb_indices
        $  opt_params
        $  index_tv_table
-      %>% getElement('init_trans_params')
+      %>% with(setNames(init_trans_params, param_trans %_% param_nms %_% "t" %+% tv_breaks))
     )
     return(c(init_trans_params, init_trans_tv_mult))
   }
@@ -2250,8 +2432,8 @@ simulation_dates = function(model) {
     by = 1)
 }
 
-#' @param model flexmodel
-#' @param sim_params parameter vector to pass to a TMB objective function
+# @param model flexmodel
+# @param sim_params parameter vector to pass to a TMB objective function
 #' @export
 changing_ratemat_elements = function(model, sim_params = NULL) {
   if(is.null(sim_params)) sim_params = tmb_params(model)
@@ -2412,7 +2594,10 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
       %>% cbind(sim_hist)
     )
   }
-  sim_hist
+  (sim_hist
+    %>% pad_lag_diffs(model$lag_diff)
+    %>% pad_convs(model$conv, model$tmb_indices$conv)
+  )
 }
 
 # FIXME: following two functions do the same thing in slightly different
@@ -2422,7 +2607,6 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
 #'
 #' @export
 simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
-  stop("use condense_flexmodel instead")
   cond_map = model$condensation_map
   cond_nms = names(cond_map)
   if (add_dates) {
@@ -2506,7 +2690,7 @@ simulation_fitted = function(model) {
 }
 
 #' @export
-update_params_calibrated = function(model, update_default_params = FALSE) {
+update_params_calibrated = function(model, update_default_params = TRUE) {
   # TODO: check if opt_par exists
   obj_fun = tmb_fun(model)
   report = obj_fun$report(model$opt_par)
@@ -2514,7 +2698,7 @@ update_params_calibrated = function(model, update_default_params = FALSE) {
   model$params_calibrated[] = report$params
   model$params_calibrated_timevar = (model$timevar$piece_wise$schedule
     %>% select(Date, Symbol, Value, Type)
-    %>% within(Value[is.na(Value)] <- report$tv_mult)
+    %>% within(Value[is.na(Value)] <- report$tv_mult[is.na(Value)])
   )
   if (update_default_params) {
     model$params = model$params_calibrated
@@ -2527,19 +2711,19 @@ update_params_calibrated = function(model, update_default_params = FALSE) {
 }
 
 #' @export
-optim_flexmodel = function(model, ...) {
+optim_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
-  model$opt_obj = optim(obj_fun$par, obj_fun$fn, obj_fun$gr, ...)
+  model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model)
+  update_params_calibrated(model, update_default_params)
 }
 
 #' @export
-nlminb_flexmodel = function(model, ...) {
+nlminb_flexmodel = function(model, update_default_params = FALSE, ...) {
   obj_fun = tmb_fun(model)
-  model$opt_obj = nlminb(obj_fun$par, obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
+  model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model)
+  update_params_calibrated(model, update_default_params)
 }
 
 #' @export

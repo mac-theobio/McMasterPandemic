@@ -4,7 +4,13 @@
 \alias{compare_sims}
 \title{Compare TMB-based and classic MacPan Simulations}
 \usage{
-compare_sims(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE)
+compare_sims(
+  classic_sim,
+  tmb_sim,
+  tolerance = NULL,
+  compare_attr = TRUE,
+  na_is_zero = FALSE
+)
 }
 \arguments{
 \item{classic_sim}{result of `run_sim` without using TMB}
@@ -14,6 +20,8 @@ compare_sims(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE)
 \item{tolerance}{numerical tolerance}
 
 \item{compare_attr}{compare attributes or just the simulations themselves}
+
+\item{na_is_zero}{should NAs be replaced with zeros?}
 }
 \description{
 Exceptions to drop-in replacement:

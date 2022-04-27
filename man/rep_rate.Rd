@@ -9,28 +9,35 @@ rep_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 \arguments{
 \item{model}{flexmodel}
 
+\item{from}{character vector defining states from which flow is coming}
+
+\item{to}{character vector defining states from which flow is going}
+
 \item{formula}{formula or length-1 character vector}
+
+\item{mapping}{experimental -- please choose default for now}
 }
 \description{
 Repeat a Rate for Several Rate Matrix Elements
 }
 \seealso{
-Other flexmodels: 
+Other flexmodel_definition_functions: 
 \code{\link{add_factr}()},
 \code{\link{add_linearized_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
 \code{\link{add_state_mappings}()},
 \code{\link{add_state_param_sum}()},
-\code{\link{flexmodel}()},
 \code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
-\code{\link{rate}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()},
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()},
+\code{\link{vec_rate}()}
+
+Other rate_functions: 
+\code{\link{add_rate}()},
+\code{\link{mat_rate}()},
 \code{\link{vec_rate}()}
 }
-\concept{flexmodels}
+\concept{flexmodel_definition_functions}
+\concept{rate_functions}

@@ -124,7 +124,7 @@ test_that('simple models still work when structure is allowed', {
     condense = FALSE,
     step_args = list(do_hazard = TRUE)
   )
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that("simple vaccination model in TMB matches and is faster than existing R model", {
@@ -291,7 +291,7 @@ test_that("time-varying parameters can be used with a vaccination model", {
   r_speed = as.numeric(r_nd - r_strt)
   print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
   expect_lt(tmb_speed, r_speed)
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that("toy symbolic matrix multiplication examples give correct results", {
@@ -476,7 +476,7 @@ test_that("variants and vaccination model simulation matches run_sim", {
     compare_sims_plot(r_sim, tmb_sim, "Ia_unvax")
   }
 
-  compare_sims(r_sim, tmb_sim, tolerance = 1e-9)
+  compare_sims(r_sim, tmb_sim, tolerance = 1e-9, compare_attr = FALSE)
 
   # test state construction on c++ side matches r-side version
   expect_equal(c(state), initial_state_vector(model))

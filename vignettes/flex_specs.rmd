@@ -554,6 +554,8 @@ Each parameter, $\theta_j$, can be optionally passed into the objective function
         * `mu` -- simulated data
         * `var` -- `mu + mu^2 / disp`, where `disp` is the dispersion parameter
         * `give_log` -- `1`
+    * Lower bound on the simulated values
+        * Before passing the simulated data to the `mu` argument, the user may optionally choose to smoothly constrain the simulated data to be greater than a lower bound, `eps`, by applying the function `mu_constrained = mu + eps*exp(-mu/eps)`
 
 #### Available Regularization Functions
 
@@ -618,6 +620,8 @@ We will pass the following additional data through to TMB to specify the objecti
     * `obs_time_step` -- row in the history matrix
     * `obs_history_col_id` -- column in the history matrix (match with `obs_var_id` above to determine the `obs_loss_id` and `obs_loss_param_count`)
     * `obs_value` -- value observed in data to compare with the associated element in the history matrix
+    * `obs_do_sim_constraint` -- Boolean determining if the lower bound in `obs_sim_lower_bound` should be applied to the simulated data with smooth constraint function `mu_constrained = mu + eps*exp(-mu/eps)`
+    * `obs_sim_lower_bound` -- lower bound applied if `obs_do_sim_constraint` is true
 * **Optimized Parameters**: the following vectors have one element per parameter that is being optimized
     * `opt_param_id` -- indices into the `params` vector giving the parameters to be optimized
     * `opt_trans_id` -- index identifying a transformation -- see above for correspondence between indices and transformations

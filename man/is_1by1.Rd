@@ -13,5 +13,10 @@ is_1by1(x)
 TRUE or FALSE
 }
 \description{
-Test if 1-by-1
+Test if a \code{\link{struc-class}} object is a scalar
 }
+\seealso{
+Other struc_info_functions: 
+\code{\link{same_dims}()}
+}
+\concept{struc_info_functions}
