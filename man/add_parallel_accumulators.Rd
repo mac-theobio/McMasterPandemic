@@ -13,10 +13,10 @@ add_parallel_accumulators(model, state_patterns)
 parallel accumulators}
 }
 \value{
-another compartmental model with parallel accumulators specified
+
 }
 \description{
-Add parallel accumulators to a compartmental model.
+[deprecated] Add parallel accumulators to a compartmental model.
 }
 \seealso{
 Other flexmodel_definition_functions: 

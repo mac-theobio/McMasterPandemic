@@ -3,7 +3,7 @@
 \name{update_opt_params}
 \alias{update_opt_params}
 \alias{add_opt_params}
-\title{Update Optimization Parameters}
+\title{Optimization Parameters}
 \usage{
 update_opt_params(model, ...)
 
@@ -17,6 +17,9 @@ be optimized, whether/how they should be transformed before being
 passed to the objective function, and what prior distribution (or
 regularization function should be used -- see the section on
 the formula syntax for more details.}
+}
+\value{
+updated \code{\link{flexmodel}} object
 }
 \description{
 Add or update parameters to be optimized/calibrated in a
@@ -66,7 +69,5 @@ optimizer.
       }
     }
 }
-
-One may also specify several parameters with the same
 }
 

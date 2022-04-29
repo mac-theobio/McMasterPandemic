@@ -15,6 +15,9 @@ to be updated when constructing a disease-free state}
 \item{param_pattern}{regular expression for identifying parameters
 to use as disease-free state variables}
 }
+\value{
+updated \code{\link{flexmodel}} object
+}
 \description{
 Update Disease-Free State
 }

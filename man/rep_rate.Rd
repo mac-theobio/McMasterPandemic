@@ -13,7 +13,10 @@ rep_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 
 \item{to}{character vector defining states from which flow is going}
 
-\item{formula}{formula or length-1 character vector}
+\item{formula}{Model formula defining dependence of the repeated rate on
+existing variables. See \code{\link{avail_for_rate}} for a function
+that will print out the names of variables that are available for
+use in these formulas.}
 
 \item{mapping}{experimental -- please choose default for now}
 }

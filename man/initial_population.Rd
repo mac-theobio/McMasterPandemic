@@ -13,6 +13,9 @@ population -- over all compartments}
 \item{infected}{name of a single parameter to represent the initial total size of
 the infected population -- over all infected compartments}
 }
+\value{
+updated \code{\link{flexmodel}} object
+}
 \description{
 \code{infected} is the multiplier of the normalized infected components of the
 eigenvector. \code{total - infected} is multiplied by

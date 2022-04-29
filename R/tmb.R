@@ -348,8 +348,11 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
 ##' @param from Name of state from which flow is coming
 ##' @param to Name of state to which flow is going
 ##' @param formula Model formula defining dependence of the rate on
-##' parameters and state variables
-##' @return another compartmental model with an additional non-zero rate matrix
+##' existing variables. See \code{\link{avail_for_rate}} for a function
+##' that will print out the names of variables that are available for
+##' use in these formulas.
+##' @return updated \code{\link{flexmodel}} with an additional
+##' non-zero rate matrix
 ##' element specified
 ##' @family flexmodel_definition_functions
 ##' @family rate_functions
@@ -370,7 +373,10 @@ add_rate <- function(model, from, to, formula) {
 #' @param model \code{\link{flexmodel}} object
 #' @param from character vector defining states from which flow is coming
 #' @param to character vector defining states from which flow is going
-#' @param formula formula or length-1 character vector
+#' @param formula Model formula defining dependence of the repeated rate on
+#' existing variables. See \code{\link{avail_for_rate}} for a function
+#' that will print out the names of variables that are available for
+#' use in these formulas.
 #' @param mapping experimental -- please choose default for now
 #' @family flexmodel_definition_functions
 #' @family rate_functions
@@ -423,7 +429,9 @@ rep_rate = function(model, from, to, formula,
 #' @param from character vector defining states from which flow is coming
 #' @param to character vector defining states from which flow is going
 #' @param formula \code{\link{struc-class}} object defining a vector of flows
-#' for each \code{from-to} pair
+#' for each \code{from-to} pair. See \code{\link{avail_for_rate}} for a
+#' function that will print out the names of variables that are available for
+#' use in these \code{\link{struc-class}} objects.
 #' @param mapping experimental -- please choose default for now
 #' @family flexmodel_definition_functions
 #' @family rate_functions
@@ -529,13 +537,15 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
 #' @param factr_nm name of the new intermediate factor
 #' @param formula formula (or string) that follows
 #' this spec, \url{https://canmod.net/misc/flex_specs#v0.1.0},
-#' or 1-by-1 \code{\link{struc}} object describing the
-#' intermediate factor
+#' or 1-by-1 \code{\link{struc-class}} object describing the
+#' intermediate factor. See \code{\link{avail_for_factr}} for
+#' a function that will return the names of all variables that are available
+#' for use in these formulas and \code{\link{struc-class}} objects.
 #'
 #' @seealso See \code{\link{vec_factr}} to add more than
 #' one intermediate factor at the same time.
 #'
-#' @return \code{\link{flexmodel}} object
+#' @return updated \code{\link{flexmodel}} object
 #' @family flexmodel_definition_functions
 #' @export
 add_factr <- function(model, factr_nm, formula) {
@@ -560,14 +570,16 @@ add_factr <- function(model, factr_nm, formula) {
 #'
 #' @param model \code{\link{flexmodel}} object
 #' @param factr_nms vector of names of the new intermediate factors
-#' @param formula \code{\link{struc}} object describing the
-#' vector of intermediate factors
+#' @param formula \code{\link{struc-class}} object describing the
+#' vector of intermediate factors. See \code{\link{avail_for_factr}} for
+#' a function that will return the names of all variables that are available
+#' for use in these \code{\link{struc-class}} objects.
 #'
 #' @seealso See \code{\link{add_factr}} to add a single
 #' scalar-valued intermediate factor and \code{\link{vec}}
 #' to create a vector-valued \code{\link{struc}} object.
 #'
-#' @return \code{\link{flexmodel}} object
+#' @return updated \code{\link{flexmodel}} object
 #'
 #' @export
 vec_factr = function(model, factr_nms, formula) {
@@ -627,9 +639,11 @@ state_param_sum = function(sum_name, summands, state, params) {
 #' @param model \code{\link{flexmodel}} object
 #' @param sum_name name of sum of state variables and parameters
 #' @param summands character vector of regular expressions for identifying
-#' state variables and parameters to sum together
+#' state variables and parameters to sum together. See \code{\link{avail_for_sum}}
+#' for a function that will return all names that these regular expressions
+#' will search through.
 #'
-#' @return \code{\link{flexmodel}}
+#' @return updated \code{\link{flexmodel}}
 #'
 #' @family flexmodel_definition_functions
 #' @export
@@ -648,7 +662,6 @@ add_state_param_sum = function(model, sum_name, summands) {
 
 # condensation -----------------------------------
 
-#' @export
 sim_report_expr = function(expr_nm, formula, init_sim_report_nms) {
   stopifnot(
     (  inherits(formula, "formula")
@@ -705,6 +718,22 @@ sim_report_expr = function(expr_nm, formula, init_sim_report_nms) {
 
 }
 
+#' Add Expression to the Simulation History
+#'
+#' Create a new variable in the \code{\link{simulation_history}}
+#' by taking sums and products of existing variables (and their
+#' complements and inverses). These new variables can be compared
+#' with observed data streams.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param expr_nm Name of the new variable
+#' @param formula formula describing the expression. See
+#' \code{\link{avail_for_expr}} for
+#' a function that will return the names of all variables that are available
+#' for use in these formulas.
+#'
+#' @return updated \code{\link{flexmodel}} object
+#'
 #' @export
 add_sim_report_expr = function(model, expr_nm, formula) {
   unpack(model)
@@ -727,6 +756,17 @@ add_sim_report_expr = function(model, expr_nm, formula) {
   return(model)
 }
 
+#' Add Variable by Lag Differencing
+#'
+#' Add a variable that will be available for comparisons with observed data
+#' that is created by processing an existing variable in the simulation
+#' history by lagged differencing.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param var_pattern regular expression used to identify variables for
+#' differencing. See \code{\link{avail_for_lag}} for a function that will
+#' return the names of all variables that are available for differencing.
+#' @param delay_n Delay in days for determining the lag in the differences.
 #' @export
 add_lag_diff = function(
   model, var_pattern,
@@ -751,6 +791,23 @@ add_lag_diff = function(
   model
 }
 
+#' Add Variable by Convolution
+#'
+#' Add a variable that will be available for comparisons with observed data
+#' that is created by processing an existing variable in the simulation
+#' history by convolving it with a gamma density.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param var_pattern regular expression used to identify variables for
+#' convolutions. See \code{\link{avail_for_conv}} for a function that will
+#' return the names of all variables that are available for convolution.
+#' @param c_prop name of the parameter in the \code{params} vector associated
+#' with the proportion of individuals in the original state variable that are
+#' represented in the convolved variable
+#' @param c_delay_cv name of the parameter in the \code{params} vector
+#' associated with the coefficient of variation of the gamma density
+#' @param c_delay_mean name of the parameter in the \code{params} vector
+#' associated with the mean of the gamma density
 #' @export
 add_conv = function(
   model, var_pattern,
@@ -808,12 +865,13 @@ update_condense_map = function(model, map = NULL) {
 
 ##' Add Parallel Accumulators
 ##'
-##' Add parallel accumulators to a compartmental model.
+##' [deprecated] Add parallel accumulators to a compartmental model.
 ##'
 ##' @param model \code{\link{flexmodel}} object
 ##' @param state_patterns regular expressions for identifying states as
 ##' parallel accumulators
-##' @return another compartmental model with parallel accumulators specified
+##' @return updated \code{\link{flexmodel} with parallel
+##' accumulators specified
 ##' @family flexmodel_definition_functions
 ##' @export
 add_parallel_accumulators <- function(model, state_patterns) {
@@ -866,7 +924,7 @@ add_linearized_outflow = function(model, from, to) {
 ##' @param to string giving a regular expression for identifying
 ##' states to which individuals are flowing
 ##'
-##' @return model \code{\link{flexmodel}} object
+##' @return updated \code{\link{flexmodel}} object
 ##'
 ##' @family flexmodel_definition_functions
 ##' @export
@@ -904,6 +962,8 @@ outflow = function(
 ##' model simulations
 ##' @param value numeric value required to update
 ##'
+##' @return updated \code{\link{flexmodel}} object
+##'
 ##' @family flexmodel_definition_functions
 ##' @export
 update_linearized_params = function(model, param_pattern, value) {
@@ -932,6 +992,8 @@ linearized_params = function(model, param_pattern, value) {
 ##' to be updated when constructing a disease-free state
 ##' @param param_pattern regular expression for identifying parameters
 ##' to use as disease-free state variables
+##'
+##' @return updated \code{\link{flexmodel}} object
 ##'
 ##' @family flexmodel_definition_functions
 ##' @export
@@ -973,6 +1035,9 @@ disease_free_state = function(model, state_pattern, param_pattern) {
 ##' population -- over all compartments
 ##' @param infected name of a single parameter to represent the initial total size of
 ##' the infected population -- over all infected compartments
+##'
+##' @return updated \code{\link{flexmodel}} object
+##'
 ##' @family flexmodel_definition_functions
 ##' @export
 initial_population = function(model, total, infected) {
@@ -1000,7 +1065,7 @@ initial_population = function(model, total, infected) {
 ##' @param initial_susceptible_pattern regular expression for
 ##' identifying states associated with susceptible classes
 ##'
-##' @return \code{\link{flexmodel}} object
+##' @return updated \code{\link{flexmodel}} object
 ##'
 ##' @family flexmodel_definition_functions
 ##' @export
@@ -1030,9 +1095,7 @@ add_state_mappings = function(
     return(model)
 }
 
-#' Update Optimization Parameters
-#'
-#'
+
 #' @rdname add_opt_params
 #' @export
 update_opt_params = function(model, ...) {
@@ -1089,14 +1152,15 @@ update_opt_params = function(model, ...) {
 #'     }
 #' }
 #'
-#' One may also specify several parameters with the same
-#'
 #' @param model \code{\link{flexmodel}} object
 #' @param ... a list of formulas for describing what parameters should
 #' be optimized, whether/how they should be transformed before being
 #' passed to the objective function, and what prior distribution (or
 #' regularization function should be used -- see the section on
 #' the formula syntax for more details.
+#'
+#' @return updated \code{\link{flexmodel}} object
+#'
 #' @export
 add_opt_params = function(model, ...) {
   l = force(list(...))

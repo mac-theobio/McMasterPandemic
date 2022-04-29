@@ -15,6 +15,9 @@ model simulations}
 
 \item{value}{numeric value required to update}
 }
+\value{
+updated \code{\link{flexmodel}} object
+}
 \description{
 Specify how to update model parameters for use with
 linearized models during initial state vector construction.

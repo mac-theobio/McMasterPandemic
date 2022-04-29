@@ -11,11 +11,13 @@ vec_factr(model, factr_nms, formula)
 
 \item{factr_nms}{vector of names of the new intermediate factors}
 
-\item{formula}{\code{\link{struc}} object describing the
-vector of intermediate factors}
+\item{formula}{\code{\link{struc-class}} object describing the
+vector of intermediate factors. See \code{\link{avail_for_factr}} for
+a function that will return the names of all variables that are available
+for use in these \code{\link{struc-class}} objects.}
 }
 \value{
-\code{\link{flexmodel}} object
+updated \code{\link{flexmodel}} object
 }
 \description{
 Vectors of Intermediate Factors

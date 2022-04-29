@@ -14,7 +14,9 @@ vec_rate(model, from, to, formula)
 \item{to}{character vector defining states from which flow is going}
 
 \item{formula}{\code{\link{struc-class}} object defining a vector of flows
-for each \code{from-to} pair}
+for each \code{from-to} pair. See \code{\link{avail_for_rate}} for a
+function that will print out the names of variables that are available for
+use in these \code{\link{struc-class}} objects.}
 
 \item{mapping}{experimental -- please choose default for now}
 }

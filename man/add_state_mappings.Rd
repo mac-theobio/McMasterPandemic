@@ -26,7 +26,7 @@ remain}
 identifying states associated with susceptible classes}
 }
 \value{
-\code{\link{flexmodel}} object
+updated \code{\link{flexmodel}} object
 }
 \description{
 Add regular expressions for identifying what states

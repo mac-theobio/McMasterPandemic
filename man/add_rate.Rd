@@ -14,10 +14,13 @@ add_rate(model, from, to, formula)
 \item{to}{Name of state to which flow is going}
 
 \item{formula}{Model formula defining dependence of the rate on
-parameters and state variables}
+existing variables. See \code{\link{avail_for_rate}} for a function
+that will print out the names of variables that are available for
+use in these formulas.}
 }
 \value{
-another compartmental model with an additional non-zero rate matrix
+updated \code{\link{flexmodel}} with an additional
+non-zero rate matrix
 element specified
 }
 \description{

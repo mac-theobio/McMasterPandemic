@@ -13,11 +13,13 @@ add_factr(model, factr_nm, formula)
 
 \item{formula}{formula (or string) that follows
 this spec, \url{https://canmod.net/misc/flex_specs#v0.1.0},
-or 1-by-1 \code{\link{struc}} object describing the
-intermediate factor}
+or 1-by-1 \code{\link{struc-class}} object describing the
+intermediate factor. See \code{\link{avail_for_factr}} for
+a function that will return the names of all variables that are available
+for use in these formulas and \code{\link{struc-class}} objects.}
 }
 \value{
-\code{\link{flexmodel}} object
+updated \code{\link{flexmodel}} object
 }
 \description{
 Save intermediate computations so that they can be used

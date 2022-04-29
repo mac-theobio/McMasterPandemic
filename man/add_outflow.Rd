@@ -19,7 +19,7 @@ states from which individuals are flowing}
 states to which individuals are flowing}
 }
 \value{
-model \code{\link{flexmodel}} object
+updated \code{\link{flexmodel}} object
 }
 \description{
 Add outflows corresponding to inflows specified by

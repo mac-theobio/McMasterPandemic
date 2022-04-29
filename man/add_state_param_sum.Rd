@@ -12,10 +12,12 @@ add_state_param_sum(model, sum_name, summands)
 \item{sum_name}{name of sum of state variables and parameters}
 
 \item{summands}{character vector of regular expressions for identifying
-state variables and parameters to sum together}
+state variables and parameters to sum together. See \code{\link{avail_for_sum}}
+for a function that will return all names that these regular expressions
+will search through.}
 }
 \value{
-\code{\link{flexmodel}}
+updated \code{\link{flexmodel}}
 }
 \description{
 Save intermediate sums of states and parameters so that
