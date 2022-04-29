@@ -2934,6 +2934,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 #' @param tolerance numerical tolerance to pass to \code{all.equal} --
 #' if \code{NA}, then a list is returned that can be passed to
 #' \code{all.equal} using \code{do.call}
+#' @param tmb_pars optional parameters to pass to the tmb functions
 #' @param ... additional arguments to pass to \code{numDeriv::grad}
 #'
 #' @return either (1) the return value of \code{all.equal} comparing
@@ -2944,7 +2945,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 #'
 #' @importFrom numDeriv grad
 #' @export
-compare_grads = function(model, tolerance = 1e-5,  ...) {
+compare_grads = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
 
   args = list(...)
   if (!'method.args' %in% names(args)) {
@@ -2955,8 +2956,11 @@ compare_grads = function(model, tolerance = 1e-5,  ...) {
       )
   }
   dd = tmb_fun(model)
-  current <- numDeriv::grad(dd$fn, dd$par, ...)
-  target <- dd$gr(dd$par)
+  if (is.null(tmb_pars)) {
+    tmb_pars = dd$par
+  }
+  current <- numDeriv::grad(dd$fn, tmb_pars, ...)
+  target <- dd$gr(tmb_pars)
   attributes(target) <- attributes(current) <- NULL
   if (is.na(tolerance)) return(nlist(target, current))
   all.equal(target, current, tolerance)

@@ -757,7 +757,17 @@ test_that("transformations and priors give the right objective function and grad
   )
   yukon_fit = nlminb_flexmodel(yukon_model)
 
-  expect_true(compare_grads(yukon_model))
+  method.args = list(
+    eps = 1e-7, d = 0.00591,
+    zero.tol = sqrt(.Machine$double.eps / 7e-7),
+    r = 3, v = 2,
+    show.details = FALSE
+  )
+
+  expect_true(isTRUE(compare_grads(yukon_model,
+                tolerance = 1e-4,
+                tmb_pars = yukon_fit$opt_par,
+                method.args = method.args)))
 })
 
 test_that("mixed tv types get optimized properly", {
