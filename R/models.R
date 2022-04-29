@@ -399,16 +399,17 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
 ##' @family canned_models
 ##' @export
 make_sir_model = function(...) {
-  stopifnot(all(names(state) %in% c("S", "I", "R")))
-  stopifnot(all(c("S", "I", "R") %in% names(state)))
-  stopifnot(all(names(params) %in% c("beta", "gamma", "N", "nb_disp_S", "nb_disp_I", "nb_disp_R")))
-  stopifnot(all(c("beta", "gamma") %in% names(params)))
+  l... = list(...)
+  stopifnot(all(names(l...$state) %in% c("S", "I", "R")))
+  stopifnot(all(c("S", "I", "R") %in% names(l...$state)))
+  stopifnot(all(names(l...$params) %in% c("beta", "gamma", "N", "nb_disp_S", "nb_disp_I", "nb_disp_R")))
+  stopifnot(all(c("beta", "gamma") %in% names(l...$params)))
   model = flexmodel(...)
   model$do_make_state = FALSE
-  if("N" %in% names(params)) {
-    stopifnot(params[["N"]] == sum(state))
+  if("N" %in% names(l...$params)) {
+    stopifnot(l...$params[["N"]] == sum(l...$state))
   } else {
-    model = add_state_param_sum(model, "N", alt_group(names(state), exact = TRUE))
+    model = add_state_param_sum(model, "N", alt_group(names(l...$state), exact = TRUE))
   }
   model = (model
     %>% add_rate("S", "I", ~ (beta) * (I) * (1/N))

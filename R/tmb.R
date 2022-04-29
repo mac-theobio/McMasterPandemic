@@ -158,7 +158,7 @@ flexmodel <- function(params, state = NULL,
         )
 
         if (spec_ver_gt("0.0.3")) {
-          model = update_piece_wise(model, params_timevar)
+          model = update_piece_wise(model, params_timevar, regenerate_rates = FALSE)
         } ## >v0.0.3
     } else {
         model = initialize_piece_wise(model)
@@ -207,26 +207,10 @@ flexmodel <- function(params, state = NULL,
     # condensation -- spec_ver_gt("0.1.2)
     model$condensation = init_condensation
 
-    if (spec_ver_gt("0.1.2") & !is.null(data)) {
-      stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
-      #allvars = model$condensation_map[final_sim_report_names(model)]
-      obsvars = unique(data$var)
-      #stopifnot(all(obsvars %in% allvars))
-      model$observed$data = data
+    model = structure(model, class = "flexmodel")
 
-      # in the future, the user should be able to provide this
-      # loss_params data themselves. would open up the
-      # possibility to add error distributions other than
-      # the negative binomial, including distributions with
-      # more than one parameter (in addition to the location
-      # parameter that is determined by the simulations).
-      # right now the c++ side assumes only negative binomial.
-      model$observed$loss_params = data.frame(
-        Parameter = "nb_disp", # only choice: dispersion
-        Distribution = "nb",   # only choice: negative binomial
-        Variable = obsvars
-      )
-      model$params = expand_params_nb_disp(model$params, obsvars)
+    if (spec_ver_gt("0.1.2") & !is.null(data)) {
+      model = update_observed(model, data)
     } else {
       model$observed = init_observed
     }
@@ -237,7 +221,11 @@ flexmodel <- function(params, state = NULL,
     }
 
     model$opt_params = list()
-    model$opt_tv_params = list()
+    model$opt_tv_params = list(
+      abs = list(),
+      rel_orig = list(),
+      rel_prev = list()
+    )
     model$condensation_map = init_condensation_map
 
     if (FALSE & spec_ver_gt('0.1.2')) {
@@ -247,7 +235,7 @@ flexmodel <- function(params, state = NULL,
 
     model$tmb_indices <- init_tmb_indices
 
-    structure(model, class = "flexmodel")
+    model
 }
 
 #' `init_model` is deprecated and identical to `flexmodel`.
@@ -354,7 +342,7 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
 ##' Add Rate
 ##'
 ##' Define how the rate of flow from one compartment to another
-##' depends on the parameters and state variables.
+##' depends on parameters, state variables, .
 ##'
 ##' @param model compartmental model
 ##' @param from Name of state from which flow is coming
@@ -1144,6 +1132,7 @@ initialize_opt_params = function(model) {
 
 #' @export
 initialize_opt_tv_params = function(model) {
+  # FIXME: doesn't seem necessary
   sc = model$timevar$piece_wise$schedule
   nms = unique(sc$Symbol)
   f = function(nm) {
@@ -1172,14 +1161,17 @@ update_opt_tv_params = function(
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
   ...
 ) {
-  tv_type = match.arg(tv_type, several.ok = TRUE)
-  tvp = (model
-      $  timevar
-      $  piece_wise
-      $  schedule
-     %>% filter (Type %in% tv_type)
+  tv_type = match.arg(tv_type, several.ok = FALSE)
+  # tvp = (model
+  #     $  timevar
+  #     $  piece_wise
+  #     $  schedule
+  #    %>% filter (Type %in% tv_type)
+  # )
+  model$opt_tv_params[[tv_type]] = lapply(
+    list(...),
+    parse_and_resolve_opt_form, model$params
   )
-  model$opt_tv_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
   model
 }
 
@@ -1189,15 +1181,15 @@ add_opt_tv_params = function(
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
   ...
 ) {
-  tv_type = match.arg(tv_type, several.ok = TRUE)
-  tvp = (model
-      $  timevar
-      $  piece_wise
-      $  schedule
-     %>% filter (Type %in% tv_type)
-  )
-  model$opt_tv_params = c(
-    model$opt_tv_params,
+  tv_type = match.arg(tv_type, several.ok = FALSE)
+  # tvp = (model
+  #     $  timevar
+  #     $  piece_wise
+  #     $  schedule
+  #    %>% filter (Type %in% tv_type)
+  # )
+  model$opt_tv_params[[tv_type]] = c(
+    model$opt_tv_params[[tv_type]],
     lapply(list(...), parse_and_resolve_opt_form, model$params)
   )
   model
@@ -1230,6 +1222,10 @@ update_opt_vec = function(model, ...) {
 ##' @param model compartmental model
 ##' @export
 update_tmb_indices <- function(model) {
+
+    if (length(model$condensation_map) == 0L) {
+      model = update_full_condensation_map(model)
+    }
 
     # reduce rates so that there is only one rate
     # for each from-to pair
@@ -1284,6 +1280,9 @@ tmb_indices <- function(model) {
         indices$sum_indices = sum_indices(model$sums, model$state, model$params)
     }
     if (spec_ver_gt("0.1.0")) {
+        if ((length(model$outflow) == 0L) & getOption("MP_auto_outflow")) {
+          model = add_outflow(model)
+        }
         if ((length(model$outflow) == 0L) & getOption("MP_warn_no_outflow")) {
           warning("model does not contain any outflow.\n",
                   "use add_outflow to balance inflows with outflows.\n",
@@ -1354,12 +1353,13 @@ tmb_fun <- function(model) {
     check_spec_ver_archived()
     DLL = getOption('MP_flex_spec_dll')
 
-    if (getOption('MP_force_full_outflow')) {
-      # reset outflow if it exists already
-      if (length(model$outflow) > 0L) {
-        model$outflow = list()
+    if (getOption('MP_auto_outflow') & spec_ver_gt("0.1.0")) {
+      if (length(model$outflow) == 0L) {
+        model = add_outflow(model)
       }
-      model = add_outflow(model)
+    }
+    if ((length(model$condensation_map) == 0L) & (nrow(model$observed$data) > 0L)) {
+      model = update_full_condensation_map(model)
     }
     if (getOption('MP_auto_tmb_index_update')) {
       model = update_tmb_indices(model)
@@ -1844,7 +1844,30 @@ update_initial_state = function(model, silent = FALSE) {
 # observed data ---------------------------------
 
 #' @export
-update_observed = function(model, data, error_dist) {
+update_observed = function(model, data) {
+  stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
+  #allvars = model$condensation_map[final_sim_report_names(model)]
+  obsvars = unique(data$var)
+  #stopifnot(all(obsvars %in% allvars))
+  model$observed$data = data
+
+  # in the future, the user should be able to provide this
+  # loss_params data themselves. would open up the
+  # possibility to add error distributions other than
+  # the negative binomial, including distributions with
+  # more than one parameter (in addition to the location
+  # parameter that is determined by the simulations).
+  # right now the c++ side assumes only negative binomial.
+  model$observed$loss_params = data.frame(
+    Parameter = "nb_disp", # only choice: dispersion
+    Distribution = "nb",   # only choice: negative binomial
+    Variable = obsvars
+  )
+  model$params = expand_params_nb_disp(model$params, obsvars)
+  class(model) = c('flexmodel', 'flexmodel_to_calibrate')
+  return(model)
+
+
   stop("deprecated ... now in init_model and canned models")
   spec_check(
     introduced_version = '0.2.0',
@@ -1871,7 +1894,7 @@ update_observed = function(model, data, error_dist) {
 # time variation updates ------------------
 
 #' @export
-update_piece_wise = function(model, params_timevar) {
+update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   spec_check(
     introduced_version = '0.0.4',
     feature = 'piece-wise time variation of parameters'
@@ -1898,11 +1921,13 @@ update_piece_wise = function(model, params_timevar) {
 
     count_of_tv_at_breaks <- c(table(schedule$breaks))
 
-    schedule$tv_val <- NA
+    if (nrow(schedule) > 0L) {
+      schedule$tv_val <- NA
+    }
     new_param <- TRUE
     ns <- nrow(schedule)
-    for (i in 1:ns) {
-      if (new_param | schedule$Type[i] == "rel_orig") {
+    for (i in seq_len(ns)) {
+      if ((new_param | schedule$Type[i] == "rel_orig") & (schedule$Type[i] != "abs")) {
         old_val <- model$params[schedule$Symbol[i]]
       } else if (schedule$Type[i] == "rel_prev") {
         old_val <- schedule$tv_val[i - 1]
@@ -1944,6 +1969,23 @@ update_piece_wise = function(model, params_timevar) {
                 "to silence this warning use:\n",
                 "options(MP_warn_bad_breaks = FALSE)")
       }
+    }
+    if (regenerate_rates) {
+      regen_rates = function(model) {
+        remodel = model
+        remodel$rates = list()
+        for(r in seq_along(model$rates)) {
+          args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
+          remodel = do.call(add_rate, args)
+        }
+        remodel
+      }
+      model = regen_rates(model)
+    }
+    if (spec_ver_gt('0.1.2')) {
+      model$timevar$piece_wise$schedule = (model$timevar$piece_wise$schedule
+       %>% mutate(tv_mult_id = seq_len(nrow(model$timevar$piece_wise$schedule)))
+      )
     }
     model
 }

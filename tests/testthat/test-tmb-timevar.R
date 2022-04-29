@@ -9,9 +9,11 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 
+skip_slow_tests = TRUE
+
 test_that('time variation works for several parameters and levels of continuity', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
     mm = make_base_model(
@@ -74,7 +76,7 @@ test_that('time variation works for several parameters and levels of continuity'
 
 test_that("time variation on the first two steps matches in r and tmb engines", {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("PHAC.csv") %>% expand_params_S0(1-1e-5)
 
   test_fun = function(type) {
@@ -124,6 +126,8 @@ test_that("time variation on the first two steps matches in r and tmb engines", 
 })
 
 test_that('time variation works for vax models', {
+  skip_if(skip_slow_tests)
+
   reset_spec_version()
   #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
@@ -173,7 +177,7 @@ test_that('time variation works for vax models', {
 
 test_that('time variation works for a mix of types', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
     mm = make_base_model(

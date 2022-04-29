@@ -89,6 +89,7 @@ init_tmb_indices = list(
       prior_trans_id = integer(0),
       param_trans_id = integer(0),
       prior_distr_id = integer(0),
+      tv_breaks = integer(0),
       opt_tv_mult_id = integer(0)
     ),
     hyperparameters_tv = numeric(0L)
@@ -621,6 +622,13 @@ layered_zero_state = function(...) {
 #' @export
 const_named_vector = function(nms, cnst) {
   setNames(rep(cnst[[1]], length(nms)), nms)
+}
+
+#' @export
+update_full_condensation_map = function(model) {
+  srn = final_sim_report_names(model)
+  model$condensation_map = setNames(srn, srn)
+  model
 }
 
 #' Merge One Vector into Another by Name
@@ -1472,8 +1480,8 @@ parse_opt_param = function(x, params, params_timevar = NULL) {
 
 }
 
-length_tv_mult_series = function(x, params_timevar) {
-  sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x))
+length_tv_mult_series = function(x, params_timevar, tv_type) {
+  sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x) & (params_timevar$Type == tv_type))
 }
 
 set_hyperparam_dims = function(x, l, p, param_nm) {
@@ -1540,17 +1548,19 @@ parse_and_resolve_opt_form = function(x, params) {
   pf
 }
 
-tmb_opt_form = function(pf, params, params_timevar = NULL) {
+tmb_opt_form = function(pf, params, params_timevar = NULL, tv_type = NULL) {
   if (is.null(params_timevar)) {
+    stopifnot(is.null(tv_type))
     if (!all(pf$param$param_nms %in% names(params))) {
       stop('parameters declared for optimization are missing from the model')
     }
   } else {
+    stopifnot(!is.null(tv_type))
     if (!all(pf$param$param_nms %in% filter(params_timevar, is.na(Value))$Symbol)) {
       stop('time varying multipliers declared for optimization are not scheduled to vary in simulation time')
     }
   }
-  fd = get_form_dim(pf, params, params_timevar)
+  fd = get_form_dim(pf, params, params_timevar, tv_type)
   hyperparams_vec = (pf$prior$reg_param
     %>% lapply(hyperparam_to_vec, l = fd$l, p = fd$p)
     %>% unlist
@@ -1571,15 +1581,26 @@ tmb_opt_form = function(pf, params, params_timevar = NULL) {
     lookup_tv_table = (params_timevar
       %>% mutate(v = ifelse(is.na(Value), Symbol, ''))
     )
-    lookup_tv_vec = lookup_tv_table$v
-    d$tv_breaks = filter(lookup_tv_table, is.na(Value) & (Symbol == param_nms[1]))$breaks
+    lookup_tv_vec = filter(lookup_tv_table, Type == tv_type)$v
+    d$tv_breaks = filter(
+      lookup_tv_table,
+      is.na(Value) & (Symbol == param_nms[1]) & (Type == tv_type)
+    )$breaks
     # d$tv_breaks = filter(lookup_tv_table, Symbol == param_nms[1])$breaks
-    d$opt_tv_mult_id =
-      unlist(lapply(
-        unique(param_nms),
-        find_vec_indices,
-        lookup_tv_vec
-      ))
+    #(lookup_tv_table
+    #  %>% mutate()
+    #)
+    d$opt_tv_mult_id = filter(
+      lookup_tv_table,
+      is.na(Value),
+      Symbol %in% param_nms,
+      Type == tv_type
+    )$tv_mult_id
+      # unlist(lapply(
+      #   unique(param_nms),
+      #   find_vec_indices,
+      #   lookup_tv_vec
+      # ))
   }
   nlist(d, hyperparams_vec)
 }
@@ -1599,14 +1620,14 @@ get_hyperparam_list = function(reg_params,  n_hyperparams, n_params, n_breaks) {
   }
   ll
 }
-get_form_dim = function(x, params, params_timevar = NULL) {
+get_form_dim = function(x, params, params_timevar = NULL, tv_type = NULL) {
   param_nm = x$param$param_nms
   # lengths of the parameter vector, p, and the time series, l
   h = x$prior$reg_params %>% length
   p = length(param_nm)
   l = 0
   if (!is.null(params_timevar)) {
-    l = sapply(param_nm, length_tv_mult_series, params_timevar)
+    l = sapply(param_nm, length_tv_mult_series, params_timevar, tv_type)
     if (length(unique(l)) != 1L) {
       stop("all time varying parameters must have the same series length ",
            "if they are going to get the same prior")
@@ -1672,6 +1693,8 @@ resolve_param = function(x, params) {
 
 #' Recursive function to parse a formula containing sums of names
 parse_name_sum = function(x) {
+  stop("sums in opt_param formulas is under construction. ",
+       "please specify the prior for each parameter separately.")
   y = character(0L)
   if (is.call(x)) {
     if (as.character(x[[1]]) != '+') {
@@ -2243,20 +2266,35 @@ tmb_opt_params = function(model) {
       %>% unlist
     )
   }
-  if (length(model$opt_tv_params) > 0L) {
-
-    opt_tv_tables = (model$opt_tv_params
-      %>% lapply(tmb_opt_form, model$params, model$timevar$piece_wise$schedule)
+  any_opt_tv_params = sum(unlist(lapply(model$opt_tv_params, length))) > 0L
+  if (any_opt_tv_params) {
+    opt_tv_tables = index_tv_table = hyperparameters_tv = setNames(
+      vector("list", length(model$opt_tv_params)),
+      names(model$opt_tv_params)
     )
-    indices$index_tv_table = (opt_tv_tables
-      %>% lapply(getElement, 'd')
-      %>% do.call(what = 'rbind')
-      %>% arrange(tv_breaks)
-    )
-    indices$hyperparameters_tv = (opt_tv_tables
-      %>% lapply(getElement, 'hyperparams_vec')
-      %>% unlist
-    )
+    # loop over time-varying types (i.e. abs, rel_orig, rel_prev)
+    for(tvt in names(opt_tv_tables)) {
+      if(length(model$opt_tv_params[[tvt]]) > 0L) {
+        opt_tv_tables[[tvt]] = lapply(
+          model$opt_tv_params[[tvt]],
+          tmb_opt_form,
+          model$params,
+          model$timevar$piece_wise$schedule,
+          tvt
+        )
+        index_tv_table[[tvt]] = (opt_tv_tables[[tvt]]
+          %>% lapply(getElement, 'd')
+          %>% do.call(what = 'rbind')
+          #%>% arrange(tv_breaks)
+        )
+        hyperparameters_tv[[tvt]] = (opt_tv_tables[[tvt]]
+          %>% lapply(getElement, 'hyperparams_vec')
+          %>% unlist
+        )
+      }
+    }
+    indices$index_tv_table = bind_rows(index_tv_table)
+    indices$hyperparameters_tv = unlist(hyperparameters_tv)
   }
   indices
 }
@@ -2306,6 +2344,10 @@ tmb_opt_params = function(model) {
 #' @param model flexmodel
 #' @export
 tmb_params = function(model) {
+  model = update_tmb_indices(model)
+  #if (inherits(model, "flexmodel_to_calibrate")) {
+  #  return(tmb_params_trans(model))
+  #}
   full_param_vec = c(unlist(model$params))
   if (spec_ver_gt('0.1.0')) {
     if(has_time_varying(model)) {
@@ -2359,22 +2401,25 @@ tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mul
     vec[id] = table$init_trans_params
     return(vec)
   } else {
-    init_trans_params = (model
-       $  tmb_indices
-       $  opt_params
-       $  index_table
-      %>% with(setNames(init_trans_params, param_trans %_% param_nms))
-    )
-    init_trans_tv_mult = (model
-       $  tmb_indices
-       $  opt_params
-       $  index_tv_table
-      %>% with(setNames(init_trans_params, param_trans %_% param_nms %_% "t" %+% tv_breaks))
-    )
-    return(c(init_trans_params, init_trans_tv_mult))
+    init_trans_params_ = with(model$tmb_indices$opt_params$index_table, {
+      setNames(
+        init_trans_params,
+        param_trans %_% param_nms
+      )
+    })
+    itvt = model$tmb_indices$opt_params$index_tv_table
+    if (nrow(itvt) == 0L) return(c(init_trans_params_))
+    init_trans_tv_mult_ = with(itvt, {
+      setNames(
+        init_trans_params,
+        param_trans %_% param_nms %_% "t" %+% tv_breaks
+      )
+    })
+    return(c(init_trans_params_, init_trans_tv_mult_))
   }
 }
 
+# FIXME: not used
 tmb_params_init = function(model) {
   model = update_tmb_indices(model)
   init_trans_params = (model
@@ -2411,6 +2456,7 @@ tmb_map_indices = function(model) {
 
 #' @export
 tmb_param_names = function(model) {
+  stop("not working")
   spec_check(
     introduced_version = '0.2.0',
     feature = 'flex models can use map argument of MakeADFun'
@@ -2442,8 +2488,8 @@ changing_ratemat_elements = function(model, sim_params = NULL) {
 
 #' @export
 simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
-  if (getOption("MP_force_full_outflow")) {
-    model = add_outflow(model)
+  if (getOption("MP_auto_outflow")) {
+     model = add_outflow(model)
   }
   if (getOption("MP_auto_tmb_index_update")) {
     model = update_tmb_indices(model)
@@ -2578,7 +2624,7 @@ initial_ratemat = function(model, sim_params = NULL) {
 }
 
 #' @export
-simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
+simulation_history = function(model, add_dates = TRUE, sim_params = NULL, include_initial_date = TRUE) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
   sim_hist = (tmb_fun(model)
     $  simulate(sim_params)
@@ -2594,10 +2640,14 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
       %>% cbind(sim_hist)
     )
   }
-  (sim_hist
+  sim_hist = (sim_hist
     %>% pad_lag_diffs(model$lag_diff)
     %>% pad_convs(model$conv, model$tmb_indices$conv)
   )
+  if (!include_initial_date) {
+    sim_hist = sim_hist[-1,]
+  }
+  sim_hist
 }
 
 # FIXME: following two functions do the same thing in slightly different
@@ -2689,49 +2739,61 @@ simulation_fitted = function(model) {
   simulation_condensed(model)[obsvars]
 }
 
-#' @export
-update_params_calibrated = function(model, update_default_params = TRUE) {
+
+update_params_calibrated = function(model) {
   # TODO: check if opt_par exists
+  if (!inherits(model, 'flexmodel_calibrated')) {
+    stop('this is not a flexmodel_calibrated object. ',
+         'please first use nlminb_flexmodel or optim_flexmodel.')
+  }
   obj_fun = tmb_fun(model)
   report = obj_fun$report(model$opt_par)
-  model$params_calibrated = model$params
-  model$params_calibrated[] = report$params
-  model$params_calibrated_timevar = (model$timevar$piece_wise$schedule
+  params_calibrated = model$params
+  params_calibrated[] = report$params
+  params_calibrated_timevar = (model$timevar$piece_wise$schedule
     %>% select(Date, Symbol, Value, Type)
     %>% within(Value[is.na(Value)] <- report$tv_mult[is.na(Value)])
   )
-  if (update_default_params) {
-    model$params = model$params_calibrated
-    model = update_piece_wise(model, model$params_calibrated_timevar)
-    model$opt_params = list()
-    model$opt_tv_params = list()
-    model = update_tmb_indices(model)
-  }
+  model$params = params_calibrated
+  model = update_piece_wise(model, params_calibrated_timevar)
+  model$opt_params = list()
+  model$opt_tv_params = list()
+  model = update_tmb_indices(model)
   model
 }
 
+#' Wrapped Optimizers for Flexmodels
+#'
+#' @param model a \code{\link{flexmodel}} object
+#' @param update_default_params should the default parameters be updated
+#' to their calibrated values?
+#'
 #' @export
-optim_flexmodel = function(model, update_default_params = FALSE, ...) {
+optim_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model, update_default_params)
+  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  update_params_calibrated(model)
 }
 
+#' @rdname optim_flexmodel
 #' @export
-nlminb_flexmodel = function(model, update_default_params = FALSE, ...) {
+nlminb_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
-  update_params_calibrated(model, update_default_params)
+  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  update_params_calibrated(model)
 }
 
 #' @export
-fitted.flexmodel = function(model) {
-  stopifnot('opt_par' %in% names(model))
+fitted.flexmodel_calibrated = function(model) {
   obs_var = unique(model$observed$data$var)
   fits = (model
-          %>% simulate(sim_params = model$opt_par, do_condensation = TRUE)
+          %>% simulate(do_condensation = TRUE)
           %>% filter(variable %in% obs_var)
   )
   comparison_data = (model$observed$data
@@ -2980,7 +3042,9 @@ tmb_mode = function() {
 ##' @export
 r_mode = function() {
   options(
-    MP_tmb_models_match_r = TRUE
+    MP_tmb_models_match_r = TRUE,
+    MP_default_do_hazard = TRUE,
+    MP_default_do_make_state = TRUE
   )
 }
 

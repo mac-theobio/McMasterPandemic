@@ -1,7 +1,7 @@
 // This version implements spec 0.2.0 in https://canmod.net/misc/flex_specs
 
-// search for printouts that are not commented out: ^\s*std::cout
-// search for printouts that are commented out: ^\s*//\s*std::cout
+// grep for printouts that are not commented out: ^\s*std::cout
+// grep for printouts that are commented out: ^\s*//\s*std::cout
 
 // Spec 0.2.0
 // Here is the order of columns that should go in the matrix:
@@ -172,7 +172,7 @@ vector<Type> CalcEigenVector(
   }
 
   if (i==iterations) {
-    Rf_warning("It does not converge in calculating eigen vector.");
+    Rf_warning("The eigenvector did not converge.");
     return vec;
   }
   else { // It converges. Lets do a last check on negativity
@@ -261,8 +261,12 @@ Eigen::SparseMatrix<Type> make_ratemat(
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
-    if (result.coeff(row,col)<0)
+    if (result.coeff(row,col)<0) {
+      //std::cout << "negative rate mat " << result.coeff(row,col) << std::endl;
+      //std::cout << "row " << row << std::endl;
+      //std::cout << "col " << col << std::endl;
       Rf_warning("Negative rate matrix element");
+    }
 
     start += count[i];
   }
@@ -313,8 +317,12 @@ void update_ratemat(
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
-    if (ratemat->coeff(row,col)<0.0)
+    if (ratemat->coeff(row,col)<0.0) {
+      //std::cout << "negative rate mat " << ratemat->coeff(row,col) << std::endl;
+      //std::cout << "row " << row << std::endl;
+      //std::cout << "col " << col << std::endl;
       Rf_warning("Negative rate matrix element.");
+    }
   }
 }
 
@@ -808,37 +816,54 @@ public:
   std::vector<int> spi; 	// index to sp
 
   // This member function calculates and returns the loss
-  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp) {
+  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp,
+           int obs_do_sim_constraint, Type obs_sim_lower_bound) {
     Type var;
     Type lll;
-    Type clamping_tolerance = 1e-12;
+    // Type clamping_tolerance = 1e-12;
     Type clamped_simulated;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         //std::cout << "obs = " << observed << " sim = " << simulated << std::endl;
-        clamped_simulated = CppAD::CondExpLt(
-          simulated,
-          clamping_tolerance,
-          clamping_tolerance,
-          simulated
-        );
+        //clamped_simulated = CppAD::CondExpLt(
+        //  simulated,
+        //  clamping_tolerance,
+        //  clamping_tolerance,
+        //  simulated
+        //);
+
+        if (obs_do_sim_constraint) { // && simulated<obs_sim_lower_bound)
+          //std::cout << "clamping!" << std::endl;
+          //clamped_simulated = simulated + obs_sim_lower_bound * exp(-simulated/obs_sim_lower_bound);
+          clamped_simulated = simulated + obs_sim_lower_bound*(1/(1-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound)));
+        } else {
+          clamped_simulated = simulated;
+        }
 
         // var = mu + mu^2/k
         // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
         //   var ~ variance
         //   mu ~ mean
-        //   k ~ overdispersion parameter
+        //   k ~ overdispersion parameter = sp[this->spi[0]]
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
 
+        // k = (mu^2)/(var - mu)
+
         //std::cout << "var = " << var << std::endl;
-        if (simulated<=0.0)
+        if (clamped_simulated<=0.0)
           Rf_warning("negative simulation value being compared with data");
 
         if (var<=0.0)
-          Rf_warning("negative binomial dispersion is negative");
+          Rf_warning("negative binomial variance is negative");
 
+        if (sp[this->spi[0]] > 1e10)
+          Rf_warning("negative binomial dispersion is very large, >1e10");
+
+        // when k is large this should tend to log(factorial(observed)),
+        // but we have observed NaNs in this case. not sure how to smoothly
+        // (i.e. differentiably) address this
         lll = -1.0 * dnbinom2(observed, clamped_simulated, var, 1);
-        //std::cout << "obs = " << observed << " sim = " << simulated << " loss = " << lll << std::endl;
+        //std::cout << "obs = " << observed << " sim = " << clamped_simulated << " var = " << var << " disp = " << sp[this->spi[0]] << " loss = " << lll << std::endl;
         return lll;
 
       //case 1: // placeholder for a different loss func
@@ -940,6 +965,7 @@ void InverseTransformParams(
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
+
   //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
@@ -1023,6 +1049,8 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(obs_time_step);
   DATA_IVECTOR(obs_history_col_id);
   DATA_VECTOR(obs_value);
+  DATA_INTEGER(obs_do_sim_constraint);
+  DATA_SCALAR(obs_sim_lower_bound);
 
   DATA_IVECTOR(opt_param_id);
   DATA_IVECTOR(opt_trans_id);
@@ -1298,6 +1326,8 @@ Type objective_function<Type>::operator() ()
     // update sp (params)
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+        //std::cout << "tv_spi = " << tv_spi[j] << std::endl;
+        //std::cout << "tv_mult = " << tv_mult[j] << std::endl;
         if (tv_abs[j]) { // type == 'abs'
           sp[tv_spi[j]-1] = tv_mult[j];
         }
@@ -1435,7 +1465,8 @@ Type objective_function<Type>::operator() ()
         //std::cout << "k= " << k << " [" << obs_time_step[k] << ", " << obs_history_col_id[k] << "]" << std::endl;
         Type x = obs_value[k];
         Type mu = simulation_history(obs_time_step[k]-1, obs_history_col_id[k]-1);
-        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp);
+        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp, obs_do_sim_constraint, obs_sim_lower_bound);
+        //std::cout << "loglik = " << sum_of_loss << std::endl;
       }
       else {
         obs_start = k;
@@ -1448,6 +1479,7 @@ Type objective_function<Type>::operator() ()
 
   // Regularization
   sum_of_loss += regularization;
+  //std::cout << "regularization = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;

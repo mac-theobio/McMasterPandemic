@@ -3,7 +3,11 @@ library(dplyr)
 library(lubridate)
 library(testthat)
 
+skip_slow_tests = TRUE
+
 test_that("macpan ontario forecasts work the same regardless of engine", {
+  skip_if(skip_slow_tests)
+
   rerun_r_engine_calibrations = FALSE
   rerun_r_engine_forecasts = FALSE
   run_simulation_comparison = FALSE

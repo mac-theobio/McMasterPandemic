@@ -3,6 +3,8 @@ library(dplyr)
 library(testthat)
 library(lubridate)
 
+skip_slow_tests = TRUE
+
 test_that('foi can be expressed as model structure', {
   reset_spec_version()
   tmb_mode()
@@ -239,7 +241,7 @@ test_that("vax_prop_first_dose can be != 1", {
 test_that("time-varying parameters can be used with a vaccination model", {
 
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   params <- read_params("ICU1.csv")
@@ -484,6 +486,7 @@ test_that("variants and vaccination model simulation matches run_sim", {
 })
 
 test_that("vax/variants model simulation matches run_sim with many break points", {
+  skip_if(skip_slow_tests)
 
   # > reports_all$var %>% unique
   # [1] "report"

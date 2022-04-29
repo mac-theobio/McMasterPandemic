@@ -1129,3 +1129,15 @@ print.flexmodel = function(x) {
     print(rate_summary(x))
     invisible(x)
 }
+
+##' @export
+coef.flexmodel = function(
+    object,
+    vector = c("tmb_arg", "params", "tv_mult"),
+    full = TRUE,
+    optimized = FALSE,
+    transformed = FALSE,
+    ...
+) {
+
+}

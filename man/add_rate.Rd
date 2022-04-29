@@ -22,7 +22,7 @@ element specified
 }
 \description{
 Define how the rate of flow from one compartment to another
-depends on the parameters and state variables.
+depends on parameters, state variables, .
 }
 \seealso{
 Other flexmodel_definition_functions: 

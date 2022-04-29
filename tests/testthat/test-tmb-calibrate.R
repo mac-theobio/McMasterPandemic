@@ -8,8 +8,10 @@ library(numDeriv)
 library(lubridate)
 library(tidyr)
 
+skip_slow_tests = TRUE
 
 test_that('simple models calibrate the same regardless of engine', {
+  skip_if(skip_slow_tests)
   reset_spec_version()
   tmb_mode()
 
@@ -91,7 +93,7 @@ test_that('simple models calibrate the same regardless of engine', {
 })
 
 test_that('v0.1.1 simple models can calibrate time varying multipliers', {
-
+  skip_if(skip_slow_tests)
   reset_spec_version()
   tmb_mode()
   options(MP_use_state_rounding = FALSE)
@@ -437,6 +439,7 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
 }
 
 test_that("macpan ontario calibration example works the same regardless of engine", {
+  skip_if(skip_slow_tests)
   rerun_r_engine_calibrations = FALSE
   run_simulation_comparison = FALSE
   reset_spec_version()
@@ -550,6 +553,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
 })
 
 test_that("tmb engine calibrates correctly to multiple data streams", {
+  skip_if(skip_slow_tests)
 
   library(McMasterPandemic)
   library(lubridate)
@@ -643,7 +647,8 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
     end_date = edate,
     params_timevar = params_timevar,
     do_make_state = TRUE,
-    do_hazard = TRUE
+    do_hazard = TRUE,
+    tol_eig_pow_meth = 1e-6
   )
   sim_args_flex = list(flexmodel = mm)
   sim_args = list()
@@ -750,131 +755,201 @@ test_that("transformations and priors give the right objective function and grad
                    log_mu ~ log_flat(0)
                  )
   )
+  yukon_fit = nlminb_flexmodel(yukon_model)
 
-  yukon_model
-  yukon_fit = nlminb_flexmodel(yukon_model, FALSE)
-
-  obj = tmb_fun(yukon_fit)
-  obj$fn(yukon_fit$opt_par) # negative log posterior
-  obj$gr(yukon_fit$opt_par) # gradient of the negative log posterior
-  obj$he(yukon_fit$opt_par) # hessian of the negative log posterior
-
-  (yukon_fit
-    %>% update_params_calibrated(TRUE)
-    %>% simulation_history
-    %>% View
-  )
-
-  expect_true(compare_grads(yukon_fit))
+  expect_true(compare_grads(yukon_model))
 })
 
-library(McMasterPandemic)
-library(ggplot2)
-library(lubridate)
-state = c(S = 20000, I = 100, R = 0)
-params = c(gamma = 0.06, beta = 0.15)
-start_date = ymd(20000101)
-end_date = ymd(20000501)
-set.seed(2L)
-random_timevar = data.frame(
-  Date = sort(sample(seq(from = start_date, to = end_date, by = 1), 15, replace = TRUE)),
-  Symbol = sample(names(params), 15, replace = TRUE),
-  Value = 0,
-  Type = sample(c('abs', 'rel_orig', 'rel_prev'), 15, replace = TRUE)
-) %>%
-  mutate(Value = params[Symbol] + runif(15, -0.01, 0.01))
+test_that("mixed tv types get optimized properly", {
+  reset_spec_version()
+  r_tmb_comparable()
 
+  state = c(S = 20000, I = 100, R = 0)
+  params = c(gamma = 0.06, beta = 0.15)
+  start_date = ymd(20000101)
+  end_date = ymd(20000501)
 
-model = make_sir_model(
-  params, state,
-  params_timevar = random_timevar,
-  start_date = start_date,
-  end_date = end_date
-)
-sims = (model
-  %>% simulation_history
-  %>% tidyr::pivot_longer(-Date, names_to = "var")
-  %>% rename(date = Date)
-  %>% mutate(value = round(value))
-  %>% filter(date > ymd(20000101))
-  %>% filter(var %in% c("S", "I", "R"))
-)
-
-(ggplot(sims)
-  + geom_line(aes(date, value, colour = var))
-)
-
-set.seed(2L)
-calibrate_timevar = (random_timevar
-  %>% within(Value[sample(15, size = 10)] <- NA)
-)
-filter(calibrate_timevar, is.na(Value)) %>% arrange(Symbol, Type)
-
-model_cal = (make_sir_model(
-    params, state,
-    start_date = model$start_date,
-    end_date = model$end_date,
-    params_timevar = calibrate_timevar,
-    data = sims
+  simple_timevar_good = data.frame(
+    Date = ymd(20000301, 20000401),
+    Symbol = 'beta',
+    Value = NA,
+    Type = 'abs'
   )
-  %>% add_opt_params(
-    log_beta ~ log_flat(0),
-    log_gamma ~ log_flat(0),
-    log_nb_disp_S ~ log_normal(0, 2.5),
-    log_nb_disp_I ~ log_normal(0, 2.5), # regularizing helps achieve convergence
-    log_nb_disp_R ~ log_normal(0, 2.5)
+  simple_timevar_bad = mutate(simple_timevar_good, Type = c("abs", "rel_orig"))
+
+  set.seed(2L)
+  random_timevar = (data.frame(
+      Date = sort(sample(seq(from = start_date, to = end_date, by = 1), 15, replace = TRUE)),
+      Symbol = sample(names(params), 15, replace = TRUE),
+      Value = 0,
+      Type = sample(c('abs', 'rel_orig', 'rel_prev'), 15, replace = TRUE)
+    )
+    %>% mutate(Value = params[Symbol])
+    %>% mutate(Value = ifelse(Type != 'abs', 1-0.05, Value))
+    %>% mutate(Value = Value + runif(15, -0.02, 0.02))
   )
-  %>% add_opt_tv_params(
-    tv_type = 'abs',
-    log_beta ~ log_flat(0),
-    log_gamma ~ log_flat(0)
+
+  model = make_sir_model(
+    params = params, state = state,
+    params_timevar = random_timevar,
+    start_date = start_date,
+    end_date = end_date,
+    do_sim_constraint = TRUE
   )
-  %>% add_opt_tv_params(
-    tv_type = 'rel_orig',
-    log_beta ~ log_flat(0),
-    log_gamma ~ log_flat(0)
+  sims = (model
+    %>% simulation_history(include_initial_date = FALSE)
+    %>% tidyr::pivot_longer(-Date, names_to = "var")
+    %>% rename(date = Date)
+    %>% mutate(value = round(value))
+    %>% filter(date > ymd(20000101))
+    %>% filter(var %in% c("S", "I", "R"))
   )
-  %>% add_opt_tv_params(
-    tv_type = 'rel_prev',
-    log_gamma ~ log_flat(0)
+
+  set.seed(2L)
+  calibrate_timevar = (random_timevar
+    %>% within(Value[sample(15, size = 10)] <- NA)
   )
-  %>% update_tmb_indices
-)
-model_cal$tmb_indices$ad_fun_map
-model_opt = nlminb_flexmodel(model_cal)
-model_opt$opt_obj
-model_opt$opt_par
+  filter(calibrate_timevar, is.na(Value)) %>% arrange(Symbol, Type)
 
-model_fit = fitted(model_opt)
-(filter(model_fit, var == "S")
-  %>% ggplot
-   +  geom_point(aes(date, value))
-   +  geom_line(aes(date, value_fitted), colour = 'red')
-)
+  model_to_cal = (model
+    %>% update_observed(sims)
+    %>% update_piece_wise(calibrate_timevar)
+    %>% add_opt_params(
+      log_beta ~ log_flat(0),
+      logit_gamma ~ logit_flat(0),
+      log_nb_disp_S ~ log_normal(0, 3),
+      log_nb_disp_I ~ log_normal(0, 3),
+      log_nb_disp_R ~ log_normal(0, 3)
+    )
+    %>% add_opt_tv_params(
+      tv_type = 'abs',
+      log_beta ~ log_flat(0),
+      logit_gamma ~ logit_flat(0)
+    )
+    %>% add_opt_tv_params(
+      tv_type = 'rel_orig',
+      log_beta ~ log_flat(0),
+      logit_gamma ~ logit_flat(0)
+    )
+    %>% add_opt_tv_params(
+      tv_type = 'rel_prev',
+      logit_gamma ~ logit_flat(0)
+    )
+  )
+  model_cal = nlminb_flexmodel(model_to_cal)
 
+  dd = data.frame(
+    sim = model$timevar$piece_wise$schedule$Value,
+    to_cal = model_to_cal$timevar$piece_wise$schedule$Value,
+    cal = model_cal$timevar$piece_wise$schedule$Value
+  )
+  expect_equal(c(model$params), c(model_cal$params)[1:2], tolerance = 1e-4)
+  expect_equal(dd$sim, dd$cal, tolerance = 1e-3)
 
+  model_base = make_sir_model(
+    params = params, state = state, start_date = start_date, end_date = end_date
+  ) %>% update_observed(sims)
+  tmb_good = (model_base
+    %>% update_piece_wise(simple_timevar_good)
+    %>% add_opt_tv_params("abs", log_beta ~ log_flat(0))
+    %>% tmb_fun
+  )
+  tmb_bad = (model_base
+    %>% update_piece_wise(simple_timevar_bad)
+    %>% add_opt_tv_params("rel_orig", log_beta ~ log_normal(0, 1))
+    %>% add_opt_tv_params("abs", log_beta ~ log_flat(0))
+    %>% tmb_fun
+  )
 
-ff = function(x) obj$fn(c(model_opt$opt_par[1], x))
+  expect_equal(tmb_good$env$data$opt_tv_param_id, c(1, 2))
+  expect_equal(tmb_good$env$data$opt_tv_trans_id, c(2, 2))
+  expect_equal(tmb_good$env$data$opt_tv_count_reg_params, c(1, 1))
+  expect_equal(tmb_good$env$data$opt_tv_reg_params, c(0, 0))
+  expect_equal(tmb_good$env$data$opt_tv_reg_family_id, c(1, 1))
 
-x = seq(from = -20, 20, length = 100)
-y = sapply(x, ff)
-plot(x, y, type = "l")
+  expect_equal(tmb_bad$env$data$opt_tv_param_id, c(1, 2))
+  expect_equal(tmb_bad$env$data$opt_tv_trans_id, c(2, 2))
+  expect_equal(tmb_bad$env$data$opt_tv_count_reg_params, c(1, 2))
+  expect_equal(tmb_bad$env$data$opt_tv_reg_params, c(0, 0, 1))
+  expect_equal(tmb_bad$env$data$opt_tv_reg_family_id, c(1, 2))
+})
 
-ss = 5
-(model_fit
-  %>% mutate(ll = -dnbinom(value, size = ss, mu = value_fitted, log = TRUE))
-  %>% summarise(sum(ll))
-  %>% unlist
-)
-ff(log(ss))
+test_that("vector-valued hyperparameters work", {
 
-nb = function(k, m, a) {
-  r = a
-  -log((gamma(r + k) / (factorial(k) * gamma(r))) * ((r / (r + m))^r) * ((m / (r + m))^k))
-}
-nb(10, 10, 4)
--dnbinom(10, mu = 10, size = 4, log = TRUE)
+  library(McMasterPandemic)
+  library(lubridate)
+  reset_spec_version()
+  r_tmb_comparable()
 
-var(rnbinom(100, size = 1000, mu = 10))
+  state = c(S = 20000, I = 100, R = 0)
+  params = c(gamma = 0.06, beta = 0.15)
+  start_date = ymd(20000101)
+  end_date = ymd(20000501)
 
+  set.seed(1L)
+  random_timevar = data.frame(
+    Date = ymd(20000201, 20000215, 20000301, 20000315, 20000401, 20000415),
+    Symbol = c('beta', 'gamma', 'gamma', 'beta', 'beta', 'gamma')
+  ) %>%
+    mutate(Value = params[Symbol] + runif(6, -0.02, 0.02)) %>%
+    mutate(Type = 'abs')
 
+  model = make_sir_model(
+    params = params, state = state,
+    params_timevar = random_timevar,
+    start_date = start_date,
+    end_date = end_date,
+    do_sim_constraint = TRUE
+  )
+  sims = (model
+    %>% simulation_history(include_initial_date = FALSE)
+    %>% tidyr::pivot_longer(-Date, names_to = "var")
+    %>% rename(date = Date)
+    %>% mutate(value = round(value))
+    %>% filter(date > ymd(20000101))
+    %>% filter(var %in% c("S", "I", "R"))
+  )
+
+  set.seed(2L)
+  calibrate_timevar = (random_timevar
+    %>% within(Value[sample(6, size = 5)] <- NA)
+  )
+
+  model_to_cal = (model
+    %>% update_observed(sims)
+    %>% update_piece_wise(calibrate_timevar)
+    %>% add_opt_params(log_beta ~ log_flat(0)
+      , log_nb_disp_S ~ log_normal(0, 3)
+      , log_nb_disp_I ~ log_normal(0, 3)
+      , log_nb_disp_R ~ log_normal(0, 3)
+    )
+    %>% add_opt_tv_params("abs"
+      , logit_gamma ~ logit_flat(c(-1, 0))
+      , log_beta ~ log_normal(0, c(1, 2, 3))
+    )
+  )
+
+  model_cal = nlminb_flexmodel(model_to_cal)
+
+  expect_equal(
+    unname(model$timevar$piece_wise$schedule$Value),
+    unname(model_cal$timevar$piece_wise$schedule$Value),
+    tolerance = 1e-4
+  )
+})
+
+test_that("an under-construction error is thrown for sums in opt_param forms", {
+  state = c(S = 20000, I = 100, R = 0)
+  params = c(gamma = 0.06, beta = 0.15)
+  start_date = ymd(20000101)
+  end_date = ymd(20000501)
+  model = make_sir_model(
+    params = params, state = state,
+    start_date = start_date,
+    end_date = end_date
+  )
+  expect_error(
+    add_opt_params(model, log_beta + log_gamma ~ normal(0, 1)),
+    "^sums in opt_param formulas is under construction"
+  )
+})

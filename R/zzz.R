@@ -48,19 +48,19 @@
 
         # -- flexmodel defaults ------------------------------------------------
         # -- see ?flexmodel for description of these arguments -----------------
-        MP_default_do_hazard = TRUE,
+        MP_default_do_hazard = FALSE,
         MP_default_do_hazard_lin = FALSE,
         MP_default_do_approx_hazard = FALSE,
         MP_default_do_approx_hazard_lin = FALSE,
-        MP_default_do_make_state = TRUE,
+        MP_default_do_make_state = FALSE,
         MP_default_do_sim_constraint = FALSE,
         MP_default_sim_lower_bound = 1e-12,
 
         # -- tmb_fun behaviour -------------------------------------------------
 
-        # do not allow control over outflows, and instead require that all
-        # inflows have an associated outflow no matter what the user specifies
-        MP_force_full_outflow = FALSE,
+        # if the user does not specify any outflows, automatically add
+        # an outflow for every inflow
+        MP_auto_outflow = TRUE,
 
         # automatically update the tmb indices when (re)generating the
         # tmb ad fun
@@ -73,8 +73,8 @@
         # -- see r_tmb_comparable ----------------------------------------------
         MP_use_state_rounding = TRUE,         # FALSE ~ comparable
         MP_vax_make_state_with_hazard = TRUE, # FALSE ~ comparable
-        MP_tmb_models_match_r = FALSE,         # TRUE ~ comparable
-        MP_force_dgTMatrix = FALSE            # TRUE ~ comparable
+        MP_tmb_models_match_r = FALSE,        # TRUE  ~ comparable
+        MP_force_dgTMatrix = FALSE            # TRUE  ~ comparable
     )
 }
 

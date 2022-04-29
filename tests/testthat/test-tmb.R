@@ -200,6 +200,7 @@ test_that("spec v0.0.4 simulations with time varying parameters match run_sim", 
 test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff is working", {
 
     set_spec_version("0.0.5", "../../inst/tmb/")
+    r_tmb_comparable()
     params <- read_params("ICU1.csv")
     state = make_state(params = params)
 
@@ -412,7 +413,7 @@ test_that('spec v0.0.6 that it remains ok to _not_ use time-varying parameters',
 test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', {
     reset_spec_version()
 
-    params <- read_params("ICU1.csv")
+    params <- read_params("PHAC.csv")
 
     # modify parameters and state for eigenvector calculation ('by hand')
     state <- make_state(params = params)[1:12]
@@ -469,7 +470,7 @@ test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', 
 
 test_that("flex models made with null state can be used", {
     reset_spec_version()
-    tmb_mode()
+    r_tmb_comparable()
     params = read_params("PHAC.csv")
     model = make_base_model(
         params = params,
@@ -674,6 +675,7 @@ test_that("informative error is thrown if no rates are specified", {
 test_that("informative error is thrown if no rates are specified", {
     reset_spec_version()
     tmb_mode()
+    options(MP_auto_outflow = FALSE)
     msg = "model does not contain any outflow"
     expect_warning(
         (
