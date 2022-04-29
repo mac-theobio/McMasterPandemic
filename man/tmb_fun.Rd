@@ -7,7 +7,7 @@
 tmb_fun(model)
 }
 \arguments{
-\item{model}{object of class \code{flexmodel}}
+\item{model}{\code{\link{flexmodel}} object}
 }
 \description{
 Construct an objective function in TMB from a \code{flexmodel}

@@ -4,7 +4,7 @@
 \alias{compare_grads}
 \title{Compare Automatic and Numerical Differentiation}
 \usage{
-compare_grads(model, tolerance = 1e-05, ...)
+compare_grads(model, tolerance = 1e-05, tmb_pars = NULL, ...)
 }
 \arguments{
 \item{model}{flexmodel}
@@ -12,6 +12,8 @@ compare_grads(model, tolerance = 1e-05, ...)
 \item{tolerance}{numerical tolerance to pass to \code{all.equal} --
 if \code{NA}, then a list is returned that can be passed to
 \code{all.equal} using \code{do.call}}
+
+\item{tmb_pars}{optional parameters to pass to the tmb functions}
 
 \item{...}{additional arguments to pass to \code{numDeriv::grad}}
 }

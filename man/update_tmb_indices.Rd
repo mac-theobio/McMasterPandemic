@@ -10,7 +10,7 @@ update_tmb_indices(model)
 add_tmb_indices(model)
 }
 \arguments{
-\item{model}{compartmental model}
+\item{model}{\code{\link{flexmodel}} object}
 }
 \description{
 Add or update indices used to access appropriate values

@@ -7,7 +7,7 @@
 update_condense_map(model, map = NULL)
 }
 \arguments{
-\item{model}{flexmodel}
+\item{model}{\code{\link{flexmodel}} object}
 
 \item{map}{named vector with names that are a subset of
 the variables in the simulation model. if \code{NULL} the

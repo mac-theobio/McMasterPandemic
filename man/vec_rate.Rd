@@ -4,7 +4,7 @@
 \alias{vec_rate}
 \title{Specify Vector of Rates}
 \usage{
-vec_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
+vec_rate(model, from, to, formula)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}

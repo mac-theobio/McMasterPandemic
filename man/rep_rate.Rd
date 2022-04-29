@@ -7,7 +7,7 @@
 rep_rate(model, from, to, formula, mapping = c("pairwise", "blockwise"))
 }
 \arguments{
-\item{model}{flexmodel}
+\item{model}{\code{\link{flexmodel}} object}
 
 \item{from}{character vector defining states from which flow is coming}
 

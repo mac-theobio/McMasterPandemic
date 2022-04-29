@@ -344,7 +344,7 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
 ##' Define how the rate of flow from one compartment to another
 ##' depends on parameters, state variables, .
 ##'
-##' @param model compartmental model
+##' @param model \code{\link{flexmodel}} object
 ##' @param from Name of state from which flow is coming
 ##' @param to Name of state to which flow is going
 ##' @param formula Model formula defining dependence of the rate on
@@ -367,7 +367,7 @@ add_rate <- function(model, from, to, formula) {
 
 #' Repeat a Rate for Several Rate Matrix Elements
 #'
-#' @param model flexmodel
+#' @param model \code{\link{flexmodel}} object
 #' @param from character vector defining states from which flow is coming
 #' @param to character vector defining states from which flow is going
 #' @param formula formula or length-1 character vector
@@ -624,7 +624,7 @@ state_param_sum = function(sum_name, summands, state, params) {
 #' they can be used as factors in rate expressions and
 #' retured as part of the simulation history.
 #'
-#' @param model \code{\link{flexmodel}}
+#' @param model \code{\link{flexmodel}} object
 #' @param sum_name name of sum of state variables and parameters
 #' @param summands character vector of regular expressions for identifying
 #' state variables and parameters to sum together
@@ -787,7 +787,7 @@ add_conv = function(
 #' by creating a map with the following structure:
 #' \code{c(orig_var_i = "cond_var_1", ..., orig_var_j = "cond_var_n")}.
 #'
-#' @param model flexmodel
+#' @param model \code{\link{flexmodel}} object
 #' @param map named vector with names that are a subset of
 #' the variables in the simulation model. if \code{NULL} the
 #' identity map is used that makes all simulation history
@@ -1214,7 +1214,7 @@ update_opt_vec = function(model, ...) {
 ##'   every simulation step}
 ##' }
 ##'
-##' @param model compartmental model
+##' @param model \code{\link{flexmodel}} object
 ##' @export
 update_tmb_indices <- function(model) {
 
@@ -1340,7 +1340,7 @@ tmb_indices <- function(model) {
 ##' Construct an objective function in TMB from a \code{flexmodel}
 ##' object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 ##'
-##' @param model object of class \code{flexmodel}
+##' @param model \code{\link{flexmodel}} object
 ##' @importFrom TMB MakeADFun
 ##' @useDynLib McMasterPandemic
 ##' @export
@@ -1838,6 +1838,22 @@ update_initial_state = function(model, silent = FALSE) {
 
 # observed data ---------------------------------
 
+#' Update Observed Data
+#'
+#' Attach a data set to a \code{\link{flexmodel}}
+#' object. Any existing data will be removed.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param data observed data frame in long format to
+#' compare with simulated trajectories. must have the following
+#' columns: \code{date}, \code{var}, \code{value}.
+#'
+#' @return a \code{\link{flexmodel}} object with an \code{observed} element,
+#' which is a list with two elements: (1) \code{data} (the attached data)
+#' and (2) \code{loss} (a data frame describing the additional parameters
+#' that are required to fit the model to data -- these parameters are added
+#' to the \code{params} of the model)
+#'
 #' @export
 update_observed = function(model, data) {
   stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))

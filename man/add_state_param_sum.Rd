@@ -7,7 +7,7 @@
 add_state_param_sum(model, sum_name, summands)
 }
 \arguments{
-\item{model}{\code{\link{flexmodel}}}
+\item{model}{\code{\link{flexmodel}} object}
 
 \item{sum_name}{name of sum of state variables and parameters}
 

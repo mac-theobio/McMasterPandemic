@@ -7,7 +7,7 @@
 add_rate(model, from, to, formula)
 }
 \arguments{
-\item{model}{compartmental model}
+\item{model}{\code{\link{flexmodel}} object}
 
 \item{from}{Name of state from which flow is coming}
 
