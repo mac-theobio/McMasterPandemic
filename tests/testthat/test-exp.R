@@ -33,5 +33,7 @@ gg1 <- ggplot(r2L, aes(date, value)) +
     facet_wrap(~pref) +
     scale_y_log10()
 ## 'transformation introduced infinite values'
-suppressWarnings(print(gg1))
-suppressWarnings(print(gg1 %+% filter(r2L, date < 30)))
+if (FALSE) { # plotting in tests seems like a bad idea
+    suppressWarnings(print(gg1))
+    suppressWarnings(print(gg1 %+% filter(r2L, date < 30)))
+}

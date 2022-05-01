@@ -82,10 +82,13 @@ test_that("time-varying example", {
         step_args = list(do_hazard = TRUE)
     )
     expect_is(resICU_t, "pansim")
-    suppressWarnings(print(plot(resICU_t)))
-    ## not showing foi because of log / <= 1 filter
-    suppressWarnings(print(plot(resICU_t, condense = FALSE, log = TRUE, drop_states = c("t", "S", "R", "E"))))
-    ## FIXME: test values!
+
+    if (FALSE) { # plotting in tests seems like a bad idea
+        suppressWarnings(print(plot(resICU_t)))
+        ## not showing foi because of log / <= 1 filter
+        suppressWarnings(print(plot(resICU_t, condense = FALSE, log = TRUE, drop_states = c("t", "S", "R", "E"))))
+        ## FIXME: test values!
+    }
 })
 
 test_that("bad time-varying examples", {
