@@ -1403,7 +1403,7 @@ make_state <- function(N = params[["N"]],
     state_names <- switch(type,
         ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
         ## "V" is the vaccination accumulator compartment
-        ICU1h = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X", "V"),
+        ICU1h = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X"),
         ICU1 = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R"),
         CI =   c("S", "E", "Ia", "Ip", "Im", "Is", "H", "D", "R"),
         ## Add a test case which should result in a thrown warning
