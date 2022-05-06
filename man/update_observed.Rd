@@ -4,7 +4,7 @@
 \alias{update_observed}
 \title{Update Observed Data}
 \usage{
-update_observed(model, data)
+update_observed(model, data, loss_params = NULL, regenerate_rates = TRUE)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -12,6 +12,9 @@ update_observed(model, data)
 \item{data}{observed data frame in long format to
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}.}
+
+\item{regenerate_rates}{should rates be regenerated to sort out any
+index misalignment that may be introduced by editing the model?}
 }
 \value{
 a \code{\link{flexmodel}} object with an \code{observed} element,

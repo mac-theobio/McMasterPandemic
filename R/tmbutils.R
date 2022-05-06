@@ -1,6 +1,6 @@
 # objects ----------------------
 
-valid_loss_functions = c('negative_binomial')
+valid_loss_functions = c('negative_binomial', 'normal')
 valid_prior_families = c('flat', 'normal')
 valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
 
@@ -33,7 +33,7 @@ init_observed = list(
   ),
   loss_params = data.frame(
     Parameter = character(),
-    Distribtion = character(),
+    Distribution = character(),
     Variable = character()
   )
 )
@@ -298,6 +298,12 @@ exists_opt_params = function(model) {
   )
 }
 
+is_fitted_by_bbmle = function(model) {
+  x = inherits(model, "flexmodel_calibrated")
+  if (!isTRUE(x)) return(x)
+  x & isTRUE(attr(class(model$opt_obj), "package") == "bbmle")
+}
+
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
@@ -478,6 +484,29 @@ pad_convs = function(sims, conv, conv_indices) {
     sims[1:(qmax[i]-2L), conv_nms[i]] = NA
   }
   sims
+}
+
+
+# constructing data frames ----------------
+
+#' Vector to Data Frame
+#'
+#' Convert a named vector to a data frame with two columns, one for the
+#' names and one for the values.
+#'
+#' @param x named vector
+#' @param values_col name of the values column -- the default takes a guess
+#' @param names_col name of the names column
+#'
+#' @export
+v2d = function(x, values_col = NULL, names_col = "names") {
+  stopifnot(!is.null(names(x)))
+  if (is.null(values_col)) {
+    values_col = make.names(deparse(substitute(x)))
+  }
+  x = setNames(data.frame(names(x), x), c(names_col, values_col))
+  row.names(x) = NULL
+  x
 }
 
 # flexmodel to latex (experimental) -------------------
@@ -961,6 +990,64 @@ reduce_rates = function(rates) {
   rates
 }
 
+# regenerate rates in a model. this is useful if parameters get inserted
+# into a model and therefore throw off the indices that are saved in the
+# rates component of a model -- the utility of this function is actually
+# a sign that we have spaghetti code and therefore should create a more
+# formal class structure
+regen_rates = function(model) {
+  remodel = model
+  remodel$rates = list()
+  for(r in seq_along(model$rates)) {
+    args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
+    remodel = do.call(add_rate, args)
+  }
+  remodel
+}
+
+#' Topological Sort
+#'
+#' Topologically sort the state names so that states earlier in the flow
+#' of individuals come earlier in sorted order.
+#'
+#' @param model \code{\link{flexmodel}} object
+#'
+#' @return character vector of state names in topological order
+#' @export
+topological_sort = function(model) {
+  state_order = c()
+  rates = model$rates
+  state_nms = names(model$state)
+  n = length(state_nms)
+  for(i in 1:n) {
+    if (length(state_nms) == 0L) break
+    remaining_inflow = sapply(
+      state_nms,
+      has_inflow,
+      rates,
+      state_nms
+    )
+    state_order = c(state_order, state_nms[!remaining_inflow])
+    rates = rates[!unlist(McMasterPandemic:::get_rate_to(rates)) %in% state_order]
+    rates = rates[!unlist(McMasterPandemic:::get_rate_from(rates)) %in% state_order]
+    state_nms = state_nms[remaining_inflow]
+    if (isTRUE(all(remaining_inflow)) & length(state_nms) != 0L & length(remaining_inflow) != 0L) {
+      stop("state network is not acyclic (i think), and therefore cannot be topologically sorted")
+    }
+  }
+  state_order
+}
+
+has_inflow = function(focal_state, rates, state_nms) {
+  stopifnot(focal_state %in% state_nms)
+  to_states = (rates
+    %>% McMasterPandemic:::get_rate_to()
+    %>% unlist
+    %>% unique
+  )
+  focal_state %in% to_states
+}
+
 # getting information about rates and sums ----------------------
 
 # Get From-State Names
@@ -991,7 +1078,14 @@ get_rate_to = function(model) get_rate_info(model, 'to')
 # @family get_flexmodel_info_functions
 # @inheritParams get_rate_from
 
-get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+get_rate_info = function(model, what) {
+  if (inherits(model, "flexmodel")) {
+    rates = model$rates
+  } else {
+    rates = model
+  }
+  lapply(rates, '[[', what)
+}
 
 # Get Factr Info
 #
@@ -2262,7 +2356,10 @@ lin_state_timevar_params = function(schedule) {
 tmb_observed_data = function(model) {
 
   initial_table = (model$observed$loss_params
-   %>% mutate(loss_id = 1) # only negative binomial (id=1) currently
+   %>% mutate(loss_id = find_vec_indices(
+     Distribution,
+     valid_loss_functions
+   ))
    %>% mutate(spi_loss_param = find_vec_indices(
      Parameter %_% Variable,
      c(model$state, model$params)
@@ -2408,9 +2505,13 @@ tmb_opt_params = function(model) {
 #' @export
 tmb_params = function(model) {
   model = update_tmb_indices(model)
-  #if (inherits(model, "flexmodel_to_calibrate")) {
-  #  return(tmb_params_trans(model))
-  #}
+  if (inherits(model, "flexmodel_to_calibrate")) {
+    p = tmb_params_trans(model)
+    if (length(p) == 0L) {
+      stop("observed data have been supplied, but optimization parameters have not been specified")
+    }
+    return(p)
+  }
   full_param_vec = c(unlist(model$params))
   if (spec_ver_gt('0.1.0')) {
     if(has_time_varying(model)) {
@@ -2668,6 +2769,7 @@ penultimate_state_vector = function(model, sim_params = NULL) {
   )
 }
 
+
 #' @export
 final_state_ratio = function(model, sim_params = NULL) {
   last_two = (model
@@ -2686,6 +2788,17 @@ initial_ratemat = function(model, sim_params = NULL) {
   tmb_fun(model)$simulate(sim_params)$ratemat
 }
 
+#' Simulation History
+#'
+#' @param model a \code{\link{flexmodel}} object
+#' @param add_dates should a column called \code{Date} be added?
+#' @param sim_params vector to pass to a TMB AD function -- you can get
+#' examples of these out of the \code{opt_par} element of a fitted
+#' \code{\link{flexmodel}} or by calling \code{\link{tmb_params_trans}}
+#' @param include_initial_date should the first row be the initial state
+#' vector, or the first date after the initial?
+#'
+#' @family simulation
 #' @export
 simulation_history = function(model, add_dates = TRUE, sim_params = NULL, include_initial_date = TRUE) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
@@ -2730,6 +2843,7 @@ simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
   names(sims) = c(cond_map)
   sims
 }
+
 
 #' @export
 condense_flexmodel = function(model) {
@@ -2794,6 +2908,85 @@ simulate.flexmodel = function(
   sims
 }
 
+#' Ensemble Simulation
+#'
+#' Given a sample of parameter vectors, simulate the condensed state simulation
+#' history for each ... TODO
+#'
+#' @family simulation
+#' @export
+simulate_ensemble = function(
+    model,
+    sim_params_matrix = NULL,
+    qvec = c(lwr = 0.025, value = 0.5, upr = 0.975),
+    ...
+  ) {
+
+  msg = paste0(
+    "\nsim_params_matrix missing, and unable to produce it.",
+    "try using bbmle_flexmodel when calibrating.",
+    collapse = "\n"
+  )
+  if (inherits(model, 'flexmodel_calibrated')) {
+    if (is.null(sim_params_matrix)) {
+      if (is_fitted_by_bbmle(model)) {
+        sim_params_matrix = McMasterPandemic:::pop_pred_samp(
+          model$opt_obj,
+          Sigma = vcov(model),
+          ...
+        )
+      } else {
+        stop(msg)
+      }
+    }
+    model = model$model_to_calibrate
+  }
+  if (is.null(sim_params_matrix)) {
+    stop(msg)
+  }
+
+  stopifnot(!is.null(names(qvec)))
+
+  # avoid the cost of computing the loss function, and just do the simulations
+  model$observed = McMasterPandemic:::init_observed
+
+  o = tmb_fun(model)
+  trajectories = list()
+  ii = seq_len(nrow(sim_params_matrix))
+
+  cond_map = model$condensation_map
+  cond_nms = names(cond_map)
+
+  date_frame = (model
+    %>% simulation_dates
+    %>% data.frame
+    %>% setNames("Date")
+  )
+  fsrn = final_sim_report_names(model)
+
+  pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
+
+  for(i in ii) {
+    traj = as.data.frame(o$report(sim_params_matrix[i,])$simulation_history)
+    names(traj) = fsrn
+    traj = setNames(
+      traj[cond_nms],
+      cond_map
+    )
+    trajectories[[i]] = cbind(date_frame, traj)
+    setTxtProgressBar(pb, i)
+  }
+
+  cat("", "summarising ensemble ... ", sep = "\n")
+  names(trajectories) = ii
+  (trajectories
+    %>% bind_rows(.id = 'simulation')
+    %>% pivot_longer(c(-simulation, -Date))
+    %>% group_by(Date, name)
+    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec))), names(qvec)))
+  )
+}
+
 #' Simulated Variables to Compare with Observed Data
 #'
 #' @export
@@ -2827,6 +3020,9 @@ update_params_calibrated = function(model) {
 
 #' Wrapped Optimizers for Flexmodels
 #'
+#' Currently there are \code{optim_flexmodel}, \code{nlminb_flexmodel},
+#' and \code{bbmle_flexmodel}
+#'
 #' @param model a \code{\link{flexmodel}} object
 #' @param update_default_params should the default parameters be updated
 #' to their calibrated values?
@@ -2834,9 +3030,11 @@ update_params_calibrated = function(model) {
 #' @export
 optim_flexmodel = function(model, ...) {
   stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
+  model$model_to_calibrate = model_to_calibrate
   class(model) = c('flexmodel', 'flexmodel_calibrated')
   update_params_calibrated(model)
 }
@@ -2845,9 +3043,34 @@ optim_flexmodel = function(model, ...) {
 #' @export
 nlminb_flexmodel = function(model, ...) {
   stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
+  model$model_to_calibrate = model_to_calibrate
+  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  update_params_calibrated(model)
+}
+
+#' @rdname optim_flexmodel
+#' @export
+bbmle_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
+  obj_fun = tmb_fun(model)
+  start_par = tmb_params_trans(model)
+  bbmle::parnames(obj_fun$fn) = names(start_par)
+  bbmle::parnames(obj_fun$gr) = names(start_par)
+  model$opt_obj = bbmle::mle2(
+    obj_fun$fn,
+    start_par,
+    gr = obj_fun$gr,
+    parnames = names(start_par),
+    vecpar = TRUE,
+    ...
+  )
+  model$opt_par = model$opt_obj@coef
+  model$model_to_calibrate = model_to_calibrate
   class(model) = c('flexmodel', 'flexmodel_calibrated')
   update_params_calibrated(model)
 }
@@ -2856,13 +3079,14 @@ nlminb_flexmodel = function(model, ...) {
 fitted.flexmodel_calibrated = function(model) {
   obs_var = unique(model$observed$data$var)
   fits = (model
-          %>% simulate(do_condensation = TRUE)
-          %>% filter(variable %in% obs_var)
+    %>% simulate(do_condensation = TRUE)
+    %>% filter(variable %in% obs_var)
   )
   comparison_data = (model$observed$data
-                     %>% left_join(
-                       fits, by = c("date" = "Date", "var" = "variable"),
-                       suffix = c('', '_fitted'))
+    %>% left_join(
+      fits, by = c("date" = "Date", "var" = "variable"),
+      suffix = c('', '_fitted')
+    )
   )
   comparison_data
 }

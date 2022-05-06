@@ -112,3 +112,5 @@ There are two functions that take a `flexmodel` and return a vector of parameter
 Simulation functions are all driven by the `simulate` method of TMB objects. These functions have optional `sim_params` arguments, which should give a vector to pass to TMB simulate methods. If there are no `sim_params` provided by the user, the `tmb_params` function is used to attempt to guess.
 
 
+## Adding New Loss Functions, Priors, and Transformations
+

@@ -9,7 +9,8 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 
-skip_slow_tests = TRUE
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
 
 test_that('time variation works for several parameters and levels of continuity', {
   reset_spec_version()

@@ -1120,6 +1120,13 @@ vcov.fit_pansim <- function(object, ...) {
 }
 
 ##' @export
+vcov.flexmodel_calibrated = function(object, ...) {
+    if (is_fitted_by_bbmle(object)) {
+        return(object$opt_obj@vcov)
+    }
+}
+
+##' @export
 is.nan.data.frame <- function(x) {
       do.call(cbind, lapply(x, is.nan))
 }
@@ -1139,5 +1146,10 @@ coef.flexmodel = function(
     transformed = FALSE,
     ...
 ) {
+    stop("under construction")
+}
 
+##' @export
+isSymmetric.numeric = function(object, ...) {
+    length(object) == 1L
 }

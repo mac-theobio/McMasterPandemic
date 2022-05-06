@@ -38,7 +38,7 @@
 ##' of the power method used in initial state construction
 ##' @param data optional observed data frame in long format to
 ##' compare with simulated trajectories. must have the following
-##' columns: \code{date}, \code{var}, \code{value}.
+##' columns: \code{date}, \code{var}, \code{value}. (currently this is not working)
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @importFrom lubridate Date
@@ -58,6 +58,9 @@ flexmodel <- function(params, state = NULL,
                        haz_eps = 1e-6,
                        data = NULL,
                        ...) {
+    if(!is.null(data)) {
+      stop("currently the data argument is not working ... please use update_observed instead")
+    }
     check_spec_ver_archived()
     name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
     if(!all(grepl(name_regex, c(names(params), names(state))))) {
@@ -1099,6 +1102,11 @@ add_state_mappings = function(
 #' @rdname add_opt_params
 #' @export
 update_opt_params = function(model, ...) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
   model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
   model
 }
@@ -1163,6 +1171,11 @@ update_opt_params = function(model, ...) {
 #'
 #' @export
 add_opt_params = function(model, ...) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
   l = force(list(...))
   model$opt_params = c(
     model$opt_params,
@@ -1220,6 +1233,11 @@ update_opt_tv_params = function(
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
   ...
 ) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
   tv_type = match.arg(tv_type, several.ok = FALSE)
   # tvp = (model
   #     $  timevar
@@ -1240,6 +1258,11 @@ add_opt_tv_params = function(
   tv_type = c('abs', 'rel_orig', 'rel_prev'),
   ...
 ) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
   tv_type = match.arg(tv_type, several.ok = FALSE)
   # tvp = (model
   #     $  timevar
@@ -1911,6 +1934,8 @@ update_initial_state = function(model, silent = FALSE) {
 #' @param data observed data frame in long format to
 #' compare with simulated trajectories. must have the following
 #' columns: \code{date}, \code{var}, \code{value}.
+#' @param regenerate_rates should rates be regenerated to sort out any
+#' index misalignment that may be introduced by editing the model?
 #'
 #' @return a \code{\link{flexmodel}} object with an \code{observed} element,
 #' which is a list with two elements: (1) \code{data} (the attached data)
@@ -1919,7 +1944,7 @@ update_initial_state = function(model, silent = FALSE) {
 #' to the \code{params} of the model)
 #'
 #' @export
-update_observed = function(model, data) {
+update_observed = function(model, data, loss_params = NULL, regenerate_rates = TRUE) {
   stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
   #allvars = model$condensation_map[final_sim_report_names(model)]
   obsvars = unique(data$var)
@@ -1933,12 +1958,23 @@ update_observed = function(model, data) {
   # more than one parameter (in addition to the location
   # parameter that is determined by the simulations).
   # right now the c++ side assumes only negative binomial.
-  model$observed$loss_params = data.frame(
-    Parameter = "nb_disp", # only choice: dispersion
-    Distribution = "nb",   # only choice: negative binomial
-    Variable = obsvars
-  )
-  model$params = expand_params_nb_disp(model$params, obsvars)
+  if (is.null(loss_params)) {
+    model$observed$loss_params = data.frame(
+      Parameter = "nb_disp", # only choice: dispersion
+      Distribution = "negative_binomial",   # only choice: negative binomial
+      Variable = obsvars
+    )
+    model$params = expand_params_nb_disp(model$params, obsvars)
+  } else {
+    model$observed$loss_params = loss_params
+    nb_vars = filter(loss_params, Parameter == "nb_disp", Distribution == "negative_binomial")$Variable
+    normal_vars = filter(loss_params, Parameter == "normal_sd", Distribution == "normal")$Variable
+    model$params = expand_params_nb_disp(model$params, nb_vars)
+    model$params = expand_params_normal_sd(model$params, normal_vars)
+  }
+  if (regenerate_rates) {
+    model = regen_rates(model)
+  }
   class(model) = c('flexmodel', 'flexmodel_to_calibrate')
   return(model)
 
@@ -2046,15 +2082,6 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       }
     }
     if (regenerate_rates) {
-      regen_rates = function(model) {
-        remodel = model
-        remodel$rates = list()
-        for(r in seq_along(model$rates)) {
-          args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
-          remodel = do.call(add_rate, args)
-        }
-        remodel
-      }
       model = regen_rates(model)
     }
     if (spec_ver_gt('0.1.2')) {

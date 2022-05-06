@@ -3,7 +3,8 @@ library(dplyr)
 library(testthat)
 library(lubridate)
 
-skip_slow_tests = TRUE
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
 
 test_that('foi can be expressed as model structure', {
   reset_spec_version()
@@ -146,12 +147,16 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
     unif = FALSE
   )
   vax_params = expand_params_S0(vax_params, 1-1e-5)
+  #vax_params$wane_rate = 0
   test_model <- make_vaccination_model(
     params = vax_params, state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
     do_make_state = FALSE,
-    do_hazard = TRUE
+    do_hazard = TRUE,
+    do_wane = FALSE
   )
+
+  topological_sort(test_model)
 
   tmb_strt = Sys.time()
   tmb_sim <- run_sim(

@@ -880,3 +880,21 @@ expand_params_nb_disp = function(params, observed_variables) {
     )
     params
 }
+
+##' @export
+expand_params_normal_sd = function(params, observed_variables) {
+    if (length(observed_variables) == 0L) return(params)
+    error_dist_params = error_dist_desc = const_named_vector("normal_sd" %_% observed_variables, 1.0)
+    if (is.null(attr(error_dist_params, "description"))) {
+        # handling non-pansim objects
+        # TODO: create method for pansim instead
+        return(merge_named_vectors(params, error_dist_params))
+    }
+    error_dist_desc[] = "Normal standard deviation parameter for " %+% observed_variables
+    attr(error_dist_params, "description") <- error_dist_desc
+    params = (params
+              %>% merge_named_vectors(error_dist_params)
+              %>% merge_named_vec_attr(error_dist_params, "description")
+    )
+    params
+}

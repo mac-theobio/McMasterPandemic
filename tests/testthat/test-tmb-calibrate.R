@@ -8,7 +8,8 @@ library(numDeriv)
 library(lubridate)
 library(tidyr)
 
-skip_slow_tests = TRUE
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
 
 test_that('simple models calibrate the same regardless of engine', {
   skip_if(skip_slow_tests)
@@ -683,7 +684,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   expect_equal(fit_no_flex$mle2@vcov, fit_flex$mle2@vcov)
 })
 
-test_that("transformations and priors give the right objective function and gradients", {
+test_that("transformations and priors give the right objective function and gradient, regardless of optimizer", {
   # construct example ---------------------------
   options(digits = 3, warn = -1)
   params <- read_params("PHAC.csv")
@@ -738,16 +739,16 @@ test_that("transformations and priors give the right objective function and grad
     end_date = edate,
     params_timevar = params_timevar,
     do_hazard = TRUE,
-    do_make_state = TRUE,  # use evec on the C++ side or not
-    data = covid_data
+    do_make_state = TRUE  # use evec on the C++ side or not
   )
 
   yukon_model = (yukon_model
+                 %>% update_observed(covid_data)
                  %>% update_opt_params(
                    log_beta0 ~ log_flat(0),
                    logit_mu ~ logit_flat(-0.04499737), # set to zero to see if it matters
-                   log_nb_disp_hosp ~ log_flat(0),
-                   log_nb_disp_report ~ log_flat(0)
+                   log_nb_disp_hosp ~ log_normal(0, 3),
+                   log_nb_disp_report ~ log_normal(0, 3)
                  )
                  %>% update_opt_tv_params(
                    tv_type = 'rel_prev',
@@ -755,19 +756,30 @@ test_that("transformations and priors give the right objective function and grad
                    log_mu ~ log_flat(0)
                  )
   )
-  yukon_fit = nlminb_flexmodel(yukon_model)
+  yukon_optim = optim_flexmodel(yukon_model, method = "BFGS")
+  yukon_nlminb = nlminb_flexmodel(yukon_model)
+  yukon_bbmle = bbmle_flexmodel(yukon_model)
+  expect_equal(yukon_nlminb$opt_par, yukon_bbmle$opt_par, tolerance = 1e-5)
+  expect_equal(yukon_optim$opt_par, yukon_bbmle$opt_par, tolerance = 1e-5)
+  yukon_forecasts = simulate_ensemble(yukon_bbmle)
 
-  method.args = list(
-    eps = 1e-7, d = 0.00591,
-    zero.tol = sqrt(.Machine$double.eps / 7e-7),
-    r = 3, v = 2,
-    show.details = FALSE
+  if(FALSE) {
+    (yukon_forecasts
+      %>% ggplot
+      + facet_wrap(~name, scales = 'free')
+      + geom_line(aes(Date, value))
+      + geom_ribbon(aes(Date, value, ymin = lwr, ymax = upr), alpha = 0.3)
+    )
+  }
+
+  expect_true(
+    isTRUE(
+      compare_grads(
+        yukon_model,
+        tmb_pars = yukon_bbmle$opt_par
+      )
+    )
   )
-
-  expect_true(isTRUE(compare_grads(yukon_model,
-                tolerance = 1e-4,
-                tmb_pars = yukon_fit$opt_par,
-                method.args = method.args)))
 })
 
 test_that("mixed tv types get optimized properly", {
@@ -949,6 +961,7 @@ test_that("vector-valued hyperparameters work", {
 })
 
 test_that("an under-construction error is thrown for sums in opt_param forms", {
+  skip("test is under construction")
   state = c(S = 20000, I = 100, R = 0)
   params = c(gamma = 0.06, beta = 0.15)
   start_date = ymd(20000101)
