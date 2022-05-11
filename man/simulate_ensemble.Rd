@@ -7,9 +7,24 @@
 simulate_ensemble(
   model,
   sim_params_matrix = NULL,
-  qvec = c(lwr = 0.025, value = 0.5, upr = 0.975),
+  covmat = NULL,
+  qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
   ...
 )
+}
+\arguments{
+\item{model}{\code{flexmodel_calibrated} object}
+
+\item{sim_params_matrix}{numberic matrix with rows giving simulation
+iterations and columns giving model parameters}
+
+\item{covmat}{not used}
+
+\item{qvec}{named numeric vector giving quantiles to compute}
+
+\item{...}{arguments to pass on the \code{pop_pred_samp}, such as
+\code{PDify = TRUE} that can solve issues with non-positive definite
+matrices}
 }
 \description{
 Given a sample of parameter vectors, simulate the condensed state simulation

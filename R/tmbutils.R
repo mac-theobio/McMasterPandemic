@@ -2913,14 +2913,29 @@ simulate.flexmodel = function(
 #' Given a sample of parameter vectors, simulate the condensed state simulation
 #' history for each ... TODO
 #'
+#' @param model \code{\link{flexmodel}} object, preferably a
+#' \code{flexmodel_calibrated} object that was fitted with
+#' \code{\link{bbmle_flexmodel}} or \code{\link{calibrate_flexmodel}}
+#' @param sim_params_matrix numberic matrix with rows giving simulation
+#' iterations and columns giving model parameters
+#' @param covmat not used
+#' @param qvec named numeric vector giving quantiles to compute
+#' @param ... arguments to pass on the \code{pop_pred_samp}, such as
+#' \code{PDify = TRUE} that can solve issues with non-positive definite
+#' matrices
+#'
 #' @family simulation
 #' @export
 simulate_ensemble = function(
     model,
     sim_params_matrix = NULL,
-    qvec = c(lwr = 0.025, value = 0.5, upr = 0.975),
+    covmat = NULL,
+    qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
     ...
   ) {
+  if (!is.null(covmat)) {
+    stop("covmat argument is not currently being used")
+  }
 
   msg = paste0(
     "\nsim_params_matrix missing, and unable to produce it.",
@@ -2979,12 +2994,14 @@ simulate_ensemble = function(
 
   cat("", "summarising ensemble ... ", sep = "\n")
   names(trajectories) = ii
-  (trajectories
+  summarised_traj = (trajectories
     %>% bind_rows(.id = 'simulation')
     %>% pivot_longer(c(-simulation, -Date))
     %>% group_by(Date, name)
     %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec))), names(qvec)))
   )
+  attr(summarised_traj, "qvec") = qvec
+  summarised_traj
 }
 
 #' Simulated Variables to Compare with Observed Data

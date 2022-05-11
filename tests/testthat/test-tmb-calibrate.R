@@ -761,7 +761,13 @@ test_that("transformations and priors give the right objective function and grad
   yukon_bbmle = bbmle_flexmodel(yukon_model)
   expect_equal(yukon_nlminb$opt_par, yukon_bbmle$opt_par, tolerance = 1e-5)
   expect_equal(yukon_optim$opt_par, yukon_bbmle$opt_par, tolerance = 1e-5)
-  yukon_forecasts = simulate_ensemble(yukon_bbmle)
+  yukon_forecasts = simulate_ensemble(
+    yukon_bbmle,
+    qvec = c(value = 0.5, lwr = 0.05, upr = 0.95)
+  )
+
+  # TODO: report as value, lwr, upr in this order
+  # TODO: add attribute with confidence level
 
   if(FALSE) {
     (yukon_forecasts

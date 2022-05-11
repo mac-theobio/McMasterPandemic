@@ -1027,6 +1027,7 @@ calibrate_flexmodel = function(
     optimizer = c('bbmle', 'nlminb', 'optim'),
     ...
 ) {
+    model = update_tmb_indices(model)
     optimizer = getFromNamespace(
         match.arg(optimizer) %_% 'flexmodel',
         "McMasterPandemic"

@@ -1285,6 +1285,20 @@ update_opt_vec = function(model, ...) {
   )
 }
 
+#' Extend End Date
+#'
+#' Extend the final simulation date a number of days
+#' in the future.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param days_to_extend number of days to extend the end date
+#' @importFrom lubridate days
+#' @export
+extend_end_date = function(model, days_to_extend) {
+  model$end_date = model$end_date + days(days_to_extend)
+  model
+}
+
 # compute indices and pass them to the tmb/c++ side ---------------------
 
 ##' Update TMB Indices
@@ -2004,6 +2018,14 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
 
 # time variation updates ------------------
 
+#' Update the Piece-Wise Parameter Time-Variation Schedule
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param params_timevar data frame with scheduling for piece-wise
+#' constant parameter variation (TODO: direct to other help pages)
+#' @param regenerate_rates should the rates in the flexmodel be
+#' regenerated? If you don't know what you are doing, you should
+#' select \code{TRUE}, which is the default.
 #' @export
 update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   spec_check(
@@ -2090,6 +2112,12 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       )
     }
     model
+}
+
+#' @export
+add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
+  ptv = model$timevar$piecewise$schedule[c("Date", "Symbol", "Value", "Type")]
+  update_piece_wise(model, rbind(params_timevar, ptv), regenerate_rates)
 }
 
 #' @export

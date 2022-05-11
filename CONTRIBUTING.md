@@ -100,7 +100,7 @@ To identify McMasterPandemic-specific global options on the `R` side we prefix t
 
 ### TMB objective function returns NaN
 
-There are several ways for the objective function to come back as a NaN. When this happens it can be used to run the simulate method within the TMB object. This simulate method might return a series of warnings, which can be useful for generating hypotheses about why the likelihood came out as a NaN. It can also be helpful in these cases to set `options(warn = 2)` so that warnings halt execution. By halting, one may inspect the parameters that were used during at the time of the warning, by looking in the `env$last.par` component within the TMB object.
+There are several ways for the objective function to come back as a NaN. When this happens it can be useful to run the simulate method within the TMB object. This simulate method might return a series of warnings, which can be useful for generating hypotheses about why the likelihood came out as a NaN. It can also be helpful in these cases to set `options(warn = 2)` so that warnings halt execution. By halting, one may inspect the parameters that were used during at the time of the warning, by looking in the `env$last.par` component within the TMB object.
 
 See https://kaskr.github.io/adcomp/_book/Errors.html#floating-point-exception for another approach using GDB.  Unfortunately this doesn't appear to be available for mac os (related discussion: https://github.com/ArduPilot/ardupilot/issues/1941), so I prefer just using the simulate method.
 

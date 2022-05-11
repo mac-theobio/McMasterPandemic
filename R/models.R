@@ -249,6 +249,7 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
       "S" %_% vax_cat,
       "E" %_% vax_cat,
       kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
+      #t(baseline_trans_rates) %*% Imat %*% t(vax_trans_red)
     )
 
     # Sums across vaccination categories
