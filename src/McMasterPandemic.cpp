@@ -873,6 +873,32 @@ public:
         return 0.0;
     }
   };
+
+  Type sim(const Type& simulated, const vector<Type>& sp,
+           int obs_do_sim_constraint, Type obs_sim_lower_bound) {
+    Type var;
+    Type sims_with_error;
+    Type clamped_simulated;
+    switch (id) {
+      case 0: // Negative Binomial Negative Log Likelihood
+        if (obs_do_sim_constraint) { // && simulated<obs_sim_lower_bound)
+          //std::cout << "clamping!" << std::endl;
+          //clamped_simulated = simulated + obs_sim_lower_bound * exp(-simulated/obs_sim_lower_bound);
+          clamped_simulated = simulated + obs_sim_lower_bound*(1/(1-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound)));
+        } else {
+          clamped_simulated = simulated;
+        }
+
+        // var = mu + mu^2/k
+        // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
+        //   var ~ variance
+        //   mu ~ mean
+        //   k ~ overdispersion parameter = sp[this->spi[0]]
+        var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
+        sims_with_error = clamped_simulated + rnbinom2(clamped_simulated, var);
+        return sims_with_error;
+    }
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1473,6 +1499,18 @@ Type objective_function<Type>::operator() ()
         break;
       }
     }
+
+    SIMULATE {
+      for (int k=0; k<obs_var_id.size(); k++) {
+        simulation_history(i, obs_var_id[k] - 1) = varid2lossfunc[obs_var_id[k] - 1].sim(
+          simulation_history(i, obs_var_id[k] - 1),
+          sp,
+          obs_do_sim_constraint,
+          obs_sim_lower_bound
+        );
+      }
+    }
+
   }
 
   //std::cout << "Loss = " << sum_of_loss << std::endl;
@@ -1483,6 +1521,7 @@ Type objective_function<Type>::operator() ()
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
+
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);

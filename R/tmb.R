@@ -1937,7 +1937,34 @@ update_initial_state = function(model, silent = FALSE) {
   model
 }
 
-# observed data ---------------------------------
+# observed data and observation error ---------------------------------
+
+#' Update Observation Error
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param loss_params TODO
+#' @param regenerate_rates TODO
+#' @export
+update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
+  model$observed$loss_params = loss_params
+  nb_vars = filter(
+    loss_params,
+    Parameter == "nb_disp",
+    Distribution == "negative_binomial"
+  )$Variable
+  normal_vars = filter(
+    loss_params,
+    Parameter == "normal_sd",
+    Distribution == "normal"
+  )$Variable
+  model$params = expand_params_nb_disp(model$params, nb_vars)
+  model$params = expand_params_normal_sd(model$params, normal_vars)
+  if (regenerate_rates) {
+    model = regen_rates(model)
+  }
+  class(model) = c("flexmodel", "flexmodel_obs_error")
+  model
+}
 
 #' Update Observed Data
 #'
@@ -1965,13 +1992,6 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
   #stopifnot(all(obsvars %in% allvars))
   model$observed$data = data
 
-  # in the future, the user should be able to provide this
-  # loss_params data themselves. would open up the
-  # possibility to add error distributions other than
-  # the negative binomial, including distributions with
-  # more than one parameter (in addition to the location
-  # parameter that is determined by the simulations).
-  # right now the c++ side assumes only negative binomial.
   if (is.null(loss_params)) {
     model$observed$loss_params = data.frame(
       Parameter = "nb_disp", # only choice: dispersion
@@ -1980,40 +2000,13 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
     )
     model$params = expand_params_nb_disp(model$params, obsvars)
   } else {
-    model$observed$loss_params = loss_params
-    nb_vars = filter(loss_params, Parameter == "nb_disp", Distribution == "negative_binomial")$Variable
-    normal_vars = filter(loss_params, Parameter == "normal_sd", Distribution == "normal")$Variable
-    model$params = expand_params_nb_disp(model$params, nb_vars)
-    model$params = expand_params_normal_sd(model$params, normal_vars)
+    model = update_loss_params(model, loss_params)
   }
   if (regenerate_rates) {
     model = regen_rates(model)
   }
   class(model) = c('flexmodel', 'flexmodel_to_calibrate')
   return(model)
-
-
-  stop("deprecated ... now in init_model and canned models")
-  spec_check(
-    introduced_version = '0.2.0',
-    feature = 'comparison with observed data'
-  )
-  stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
-  allvars = model$condensation_map[final_sim_report_names(model)]
-  obsvars = unique(data$var)
-  stopifnot(all(obsvars %in% allvars))
-  model$observed$data = data
-  model$observed$loss_params = data.frame(
-    Parameter = "nb_disp", # only choice: dispersion
-    Distribution = "nb",   # only choice: negative binomial
-    Variable = obsvars
-  )
-  model$observed$timevar_error = (data.frame(
-      Date = model$start_date
-    )
-    %>% cbind(model$observed$loss_params)
-  )
-  model
 }
 
 # time variation updates ------------------

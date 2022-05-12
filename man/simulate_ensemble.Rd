@@ -13,7 +13,9 @@ simulate_ensemble(
 )
 }
 \arguments{
-\item{model}{\code{flexmodel_calibrated} object}
+\item{model}{\code{\link{flexmodel}} object, preferably a
+\code{flexmodel_calibrated} object that was fitted with
+\code{\link{bbmle_flexmodel}} or \code{\link{calibrate_flexmodel}}}
 
 \item{sim_params_matrix}{numberic matrix with rows giving simulation
 iterations and columns giving model parameters}
