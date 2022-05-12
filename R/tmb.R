@@ -791,7 +791,7 @@ add_lag_diff = function(
     model$lag_diff,
     list(added_lag_diff)
   )
-  model
+  update_tmb_indices(model)
 }
 
 #' Add Variable by Convolution
@@ -836,7 +836,7 @@ add_conv = function(
     model$conv,
     list(added_conv)
   )
-  model
+  update_tmb_indices(model)
 }
 
 #' Specify and Name Variables for Condensation

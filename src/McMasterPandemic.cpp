@@ -895,8 +895,12 @@ public:
         //   mu ~ mean
         //   k ~ overdispersion parameter = sp[this->spi[0]]
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
-        sims_with_error = clamped_simulated + rnbinom2(clamped_simulated, var);
+        sims_with_error = rnbinom2(clamped_simulated, var);
         return sims_with_error;
+
+      default:
+        // tmb error
+        return 0.0;
     }
   }
 };
@@ -1500,6 +1504,10 @@ Type objective_function<Type>::operator() ()
       }
     }
 
+
+  }
+
+  for (int i=0; i<numIterations; i++) {
     SIMULATE {
       for (int k=0; k<obs_var_id.size(); k++) {
         simulation_history(i, obs_var_id[k] - 1) = varid2lossfunc[obs_var_id[k] - 1].sim(
@@ -1510,7 +1518,6 @@ Type objective_function<Type>::operator() ()
         );
       }
     }
-
   }
 
   //std::cout << "Loss = " << sum_of_loss << std::endl;

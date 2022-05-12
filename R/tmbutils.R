@@ -2803,7 +2803,7 @@ initial_ratemat = function(model, sim_params = NULL) {
 simulation_history = function(model, add_dates = TRUE, sim_params = NULL, include_initial_date = TRUE) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
   sim_hist = (tmb_fun(model)
-    $  simulate(sim_params)
+    $  report(sim_params)  ## use report instead of simulate until obs err is finalized
     $  simulation_history
    %>% as.data.frame
    %>% setNames(final_sim_report_names(model))
