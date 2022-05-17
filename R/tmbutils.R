@@ -2964,6 +2964,7 @@ simulate_ensemble = function(
     sim_params_matrix = NULL,
     covmat = NULL,
     qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
+    use_progress_bar = TRUE,
     ...
   ) {
   if (!is.null(covmat)) {
@@ -3013,7 +3014,9 @@ simulate_ensemble = function(
   )
   fsrn = final_sim_report_names(model)
 
-  pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
+  if (use_progress_bar) {
+    pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
+  }
 
   for(i in ii) {
     traj = as.data.frame(o$simulate(sim_params_matrix[i,])$simulation_history)
@@ -3023,10 +3026,12 @@ simulate_ensemble = function(
       cond_map
     )
     trajectories[[i]] = cbind(date_frame, traj)
-    setTxtProgressBar(pb, i)
+    if (use_progress_bar) {
+      setTxtProgressBar(pb, i)
+    }
   }
 
-  cat("", "summarising ensemble ... ", sep = "\n")
+  if (use_progress_bar) cat("", "summarising ensemble ... ", sep = "\n")
   names(trajectories) = ii
   summarised_traj = (trajectories
     %>% bind_rows(.id = 'simulation')

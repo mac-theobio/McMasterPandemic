@@ -1917,7 +1917,8 @@ tmb_fun <- function(model) {
         parameters = list(params = c(unlist(params)),
                           tv_mult = null_to_num0(init_tv_mult)),
         map = map,
-        DLL = DLL
+        DLL = DLL,
+        silent = getOption("MP_silent_tmb_function")
       )
     } else {
         stop("Construction of TMB functions is not supported by your installation of MacPan")

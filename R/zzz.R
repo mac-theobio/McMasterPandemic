@@ -70,6 +70,8 @@
         # do state condensation with c++ code as opposed to r
         MP_condense_cpp = TRUE,
 
+        MP_silent_tmb_function = TRUE,
+
         # -- control how comparable r and tmb engines are ----------------------
         # -- see r_tmb_comparable ----------------------------------------------
         MP_use_state_rounding = TRUE,         # FALSE ~ comparable
