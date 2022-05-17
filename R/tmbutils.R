@@ -1956,6 +1956,9 @@ parse_opt_form = function(x, e = NULL) {
   }
 }
 
+
+# date and time utilities -----------
+
 # computing indices and data for tmb ----------------------
 
 ##' @export
@@ -2534,7 +2537,7 @@ tmb_params = function(model) {
 
 #' Parameter Vectors Transformed for TMB
 #'
-#' @params model flexmodel
+#' @param model flexmodel
 #' @param vec_type type of vector to return:
 #' (1) tmb_fun_arg = same length as the argument for TMB objective function,
 #' (2) params = same length as the params element in \code{model}
@@ -2640,6 +2643,13 @@ simulation_dates = function(model) {
     as.Date(model$start_date),
     as.Date(model$end_date),
     by = 1)
+}
+
+compute_num_iters = function(model) {
+  (model$end_date
+    %>% difftime(model$start_date, units = 'days')
+    %>% as.integer
+  )
 }
 
 # @param model flexmodel
@@ -2800,14 +2810,31 @@ initial_ratemat = function(model, sim_params = NULL) {
 #'
 #' @family simulation
 #' @export
-simulation_history = function(model, add_dates = TRUE, sim_params = NULL, include_initial_date = TRUE) {
+simulation_history = function(
+    model,
+    add_dates = TRUE,
+    sim_params = NULL,
+    include_initial_date = TRUE,
+    obs_error = FALSE,
+    condense = FALSE
+  ) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
-  sim_hist = (tmb_fun(model)
-    $  report(sim_params)  ## use report instead of simulate until obs err is finalized
-    $  simulation_history
+  if (obs_error) {
+    sim_hist_raw = tmb_fun(model)$simulate()$simulation_history
+  } else {
+    sim_hist_raw = tmb_fun(model)$report()$simulation_history
+  }
+  sim_hist = (sim_hist_raw
    %>% as.data.frame
    %>% setNames(final_sim_report_names(model))
   )
+  if (condense) {
+    sim_hist = setNames(
+      sim_hist[names(model$condensation_map)],
+      model$condensation_map
+    )
+    # FIXME: need cumRep hack in condense_flexmodel?
+  }
   if (add_dates) {
     sim_hist = (model
       %>% simulation_dates
@@ -2825,6 +2852,12 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL, includ
   }
   sim_hist
 }
+
+# @param cond_map condensation_map element of flexmodel
+# @param sim_hist value of simulation_history in a TMB report or simulation
+# apply_condensation = function(cond_map, sim_hist) {
+#
+# }
 
 # FIXME: following two functions do the same thing in slightly different
 # ways!
@@ -2938,7 +2971,7 @@ simulate_ensemble = function(
   }
 
   msg = paste0(
-    "\nsim_params_matrix missing, and unable to produce it.",
+    "\nsim_params_matrix missing, and unable to produce it. ",
     "try using bbmle_flexmodel when calibrating.",
     collapse = "\n"
   )
@@ -2962,8 +2995,9 @@ simulate_ensemble = function(
 
   stopifnot(!is.null(names(qvec)))
 
-  # avoid the cost of computing the loss function, and just do the simulations
-  model$observed = McMasterPandemic:::init_observed
+  # avoid the cost of computing the loss function,
+  # and just do the simulations
+  model$observed$data = McMasterPandemic:::init_observed$data
 
   o = tmb_fun(model)
   trajectories = list()
@@ -2982,7 +3016,7 @@ simulate_ensemble = function(
   pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
 
   for(i in ii) {
-    traj = as.data.frame(o$report(sim_params_matrix[i,])$simulation_history)
+    traj = as.data.frame(o$simulate(sim_params_matrix[i,])$simulation_history)
     names(traj) = fsrn
     traj = setNames(
       traj[cond_nms],
@@ -2998,7 +3032,7 @@ simulate_ensemble = function(
     %>% bind_rows(.id = 'simulation')
     %>% pivot_longer(c(-simulation, -Date))
     %>% group_by(Date, name)
-    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec))), names(qvec)))
+    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
   )
   attr(summarised_traj, "qvec") = qvec
   summarised_traj
@@ -3096,12 +3130,17 @@ bbmle_flexmodel = function(model, ...) {
 fitted.flexmodel_calibrated = function(model) {
   obs_var = unique(model$observed$data$var)
   fits = (model
-    %>% simulate(do_condensation = TRUE)
-    %>% filter(variable %in% obs_var)
+    %>% simulation_history(obs_error = FALSE, condense = TRUE)
+    %>% pivot_longer(-Date, names_to = "var")
+    %>% filter(var %in% obs_var)
   )
+  # fits = (model
+  #   %>% simulate(do_condensation = TRUE)
+  #   %>% filter(variable %in% obs_var)
+  # )
   comparison_data = (model$observed$data
     %>% left_join(
-      fits, by = c("date" = "Date", "var" = "variable"),
+      fits, by = c("date" = "Date", "var" = "var"),
       suffix = c('', '_fitted')
     )
   )

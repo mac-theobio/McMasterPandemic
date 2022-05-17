@@ -675,7 +675,8 @@ test_that("informative error is thrown if no rates are specified", {
 test_that("informative error is thrown if no rates are specified", {
     reset_spec_version()
     tmb_mode()
-    options(MP_auto_outflow = FALSE)
+    op1 = options(MP_auto_outflow = FALSE)
+    op2 = options(MP_warn_no_outflow = TRUE)
     msg = "model does not contain any outflow"
     expect_warning(
         (
@@ -690,6 +691,8 @@ test_that("informative error is thrown if no rates are specified", {
         ),
         regexp = msg
     )
+    options(op1)
+    options(op2)
 })
 
 test_that("start_date <= end_date in flex models", {
@@ -849,14 +852,13 @@ test_that("sim_report expressions give correct results", {
   model = (two_strain_model
      %>% vec_factr(
       "foi" %_% strains,
-      vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains))
+      vec("beta" %_% strains) * struc("1/N") * vec("I" %_% strains)
+     )
      %>% vec_rate("S", "I" %_% strains, vec("foi" %_% strains))
      %>% rep_rate("I", "R", ~ (gamma))
      %>% add_sim_report_expr('report', ~ (I_wild) + (I_variant))
      %>% add_sim_report_expr('recov', ~ (S) * (S_to_I_wild) + (S) * (S_to_I_variant))
      %>% add_lag_diff("^report$")
      %>% add_conv("^recov$")
-     %>% add_outflow
-     %>% update_tmb_indices
   )
 })

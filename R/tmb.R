@@ -125,10 +125,7 @@ flexmodel <- function(params, state = NULL,
                    feature = "Start and end dates")
         model$start_date <- as.Date(start_date)
         model$end_date <- as.Date(end_date)
-        model$iters <- (model$end_date
-            %>% difftime(model$start_date, units = 'days')
-            %>% as.integer
-        )
+        model$iters <- compute_num_iters(model)
         if (model$iters < 0) {
           stop("start_date must be less than or equal to end_date")
         }
@@ -873,7 +870,7 @@ update_condense_map = function(model, map = NULL) {
 ##' @param model \code{\link{flexmodel}} object
 ##' @param state_patterns regular expressions for identifying states as
 ##' parallel accumulators
-##' @return updated \code{\link{flexmodel} with parallel
+##' @return updated \code{\link{flexmodel}} with parallel
 ##' accumulators specified
 ##' @family flexmodel_definition_functions
 ##' @export
@@ -1296,8 +1293,23 @@ update_opt_vec = function(model, ...) {
 #' @export
 extend_end_date = function(model, days_to_extend) {
   model$end_date = model$end_date + days(days_to_extend)
-  model
+  model$iters = compute_num_iters(model)
+
+  # HACK!
+  if (!is.null(model$model_to_calibrate)) {
+    model$model_to_calibrate$end_date =
+      model$model_to_calibrate$end_date +
+      days(days_to_extend)
+    model$model_to_calibrate$iters = compute_num_iters(model$model_to_calibrate)
+    model$model_to_calibrate =
+      update_tmb_indices(model$model_to_calibrate)
+  }
+
+  update_tmb_indices(model)
 }
+
+
+
 
 # compute indices and pass them to the tmb/c++ side ---------------------
 
@@ -2129,6 +2141,18 @@ initialize_piece_wise = function(model) {
       )
     )
   )
+  model
+}
+
+
+# param updates -----------------
+
+#' @param model \code{\link{flexmodel}} object
+#' @param params_update named vector of parameter names
+#' @export
+update_params = function(model, params_update) {
+  stopifnot(!is.null(names(params_update)))
+  model$params[names(params_update)] = params_update
   model
 }
 

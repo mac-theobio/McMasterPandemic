@@ -7,6 +7,8 @@
 tmb_params_trans(model, vec_type = c("tmb_fun_arg", "params", "tv_mult"))
 }
 \arguments{
+\item{model}{flexmodel}
+
 \item{vec_type}{type of vector to return:
 (1) tmb_fun_arg = same length as the argument for TMB objective function,
 (2) params = same length as the params element in \code{model}

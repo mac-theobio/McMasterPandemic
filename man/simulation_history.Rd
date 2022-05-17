@@ -8,7 +8,9 @@ simulation_history(
   model,
   add_dates = TRUE,
   sim_params = NULL,
-  include_initial_date = TRUE
+  include_initial_date = TRUE,
+  obs_error = FALSE,
+  condense = FALSE
 )
 }
 \arguments{

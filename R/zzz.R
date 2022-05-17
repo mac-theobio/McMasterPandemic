@@ -40,7 +40,8 @@
         MP_warn_repeated_rates = FALSE,
 
         # warn if there is no outflow in the model (rarely what users want)
-        MP_warn_no_outflow = TRUE,
+        # -- setting to FALSE because of MP_auto_outflow
+        MP_warn_no_outflow = FALSE,
 
         # warn if there are time-variation breakpoints outside of the
         # simulation bounds

@@ -1123,7 +1123,7 @@ vcov.fit_pansim <- function(object, ...) {
 vcov.flexmodel_calibrated = function(object, ...) {
     if (is_fitted_by_bbmle(object)) {
         # symmetrize before returning
-        return(object$opt_obj@vcov + t(object$opt_obj@vcov) / 2)
+        return((object$opt_obj@vcov + t(object$opt_obj@vcov)) / 2)
     }
 }
 

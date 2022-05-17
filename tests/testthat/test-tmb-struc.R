@@ -412,6 +412,7 @@ test_that("vax/variant foi algebraic manipulations are correct", {
 })
 
 test_that("variants and vaccination model simulation matches run_sim", {
+  skip_if(skip_slow_tests)
 
   reset_spec_version()
   #r_tmb_comparable()

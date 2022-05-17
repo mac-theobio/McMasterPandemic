@@ -879,6 +879,7 @@ public:
     Type var;
     Type sims_with_error;
     Type clamped_simulated;
+    Type var_tolerance = 1e-8;
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
         if (obs_do_sim_constraint) { // && simulated<obs_sim_lower_bound)
@@ -894,8 +895,15 @@ public:
         //   var ~ variance
         //   mu ~ mean
         //   k ~ overdispersion parameter = sp[this->spi[0]]
+
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
-        sims_with_error = rnbinom2(clamped_simulated, var);
+
+        if (var < var_tolerance) {
+          // handle case where rnbinom2 returns NaNs
+          sims_with_error = 0.0;
+        } else {
+          sims_with_error = rnbinom2(clamped_simulated, var);
+        }
         return sims_with_error;
 
       default:
@@ -1507,7 +1515,6 @@ Type objective_function<Type>::operator() ()
 
   }
 
-  if
   for (int i=0; i<numIterations; i++) {
     SIMULATE {
       for (int k=0; k<obs_var_id.size(); k++) {
