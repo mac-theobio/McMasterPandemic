@@ -613,7 +613,7 @@ test_that("an informative error is returned if variables are missing", {
 test_that("invalid state and parameter sum specification returns informative error msg", {
     reset_spec_version()
     tmb_mode()
-    msg1 = "sums cannot be named after state variables or parameters"
+    msg1 = "sums cannot have the same name as state variables or parameters"
     msg2 = "sum_name must be character-valued"
     msg3 = "can only specify one sum at a time"
     expect_error(

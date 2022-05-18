@@ -1271,17 +1271,21 @@ get_rates = function(model) {
 ##' @param model a \code{\link{flexmodel}} object
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
-rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
+rate_summary = function(model, include_parse_info = TRUE, include_formula = FALSE, include_latex = FALSE) {
   summary = data.frame(
     from = get_rate_info(model, "from") %>% unlist,
-    to = get_rate_info(model, "to") %>% unlist,
-    n_fctrs = get_n_factors(model) %>% unlist,
-    n_prdcts = get_n_products(model) %>% unlist,
-    n_vrbls = get_n_variables(model) %>% unlist,
-    state_dependent = get_rate_info(model, "state_dependent") %>% unlist,
-    time_varying = get_rate_info(model, "time_varying") %>% unlist,
-    sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
+    to = get_rate_info(model, "to") %>% unlist
   )
+
+  if(include_parse_info) {
+    summary$n_fctrs = get_n_factors(model) %>% unlist
+    summary$n_prdcts = get_n_products(model) %>% unlist
+    summary$n_vrbls = get_n_variables(model) %>% unlist
+    summary$state_dependent = get_rate_info(model, "state_dependent") %>% unlist
+    summary$time_varying = get_rate_info(model, "time_varying") %>% unlist
+    summary$sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
+  }
+
   if(include_formula) {
     summary$formula = (model
       %>% get_rate_info('formula')
@@ -1513,6 +1517,44 @@ avail_for_lag = function(model) {
   intermediate_sim_report_names(model)
 }
 
+
+
+# getting information about calibrated models -----------------
+
+#' Optimizer Object
+#'
+#' Get the object returned by the optimizer used to calibrate a
+#' \code{flexmodel_to_calibrate} object. The \code{convergence_info}
+#' function gets convergence information in case it is buried within
+#' the \code{opt_obj}.
+#'
+#' @param model object of class \code{flexmodel_calibrated}
+#' @export
+opt_obj = function(model) {
+  stopifnot(inherits(model, 'flexmodel_calibrated'))
+  model$opt_obj
+}
+
+#' @rdname opt_obj
+#' @export
+convergence_info = function(model) {
+  UseMethod('convergence_info')
+}
+
+#' @export
+convergence_info.default = function(model) {
+  stop('this function only applies to flexmodel_calibrated objects.')
+}
+
+#' @export
+convergence_info.flexmodel_calibrated = function(model) {
+  return(opt_obj(model))
+}
+
+#' @export
+convergence_info.flexmodel_bbmle = function(model) {
+  return(opt_obj(model)@details)
+}
 
 # utilities for parsing opt_params formulas ------------------
 
@@ -3091,7 +3133,7 @@ optim_flexmodel = function(model, ...) {
   model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  class(model) = c('flexmodel_optim', 'flexmodel_calibrated', 'flexmodel')
   update_params_calibrated(model)
 }
 
@@ -3104,7 +3146,7 @@ nlminb_flexmodel = function(model, ...) {
   model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  class(model) = c('flexmodel_nlminb', 'flexmodel_calibrated', 'flexmodel')
   update_params_calibrated(model)
 }
 
@@ -3127,7 +3169,7 @@ bbmle_flexmodel = function(model, ...) {
   )
   model$opt_par = model$opt_obj@coef
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel', 'flexmodel_calibrated')
+  class(model) = c('flexmodel_bbmle', 'flexmodel_calibrated', 'flexmodel')
   update_params_calibrated(model)
 }
 

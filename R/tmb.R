@@ -610,7 +610,7 @@ state_param_sum = function(sum_name, summands, state, params) {
     }
     sp = c(state, params)
     if (sum_name %in% names(sp)) {
-      stop("sums cannot be named after state variables ",
+      stop("sums cannot have the same name as state variables ",
            "or parameters.")
     }
     summands = (summands
@@ -2018,7 +2018,7 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
   if (regenerate_rates) {
     model = regen_rates(model)
   }
-  class(model) = c('flexmodel', 'flexmodel_to_calibrate')
+  class(model) = c('flexmodel_to_calibrate', 'flexmodel')
   return(model)
 }
 
@@ -2148,6 +2148,8 @@ initialize_piece_wise = function(model) {
 
 # param updates -----------------
 
+#' Update Default Parameters
+#'
 #' @param model \code{\link{flexmodel}} object
 #' @param params_update named vector of parameter names
 #' @export

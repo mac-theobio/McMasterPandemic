@@ -9,6 +9,7 @@ simulate_ensemble(
   sim_params_matrix = NULL,
   covmat = NULL,
   qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
+  use_progress_bar = TRUE,
   ...
 )
 }
