@@ -1024,15 +1024,28 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
 ##' @export
 calibrate_flexmodel = function(
     model,
-    optimizer = c('bbmle', 'nlminb', 'optim'),
+    .optimizer_wrapper = c('bbmle', 'nlminb', 'optim'),
     ...
 ) {
+    dot_args = list(...)
     model = update_tmb_indices(model)
-    optimizer = getFromNamespace(
-        match.arg(optimizer) %_% 'flexmodel',
+    optimizer_function = getFromNamespace(
+        match.arg(.optimizer_wrapper) %_% 'flexmodel',
         "McMasterPandemic"
     )
-    optimizer(model, ...)
+    opt_args = c(list(model), dot_args)
+    output = try(
+        do.call(optimizer_function, opt_args),
+        silent = FALSE
+    )
+    if (inherits(output, 'try-error')) {
+        model$opt_err = output
+        output = structure(
+            model,
+            class = c('flexmodel_failed_calibration', class(model))
+        )
+    }
+    output
 }
 
 ##' find confidence envelopes by simulation

@@ -1952,6 +1952,32 @@ update_initial_state = function(model, silent = FALSE) {
 
 # observed data and observation error ---------------------------------
 
+#' @export
+add_error_dist = function(model, ...) {
+  new_loss_params = (list(...)
+   %>% lapply(parse_and_resolve_loss_form, final_sim_report_names(model))
+   %>% bind_rows
+  )
+  new_loss_params = bind_rows(
+    model$observed$loss_params,
+    new_loss_params
+  )
+  update_loss_params(model, new_loss_params)
+}
+
+#' Update Error Distribution
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param ... error distribution formulas
+#' @export
+update_error_dist = function(model, ...) {
+  new_loss_params = (list(...)
+   %>% lapply(parse_and_resolve_loss_form, final_sim_report_names(model))
+   %>% bind_rows
+  )
+  update_loss_params(model, new_loss_params)
+}
+
 #' Update Observation Error
 #'
 #' @param model \code{\link{flexmodel}} object
@@ -1959,19 +1985,52 @@ update_initial_state = function(model, silent = FALSE) {
 #' @param regenerate_rates TODO
 #' @export
 update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
+
+  dist_nms = unique(loss_params$Distribution)
+  invalid_dist_nms = dist_nms[!dist_nms %in% valid_loss_functions]
+  if (length(invalid_dist_nms) != 0L) {
+    stop(
+      'the following distributions were requested but not valid: ',
+      paste0(invalid_dist_nms, collapse = ", ")
+    )
+  }
+
   model$observed$loss_params = loss_params
-  nb_vars = filter(
-    loss_params,
-    Parameter == "nb_disp",
-    Distribution == "negative_binomial"
-  )$Variable
-  normal_vars = filter(
-    loss_params,
-    Parameter == "normal_sd",
-    Distribution == "normal"
-  )$Variable
-  model$params = expand_params_nb_disp(model$params, nb_vars)
-  model$params = expand_params_normal_sd(model$params, normal_vars)
+
+  # vars_by_loss = mapply(
+  #   filter_loss_params,
+  #   valid_loss_params,
+  #   valid_loss_functions,
+  #   MoreArgs = list(loss_params = loss_params),
+  #   SIMPLIFY = FALSE
+  # )
+  # nb_vars = filter(
+  #   loss_params,
+  #   Parameter == "nb_disp",
+  #   Distribution == "negative_binomial"
+  # )$Variable
+  # normal_vars = filter(
+  #   loss_params,
+  #   Parameter == "normal_sd",
+  #   Distribution == "normal"
+  # )$Variable
+  #invalid_loss_vars = all_loss_vars[!all_loss_vars %in% c(nb_vars, normal_vars)]
+  # all_loss_vars = unique(loss_params$Variable)
+  # invalid_loss_vars = all_loss_vars[!all_loss_vars %in% unlist(vars_by_loss)]
+  # if (length(invalid_loss_vars) != 0L) {
+  #   stop(
+  #     "the following variables have invalid loss parameters: ",
+  #     paste0(invalid_loss_vars, collapse = ", ")
+  #   )
+  # }
+  # model$params = expand_params_nb_disp(
+  #   model$params,
+  #   vars_by_loss$negative_binomial
+  # )
+  # model$params = expand_params_normal_sd(
+  #   model$params,
+  #   unlist(vars_by_loss[c('log_normal', 'normal')])
+  # )
   if (regenerate_rates) {
     model = regen_rates(model)
   }
@@ -2007,8 +2066,8 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
 
   if (is.null(loss_params)) {
     model$observed$loss_params = data.frame(
-      Parameter = "nb_disp", # only choice: dispersion
-      Distribution = "negative_binomial",   # only choice: negative binomial
+      Parameter = "nb_disp" %_% obsvars, # default choice: dispersion
+      Distribution = "negative_binomial",   # default choice: negative binomial
       Variable = obsvars
     )
     model$params = expand_params_nb_disp(model$params, obsvars)

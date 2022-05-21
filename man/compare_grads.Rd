@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmbutils.R
 \name{compare_grads}
 \alias{compare_grads}
+\alias{compare_hessians}
 \title{Compare Automatic and Numerical Differentiation}
 \usage{
 compare_grads(model, tolerance = 1e-05, tmb_pars = NULL, ...)
+
+compare_hessians(model, tolerance = 1e-05, tmb_pars = NULL, ...)
 }
 \arguments{
 \item{model}{flexmodel}

@@ -4,7 +4,12 @@
 \alias{rate_summary}
 \title{Rate Summary}
 \usage{
-rate_summary(model, include_formula = FALSE, include_latex = FALSE)
+rate_summary(
+  model,
+  include_parse_info = TRUE,
+  include_formula = FALSE,
+  include_latex = FALSE
+)
 }
 \arguments{
 \item{model}{a \code{\link{flexmodel}} object}

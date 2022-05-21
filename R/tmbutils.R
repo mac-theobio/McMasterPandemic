@@ -1,8 +1,21 @@
 # objects ----------------------
 
-valid_loss_functions = c('negative_binomial', 'normal')
+valid_loss_params = list(
+  negative_binomial = 'nb_disp',
+  log_normal = 'normal_sd',
+  normal = 'normal_sd'
+)
+valid_loss_functions = names(valid_loss_params)
 valid_prior_families = c('flat', 'normal')
 valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
+
+filter_loss_params = function(loss_params, param_nms, dist_nm){
+  filter(
+    loss_params,
+    Parameter == param_nms,
+    Distribution == dist_nm
+  )$Variable
+}
 
 init_initialization_mapping = list(
   eigen = character(0L),
@@ -393,6 +406,7 @@ index_sep = function(x, i, sep = "_") {
   )
 }
 
+#' @export
 wrap_exact = function(x) {
   "^" %+% x %+% "$"
 }
@@ -913,7 +927,7 @@ find_vec_indices <- function(x, vec) {
   if(length(missing_variables) > 0L) {
     stop("the following variables were used but not found in the model:\n",
          paste0(missing_variables, collapse = "\n"),
-         "you might find the help page for ?avail_for_rate useful")
+         "\nyou might find the help page for ?avail_for_rate useful")
   }
   (x
     %>% as.character()
@@ -1552,11 +1566,61 @@ convergence_info.flexmodel_calibrated = function(model) {
 }
 
 #' @export
+convergence_info.flexmodel_failed_calibration = function(model) {
+  return(model$opt_err)
+}
+
+#' @export
 convergence_info.flexmodel_bbmle = function(model) {
   return(opt_obj(model)@details)
 }
 
-# utilities for parsing opt_params formulas ------------------
+
+# getting information about objective functions and models to calibrate --------------
+
+#' @export
+profile_obj_fun = function(model, focal_param) {
+  UseMethod('profile_obj_fun')
+}
+
+#' @export
+profile_obj_fun.flexmodel_to_calibrate = function(model, focal_param) {
+  model = remove_opt_param(model, focal_param)
+  # o = tmb_fun(model)
+  # param_names = names(tmb_params_trans(model))
+  # par_ind = which(param_names == focal_param)
+  # par = o$par
+  function(x) {
+    model$params[focal_param] = x
+    o = tmb_fun(model)
+    o$fn(par)
+  }
+}
+
+#' @export
+loss_params = function(model) {
+  model$observed$loss_params
+}
+
+# utilities for parsing opt_params and loss_params formulas and structures ------------------
+
+remove_opt_param = function(model, focal_param) {
+  opt_param_is_focal = (model$opt_params
+    %>% lapply(getElement, 'param')
+    %>% lapply(getElement, 'param_nms')
+    %>% lapply(`==`, focal_param)
+  )
+  opt_params = model$opt_params[!unlist(lapply(opt_param_is_focal, all))]
+  model$opt_params = mapply(function(x, y) {
+      x$param$param_nms = x$param$param_nms[!y]
+      x
+    },
+    opt_params,
+    opt_param_is_focal,
+    SIMPLIFY = FALSE
+  )
+  model
+}
 
 #' Parse Fitted Parameter Formula
 #'
@@ -1744,6 +1808,12 @@ parse_and_resolve_opt_form = function(x, params) {
       '\n', example_good
     )
   }
+  pf
+}
+
+parse_and_resolve_loss_form = function(x, hist_nms) {
+  pf = parse_loss_form(x)
+  stopifnot(all(unique(pf$Variable) %in% hist_nms))
   pf
 }
 
@@ -1998,6 +2068,103 @@ parse_opt_form = function(x, e = NULL) {
   }
 }
 
+parse_loss_form = function(x, e = NULL) {
+  if (is.call(x)) {
+    func = parse_loss_form(x[[1]], e)
+    if (func == '~') {
+      if (!is.null(e)) {
+        # note that this message will display wrongly if someone
+        # calls this function directly with an environment,
+        # but this should be ok given that we are not going to
+        # export this function
+        stop('one may not use more than one tilde in optimization formulas')
+      }
+      # capture the environment of the formula so that it can
+      # be recursively passed down, and used when/if eval is called
+      e = environment(x)
+      if (is.character(x[[2]])) {
+        trans = index_sep(x[[2]], 1)
+        if (trans %in% valid_trans) {
+          regex = index_sep(x[[2]], -1)
+        } else {
+          regex = x[[2]]
+          trans = ''
+        }
+        param = structure(nlist(regex, trans), class = 'param_regex')
+      } else {
+        history_variable = parse_loss_form(x[[2]], e)
+        # if (!inherits(history_variable, 'param_sum')) {
+        #   history_variable = structure(history_variable, class = 'history_vector')
+        # }
+      }
+      loss_dist = parse_loss_form(x[[3]], e)
+      if (is.numeric(loss_dist)) {
+        stop('need to specify a prior distribution or initial value for the optimizer')
+      }
+      loss_dist$Variable = history_variable
+      return(loss_dist)
+    } else if (func == '+') {
+      stop('loss formulas cannot contain sums')
+      # return(structure(parse_name_sum(x), class = 'param_vector'))
+    } else {
+      # at this point we should know that the function is a loss function
+      loss_func = func
+      if (loss_func %in% valid_loss_functions) {
+        loss_params = lapply(x[-1], parse_loss_form, e)
+
+        # check for the right number of loss parameters,
+        # given the loss function
+        if (length(loss_params) != length(valid_loss_params[[loss_func]])) {
+          stop(
+            length(loss_params), ' loss parameters were ',
+            'specified, but exactly ', length(valid_loss_params[[loss_func]]),
+            ' needs to be provided'
+          )
+        }
+
+        # check that the loss parameters are specified as length-1
+        # character vectors
+        all_len1_char = all(unlist(lapply(loss_params, is_len1_char)))
+        if (!all_len1_char) {
+          stop(
+            'loss parameters must be length-1 character vectors, ',
+            'with names that will be added to the param vector'
+          )
+        }
+
+        # check that the parameter names are syntactically valid
+        name_re = getOption("MP_name_search_regex")
+        all_valid_param_nms = all(
+          unlist(lapply(loss_params, grepl, pattern = name_re))
+        )
+        if (!all_valid_param_nms) {
+          stop('not all loss parameter names are syntactically valid')
+        }
+
+        loss_params_data = data.frame(
+          Parameter = unlist(loss_params),
+          Distribution = loss_func
+        )
+        return(loss_params_data)
+      } else {
+        stop('something went wrong')
+        # if the function of the call is not a valid prior distribution,
+        # assume that we just want to evaluate the call and do so in the
+        # environment of the formula -- is this a good idea? -- could there
+        # be issues if we decide to allow two tildes?
+        return(parse_loss_form(eval(x, e), e))
+      }
+    }
+  } else if (is.name(x)) {
+    return(parse_loss_form(as.character(x), e))
+  } else if (is.character(x)) {
+    return(x)
+  } else if (is.numeric(x)) {
+    return(x)
+  } else {
+    stop('not a valid type')
+  }
+}
 
 # date and time utilities -----------
 
@@ -2406,7 +2573,8 @@ tmb_observed_data = function(model) {
      valid_loss_functions
    ))
    %>% mutate(spi_loss_param = find_vec_indices(
-     Parameter %_% Variable,
+     #Parameter %_% Variable,
+     Parameter,
      c(model$state, model$params)
    ))
    %>% mutate(variable_id = find_vec_indices(
@@ -2870,6 +3038,12 @@ simulation_history = function(
    %>% as.data.frame
    %>% setNames(final_sim_report_names(model))
   )
+
+  sim_hist = (sim_hist
+    %>% pad_lag_diffs(model$lag_diff)
+    %>% pad_convs(model$conv, model$tmb_indices$conv)
+  )
+
   if (condense) {
     sim_hist = setNames(
       sim_hist[names(model$condensation_map)],
@@ -2877,6 +3051,7 @@ simulation_history = function(
     )
     # FIXME: need cumRep hack in condense_flexmodel?
   }
+
   if (add_dates) {
     sim_hist = (model
       %>% simulation_dates
@@ -2885,13 +3060,11 @@ simulation_history = function(
       %>% cbind(sim_hist)
     )
   }
-  sim_hist = (sim_hist
-    %>% pad_lag_diffs(model$lag_diff)
-    %>% pad_convs(model$conv, model$tmb_indices$conv)
-  )
+
   if (!include_initial_date) {
     sim_hist = sim_hist[-1,]
   }
+
   sim_hist
 }
 
@@ -3352,6 +3525,31 @@ compare_grads = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
   current <- numDeriv::grad(dd$fn, tmb_pars, ...)
   target <- dd$gr(tmb_pars)
   attributes(target) <- attributes(current) <- NULL
+  if (is.na(tolerance)) return(nlist(target, current))
+  all.equal(target, current, tolerance)
+}
+
+#' @rdname compare_grads
+#' @export
+compare_hessians = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
+  args = list(...)
+  if (!'method.args' %in% names(args)) {
+    args$method.args = list(
+      eps = 1e-4, d = 0.1,
+      zero.tol = sqrt(.Machine$double.eps / 7e-7), r = 4, v = 2,
+      show.details = FALSE
+    )
+  }
+  dd = tmb_fun(model)
+  if (is.null(tmb_pars)) {
+    tmb_pars = dd$par
+  }
+  current <- numDeriv::hessian(dd$fn, tmb_pars, ...)
+  target <- dd$he(tmb_pars)
+  dms = dim(target)
+  stopifnot(all.equal(dms, dim(current)))
+  attributes(target) <- attributes(current) <- NULL
+  dim(target) = dim(current) = dms
   if (is.na(tolerance)) return(nlist(target, current))
   all.equal(target, current, tolerance)
 }

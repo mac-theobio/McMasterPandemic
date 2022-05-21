@@ -899,16 +899,18 @@ public:
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
 
         if (var < var_tolerance) {
-          // handle case where rnbinom2 returns NaNs
-          sims_with_error = 0.0;
+          // more numerically stable to just set the simulations
+          // to the mean when the var is low
+          sims_with_error = clamped_simulated;
         } else {
           sims_with_error = rnbinom2(clamped_simulated, var);
         }
         return sims_with_error;
 
       default:
-        // tmb error
-        return 0.0;
+        // if you can't find a valid error distribution,
+        // just return the mean
+        return simulated;
     }
   }
 };
@@ -1515,7 +1517,7 @@ Type objective_function<Type>::operator() ()
 
   }
 
-  for (int i=0; i<numIterations; i++) {
+  for (int i=0; i<numIterations+1; i++) {
     SIMULATE {
       for (int k=0; k<obs_var_id.size(); k++) {
         simulation_history(i, obs_var_id[k] - 1) = varid2lossfunc[obs_var_id[k] - 1].sim(

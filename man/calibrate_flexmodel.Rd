@@ -4,7 +4,11 @@
 \alias{calibrate_flexmodel}
 \title{Calibrate Flexmodel}
 \usage{
-calibrate_flexmodel(model, optimizer = c("bbmle", "nlminb", "optim"), ...)
+calibrate_flexmodel(
+  model,
+  .optimizer_wrapper = c("bbmle", "nlminb", "optim"),
+  ...
+)
 }
 \arguments{
 \item{model}{\code{flexmodel_to_calibrate} object, which is a
@@ -12,10 +16,10 @@ calibrate_flexmodel(model, optimizer = c("bbmle", "nlminb", "optim"), ...)
 throught the \code{data} argument in \code{\link{flexmodel}} or with the
 \code{\link{update_observed}} function}
 
+\item{...}{additional arguments to pass on to the optimizer}
+
 \item{optimizer}{name of a valid optimizer -- currently \code{bbmle} is
 recommended (see details for more information about the choices)}
-
-\item{...}{additional arguments to pass on to the optimizer}
 }
 \value{
 \code{flexmodel_calibrated} object
