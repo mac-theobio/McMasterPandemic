@@ -13,6 +13,8 @@ update_observed(model, data, loss_params = NULL, regenerate_rates = TRUE)
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}.}
 
+\item{loss_params}{TODO}
+
 \item{regenerate_rates}{should rates be regenerated to sort out any
 index misalignment that may be introduced by editing the model?}
 }

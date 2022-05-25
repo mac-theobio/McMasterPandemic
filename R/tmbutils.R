@@ -2,8 +2,10 @@
 
 valid_loss_params = list(
   negative_binomial = 'nb_disp',
+  poisson = character(0L),
   log_normal = 'normal_sd',
-  normal = 'normal_sd'
+  normal = 'normal_sd',
+  beta = c('beta_shape1', 'beta_shape2')
 )
 valid_loss_functions = names(valid_loss_params)
 valid_prior_families = c('flat', 'normal')
@@ -1062,6 +1064,38 @@ has_inflow = function(focal_state, rates, state_nms) {
   focal_state %in% to_states
 }
 
+if(FALSE) {
+  ## experimenting with
+  state_order = base::setdiff(topological_sort(model), c("V", "X"))
+  lapply(state_order, has_inflow, model$rates, state_order)
+  get_children = function(focal_state, rates) {
+    which_parent = unlist(McMasterPandemic:::get_rate_from(rates)) == focal_state
+    McMasterPandemic:::get_rate_to(rates)[which_parent]
+  }
+  get_children("Ip", model$rates)
+  e = list2env(list(path_number = 0))
+  tree_maker = function(focal_state, e, rates) {
+    children = get_children(focal_state, rates)
+    if (length(children) == 0L) {
+      e$path_number = e$path_number + 1
+    }
+    path = setNames(lapply(children, tree_maker, e, rates), children)
+    if (length(children) == 0L) {
+      return(e$path_number)
+    } else {
+      return(path)
+    }
+  }
+  S_tree = tree_maker("S", e, model$rates)
+  S_tree$E$Ia$R
+  S_tree$E$Ip$Im$R
+  S_tree$E$Ip$Is$H$R
+  S_tree$E$Ip$Is$ICUs$H2$R
+  S_tree$E$Ip$Is$ICUd$D
+  S_tree$E$Ip$Is$D
+  S_tree$E$Ip$Is
+}
+
 # getting information about rates and sums ----------------------
 
 # Get From-State Names
@@ -1811,9 +1845,26 @@ parse_and_resolve_opt_form = function(x, params) {
   pf
 }
 
-parse_and_resolve_loss_form = function(x, hist_nms) {
+parse_and_resolve_loss_form = function(x, hist_nms, param_nms) {
   pf = parse_loss_form(x)
-  stopifnot(all(unique(pf$Variable) %in% hist_nms))
+  if (!all(unique(pf$Parameter) %in% param_nms)) {
+    if (!all(is.na(pf$Parameter))) {
+      stop(
+        'parameters used in an error distribution are missing from the ',
+        'model parameter vector'
+      )
+    } else if (length(pf$Parameter) != 1L) {
+      stop(
+        'error distribution without parameters is specified with parameters'
+      )
+    }
+  }
+  if (!all(unique(pf$Variable) %in% hist_nms)) {
+    stop(
+      'variables declared for observation error are missing from the ',
+      'model simulation history'
+    )
+  }
   pf
 }
 
@@ -2141,18 +2192,19 @@ parse_loss_form = function(x, e = NULL) {
           stop('not all loss parameter names are syntactically valid')
         }
 
+        unlist_loss_params = unlist(loss_params)
+        if (is.null(unlist_loss_params)) unlist_loss_params = NA
         loss_params_data = data.frame(
-          Parameter = unlist(loss_params),
+          Parameter = unlist_loss_params,
           Distribution = loss_func
         )
         return(loss_params_data)
       } else {
-        stop('something went wrong')
-        # if the function of the call is not a valid prior distribution,
-        # assume that we just want to evaluate the call and do so in the
-        # environment of the formula -- is this a good idea? -- could there
-        # be issues if we decide to allow two tildes?
-        return(parse_loss_form(eval(x, e), e))
+        stop(
+          '\n', loss_func,
+          ' is not one of the following valid loss functions:\n',
+          paste0(valid_loss_functions, collapse = ', ')
+        )
       }
     }
   } else if (is.name(x)) {
@@ -2567,30 +2619,61 @@ lin_state_timevar_params = function(schedule) {
 ##' @export
 tmb_observed_data = function(model) {
 
-  initial_table = (model$observed$loss_params
-   %>% mutate(loss_id = find_vec_indices(
-     Distribution,
-     valid_loss_functions
-   ))
-   %>% mutate(spi_loss_param = find_vec_indices(
-     #Parameter %_% Variable,
-     Parameter,
-     c(model$state, model$params)
-   ))
-   %>% mutate(variable_id = find_vec_indices(
-     Variable,
-     model$condensation_map[final_sim_report_names(model)]
-   ))
-   %>% select(variable_id, loss_id, spi_loss_param)
+  lp = model$observed$loss_params
+  lp_by_var = (lp
+   %>% group_by(Variable, Distribution)
+   %>% summarise(loss_param_count = length(na.omit(Parameter)))
   )
-  variables_by_distributions = (initial_table
-    %>% group_by(variable_id, loss_id)
-    %>% summarise(loss_param_count = n())
-    %>% ungroup
+
+  lp_for_vars = (lp
+    %>% select(-Parameter)
+    %>% distinct
+    %>% left_join(lp_by_var, by = c("Distribution", "Variable"))
+    %>% mutate(loss_id = find_vec_indices(
+       Distribution,
+       valid_loss_functions
+     ))
+     %>% mutate(variable_id = find_vec_indices(
+       Variable,
+       model$condensation_map[final_sim_report_names(model)]
+     ))
+     %>% select(loss_param_count, loss_id, variable_id)
   )
-  parameters = (initial_table
+
+  lp_for_params = (lp
+    %>% filter(!is.na(Parameter))
+    %>% mutate(spi_loss_param = find_vec_indices(
+       Parameter,
+       c(model$state, model$params)
+      )
+    )
     %>% select(spi_loss_param)
   )
+
+  # initial_table = (model$observed$loss_params
+  #  %>% mutate(loss_id = find_vec_indices(
+  #    Distribution,
+  #    valid_loss_functions
+  #  ))
+   # %>% mutate(spi_loss_param = find_vec_indices(
+   #     Parameter,
+   #     c(model$state, model$params, setNames(NA = 0))
+   #    )
+   #  )
+  #  %>% mutate(variable_id = find_vec_indices(
+  #    Variable,
+  #    model$condensation_map[final_sim_report_names(model)]
+  #  ))
+  #  %>% select(variable_id, loss_id, spi_loss_param)
+  # )
+  # variables_by_distributions = (initial_table
+  #   %>% group_by(variable_id, loss_id)
+  #   %>% summarise(loss_param_count = n())
+  #   %>% ungroup
+  # )
+  # parameters = (initial_table
+  #   %>% select(spi_loss_param)
+  # )
   comparisons = (model$observed$data
    %>% na.omit
    %>% rename(observed = value)
@@ -2608,15 +2691,17 @@ tmb_observed_data = function(model) {
 
   # HACK: simplify things for now while we only have a
   # single loss function
-  if (nrow(initial_table) == 0L) {
-    initial_table$loss_param_count = integer(0L)
-  } else {
-    initial_table$loss_param_count = 1
-  }
+  # if (nrow(initial_table) == 0L) {
+  #   initial_table$loss_param_count = integer(0L)
+  # } else {
+  #   initial_table$loss_param_count = 1
+  # }
   c(
     #as.list(variables_by_distributions),
     #as.list(parameters),
-    as.list(initial_table),
+    #as.list(initial_table),
+    as.list(lp_for_vars),
+    as.list(lp_for_params),
     as.list(comparisons)
   )
 }
@@ -3250,8 +3335,8 @@ simulate_ensemble = function(
   names(trajectories) = ii
   summarised_traj = (trajectories
     %>% bind_rows(.id = 'simulation')
-    %>% pivot_longer(c(-simulation, -Date))
-    %>% group_by(Date, name)
+    %>% pivot_longer(c(-simulation, -Date), names_to = 'var')
+    %>% group_by(Date, var)
     %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
   )
   attr(summarised_traj, "qvec") = qvec

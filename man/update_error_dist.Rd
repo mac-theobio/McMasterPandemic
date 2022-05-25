@@ -2,14 +2,18 @@
 % Please edit documentation in R/tmb.R
 \name{update_error_dist}
 \alias{update_error_dist}
+\alias{reset_error_dist}
 \title{Update Error Distribution}
 \usage{
 update_error_dist(model, ...)
+
+reset_error_dist(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
 
-\item{...}{error distribution formulas}
+\item{...}{optional error distribution formulas. if no formulas are provided
+the existing error distributions are removed.}
 }
 \description{
 Update Error Distribution

@@ -1955,7 +1955,11 @@ update_initial_state = function(model, silent = FALSE) {
 #' @export
 add_error_dist = function(model, ...) {
   new_loss_params = (list(...)
-   %>% lapply(parse_and_resolve_loss_form, final_sim_report_names(model))
+   %>% lapply(
+     parse_and_resolve_loss_form,
+     final_sim_report_names(model),
+     names(model$params)
+    )
    %>% bind_rows
   )
   new_loss_params = bind_rows(
@@ -1968,15 +1972,28 @@ add_error_dist = function(model, ...) {
 #' Update Error Distribution
 #'
 #' @param model \code{\link{flexmodel}} object
-#' @param ... error distribution formulas
+#' @param ... optional error distribution formulas. if no formulas are provided
+#' the existing error distributions are removed.
 #' @export
 update_error_dist = function(model, ...) {
+  if (length(list(...)) == 0L) {
+    model$observed$loss_params = init_observed$loss_params
+    return(model)
+  }
   new_loss_params = (list(...)
-   %>% lapply(parse_and_resolve_loss_form, final_sim_report_names(model))
+   %>% lapply(
+     parse_and_resolve_loss_form,
+     final_sim_report_names(model),
+     names(model$params)
+    )
    %>% bind_rows
   )
   update_loss_params(model, new_loss_params)
 }
+
+#' @rdname update_error_dist
+#' @export
+reset_error_dist = function(model) update_error_dist(model)
 
 #' Update Observation Error
 #'
@@ -2034,7 +2051,11 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
   if (regenerate_rates) {
     model = regen_rates(model)
   }
-  class(model) = c("flexmodel", "flexmodel_obs_error")
+  if (isTRUE(all.equal(model$observed$data, init_observed$data))) {
+    class(model) = c("flexmodel", "flexmodel_obs_error")
+  } else {
+    class(model) = c("flexmodel", "flexmodel_to_calibrate")
+  }
   model
 }
 
@@ -2047,6 +2068,7 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
 #' @param data observed data frame in long format to
 #' compare with simulated trajectories. must have the following
 #' columns: \code{date}, \code{var}, \code{value}.
+#' @param loss_params TODO
 #' @param regenerate_rates should rates be regenerated to sort out any
 #' index misalignment that may be introduced by editing the model?
 #'
@@ -2065,12 +2087,21 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
   model$observed$data = data
 
   if (is.null(loss_params)) {
-    model$observed$loss_params = data.frame(
-      Parameter = "nb_disp" %_% obsvars, # default choice: dispersion
-      Distribution = "negative_binomial",   # default choice: negative binomial
-      Variable = obsvars
-    )
-    model$params = expand_params_nb_disp(model$params, obsvars)
+    if (nrow(model$observed$loss_params) == 0L) {
+      model$observed$loss_params = data.frame(
+        Parameter = "nb_disp" %_% obsvars, # default choice: dispersion
+        Distribution = "negative_binomial",   # default choice: negative binomial
+        Variable = obsvars
+      )
+      model$params = expand_params_nb_disp(model$params, obsvars)
+    } else {
+      warning(
+        "\nan error distribution was inherited from a modified flexmodel, \n",
+        "and has not been explicitly modified to be consistent with the \n",
+        "new observed data. it is recommended that update_error_dist is \n",
+        "explicitly called."
+      )
+    }
   } else {
     model = update_loss_params(model, loss_params)
   }
