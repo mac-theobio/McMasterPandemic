@@ -49,6 +49,7 @@ jobs:
           tinytex::tlmgr_install("babel-english")
           tinytex::tlmgr_install("pgf") # tikz
           tinytex::tlmgr_install(c("placeins","lastpage","cleveref","listings"))
+          tinytex::tlmgr_install("grffile")
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
