@@ -8,7 +8,7 @@ Compartmental epidemic models for forecasting and analysis of infectious disease
 
 ### Refactoring for Speed and Generality
 
-We are currently refactoring McMasterPandemic to make it faster and more general. The development for this refactoring project is taking place on the [tmb-condense](https://github.com/mac-theobio/McMasterPandemic/tree/tmb-condense) branch. [This draft guide](https://canmod.github.io/macpan-book/) describes how to use this refactored version of McMasterPandemic.
+We are [currently refactoring](https://github.com/mac-theobio/McMasterPandemic/projects/7) McMasterPandemic to make it faster and more general. The development for this refactoring project is taking place on the [tmb-condense](https://github.com/mac-theobio/McMasterPandemic/tree/tmb-condense) branch. [This draft guide](https://canmod.github.io/macpan-book/) describes how to use this refactored version of McMasterPandemic.
 
 ### Documentation
 * See the accompanying [pkgdown](https://mac-theobio.github.io/McMasterPandemic/) site.
