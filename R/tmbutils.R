@@ -31,6 +31,11 @@ init_initial_population = list(
 )
 
 init_factr_vector = numeric(0L)
+init_pow_vector = numeric(0L)
+init_pow = setNames(
+  as.data.frame(matrix(nrow = 0L, ncol = 5)),
+  c("pow_nms", "pow_arg1_nms", "pow_arg2_nms", "pow_const_nms", "initial_value")
+)
 
 init_condensation = list(
   include = list(),
@@ -73,6 +78,12 @@ init_tmb_indices = list(
     count = integer(0L),
     spi = integer(0L),
     modifier = integer(0L)
+  ),
+  pow_indices = list(
+    powidx = integer(0L),
+    powarg1idx = integer(0L),
+    powarg2idx = integer(0L),
+    powconstidx = integer(0L)
   ),
   condense_indices = list(
     sri_output = integer(0L),
@@ -459,7 +470,8 @@ initial_sim_report_names = function(model) {
     names(model$state),
     names(which_time_varying_rates(model)),
     names(model$sum_vector),
-    names(model$factr_vector)
+    names(model$factr_vector),
+    names(model$pow_vector)
   )
 }
 
@@ -1429,7 +1441,8 @@ get_var_list = function(model) {
     as.list(model$params),
     as.list(model$state),
     as.list(model$sum_vector),
-    as.list(model$factr_vector)
+    as.list(model$factr_vector),
+    as.list(model$pow_vector)
   )
 }
 
@@ -1545,6 +1558,16 @@ avail_for_factr = function(model) {
     names(model$params),
     names(model$sums),
     names(model$factrs))
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_pow = function(model) {
+  c(names(model$state),
+    names(model$params),
+    names(model$sums),
+    names(model$factrs),
+    names(model$pows))
 }
 
 #' @rdname avail_for
@@ -2264,6 +2287,19 @@ factr_indices = function(factrs, state_param_sums) {
     modifier = modifier
   )
   return(indices)
+}
+
+#' @export
+pow_indices = function(pow, state_param_sum_factr_pow) {
+  if (nrow(pow) == 0L) {
+    return(init_tmb_indices$pow_indices)
+  }
+  list(
+    powidx = find_vec_indices(pow$pow_nms, state_param_sum_factr_pow),
+    powarg1idx = find_vec_indices(pow$pow_arg1_nms, state_param_sum_factr_pow),
+    powarg2idx = find_vec_indices(pow$pow_arg2_nms, state_param_sum_factr_pow),
+    powconstidx = find_vec_indices(pow$pow_const_nms, state_param_sum_factr_pow)
+  )
 }
 
 #' @export

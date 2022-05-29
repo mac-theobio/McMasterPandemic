@@ -203,6 +203,8 @@ flexmodel <- function(params, state = NULL,
       model$sim_report_exprs = list()
     }
     model$factr_vector = init_factr_vector
+    model$pow = init_pow
+    model$pow_vector = init_pow_vector
 
     # condensation -- spec_ver_gt("0.1.2)
     model$condensation = init_condensation
@@ -264,11 +266,13 @@ init_model = function(...) {
 ## @param state state_pansim object
 ## @param params param_pansim object
 ## @param sums vector of sums of state variables and parameters
+## @param factrs vector of factrs ...
+## @param pows vector of pows ...
 ## @param ratemat rate matrix
 ## @importFrom dplyr bind_rows
 ## @family flexmodel_definition_functions
 
-rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
+rate <- function(from, to, formula, state, params, sums, factrs, pows, ratemat) {
     ## TODO: test for formula structure
     M <- ratemat
     stopifnot(
@@ -302,7 +306,7 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
         }
         x$factors$var_indx <- find_vec_indices(
             x$factors$var,
-            c(state, params, sums, factrs))
+            c(state, params, sums, factrs, pows))
 
         missing_vars = x$factors$var[sapply(x$factors$var_indx, length) == 0L]
         if(length(missing_vars) > 0L) {
@@ -360,7 +364,7 @@ rate <- function(from, to, formula, state, params, sums, factrs, ratemat) {
 add_rate <- function(model, from, to, formula) {
     unpack(model)
     added_rate <- (from
-      %>% rate(to, formula, state, params, sum_vector, factr_vector, ratemat)
+      %>% rate(to, formula, state, params, sum_vector, factr_vector, pow_vector, ratemat)
       %>% list
       %>% setNames(paste(from, to, sep = "_to_"))
     )
@@ -415,7 +419,9 @@ rep_rate = function(model, from, to, formula,
     to = colnames(ratemat)[indices[,'to_pos']]
 
     lst = mapply(rate, from, to,
-        MoreArgs = nlist(formula, state, params, sums, factrs = factr_vector, ratemat),
+        MoreArgs = nlist(formula, state, params, sums,
+                         factrs = factr_vector, pows = pow_vector,
+                         ratemat),
         SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
     model$rates <- c(rates, setNames(lst, nms))
@@ -447,7 +453,7 @@ vec_rate = function(model, from, to, formula) {
     to = colnames(ratemat)[indices[,'to_pos']]
 
     lst = mapply(rate, from, to, as.character(formula),
-                 MoreArgs = nlist(state, params, sums, factrs = factr_vector, ratemat),
+                 MoreArgs = nlist(state, params, sums, factrs = factr_vector, pows = pow_vector, ratemat),
                  SIMPLIFY = FALSE, USE.NAMES = FALSE)
     nms = mapply(paste, from, to, MoreArgs = list(sep = "_to_"))
     model$rates <- c(rates, setNames(lst, nms))
@@ -659,6 +665,35 @@ add_state_param_sum = function(model, sum_name, summands) {
     model
 }
 
+pow = function(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
+               state, params, sum_vector, factr_vector, pow_vector) {
+  avail_vec = c(state, params, sum_vector, factr_vector, pow_vector)
+  arg1_idx = McMasterPandemic:::find_vec_indices(pow_arg1_nms, avail_vec)
+  arg2_idx = McMasterPandemic:::find_vec_indices(pow_arg2_nms, avail_vec)
+  const_idx = McMasterPandemic:::find_vec_indices(pow_const_nms, avail_vec)
+  initial_value = setNames(
+    avail_vec[const_idx] * (avail_vec[arg1_idx]^avail_vec[arg2_idx]),
+    pow_nms
+  )
+  data.frame(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms, initial_value)
+}
+
+#' Add Power Law
+#'
+#' Compute and save the intermediate result of applying a
+#' power law to the state variables, parameters, sums of these
+#' things, and factr expressions of them as well.
+#'
+#' @export
+add_pow = function(model, pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms) {
+  model$pow = rbind(model$pow, pow(
+    pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
+    model$state, model$params, model$sum_vector,
+    model$factr_vector, model$pow_vector
+  ))
+  model$pow_vector = setNames(model$pow$initial_value, model$pow$pow_nms)
+  model
+}
 
 # condensation -----------------------------------
 
@@ -1412,6 +1447,12 @@ tmb_indices <- function(model) {
       )
     }
     if (spec_ver_gt("0.1.2")) {
+      indices$pow_indices = pow_indices(
+        model$pow,
+        c(model$state, model$params, model$sum_vector, model$factr_vector, model$pow_vector)
+      )
+    }
+    if (spec_ver_gt("0.1.2")) {
       indices$sim_report_expr_indices = sim_report_expr_indices(
         model$sim_report_exprs,
         initial_sim_report_names(model)
@@ -1837,6 +1878,11 @@ tmb_fun <- function(model) {
           factr_count = null_to_int0(factr_indices$count),
           factr_spi_compute = null_to_int0(factr_indices$spi),
           factr_modifier = null_to_int0(factr_indices$modifier),
+
+          powidx = null_to_int0(pow_indices$powidx),
+          powarg1idx = null_to_int0(pow_indices$powarg1idx),
+          powarg2idx = null_to_int0(pow_indices$powarg2idx),
+          powconstidx = null_to_int0(pow_indices$powconstidx),
 
           do_make_state = isTRUE(do_make_state),
           max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
