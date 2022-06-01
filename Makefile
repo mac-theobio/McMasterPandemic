@@ -208,6 +208,9 @@ install: $(TARBALL)
 	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
 	@touch $@
 
+newinstall:
+	make install BUILDARGS="--no-build-vignettes"
+
 ######################################################################
 
 ## Looks cool; clashes with current Bolker rules.
