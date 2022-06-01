@@ -204,6 +204,8 @@ $(TARBALL): ./NAMESPACE
 	$(R) CMD build $(BUILDARGS) .
 	mv $@ ..
 
+## JD: Why is TARBALL pushed up a directory in the user's tree?
+## Is it OK to bring it back here?
 install: $(TARBALL)
 	export NOT_CRAN=true; $(R) CMD INSTALL --preclean ../$<
 	@touch $@
