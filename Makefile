@@ -1,4 +1,4 @@
-## This is McMaster pandemic
+## This is McMaster pandemic tmb-condense branch
 ## https://github.com/bbolker/McMasterPandemic
 
 current: target
