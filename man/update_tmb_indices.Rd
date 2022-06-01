@@ -10,9 +10,7 @@ update_tmb_indices(model)
 add_tmb_indices(model)
 }
 \arguments{
-\item{model}{compartmental model}
-
-\item{another}{compartmental model with indices for TMB}
+\item{model}{\code{\link{flexmodel}} object}
 }
 \description{
 Add or update indices used to access appropriate values
@@ -28,21 +26,3 @@ during simulation and calibration using TMB
   every simulation step}
 }
 }
-\seealso{
-Other flexmodels: 
-\code{\link{add_outflow}()},
-\code{\link{add_parallel_accumulators}()},
-\code{\link{add_rate}()},
-\code{\link{init_model}()},
-\code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
-\code{\link{mat_rate}()},
-\code{\link{rate}()},
-\code{\link{rep_rate}()},
-\code{\link{state_param_sum}()},
-\code{\link{tmb_fun}()},
-\code{\link{vec_rate}()}
-}
-\concept{flexmodels}

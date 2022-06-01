@@ -978,6 +978,76 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
     return(res)
 }
 
+##' Calibrate Flexmodel
+##'
+##' @details Currently there are the following three optimizer wrappers.
+##'
+##' \describe{
+##'   \item{\code{\link{bbmle_flexmodel}}}{
+##'     Wraps the \code{mle2} function in the \code{bbmle} package. This is
+##'     the recommended optimizer because it provides the ability to create
+##'     ensemble forecasts through \code{\link{simulate_ensemble}}. Such
+##'     forecasts are possible because of the functionality provided in
+##'     \code{bbmle} to generate from the sampling distribution of the
+##'     parameters. The variation induced by this sampling distribution is
+##'     used to create a distribution of simulation trajectories and therefore
+##'     confidence envelopes around forecasts or fits. The main limitation
+##'     of \code{\link{bbmle_flexmodel}} is that it doesn't make use of
+##'     the Hessian matrix that is provided by \code{TMB} through
+##'     auto-differentiation, although it does make use of the gradient.
+##'   }
+##'   \item{\code{\link{nlminb_flexmodel}}}{
+##'     Wraps the \code{\link{nlminb_flexmodel}} function. The main advantage
+##'     of this optimizer is that it allows one to make use of the Hessian
+##'     matrix (contrast with \code{\link{bbmle_flexmodel}}). The main
+##'     disadvantage is that \code{\link{nlminb_flexmodel}} does not allow
+##'     generating samples from the sampling distribution of the parameters,
+##'     and therefore does not allow for ensemble simulation.
+##'   }
+##'   \item{\code{\link{optim_flexmodel}}}{
+##'     Wraps the standard optimizer in R, but neither allows the use of
+##'     Hessians nor ensemble forecasts.
+##'   }
+##' }
+##'
+##' @param model \code{flexmodel_to_calibrate} object, which is a
+##' \code{\link{flexmodel}} object that contains observed data added either
+##' throught the \code{data} argument in \code{\link{flexmodel}} or with the
+##' \code{\link{update_observed}} function
+##' @param optimizer name of a valid optimizer -- currently \code{bbmle} is
+##' recommended (see details for more information about the choices)
+##' @param ... additional arguments to pass on to the optimizer
+##'
+##' @seealso \code{\link{bbmle_flexmodel}}, \code{\link{nlminb_flexmodel}},
+##' \code{\link{optim_flexmodel}}
+##' @return \code{flexmodel_calibrated} object
+##' @export
+calibrate_flexmodel = function(
+    model,
+    .optimizer_wrapper = c('bbmle', 'nlminb', 'optim'),
+    ...
+) {
+    dot_args = list(...)
+    model = update_tmb_indices(model)
+    optimizer_function = getFromNamespace(
+        match.arg(.optimizer_wrapper) %_% 'flexmodel',
+        "McMasterPandemic"
+    )
+    opt_args = c(list(model), dot_args)
+    output = try(
+        do.call(optimizer_function, opt_args),
+        silent = FALSE
+    )
+    if (inherits(output, 'try-error')) {
+        model$opt_err = output
+        output = structure(
+            model,
+            class = c('flexmodel_failed_calibration', class(model))
+        )
+    }
+    output
+}
+
 ##' find confidence envelopes by simulation
 ##' @inheritParams forecast_sim
 ##' @param fit output from \code{calibrate}

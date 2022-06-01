@@ -9,9 +9,12 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
+
 test_that('time variation works for several parameters and levels of continuity', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
     mm = make_base_model(
@@ -74,7 +77,7 @@ test_that('time variation works for several parameters and levels of continuity'
 
 test_that("time variation on the first two steps matches in r and tmb engines", {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("PHAC.csv") %>% expand_params_S0(1-1e-5)
 
   test_fun = function(type) {
@@ -124,8 +127,10 @@ test_that("time variation on the first two steps matches in r and tmb engines", 
 })
 
 test_that('time variation works for vax models', {
+  skip_if(skip_slow_tests)
+
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
 
@@ -155,7 +160,7 @@ test_that('time variation works for vax models', {
   test_fun = function(do_make_state, tolerance = testthat_tolerance()) {
     mm$do_make_state = do_make_state
     tmb_sim <- run_sim(
-      params = model_params,
+      params = unlist(model_params),
       state = mm$state,
       start_date = mm$start_date,
       end_date = mm$end_date,
@@ -173,7 +178,7 @@ test_that('time variation works for vax models', {
 
 test_that('time variation works for a mix of types', {
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
     mm = make_base_model(
@@ -236,7 +241,7 @@ test_that('time variation works for a mix of types', {
 
 test_that("breakpoints outside of the simulation range cause a warning", {
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   start_date <- "2021-02-02"

@@ -7,8 +7,9 @@
 compare_sims(
   classic_sim,
   tmb_sim,
-  tolerance = testthat_tolerance(),
-  compare_attr = TRUE
+  tolerance = NULL,
+  compare_attr = TRUE,
+  na_is_zero = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ compare_sims(
 \item{tolerance}{numerical tolerance}
 
 \item{compare_attr}{compare attributes or just the simulations themselves}
+
+\item{na_is_zero}{should NAs be replaced with zeros?}
 }
 \description{
 Exceptions to drop-in replacement:

@@ -621,7 +621,11 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
     }
 
     if (sparse) {
-        M <- Matrix::Matrix(M)
+        if(getOption("MP_force_dgTMatrix")){
+          M <- as(M, "dgTMatrix")
+        } else {
+          M <- Matrix::Matrix(M)
+        }
     } else {
         M <- as.matrix(M)
     }
@@ -918,12 +922,19 @@ run_sim <- function(params,
                     obj_fun = NULL) {
 
   if (!is.null(flexmodel) | !is.null(obj_fun)) use_flex = TRUE
+  condense_cpp = FALSE
   if (use_flex) {
     ## tmb/c++ computational approach (experimental)
     ## (https://canmod.net/misc/flex_specs)
 
     if (is.null(flexmodel)) {
       stop("to use the flex approach you need to specify the flexmodel argument")
+    }
+
+    # HACK: flexmodel approach assumes vector-valued parameters, but
+    # general macpan allows lists and these can cause problems downstream
+    if (spec_ver_gt('0.1.2')) {
+      params = unlist(params)
     }
 
     ## always regenerate the objective function -- #164
@@ -939,7 +950,10 @@ run_sim <- function(params,
     # -- important in calibration situations where the parameters
     #    are changing each iteration of the optimizer
     if (!is.null(flexmodel)) {
-      flexmodel$params = expand_params_S0(params, 1-1e-5)
+      flexmodel$params = (params
+        %>% expand_params_S0(1-1e-5)
+        %>% expand_params_nb_disp(unique(flexmodel$observed$data$var))
+      )
       if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
         if (is.null(params_timevar)) {
           params_timevar = flexmodel$timevar$piece_wise$schedule
@@ -976,52 +990,58 @@ run_sim <- function(params,
     }
 
     ## simulate trajectories based on new parameters
+
     full_param_vec = tmb_params(flexmodel)
     tmb_sims <- obj_fun$simulate(full_param_vec)
-    res = (tmb_sims
-      %>% getElement("concatenated_state_vector")
-      %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
-    )
-    res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
+    if (spec_ver_gt('0.1.2') & condense & getOption("MP_condense_cpp")) {
+      res = condense_flexmodel(flexmodel)
+      condense_cpp = TRUE
+    } else {
+      res = (tmb_sims
+        %>% getElement("concatenated_state_vector")
+        %>% structure_state_vector(flexmodel$iters, names(flexmodel$state))
+      )
+      res <- dfs(date = seq(flexmodel$start_date, flexmodel$end_date, by = 1), res)
 
-    # look for foi -- TODO: formalize the definition of foi so that we
-    #                       can reliably check -- this is too model-specific
+      # look for foi -- TODO: formalize the definition of foi so that we
+      #                       can reliably check -- this is too model-specific
 
-    #regmatches(
-    #  names(flexmodel$tmb_indices$updateidx),
-    #  regexec("^S_?(.*)(_to_)E_?(.*)$", names(flexmodel$tmb_indices$updateidx))
-    #)
+      #regmatches(
+      #  names(flexmodel$tmb_indices$updateidx),
+      #  regexec("^S_?(.*)(_to_)E_?(.*)$", names(flexmodel$tmb_indices$updateidx))
+      #)
 
-    foi = (flexmodel$tmb_indices$updateidx
-      %>% names
-      %>% strsplit("_to_")
-      %>% lapply(function(x) {
-        # vax_cat may not exist and therefore be a blank string
-        vax_cat = sub("^E(_|$)", "", x[2])
-        setNames(
-          startsWith(x[1], "S") & startsWith(x[2], "E"),
-          ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
-      })
-      %>% unlist
-      %>% which
-      %>% lapply(function(foi_off) {
-        tmb_sims$concatenated_ratemat_nonzeros[
-          seq(from = foi_off,
-              by = length(flexmodel$tmb_indices$updateidx),
-              length.out = flexmodel$iters + 1)
-        ]
-      })
-      %>% as.data.frame
-    )
+      foi = (flexmodel$tmb_indices$updateidx
+        %>% names
+        %>% strsplit("_to_")
+        %>% lapply(function(x) {
+          # vax_cat may not exist and therefore be a blank string
+          vax_cat = sub("^E(_|$)", "", x[2])
+          setNames(
+            startsWith(x[1], "S") & startsWith(x[2], "E"),
+            ifelse(vax_cat == '', 'foi', 'foi' %_% vax_cat))
+        })
+        %>% unlist
+        %>% which
+        %>% lapply(function(foi_off) {
+          tmb_sims$concatenated_ratemat_nonzeros[
+            seq(from = foi_off,
+                by = length(flexmodel$tmb_indices$updateidx),
+                length.out = flexmodel$iters + 1)
+          ]
+        })
+        %>% as.data.frame
+      )
 
+
+      res = cbind(res, foi)
+    }
     params0 <- params
     state0 = state
     if (spec_ver_gt('0.1.0') & isTRUE(flexmodel$do_make_state)) {
       # if the initial state came from tmb ...
       state0[] = tmb_sims$concatenated_state_vector[seq_along(state)]
     }
-
-    res = cbind(res, foi)
   } else {
 
     call <- match.call()
@@ -1234,7 +1254,7 @@ run_sim <- function(params,
     } # not use_flex
 
     ## condense here
-    if (condense) {
+    if (condense & !isTRUE(condense_cpp)) {
       ## FIXME: will it break anything if we call condense with 'params'
       ## (modified by time-varying stuff) instead of params0? Let's find out!
       res <- do.call(condense.pansim, c(
@@ -1383,6 +1403,7 @@ make_state <- function(N = params[["N"]],
     state_names <- switch(type,
         ## "X" is a hospital-accumulator compartment (diff(X) -> hosp)
         ## "V" is the vaccination accumulator compartment
+        ICU1hv = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X", "V"),
         ICU1h = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R", "X", "V"),
         ICU1 = c("S", "E", "Ia", "Ip", "Im", "Is", "H", "H2", "ICUs", "ICUd", "D", "R"),
         CI =   c("S", "E", "Ia", "Ip", "Im", "Is", "H", "D", "R"),

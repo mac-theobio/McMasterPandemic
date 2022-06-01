@@ -97,7 +97,8 @@ sim0_testified_condensed <- run_sim(
     ratemat_args = list(testing_time = "sample")
 )
 
-make_state(pp[["N"]], pp[["E0"]], params = pp)
+if (interactive()) make_state(pp[["N"]], pp[["E0"]], params = pp)
+
 test_that("obsolete testify spec", {
     expect_warning(
         run_sim(

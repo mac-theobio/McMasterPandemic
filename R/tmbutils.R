@@ -1,25 +1,354 @@
 # objects ----------------------
 
-valid_prior_families = c('normal')
-valid_trans = c('log', 'log10', 'logit', 'inverse')
+valid_loss_params = list(
+  negative_binomial = 'nb_disp',
+  poisson = character(0L),
+  log_normal = 'normal_sd',
+  normal = 'normal_sd',
+  beta = c('beta_shape1', 'beta_shape2')
+)
+valid_loss_functions = names(valid_loss_params)
+valid_prior_families = c('flat', 'normal')
+valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
+
+filter_loss_params = function(loss_params, param_nms, dist_nm){
+  filter(
+    loss_params,
+    Parameter == param_nms,
+    Distribution == dist_nm
+  )$Variable
+}
+
+init_initialization_mapping = list(
+  eigen = character(0L),
+  infected = character(0L),
+  susceptible = character(0L)
+)
+
+init_initial_population = list(
+  total = character(0L),
+  infected = character(0L)
+)
+
+init_factr_vector = numeric(0L)
+
+init_condensation = list(
+  include = list(),
+  # ordered list of condensation steps
+  steps = list()
+)
+
+init_condensation_map = character(0L)
+
+init_observed = list(
+  data = data.frame(
+    date = Date(),
+    var = character(),
+    value = numeric()
+  ),
+  loss_params = data.frame(
+    Parameter = character(),
+    Distribution = character(),
+    Variable = character()
+  )
+)
+
+init_tmb_indices = list(
+  make_ratemat_indices = list(
+    from = integer(0L),
+    to = integer(0L),
+    count = integer(0L),
+    spi = integer(0L),
+    modifier = integer(0L)
+  ),
+  par_accum_indices = integer(0L),
+  updateidx = integer(0L),
+  sum_indices = list(
+    sumidx = integer(0L),
+    sumcount = integer(0L),
+    summandidx = integer(0L)
+  ),
+  factr_indices = list(
+    spi_factr = integer(0L),
+    count = integer(0L),
+    spi = integer(0L),
+    modifier = integer(0L)
+  ),
+  condense_indices = list(
+    sri_output = integer(0L),
+    sr_count = integer(0L),
+    sri = integer(0L),
+    sr_modifier = integer(0L)
+  ),
+  opt_params = list(
+    index_table = data.frame(
+      param_nms = character(0),
+      param_trans = character(0),
+      prior_distr = character(0),
+      prior_trans = character(0),
+      count_hyperparams = integer(0),
+      init_trans_params = numeric(0),
+      prior_trans_id = integer(0),
+      param_trans_id = integer(0),
+      prior_distr_id = integer(0),
+      opt_param_id = integer(0)
+    ),
+    hyperparameters = numeric(0L),
+    index_tv_table = data.frame(
+      param_nms = character(0),
+      param_trans = character(0),
+      prior_distr = character(0),
+      prior_trans = character(0),
+      count_hyperparams = integer(0),
+      init_trans_params = numeric(0),
+      prior_trans_id = integer(0),
+      param_trans_id = integer(0),
+      prior_distr_id = integer(0),
+      tv_breaks = integer(0),
+      opt_tv_mult_id = integer(0)
+    ),
+    hyperparameters_tv = numeric(0L)
+  )
+)
+
+
+
 
 # test functions ------------------------------------------------
 
-is_len1_char = function(x) (length(x) == 1L) & is.character(x)
+check_len_bounds = function(min_length, max_length) {
+  stopifnot(is.integer(min_length) & (is.integer(max_length) | is.infinite(max_length)) & min_length >= 0L & max_length >= min_length)
+}
+
+check_len = function(x) {
+  len = length(x$default)
+  check_len_bounds(x$min_len, len)
+  check_len_bounds(len, x$max_len)
+}
+
+bundle_def = function(..., class) {
+  structure(nlist(...), class = class)
+}
+
+def_vectors = c('logical', 'integer', 'double', 'character', 'list')
+def_numerics = c('integer', 'double')
+def_named_containers = c('nlist', 'dataframe')
+
+make_def_function = function(def_name) {
+  if (def_name %in% def_named_containers) {
+    f = function(...) {
+      l = list(...)
+      stopifnot(!is.null(names(l)))
+      stopifnot(!any(duplicated(names(l))))
+      structure(l, class = 'def' %_% def_name)
+    }
+    return(f)
+  }
+  f = function() {
+    l = as.list(environment())
+    if (!l$optional & l$extra) {
+      stop('extra components must be optional')
+    }
+    if (isFALSE(l$allow_dups)) {
+      if (any(duplicated(l$default))) {
+        stop('must either allow dups or supply an appropriate default if minimum length is greater than one')
+      }
+    }
+    structure(l, class = 'def' %_% def_name)
+  }
+  if (def_name %in% def_vectors) {
+    formals(f) = c(formals(f), alist(min_len = 0L, max_len = 1L, default = vector(def_name, min_len)))
+    if (def_name != 'logical') {
+      formals(f) = c(formals(f), alist(allow_dups = TRUE))
+    }
+  }
+  if (def_name %in% def_numerics) {
+    formals(f) = c(formals(f), alist(min_val = -Inf, max_val = Inf))
+  }
+  if (def_name == 'character') {
+    formals(f) = c(formals(f), alist(pattern = '^.*$'))
+  } else if (def_name == 'formula') {
+    formals(f) = c(formals(f), alist(n_sides = 'any')) # 'one', 'two'
+  } else if (def_name == 'list') {
+    formals(f) = c(formals(f), alist(component_def = make_def_function('character')()))
+  }
+  formals(f) = c(formals(f), alist(optional = FALSE, extra = FALSE))
+  f
+}
+
+def = sapply(c(
+  'logical',
+  'integer',
+  'double',
+  'character',
+  'formula',
+  'struc',
+  'list',
+  'nlist',
+  'dataframe'
+), make_def_function, simplify = FALSE)
+
+def$model = function(name, model_spec_version) {
+  def$nlist(
+    name = def$character(min_len = 1L, max_len = Inf, default = name),
+    model_spec_version = def$character(
+      min_len = 1L, max_len = 1L,
+      pattern = '[0-9]+\\.[0-9]+\\.[0-9]+',
+      default = model_spec_version
+    ),
+    states = def$dataframe(
+      state = def$character(min_len = 1L, max_len = Inf, allow_dups = FALSE),
+      description = def$character(allow_dups = FALSE, optional = TRUE),
+      layers = def$character(allow_dups = TRUE, option = TRUE, extra = TRUE)
+    ),
+    parameters = def$dataframe(
+      parameter = def$character(allow_dups = FALSE),
+      description = def$character(allow_dups = FALSE, optional = TRUE),
+      layers = def$character(option = TRUE, extra = TRUE)
+    ),
+    rates = def$dataframe(
+      from = def$character(),
+      to = def$character(),
+      expression = def$character(),
+      outflow = def$logical()
+    ),
+    summaries = def$dataframe(
+      summary = def$character(allow_dups = FALSE),
+      type = def$character(pattern = "^(sum|intermediate|lag_n_diff|conv)$"),
+      expression = def$character()
+    ),
+    structure = def$list(
+      allow_dups = FALSE,
+      component_def = def$struc()
+    )
+  )
+}
+
+check_def = function(x, ...) {
+  UseMethod("check_def")
+}
+
+check_def.def_logical = function(x, ...) {
+  check_len(x)
+}
+
+init_def = function(x, ...) {
+  if (isTRUE(x$extra)) return(NULL)
+  UseMethod("init_def")
+}
+
+init_def.def_logical = function(x, ...) {
+  x$default
+}
+
+init_def.def_integer = function(x, ...) {
+  x$default
+}
+
+init_def.def_double = function(x, ...) {
+  x$default
+}
+
+init_def.def_character = function(x, ...) {
+  x$default
+}
+
+init_def.def_formula = function(x, ...) {
+  if (x$n_sides == 'two') return(. ~ 1)
+  ~ 1
+}
+
+init_def.def_struc = function(x, ...) {
+  struc('1')
+}
+
+init_def.def_list = function(x, ...) {
+  if (x$min_len == 0L) return(list())
+  rep(list(init_def(x$component_def)), x$min_len)
+}
+
+init_def.def_nlist = function(x, ...) {
+  sapply(x, init_def, simplify = FALSE)
+}
+
+init_def.def_dataframe = function(x, ...) {
+  l = sapply(x, init_def, simplify = FALSE)
+  l[sapply(l, is.null)] = NULL
+  as.data.frame(l)
+}
+
+is_len1_char = function(x) {
+  isTRUE((length(x) == 1L) & is.character(x))
+}
+
+assert_len1_char = function(x) {
+  nm = deparse(substitute(x))
+  if(!is_len1_char(x)) {
+    stop(nm, ' must be a length-1 character')
+  }
+}
 
 is_len1_int = function(x) {
+  # not good enough to just check for integer, because
+  # a double may effectively be an integer
   (length(x) == 1L) & isTRUE(all.equal(x, as.integer(x)))
+}
+
+assert_len1_int = function(x) {
+  nm = deparse(substitute(x))
+  if(!is_len1_int(x)) {
+    stop(nm, ' must be a length-1 integer')
+  }
+}
+
+#' @export
+exists_opt_params = function(model) {
+  (model
+   $  tmb_indices
+   $  ad_fun_map
+   %>% unlist
+   %>% is.na
+   %>% all
+   %>% `!`
+  )
+}
+
+is_fitted_by_bbmle = function(model) {
+  x = inherits(model, "flexmodel_calibrated")
+  if (!isTRUE(x)) return(x)
+  x & isTRUE(attr(class(model$opt_obj), "package") == "bbmle")
 }
 
 # constructing names and strings ----------------------
 
 #' Paste with Underscore Separator
+#'
+#' Paste with an underscore separator, except for length-zero character
+#' strings in the first vector
+#'
+#' @param x character vector
+#' @param y character vector
+#'
 #' @export
-`%_%` = function(x, y) paste(x, y, sep = "_")
+`%_%` = function(x, y) {
+  x = ifelse(nchar(trimws(as.character(x))) == 0L, '', paste(x, '_', sep = ""))
+  paste(x, y, sep = "")
+}
+
+#' Paste with Tilde Separator
+#'
+#' @param x character vector
+#' @param y character vector
+#'
+#' @export
+`%~%` = function(x, y) {
+  paste(x, y, sep = " ~ ")
+}
 
 #' Paste with Blank Separator
 #'
 #' Like Python string `+`
+#'
 #' @export
 `%+%` = function(x, y) paste(x, y, sep = "")
 
@@ -32,19 +361,56 @@ is_empty = function(x) {
 #' @export
 omit_empty = function(x) x[!is_empty(x)]
 
+#' Get Substrings by Indices and Separators
+#'
+#' For example \code{index_sep('a_b_c', 2, '_')} equals \code{'b'}.
+#' For example \code{index_sep('a_b_c', c(1, 3), '_')} equals \code{'a_c'}.
+#' For example \code{index_sep('a_b_c', -2, '_')} equals \code{'a_c'}.
+#' For example \code{index_sep('a_b_c', 4, '_')} equals \code{''}.
+#' For example \code{index_sep('a', 1, '_')} equals \code{'a'}.
+#' For example \code{index_sep('a', 2, '_')} equals \code{''}.
+#' For example \code{index_sep(c('a_b', 'c'), 2, '_')} equals \code{c('b', '')}.
+#' For example \code{index_sep('a_b_c', c(3, 1), '_')} equals \code{'c_a'}.
+#'
+#' @param x character vector
+#' @param i integer vector without sign mixing
+#' @param sep length-one character vector
+#' @param complement if \code{TRUE} the indices in \code{i} that are not matched are returned
+#'
 #' @export
 index_sep = function(x, i, sep = "_") {
+  complement = FALSE
+  if (any(i < 0L)) {
+    if (!all(i < 0L)) stop("cannot mix positive and negative indices")
+    complement = TRUE
+    i = -1 * i
+  }
+  stopifnot(length(sep) == 1L)
+  if (complement) {
+    n_separated_items = nchar(x) - nchar(gsub(sep, '', x)) + 1
+    if (length(n_separated_items) > 1L) {
+      stop('cannot use complement method with multiple inputs')
+    }
+    i = setdiff(seq_len(n_separated_items), i)
+  }
   (x
-   %>% strsplit("_")
+   %>% as.character
+   %>% strsplit(sep)
    %>% lapply(function(x) {
      ifelse(
        length(x) == 0L,
        '',
-       paste0(omit_empty(x[i]), collapse = "_")
+       paste0(omit_empty(x[i]), collapse = sep)
      )
    })
    %>% unlist
+   %>% unname
   )
+}
+
+#' @export
+wrap_exact = function(x) {
+  "^" %+% x %+% "$"
 }
 
 ##' Regex Alternation Group
@@ -113,6 +479,53 @@ final_sim_report_names = function(model) {
     unlist(lapply(model$conv, getElement, "output_names"))
   )
 }
+
+pad_lag_diffs = function(sims, lag_diff) {
+  if(length(lag_diff) == 0L) return(sims)
+  ff = function(x) {
+    as.data.frame(x[c('delay_n', 'output_names')])
+  }
+  d = bind_rows(lapply(lag_diff, ff))
+  for(i in 1:nrow(d)) {
+    sims[1:as.integer(d[i,'delay_n']), d[i,'output_names']] = NA
+  }
+  sims
+}
+
+pad_convs = function(sims, conv, conv_indices) {
+  if(length(conv) == 0L) return
+  conv_nms = unlist(lapply(conv, getElement, 'output_names'))
+  qmax = conv_indices$qmax
+  for(i in 1:length(conv_nms)) {
+    sims[1:(qmax[i]-2L), conv_nms[i]] = NA
+  }
+  sims
+}
+
+
+# constructing data frames ----------------
+
+#' Vector to Data Frame
+#'
+#' Convert a named vector to a data frame with two columns, one for the
+#' names and one for the values.
+#'
+#' @param x named vector
+#' @param values_col name of the values column -- the default takes a guess
+#' @param names_col name of the names column
+#'
+#' @export
+v2d = function(x, values_col = NULL, names_col = "names") {
+  stopifnot(!is.null(names(x)))
+  if (is.null(values_col)) {
+    values_col = make.names(deparse(substitute(x)))
+  }
+  x = setNames(data.frame(names(x), x), c(names_col, values_col))
+  row.names(x) = NULL
+  x
+}
+
+# flexmodel to latex (experimental) -------------------
 
 ##' @export
 make_latex_symbols = function(nms) {
@@ -256,6 +669,13 @@ const_named_vector = function(nms, cnst) {
   setNames(rep(cnst[[1]], length(nms)), nms)
 }
 
+#' @export
+update_full_condensation_map = function(model) {
+  srn = final_sim_report_names(model)
+  model$condensation_map = setNames(srn, srn)
+  model
+}
+
 #' Merge One Vector into Another by Name
 #'
 #' If an item in \code{u} has the same name as an item
@@ -284,67 +704,78 @@ merge_named_vec_attr = function(v, u, a) {
   return(v)
 }
 
+ff = function(x) {
+  if (is.atomic(x)) {
+    return(x)
+  }
+  n = length(x) # number of hyperparameters
+  d = lapply(x, dim) %>% unique
+  if (length(d) != 1L) {
+    stop('inconsistent hyperparameter dimensions')
+  }
+  d = unlist(d)
+  if (!is.null(d)) {
+    stop('cannot handle matrix-valued hyperparameters yet')
+  }
+  l = lapply(x, length) %>% unique
+  if (length(l) != 1L) {
+    stop('inconsistent hyperparameter lengths')
+  }
+  l = unlist(l)
+  ii = outer(seq(from = 1, by = l, len = n), seq_len(l) - 1, `+`) %>% c
+  unlist(x)[ii]
+}
 
 # null-safe coercion ----------------------------
 
 # Used in tmb_fun -- needs work, but this is a
 # good approach generally
 
-#' @export
 null_to_char0 = function(x) {
   if(is.null(x)) return(character(0L))
   as.character(x)
 }
 
-#' @export
 null_to_int0 = function(x) {
   if(is.null(x)) return(integer(0L))
   as.integer(x)
 }
 
-#' @export
 null_to_num0 = function(x) {
   if(is.null(x)) return(numeric(0L))
   as.numeric(x)
 }
 
-#' @export
 null_to_log0 = function(x) {
   if(is.null(x)) return(logical(0L))
   as.logical(x)
 }
 
-#' @export
 null_to_charNA = function(x) {
   if(is.null(x)) return(as.character(NA))
   as.character(x)
 }
 
-#' @export
 null_to_intNA = function(x) {
   if(is.null(x)) return(as.integer(NA))
   as.integer(x)
 }
 
-#' @export
 null_to_numNA = function(x) {
   if(is.null(x)) return(as.numeric(NA))
   as.numeric(x)
 }
 
-#' @export
 null_to_logNA = function(x) {
   if(is.null(x)) return(as.logical(NA))
   as.logical(x)
 }
 
-#' @export
 null_to_0 = function(x) {
   if(is.null(x)) return(0L)
   as.integer(x)
 }
 
-#' @export
 int0_to_0 = function(x) {
   if(length(x) == 0L) return(0L)
   as.integer(x)
@@ -384,6 +815,7 @@ find_operators <- function(x, operator) {
     ), x
   )
 }
+
 factor_table <- function(x) {
   data.frame(
     var = unlist(lapply(x, get_variables)),
@@ -432,7 +864,6 @@ pwise = function(from, to, mat) {
   cbind(from_pos, to_pos)
 }
 
-#' @export
 block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
 }
@@ -489,15 +920,16 @@ rateform_as_char = function(x) {
   y
 }
 
-#' @param x character vector of names to look for in \code{vec} or
-#' \code{names(vec)}
-#' @param vec character vector or object with names
+# @param x character vector of names to look for in \code{vec} or
+# \code{names(vec)}
+# @param vec character vector or object with names
 find_vec_indices <- function(x, vec) {
   if(!is.character(vec)) vec = names(vec)
   missing_variables = x[!x %in% vec]
   if(length(missing_variables) > 0L) {
     stop("the following variables were used but not found in the model:\n",
-         paste0(missing_variables, collapse = "\n"))
+         paste0(missing_variables, collapse = "\n"),
+         "\nyou might find the help page for ?avail_for_rate useful")
   }
   (x
     %>% as.character()
@@ -574,42 +1006,213 @@ reduce_rates = function(rates) {
   rates
 }
 
+# regenerate rates in a model. this is useful if parameters get inserted
+# into a model and therefore throw off the indices that are saved in the
+# rates component of a model -- the utility of this function is actually
+# a sign that we have spaghetti code and therefore should create a more
+# formal class structure
+regen_rates = function(model) {
+  remodel = model
+  remodel$rates = list()
+  for(r in seq_along(model$rates)) {
+    args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
+    remodel = do.call(add_rate, args)
+  }
+  remodel
+}
+
+#' Topological Sort
+#'
+#' Topologically sort the state names so that states earlier in the flow
+#' of individuals come earlier in sorted order.
+#'
+#' @param model \code{\link{flexmodel}} object
+#'
+#' @return character vector of state names in topological order
+#' @export
+topological_sort = function(model) {
+  state_order = c()
+  rates = model$rates
+  state_nms = names(model$state)
+  n = length(state_nms)
+  for(i in 1:n) {
+    if (length(state_nms) == 0L) break
+    remaining_inflow = sapply(
+      state_nms,
+      has_inflow,
+      rates,
+      state_nms
+    )
+    state_order = c(state_order, state_nms[!remaining_inflow])
+    rates = rates[!unlist(McMasterPandemic:::get_rate_to(rates)) %in% state_order]
+    rates = rates[!unlist(McMasterPandemic:::get_rate_from(rates)) %in% state_order]
+    state_nms = state_nms[remaining_inflow]
+    if (isTRUE(all(remaining_inflow)) & length(state_nms) != 0L & length(remaining_inflow) != 0L) {
+      stop("state network is not acyclic (i think), and therefore cannot be topologically sorted")
+    }
+  }
+  state_order
+}
+
+has_inflow = function(focal_state, rates, state_nms) {
+  stopifnot(focal_state %in% state_nms)
+  to_states = (rates
+    %>% McMasterPandemic:::get_rate_to()
+    %>% unlist
+    %>% unique
+  )
+  focal_state %in% to_states
+}
+
+if(FALSE) {
+  ## experimenting with
+  state_order = base::setdiff(topological_sort(model), c("V", "X"))
+  lapply(state_order, has_inflow, model$rates, state_order)
+  get_children = function(focal_state, rates) {
+    which_parent = unlist(McMasterPandemic:::get_rate_from(rates)) == focal_state
+    McMasterPandemic:::get_rate_to(rates)[which_parent]
+  }
+  get_children("Ip", model$rates)
+  e = list2env(list(path_number = 0))
+  tree_maker = function(focal_state, e, rates) {
+    children = get_children(focal_state, rates)
+    if (length(children) == 0L) {
+      e$path_number = e$path_number + 1
+    }
+    path = setNames(lapply(children, tree_maker, e, rates), children)
+    if (length(children) == 0L) {
+      return(e$path_number)
+    } else {
+      return(path)
+    }
+  }
+  S_tree = tree_maker("S", e, model$rates)
+  S_tree$E$Ia$R
+  S_tree$E$Ip$Im$R
+  S_tree$E$Ip$Is$H$R
+  S_tree$E$Ip$Is$ICUs$H2$R
+  S_tree$E$Ip$Is$ICUd$D
+  S_tree$E$Ip$Is$D
+  S_tree$E$Ip$Is
+}
+
 # getting information about rates and sums ----------------------
 
-#' @export
-get_rate_info = function(model, what) lapply(model$rates, '[[', what)
+# Get From-State Names
+#
+# Get vector of from-state names associated with each rate in the model.
+#
+# @param model \code{\link{flexmodel}} object
+#
+# @family get_flexmodel_info_functions
 
-#' @export
-get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
-
-#' @export
 get_rate_from = function(model) get_rate_info(model, 'from')
 
-#' @export
+# Get To-State Names
+#
+# Get vector of to-state names associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_to = function(model) get_rate_info(model, 'to')
 
-#' @export
-get_rate_ratemat_indices = function(model) get_rate_info(model, 'ratemat_indices')
+# Get Rate Info
+#
+# Get information on the rate associated with a particular state transition.
+#
+# @param what character describing the rate (i.e. \code{'state1_to_state2'})
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
 
-#' @export
+get_rate_info = function(model, what) {
+  if (inherits(model, "flexmodel")) {
+    rates = model$rates
+  } else {
+    rates = model
+  }
+  lapply(rates, '[[', what)
+}
+
+# Get Factr Info
+#
+# Get information about an intermediate factor
+#
+# @param what name of the intermediate factor, as named by
+# \code{\link{add_factr}} or \code{\link{vec_factr}}
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
+get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
+
+# Get Rate Formulas
+#
+# Get vector of formulas associated with each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_formula = function(model) get_rate_info(model, 'formula')
 
-#' @export
+# Get Rate Factors
+#
+# Get the factor table associated with each rate in the model.
+# TODO: define the factor table or link to a description.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_factors = function(model) get_rate_info(model, 'factors')
 
-#' @export
+# Get Rate State Dependence
+#
+# Get a logical vector indicating which rates in the model depend on
+# state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
 
-#' @export
+# Get Rate Time Variation
+#
+# Get a logical vector indicating which rates in the model are
+# time-varying.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
 
-#' @export
+# Get Rate Sum Dependence
+#
+# Get a logical vector indicating which rates in the model depend
+# on sums of parameters and state variables.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
 
-#' @export
+# Get Factr Formula
+#
+# Get vector of formulas for defining each intermediate factor in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_formula = function(model) get_factr_info(model, 'formula')
 
-#' @export
+# Get the Number of Products
+#
+# Get a vector giving the number of products (in the multiplication sense)
+# that are required to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_products = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -619,7 +1222,15 @@ get_n_products = function(model) {
   )
 }
 
-#' @export
+# Get Number of Variables
+#
+# Get a vector giving the numbers of variables (parameters, state variables,
+# sums of parameters and state variables, and intermediate factors) required
+# to compute each rate in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_variables = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -628,7 +1239,14 @@ get_n_variables = function(model) {
   )
 }
 
-#' @export
+# Get Number of Factors
+#
+# Get the number of factors required to compute each rate in the
+# model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_n_factors = function(model) {
   (model
    %>% get_rate_info('factors')
@@ -636,22 +1254,39 @@ get_n_factors = function(model) {
   )
 }
 
-#' @export
+# Get Sum Info
+#
+# Get information on each sum (of parameters and state variables)
+# in the model.
+#
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_info = function(model, what) lapply(model$sums, '[[', what)
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_summands = function(model) get_sum_info(model, 'summands')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rate_vars = function(model) {
   (model
    %>% get_rate_factors
@@ -659,7 +1294,9 @@ get_rate_vars = function(model) {
   )
 }
 
-#' @export
+# @family get_flexmodel_info_functions
+# @inheritParams get_rate_from
+
 get_rates_with_vars = function(model, var_pattern) {
   ii = (model
     %>% get_rate_vars
@@ -670,19 +1307,33 @@ get_rates_with_vars = function(model, var_pattern) {
   get_rates(model)[ii]
 }
 
+get_rates = function(model) {
+  model$rates
+}
+
+##' Rate Summary
+##'
+##' Summarize the properties of the rates of transition amongst the
+##' compartments in the model.
+##'
+##' @param model a \code{\link{flexmodel}} object
 ##' @param include_formula include a column for the expanded rate formula
 ##' @export
-rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
+rate_summary = function(model, include_parse_info = TRUE, include_formula = FALSE, include_latex = FALSE) {
   summary = data.frame(
     from = get_rate_info(model, "from") %>% unlist,
-    to = get_rate_info(model, "to") %>% unlist,
-    n_fctrs = get_n_factors(model) %>% unlist,
-    n_prdcts = get_n_products(model) %>% unlist,
-    n_vrbls = get_n_variables(model) %>% unlist,
-    state_dependent = get_rate_info(model, "state_dependent") %>% unlist,
-    time_varying = get_rate_info(model, "time_varying") %>% unlist,
-    sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
+    to = get_rate_info(model, "to") %>% unlist
   )
+
+  if(include_parse_info) {
+    summary$n_fctrs = get_n_factors(model) %>% unlist
+    summary$n_prdcts = get_n_products(model) %>% unlist
+    summary$n_vrbls = get_n_variables(model) %>% unlist
+    summary$state_dependent = get_rate_info(model, "state_dependent") %>% unlist
+    summary$time_varying = get_rate_info(model, "time_varying") %>% unlist
+    summary$sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
+  }
+
   if(include_formula) {
     summary$formula = (model
       %>% get_rate_info('formula')
@@ -702,13 +1353,9 @@ rate_summary = function(model, include_formula = FALSE, include_latex = FALSE) {
   summary
 }
 
-#' @export
-get_rates = function(model) {
-  model$rates
-}
 
-##' @param x parameter vector or flexmodel
-##' @export
+## @param x parameter vector or flexmodel
+## @export
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
@@ -857,34 +1504,258 @@ rate_matrix_lookup = function(ratemat) {
   )
 }
 
+#' What Variables are Available?
+#'
+#' Find out what variables are available for particular functions that
+#' add variables to a model, based on existing variables.
+#'
+#' \describe{
+#'   \item{\code{avail_for_rate}}{\code{\link{add_rate}},\code{\link{rep_rate}},\code{\link{vec_rate}}}
+#'   \item{\code{avail_for_sum}}{\code{\link{add_state_param_sum}}}
+#'   \item{\code{avail_for_factr}}{\code{\link{add_factr}},\code{\link{vec_factr}}}
+#'   \item{\code{avail_for_expr}}{\code{\link{add_sim_report_expr}}}
+#'   \item{\code{avail_for_lag}}{\code{\link{add_lag_diff}}}
+#'   \item{\code{avail_for_conv}}{\code{\link{add_conv}}}
+#' }
+#'
+#' @param model a \code{\link{flexmodel}} object
+#'
+#' @return character vector of available variable names
+#'
+#' @rdname avail_for
+#' @export
+avail_for_rate = function(model) {
+  c(names(model$state),
+    names(model$params),
+    names(model$sums),
+    names(model$factrs))
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_sum = function(model) {
+  c(names(model$state),
+    names(model$params))
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_factr = function(model) {
+  c(names(model$state),
+    names(model$params),
+    names(model$sums),
+    names(model$factrs))
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_expr = function(model) {
+  initial_sim_report_names(model)
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_conv = function(model) {
+  intermediate_sim_report_names(model)
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_lag = function(model) {
+  intermediate_sim_report_names(model)
+}
 
 
-# utilities for parsing opt_params formulas
 
-parse_opt_param = function(x, params) {
+# getting information about calibrated models -----------------
+
+#' Optimizer Object
+#'
+#' Get the object returned by the optimizer used to calibrate a
+#' \code{flexmodel_to_calibrate} object. The \code{convergence_info}
+#' function gets convergence information in case it is buried within
+#' the \code{opt_obj}.
+#'
+#' @param model object of class \code{flexmodel_calibrated}
+#' @export
+opt_obj = function(model) {
+  stopifnot(inherits(model, 'flexmodel_calibrated'))
+  model$opt_obj
+}
+
+#' @rdname opt_obj
+#' @export
+convergence_info = function(model) {
+  UseMethod('convergence_info')
+}
+
+#' @export
+convergence_info.default = function(model) {
+  stop('this function only applies to flexmodel_calibrated objects.')
+}
+
+#' @export
+convergence_info.flexmodel_calibrated = function(model) {
+  return(opt_obj(model))
+}
+
+#' @export
+convergence_info.flexmodel_failed_calibration = function(model) {
+  return(model$opt_err)
+}
+
+#' @export
+convergence_info.flexmodel_bbmle = function(model) {
+  return(opt_obj(model)@details)
+}
+
+
+# getting information about objective functions and models to calibrate --------------
+
+#' @export
+profile_obj_fun = function(model, focal_param) {
+  UseMethod('profile_obj_fun')
+}
+
+#' @export
+profile_obj_fun.flexmodel_to_calibrate = function(model, focal_param) {
+  model = remove_opt_param(model, focal_param)
+  # o = tmb_fun(model)
+  # param_names = names(tmb_params_trans(model))
+  # par_ind = which(param_names == focal_param)
+  # par = o$par
+  function(x) {
+    model$params[focal_param] = x
+    o = tmb_fun(model)
+    o$fn(par)
+  }
+}
+
+#' @export
+loss_params = function(model) {
+  model$observed$loss_params
+}
+
+# utilities for parsing opt_params and loss_params formulas and structures ------------------
+
+remove_opt_param = function(model, focal_param) {
+  opt_param_is_focal = (model$opt_params
+    %>% lapply(getElement, 'param')
+    %>% lapply(getElement, 'param_nms')
+    %>% lapply(`==`, focal_param)
+  )
+  opt_params = model$opt_params[!unlist(lapply(opt_param_is_focal, all))]
+  model$opt_params = mapply(function(x, y) {
+      x$param$param_nms = x$param$param_nms[!y]
+      x
+    },
+    opt_params,
+    opt_param_is_focal,
+    SIMPLIFY = FALSE
+  )
+  model
+}
+
+#' Parse Fitted Parameter Formula
+#'
+#' \code{trans1_parameter ~ trans2_prior(hyperparameter1, ..., laplace = FALSE)}
+#'
+#' If \code{parameter}
+#'
+#' @param x opt_params formula
+#' @param params parameter vector
+#' @param regex_param_nm should the parameter name be treated as a regular
+#' expression used to produce a vector of parameter names
+#' @export
+parse_opt_param = function(x, params, params_timevar = NULL) {
+
+  # TODO: allow for transformations associated with the regularization function
+  # TODO: allow for vector-valued hyperparameters to be used with time variation
   stopifnot(is.call(x))
   stopifnot(as.character(x)[[1]] == '~')
   stopifnot(length(x) == 3L)
 
-  # separate parameter name from transformation
-  param_nm = as.character(x[[2]])
-  re = "^" %+% alt_group(valid_trans %_% '') %+% "?" %+% alt_group(names(params)) %+% "$"
-  if (!grepl(re, param_nm)) {
-    stop('unrecognized transformation or parameter is not in the model')
+  # string parameter expressions are treated as regex patterns
+  regex_param_nm = is.character(x[[2]])
+
+  # non-regex patterns are split on plus
+  if (!regex_param_nm) {
+    param_nm = (x[2]
+      %>% as.character
+      %>% strsplit("+", fixed = TRUE)
+      %>% lapply(trimws)
+      %>% unlist
+    )
+  } else {
+    param_nm = x[[2]]
   }
-  trans_nm = sub(re, '\\1', param_nm, perl = TRUE) %>% sub(pattern = '_$', replacement = '', perl = TRUE)
-  param_nm = sub(re, '\\2', param_nm, perl = TRUE)
+
+  # separate parameter name from transformation
+  trans_nm = sapply(param_nm, index_sep,  1L, USE.NAMES = FALSE)
+  for (i in seq_along(trans_nm)) {
+    if (trans_nm[i] %in% valid_trans) {
+      param_nm[i] = sapply(param_nm[i], index_sep, -1L, USE.NAMES = FALSE)
+    } else {
+      trans_nm[i] = ""
+    }
+  }
+
+  # expand param_nm into a vector of parameter names that match
+  if (regex_param_nm) {
+    param_nm = grep(param_nm, names(params), value = TRUE, perl = TRUE)
+  }
+
+  # lengths of the parameter vector, p, and the time series, l
+  p = length(param_nm)
+  l = 0
+  if (!is.null(params_timevar)) {
+    l = sapply(param_nm, length_tv_mult_series, params_timevar)
+    if (length(unique(l)) != 1L) {
+      stop("all time varying parameters must have the same series length ",
+           "if they are going to get the same prior")
+    }
+    l = l[1]
+  }
+
+  # cases:
+  #  p = 1, l = 0: baseline prior on one parameter (scalar hyperparameters)
+  #  p = 1, l > 0: tv_mult prior or priors on one parameter (scalar or l-vector hyperparameters)
+  #  p > 1, l = 0: baseline priors on several parameters (scalar or p-vector hyperparameters)
+  #  p > 1, l > 0: tv_mult priors on one parameter (scalar or l-by-p matrix hyperparameters)
+
+  stopifnot(all(param_nm %in% names(params)))
+
+  # re = "^" %+% alt_group(valid_trans %_% '') %+% "?" %+% alt_group(names(params)) %+% "$"
+  # if (!grepl(re, param_nm)) {
+  #   stop('unrecognized transformation or parameter is not in the model')
+  # }
+  # trans_nm = sub(re, '\\1', param_nm, perl = TRUE) %>% sub(pattern = '_$', replacement = '', perl = TRUE)
+  # param_nm = sub(re, '\\2', param_nm, perl = TRUE)
 
   # extract prior and starting value information
   param_spec = x[[3]]
   prior_family = ''
   if (is.call(param_spec)) {
     rhs_func = as.character(param_spec[[1]])
-    if (rhs_func %in% valid_prior_families) {
+    prior_trans = index_sep(rhs_func, 1)
+    if (prior_trans %in% valid_trans) {
+      prior_family = index_sep(rhs_func, -1)
+    } else {
+      prior_trans = ''
       prior_family = rhs_func
-      reg_params = numeric(length(param_spec) - 1)
+    }
+    if (prior_family %in% valid_prior_families) {
+      reg_params = vector("list", p * l)
+      dim(reg_params) = c(l, p)
+      for (i in l) {
+        for(j in p) {
+          reg_params[[i, j]] = try(eval(param_spec[[i+1]]))
+        }
+      }
+      #reg_params = vector("list", length(param_spec) - 1)
       for (i in seq_along(reg_params)) {
-        reg_params[i] = try(eval(param_spec[[i+1]]))
+        reg_params[[i]] = try(eval(param_spec[[i+1]]))
+        reg_params[[i]] = set_hyperparam_dims(reg_params[[i]], l, p, param_nm)
       }
     } else {
       # TODO: worry about eval environments??
@@ -892,15 +1763,462 @@ parse_opt_param = function(x, params) {
       if (!is.numeric(reg_params)) {
         stop('unrecognized parameter specification')
       }
+      reg_params = set_hyperparam_dims(reg_params, l, p, param_nm)
     }
   } else {
     if (!is.numeric(param_spec)) {
       stop('unrecognized parameter specification')
     }
-    reg_params = param_spec
+    reg_params = set_hyperparam_dims(param_spec, l, p, param_nm)
+    prior_family = ''
+    prior_trans = ''
   }
-  nlist(param_nm, trans_nm, prior_family, reg_params)
+  nlist(param_nm, trans_nm, prior_family, prior_trans, reg_params)
+
 }
+
+length_tv_mult_series = function(x, params_timevar, tv_type) {
+  sum(is.na(params_timevar$Value) & (params_timevar$Symbol == x) & (params_timevar$Type == tv_type))
+}
+
+set_hyperparam_dims = function(x, l, p, param_nm) {
+  if (length(x) == 1L) {
+    if (l > 0 & p > 1) {
+      x = matrix(x, l, p)
+    } else if (l > 0) {
+      x = rep(x, l)
+    } else if (p > 1) {
+      x = rep(x, p)
+    }
+  } else {
+    if (l > 0 & p > 1) {
+      if (!all(dim(x) == c(l, p))) {
+        stop("incompatible hyperparameter dimensions")
+      }
+    } else if (l > 0) {
+      if (length(x) != l) {
+        stop("incompatible numbers of hyperparameters")
+      }
+    } else if (p > 1) {
+      if (length(x) != p) {
+        stop("incompatible numbers of hyperparameters")
+      }
+    } else {
+      stop("incompatible numbers of hyperparameters")
+    }
+  }
+  if (is.matrix(x)) {
+    colnames(x) = param_nm
+  }
+  x
+}
+
+parse_and_resolve_opt_form = function(x, params) {
+  pf = parse_opt_form(x)
+  pf$param = resolve_param(pf$param, params)
+  if (length(unique(c(pf$param$trans, pf$prior$trans))) != 1L) {
+    example_bad = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$prior$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    example_good = (pf$param$trans[1]
+        %_% pf$param$param_nms[1]
+        %~% (pf$param$trans[1] %_% pf$prior$distr[1])
+        %+% "(" %+% paste0(pf$prior$reg_params, collapse = ', ') %+% ")"
+    )
+    stop(
+      '\nthe transformation scale used when a parameter is an argument',
+      '\nof an objective function, must be the same transformation used',
+      '\nwhen it is an argument of a prior density function.',
+      '\nfor example one may not optimize the transmission rate on the',
+      '\nlog scale but take the normal prior density over the identity scale.',
+      '\nthis restriction might be lifted in the future, which is the reason',
+      '\nwhy the notation makes it possible to decouple these two types of',
+      '\ntransformations.',
+      '\n\nproblematic example inspired by your input:',
+      '\n', example_bad,
+      '\n\nvalid example inspired by your input:',
+      '\n', example_good
+    )
+  }
+  pf
+}
+
+parse_and_resolve_loss_form = function(x, hist_nms, param_nms) {
+  pf = parse_loss_form(x)
+  if (!all(unique(pf$Parameter) %in% param_nms)) {
+    if (!all(is.na(pf$Parameter))) {
+      stop(
+        'parameters used in an error distribution are missing from the ',
+        'model parameter vector'
+      )
+    } else if (length(pf$Parameter) != 1L) {
+      stop(
+        'error distribution without parameters is specified with parameters'
+      )
+    }
+  }
+  if (!all(unique(pf$Variable) %in% hist_nms)) {
+    stop(
+      'variables declared for observation error are missing from the ',
+      'model simulation history'
+    )
+  }
+  pf
+}
+
+tmb_opt_form = function(pf, params, params_timevar = NULL, tv_type = NULL) {
+  if (is.null(params_timevar)) {
+    stopifnot(is.null(tv_type))
+    if (!all(pf$param$param_nms %in% names(params))) {
+      stop('parameters declared for optimization are missing from the model')
+    }
+  } else {
+    stopifnot(!is.null(tv_type))
+    if (!all(pf$param$param_nms %in% filter(params_timevar, is.na(Value))$Symbol)) {
+      stop('time varying multipliers declared for optimization are not scheduled to vary in simulation time')
+    }
+  }
+  fd = get_form_dim(pf, params, params_timevar, tv_type)
+  hyperparams_vec = (pf$prior$reg_param
+    %>% lapply(hyperparam_to_vec, l = fd$l, p = fd$p)
+    %>% unlist
+    %>% matrix(nrow = fd$h, ncol = max(fd$l, 1) * fd$p, byrow = TRUE)
+    %>% c
+  )
+  init_trans_params = c(pf$prior$reg_param[[1]])
+  param_nms = rep(pf$param$param_nms, each = max(fd$l, 1))
+  param_trans = rep(pf$param$trans, each = max(fd$l, 1))
+  prior_distr = pf$prior$distr
+  d = data.frame(param_nms, param_trans, prior_distr = pf$prior$distr, prior_trans = pf$prior$trans, count_hyperparams = fd$h, init_trans_params)
+  d$prior_trans_id = find_vec_indices(d$prior_trans, c('', valid_trans))
+  d$param_trans_id = find_vec_indices(d$param_trans, c('', valid_trans))
+  d$prior_distr_id = find_vec_indices(d$prior_distr, valid_prior_families)
+  if (is.null(params_timevar)) {
+    d$opt_param_id = find_vec_indices(d$param_nms, params)
+  } else {
+    lookup_tv_table = (params_timevar
+      %>% mutate(v = ifelse(is.na(Value), Symbol, ''))
+    )
+    lookup_tv_vec = filter(lookup_tv_table, Type == tv_type)$v
+    d$tv_breaks = filter(
+      lookup_tv_table,
+      is.na(Value) & (Symbol == param_nms[1]) & (Type == tv_type)
+    )$breaks
+    # d$tv_breaks = filter(lookup_tv_table, Symbol == param_nms[1])$breaks
+    #(lookup_tv_table
+    #  %>% mutate()
+    #)
+    d$opt_tv_mult_id = filter(
+      lookup_tv_table,
+      is.na(Value),
+      Symbol %in% param_nms,
+      Type == tv_type
+    )$tv_mult_id
+      # unlist(lapply(
+      #   unique(param_nms),
+      #   find_vec_indices,
+      #   lookup_tv_vec
+      # ))
+  }
+  nlist(d, hyperparams_vec)
+}
+get_hyperparam_list = function(reg_params,  n_hyperparams, n_params, n_breaks) {
+  h = n_hyperparams
+  p = n_params
+  l = n_breaks
+  ll = vector("list", max(1, l) * p)
+  dim(ll) = c(max(1, l), p)
+  for (k in seq_len(h)) {
+    hyper_mat = matrix(reg_params[[k]], max(1, l), p)
+    for (i in seq_len(max(1, l))) {
+      for (j in seq_len(p)) {
+        ll[[i, j]] = c(ll[[i, j]], hyper_mat[i, j])
+      }
+    }
+  }
+  ll
+}
+get_form_dim = function(x, params, params_timevar = NULL, tv_type = NULL) {
+  param_nm = x$param$param_nms
+  # lengths of the parameter vector, p, and the time series, l
+  h = x$prior$reg_params %>% length
+  p = length(param_nm)
+  l = 0
+  if (!is.null(params_timevar)) {
+    l = sapply(param_nm, length_tv_mult_series, params_timevar, tv_type)
+    if (length(unique(l)) != 1L) {
+      stop("all time varying parameters must have the same series length ",
+           "if they are going to get the same prior")
+    }
+    l = l[1]
+  }
+  l = unname(l)
+  lapply(x$prior$reg_params, valid_dim_hyperparam, l, p)
+  nlist(h, p, l)
+}
+dim_hyperparam = function(x) {
+  if (is.null(dim(x))) {
+    y = c(length(x), 1)
+  } else {
+    y = dim(x)
+  }
+  if (length(y) != 2) stop('only matrices, vectors, and scalar hyperparameters are allowed')
+  y
+}
+valid_dim_hyperparam = function(x, l, p) {
+  dh = dim_hyperparam(x)
+  if (!any(
+    isTRUE(all.equal(dh, c(l, p))),
+    isTRUE(all.equal(dh, c(1, 1))),
+    isTRUE(all.equal(dh, c(p, 1))) & (l == 0L),
+    isTRUE(all.equal(dh, c(l, 1))) & (p == 1L)
+  )) {
+    stop('inconsistent hyperparameter dimensions')
+  }
+  NULL
+}
+hyperparam_to_vec = function(hyperparam, l, p) {
+  hyperparam = (hyperparam
+                %>% matrix(max(1, l), p)
+                %>% t
+                %>% c
+  )
+  hyperparam
+}
+resolve_param = function(x, params) {
+  if (inherits(x, 'param_regex')) {
+    param_nms = grep(x$regex, names(params), perl = TRUE, value = TRUE)
+    trans = rep(x$trans, length(param_nms))
+  } else {
+    param_nms = x
+    if (inherits(param_nms, 'param_vector')){
+      param_nms = unclass(param_nms)
+    }
+    if (!is.character(param_nms)) {
+      stop('unable to resolve parameter optimization specification')
+    }
+    trans = index_sep(param_nms, 1)
+    which_have_trans = trans %in% valid_trans
+    trans = ifelse(which_have_trans, trans, '')
+
+    param_nms = ifelse(which_have_trans, Vectorize(index_sep)(param_nms, -1), param_nms)
+  }
+  if (!all(param_nms %in% names(params))) {
+    stop('cannot find opimization parameters in the params vector')
+  }
+  nlist(param_nms, trans)
+}
+
+#' Recursive function to parse a formula containing sums of names
+parse_name_sum = function(x) {
+  stop("sums in opt_param formulas is under construction. ",
+       "please specify the prior for each parameter separately.")
+  y = character(0L)
+  if (is.call(x)) {
+    if (as.character(x[[1]]) != '+') {
+      stop('you cannot apply functions or operators to terms in a sum, ',
+           'but ', as.character(x[[1]]), ' was used')
+    }
+    y = c(parse_name_sum(x[[2]]), parse_name_sum(x[[3]]))
+    return(y)
+  } else if (is.name(x)) {
+    return(as.character(x))
+  } else {
+    stop('parameters must be expressed as valid R names (e.g. not character strings) ',
+         'when summing parameters on the left-hand-side. if you are trying to ',
+         'programmatically create formulas, you should instead programmatically ',
+         'create the results of parsing the formula')
+  }
+}
+#' Recursive function to parse a formula containing parameter
+#' optimization specifications
+#'
+#' trans1_param ~ trans2_prior(hyperparameters, ...)
+#'
+#' trans1_param can be:
+#'   (1) a symbol/name (or sum of symbols)
+#'   (2) an expression that evaluates (in the environment of the formula)
+#'       to a character vector
+#'   (3) a literal length-1 character vector
+#'
+#' if trans1_param is a symbol:
+#' trans1 = name of a valid parameter transformation, giving the scale
+#'          on which the optimizer treats the parameter(s)
+#' param = name of a parameter in the parameter vector
+#'
+#' if trans1_param is an expression
+#'
+parse_opt_form = function(x, e = NULL) {
+  if (is.call(x)) {
+    func = parse_opt_form(x[[1]], e)
+    if (func == '~') {
+      if (!is.null(e)) {
+        # note that this message will display wrongly if someone
+        # calls this function directly with an environment,
+        # but this should be ok given that we are not going to
+        # export this function
+        stop('one may not use more than one tilde in optimization formulas')
+      }
+      # capture the environment of the formula so that it can
+      # be recursively passed down, and used when/if eval is called
+      e = environment(x)
+      if (is.character(x[[2]])) {
+        trans = index_sep(x[[2]], 1)
+        if (trans %in% valid_trans) {
+          regex = index_sep(x[[2]], -1)
+        } else {
+          regex = x[[2]]
+          trans = ''
+        }
+        param = structure(nlist(regex, trans), class = 'param_regex')
+      } else {
+        param = parse_opt_form(x[[2]], e)
+        if (!inherits(param, 'param_sum')) {
+          param = structure(param, class = 'param_vector')
+        }
+      }
+      prior = parse_opt_form(x[[3]], e)
+      if (is.numeric(prior)) {
+        stop('need to specify a prior distribution or initial value for the optimizer')
+      }
+      if (inherits(prior, 'param_sum')) {
+        stop('summing prior distributions is not allowed')
+      }
+      return(nlist(param, prior))
+    } else if (func == '+') {
+      return(structure(parse_name_sum(x), class = 'param_vector'))
+    } else {
+      trans = index_sep(func, 1)
+      if (trans %in% valid_trans) {
+        distr = index_sep(func, -1)
+      } else {
+        distr = func
+        trans = ''
+      }
+      if (distr %in% valid_prior_families) {
+        reg_params = lapply(x[-1], parse_opt_form, e)
+        return(structure(nlist(distr, trans, reg_params), class = 'prior'))
+      } else {
+        # if the function of the call is not a valid prior distribution,
+        # assume that we just want to evaluate the call and do so in the
+        # environment of the formula -- is this a good idea? -- could there
+        # be issues if we decide to allow two tildes?
+        return(parse_opt_form(eval(x, e), e))
+      }
+    }
+  } else if (is.name(x)) {
+    return(parse_opt_form(as.character(x), e))
+  } else if (is.character(x)) {
+    return(x)
+  } else if (is.numeric(x)) {
+    return(x)
+  } else {
+    stop('not a valid type')
+  }
+}
+
+parse_loss_form = function(x, e = NULL) {
+  if (is.call(x)) {
+    func = parse_loss_form(x[[1]], e)
+    if (func == '~') {
+      if (!is.null(e)) {
+        # note that this message will display wrongly if someone
+        # calls this function directly with an environment,
+        # but this should be ok given that we are not going to
+        # export this function
+        stop('one may not use more than one tilde in optimization formulas')
+      }
+      # capture the environment of the formula so that it can
+      # be recursively passed down, and used when/if eval is called
+      e = environment(x)
+      if (is.character(x[[2]])) {
+        trans = index_sep(x[[2]], 1)
+        if (trans %in% valid_trans) {
+          regex = index_sep(x[[2]], -1)
+        } else {
+          regex = x[[2]]
+          trans = ''
+        }
+        param = structure(nlist(regex, trans), class = 'param_regex')
+      } else {
+        history_variable = parse_loss_form(x[[2]], e)
+        # if (!inherits(history_variable, 'param_sum')) {
+        #   history_variable = structure(history_variable, class = 'history_vector')
+        # }
+      }
+      loss_dist = parse_loss_form(x[[3]], e)
+      if (is.numeric(loss_dist)) {
+        stop('need to specify a prior distribution or initial value for the optimizer')
+      }
+      loss_dist$Variable = history_variable
+      return(loss_dist)
+    } else if (func == '+') {
+      stop('loss formulas cannot contain sums')
+      # return(structure(parse_name_sum(x), class = 'param_vector'))
+    } else {
+      # at this point we should know that the function is a loss function
+      loss_func = func
+      if (loss_func %in% valid_loss_functions) {
+        loss_params = lapply(x[-1], parse_loss_form, e)
+
+        # check for the right number of loss parameters,
+        # given the loss function
+        if (length(loss_params) != length(valid_loss_params[[loss_func]])) {
+          stop(
+            length(loss_params), ' loss parameters were ',
+            'specified, but exactly ', length(valid_loss_params[[loss_func]]),
+            ' needs to be provided'
+          )
+        }
+
+        # check that the loss parameters are specified as length-1
+        # character vectors
+        all_len1_char = all(unlist(lapply(loss_params, is_len1_char)))
+        if (!all_len1_char) {
+          stop(
+            'loss parameters must be length-1 character vectors, ',
+            'with names that will be added to the param vector'
+          )
+        }
+
+        # check that the parameter names are syntactically valid
+        name_re = getOption("MP_name_search_regex")
+        all_valid_param_nms = all(
+          unlist(lapply(loss_params, grepl, pattern = name_re))
+        )
+        if (!all_valid_param_nms) {
+          stop('not all loss parameter names are syntactically valid')
+        }
+
+        unlist_loss_params = unlist(loss_params)
+        if (is.null(unlist_loss_params)) unlist_loss_params = NA
+        loss_params_data = data.frame(
+          Parameter = unlist_loss_params,
+          Distribution = loss_func
+        )
+        return(loss_params_data)
+      } else {
+        stop(
+          '\n', loss_func,
+          ' is not one of the following valid loss functions:\n',
+          paste0(valid_loss_functions, collapse = ', ')
+        )
+      }
+    }
+  } else if (is.name(x)) {
+    return(parse_loss_form(as.character(x), e))
+  } else if (is.character(x)) {
+    return(x)
+  } else if (is.numeric(x)) {
+    return(x)
+  } else {
+    stop('not a valid type')
+  }
+}
+
+# date and time utilities -----------
 
 # computing indices and data for tmb ----------------------
 
@@ -1215,7 +2533,7 @@ outflow_indices = function(outflow, ratemat) {
   #       outflow.
   #nlist(state_indices, flow_state_indices)
   #all = names(model$state)
-  #lapply(model$outflow, McMasterPandemic:::make_nested_indices, x = all)
+  #lapply(model$outflow, McMasterPandemic::make_nested_indices, x = all)
 }
 
 #' Nested Indices
@@ -1301,26 +2619,61 @@ lin_state_timevar_params = function(schedule) {
 ##' @export
 tmb_observed_data = function(model) {
 
-  initial_table = (model$observed$loss_params
-   %>% mutate(loss_id = 1) # only negative binomial (id=1) currently
-   %>% mutate(spi_loss_param = find_vec_indices(
-     Parameter %_% Variable,
-     c(model$state, model$params)
-   ))
-   %>% mutate(variable_id = find_vec_indices(
-     Variable,
-     model$condensation_map[final_sim_report_names(model)]
-   ))
-   %>% select(variable_id, loss_id, spi_loss_param)
+  lp = model$observed$loss_params
+  lp_by_var = (lp
+   %>% group_by(Variable, Distribution)
+   %>% summarise(loss_param_count = length(na.omit(Parameter)))
   )
-  variables_by_distributions = (initial_table
-    %>% group_by(variable_id, loss_id)
-    %>% summarise(loss_param_count = n())
-    %>% ungroup
+
+  lp_for_vars = (lp
+    %>% select(-Parameter)
+    %>% distinct
+    %>% left_join(lp_by_var, by = c("Distribution", "Variable"))
+    %>% mutate(loss_id = find_vec_indices(
+       Distribution,
+       valid_loss_functions
+     ))
+     %>% mutate(variable_id = find_vec_indices(
+       Variable,
+       model$condensation_map[final_sim_report_names(model)]
+     ))
+     %>% select(loss_param_count, loss_id, variable_id)
   )
-  parameters = (initial_table
+
+  lp_for_params = (lp
+    %>% filter(!is.na(Parameter))
+    %>% mutate(spi_loss_param = find_vec_indices(
+       Parameter,
+       c(model$state, model$params)
+      )
+    )
     %>% select(spi_loss_param)
   )
+
+  # initial_table = (model$observed$loss_params
+  #  %>% mutate(loss_id = find_vec_indices(
+  #    Distribution,
+  #    valid_loss_functions
+  #  ))
+   # %>% mutate(spi_loss_param = find_vec_indices(
+   #     Parameter,
+   #     c(model$state, model$params, setNames(NA = 0))
+   #    )
+   #  )
+  #  %>% mutate(variable_id = find_vec_indices(
+  #    Variable,
+  #    model$condensation_map[final_sim_report_names(model)]
+  #  ))
+  #  %>% select(variable_id, loss_id, spi_loss_param)
+  # )
+  # variables_by_distributions = (initial_table
+  #   %>% group_by(variable_id, loss_id)
+  #   %>% summarise(loss_param_count = n())
+  #   %>% ungroup
+  # )
+  # parameters = (initial_table
+  #   %>% select(spi_loss_param)
+  # )
   comparisons = (model$observed$data
    %>% na.omit
    %>% rename(observed = value)
@@ -1335,34 +2688,101 @@ tmb_observed_data = function(model) {
    %>% select(time_step, history_col_id, observed)
    %>% arrange(time_step, history_col_id)
   )
+
+  # HACK: simplify things for now while we only have a
+  # single loss function
+  # if (nrow(initial_table) == 0L) {
+  #   initial_table$loss_param_count = integer(0L)
+  # } else {
+  #   initial_table$loss_param_count = 1
+  # }
   c(
-    as.list(variables_by_distributions),
-    as.list(parameters),
+    #as.list(variables_by_distributions),
+    #as.list(parameters),
+    #as.list(initial_table),
+    as.list(lp_for_vars),
+    as.list(lp_for_params),
     as.list(comparisons)
   )
 }
 
 #' @export
 tmb_opt_params = function(model) {
-  # in progress:
-  #  - account for time variation
+  indices = init_tmb_indices$opt_params
 
-  param_nms = sapply(model$opt_params, getElement, "param_nm")
-  param_spi = find_vec_indices(param_nms, c(model$state, model$params))
-  trans_nms = sapply(model$opt_params, getElement, "trans_nm")
-  prior_families = sapply(model$opt_params, getElement, "prior_family")
-  count_reg_params = (model$opt_params
-    %>% lapply(getElement, "reg_params")
-    %>% sapply(length)
-  )
-  reg_params = (model$opt_params
-    %>% lapply(getElement, "reg_params")
-    %>% unlist
-  )
-  trans_id = find_vec_indices(trans_nms, c('', valid_trans))
-  prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
-  nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
+  if (length(model$opt_params) > 0L) {
+
+    opt_tables = (model$opt_params
+      %>% lapply(tmb_opt_form, model$params)
+    )
+    indices$index_table = (opt_tables
+      %>% lapply(getElement, 'd')
+      %>% do.call(what = 'rbind')
+    )
+    indices$hyperparameters = (opt_tables
+      %>% lapply(getElement, 'hyperparams_vec')
+      %>% unlist
+    )
+  }
+  any_opt_tv_params = sum(unlist(lapply(model$opt_tv_params, length))) > 0L
+  if (any_opt_tv_params) {
+    opt_tv_tables = index_tv_table = hyperparameters_tv = setNames(
+      vector("list", length(model$opt_tv_params)),
+      names(model$opt_tv_params)
+    )
+    # loop over time-varying types (i.e. abs, rel_orig, rel_prev)
+    for(tvt in names(opt_tv_tables)) {
+      if(length(model$opt_tv_params[[tvt]]) > 0L) {
+        opt_tv_tables[[tvt]] = lapply(
+          model$opt_tv_params[[tvt]],
+          tmb_opt_form,
+          model$params,
+          model$timevar$piece_wise$schedule,
+          tvt
+        )
+        index_tv_table[[tvt]] = (opt_tv_tables[[tvt]]
+          %>% lapply(getElement, 'd')
+          %>% do.call(what = 'rbind')
+          #%>% arrange(tv_breaks)
+        )
+        hyperparameters_tv[[tvt]] = (opt_tv_tables[[tvt]]
+          %>% lapply(getElement, 'hyperparams_vec')
+          %>% unlist
+        )
+      }
+    }
+    indices$index_tv_table = bind_rows(index_tv_table)
+    indices$hyperparameters_tv = unlist(hyperparameters_tv)
+  }
+  indices
 }
+
+# tmb_opt_params = function(model) {
+#   return(tmb_opt_indices(model))
+#
+#   param_nms = lapply(model$opt_params, getElement, "param_nm")
+#   params_per_formula = sapply(param_nms, length)
+#   param_spi = lapply(param_nms, find_vec_indices, c(model$state, model$params))
+#   trans_nms = lapply(model$opt_params, getElement, "trans_nm")
+#
+#   prior_families = lapply(model$opt_params, getElement, "prior_family")
+#   reg_params = lapply(model$opt_params, getElement, "reg_params")
+#
+#   prior_families = rep(unlist(prior_families), params_per_formula)
+#
+#   count_reg_params = (model$opt_params
+#     %>% lapply(getElement, "reg_params")
+#     %>% sapply(length)
+#   )
+#   reg_params = (model$opt_params
+#     %>% lapply(getElement, "reg_params")
+#     %>% unlist
+#   )
+#   trans_id = find_vec_indices(trans_nms, c('', valid_trans))
+#   prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
+#   nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
+# }
+
 
 # retrieving information from tmb objective function --------------
 
@@ -1382,6 +2802,14 @@ tmb_opt_params = function(model) {
 #' @param model flexmodel
 #' @export
 tmb_params = function(model) {
+  model = update_tmb_indices(model)
+  if (inherits(model, "flexmodel_to_calibrate")) {
+    p = tmb_params_trans(model)
+    if (length(p) == 0L) {
+      stop("observed data have been supplied, but optimization parameters have not been specified")
+    }
+    return(p)
+  }
   full_param_vec = c(unlist(model$params))
   if (spec_ver_gt('0.1.0')) {
     if(has_time_varying(model)) {
@@ -1392,12 +2820,83 @@ tmb_params = function(model) {
     }
   }
   if (spec_ver_gt('0.1.2')) {
-    full_param_vec = setNames(
-      full_param_vec[tmb_map_indices(model)],
-      tmb_param_names(model)
-    )
+    if (exists_opt_params(model)) {
+      full_param_vec = setNames(
+        full_param_vec[tmb_map_indices(model)],
+        tmb_param_names(model)
+      )
+    }
   }
   full_param_vec
+}
+
+#' Parameter Vectors Transformed for TMB
+#'
+#' @param model flexmodel
+#' @param vec_type type of vector to return:
+#' (1) tmb_fun_arg = same length as the argument for TMB objective function,
+#' (2) params = same length as the params element in \code{model}
+#' (3) tv_mult = same length as the \code{model$timevar$piece_wise$schedule$init_tv_mult}
+#'
+#' @export
+tmb_params_trans = function(model, vec_type = c('tmb_fun_arg', 'params', 'tv_mult')) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = 'parameter transformations'
+  )
+  vec_type = match.arg(vec_type)
+  model = update_tmb_indices(model)
+  if (vec_type != 'tmb_fun_arg') {
+    opt_params = model$tmb_indices$opt_params
+    table = switch(vec_type
+      , params = opt_params$index_table
+      , tv_mult = opt_params$index_tv_table
+    )
+    id = switch(vec_type
+      , params = table$opt_param_id
+      , tv_mult = table$opt_tv_mult_id
+    )
+    vec = switch(vec_type
+      , params = model$params
+      , tv_mult = model$timevar$piece_wise$schedule$init_tv_mult
+    )
+    vec[id] = table$init_trans_params
+    return(vec)
+  } else {
+    init_trans_params_ = with(model$tmb_indices$opt_params$index_table, {
+      setNames(
+        init_trans_params,
+        param_trans %_% param_nms
+      )
+    })
+    itvt = model$tmb_indices$opt_params$index_tv_table
+    if (nrow(itvt) == 0L) return(c(init_trans_params_))
+    init_trans_tv_mult_ = with(itvt, {
+      setNames(
+        init_trans_params,
+        param_trans %_% param_nms %_% "t" %+% tv_breaks
+      )
+    })
+    return(c(init_trans_params_, init_trans_tv_mult_))
+  }
+}
+
+# FIXME: not used
+tmb_params_init = function(model) {
+  model = update_tmb_indices(model)
+  init_trans_params = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_table
+    %>% with(setNames(init_trans_params, param_nms))
+  )
+  init_trans_tv_mult = (model
+     $  tmb_indices
+     $  opt_params
+     $  index_tv_table
+    %>% getElement('init_trans_params')
+  )
+  c(init_trans_params, init_trans_tv_mult)
 }
 
 #' @export
@@ -1419,6 +2918,7 @@ tmb_map_indices = function(model) {
 
 #' @export
 tmb_param_names = function(model) {
+  stop("not working")
   spec_check(
     introduced_version = '0.2.0',
     feature = 'flex models can use map argument of MakeADFun'
@@ -1440,8 +2940,15 @@ simulation_dates = function(model) {
     by = 1)
 }
 
-#' @param model flexmodel
-#' @param sim_params parameter vector to pass to a TMB objective function
+compute_num_iters = function(model) {
+  (model$end_date
+    %>% difftime(model$start_date, units = 'days')
+    %>% as.integer
+  )
+}
+
+# @param model flexmodel
+# @param sim_params parameter vector to pass to a TMB objective function
 #' @export
 changing_ratemat_elements = function(model, sim_params = NULL) {
   if(is.null(sim_params)) sim_params = tmb_params(model)
@@ -1450,8 +2957,8 @@ changing_ratemat_elements = function(model, sim_params = NULL) {
 
 #' @export
 simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
-  if (getOption("MP_force_full_outflow")) {
-    model = add_outflow(model)
+  if (getOption("MP_auto_outflow")) {
+     model = add_outflow(model)
   }
   if (getOption("MP_auto_tmb_index_update")) {
     model = update_tmb_indices(model)
@@ -1567,6 +3074,7 @@ penultimate_state_vector = function(model, sim_params = NULL) {
   )
 }
 
+
 #' @export
 final_state_ratio = function(model, sim_params = NULL) {
   last_two = (model
@@ -1585,15 +3093,50 @@ initial_ratemat = function(model, sim_params = NULL) {
   tmb_fun(model)$simulate(sim_params)$ratemat
 }
 
+#' Simulation History
+#'
+#' @param model a \code{\link{flexmodel}} object
+#' @param add_dates should a column called \code{Date} be added?
+#' @param sim_params vector to pass to a TMB AD function -- you can get
+#' examples of these out of the \code{opt_par} element of a fitted
+#' \code{\link{flexmodel}} or by calling \code{\link{tmb_params_trans}}
+#' @param include_initial_date should the first row be the initial state
+#' vector, or the first date after the initial?
+#'
+#' @family simulation
 #' @export
-simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
+simulation_history = function(
+    model,
+    add_dates = TRUE,
+    sim_params = NULL,
+    include_initial_date = TRUE,
+    obs_error = FALSE,
+    condense = FALSE
+  ) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
-  sim_hist = (tmb_fun(model)
-    $  simulate(sim_params)
-    $  simulation_history
+  if (obs_error) {
+    sim_hist_raw = tmb_fun(model)$simulate()$simulation_history
+  } else {
+    sim_hist_raw = tmb_fun(model)$report()$simulation_history
+  }
+  sim_hist = (sim_hist_raw
    %>% as.data.frame
    %>% setNames(final_sim_report_names(model))
   )
+
+  sim_hist = (sim_hist
+    %>% pad_lag_diffs(model$lag_diff)
+    %>% pad_convs(model$conv, model$tmb_indices$conv)
+  )
+
+  if (condense) {
+    sim_hist = setNames(
+      sim_hist[names(model$condensation_map)],
+      model$condensation_map
+    )
+    # FIXME: need cumRep hack in condense_flexmodel?
+  }
+
   if (add_dates) {
     sim_hist = (model
       %>% simulation_dates
@@ -1602,8 +3145,22 @@ simulation_history = function(model, add_dates = TRUE, sim_params = NULL) {
       %>% cbind(sim_hist)
     )
   }
+
+  if (!include_initial_date) {
+    sim_hist = sim_hist[-1,]
+  }
+
   sim_hist
 }
+
+# @param cond_map condensation_map element of flexmodel
+# @param sim_hist value of simulation_history in a TMB report or simulation
+# apply_condensation = function(cond_map, sim_hist) {
+#
+# }
+
+# FIXME: following two functions do the same thing in slightly different
+# ways!
 
 #' Condensed set of Simulated Variables
 #'
@@ -1615,10 +3172,40 @@ simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
     cond_nms = c("Date", cond_nms)
     cond_map = c(Date = "Date", cond_map)
   }
-  sims = simulation_history(model, add_dates = TRUE)[cond_nms]
+  sims = simulation_history(model, add_dates = TRUE, sim_params = sim_params)[cond_nms]
   names(sims) = c(cond_map)
   sims
 }
+
+
+#' @export
+condense_flexmodel = function(model) {
+  spec_check(
+    introduced_version = '0.2.0',
+    feature = "condensation in c++"
+  )
+  condensed_simulation_history = setNames(
+    simulation_history(model)[names(model$condensation_map)],
+    model$condensation_map
+  )
+
+  # HACK! ultimately we want cumulative reports calculated
+  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
+  # also this assumes no observation error, and doesn't
+  # compute D as cumulative sum of deaths (as is done in run_sim)
+  if ('report' %in% names(condensed_simulation_history)) {
+    condensed_simulation_history$cumRep = cumsum(
+      ifelse(
+        !is.na(unname(unlist(condensed_simulation_history$report))),
+        unname(unlist(condensed_simulation_history$report)),
+        0
+      )
+    )
+  }
+
+  cbind(data.frame(date = simulation_dates(model), condensed_simulation_history))
+}
+
 
 #' @importFrom tidyr pivot_longer
 #' @export
@@ -1654,12 +3241,215 @@ simulate.flexmodel = function(
   sims
 }
 
+#' Ensemble Simulation
+#'
+#' Given a sample of parameter vectors, simulate the condensed state simulation
+#' history for each ... TODO
+#'
+#' @param model \code{\link{flexmodel}} object, preferably a
+#' \code{flexmodel_calibrated} object that was fitted with
+#' \code{\link{bbmle_flexmodel}} or \code{\link{calibrate_flexmodel}}
+#' @param sim_params_matrix numberic matrix with rows giving simulation
+#' iterations and columns giving model parameters
+#' @param covmat not used
+#' @param qvec named numeric vector giving quantiles to compute
+#' @param ... arguments to pass on the \code{pop_pred_samp}, such as
+#' \code{PDify = TRUE} that can solve issues with non-positive definite
+#' matrices
+#'
+#' @family simulation
+#' @export
+simulate_ensemble = function(
+    model,
+    sim_params_matrix = NULL,
+    covmat = NULL,
+    qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
+    use_progress_bar = TRUE,
+    ...
+  ) {
+  if (!is.null(covmat)) {
+    stop("covmat argument is not currently being used")
+  }
+
+  msg = paste0(
+    "\nsim_params_matrix missing, and unable to produce it. ",
+    "try using bbmle_flexmodel when calibrating.",
+    collapse = "\n"
+  )
+  if (inherits(model, 'flexmodel_calibrated')) {
+    if (is.null(sim_params_matrix)) {
+      if (is_fitted_by_bbmle(model)) {
+        sim_params_matrix = McMasterPandemic:::pop_pred_samp(
+          model$opt_obj,
+          Sigma = vcov(model),
+          ...
+        )
+      } else {
+        stop(msg)
+      }
+    }
+    model = model$model_to_calibrate
+  }
+  if (is.null(sim_params_matrix)) {
+    stop(msg)
+  }
+
+  stopifnot(!is.null(names(qvec)))
+
+  # avoid the cost of computing the loss function,
+  # and just do the simulations
+  model$observed$data = McMasterPandemic:::init_observed$data
+
+  o = tmb_fun(model)
+  trajectories = list()
+  ii = seq_len(nrow(sim_params_matrix))
+
+  cond_map = model$condensation_map
+  cond_nms = names(cond_map)
+
+  date_frame = (model
+    %>% simulation_dates
+    %>% data.frame
+    %>% setNames("Date")
+  )
+  fsrn = final_sim_report_names(model)
+
+  if (use_progress_bar) {
+    pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
+  }
+
+  for(i in ii) {
+    traj = as.data.frame(o$simulate(sim_params_matrix[i,])$simulation_history)
+    names(traj) = fsrn
+    traj = setNames(
+      traj[cond_nms],
+      cond_map
+    )
+    trajectories[[i]] = cbind(date_frame, traj)
+    if (use_progress_bar) {
+      setTxtProgressBar(pb, i)
+    }
+  }
+
+  if (use_progress_bar) cat("", "summarising ensemble ... ", sep = "\n")
+  names(trajectories) = ii
+  summarised_traj = (trajectories
+    %>% bind_rows(.id = 'simulation')
+    %>% pivot_longer(c(-simulation, -Date), names_to = 'var')
+    %>% group_by(Date, var)
+    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
+  )
+  attr(summarised_traj, "qvec") = qvec
+  summarised_traj
+}
+
 #' Simulated Variables to Compare with Observed Data
 #'
 #' @export
 simulation_fitted = function(model) {
   obsvars = unique(model$observed$data$var)
-  simulation_condense(model)[obsvars]
+  simulation_condensed(model)[obsvars]
+}
+
+
+update_params_calibrated = function(model) {
+  # TODO: check if opt_par exists
+  if (!inherits(model, 'flexmodel_calibrated')) {
+    stop('this is not a flexmodel_calibrated object. ',
+         'please first use nlminb_flexmodel or optim_flexmodel.')
+  }
+  obj_fun = tmb_fun(model)
+  report = obj_fun$report(model$opt_par)
+  params_calibrated = model$params
+  params_calibrated[] = report$params
+  params_calibrated_timevar = (model$timevar$piece_wise$schedule
+    %>% select(Date, Symbol, Value, Type)
+    %>% within(Value[is.na(Value)] <- report$tv_mult[is.na(Value)])
+  )
+  model$params = params_calibrated
+  model = update_piece_wise(model, params_calibrated_timevar)
+  model$opt_params = list()
+  model$opt_tv_params = list()
+  model = update_tmb_indices(model)
+  model
+}
+
+#' Wrapped Optimizers for Flexmodels
+#'
+#' Currently there are \code{optim_flexmodel}, \code{nlminb_flexmodel},
+#' and \code{bbmle_flexmodel}
+#'
+#' @param model a \code{\link{flexmodel}} object
+#' @param update_default_params should the default parameters be updated
+#' to their calibrated values?
+#'
+#' @export
+optim_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
+  obj_fun = tmb_fun(model)
+  model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
+  model$opt_par = model$opt_obj$par
+  model$model_to_calibrate = model_to_calibrate
+  class(model) = c('flexmodel_optim', 'flexmodel_calibrated', 'flexmodel')
+  update_params_calibrated(model)
+}
+
+#' @rdname optim_flexmodel
+#' @export
+nlminb_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
+  obj_fun = tmb_fun(model)
+  model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
+  model$opt_par = model$opt_obj$par
+  model$model_to_calibrate = model_to_calibrate
+  class(model) = c('flexmodel_nlminb', 'flexmodel_calibrated', 'flexmodel')
+  update_params_calibrated(model)
+}
+
+#' @rdname optim_flexmodel
+#' @export
+bbmle_flexmodel = function(model, ...) {
+  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  model_to_calibrate = model
+  obj_fun = tmb_fun(model)
+  start_par = tmb_params_trans(model)
+  bbmle::parnames(obj_fun$fn) = names(start_par)
+  bbmle::parnames(obj_fun$gr) = names(start_par)
+  model$opt_obj = bbmle::mle2(
+    obj_fun$fn,
+    start_par,
+    gr = obj_fun$gr,
+    parnames = names(start_par),
+    vecpar = TRUE,
+    ...
+  )
+  model$opt_par = model$opt_obj@coef
+  model$model_to_calibrate = model_to_calibrate
+  class(model) = c('flexmodel_bbmle', 'flexmodel_calibrated', 'flexmodel')
+  update_params_calibrated(model)
+}
+
+#' @export
+fitted.flexmodel_calibrated = function(model) {
+  obs_var = unique(model$observed$data$var)
+  fits = (model
+    %>% simulation_history(obs_error = FALSE, condense = TRUE)
+    %>% pivot_longer(-Date, names_to = "var")
+    %>% filter(var %in% obs_var)
+  )
+  # fits = (model
+  #   %>% simulate(do_condensation = TRUE)
+  #   %>% filter(variable %in% obs_var)
+  # )
+  comparison_data = (model$observed$data
+    %>% left_join(
+      fits, by = c("date" = "Date", "var" = "var"),
+      suffix = c('', '_fitted')
+    )
+  )
+  comparison_data
 }
 
 # benchmarking and comparison in tests -----------------------
@@ -1683,9 +3473,20 @@ simulation_fitted = function(model) {
 #' @param tmb_sim result of `run_sim` using TMB
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
-#' @importFrom testthat testthat_tolerance
+#' @param na_is_zero should NAs be replaced with zeros?
 #' @export
-compare_sims = function(classic_sim, tmb_sim, tolerance = testthat_tolerance(), compare_attr = TRUE) {
+compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE, na_is_zero = FALSE) {
+  if (is.null(tolerance)) {
+    if (require(testthat)) {
+      tolerance = testthat_tolerance()
+    } else {
+      tolerance = .Machine$double.eps^0.5
+    }
+  }
+  if (na_is_zero) {
+    classic_sim[is.na(classic_sim)] = 0
+    tmb_sim[is.na(tmb_sim)] = 0
+  }
   if(compare_attr) {
     params_to_keep = which(names(attr(tmb_sim, 'params')) != "S0")
     attr(tmb_sim, 'params')[params_to_keep] = attr(tmb_sim, 'params')[params_to_keep]
@@ -1781,6 +3582,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 #' @param tolerance numerical tolerance to pass to \code{all.equal} --
 #' if \code{NA}, then a list is returned that can be passed to
 #' \code{all.equal} using \code{do.call}
+#' @param tmb_pars optional parameters to pass to the tmb functions
 #' @param ... additional arguments to pass to \code{numDeriv::grad}
 #'
 #' @return either (1) the return value of \code{all.equal} comparing
@@ -1791,7 +3593,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 #'
 #' @importFrom numDeriv grad
 #' @export
-compare_grads = function(model, tolerance = 1e-5,  ...) {
+compare_grads = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
 
   args = list(...)
   if (!'method.args' %in% names(args)) {
@@ -1802,14 +3604,42 @@ compare_grads = function(model, tolerance = 1e-5,  ...) {
       )
   }
   dd = tmb_fun(model)
-  current <- numDeriv::grad(dd$fn, dd$par, ...)
-  target <- dd$gr(dd$par)
+  if (is.null(tmb_pars)) {
+    tmb_pars = dd$par
+  }
+  current <- numDeriv::grad(dd$fn, tmb_pars, ...)
+  target <- dd$gr(tmb_pars)
   attributes(target) <- attributes(current) <- NULL
   if (is.na(tolerance)) return(nlist(target, current))
   all.equal(target, current, tolerance)
 }
 
-# spec versioning -----------------------
+#' @rdname compare_grads
+#' @export
+compare_hessians = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
+  args = list(...)
+  if (!'method.args' %in% names(args)) {
+    args$method.args = list(
+      eps = 1e-4, d = 0.1,
+      zero.tol = sqrt(.Machine$double.eps / 7e-7), r = 4, v = 2,
+      show.details = FALSE
+    )
+  }
+  dd = tmb_fun(model)
+  if (is.null(tmb_pars)) {
+    tmb_pars = dd$par
+  }
+  current <- numDeriv::hessian(dd$fn, tmb_pars, ...)
+  target <- dd$he(tmb_pars)
+  dms = dim(target)
+  stopifnot(all.equal(dms, dim(current)))
+  attributes(target) <- attributes(current) <- NULL
+  dim(target) = dim(current) = dms
+  if (is.na(tolerance)) return(nlist(target, current))
+  all.equal(target, current, tolerance)
+}
+
+# spec version and global option control ----------------------
 
 ##' Set and Reset Spec Version
 ##'
@@ -1877,7 +3707,8 @@ reset_spec_version = function() {
 tmb_mode = function() {
   options(
     MP_use_state_rounding = FALSE,
-    MP_vax_make_state_with_hazard = FALSE)
+    MP_vax_make_state_with_hazard = FALSE,
+    MP_force_dgTMatrix = TRUE)
 }
 
 ##' R Mode
@@ -1888,7 +3719,9 @@ tmb_mode = function() {
 ##' @export
 r_mode = function() {
   options(
-    MP_tmb_models_match_r = TRUE
+    MP_tmb_models_match_r = TRUE,
+    MP_default_do_hazard = TRUE,
+    MP_default_do_make_state = TRUE
   )
 }
 
@@ -1903,6 +3736,17 @@ r_mode = function() {
 r_tmb_comparable = function() {
   r_mode()
   tmb_mode()
+}
+
+##' Get McMasterPandemic Options
+##'
+##' @export
+get_macpan_options = function() {
+  (options()
+   %>% names
+   %>% grep(pattern = "^MP_", value = TRUE)
+   %>% sapply(getOption, simplify = FALSE)
+  )
 }
 
 

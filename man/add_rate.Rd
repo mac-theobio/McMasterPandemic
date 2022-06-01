@@ -2,43 +2,49 @@
 % Please edit documentation in R/tmb.R
 \name{add_rate}
 \alias{add_rate}
-\title{Rate Structure}
+\title{Add Rate}
 \usage{
 add_rate(model, from, to, formula)
 }
 \arguments{
-\item{model}{compartmental model}
+\item{model}{\code{\link{flexmodel}} object}
 
-\item{from}{Name of state where flow is happening from}
+\item{from}{Name of state from which flow is coming}
 
-\item{to}{Name of state where flow is happening to}
+\item{to}{Name of state to which flow is going}
 
 \item{formula}{Model formula defining dependence of the rate on
-parameters and state variables}
+existing variables. See \code{\link{avail_for_rate}} for a function
+that will print out the names of variables that are available for
+use in these formulas.}
 }
 \value{
-another compartmental model with an additional non-zero rate matrix
+updated \code{\link{flexmodel}} with an additional
+non-zero rate matrix
 element specified
 }
 \description{
 Define how the rate of flow from one compartment to another
-depends on the parameters and state variables.
+depends on parameters, state variables, .
 }
 \seealso{
-Other flexmodels: 
-\code{\link{add_outflow}()},
+Other flexmodel_definition_functions: 
+\code{\link{add_factr}()},
+\code{\link{add_linearized_outflow}()},
 \code{\link{add_parallel_accumulators}()},
-\code{\link{init_model}()},
+\code{\link{add_state_mappings}()},
+\code{\link{add_state_param_sum}()},
 \code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
 \code{\link{mat_rate}()},
-\code{\link{rate}()},
 \code{\link{rep_rate}()},
-\code{\link{state_param_sum}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()},
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()},
+\code{\link{vec_rate}()}
+
+Other rate_functions: 
+\code{\link{mat_rate}()},
+\code{\link{rep_rate}()},
 \code{\link{vec_rate}()}
 }
-\concept{flexmodels}
+\concept{flexmodel_definition_functions}
+\concept{rate_functions}

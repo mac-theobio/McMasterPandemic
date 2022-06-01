@@ -1,7 +1,7 @@
 // This version implements spec 0.2.0 in https://canmod.net/misc/flex_specs
 
-// search for printouts that are not commented out: ^\s*std::cout
-// search for printouts that are commented out: ^\s*//\s*std::cout
+// grep for printouts that are not commented out: ^\s*std::cout
+// grep for printouts that are commented out: ^\s*//\s*std::cout
 
 // Spec 0.2.0
 // Here is the order of columns that should go in the matrix:
@@ -13,28 +13,33 @@
 // 6 Lag-n differences of the first five items
 // 7 Convolutions of the first five items
 
+#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
+#include <Eigen/Eigen>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
+#include <math.h> 	// isnan() is defined
 #include <sys/time.h>
 #include <TMB.hpp>
 #include <cppad/local/cond_exp.hpp>
 
+const double EPSILON = 1.0e-10; // less than this value is considered as zero
+
 ///////////////////////////////////////////////////////////////////////////////
-// To make gdb work, I define the following functions:
+// To make debugging with gdb work, I define the following functions:
 void print(vector<double> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 void print(vector<int> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 
 void print(matrix<double> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 void print(matrix<int> x) {
-  std::cout << x;
+  std::cout << x << std::endl;
 }
 
 void print(array<double> x) {
@@ -43,15 +48,6 @@ void print(array<double> x) {
 void print(array<int> x) {
   x.print();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Status of TMB calculations.
-// If it is 0, then succeed. Otherwise, it encodes various causes for failure
-//          1: doesn't not converge in CalcEigenVector;
-//          2: eigen vector is all zeros in CalcEigenVector;
-//          3: mixed signs in eigen vector in CalcEigenVector;
-
-//static int tmb_status = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function round
@@ -135,9 +131,6 @@ vector<Type> CalcEigenVector(
     int iterations = 8000,
     Type tolerance = 0.000001)
 {
-  //if (iterations<100)
-  //  iterations = 100;	// this is the minimum
-
   matrix<Type> mat = jacobian;
   vector<Type> vec = state;
   vector<Type> prevec(1);
@@ -147,10 +140,13 @@ vector<Type> CalcEigenVector(
 
   for (i=0; i<iterations; i++) {
     vec = mat*vec;
-    vec /= Norm(vec);
+    Type norm = Norm(vec);
+    if (norm<EPSILON)
+      Rf_error("Divided by zero in CalcEigenVector");
+
+    vec /= norm;
 
     if (i%50==0) {
-
       if (prevec.size() != vec.size()) {
         prevec = vec;
       }
@@ -176,30 +172,17 @@ vector<Type> CalcEigenVector(
   }
 
   if (i==iterations) {
-    //tmb_status = 1; 	// doesn't not converge
+    Rf_warning("The eigenvector did not converge.");
     return vec;
   }
-
-  // check if the signs are the same
-  //for (i=0; i<vec.size(); i++)
-  //  if (vec[i]!=0) break;
-
-  //if (i==vec.size()) {
-  //  tmb_status = 2; 	// eigen vector is all zeros
-  //  return vec;
-  //}
-
-  //for (int j=i+1; j<vec.size(); j++)
-  //  if (vec[j-1]*vec[j]<0) {
-  //    tmb_status = 3;     // mixed signs in eigen vector
-  //    return vec;
-  //  }
-
-  // flip the sign
-  //if (vec[i]<00)
-  //  vec = -vec;
-
-  return vec;
+  else { // It converges. Lets do a last check on negativity
+    for (i=0; i<vec.size(); i++)
+      if (vec[i]<0.0) {
+        Rf_warning("Negative eigen vector");
+        break;
+      }
+    return vec;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -278,6 +261,13 @@ Eigen::SparseMatrix<Type> make_ratemat(
       prod *= x;
     }
     result.coeffRef(row,col) += prod;
+    if (result.coeff(row,col)<0) {
+      //std::cout << "negative rate mat " << result.coeff(row,col) << std::endl;
+      //std::cout << "row " << row << std::endl;
+      //std::cout << "col " << col << std::endl;
+      Rf_warning("Negative rate matrix element");
+    }
+
     start += count[i];
   }
 
@@ -327,6 +317,12 @@ void update_ratemat(
       prod *= x;
     }
     ratemat->coeffRef(row,col) += prod;
+    if (ratemat->coeff(row,col)<0.0) {
+      //std::cout << "negative rate mat " << ratemat->coeff(row,col) << std::endl;
+      //std::cout << "row " << row << std::endl;
+      //std::cout << "col " << col << std::endl;
+      Rf_warning("Negative rate matrix element.");
+    }
   }
 }
 
@@ -496,7 +492,6 @@ template<class Type>
 vector<Type> do_step(
     vector<Type> state,
     Eigen::SparseMatrix<Type> ratemat,
-//    vector<int> par_accum_indices,
     vector<int> outflow_row_count,
     vector<int> outflow_col_count,
     vector<int> outflow_rows,
@@ -509,6 +504,12 @@ vector<Type> do_step(
   vector<Type> inflow = colSums(flows);
   vector<Type> outflow = OutFlow(flows, outflow_row_count, outflow_col_count, outflow_rows, outflow_cols);
   state = state - outflow + inflow;
+
+  for (int i=0; i<state.size(); i++)
+    if (state[i]<0.0) {
+      Rf_warning("Negative state variable");
+      break;
+    }
 
   return state;
 }
@@ -753,10 +754,6 @@ vector<Type> make_state(
   // 7 -- Compute eigenvector
   vector<Type> eigenvec = CalcEigenVector(trimmed_jacob, trimmed_lin_state, max_iters_eig_pow_meth, tol_eig_pow_meth);
 
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return state; // There is an error in the computation so far
-
   // 8 -- Remove elements of `eigvec` to create `eig_infected`
   n = im_eigen_drop_infected_idx.size();
   vector<int> tmp_im_eigen_drop_infected_idx(n+1);
@@ -795,24 +792,263 @@ vector<Type> make_state(
   eig_infected /= eig_infected.sum();
 
   // 10 -- distribute infected individuals among compartments in the initial state vector
-  for (int i=0; i<im_all_to_infected_idx.size(); i++)
+  for (int i=0; i<im_all_to_infected_idx.size(); i++) {
     state[im_all_to_infected_idx[i]-1] = eig_infected[i] * params[ip_infected_idx-1];
-
+    if (state[im_all_to_infected_idx[i]-1]<0.0)
+      Rf_warning("Negative state variable");
+  }
   // 11 -- distribute susceptible individuals among compartments in the initial state vector
-  for (int i=0; i<im_susceptible_idx.size(); i++)
-    state[im_susceptible_idx[i] - 1] = (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
-
+  for (int i=0; i<im_susceptible_idx.size(); i++) {
+    state[im_susceptible_idx[i] - 1] = \
+      (1.0/im_susceptible_idx.size()) * (params[ip_total_idx-1] - params[ip_infected_idx-1]);
+    if (state[im_susceptible_idx[i] - 1]<0.0)
+      Rf_warning("Negative state variable");
+  }
   return state;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// General Objective Function in spec 0.2.0
+template<class Type>
+class LossFunc {
+public:
+  int id;			// loss id
+  std::vector<int> spi; 	// index to sp
+
+  // This member function calculates and returns the loss
+  Type run(const Type& observed, const Type& simulated, const vector<Type>& sp,
+           int obs_do_sim_constraint, Type obs_sim_lower_bound) {
+    Type var;
+    Type lll = 0.0;
+    // Type clamping_tolerance = 1e-12;
+    Type clamped_simulated;
+    Type param1, param2;
+
+    // clamping
+    if (obs_do_sim_constraint) // && simulated<obs_sim_lower_bound)
+      clamped_simulated = simulated + obs_sim_lower_bound * \
+                          (1.0/(1.0-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + \
+                                ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound) \
+                               ) \
+                          );
+    else
+      clamped_simulated = simulated;
+
+    switch (id) {
+      case 0: // Negative Binomial Negative Log Likelihood
+        // var = mu + mu^2/k
+        // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
+        //   var ~ variance
+        //   mu ~ mean
+        //   k ~ overdispersion parameter = sp[this->spi[0]]
+        var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
+
+        // k = (mu^2)/(var - mu)
+
+        //std::cout << "var = " << var << std::endl;
+        if (clamped_simulated<=0.0)
+          Rf_warning("negative simulation value being compared with data");
+
+        if (var<=0.0)
+          Rf_warning("negative binomial variance is negative");
+
+        if (sp[this->spi[0]] > 1e10)
+          Rf_warning("negative binomial dispersion is very large, >1e10");
+
+        // when k is large this should tend to log(factorial(observed)),
+        // but we have observed NaNs in this case. not sure how to smoothly
+        // (i.e. differentiably) address this
+        lll = -1.0 * dnbinom2(observed, clamped_simulated, var, 1);
+        //std::cout << "obs = " << observed << " sim = " << clamped_simulated << " var = " << var << " disp = " << sp[this->spi[0]] << " loss = " << lll << std::endl;
+        break;
+
+      case 1: // Poisson
+        lll = dpois(observed, clamped_simulated, 1);
+        break;
+
+      case 2: // Log Normal
+        param1 = sp[this->spi[0]]; // sd
+        lll = dnorm(log(observed), log(clamped_simulated), param1, 1);
+        break;
+
+      case 3: // Normal
+        param1 = sp[this->spi[0]]; // sd
+        lll = dnorm(observed, clamped_simulated, param1, 1);
+        break;
+
+      case 4: // Beta
+        param1 = sp[this->spi[0]]; // shape1
+        param2 = sp[this->spi[1]]; // shape2
+        //lll = pbeta(observed, param1, param2);
+        break;
+
+      default:
+        // tmb error
+        Rf_error("Unrecognized loss id");
+        return 0.0;
+    }
+
+    // If there is no error
+    return lll;
+  };
+
+  Type sim(const Type& simulated, const vector<Type>& sp,
+           int obs_do_sim_constraint, Type obs_sim_lower_bound) {
+    Type var;
+    Type sims_with_error = simulated;
+    Type clamped_simulated;
+    Type var_tolerance = 1e-8;
+    Type param1;
+
+    // clamping
+    if (obs_do_sim_constraint) // && simulated<obs_sim_lower_bound)
+      clamped_simulated = simulated + obs_sim_lower_bound * \
+                          (1.0/(1.0-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + \
+                                ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound) \
+                               ) \
+                          );
+    else
+      clamped_simulated = simulated;
+
+    switch (id) {
+      case 0: // Negative Binomial Negative Log Likelihood
+        // var = mu + mu^2/k
+        // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
+        //   var ~ variance
+        //   mu ~ mean
+        //   k ~ overdispersion parameter = sp[this->spi[0]]
+
+        var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
+
+        if (var < var_tolerance) 
+          // more numerically stable to just set the simulations
+          // to the mean when the var is low
+          sims_with_error = clamped_simulated;
+        else 
+          sims_with_error = rnbinom2(clamped_simulated, var);
+
+        break;
+
+      case 1: // Poisson
+        sims_with_error = rpois(clamped_simulated);
+        break;
+
+      case 2: // Log Normal
+        param1 = sp[this->spi[0]]; // sd
+        sims_with_error = rnorm(log(clamped_simulated), param1);
+        break;
+
+      case 3: // Normal
+        param1 = sp[this->spi[0]]; // sd
+        sims_with_error = rnorm(clamped_simulated, param1);
+        break;
+
+      case 4: // Beta
+        //sims_with_error = rpois(clamped_simulated);
+        break;
+
+      default:
+        // if you can't find a valid error distribution,
+        // just return the mean
+        break;
+    }
+
+    return sims_with_error;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Regularization
+template<class Type>
+Type Regularization(
+  const vector<Type>& params, // either params or tv_mult
+  const vector<int>& param_id,
+  const vector<int>& reg_family_id,
+  const vector<int>& count_reg_params,
+  const vector<Type>& reg_params
+)
+{
+  // Shall we adjust params a bit to make sure positive value is passed to the log function?
+  // const Type EPSILON = 1.0e-8;
+
+  int start = 0;
+  Type result = 0.0;
+
+  for (int j=0; j<param_id.size(); j++) {
+    // Based on the regularization type
+    switch (reg_family_id[j]) {
+      case 1: // Flat
+        break;
+
+      case 2: // Normal
+        result += -(dnorm(params[param_id[j]-1], reg_params[start], reg_params[start+1], 1));
+        break;
+
+      // case 3: // others ...
+
+      default: // error
+        Rf_error("Unrecognized regularization type");
+        break;
+    }
+
+    start += count_reg_params[j];
+  }
+
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Inverse transform
+template<class Type>
+void InverseTransformParams(
+  vector<Type>& params, // either params or tv_mult
+  const vector<int>& param_id,
+  const vector<int>& trans_id
+)
+{
+  //std::cout << "InverseTransformParams ..." << std::endl;
+  //std::cout << param_id << std::endl;
+  //std::cout << trans_id << std::endl;
+
+  for (int j=0; j<param_id.size(); j++) {
+    // Transformation no matter it is flat or not
+
+    switch (trans_id[j]) {
+      case 1: // identity
+        //transformed = params[param_id[j]-1];
+        break;
+      case 2: // inverse log
+        params[param_id[j]-1] = exp(params[param_id[j]-1]);
+        //std::cout << params[param_id[j]-1] << std::endl;
+        break;
+      case 3: // inverse log_10
+        params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
+        break;
+      case 4: // inverse logit
+        params[param_id[j]-1] = 1.0/(1.0+exp(-params[param_id[j]-1]));
+        break;
+      case 5: // inverse cloglog
+        params[param_id[j]-1] = 1.0 - exp(-exp(params[param_id[j]-1]));
+        break;
+      case 6: // inverse of inverse
+        if (params[param_id[j]-1]<1.0e-8 || params[param_id[j]-1]>-1.0e-8) {
+          Rf_error("zero in inverse trans");
+        }
+        params[param_id[j]-1] = 1.0/params[param_id[j]-1];
+        break;
+      default: // unrecognized trans_id. Treat it as identity
+        Rf_error("Unrecognized parameter transformation type");
+        break;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  std::cout << " =========== inside TMB ===========" << std::endl;
 
-  // Joint negative log-likelihood (stub)
-  //Type jnll= 0;
+  //std::cout << " =========== inside TMB ===========" << std::endl;
 
   // Get data and parameters from R
   DATA_VECTOR(state);
@@ -895,6 +1131,29 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(obs_time_step);
   DATA_IVECTOR(obs_history_col_id);
   DATA_VECTOR(obs_value);
+  DATA_INTEGER(obs_do_sim_constraint);
+  DATA_SCALAR(obs_sim_lower_bound);
+
+  DATA_IVECTOR(opt_param_id);
+  DATA_IVECTOR(opt_trans_id);
+  DATA_IVECTOR(opt_count_reg_params);
+  DATA_VECTOR(opt_reg_params);
+  DATA_IVECTOR(opt_reg_family_id);
+
+  //std::cout << "opt_param_id = " << opt_param_id << std::endl;
+  //std::cout << "opt_trans_id = " << opt_trans_id << std::endl;
+  //std::cout << "opt_count_reg_params = " << opt_count_reg_params << std::endl;
+  //std::cout << "opt_reg_params = " << opt_reg_params << std::endl;
+  //std::cout << "opt_reg_family_id = " << opt_reg_family_id << std::endl;
+
+  DATA_IVECTOR(opt_tv_param_id);
+  DATA_IVECTOR(opt_tv_trans_id);
+  DATA_IVECTOR(opt_tv_count_reg_params);
+  DATA_VECTOR(opt_tv_reg_params);
+  DATA_IVECTOR(opt_tv_reg_family_id);
+
+  //std::cout << "opt_tv_param_id = " << opt_tv_param_id << std::endl;
+  //std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
 
   // used for testing convolution code only
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
@@ -910,7 +1169,43 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
 
-  //REPORT(tmb_status);
+  // Regularization
+  Type regularization = Regularization(
+                          params,
+                          opt_param_id,
+                          opt_reg_family_id,
+                          opt_count_reg_params,
+                          opt_reg_params
+                        );
+
+  regularization += Regularization(
+                      tv_mult,
+                      opt_tv_param_id,
+                      opt_tv_reg_family_id,
+                      opt_tv_count_reg_params,
+                      opt_tv_reg_params
+                    );
+
+  InverseTransformParams(
+    params,
+    opt_param_id,
+    opt_trans_id
+  );
+  //std::cout << "params: " << params << std::endl;
+
+  InverseTransformParams(
+    tv_mult,
+    opt_tv_param_id,
+    opt_tv_trans_id
+  );
+  //std::cout << "tv_mult: " << tv_mult << std::endl;
+
+  // dump inverse-transformed parameters and time-varying
+  // multipliers to the R side, as an easy way to
+  // back-transform the parameters off of the scale used
+  // for optimization
+  REPORT(params);
+  REPORT(tv_mult);
 
   // make state vector from params vector
   if (do_make_state) {
@@ -952,10 +1247,6 @@ Type objective_function<Type>::operator() ()
     );
 
   }
-
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return 0; // There is an error in the computation so far
 
   // spec v0.2.0
   int stateSize = state.size();
@@ -1006,13 +1297,8 @@ Type objective_function<Type>::operator() ()
   // We've got everything we need, lets do the job ...
   Eigen::SparseMatrix<Type> ratemat = make_ratemat(state.size(), sp, from, to, count, spi, modifier);
 
-  // FIXME: parameter dependent branching??
-  //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-  //if (tmb_status) return 0; // There is an error in the computation so far
-
   vector<Type> concatenated_state_vector((numIterations+1)*stateSize);
   vector<Type> concatenated_ratemat_nonzeros((numIterations+1)*updateidx.size());
-  vector<Type> concatenated_time_varying_parameters((numIterations+1)*tv_spi_unique.size());
 
   // Add initial state vector and non-zero element of the rate matrix into
   // corresponding vectors prefixed with "concatenated_".
@@ -1025,10 +1311,6 @@ Type objective_function<Type>::operator() ()
     concatenated_ratemat_nonzeros[j] = ratemat.coeff(row,col);
     simulation_history(0, stateSize+j) = ratemat.coeff(row,col);
   }
-
-  //if (tmb_status) {
-  //  return 0; // There is an error in the computation so far
-  //}
 
   // Item #5 Element-wise sum of any variable of type 4 (similar to factr calculation)
   if (extraExprNum>0) {
@@ -1054,41 +1336,59 @@ Type objective_function<Type>::operator() ()
   for (int k=0; k<conv_sri.size(); k++) {
     if (conv_qmax[k]<2) continue; // 2 is the mininum
 
-    std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
+    //std::cout << "kappa initial len=" << kappa[k].size() << std::endl;
 
     Type c_prop = params(conv_c_prop_idx[k]-1);
     Type c_delay_cv   = params(conv_c_delay_cv_idx[k]-1);
     Type c_delay_mean = params(conv_c_delay_mean_idx[k]-1);
 
-    std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
-    std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
+    //std::cout << "conv_c_delay_cv_idx[k]=" << conv_c_delay_cv_idx[k] << std::endl;
+    //std::cout << "c_delay_cv=" << c_delay_cv << std::endl;
 
     Type shape = 1.0/(c_delay_cv*c_delay_cv);
     Type scale = c_delay_mean/shape;
 
     vector<Type> delta(conv_qmax[k]-1);
 
-    std::cout << "shape=" << shape << std::endl;
-    std::cout << "scale=" << scale << std::endl;
+    //std::cout << "shape=" << shape << std::endl;
+    //std::cout << "scale=" << scale << std::endl;
 
     Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
     for (int q=1; q<conv_qmax[k]; q++) {
-      std::cout << pre_gamma << std::endl;
+      //std::cout << pre_gamma << std::endl;
       Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
       delta(q-1) = cur_gamma - pre_gamma;
       pre_gamma = cur_gamma;
     }
-    std::cout << "delta = " << delta << std::endl;
-    std::cout << "delta sum = " << delta.sum() << std::endl;
-    std::cout << "c_prop = " << c_prop << std::endl;
+    //std::cout << "delta = " << delta << std::endl;
+    //std::cout << "delta sum = " << delta.sum() << std::endl;
+    //std::cout << "c_prop = " << c_prop << std::endl;
     kappa[k] = c_prop*delta/delta.sum();
-    std::cout << "kappa = " << kappa[k] << std::endl;
+    //std::cout << "kappa = " << kappa[k] << std::endl;
+  }
+
+  // Preparation for the General Objective Function in spec 0.2.0
+  // Build a map of var_id to loss func
+  int start = 0;
+  std::map<int, LossFunc<Type> > varid2lossfunc;
+  for (int i=0; i<obs_var_id.size(); i++) {
+    LossFunc<Type> lf;
+    lf.id = obs_loss_id[i] - 1;
+
+    for (int j=0; j<obs_loss_param_count[i]; j++)
+      lf.spi.push_back(obs_spi_loss_param[start+j]-1);
+    start += obs_loss_param_count[i];
+
+    varid2lossfunc[obs_var_id[i]-1] = lf;
   }
 
   /////////////////////////////////////////////////////////////////////////////
   // Simulation loop through "numIterations" time steps
   int nextBreak = 0;
-  int start = 0;
+  start = 0;
+  Type sum_of_loss = 0.0;
+  int obs_start = 0;
+
   for (int i=0; i<numIterations; i++) {
 
     //std::cout << "sp:" << std::endl;
@@ -1102,18 +1402,14 @@ Type objective_function<Type>::operator() ()
                     outflow_rows, outflow_cols,
                     do_hazard, do_approx_hazard);
 
-    // FIXME: parameter dependent branching?? commenting out for now
-    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-    //if (tmb_status) {
-    //  return 0; // There is an error in the computation so far
-    //}
-
     sp.segment(0, stateSize) = state;
     simulation_history.block(i+1, 0, 1, stateSize) = state.transpose();
 
     // update sp (params)
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+        //std::cout << "tv_spi = " << tv_spi[j] << std::endl;
+        //std::cout << "tv_mult = " << tv_mult[j] << std::endl;
         if (tv_abs[j]) { // type == 'abs'
           sp[tv_spi[j]-1] = tv_mult[j];
         }
@@ -1151,12 +1447,6 @@ Type objective_function<Type>::operator() ()
     update_ratemat(
       &ratemat, sp, from, to, count_integral,
       spi, modifier, updateidx);
-
-    // FIXME: parameter dependent branching??
-    //        https://github.com/kaskr/adcomp/wiki/Things-you-should-NOT-do-in-TMB
-    //if (tmb_status) {
-    //  return 0; // There is an error in the computation so far
-    //}
 
     // concatenate state vectors at each time step so they can be returned
     concatenated_state_vector.segment((i+1)*stateSize, stateSize) = state;
@@ -1237,7 +1527,7 @@ Type objective_function<Type>::operator() ()
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
       vector<Type> kernel = kappa[k];
-      std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
+      //std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
       Type conv = 0.0;
       if (i>conv_qmax[k]-4) { // i+2>=qmax-1
         //std::cout << "========= i = " << i << std::endl;
@@ -1250,15 +1540,52 @@ Type objective_function<Type>::operator() ()
         simulation_history(i+1, index_to_item7+k) = conv;
       }
     }
+
+    // Calculate the General Objective Function
+    for (int k=obs_start; k<obs_time_step.size(); k++) {
+      if (i+1==obs_time_step[k]-1) {
+        //std::cout << "k= " << k << " [" << obs_time_step[k] << ", " << obs_history_col_id[k] << "]" << std::endl;
+        Type x = obs_value[k];
+        Type mu = simulation_history(obs_time_step[k]-1, obs_history_col_id[k]-1);
+        sum_of_loss += varid2lossfunc[obs_history_col_id[k]-1].run(x, mu, sp, obs_do_sim_constraint, obs_sim_lower_bound);
+        //std::cout << "loglik = " << sum_of_loss << std::endl;
+      }
+      else {
+        obs_start = k;
+        break;
+      }
+    }
+
+
   }
+
+  for (int i=0; i<numIterations+1; i++) {
+    SIMULATE {
+      for (int k=0; k<obs_var_id.size(); k++) {
+        simulation_history(i, obs_var_id[k] - 1) = varid2lossfunc[obs_var_id[k] - 1].sim(
+          simulation_history(i, obs_var_id[k] - 1),
+          sp,
+          obs_do_sim_constraint,
+          obs_sim_lower_bound
+        );
+      }
+    }
+  }
+
+  //std::cout << "Loss = " << sum_of_loss << std::endl;
+
+  // Regularization
+  sum_of_loss += regularization;
+  //std::cout << "regularization = " << sum_of_loss << std::endl;
 
   //std::cout << "simulation_history size= " << simulation_history.size() << std::endl;
   //std::cout << simulation_history << std::endl;
+
 
   REPORT(ratemat);
   REPORT(concatenated_state_vector);
   REPORT(concatenated_ratemat_nonzeros);
   REPORT(simulation_history);
 
-  return state.sum();
+  return sum_of_loss;
 }

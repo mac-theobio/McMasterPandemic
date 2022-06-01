@@ -1,6 +1,6 @@
 ##' Represent a Standard Unstructured Model as a flexmodel
 ##'
-##' @inheritDotParams init_model
+##' @inheritDotParams flexmodel
 ##' @family flexmodels
 ##' @family canned_models
 ##' @export
@@ -8,7 +8,7 @@ make_base_model <- function(...) {
 
   spec_check("0.0.5", "run_sim with TMB")
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
@@ -86,17 +86,24 @@ make_base_model <- function(...) {
     model = (model
       %>% add_state_param_sum("Htotal", "^H2?$")
       %>% add_state_param_sum("ICU", "^ICU(s|d)$")
+      %>% add_state_param_sum("Itotal", "^I(a|p|m|s)$")
       %>% add_sim_report_expr("Incidence", ~ (S_to_E) * (S))
       %>% add_lag_diff("^(X|D)$")
       %>% add_conv("^Incidence$")
       %>% update_condense_map(c(
-        conv_Incidence = 'report',
-        Incidence = 'incidence',
-        S_to_E = 'foi',
+        S = "S",
+        E = "E",
+        Itotal = "I",
         Htotal = 'H',
         ICU = 'ICU',
+        R = 'R',
         lag_1_diff_X = 'hosp',
-        lag_1_diff_D = 'death'
+        X = 'X',
+        lag_1_diff_D = 'death',
+        D = 'D',
+        S_to_E = 'foi',
+        Incidence = 'incidence',
+        conv_Incidence = 'report'
       ))
     )
   }
@@ -112,11 +119,11 @@ make_base_model <- function(...) {
 
 #' Make a Two-Dose Vaccination Model
 #'
-#' @inheritDotParams init_model
+#' @inheritDotParams flexmodel
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -186,7 +193,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
 
 
-  if (!do_variant | getOption("MP_tmb_models_match_r")) {
+  if (!do_variant_mu) { # | getOption("MP_tmb_models_match_r")) {
     mu      = c("mu",    "mu",    "vax_mu_dose1",    "vax_mu_dose1",    "vax_mu_dose2")
   } else {
     ## variant-based mild-illness probability adjustment in vaccinated individuals
@@ -203,7 +210,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
   Ip_to_Im_rates = vec(              mu ) * gamma_p
   Ip_to_Is_rates = vec(complement(   mu)) * gamma_p
 
-  model = init_model(...)
+  model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
@@ -242,6 +249,7 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       "S" %_% vax_cat,
       "E" %_% vax_cat,
       kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
+      #t(baseline_trans_rates) %*% Imat %*% t(vax_trans_red)
     )
 
     # Sums across vaccination categories
@@ -259,7 +267,15 @@ make_vaccination_model = function(..., do_variant = FALSE) {
       dose_to   %_% 'vaxdose2',
       ~ (1 - vax_prop_first_dose) * (vax_doses_per_day) * (1 / asymp_vaxprotect1_N))
   )
-  if(spec_ver_lt('0.1.1')) {
+  if (do_wane) {
+    model = rep_rate(
+      model,
+      "R" %_% vax_cat,
+      "S" %_% vax_cat,
+      ~ (wane_rate)
+    )
+  }
+  if (spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
     model = add_parallel_accumulators(model, c('V' %_% vax_cat, 'X' %_% vax_cat))
   } else {
@@ -317,10 +333,91 @@ make_vaccination_model = function(..., do_variant = FALSE) {
     )
   }
 
+  if (spec_ver_gt('0.1.2')) {
+    foi_vec = vec("S" %_% vax_cat %_% "to" %_% "E" %_% vax_cat)
+    S_vec = vec("S" %_% vax_cat)
+    model = (model
+      %>% add_state_param_sum("Stotal", "^S" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Etotal", "^E" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Itotal", "^I(a|s|p|m)" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Htotal", "^H2?" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("ICU", "^ICU(s|d)" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Rtotal", "^R" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Xtotal", "^X" %_% alt_group(vax_cat))
+      %>% add_state_param_sum("Dtotal", "^D" %_% alt_group(vax_cat))
+      %>% add_sim_report_expr("Incidence_unvax", ~ (S_unvax_to_E_unvax) * (S_unvax))
+      %>% add_sim_report_expr("Incidence_vaxdose1", ~ (S_vaxdose1_to_E_vaxdose1) * (S_vaxdose1))
+      %>% add_sim_report_expr("Incidence_vaxprotect1", ~ (S_vaxprotect1_to_E_vaxprotect1) * (S_vaxprotect1))
+      %>% add_sim_report_expr("Incidence_vaxdose2", ~ (S_vaxdose2_to_E_vaxdose2) * (S_vaxdose2))
+      %>% add_sim_report_expr("Incidence_vaxprotect2", ~ (S_vaxprotect2_to_E_vaxprotect2) * (S_vaxprotect2))
+      %>% add_sim_report_expr("Incidence", sum(foi_vec * S_vec))
+      %>% add_conv("^Incidence")
+      %>% add_lag_diff("^(X|D)total$")
+      %>% update_condense_map(c(
+        Stotal = "S",
+        Etotal = "E",
+        Itotal = "I",
+        Htotal = 'H',
+        ICU = 'ICU',
+        Rtotal = "R",
+        lag_1_diff_Xtotal = 'hosp',
+        Xtotal = "X",
+        lag_1_diff_Dtotal = 'death',
+        Dtotal = "D",
+        S_unvax_to_E_unvax = "foi_unvax",
+        S_vaxdose1_to_E_vaxdose1 = "foi_vaxdose1",
+        S_vaxprotect1_to_E_vaxprotect1 = "foi_vaxprotect1",
+        S_vaxdose2_to_E_vaxdose2 = "foi_vaxdose2",
+        S_vaxprotect2_to_E_vaxprotect2 = "foi_vaxprotect2",
+        Incidence_unvax = "incidence_unvax",
+        Incidence_vaxdose1 = "incidence_vaxdose1",
+        Incidence_vaxprotect1 = "incidence_vaxprotect1",
+        Incidence_vaxdose2 = "incidence_vaxdose2",
+        Incidence_vaxprotect2 = "incidence_vaxprotect2",
+        Incidence = 'incidence',
+        conv_Incidence_unvax = 'report_unvax',
+        conv_Incidence_vaxdose1 = 'report_vaxdose1',
+        conv_Incidence_vaxprotect1 = 'report_vaxprotect1',
+        conv_Incidence_vaxdose2 = 'report_vaxdose2',
+        conv_Incidence_vaxprotect2 = 'report_vaxprotect2',
+        conv_Incidence = 'report'
+    ))
+    )
+  }
   model = update_tmb_indices(model)
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
   }
   model$classic_macpan_model = TRUE
+  model
+}
+
+
+##' SIR Model
+##'
+##' @inheritDotParams flexmodel
+##' @family flexmodels
+##' @family canned_models
+##' @export
+make_sir_model = function(...) {
+  l... = list(...)
+  stopifnot(all(names(l...$state) %in% c("S", "I", "R")))
+  stopifnot(all(c("S", "I", "R") %in% names(l...$state)))
+  stopifnot(all(names(l...$params) %in% c("beta", "gamma", "N", "nb_disp_S", "nb_disp_I", "nb_disp_R")))
+  stopifnot(all(c("beta", "gamma") %in% names(l...$params)))
+  model = flexmodel(...)
+  model$do_make_state = FALSE
+  if("N" %in% names(l...$params)) {
+    stopifnot(l...$params[["N"]] == sum(l...$state))
+  } else {
+    model = add_state_param_sum(model, "N", alt_group(names(l...$state), exact = TRUE))
+  }
+  model = (model
+    %>% add_rate("S", "I", ~ (beta) * (I) * (1/N))
+    %>% add_rate("I", "R", ~ (gamma))
+    %>% add_outflow
+    %>% update_condense_map
+    %>% update_tmb_indices
+  )
   model
 }

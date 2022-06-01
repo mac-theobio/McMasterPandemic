@@ -3,13 +3,16 @@ library(dplyr)
 library(testthat)
 library(lubridate)
 
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
+
 test_that('foi can be expressed as model structure', {
   reset_spec_version()
   tmb_mode()
 
   params <- read_params("ICU1.csv")
 
-  mm = (init_model(
+  mm = (flexmodel(
     params = params,
     state = make_state(params = params),
     do_make_state = FALSE,
@@ -124,7 +127,7 @@ test_that('simple models still work when structure is allowed', {
     condense = FALSE,
     step_args = list(do_hazard = TRUE)
   )
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that("simple vaccination model in TMB matches and is faster than existing R model", {
@@ -144,21 +147,24 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
     unif = FALSE
   )
   vax_params = expand_params_S0(vax_params, 1-1e-5)
+  #vax_params$wane_rate = 0
   test_model <- make_vaccination_model(
     params = vax_params, state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
     do_make_state = FALSE,
-    do_hazard = TRUE
+    do_hazard = TRUE,
+    do_wane = FALSE
   )
+
+  topological_sort(test_model)
 
   tmb_strt = Sys.time()
   tmb_sim <- run_sim(
-    params = vax_params, state = vax_state,
+    # FIXME: we should unlist inside run_sim somewhere, but where?
+    params = unlist(vax_params), state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
     condense = TRUE,
-    step_args = list(do_hazard = TRUE),
-    flexmodel = test_model,
-    use_flex = TRUE
+    flexmodel = test_model
   )
   tmb_nd = Sys.time()
   r_strt = Sys.time()
@@ -173,7 +179,7 @@ test_that("simple vaccination model in TMB matches and is faster than existing R
   r_speed = as.numeric(r_nd - r_strt)
   print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
   expect_lt(tmb_speed, r_speed)
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE, na_is_zero = TRUE)
 })
 
 test_that("vax_prop_first_dose can be != 1", {
@@ -213,7 +219,7 @@ test_that("vax_prop_first_dose can be != 1", {
 
   tmb_strt = Sys.time()
   tmb_sim <- run_sim(
-    params = vax_params, state = vax_state,
+    params = unlist(vax_params), state = vax_state,
     start_date = "2021-09-09", end_date = "2021-10-09",
     condense = FALSE,
     params_timevar = params_timevar,
@@ -234,13 +240,13 @@ test_that("vax_prop_first_dose can be != 1", {
   r_speed = as.numeric(r_nd - r_strt)
   print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
   expect_lt(tmb_speed, r_speed)
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that("time-varying parameters can be used with a vaccination model", {
 
   reset_spec_version()
-  tmb_mode()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   params <- read_params("ICU1.csv")
@@ -292,7 +298,7 @@ test_that("time-varying parameters can be used with a vaccination model", {
   r_speed = as.numeric(r_nd - r_strt)
   print(paste0('tmb speed-up: ', round(r_speed/tmb_speed), 'x'))
   expect_lt(tmb_speed, r_speed)
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
 })
 
 test_that("toy symbolic matrix multiplication examples give correct results", {
@@ -406,9 +412,10 @@ test_that("vax/variant foi algebraic manipulations are correct", {
 })
 
 test_that("variants and vaccination model simulation matches run_sim", {
+  skip_if(skip_slow_tests)
 
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   start_date <- "2021-02-01"
@@ -444,8 +451,8 @@ test_that("variants and vaccination model simulation matches run_sim", {
     do_hazard = TRUE,
     do_approx_hazard = FALSE,
     do_make_state = TRUE,
-    max_iters_eig_pow_meth = 100,
-    tol_eig_pow_meth = 1e-6,
+    max_iters_eig_pow_meth = 200,
+    tol_eig_pow_meth = 1e-3,
     params_timevar = params_timevar,
     do_variant = TRUE)
 
@@ -477,7 +484,7 @@ test_that("variants and vaccination model simulation matches run_sim", {
     compare_sims_plot(r_sim, tmb_sim, "Ia_unvax")
   }
 
-  compare_sims(r_sim, tmb_sim, tolerance = 1e-9)
+  compare_sims(r_sim, tmb_sim, tolerance = 1e-9, compare_attr = FALSE)
 
   # test state construction on c++ side matches r-side version
   expect_equal(c(state), initial_state_vector(model))
@@ -485,6 +492,7 @@ test_that("variants and vaccination model simulation matches run_sim", {
 })
 
 test_that("vax/variants model simulation matches run_sim with many break points", {
+  skip_if(skip_slow_tests)
 
   # > reports_all$var %>% unique
   # [1] "report"
@@ -497,9 +505,9 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # base parameters using read_params target argument
 
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
-  options(MP_rexp_steps_default = 150)
+  options(MP_rexp_steps_default = 200)
 
   # From macpan_ontario -----------------------------
 
@@ -535,7 +543,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # make flex vaccination model -----------
   model = make_vaccination_model(
     params = model_params,
-    state = make_state(params = model_params),
+    state = NULL,
     start_date = start_date - days(start_date_offset),
     end_date = end_date + days(1),
     params_timevar = params_timevar,
@@ -545,7 +553,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
     do_approx_hazard_lin = FALSE,
     do_make_state = TRUE,
     max_iters_eig_pow_meth = 1000,
-    tol_eig_pow_meth = 1e-12,
+    tol_eig_pow_meth = 1e-4,
     do_variant = TRUE)
 
   time_wrap(
@@ -569,41 +577,4 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   )
 
   compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
-
-
-  # options(MP_rexp_steps_default = 100)
-  #
-  # fitted_mod_tmb <- calibrate(
-  #   base_params = model$params,
-  #   data = fitdat,
-  #   opt_pars = opt_pars,
-  #   start_date_offset = start_date_offset,
-  #   debug = TRUE,
-  #   time_args = list(
-  #     params_timevar = params_timevar
-  #   ),
-  #   mle2_control = mle2_control,
-  #   sim_args = list(
-  #     ndt = 1,
-  #     step_args = list(do_hazard = TRUE),
-  #     flexmodel = model
-  #   )
-  # )
-
-  # fitted_mod_r <- calibrate(
-  #   base_params = model$params,
-  #   data = fitdat,
-  #   opt_pars = opt_pars,
-  #   start_date_offset = start_date_offset,
-  #   debug = TRUE,
-  #   time_args = list(
-  #     params_timevar = params_timevar
-  #   ),
-  #   mle2_control = mle2_control,
-  #   sim_args = list(
-  #     ndt = 1,
-  #     step_args = list(do_hazard = TRUE)
-  #   )
-  # )
-
 })

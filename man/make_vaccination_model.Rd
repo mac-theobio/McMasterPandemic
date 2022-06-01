@@ -4,11 +4,16 @@
 \alias{make_vaccination_model}
 \title{Make a Two-Dose Vaccination Model}
 \usage{
-make_vaccination_model(..., do_variant = FALSE)
+make_vaccination_model(
+  ...,
+  do_variant = FALSE,
+  do_variant_mu = FALSE,
+  do_wane = FALSE
+)
 }
 \arguments{
 \item{...}{
-  Arguments passed on to \code{\link[=init_model]{init_model}}
+  Arguments passed on to \code{\link[=flexmodel]{flexmodel}}
   \describe{
     \item{\code{params}}{a \code{param_pansim} object}
     \item{\code{state}}{a \code{state_pansim} object}
@@ -28,6 +33,15 @@ state (experimental)}
     \item{\code{do_make_state}}{should state be remade on the c++ size?
 (https://canmod.net/misc/flex_specs#v0.1.1) -- only used
 if \code{spec_ver_gt('0.1.0')}}
+    \item{\code{do_sim_constraint}}{should simulated values be smoothly
+constrained to be above \code{sim_lower_bound} when computing
+negative binomial (maybe others in the future?) loss functions?
+the smooth constraint function is
+\eqn{y = x + \epsilon * \exp(-x / \epsilon)}, where \eqn{\epsilon}
+is \code{sim_lower_bound} and \eqn{x} is the simulated value.}
+    \item{\code{sim_lower_bound}}{optional lower bound on the simulated values
+when computing negative binomial loss functions (only applicable
+when \code{do_sim_constraint} is \code{TRUE}.}
     \item{\code{max_iters_eig_pow_meth}}{maximum number of iterations
 to use in computing the eigenvector for initial state
 construction}
@@ -35,7 +49,7 @@ construction}
 of the power method used in initial state construction}
     \item{\code{data}}{optional observed data frame in long format to
 compare with simulated trajectories. must have the following
-columns: \code{date}, \code{var}, \code{value}.}
+columns: \code{date}, \code{var}, \code{value}. (currently this is not working)}
   }}
 }
 \description{
@@ -43,24 +57,15 @@ Make a Two-Dose Vaccination Model
 }
 \seealso{
 Other flexmodels: 
-\code{\link{add_outflow}()},
-\code{\link{add_parallel_accumulators}()},
-\code{\link{add_rate}()},
-\code{\link{init_model}()},
-\code{\link{initial_population}()},
+\code{\link{flexmodel}()},
 \code{\link{make_base_model}()},
 \code{\link{make_omicron_model}()},
-\code{\link{mat_rate}()},
-\code{\link{rate}()},
-\code{\link{rep_rate}()},
-\code{\link{state_param_sum}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()},
-\code{\link{vec_rate}()}
+\code{\link{make_sir_model}()}
 
 Other canned_models: 
 \code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()}
+\code{\link{make_omicron_model}()},
+\code{\link{make_sir_model}()}
 }
 \concept{canned_models}
 \concept{flexmodels}

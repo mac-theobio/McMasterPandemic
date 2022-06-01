@@ -3,11 +3,17 @@ library(dplyr)
 library(lubridate)
 library(testthat)
 
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+skip_slow_tests = isTRUE(testLevel == 1)
+
 test_that("macpan ontario forecasts work the same regardless of engine", {
+  skip_if(skip_slow_tests)
+
   rerun_r_engine_calibrations = FALSE
   rerun_r_engine_forecasts = FALSE
   run_simulation_comparison = FALSE
-  reset_spec_version()
+  #reset_spec_version()
+  set_spec_version("0.2.0", '../../inst/tmb')
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   options(MP_warn_bad_breaks = FALSE)
@@ -30,7 +36,7 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   all.equal(c(r_init), c(tmb_init))
 
   params_timevar_sim = (params_timevar
-                        %>% within({Value[is.na(Value)] = opt_pars$time_params})
+    %>% within({Value[is.na(Value)] = opt_pars$time_params})
   )
 
   if(run_simulation_comparison) {
@@ -51,8 +57,16 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
       step_args = list(do_hazard = TRUE),
       flexmodel = model
     )
-    compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
+    compare_sims(r_sim, tmb_sim, compare_attr = FALSE, na_is_zero = TRUE)
   }
+
+  cntrl = list(maxit = 1e3,
+       reltol = calibration_params[["reltol"]],
+       ## here beta and gamma are nelder-mead parameters,
+       ## not macpan model parameters!!!
+       beta = 0.5,
+       gamma = 2
+  )
 
   # suppressing warning for now -- nelder-mead complaining
   # because it is a 1d problem (TODO: ask Mike if he is getting
@@ -65,18 +79,35 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
                         step_args = list(do_hazard = TRUE),
                         flexmodel = model)
     , time_args = list(params_timevar = params_timevar)
-    , mle2_control = list(maxit = 1e3,
-                          reltol = calibration_params[["reltol"]],
-                          ## here beta and gamma are nelder-mead parameters,
-                          ## not macpan model parameters!!!
-                          beta = 0.5,
-                          gamma = 2
-    )
+    , mle2_control = cntrl
     , start_date_offset = start_date_offset
     , use_DEoptim = FALSE
     , debug = FALSE
     , debug_plot = FALSE
   ))
+
+  model$do_sim_constraint = TRUE
+  model_to_fit = (model
+    #%>% update_piece_wise(params_timevar_sim)
+    %>% update_observed(fitdat)
+    #%>% update_opt_params(
+    #  log_nb_disp_report ~ log_normal(0, 5)
+    #)
+    %>% update_opt_tv_params("rel_orig"
+      , beta0 ~ flat(1)
+    )
+    %>% update_tmb_indices
+  )
+
+  expect_true(
+    isTRUE(
+      compare_grads(
+        model_to_fit,
+        tmb_pars = tmb_params_trans(model_to_fit)
+      )
+    )
+  )
+  fitted_model_tmb_condense = calibrate_flexmodel(model_to_fit)
 
   if (rerun_r_engine_calibrations) {
     # takes a really long time so best to avoid it
@@ -113,6 +144,11 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   # [1] 525.3678
   # save(fitted_model_r, file = "../../inst/testdata/ontario_flex_test_better_fit.Rdata")
 
+  expect_equal(
+    unname(fitted_model_tmb_condense$opt_par),
+    unname(fitted_model_tmb$mle2@coef),
+    tolerance = 1e-3
+  )
   expect_equal(fitted_model_r$mle2@coef, fitted_model_tmb$mle2@coef)
   expect_equal(fitted_model_r$mle2@min, fitted_model_tmb$mle2@min)
   expect_equal(fitted_model_r$mle2@vcov, fitted_model_tmb$mle2@vcov)
@@ -124,5 +160,29 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   } else {
     load("../../inst/testdata/ontario_flex_test_better_forecasts.rda")
   }
+
+  Rprof("~/testing.out")
+  forecast_tmb_condense = simulate_ensemble(fitted_model_tmb_condense, n = 200)
+  Rprof(NULL)
+
   expect_equal(forecast_tmb, forecast_r)
+
+  if (FALSE) {
+    # these look similar, but the variation is very small in tmb??
+    # although it does make sense that there is not any variation until
+    # the breakpoint of the only (time-varying) parameter
+    library(ggplot2)
+    (forecast_tmb_condense
+      %>% filter(name == "report")
+      %>% ggplot
+      + geom_ribbon(aes(Date, ymin = lwr, ymax = upr), alpha = 0.2)
+      + geom_line(aes(Date, value))
+    )
+    (forecast_tmb
+      %>% filter(var == "report")
+      %>% ggplot
+      + geom_ribbon(aes(date, ymin = lwr, ymax = upr), alpha = 0.2)
+      + geom_line(aes(date, value))
+    )
+  }
 })

@@ -6,6 +6,22 @@ library(dplyr)
 library(semver)
 library(lubridate)
 
+test_that("an error is thrown when disease-free state is missing when required", {
+  expect_error({
+    (flexmodel(
+      params = c(a = 0.5, b = 0.25, c = 0.1),
+      state = c(X = 1, Y = 2),
+      start_date = "2000-01-01",
+      end_date = "2000-02-05",
+      do_make_state = TRUE
+    ) %>% add_rate("X", "Y", ~ (a) * (c) * (X) + (c) * (b) * (Y))
+    %>% add_outflow
+    %>% update_tmb_indices
+    %>% tmb_fun
+    )
+  }, regexp = "cannot make the initial state because a disease-free state was not supplied")
+})
+
 test_that("make state matches classic macpan without state rounding", {
   reset_spec_version()
   tmb_mode()
@@ -50,7 +66,7 @@ test_that('make state works with a time-varying parameter', {
                            params_timevar = tv_dat,
                            do_hazard = TRUE,
                            do_make_state = TRUE,
-                           max_iters_eig_pow_meth = 100,
+                           max_iters_eig_pow_meth = 200,
                            tol_eig_pow_meth = 1e-03
   )
   tv_dat_filled = tv_dat
@@ -81,14 +97,14 @@ test_that('make state works with a time-varying parameter', {
       use_flex = FALSE
     )
   )
-  compare_sims(r_sim, tmb_sim)
+  compare_sims(r_sim, tmb_sim, na_is_zero = TRUE)
 })
 
 test_that('make state matches vax/variant model without hazard intialization', {
 
   reset_spec_version()
   options(macpan_pfun_method = "grep")
-  r_tmb_comparable()
+  #r_tmb_comparable()
 
   base_params <- read_params("PHAC.csv")
   vax_params <- expand_params_vax(
@@ -112,7 +128,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
     do_approx_hazard = FALSE,
     do_approx_hazard_lin = FALSE,
     do_make_state = TRUE,
-    max_iters_eig_pow_meth = 100,
+    max_iters_eig_pow_meth = 200,
     do_variant = TRUE)
 
   expect_equal(
@@ -122,7 +138,7 @@ test_that('make state matches vax/variant model without hazard intialization', {
 
 test_that('make state matches vax/variant model with realistic parameters', {
   reset_spec_version()
-  r_tmb_comparable()
+  #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
   # Need to take more than 100 steps for the

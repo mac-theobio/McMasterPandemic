@@ -13,6 +13,9 @@ population -- over all compartments}
 \item{infected}{name of a single parameter to represent the initial total size of
 the infected population -- over all infected compartments}
 }
+\value{
+updated \code{\link{flexmodel}} object
+}
 \description{
 \code{infected} is the multiplier of the normalized infected components of the
 eigenvector. \code{total - infected} is multiplied by
@@ -24,20 +27,17 @@ across susceptible compartments -- currently a uniform distribution
 is assumed..
 }
 \seealso{
-Other flexmodels: 
-\code{\link{add_outflow}()},
+Other flexmodel_definition_functions: 
+\code{\link{add_factr}()},
+\code{\link{add_linearized_outflow}()},
 \code{\link{add_parallel_accumulators}()},
 \code{\link{add_rate}()},
-\code{\link{init_model}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
+\code{\link{add_state_mappings}()},
+\code{\link{add_state_param_sum}()},
 \code{\link{mat_rate}()},
-\code{\link{rate}()},
 \code{\link{rep_rate}()},
-\code{\link{state_param_sum}()},
-\code{\link{tmb_fun}()},
-\code{\link{update_tmb_indices}()},
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()},
 \code{\link{vec_rate}()}
 }
-\concept{flexmodels}
+\concept{flexmodel_definition_functions}

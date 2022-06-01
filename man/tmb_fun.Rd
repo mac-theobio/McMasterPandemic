@@ -7,27 +7,9 @@
 tmb_fun(model)
 }
 \arguments{
-\item{model}{object of class \code{flexmodel}}
+\item{model}{\code{\link{flexmodel}} object}
 }
 \description{
 Construct an objective function in TMB from a \code{flexmodel}
 object. The behaviour of \code{tmb_fun} depends on \code{spec_version()}
 }
-\seealso{
-Other flexmodels: 
-\code{\link{add_outflow}()},
-\code{\link{add_parallel_accumulators}()},
-\code{\link{add_rate}()},
-\code{\link{init_model}()},
-\code{\link{initial_population}()},
-\code{\link{make_base_model}()},
-\code{\link{make_omicron_model}()},
-\code{\link{make_vaccination_model}()},
-\code{\link{mat_rate}()},
-\code{\link{rate}()},
-\code{\link{rep_rate}()},
-\code{\link{state_param_sum}()},
-\code{\link{update_tmb_indices}()},
-\code{\link{vec_rate}()}
-}
-\concept{flexmodels}

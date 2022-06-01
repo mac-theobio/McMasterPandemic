@@ -19,3 +19,10 @@ struc object
 \description{
 Stretch a Block
 }
+\seealso{
+Other struc_functions: 
+\code{\link{cross_mat}()},
+\code{\link{struc_block}()},
+\code{\link{struc}}
+}
+\concept{struc_functions}

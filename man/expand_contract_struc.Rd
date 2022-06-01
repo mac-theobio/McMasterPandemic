@@ -2,12 +2,9 @@
 % Please edit documentation in R/flexstruc.R
 \name{expand_struc}
 \alias{expand_struc}
-\alias{contract_struc}
 \title{Expand and Contract struc and struc_expanded Objects}
 \usage{
 expand_struc(x)
-
-contract_struc(x)
 }
 \arguments{
 \item{x}{object to contract or expand}

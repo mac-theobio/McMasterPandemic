@@ -1120,6 +1120,14 @@ vcov.fit_pansim <- function(object, ...) {
 }
 
 ##' @export
+vcov.flexmodel_calibrated = function(object, ...) {
+    if (is_fitted_by_bbmle(object)) {
+        # symmetrize before returning
+        return((object$opt_obj@vcov + t(object$opt_obj@vcov)) / 2)
+    }
+}
+
+##' @export
 is.nan.data.frame <- function(x) {
       do.call(cbind, lapply(x, is.nan))
 }
@@ -1128,4 +1136,21 @@ is.nan.data.frame <- function(x) {
 print.flexmodel = function(x) {
     print(rate_summary(x))
     invisible(x)
+}
+
+##' @export
+coef.flexmodel = function(
+    object,
+    vector = c("tmb_arg", "params", "tv_mult"),
+    full = TRUE,
+    optimized = FALSE,
+    transformed = FALSE,
+    ...
+) {
+    stop("under construction")
+}
+
+##' @export
+isSymmetric.numeric = function(object, ...) {
+    length(object) == 1L
 }

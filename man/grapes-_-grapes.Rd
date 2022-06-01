@@ -6,6 +6,12 @@
 \usage{
 x \%_\% y
 }
+\arguments{
+\item{x}{character vector}
+
+\item{y}{character vector}
+}
 \description{
-Paste with Underscore Separator
+Paste with an underscore separator, except for length-zero character
+strings in the first vector
 }
