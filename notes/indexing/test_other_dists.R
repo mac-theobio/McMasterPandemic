@@ -4,6 +4,8 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 
+set_spec_version("0.2.0", '../../inst/tmb')
+
 state = c(S = 20000, I = 100, R = 0)
 params = c(gamma = 0.06, beta = 0.15)
 start_date = ymd(20000101)
