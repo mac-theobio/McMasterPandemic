@@ -55,5 +55,11 @@
     * More Flexible Ensembles
       * Choose any combination of parameter uncertainty, observation error, and process error
       * Flexibly omit error for particular time-series or omit uncertainty for certain parameters
-    * Cumulative sums in condensation on the C++ side
+    * Condensation
+      * Cumulative sums in condensation on the C++ side
+      * Gaussian convolution -- make sure that it is robust when sd is large (set a threshold for an error -- in general we need this for all convolutions)
+      * Mass loss problem: the q-vector that we choose will cause us to lose mass at the tails
+        * Could renormalize (probably should)
+        * Take the difference of the cumulative convolution distribution of the two end-points, and if this is above a threshold then throw an error/warn/fix??
+        * We could also use this approach to check for negativity
     * Ability to fit prior hyperparameters
