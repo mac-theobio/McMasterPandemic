@@ -819,27 +819,23 @@ public:
   Type run(const Type& observed, const Type& simulated, const vector<Type>& sp,
            int obs_do_sim_constraint, Type obs_sim_lower_bound) {
     Type var;
-    Type lll;
+    Type lll = 0.0;
     // Type clamping_tolerance = 1e-12;
     Type clamped_simulated;
+    Type param1, param2;
+
+    // clamping
+    if (obs_do_sim_constraint) // && simulated<obs_sim_lower_bound)
+      clamped_simulated = simulated + obs_sim_lower_bound * \
+                          (1.0/(1.0-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + \
+                                ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound) \
+                               ) \
+                          );
+    else
+      clamped_simulated = simulated;
+
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
-        //std::cout << "obs = " << observed << " sim = " << simulated << std::endl;
-        //clamped_simulated = CppAD::CondExpLt(
-        //  simulated,
-        //  clamping_tolerance,
-        //  clamping_tolerance,
-        //  simulated
-        //);
-
-        if (obs_do_sim_constraint) { // && simulated<obs_sim_lower_bound)
-          //std::cout << "clamping!" << std::endl;
-          //clamped_simulated = simulated + obs_sim_lower_bound * exp(-simulated/obs_sim_lower_bound);
-          clamped_simulated = simulated + obs_sim_lower_bound*(1/(1-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound)));
-        } else {
-          clamped_simulated = simulated;
-        }
-
         // var = mu + mu^2/k
         // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
         //   var ~ variance
@@ -864,32 +860,58 @@ public:
         // (i.e. differentiably) address this
         lll = -1.0 * dnbinom2(observed, clamped_simulated, var, 1);
         //std::cout << "obs = " << observed << " sim = " << clamped_simulated << " var = " << var << " disp = " << sp[this->spi[0]] << " loss = " << lll << std::endl;
-        return lll;
+        break;
 
-      //case 1: // placeholder for a different loss func
+      case 1: // Poisson
+        lll = dpois(observed, clamped_simulated, 1);
+        break;
+
+      case 2: // Log Normal
+        param1 = sp[this->spi[0]]; // sd
+        lll = dnorm(log(observed), log(clamped_simulated), param1, 1);
+        break;
+
+      case 3: // Normal
+        param1 = sp[this->spi[0]]; // sd
+        lll = dnorm(observed, clamped_simulated, param1, 1);
+        break;
+
+      case 4: // Beta
+        param1 = sp[this->spi[0]]; // shape1
+        param2 = sp[this->spi[1]]; // shape2
+        //lll = pbeta(observed, param1, param2);
+        break;
 
       default:
         // tmb error
+        Rf_error("Unrecognized loss id");
         return 0.0;
     }
+
+    // If there is no error
+    return lll;
   };
 
   Type sim(const Type& simulated, const vector<Type>& sp,
            int obs_do_sim_constraint, Type obs_sim_lower_bound) {
     Type var;
-    Type sims_with_error;
+    Type sims_with_error = simulated;
     Type clamped_simulated;
     Type var_tolerance = 1e-8;
+    Type param1;
+
+    // clamping
+    if (obs_do_sim_constraint) // && simulated<obs_sim_lower_bound)
+      clamped_simulated = simulated + obs_sim_lower_bound * \
+                          (1.0/(1.0-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + \
+                                ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound) \
+                               ) \
+                          );
+    else
+      clamped_simulated = simulated;
+
     switch (id) {
       case 0: // Negative Binomial Negative Log Likelihood
-        if (obs_do_sim_constraint) { // && simulated<obs_sim_lower_bound)
-          //std::cout << "clamping!" << std::endl;
-          //clamped_simulated = simulated + obs_sim_lower_bound * exp(-simulated/obs_sim_lower_bound);
-          clamped_simulated = simulated + obs_sim_lower_bound*(1/(1-(simulated-obs_sim_lower_bound)/obs_sim_lower_bound + ((simulated-obs_sim_lower_bound)*(simulated-obs_sim_lower_bound))/(obs_sim_lower_bound*obs_sim_lower_bound)));
-        } else {
-          clamped_simulated = simulated;
-        }
-
         // var = mu + mu^2/k
         // p.165: https://ms.mcmaster.ca/~bolker/emdbook/book.pdf
         //   var ~ variance
@@ -898,20 +920,40 @@ public:
 
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
 
-        if (var < var_tolerance) {
+        if (var < var_tolerance) 
           // more numerically stable to just set the simulations
           // to the mean when the var is low
           sims_with_error = clamped_simulated;
-        } else {
+        else 
           sims_with_error = rnbinom2(clamped_simulated, var);
-        }
-        return sims_with_error;
+
+        break;
+
+      case 1: // Poisson
+        sims_with_error = rpois(clamped_simulated);
+        break;
+
+      case 2: // Log Normal
+        param1 = sp[this->spi[0]]; // sd
+        sims_with_error = rnorm(log(clamped_simulated), param1);
+        break;
+
+      case 3: // Normal
+        param1 = sp[this->spi[0]]; // sd
+        sims_with_error = rnorm(clamped_simulated, param1);
+        break;
+
+      case 4: // Beta
+        //sims_with_error = rpois(clamped_simulated);
+        break;
 
       default:
         // if you can't find a valid error distribution,
         // just return the mean
-        return simulated;
+        break;
     }
+
+    return sims_with_error;
   }
 };
 

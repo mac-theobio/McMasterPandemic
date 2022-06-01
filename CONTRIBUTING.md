@@ -135,3 +135,25 @@ coef.flexmodel = function(
   
 }
 default, opt_init, opt_final
+
+## Testing Infrastructure
+
+When one only wants to test the TMB refactored functionality, please use the following commands.
+
+```
+export MACPAN_TEST_LEVEL=1
+make test-tmb-all
+```
+
+The test level can be increased to `>1` to run tests that are slower because they compare refactored TMB/C++ results with equivalent jobs that use the original R-engine.
+
+It is also possible to only run tests associated with specific areas.
+
+```
+test-tmb 
+test-tmb-forecast
+test-tmb-struc                       
+test-tmb-calibrate
+test-tmb-make-state
+test-tmb-timevar
+```
