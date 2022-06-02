@@ -365,7 +365,7 @@ setMethod("%*%", c(x = 'struc', y = 'struc'),
           }
 )
 
-#' describeIn struc Kronecker product
+#' @describeIn struc Kronecker product
 #' @export
 setMethod("kronecker", c(X = 'struc', Y = 'struc'),
           function(X, Y) {
@@ -432,19 +432,20 @@ setMethod("dim", c(x = 'struc'),
             x@dims
           })
 
-#' @describeIn struc Number of matrix rows
-#' @export
-setMethod("nrow", c(x = 'struc'),
-          function(x) {
-            x@dims[1]
-          })
 
-#' @describeIn struc Number of matrix columns
-#' @export
-setMethod("ncol", c(x = 'struc'),
-          function(x) {
-            x@dims[2]
-          })
+# @describeIn struc Number of matrix rows
+# @export
+#nrow.struc <- function(x) {
+#  x@dims[1]
+#}
+
+
+# @describeIn struc Number of matrix columns
+# @export
+#setMethod("ncol", c(x = 'struc'),
+#          function(x) {
+#            x@dims[2]
+#          })
 
 
 setMethod("dim", c(x = 'struc_expanded'),
@@ -453,16 +454,16 @@ setMethod("dim", c(x = 'struc_expanded'),
           })
 
 
-setMethod("nrow", c(x = 'struc_expanded'),
-          function(x) {
-            x@dims[1]
-          })
+# setMethod("nrow", c(x = 'struc_expanded'),
+#           function(x) {
+#             x@dims[1]
+#           })
 
 
-setMethod("ncol", c(x = 'struc_expanded'),
-          function(x) {
-            x@dims[2]
-          })
+# setMethod("ncol", c(x = 'struc_expanded'),
+#           function(x) {
+#             x@dims[2]
+#           })
 
 #' Repeat a Block
 #'

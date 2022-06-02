@@ -6,6 +6,7 @@
 \alias{*,struc,struc-method}
 \alias{+,struc,struc-method}
 \alias{\%*\%,struc,struc-method}
+\alias{kronecker,struc,struc-method}
 \alias{t,struc-method}
 \alias{inner,struc,struc-method}
 \alias{sum,struc-method}
@@ -13,8 +14,6 @@
 \alias{rowSums,struc-method}
 \alias{colSums,struc-method}
 \alias{dim,struc-method}
-\alias{nrow,struc-method}
-\alias{ncol,struc-method}
 \title{Class to Represent Scalar, Vector, or Matrix Structure}
 \usage{
 \S4method{*}{struc,struc}(e1, e2)
@@ -22,6 +21,8 @@
 \S4method{+}{struc,struc}(e1, e2)
 
 \S4method{\%*\%}{struc,struc}(x, y)
+
+\S4method{kronecker}{struc,struc}(X, Y)
 
 \S4method{t}{struc}(x)
 
@@ -36,10 +37,6 @@
 \S4method{colSums}{struc}(x, na.rm = FALSE, dims = 1L)
 
 \S4method{dim}{struc}(x)
-
-\S4method{nrow}{struc}(x)
-
-\S4method{ncol}{struc}(x)
 }
 \description{
 The simplest way to create such objects is with the \code{\link{struc}}
@@ -52,6 +49,8 @@ function.
 \item \code{+}: Elementwise or scalar addition
 
 \item \code{\%*\%}: Matrix multiplication
+
+\item \code{kronecker}: Kronecker product
 
 \item \code{t}: Matrix or vector transpose
 
@@ -66,10 +65,6 @@ function.
 \item \code{colSums}: Column sums of matrices
 
 \item \code{dim}: Dimensions of a matrix
-
-\item \code{nrow}: Number of matrix rows
-
-\item \code{ncol}: Number of matrix columns
 }}
 
 \section{Slots}{
