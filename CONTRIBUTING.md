@@ -92,9 +92,13 @@ TODO: describe the `get_*` family of functions and how they should be used to cr
 
 To identify McMasterPandemic-specific global options on the `R` side we prefix their names with `MP_`. For example, the `MP_use_state_rounding` option is used to indicate whether the R engine should ever round the state variable. The defaults for all McMasterPandemic-specific options should be set in [R/zzz.R](https://github.com/mac-theobio/McMasterPandemic/blob/tmb/R/zzz.R).
 
-## Package Tests
+## Installing from Makefile
 
-
+```
+make cleanobjects
+make src/McMasterPandemic.cpp
+make newinstall
+```
 
 ## Debugging
 
@@ -157,6 +161,8 @@ test-tmb-calibrate
 test-tmb-make-state
 test-tmb-timevar
 ```
+
+
 ## Adding to the sp Vector on the C++ Side
 
 ### Pass indices from R
