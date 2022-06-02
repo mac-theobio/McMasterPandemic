@@ -959,11 +959,11 @@ public:
 
         var = clamped_simulated + ((clamped_simulated*clamped_simulated) / sp[this->spi[0]]);
 
-        if (var < var_tolerance) 
+        if (var < var_tolerance)
           // more numerically stable to just set the simulations
           // to the mean when the var is low
           sims_with_error = clamped_simulated;
-        else 
+        else
           sims_with_error = rnbinom2(clamped_simulated, var);
 
         break;
@@ -974,7 +974,7 @@ public:
 
       case 2: // Log Normal
         param1 = sp[this->spi[0]]; // sd
-        sims_with_error = rnorm(log(clamped_simulated), param1);
+        sims_with_error = exp(rnorm(log(clamped_simulated), param1));
         break;
 
       case 3: // Normal

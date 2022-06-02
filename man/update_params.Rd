@@ -4,12 +4,12 @@
 \alias{update_params}
 \title{Update Default Parameters}
 \usage{
-update_params(model, params_update)
+update_params(model, ...)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
 
-\item{params_update}{named vector of parameter names}
+\item{...}{named vectors of parameter names}
 }
 \description{
 Update Default Parameters

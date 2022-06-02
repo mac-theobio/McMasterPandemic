@@ -982,3 +982,23 @@ test_that("an under-construction error is thrown for sums in opt_param forms", {
     "^sums in opt_param formulas is under construction"
   )
 })
+
+factory_fresh_macpan_options()
+sir = (flexmodel(
+    params = c(beta = 0.1, gamma = 0.01, N = 100),
+    state = c(S = 99, I = 1, R = 0),
+    start_date = "2020-03-11",
+    end_date = "2020-12-01"
+  )
+  %>% add_rate("S", "I", ~ (I) * (beta) * (1/N))
+  %>% add_rate("I", "R", ~ (gamma))
+  %>% update_params(c(
+    I_sd = 1
+  ))
+  %>% add_error_dist(
+    S ~ poisson(),
+    I ~ log_normal("I_sd")
+  )
+)
+simulation_history(sir, obs_error = TRUE)$I
+

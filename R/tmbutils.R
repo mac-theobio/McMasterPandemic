@@ -2213,7 +2213,7 @@ parse_loss_form = function(x, e = NULL) {
         }
 
         # check that the parameter names are syntactically valid
-        name_re = getOption("MP_name_search_regex")
+        name_re = wrap_exact(getOption("MP_name_search_regex"))
         all_valid_param_nms = all(
           unlist(lapply(loss_params, grepl, pattern = name_re))
         )
@@ -3815,6 +3815,8 @@ factory_fresh_macpan_options = function() {
         MP_flex_spec_dll = "McMasterPandemic",
 
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
+        # need to wrap this in wrap_exact for names that are not embedded in
+        # character strings representing expressions
         MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
 
         # -- default behaviour of classic macpan engine ------------------------

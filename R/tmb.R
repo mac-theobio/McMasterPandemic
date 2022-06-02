@@ -62,7 +62,7 @@ flexmodel <- function(params, state = NULL,
       stop("currently the data argument is not working ... please use update_observed instead")
     }
     check_spec_ver_archived()
-    name_regex = "^" %+% getOption("MP_name_search_regex") %+% "$"
+    name_regex = wrap_exact(getOption("MP_name_search_regex"))
     if(!all(grepl(name_regex, c(names(params), names(state))))) {
         stop("only syntactically valid r names can be used ",
              "for state variables and parameters")
@@ -2086,40 +2086,6 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
 
   model$observed$loss_params = loss_params
 
-  # vars_by_loss = mapply(
-  #   filter_loss_params,
-  #   valid_loss_params,
-  #   valid_loss_functions,
-  #   MoreArgs = list(loss_params = loss_params),
-  #   SIMPLIFY = FALSE
-  # )
-  # nb_vars = filter(
-  #   loss_params,
-  #   Parameter == "nb_disp",
-  #   Distribution == "negative_binomial"
-  # )$Variable
-  # normal_vars = filter(
-  #   loss_params,
-  #   Parameter == "normal_sd",
-  #   Distribution == "normal"
-  # )$Variable
-  #invalid_loss_vars = all_loss_vars[!all_loss_vars %in% c(nb_vars, normal_vars)]
-  # all_loss_vars = unique(loss_params$Variable)
-  # invalid_loss_vars = all_loss_vars[!all_loss_vars %in% unlist(vars_by_loss)]
-  # if (length(invalid_loss_vars) != 0L) {
-  #   stop(
-  #     "the following variables have invalid loss parameters: ",
-  #     paste0(invalid_loss_vars, collapse = ", ")
-  #   )
-  # }
-  # model$params = expand_params_nb_disp(
-  #   model$params,
-  #   vars_by_loss$negative_binomial
-  # )
-  # model$params = expand_params_normal_sd(
-  #   model$params,
-  #   unlist(vars_by_loss[c('log_normal', 'normal')])
-  # )
   if (regenerate_rates) {
     model = regen_rates(model)
   }
@@ -2335,10 +2301,16 @@ initialize_piece_wise = function(model) {
 #' Update Default Parameters
 #'
 #' @param model \code{\link{flexmodel}} object
-#' @param params_update named vector of parameter names
+#' @param ... named vectors of parameter names
 #' @export
-update_params = function(model, params_update) {
+update_params = function(model, ...) {
+  params_update = unlist(list(...))
   stopifnot(!is.null(names(params_update)))
+  stopifnot(!any(duplicated(names(params_update))))
+  stopifnot(all(grepl(
+    wrap_exact(getOption("MP_name_search_regex")),
+    names(params_update)
+  )))
   model$params[names(params_update)] = params_update
   model
 }
@@ -2346,10 +2318,6 @@ update_params = function(model, params_update) {
 # regenerate model --------------------------------
 
 if(FALSE) {
-
-model = yukon_model
-
-model %>% names
 
 arg_names = function(f, include_dots = FALSE, warn_dots = TRUE) {
   nms = names(formals(f))
