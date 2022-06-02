@@ -1002,10 +1002,11 @@ combine_rates = function(rates) {
 # reduce rates that act on a single from-to state pair
 # to a single total rate
 reduce_rates = function(rates) {
+  is_greater_than = function(x, y) x > y
   repeated_transitions = (rates
    %>% names
    %>% table
-   %>% `>`(1L)
+   %>% is_greater_than(1L)
    %>% which
    %>% names
   )
