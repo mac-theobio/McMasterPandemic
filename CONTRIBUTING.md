@@ -157,3 +157,123 @@ test-tmb-calibrate
 test-tmb-make-state
 test-tmb-timevar
 ```
+## Adding to the sp Vector on the C++ Side
+
+### Pass indices from R
+
+```
+DATA_IVECTOR(powidx);
+DATA_IVECTOR(powarg1idx);
+DATA_IVECTOR(powarg2idx);
+```
+
+### Compute the number of new elements in sp and allocate this space in sp and simulation_history
+
+See the area of code with `sumSize` for example.
+
+```
+// more code ...
+
+int powSize = powidx.size(); // powers
+
+// more code ...
+
+matrix<Type> simulation_history(numIterations+1, \
+  stateSize+tvElementsNum+sumSize+factrSize+powSize+extraExprNum+lagNum+convNum);
+
+// more code ...
+
+vector<Type> sp(state.size()+params.size()+sumSize+factrSize+powSize);
+
+// more code ...
+
+vector<Type> place_holder_pow(powSize);
+sp << state, params, place_holder, place_holder_factr, place_holder_pow;
+
+// more code ...
+
+if (powSize>0)
+  simulation_history.block(0, stateSize+tvElementsNum+sumSize+factrSize, 1, powSize) = \
+    sp.segment(stateSize+params.size()+sumSize+factrSize, powSize).transpose();
+
+```
+
+### Update `sp` handling in `update_state_functor` 
+
+(similar to previous step)
+
+```
+template <class Type>
+struct update_state_functor{
+  // Data members
+  vector<Type> params_;
+  vector<int> from_;
+
+// more code ...
+
+  vector<int> powidx_;
+  vector<int> powarg1idx_;
+  vector<int> powarg2idx_;
+  
+// more code ...
+
+// Constructor
+  update_state_functor(
+    vector<Type> params,
+    vector<int> from,
+
+// more code ...
+
+    vector<int> powidx,
+    vector<int> powarg1idx,
+    vector<int> powarg2idx,
+
+// more code ...
+
+    int do_approx_hazard) : params_(params), from_(from), to_(to), count_(count),
+
+// more code ...
+
+                     powidx_(powidx),
+                     powarg1idx_(powarg1idx),
+                     powarg2idx_(powarg2idx),
+
+// more code ...
+
+    // Concatenate state and params
+    vector<T> sp(state_.size()+params.size()+sumidx_.size()+factr_spi_.size()+powidx_.size());
+
+// more code ...
+
+    vector<T> place_holder_pow(powidx_.size());
+
+    sp << state_, params, place_holder, place_holder_factr, place_holder_pow;
+```
+
+
+### Function to update `sp` such as `update_sum_in_sp`
+
+```
+template<class Type>
+void update_pow_in_sp(
+    vector<Type>& sp,
+    const vector<int>& powidx,
+    const vector<int>& powarg1idx,
+    const vector<int>& powarg2idx
+  )
+{
+  for (int j=0; j<powidx.size(); j++) {
+    sp[powidx-1] = pow(sp[powarg1idx-1], [powarg2idx-1])
+  }
+}
+```
+
+### Use the update function in the objective function and in the `update_state_functor`
+
+```
+update_pow_in_sp(sp, powidx, powarg1idx, powarg2idx);
+```
+
+### Update the argument signature and calls to `do_make_state`
+
+

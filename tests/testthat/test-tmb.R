@@ -861,4 +861,5 @@ test_that("sim_report expressions give correct results", {
      %>% add_lag_diff("^report$")
      %>% add_conv("^recov$")
   )
+  simulation_history(model)
 })

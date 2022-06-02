@@ -8,6 +8,7 @@ library(dplyr)
 library(semver)
 library(numDeriv)
 library(lubridate)
+library(tidyr)
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -283,4 +284,79 @@ test_that("breakpoints outside of the simulation range cause a warning", {
     regexp = "some time-varying parameters will not change"
   )
 
+})
+
+test_that("logit-scale time-variation works", {
+  factory_fresh_macpan_options()
+  options(MP_default_do_sim_constraint = TRUE)
+  initial_gamma = 0.01
+  gamma_multiplier = 0.6
+  timevar = data.frame(
+    Date = c("2020-04-01", "2020-05-01", "2020-06-01", "2020-07-01", "2020-08-01"),
+    Symbol = "gamma",
+    Value = gamma_multiplier,
+    Type = "rel_prev_logit"
+  )
+  sir = (flexmodel(
+      params = c(beta = 0.1, gamma = initial_gamma, N = 100),
+      state = c(S = 99, I = 1, R = 0),
+      start_date = "2020-03-11",
+      end_date = "2020-12-01"
+    )
+    %>% update_piece_wise(timevar)
+    %>% add_rate("S", "I", ~ (I) * (beta) * (1/N))
+    %>% add_rate("I", "R", ~ (gamma))
+  )
+  expect_equal(
+    simulation_history(sir)$I_to_R %>% unique,
+    plogis(qlogis(initial_gamma) + (0:5) * qlogis(gamma_multiplier))
+  )
+  synth_data = (sir
+    %>% update_params(c(
+      dist = 1
+    ))
+    %>% update_error_dist(
+      S ~ negative_binomial('dist'),
+      I ~ negative_binomial('dist'),
+      R ~ negative_binomial('dist')
+    )
+    %>% simulation_history(obs_error = TRUE, include_initial_date = FALSE)
+    %>% select(Date, S, I, R)
+    %>% rename(date = Date)
+    %>% pivot_longer(-date, names_to = 'var')
+  )
+  timevar_to_cal = (timevar
+    %>% mutate(Value = NA)
+  )
+  sir_to_cal = (sir
+    %>% update_piece_wise(timevar_to_cal)
+    %>% update_observed(synth_data)
+    %>% update_params(c(
+      dist = 1
+    ))
+    %>% update_error_dist(
+      S ~ negative_binomial('dist'),
+      I ~ negative_binomial('dist'),
+      R ~ negative_binomial('dist')
+    )
+    %>% update_opt_params(
+      log_beta ~ log_flat(-2),
+      log_gamma ~ log_flat(-2)
+    )
+    %>% update_opt_tv_params(tv_type = 'rel_prev_logit'
+      , logit_gamma ~ logit_flat(0)
+    )
+  )
+  # o = tmb_fun(sir_to_cal)
+  # args = tmb_fun_args(sir_to_cal)
+  # args$random = 'tv_mult'
+  # o = do.call(MakeADFun, args)
+  # opt = nlminb(o$par, o$fn, o$gr)
+  # #o$env$parList()
+  # opt$objective
+  # o$env$random
+  # o$env$retape()
+  # o$fn()
+  sir_cal = calibrate_flexmodel(sir_to_cal)
+  sir_cal$opt_par
 })

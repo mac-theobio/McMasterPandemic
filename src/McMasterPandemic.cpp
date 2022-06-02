@@ -488,6 +488,24 @@ void update_factr_in_sp(
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Helper function update_pow_in_sp
+template<class Type>
+void update_pow_in_sp(
+    vector<Type>& sp,
+    const vector<int>& powidx,
+    const vector<int>& powarg1idx,
+    const vector<int>& powarg2idx,
+    const vector<int>& powconstidx)
+{
+  for (int j=0; j<powidx.size(); j++) {
+    Type powarg1 = sp(powarg1idx[j]-1);
+    Type powarg2 = sp(powarg2idx[j]-1);
+    Type powconst = sp(powconstidx[j]-1);
+    sp[powidx[j]-1] = powconst * pow(powarg1, powarg2);
+  }
+}
+
 template<class Type>
 vector<Type> do_step(
     vector<Type> state,
@@ -533,6 +551,10 @@ struct update_state_functor{
   vector<int> factr_count_;
   vector<int> factr_spi_compute_;
   vector<int> factr_modifier_;
+  vector<int> powidx_;
+  vector<int> powarg1idx_;
+  vector<int> powarg2idx_;
+  vector<int> powconstidx_;
   // vector<int> par_accum_indices_;
   vector<int> linearized_outflow_row_count_;
   vector<int> linearized_outflow_col_count_;
@@ -556,6 +578,10 @@ struct update_state_functor{
     vector<int> factr_count,
     vector<int> factr_spi_compute,
     vector<int> factr_modifier,
+    vector<int> powidx,
+    vector<int> powarg1idx,
+    vector<int> powarg2idx,
+    vector<int> powconstidx,
     // vector<int> par_accum_indices,
     vector<int> linearized_outflow_row_count,
     vector<int> linearized_outflow_col_count,
@@ -569,6 +595,10 @@ struct update_state_functor{
                      factr_count_(factr_count),
                      factr_spi_compute_(factr_spi_compute),
                      factr_modifier_(factr_modifier),
+                     powidx_(powidx),
+                     powarg1idx_(powarg1idx),
+                     powarg2idx_(powarg2idx),
+                     powconstidx_(powconstidx),
                      linearized_outflow_row_count_(linearized_outflow_row_count),
                      linearized_outflow_col_count_(linearized_outflow_col_count),
                      linearized_outflow_rows_(linearized_outflow_rows),
@@ -589,11 +619,12 @@ struct update_state_functor{
        params[i] = (T) params_[i];
 
     // Concatenate state and params
-    vector<T> sp(state_.size()+params.size()+sumidx_.size()+factr_spi_.size());
+    vector<T> sp(state_.size()+params.size()+sumidx_.size()+factr_spi_.size()+powidx_.size());
     vector<T> place_holder(sumidx_.size());
     vector<T> place_holder_factr(factr_spi_.size());
+    vector<T> place_holder_pow(powidx_.size());
 
-    sp << state_, params, place_holder, place_holder_factr;
+    sp << state_, params, place_holder, place_holder_factr, place_holder_pow;
 
     update_sum_in_sp(sp, sumidx_, sumcount_, summandidx_);
     update_factr_in_sp(
@@ -602,6 +633,9 @@ struct update_state_functor{
       factr_count_,
       factr_spi_compute_,
       factr_modifier_
+    );
+    update_pow_in_sp(
+      sp, powidx_, powarg1idx_, powarg2idx_, powconstidx_
     );
 
     // We've got everything we need, lets do the job ...
@@ -642,6 +676,10 @@ vector<Type> make_state(
   const vector<int>& factr_count,
   const vector<int>& factr_spi_compute,
   const vector<int>& factr_modifier,
+  const vector<int>& powidx,
+  const vector<int>& powarg1idx,
+  const vector<int>& powarg2idx,
+  const vector<int>& powconstidx,
   const vector<int>& linearized_outflow_row_count,
   const vector<int>& linearized_outflow_col_count,
   const vector<int>& linearized_outflow_rows,
@@ -698,6 +736,7 @@ vector<Type> make_state(
                                factr_spi, factr_count,
                                factr_spi_compute,
                                factr_modifier,
+                               powidx, powarg1idx, powarg2idx, powconstidx,
                                linearized_outflow_row_count, linearized_outflow_col_count,
                                linearized_outflow_rows, linearized_outflow_cols,
                                do_hazard, do_approx_hazard);
@@ -1025,7 +1064,7 @@ void InverseTransformParams(
         params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
         break;
       case 4: // inverse logit
-        params[param_id[j]-1] = 1.0/(1.0+exp(-params[param_id[j]-1]));
+        params[param_id[j]-1] = invlogit(params[param_id[j]-1]); // 1.0/(1.0+exp(-params[param_id[j]-1]));
         break;
       case 5: // inverse cloglog
         params[param_id[j]-1] = 1.0 - exp(-exp(params[param_id[j]-1]));
@@ -1064,6 +1103,7 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_spi_unique);
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
+  DATA_IVECTOR(tv_type_id);
 
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
@@ -1104,6 +1144,11 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(factr_count);
   DATA_IVECTOR(factr_spi_compute);
   DATA_IVECTOR(factr_modifier);
+
+  DATA_IVECTOR(powidx);
+  DATA_IVECTOR(powarg1idx);
+  DATA_IVECTOR(powarg2idx);
+  DATA_IVECTOR(powconstidx);
 
   DATA_INTEGER(numIterations);
   DATA_INTEGER(do_hazard);
@@ -1230,6 +1275,10 @@ Type objective_function<Type>::operator() ()
       factr_count,
       factr_spi_compute,
       factr_modifier,
+      powidx,
+      powarg1idx,
+      powarg2idx,
+      powconstidx,
       linearized_outflow_row_count,
       linearized_outflow_col_count,
       linearized_outflow_rows,
@@ -1248,31 +1297,32 @@ Type objective_function<Type>::operator() ()
 
   }
 
-  // spec v0.2.0
-  int stateSize = state.size();
-  int tvElementsNum = updateidx.size();
-  int sumSize = sumidx.size();
-  int factrSize = factr_spi.size();
-  int extraExprNum = sr_count.size();
-  int lagNum = lag_diff_sri.size();
-  int convNum = conv_sri.size();
+  // numbers of different types of columns in the simulation_history
+  //  -- spec v0.2.0
+  int stateSize = state.size(); // state variables
+  int tvElementsNum = updateidx.size(); // time-varying rate matrix elements
+  int sumSize = sumidx.size(); // sums of parameters and state variables
+  int factrSize = factr_spi.size(); // factrs
+  int powSize = powidx.size(); // powers
+  int extraExprNum = sr_count.size(); // additional expressions
+  int lagNum = lag_diff_sri.size(); // lagged differences
+  int convNum = conv_sri.size(); // convolutions
 
-  //std::cout << "extraExprNum = " << extraExprNum << std::endl;
-  //std::cout << "lagNum = " << lagNum << std::endl;
-  //std::cout << "convNum = " << convNum << std::endl;
+  // std::cout << "powSize: " << powSize << std::endl;
 
   matrix<Type> simulation_history(numIterations+1, \
-    stateSize+tvElementsNum+sumSize+factrSize+extraExprNum+lagNum+convNum);
+    stateSize+tvElementsNum+sumSize+factrSize+powSize+extraExprNum+lagNum+convNum);
   simulation_history.setZero();
 
   simulation_history.block(0, 0, 1, stateSize) = state.transpose();
 
   // Initialize the vectors that contain state, parameters,
   // and sums of these quantities
-  vector<Type> sp(state.size()+params.size()+sumidx.size()+factr_spi.size());
-  vector<Type> place_holder(sumidx.size());
-  vector<Type> place_holder_factr(factr_spi.size());
-  sp << state, params, place_holder, place_holder_factr;
+  vector<Type> sp(state.size()+params.size()+sumSize+factrSize+powSize);
+  vector<Type> place_holder(sumSize);
+  vector<Type> place_holder_factr(factrSize);
+  vector<Type> place_holder_pow(powSize);
+  sp << state, params, place_holder, place_holder_factr, place_holder_pow;
   vector<Type> sp_orig(sp); // sp_orig does not contain sums
 
   update_sum_in_sp(sp, sumidx, sumcount, summandidx);
@@ -1287,6 +1337,11 @@ Type objective_function<Type>::operator() ()
   if (factrSize>0)
     simulation_history.block(0, stateSize+tvElementsNum+sumSize, 1, factrSize) = \
       sp.segment(stateSize+params.size()+sumSize, factrSize).transpose();
+
+  update_pow_in_sp(sp, powidx, powarg1idx, powarg2idx, powconstidx);
+  if (powSize>0)
+    simulation_history.block(0, stateSize+tvElementsNum+sumSize+factrSize, 1, powSize) = \
+      sp.segment(stateSize+params.size()+sumSize+factrSize, powSize).transpose();
 
   // Calculate integral of count
   vector<int> count_integral(count.size()+1);
@@ -1316,7 +1371,7 @@ Type objective_function<Type>::operator() ()
   if (extraExprNum>0) {
     vector<int> sr_output_idx(extraExprNum);
     for (int k=0; k<extraExprNum; k++) {
-      sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+k+1; // 1-based indexing
+      sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+powSize+k+1; // 1-based indexing
     }
 
     vector<Type> sh_row = simulation_history.row(0).transpose();
@@ -1408,17 +1463,45 @@ Type objective_function<Type>::operator() ()
     // update sp (params)
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+        // valid_tv_types = c(
+        //   'abs',
+        //   'rel_orig', 'rel_prev',
+        //   'rel_orig_logit', 'rel_prev_logit'
+        // )
+        switch (tv_type_id[j]-1) {
+          case 0: // abs
+            sp[tv_spi[j]-1] = tv_mult[j];
+            break;
+          case 1: // rel_orig
+            sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
+            break;
+          case 2: // rel_prev
+            sp[tv_spi[j]-1] *= tv_mult[j];
+            break;
+          case 3: // rel_orig_logit
+            sp[tv_spi[j]-1] = invlogit(
+              logit(sp_orig[tv_spi[j]-1]) + logit(tv_mult[j])
+            );
+            break;
+          case 4: // rel_prev_logit
+            sp[tv_spi[j]-1] = invlogit(
+              logit(sp[tv_spi[j]-1]) + logit(tv_mult[j])
+            );
+            break;
+          default:
+            Rf_error("invalid time-variation specification");
+        }
         //std::cout << "tv_spi = " << tv_spi[j] << std::endl;
         //std::cout << "tv_mult = " << tv_mult[j] << std::endl;
-        if (tv_abs[j]) { // type == 'abs'
-          sp[tv_spi[j]-1] = tv_mult[j];
-        }
-        else if (tv_orig[j]) { // type == 'rel_orig'
-          sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
-        }
-        else { // type == 'rel_prev'
-          sp[tv_spi[j]-1] *= tv_mult[j];
-        }
+        // if (tv_abs[j]) { // type == 'abs'
+        //   sp[tv_spi[j]-1] = tv_mult[j];
+        // }
+        // else if (tv_orig[j]) { // type == 'rel_orig'
+        //   sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
+        // }
+        // else { // type == 'rel_prev'
+        //   sp[tv_spi[j]-1] *= tv_mult[j];
+        // }
       }
 
       start += count_of_tv_at_breaks[nextBreak];
@@ -1444,6 +1527,11 @@ Type objective_function<Type>::operator() ()
       simulation_history.block(i+1, stateSize+tvElementsNum+sumSize, 1, factrSize) = \
         sp.segment(stateSize+params.size()+sumSize, factrSize).transpose();
 
+    update_pow_in_sp(sp, powidx, powarg1idx, powarg2idx, powconstidx);
+    if (powSize>0)
+      simulation_history.block(i+1, stateSize+tvElementsNum+sumSize+factrSize, 1, powSize) = \
+        sp.segment(stateSize+params.size()+sumSize+factrSize, powSize).transpose();
+
     update_ratemat(
       &ratemat, sp, from, to, count_integral,
       spi, modifier, updateidx);
@@ -1465,7 +1553,7 @@ Type objective_function<Type>::operator() ()
     if (extraExprNum>0) {
       vector<int> sr_output_idx(extraExprNum);
       for (int k=0; k<extraExprNum; k++) {
-        sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+k+1; // 1-based indexing
+        sr_output_idx(k) = stateSize+tvElementsNum+sumSize+factrSize+powSize+k+1; // 1-based indexing
       }
 
       vector<Type> sh_row = simulation_history.row(i+1).transpose();
@@ -1517,13 +1605,13 @@ Type objective_function<Type>::operator() ()
     for (int k=0; k<lag_diff_sri.size(); k++) {
       if (i+1>=lag_diff_delay_n[k]) {
         int col = lag_diff_sri[k]-1;
-        simulation_history(i+1, stateSize+tvElementsNum+sumSize+factrSize+extraExprNum+k) = \
+        simulation_history(i+1, stateSize+tvElementsNum+sumSize+factrSize+powSize+extraExprNum+k) = \
           simulation_history(i+1, col) - simulation_history(i+1-lag_diff_delay_n[k], col);
       }
     }
 
     // Item #7 Convolutions of any variables of type 1-5 with a gamma-density kernel
-    int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + \
+    int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + powSize + \
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
       vector<Type> kernel = kappa[k];

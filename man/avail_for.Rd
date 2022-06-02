@@ -4,6 +4,7 @@
 \alias{avail_for_rate}
 \alias{avail_for_sum}
 \alias{avail_for_factr}
+\alias{avail_for_pow}
 \alias{avail_for_expr}
 \alias{avail_for_conv}
 \alias{avail_for_lag}
@@ -14,6 +15,8 @@ avail_for_rate(model)
 avail_for_sum(model)
 
 avail_for_factr(model)
+
+avail_for_pow(model)
 
 avail_for_expr(model)
 

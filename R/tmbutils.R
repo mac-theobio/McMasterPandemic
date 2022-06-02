@@ -10,6 +10,11 @@ valid_loss_params = list(
 valid_loss_functions = names(valid_loss_params)
 valid_prior_families = c('flat', 'normal')
 valid_trans = c('log', 'log10', 'logit', 'cloglog', 'inverse')
+valid_tv_types = c(
+  'abs',
+  'rel_orig', 'rel_prev',
+  'rel_orig_logit', 'rel_prev_logit'
+)
 
 filter_loss_params = function(loss_params, param_nms, dist_nm){
   filter(
@@ -31,6 +36,11 @@ init_initial_population = list(
 )
 
 init_factr_vector = numeric(0L)
+init_pow_vector = numeric(0L)
+init_pow = setNames(
+  as.data.frame(matrix(nrow = 0L, ncol = 5)),
+  c("pow_nms", "pow_arg1_nms", "pow_arg2_nms", "pow_const_nms", "initial_value")
+)
 
 init_condensation = list(
   include = list(),
@@ -73,6 +83,12 @@ init_tmb_indices = list(
     count = integer(0L),
     spi = integer(0L),
     modifier = integer(0L)
+  ),
+  pow_indices = list(
+    powidx = integer(0L),
+    powarg1idx = integer(0L),
+    powarg2idx = integer(0L),
+    powconstidx = integer(0L)
   ),
   condense_indices = list(
     sri_output = integer(0L),
@@ -459,7 +475,8 @@ initial_sim_report_names = function(model) {
     names(model$state),
     names(which_time_varying_rates(model)),
     names(model$sum_vector),
-    names(model$factr_vector)
+    names(model$factr_vector),
+    names(model$pow_vector)
   )
 }
 
@@ -1429,7 +1446,8 @@ get_var_list = function(model) {
     as.list(model$params),
     as.list(model$state),
     as.list(model$sum_vector),
-    as.list(model$factr_vector)
+    as.list(model$factr_vector),
+    as.list(model$pow_vector)
   )
 }
 
@@ -1545,6 +1563,16 @@ avail_for_factr = function(model) {
     names(model$params),
     names(model$sums),
     names(model$factrs))
+}
+
+#' @rdname avail_for
+#' @export
+avail_for_pow = function(model) {
+  c(names(model$state),
+    names(model$params),
+    names(model$sums),
+    names(model$factrs),
+    names(model$pows))
 }
 
 #' @rdname avail_for
@@ -2264,6 +2292,19 @@ factr_indices = function(factrs, state_param_sums) {
     modifier = modifier
   )
   return(indices)
+}
+
+#' @export
+pow_indices = function(pow, state_param_sum_factr_pow) {
+  if (nrow(pow) == 0L) {
+    return(init_tmb_indices$pow_indices)
+  }
+  list(
+    powidx = find_vec_indices(pow$pow_nms, state_param_sum_factr_pow),
+    powarg1idx = find_vec_indices(pow$pow_arg1_nms, state_param_sum_factr_pow),
+    powarg2idx = find_vec_indices(pow$pow_arg2_nms, state_param_sum_factr_pow),
+    powconstidx = find_vec_indices(pow$pow_const_nms, state_param_sum_factr_pow)
+  )
 }
 
 #' @export
@@ -3749,6 +3790,89 @@ get_macpan_options = function() {
   )
 }
 
+##' @export
+factory_fresh_macpan_options = function() {
+  flex_version <- readLines(
+        system.file("tmb/recommended_spec_version",
+            package = "McMasterPandemic"
+        )
+    )[1]
+  options(
+
+        # -- spec version settings ---------------------------------------------
+
+        # default spec version
+        MP_flex_spec_version = flex_version,
+
+        # url containing spec version descriptions
+        MP_flex_spec_doc_site = "https://canmod.net/misc/flex_specs",
+
+        # default object file for c++ implementation of the spec
+        #   - the default means that src/McMasterPandemic.src will be used
+        #   - a common alternative is "macpan", which will correspond to
+        #     different spec versions in inst/tmb
+        MP_flex_spec_dll = "McMasterPandemic",
+
+        # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
+        MP_name_search_regex = "((([[:alpha:]]|[.][._[:alpha:]])[._[:alnum:]]*)|[.])",
+
+        # -- default behaviour of classic macpan engine ------------------------
+
+        # ??
+        MP_badsum_action = "warning",
+
+        # ??
+        MP_badsum_tol = 1e-12,
+
+        # default number of steps to take in the iterative eigenvector solver
+        MP_rexp_steps_default = 100,
+
+        # -- warnings associated with flexmodel structure ----------------------
+
+        # warn if there are multiple rates for the same state transition
+        MP_warn_repeated_rates = FALSE,
+
+        # warn if there is no outflow in the model (rarely what users want)
+        # -- setting to FALSE because of MP_auto_outflow
+        MP_warn_no_outflow = FALSE,
+
+        # warn if there are time-variation breakpoints outside of the
+        # simulation bounds
+        MP_warn_bad_breaks = TRUE,
+
+        # -- flexmodel defaults ------------------------------------------------
+        # -- see ?flexmodel for description of these arguments -----------------
+        MP_default_do_hazard = FALSE,
+        MP_default_do_hazard_lin = FALSE,
+        MP_default_do_approx_hazard = FALSE,
+        MP_default_do_approx_hazard_lin = FALSE,
+        MP_default_do_make_state = FALSE,
+        MP_default_do_sim_constraint = FALSE,
+        MP_default_sim_lower_bound = 1e-12,
+
+        # -- tmb_fun behaviour -------------------------------------------------
+
+        # if the user does not specify any outflows, automatically add
+        # an outflow for every inflow
+        MP_auto_outflow = TRUE,
+
+        # automatically update the tmb indices when (re)generating the
+        # tmb ad fun
+        MP_auto_tmb_index_update = TRUE,
+
+        # do state condensation with c++ code as opposed to r
+        MP_condense_cpp = TRUE,
+
+        MP_silent_tmb_function = TRUE,
+
+        # -- control how comparable r and tmb engines are ----------------------
+        # -- see r_tmb_comparable ----------------------------------------------
+        MP_use_state_rounding = TRUE,         # FALSE ~ comparable
+        MP_vax_make_state_with_hazard = TRUE, # FALSE ~ comparable
+        MP_tmb_models_match_r = FALSE,        # TRUE  ~ comparable
+        MP_force_dgTMatrix = FALSE            # TRUE  ~ comparable
+    )
+}
 
 # converting between classic and tmb params_timevar -------
 #   this is annoying:
