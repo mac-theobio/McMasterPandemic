@@ -1262,7 +1262,7 @@ initialize_opt_tv_params = function(model) {
 #' @export
 update_opt_tv_params = function(
   model,
-  tv_type = c('abs', 'rel_orig', 'rel_prev'),
+  tv_type = valid_tv_types,
   ...
 ) {
   if (!inherits(model, "flexmodel_to_calibrate")) {
@@ -1287,7 +1287,7 @@ update_opt_tv_params = function(
 #' @export
 add_opt_tv_params = function(
   model,
-  tv_type = c('abs', 'rel_orig', 'rel_prev'),
+  tv_type = valid_tv_types,
   ...
 ) {
   if (!inherits(model, "flexmodel_to_calibrate")) {
@@ -1315,6 +1315,25 @@ update_opt_vec = function(model, ...) {
     "and will wrap update_opt_params, but is not yet implemented. ",
     "this would allow multivariate priors, for example"
   )
+}
+
+##' Update Random Effect Parameters
+##'
+##' Specify parameters as random effects
+##'
+##' @param model \code{flexmodel_to_calibrate} object
+##' @param ... formulas for specifying parameters as random effects -- see
+##' \code{\link{update_opt_params}} for more detail
+##'
+##' @export
+update_ranef_params = function(model, ...) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters as random effects"
+    )
+  }
+  model$ranef_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
+  model
 }
 
 #' Extend End Date
@@ -1467,8 +1486,6 @@ tmb_indices <- function(model) {
       opi = indices$opt_params$index_table$opt_param_id
       tvpi = indices$opt_params$index_tv_table$opt_tv_mult_id
 
-      sc = model$timevar$piece_wise$schedule
-
       # MakeADFun map argument
       params_map = factor(
         rep(NA, length(model$params)),
@@ -1498,7 +1515,13 @@ tmb_indices <- function(model) {
 ##' @importFrom TMB MakeADFun
 ##' @useDynLib McMasterPandemic
 ##' @export
-tmb_fun <- function(model) {
+tmb_fun = function(model) {
+  do.call(MakeADFun, tmb_fun_args(model))
+}
+
+##' @rdname tmb_fun
+##' @export
+tmb_fun_args <- function(model) {
     check_spec_ver_archived()
     DLL = getOption('MP_flex_spec_dll')
 
@@ -1532,7 +1555,7 @@ tmb_fun <- function(model) {
 
     ## make ad functions for different spec versions
     if (spec_ver_eq("0.0.1")) {
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1551,7 +1574,7 @@ tmb_fun <- function(model) {
         ## TODO: spec problem -- numIters should have been kept in model
         numIters <- 3
 
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1572,7 +1595,7 @@ tmb_fun <- function(model) {
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.4")) {
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1593,7 +1616,7 @@ tmb_fun <- function(model) {
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.5")) {
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1615,7 +1638,7 @@ tmb_fun <- function(model) {
             DLL = DLL
         )
     } else if (spec_ver_eq("0.0.6")) {
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1640,7 +1663,7 @@ tmb_fun <- function(model) {
         )
     } else if (spec_ver_eq("0.1.0")) {
         unpack(sum_indices)
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1670,7 +1693,7 @@ tmb_fun <- function(model) {
         unpack(sum_indices)
         init_tv_mult = integer(0L)
         if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
-        dd <- MakeADFun(
+        dd <- list(
             data = list(
                 state = c(state),
                 ratemat = ratemat,
@@ -1739,7 +1762,7 @@ tmb_fun <- function(model) {
       unpack(sum_indices)
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
-      dd <- MakeADFun(
+      dd <- list(
         data = list(
           state = c(state),
           ratemat = ratemat,
@@ -1851,7 +1874,7 @@ tmb_fun <- function(model) {
         stop('observations outside of simulation range')
       }
 
-      dd <- MakeADFun(
+      dd <- list(
         data = list(
           state = c(state),
           ratemat = ratemat,
@@ -1863,12 +1886,15 @@ tmb_fun <- function(model) {
           updateidx = null_to_int0(c(updateidx)),
           breaks = null_to_int0(breaks),
           count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+
           tv_val = null_to_num0(schedule$tv_val),
           tv_spi = null_to_int0(schedule$tv_spi),
           tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
           # tv_mult = schedule$Value,  # moved to parameter vector
           tv_orig = null_to_log0(schedule$Type == "rel_orig"),
           tv_abs = null_to_log0(schedule$Type == "abs"),
+          tv_type_id = null_to_int0(schedule$tv_type_id),
+          #tv_type = null_to_int0(NULL),
 
           sumidx = null_to_int0(sumidx),
           sumcount = null_to_int0(unname(sumcount)),
@@ -2175,22 +2201,26 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     feature = 'piece-wise time variation of parameters'
   )
 
+  #
   schedule <- (params_timevar
-               %>% mutate(Date = as.Date(Date))
-               %>% mutate(breaks = (Date
-                  %>% difftime(model$start_date, units = 'days')
-                  %>% as.integer
-               ))
-               %>% mutate(tv_spi = find_vec_indices(Symbol, c(model$state, model$params)))
-               %>% arrange(breaks, tv_spi)
+   %>% mutate(Date = as.Date(Date))
+   %>% mutate(breaks = (Date
+      %>% difftime(model$start_date, units = 'days')
+      %>% as.integer
+   ))
+   %>% mutate(tv_spi = find_vec_indices(Symbol, c(model$state, model$params)))
+   %>% mutate(tv_type_id = as.numeric(factor(Type, levels = valid_tv_types)))
+   %>% arrange(breaks, tv_spi)
   )
 
     if(spec_ver_gt("0.1.0")) {
       schedule = (schedule
-                  %>% mutate(init_tv_mult = replace(Value,
-                                                    which(is.na(Value)),
-                                                    1))
-                  %>% mutate(last_tv_mult = init_tv_mult)
+        %>% mutate(init_tv_mult = replace(
+          Value,
+          which(is.na(Value)),
+          1
+        ))
+        %>% mutate(last_tv_mult = init_tv_mult)
       )
     }
 
@@ -2201,20 +2231,33 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     }
     new_param <- TRUE
     ns <- nrow(schedule)
+    if (!all(schedule$Type %in% valid_tv_types)) {
+      stop(
+        "Unrecognized break-point type.\n",
+        "Only the following are allowed:\n",
+        paste0(valid_tv_types, collapse = ', ')
+      )
+    }
     for (i in seq_len(ns)) {
-      if ((new_param | schedule$Type[i] == "rel_orig") & (schedule$Type[i] != "abs")) {
+      if ((new_param | grepl("^rel_orig", schedule$Type[i])) & (schedule$Type[i] != "abs")) {
         old_val <- model$params[schedule$Symbol[i]]
-      } else if (schedule$Type[i] == "rel_prev") {
+      } else if (grepl("^rel_prev", schedule$Type[i])) {
         old_val <- schedule$tv_val[i - 1]
       } else if (schedule$Type[i] == "abs") {
         old_val <- 1
       } else {
         stop(
-          "Unrecognized break-point type.\n",
-          "Only rel_orig, rel_prev, and abs are allowed"
+          "parameter time-variation functionality is broken. ",
+          "please contact package maintainers."
         )
       }
-      schedule$tv_val[i] <- old_val * schedule$Value[i]
+      if (grepl("_logit$", schedule$Type[i])) {
+        schedule$tv_val[i] <- plogis(
+          qlogis(old_val) + qlogis(schedule$Value[i])
+        )
+      } else {
+        schedule$tv_val[i] <- old_val * schedule$Value[i]
+      }
       new_param <- schedule$Symbol[i] != schedule$Symbol[min(ns, i + i)]
     }
 
@@ -2271,10 +2314,15 @@ initialize_piece_wise = function(model) {
       schedule = data.frame(
         Date = as.Date(numeric(0L), origin = "1970-01-01"),
         Symbol = character(0L),
-        Type = character(0L),
         Value = numeric(0L),
+        Type = character(0L),
+        breaks = integer(0L),
         tv_spi = integer(0L),
-        tv_val = numeric(0L)
+        tv_type_id = integer(0L),
+        init_tv_mult = numeric(0L),
+        last_tv_mult = numeric(0L),
+        tv_val = numeric(0L),
+        tv_mult_id = integer(0L)
       )
     )
   )

@@ -1022,7 +1022,7 @@ void InverseTransformParams(
         params[param_id[j]-1] = pow(10.0, params[param_id[j]-1]);
         break;
       case 4: // inverse logit
-        params[param_id[j]-1] = 1.0/(1.0+exp(-params[param_id[j]-1]));
+        params[param_id[j]-1] = invlogit(params[param_id[j]-1]); // 1.0/(1.0+exp(-params[param_id[j]-1]));
         break;
       case 5: // inverse cloglog
         params[param_id[j]-1] = 1.0 - exp(-exp(params[param_id[j]-1]));
@@ -1061,6 +1061,7 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(tv_spi_unique);
   DATA_IVECTOR(tv_orig);
   DATA_IVECTOR(tv_abs);
+  DATA_IVECTOR(tv_type_id);
 
   DATA_IVECTOR(outflow_row_count);
   DATA_IVECTOR(outflow_col_count);
@@ -1265,7 +1266,7 @@ Type objective_function<Type>::operator() ()
   int lagNum = lag_diff_sri.size(); // lagged differences
   int convNum = conv_sri.size(); // convolutions
 
-  std::cout << "powSize: " << powSize << std::endl;
+  // std::cout << "powSize: " << powSize << std::endl;
 
   matrix<Type> simulation_history(numIterations+1, \
     stateSize+tvElementsNum+sumSize+factrSize+powSize+extraExprNum+lagNum+convNum);
@@ -1420,17 +1421,45 @@ Type objective_function<Type>::operator() ()
     // update sp (params)
     if (nextBreak<breaks.size() && i==(breaks[nextBreak])) {
       for (int j=start; j<start+count_of_tv_at_breaks[nextBreak]; j++) {
+        // valid_tv_types = c(
+        //   'abs',
+        //   'rel_orig', 'rel_prev',
+        //   'rel_orig_logit', 'rel_prev_logit'
+        // )
+        switch (tv_type_id[j]-1) {
+          case 0: // abs
+            sp[tv_spi[j]-1] = tv_mult[j];
+            break;
+          case 1: // rel_orig
+            sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
+            break;
+          case 2: // rel_prev
+            sp[tv_spi[j]-1] *= tv_mult[j];
+            break;
+          case 3: // rel_orig_logit
+            sp[tv_spi[j]-1] = invlogit(
+              logit(sp_orig[tv_spi[j]-1]) + logit(tv_mult[j])
+            );
+            break;
+          case 4: // rel_prev_logit
+            sp[tv_spi[j]-1] = invlogit(
+              logit(sp[tv_spi[j]-1]) + logit(tv_mult[j])
+            );
+            break;
+          default:
+            Rf_error("invalid time-variation specification");
+        }
         //std::cout << "tv_spi = " << tv_spi[j] << std::endl;
         //std::cout << "tv_mult = " << tv_mult[j] << std::endl;
-        if (tv_abs[j]) { // type == 'abs'
-          sp[tv_spi[j]-1] = tv_mult[j];
-        }
-        else if (tv_orig[j]) { // type == 'rel_orig'
-          sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
-        }
-        else { // type == 'rel_prev'
-          sp[tv_spi[j]-1] *= tv_mult[j];
-        }
+        // if (tv_abs[j]) { // type == 'abs'
+        //   sp[tv_spi[j]-1] = tv_mult[j];
+        // }
+        // else if (tv_orig[j]) { // type == 'rel_orig'
+        //   sp[tv_spi[j]-1] = sp_orig[tv_spi[j]-1]*tv_mult[j];
+        // }
+        // else { // type == 'rel_prev'
+        //   sp[tv_spi[j]-1] *= tv_mult[j];
+        // }
       }
 
       start += count_of_tv_at_breaks[nextBreak];

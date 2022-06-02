@@ -862,5 +862,4 @@ test_that("sim_report expressions give correct results", {
      %>% add_conv("^recov$")
   )
   simulation_history(model)
-  simulation_history(update_tmb_indices(add_pow(model, "PP", "S", "beta_wild") %>% add_pow("LL", "PP", "beta_wild")))
 })

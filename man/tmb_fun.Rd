@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmb.R
 \name{tmb_fun}
 \alias{tmb_fun}
+\alias{tmb_fun_args}
 \title{Make Objective Function with TMB}
 \usage{
 tmb_fun(model)
+
+tmb_fun_args(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
