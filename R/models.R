@@ -392,6 +392,75 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
   model
 }
 
+#' Converts a classic ageified model to a flexmodel
+#'
+#' @inheritDotParams flexmodel
+#' @family flexmodels
+#' @family canned_models
+#' @export
+make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALSE){
+  args = list(...)
+  McMasterPandemic::unpack(args)
+
+  stopifnot(has_age(params))
+
+  model = flexmodel(params = unlist(params), state = setNames(state, make.names(names(state))), start_date = start_date, end_date=end_date)
+
+  epi_cat = c(attr(state, "epi_cat"))
+  age_cat = c(attr(state, "age_cat"))
+  age_cat = gsub("-", ".", age_cat)
+  age_cat = gsub("\\+", ".", age_cat)
+
+  beta0 = vec(paste0("beta0", 1:length(age_cat)))
+  C = vec(c("(Ca)", "(Cp)", "(1 - iso_m) * (Cm)", "(1 - iso_s) * (Cs)"))
+  N = struc_block(vec(inverse(paste0("N", 1:length(age_cat)))), row_times=1, col_times=4)
+
+  pmat = as.struc(matrix(paste0('pmat', 1:(length(age_cat)*length(age_cat))), length(age_cat), length(age_cat)))
+
+  Istate = c('Ia', 'Ip', 'Im', 'Is')
+  Ivec = expand_names(Istate, age_cat)
+  Imat = as.struc(matrix(Ivec, ncol = 4, byrow=TRUE))
+  foi_vec = rowSums((beta0 %*% t(C)) * (pmat %*% (Imat * N)))
+
+  model = (model
+           # Flow within age categories,
+           # with constant rates across categories
+           %>% rep_rate("Ia",   "R",    ~                      (gamma_a))
+           %>% rep_rate("Im",   "R",    ~                      (gamma_m))
+           %>% rep_rate("Is",   "D",    ~ (    nonhosp_mort) * (gamma_s))
+           %>% rep_rate("Is",   "H",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+           %>% rep_rate("Is",   "ICUs", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (1 - phi2))
+           %>% rep_rate("Is",   "ICUd", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (    phi2))
+           %>% rep_rate("ICUs", "H2",   ~                                  (    psi1))
+           %>% rep_rate("ICUd", "D",    ~                                  (    psi2))
+           %>% rep_rate("H2",   "R",    ~                                  (    psi3))
+           %>% rep_rate("H",    "R",    ~ (rho))
+           %>% rep_rate("E", "Ia",      ~(           alpha ) * (sigma))
+           %>% rep_rate("E", "Ip",      ~(1-alpha) * (sigma))
+           %>% rep_rate("Ip", "Im",     ~(              mu ) * (gamma_p))
+           %>% rep_rate("Ip", "Is",     ~(1-mu) * (gamma_p))
+
+           #Add variable rates within a single age category
+           %>% vec_rate("S", "E", foi_vec)
+  )
+
+  #Add rates between age categories (if requested)
+  if(do_ageing){
+    ageing_rate = length(age_cat)/(365*(max_age-min_age))
+    model = update_params(model, c(ageing_rate = ageing_rate))
+    ageing_cat = epi_cat[epi_cat!="D"]
+    for(i in ageing_cat){
+      ageified_states = paste(i, age_cat, sep="_")
+      states_from = ageified_states[1:(length(ageified_states)-1)]
+      states_to = ageified_states[2:length(ageified_states)]
+      model = model%>%rep_rate(states_from, states_to, ~(ageing_rate))
+    }
+  }
+
+
+  model$classic_macpan_model = TRUE
+  return(model)
+}
 
 ##' SIR Model
 ##'
