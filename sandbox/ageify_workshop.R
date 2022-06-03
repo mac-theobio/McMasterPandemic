@@ -18,7 +18,41 @@ for(i in 1:16){
   beta0[i]=0.056*i
 }
 
-pmat = as.matrix(read.csv("../PremEtAl_contacts_Canada.csv"))
+### The following data is taken from Prem et al, PLOS computational biology, 2017
+pvec = c(2.87087681,  0.86595357,  0.21203609,  0.13160236,  0.22627356,  0.56043760,  0.76410939,  0.67325715,
+         0.30618438,  0.37273137,  0.28505683,  0.51976450,  0.40895496,  0.24917620,  0.09997739,  0.19569749,
+         0.94357477,  4.48163950,  1.41985066,  0.31182949,  0.17528649,  0.28378290,  0.88449425,  1.01373316,
+         0.66651081,  0.50589960,  0.62493291,  0.67430895,  0.37226525,  0.39129459,  0.28492363,  0.25283756,
+         0.37358052,  0.88978665,  6.67547793,  2.59695238,  0.30914903,  0.21759868,  0.65662328,  0.83752341,
+         0.98257181,  0.74771908,  0.99219952,  0.72762247,  0.29966765,  0.32452269,  0.28845841,  0.36262822,
+         0.25317159,  0.25207481,  0.80122709, 10.35650746,  2.55207646,  0.87843040,  0.51528489,  0.76382834,
+         1.14901511,  1.71647765,  1.46081049,  0.95673375,  0.46320592,  0.21400864,  0.32618166,  0.29805416,
+         0.33586201,  0.15642724,  0.29643418,  1.56028287,  4.41678745,  2.13343636,  1.07548843,  0.75941648,
+         0.91697100,  0.95665619,  1.11019515,  0.77754491,  0.40315311,  0.28383193,  0.15984425,  0.13200477,
+         0.65584323,  0.40257766,  0.25208035,  0.77738676,  1.85679154,  3.73581938,  1.82448679,  1.39093400,
+         1.23184934,  1.03822838,  1.40707079,  1.24048811,  0.60717672,  0.39561083,  0.25123347,  0.16009860,
+         1.03423059,  0.76881514,  0.46080405,  0.64698646,  1.24493594,  1.90594773,  3.11859587,  1.73573791,
+         1.58622839,  1.29372886,  1.27835939,  1.30256290,  0.73561049,  0.57346207,  0.25856558,  0.25523763,
+         0.92004231,  0.93100172,  0.71878219,  0.83555168,  1.12056252,  1.45747508,  1.89863593,  3.03051793,
+         1.78587322,  1.45193808,  1.24906900,  1.01742936,  0.75967050,  0.55968725,  0.42718717,  0.29100744,
+         0.44895120,  0.74227614,  0.96370293,  1.08284750,  0.97896422,  1.23876152,  1.45091467,  1.98427202,
+         2.76936616,  1.56890737,  1.64254911,  1.13522623,  0.61306572,  0.55830674,  0.53603683,  0.33779344,
+         0.29422722,  0.31622672,  0.54795580,  1.08500588,  1.25377563,  1.04954678,  1.16542512,  1.31932496,
+         1.64173440,  2.28966469,  1.88308081,  1.00930104,  0.54741172,  0.37860998,  0.43318089,  0.40556621,
+         0.31204529,  0.21051978,  0.28606516,  0.55216954,  0.84894692,  1.01088523,  0.89306802,  0.94105256,
+         1.13203414,  1.18740204,  2.15420252,  1.29600953,  0.56097701,  0.42924095,  0.36068821,  0.41205509,
+         0.25033322,  0.17382395,  0.14325162,  0.22582218,  0.43186039,  0.51604087,  0.59493354,  0.49407920,
+         0.41105569,  0.52692641,  0.94441090,  1.77300020,  0.75303095,  0.53670880,  0.32686384,  0.26190351,
+         0.16140108,  0.14895517,  0.09049465,  0.08686389,  0.11614301,  0.15670103,  0.23012089,  0.26229784,
+         0.20939502,  0.18815659,  0.33105220,  0.58444201,  1.24970378,  0.57794926,  0.56693136,  0.19973673,
+         0.13253666,  0.11229653,  0.08989419,  0.06416785,  0.05912124,  0.06512385,  0.10905689,  0.16947812,
+         0.12952593,  0.10869355,  0.15792250,  0.26587234,  0.45164130,  1.15929008,  0.60142751,  0.29751953,
+         0.07109389,  0.04629893,  0.05672467,  0.03185901,  0.05611564,  0.03131584,  0.04826811,  0.08543297,
+         0.08066805,  0.08425313,  0.09449383,  0.11635659,  0.22651242,  0.29069106,  0.83561744,  0.26946360,
+         0.03790854,  0.03547422,  0.04728921,  0.02084000,  0.04458359,  0.02221800,  0.04501411,  0.03386190,
+         0.03615801,  0.07324080,  0.08172454,  0.08031509,  0.09210569,  0.12038808,  0.24581890,  0.46130449)
+
+pmat = matrix(pvec, byrow=FALSE, nrow=16)
 pmat_row_sums = rowSums(pmat)
 pmat_normalizer = do.call(cbind, replicate(length(pmat_row_sums), pmat_row_sums, simplify = FALSE ))
 pmat = pmat/pmat_normalizer
@@ -43,131 +77,3 @@ ageified_history = simulation_history(ageified_model)
   + facet_grid(epi~age, scales = "free_y")
   + geom_line(aes(Date, value))
 )
-
-# plotting_data = data.frame(
-#   Date = ageified_history$Date,
-#   stringsAsFactors = FALSE
-# )
-#
-# gen_col_names<-function(base_name){
-#   name_vec = vector(mode="character", length=16)
-#   for(i in 1:16){
-#     if(i!=16){
-#       lower_age = 5*(i-1)
-#       upper_age = 5*i-1
-#       age_name = paste(lower_age, upper_age, sep=".")
-#     }
-#     else age_name = paste0(5*(i-1), ".")
-#     name_vec[i]=paste(base_name, age_name, sep="_")
-#   }
-#   return(name_vec)
-# }
-
-# s_vec = gen_col_names("S")
-# s_tab = ageified_history[s_vec]
-# plotting_data$S = rowSums(s_tab)
-#
-# e_vec = gen_col_names("E")
-# e_tab = ageified_history[e_vec]
-# plotting_data$E = rowSums(e_tab)
-#
-# ia_vec = gen_col_names("Ia")
-# ia_tab = ageified_history[ia_vec]
-# plotting_data$Ia = rowSums(ia_tab)
-#
-# ip_vec = gen_col_names("Ip")
-# ip_tab = ageified_history[ip_vec]
-# plotting_data$Ip = rowSums(ip_tab)
-#
-# im_vec = gen_col_names("Im")
-# im_tab = ageified_history[im_vec]
-# plotting_data$Im = rowSums(im_tab)
-#
-# is_vec = gen_col_names("Is")
-# is_tab = ageified_history[is_vec]
-# plotting_data$Is = rowSums(is_tab)
-#
-# h_vec = gen_col_names("H")
-# h_tab = ageified_history[h_vec]
-# plotting_data$H = rowSums(h_tab)
-#
-# h2_vec = gen_col_names("H2")
-# h2_tab = ageified_history[h2_vec]
-# plotting_data$H2 = rowSums(h2_tab)
-#
-# icus_vec = gen_col_names("ICUs")
-# icus_tab = ageified_history[icus_vec]
-# plotting_data$ICUs = rowSums(icus_tab)
-#
-# icud_vec = gen_col_names("ICUd")
-# icud_tab = ageified_history[icud_vec]
-# plotting_data$ICUd = rowSums(icud_tab)
-#
-# r_vec = gen_col_names("R")
-# r_tab = ageified_history[r_vec]
-# plotting_data$R = rowSums(r_tab)
-#
-# d_vec = gen_col_names("D")
-# d_tab = ageified_history[d_vec]
-# plotting_data$D = rowSums(d_tab)
-#
-# (plotting_data
-#   %>% pivot_longer(-Date)
-#   %>% ggplot()
-#   + facet_wrap(~name, scales = "free")
-#   + geom_line(aes(Date, value, color=name))
-#   )
-# (ggplot()+geom_line(data = plotting_data, aes(x=Date, y=S), color="green")
-#   +geom_line(data=plotting_data, aes(x=Date, y=E), color="blue")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Ia), color="orange1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Ip), color="orange2")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Im), color="orange3")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Is), color="orange4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=H), color="hotpink1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=H2), color="hotpink4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUs), color="purple1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUd), color="purple4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=R), color="grey50")
-#   +geom_line(data=plotting_data, aes(x=Date, y=D), color="grey20")
-#   )
-#
-# (ggplot()
-#   +geom_line(data=plotting_data, aes(x=Date, y=E), color="blue")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Ia), color="orange1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Ip), color="orange2")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Im), color="orange3")
-#   +geom_line(data=plotting_data, aes(x=Date, y=Is), color="orange4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=H), color="hotpink1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=H2), color="hotpink4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUs), color="purple1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUd), color="purple4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=D), color="grey20")
-# )
-#
-# (ggplot()
-#   +geom_line(data=plotting_data, aes(x=Date, y=H), color="hotpink1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=H2), color="green")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUs), color="purple1")
-#   +geom_line(data=plotting_data, aes(x=Date, y=ICUd), color="purple4")
-#   +geom_line(data=plotting_data, aes(x=Date, y=D), color="grey20")
-# )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
