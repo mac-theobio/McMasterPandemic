@@ -229,6 +229,7 @@ flexmodel <- function(params, state = NULL,
       rel_prev = list()
     )
     model$condensation_map = init_condensation_map
+    model$condensation_full = TRUE
 
     if (FALSE & spec_ver_gt('0.1.2')) {
       model$opt_params = initialize_opt_params(model)
@@ -823,6 +824,9 @@ add_lag_diff = function(
     model$lag_diff,
     list(added_lag_diff)
   )
+  if (any(duplicated(unlist(lapply(model$lag_diff, getElement, "output_names"))))) {
+    stop('the same variable is being differenced with the same lag, which is not currently allowed')
+  }
   update_tmb_indices(model)
 }
 
@@ -868,6 +872,9 @@ add_conv = function(
     model$conv,
     list(added_conv)
   )
+  if (any(duplicated(unlist(lapply(model$conv, getElement, "output_names"))))) {
+    stop('the same variable is being convolved twice, which is not currently allowed')
+  }
   update_tmb_indices(model)
 }
 
@@ -892,6 +899,7 @@ update_condense_map = function(model, map = NULL) {
   if (is.null(map)) map = setNames(allvars, allvars)
   stopifnot(all(names(map) %in% allvars))
   model$condensation_map = map
+  model$condensation_full = FALSE
   model
 }
 
@@ -1405,7 +1413,7 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
 ##' @export
 update_tmb_indices <- function(model) {
 
-    if (length(model$condensation_map) == 0L) {
+    if (model$condensation_full) {
       model = update_full_condensation_map(model)
     }
 
@@ -1550,7 +1558,7 @@ tmb_fun_args <- function(model) {
         model = add_outflow(model)
       }
     }
-    if ((length(model$condensation_map) == 0L) & (nrow(model$observed$data) > 0L)) {
+    if (model$condensation_full) {
       model = update_full_condensation_map(model)
     }
     if (getOption('MP_auto_tmb_index_update')) {

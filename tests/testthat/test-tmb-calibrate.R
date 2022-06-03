@@ -1000,5 +1000,3 @@ sir = (flexmodel(
     I ~ log_normal("I_sd")
   )
 )
-simulation_history(sir, obs_error = TRUE)$I
-
