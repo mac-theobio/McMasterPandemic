@@ -1362,7 +1362,27 @@ extend_end_date = function(model, days_to_extend) {
   update_tmb_indices(model)
 }
 
-
+#' Update Simulation Bounds
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @param start_date optional new start date for simulations
+#' @param end_date optional new end date for simulations
+#'
+#' @export
+update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
+  if (inherits(model, 'flexmodel_calibrated')) {
+    stop("it is not currently allowed to update the simulation bounds on a calibrated model. please see ?extend_end_date for a possible solution")
+  }
+  if (!is.null(start_date)) {
+    model$start_date = as.Date(start_date)
+  }
+  if (!is.null(end_date)) {
+    model$end_date = as.Date(end_date)
+  }
+  model$iters = compute_num_iters(model)
+  # TODO: check time-variation breakpoints? maybe updating the indices will be enough
+  update_tmb_indices(model)
+}
 
 
 # compute indices and pass them to the tmb/c++ side ---------------------
@@ -2265,10 +2285,30 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     model
 }
 
+#' @rdname update_piece_wise
 #' @export
 add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
-  ptv = model$timevar$piecewise$schedule[c("Date", "Symbol", "Value", "Type")]
-  update_piece_wise(model, rbind(params_timevar, ptv), regenerate_rates)
+  tv_cols = c("Date", "Symbol", "Value", "Type")
+  if (!is.null(model$model_to_calibrate)) {
+    ptv_to_cal = rbind(
+      model$model_to_calibrate$timevar$piecewise$schedule[tv_cols],
+      params_timevar
+    )
+    model$model_to_calibrate = update_piece_wise(
+      model$model_to_calibrate,
+      ptv_to_cal,
+      regenerate_rates
+    )
+  }
+  ptv_to_cal = rbind(
+    model$timevar$piecewise$schedule[tv_cols],
+    params_timevar
+  )
+  update_piece_wise(
+    model,
+    ptv_to_cal,
+    regenerate_rates
+  )
 }
 
 #' @export

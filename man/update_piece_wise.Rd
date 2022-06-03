@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmb.R
 \name{update_piece_wise}
 \alias{update_piece_wise}
+\alias{add_piece_wise}
 \title{Update the Piece-Wise Parameter Time-Variation Schedule}
 \usage{
 update_piece_wise(model, params_timevar, regenerate_rates = TRUE)
+
+add_piece_wise(model, params_timevar, regenerate_rates = TRUE)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}

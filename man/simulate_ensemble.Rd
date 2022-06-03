@@ -25,9 +25,11 @@ iterations and columns giving model parameters}
 
 \item{qvec}{named numeric vector giving quantiles to compute}
 
-\item{...}{arguments to pass on the \code{pop_pred_samp}, such as
-\code{PDify = TRUE} that can solve issues with non-positive definite
-matrices}
+\item{...}{arguments to pass on the \code{pop_pred_samp}, which
+is actually doing the sampling from the distribution of parameters.
+useful parameters here include the sample size, \code{n} (default 1000),
+and \code{PDify = TRUE} that can solve issues with non-positive definite
+matrices.}
 }
 \description{
 Given a sample of parameter vectors, simulate the condensed state simulation
