@@ -209,7 +209,6 @@ flexmodel <- function(params, state = NULL,
     # condensation -- spec_ver_gt("0.1.2)
     model$condensation = init_condensation
 
-    model = structure(model, class = "flexmodel")
 
     if (spec_ver_gt("0.1.2") & !is.null(data)) {
       model = update_observed(model, data)
@@ -229,7 +228,7 @@ flexmodel <- function(params, state = NULL,
       rel_prev = list()
     )
     model$condensation_map = init_condensation_map
-    model$condensation_full = TRUE
+    model$no_condensation = TRUE
 
     if (FALSE & spec_ver_gt('0.1.2')) {
       model$opt_params = initialize_opt_params(model)
@@ -237,6 +236,7 @@ flexmodel <- function(params, state = NULL,
     }
 
     model$tmb_indices <- init_tmb_indices
+    class(model) = 'flexmodel'
 
     model
 }
@@ -899,7 +899,7 @@ update_condense_map = function(model, map = NULL) {
   if (is.null(map)) map = setNames(allvars, allvars)
   stopifnot(all(names(map) %in% allvars))
   model$condensation_map = map
-  model$condensation_full = FALSE
+  model$no_condensation = FALSE
   model
 }
 
@@ -1325,6 +1325,8 @@ update_opt_vec = function(model, ...) {
   )
 }
 
+# refine_initial_values = function(model)
+
 ##' Update Random Effect Parameters
 ##'
 ##' Specify parameters as random effects
@@ -1354,21 +1356,41 @@ update_ranef_params = function(model, ...) {
 #' @importFrom lubridate days
 #' @export
 extend_end_date = function(model, days_to_extend) {
+  UseMethod('extend_end_date')
+}
+
+#' @exportS3Method
+extend_end_date.flexmodel = function(model, days_to_extend) {
   model$end_date = model$end_date + days(days_to_extend)
   model$iters = compute_num_iters(model)
-
-  # HACK!
-  if (!is.null(model$model_to_calibrate)) {
-    model$model_to_calibrate$end_date =
-      model$model_to_calibrate$end_date +
-      days(days_to_extend)
-    model$model_to_calibrate$iters = compute_num_iters(model$model_to_calibrate)
-    model$model_to_calibrate =
-      update_tmb_indices(model$model_to_calibrate)
-  }
-
   update_tmb_indices(model)
 }
+
+#' @exportS3Method
+extend_end_date.flexmodel_calibrated = function(model, days_to_extend) {
+  model$model_to_calibrate = extend_end_date(
+    model$model_to_calibrate,
+    days_to_extend
+  )
+  NextMethod("extend_end_date")
+}
+
+# a = function(x) {
+#   UseMethod('a')
+# }
+# a.A = function(x) {
+#   x = x + 2
+#   x = NextMethod('a')
+#   x
+# }
+# a.B = function(x) {
+#   x = x * 10
+#   x
+# }
+# a(structure(1, class = c('A', 'B')))
+# a(structure(1, class = c('B')))
+
+
 
 #' Update Simulation Bounds
 #'
@@ -1411,9 +1433,14 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
 ##'
 ##' @param model \code{\link{flexmodel}} object
 ##' @export
-update_tmb_indices <- function(model) {
+update_tmb_indices = function(model) {
+  UseMethod("update_tmb_indices")
+}
 
-    if (model$condensation_full) {
+##' @exportS3Method
+update_tmb_indices.flexmodel <- function(model) {
+
+    if (model$no_condensation) {
       model = update_full_condensation_map(model)
     }
 
@@ -1558,7 +1585,7 @@ tmb_fun_args <- function(model) {
         model = add_outflow(model)
       }
     }
-    if (model$condensation_full) {
+    if (model$no_condensation) {
       model = update_full_condensation_map(model)
     }
     if (getOption('MP_auto_tmb_index_update')) {
@@ -2117,10 +2144,17 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
   if (regenerate_rates) {
     model = regen_rates(model)
   }
+
+  # HACK: refactor so that update_loss_params has a generic,
+  #       so that this class setting becomes unconditional
   if (isTRUE(all.equal(model$observed$data, init_observed$data))) {
-    class(model) = c("flexmodel", "flexmodel_obs_error")
+    class(model) = c("flexmodel_obs_error", "flexmodel")
   } else {
-    class(model) = c("flexmodel", "flexmodel_to_calibrate")
+    class(model) = c(
+      "flexmodel_obs_error",
+      "flexmodel_to_calibrate",
+      "flexmodel"
+    )
   }
   model
 }
@@ -2174,7 +2208,11 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
   if (regenerate_rates) {
     model = regen_rates(model)
   }
-  class(model) = c('flexmodel_to_calibrate', 'flexmodel')
+  class(model) = c(
+    'flexmodel_obs_error',
+    'flexmodel_to_calibrate',
+    'flexmodel'
+  )
   return(model)
 }
 
@@ -2299,7 +2337,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   tv_cols = c("Date", "Symbol", "Value", "Type")
   if (!is.null(model$model_to_calibrate)) {
     ptv_to_cal = rbind(
-      model$model_to_calibrate$timevar$piecewise$schedule[tv_cols],
+      model$model_to_calibrate$timevar$piece_wise$schedule[tv_cols],
       params_timevar
     )
     model$model_to_calibrate = update_piece_wise(

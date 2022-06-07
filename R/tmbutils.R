@@ -3459,6 +3459,9 @@ bbmle_flexmodel = function(model, ...) {
   model_to_calibrate = model
   obj_fun = tmb_fun(model)
   start_par = tmb_params_trans(model)
+  if (getOption("MP_get_bbmle_init_from_nlminb")) {
+    start_par[] = nlminb_flexmodel(model)$opt_par
+  }
   bbmle::parnames(obj_fun$fn) = names(start_par)
   bbmle::parnames(obj_fun$gr) = names(start_par)
   model$opt_obj = bbmle::mle2(
@@ -3869,6 +3872,9 @@ factory_fresh_macpan_options = function() {
         MP_condense_cpp = TRUE,
 
         MP_silent_tmb_function = TRUE,
+
+        # optimizer options ----------------------------------------------------
+        MP_get_bbmle_init_from_nlminb = FALSE,
 
         # -- control how comparable r and tmb engines are ----------------------
         # -- see r_tmb_comparable ----------------------------------------------

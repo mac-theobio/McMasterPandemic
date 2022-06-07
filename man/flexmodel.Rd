@@ -85,6 +85,7 @@ https://canmod.net/misc/flex_specs
 }
 \seealso{
 Other flexmodels: 
+\code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
 \code{\link{make_omicron_model}()},
 \code{\link{make_sir_model}()},
