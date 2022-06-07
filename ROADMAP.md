@@ -117,10 +117,11 @@
       * Make State Cleanup
         * Option to not use eigenvector and just populate the initial state with elements of the parameter vector
         * More intuitive interface, or at least detailed documentation
-      * More Flexible Ensembles
+      * Ensemble Forecasting
         * Choose any combination of parameter uncertainty, observation error, and process error (when process error is possible)
         * Flexibly omit error for particular time-series or omit uncertainty for certain parameters
         * Ensemble forecasting should run faster in loops within simulation macros on the C++ side, as opposed to generating samples from the distribution of parameters on the R side and then passing back to C++
+        * Smoothing out the empirical quantiles so that forecast envelopes are not as bumpy
       * Condensation
         * Cumulative sums in condensation on the C++ side
         * Gaussian convolution -- make sure that it is robust when sd is large (set a threshold for an error -- in general we need this for all convolutions)
