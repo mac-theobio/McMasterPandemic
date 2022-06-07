@@ -1,5 +1,11 @@
 # McMasterPandemic Roadmap
 
+## Prioritization
+
+![](roadmap.svg)
+
+## Descriptions of the Items
+
 * Arithmetic Engine
   * Main existing pain-points:
     * Interface for inputting rate expressions is not intuitive in many (but not all) cases
