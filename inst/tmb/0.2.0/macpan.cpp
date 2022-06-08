@@ -1480,12 +1480,12 @@ Type objective_function<Type>::operator() ()
             break;
           case 3: // rel_orig_logit
             sp[tv_spi[j]-1] = invlogit(
-              logit(sp_orig[tv_spi[j]-1]) + logit(tv_mult[j])
+              logit(sp_orig[tv_spi[j]-1]) + tv_mult[j]
             );
             break;
           case 4: // rel_prev_logit
             sp[tv_spi[j]-1] = invlogit(
-              logit(sp[tv_spi[j]-1]) + logit(tv_mult[j])
+              logit(sp[tv_spi[j]-1]) + tv_mult[j]
             );
             break;
           default:

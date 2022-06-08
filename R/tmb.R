@@ -2285,7 +2285,7 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       }
       if (grepl("_logit$", schedule$Type[i])) {
         schedule$tv_val[i] <- plogis(
-          qlogis(old_val) + qlogis(schedule$Value[i])
+          qlogis(old_val) + schedule$Value[i]
         )
       } else {
         schedule$tv_val[i] <- old_val * schedule$Value[i]
