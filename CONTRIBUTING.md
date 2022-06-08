@@ -87,6 +87,42 @@ TODO: point to a help file (not yet written) that describes the `flexmodel` clas
 
 TODO: describe the `get_*` family of functions and how they should be used to create functions like `rate_summary`
 
+### Types of `flexmodel`
+
+* `flexmodel` base class
+* `flexmodel_to_calibrate` used to pass to an optimizer
+* `flexmodel_calibrated` used to simulate from a calibrated model
+* `flexmodel_for_forecasts`
+* `flexmodel_obs_error`
+* `flexmodel_optim`
+* `flexmodel_nlminb`
+* `flexmodel_bbmle`
+* `flexmodel_failed_calibration`
+
+S3 class vectors that appear in the package:
+
+*     error type             parameter tuning type           use case     
+* `c(                                                                                 'flexmodel')`
+* `c(                                                       'flexmodel_scenario',     'flexmodel')` (this is not necessary)
+* `c('flexmodel_obs_error',                                                           'flexmodel')` 
+* `c('flexmodel_obs_error'                                  'flexmodel_to_calibrate', 'flexmodel')`
+* `c('flexmodel_obs_error',                                 'flexmodel_scenario',     'flexmodel')`
+* `c(                       'flexmodel_bbmle',              'flexmodel_scenario',     'flexmodel')`  (what's this??)
+* `c('flexmodel_obs_error', 'flexmodel_optim',              'flexmodel_calibrated',   'flexmodel')`
+* `c('flexmodel_obs_error', 'flexmodel_nlminb',             'flexmodel_calibrated',   'flexmodel')`
+* `c('flexmodel_obs_error', 'flexmodel_bbmle',              'flexmodel_calibrated',   'flexmodel')`
+* `c('flexmodel_obs_error', 'flexmodel_bbmle',              'flexmodel_scenario',     'flexmodel')`
+* `c(                       'flexmodel_failed_calibration',                           'flexmodel')`
+
+### Methods for `flexmodel` Objects
+
+#### Methods for building and editing `flexmodel` objects
+
+#### Methods for converting between different kinds of `flexmodel` objects
+
+#### Methods for generating output from `flexmodel` objects
+
+#### Methods for extracting information from `flexmodel` objects
 
 ## Global Options
 
@@ -110,11 +146,6 @@ See https://kaskr.github.io/adcomp/_book/Errors.html#floating-point-exception fo
 
 
 
-## Types of `flexmodel`
-
-* `flexmodel` used for simulations that are not guided by calibrations
-* `flexmodel_to_calibrate` used to pass to an optimizer
-* `flexmodel_calibrated` used to simulate from a calibrated model
 
 ## Parameters for TMB Objects
 
@@ -281,5 +312,4 @@ update_pow_in_sp(sp, powidx, powarg1idx, powarg2idx);
 ```
 
 ### Update the argument signature and calls to `do_make_state`
-
 

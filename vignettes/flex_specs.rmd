@@ -56,11 +56,7 @@ as well. `C++` files that implement various spec versions are currently
 being placed
 [here](https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb).
 
-Spec versions have three life cycle stages: frozen, experimental, and
-archived. If a frozen version needs clarification or updating, this
-clarification must be done by linking to a subsequent version that
-addresses the issue(s). Each frozen version of the spec must contain the
-following five sections.
+Spec versions have three life cycle stages: frozen, experimental, recommended, and archived. If a frozen version needs clarification or updating, this clarification must be done by linking to a subsequent version that addresses the issue(s). Each frozen version of the spec must contain the following five sections.
 
 -   *New Capabilities* -- very short summary; refer to previous versions
     for background
@@ -91,22 +87,18 @@ will not change.
 -   [0.1.0 -- Model structure](#v0.1.0)
 -   [0.1.1 -- Make state and calibrate time-varying
     multipliers](#v0.1.1)
+-   [0.1.2 -- Common factors](#v0.1.2)
+
+## Recommended
+
+-   [0.2.0 -- Condensation, calibration, and observation error on the `C++` side](#v0.2.0)
 
 ## Experimental Versions
 
-The specs for the following versions are being actively developed and
-modified. These versions also serve as a roadmap. Note that version
-numbers of experimental versions can change without warning.
+The specs for the following versions are being actively developed and modified. Note that version numbers of experimental versions can change without warning.
 
--   [0.1.2 -- Common factors](#v0.1.2)
--   [0.2.0 -- Condensation and calibration on the `C++` side](#v0.2.0)
 -   [0.2.1 -- Uneven lagged differencing](#v0.2.1)
--   [0.2.2 -- Log-linear exogenous time-variation of
-    parameters](#v0.2.2)
--   [0.2.3 -- Stochasticity](#v0.2.3)
--   [0.3.0 -- Endogenous time-variation of parameters](#v0.3.0)
--   [0.4.0 -- Time steps not equal to one](#0.4.0)
--   [1.0.0 -- Version One](#1.0.0)
+-   [0.2.2 -- Log-linear time-variation of parameters](#v0.2.2)
 
 ## Archived Versions
 
@@ -120,158 +112,22 @@ still reference them.
 
 # Version Descriptions
 
-## v2.0.0
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-Here we describe a generalization of McMasterPandemic so that it can leverage different engines from a common interface.
-
-## v1.0.0
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-Here we describe what we are working towards. This will change regularly, but the goal is to have a clear, succinct, and accurate description of refactored McMasterPandemic at the same time that it is ready.
-
-### Mathematical Description (1.0.0)
-
-#### Objective Function
-
-Every evaluation of the objective function triggers the following steps.
-
-* Get data and parameters from R
-* Inverse-transform parameters on transformed scales [v0.2.0](#v0.2.0)
-* Make initial state vector [v0.1.1](#v0.1.1)
-    * Initialize two state vectors -- one for the full model and one for the linearized model
-    * Copy parameters so they can be used for the linearized model
-    * Replace some elements of the parameters for the linearized model
-    * Replace some elements of state for the linearized model
-    * Compute the Jacobian for the linearized model using automatic differentiation
-    * Remove rows and columns from the Jacobian and the state for the linearized model
-    * Compute eigenvector of the Jacobian using a power method
-    * Normalize a subset (associated with infected compartments only) of the eigenvector to have elements that sum to one
-    * Distribute infected individuals among compartments in the initial state vector
-    * Distribute susceptible individuals among compartments in the initial state vector
-* Concatenate state, params, and sums into a vector, sp, containing all quantities on which rates can depend [v0.0.1](#v0.0.1)
-* Update sums of state variables and parameters [v0.1.0](#v0.1.0)
-* Copy sp [v0.0.6](#v0.0.6)
-* Make rate matrix from sp [v0.0.2](#v0.0.2)
-* Add initial state to the report [v0.0.2](#v0.0.2)
-* Add initial structural (i.e. non-zero) elements of the rate matrix to the report [v0.0.5](#v0.0.5)
-* Run the simulation loop for `end_date - start_date` iterations, where the date difference is taken in units of days (e.g. `"2021-10-12" - "2021-10-10" = 2`) [v0.0.2](#v0.0.2)
-    * Update the state vector [v0.0.2](#v0.0.2)
-    * Update the time-varying parameters [v0.0.4](#v0.0.4)
-    * Update sums of state variables and parameters [v0.1.0](#v0.1.0)
-    * Update rate matrix [v0.0.1](#v0.0.1)
-    * Add updated state variable to the report [v0.0.2](#v0.0.2)
-    * Add updated structural (i.e. non-zero) elements of the rate [v0.0.5](#v0.0.5) matrix to the report
-* Condense the `concatenated_state_vector` [v0.2.0](#v0.2.0)
-* Compute the negative binomial negative log likelihood [v0.2.0](#v0.2.0)
-* Subtract log priors from the negative log likelihood, and return [v0.2.0](#v0.2.0)
-
-### Data Structure (1.0.0)
-
-`state`
-`from`
-`to`
-`count`
-`spi`
-`modifier`
-`updateidx`
-`breaks`
-`count_of_tv_at_breaks`
-`tv_spi`
-`tv_spi_unique`
-`tv_orig`
-`tv_abs`
-
-`outflow_row_count`
-`outflow_col_count`
-`outflow_rows`
-`outflow_cols`
-
-`do_make_state`
-`max_iters_eig_pow_meth`
-`tol_eig_pow_meth`
-
-`linearized_outflow_row_count`
-`linearized_outflow_col_count`
-`linearized_outflow_rows`
-`linearized_outflow_cols`
-
-`lin_param_vals`
-`lin_param_count`
-`lin_param_idx`
-
-`df_state_par_idx`
-`df_state_count`
-`df_state_idx`
-
-`im_all_drop_eigen_idx`
-`im_eigen_drop_infected_idx`
-`im_all_to_infected_idx`
-`im_susceptible_idx`
-
-`ip_total_idx`
-`ip_infected_idx`
-
-`sumidx`
-`sumcount`
-`summandidx`
-
-`numIterations`
-`do_hazard`
-`do_approx_hazard`
-`do_hazard_lin`
-`do_approx_hazard_lin`
-
-  // The order of these PARAMETER_VECTOR macros
-  // is important because it defines the order with
-  // which non-fixed parameters are passed to the
-  // objective function on the R side. From ?MakeADFun:
-  // "The order of the PARAMETER_ macros defines the order
-  // of parameters in the final objective function"
-`params`
-`tv_mult`
-
-## v0.4.0
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.4.0)
-
-Time steps not equal to one.
-
-## v0.3.0 {#v0.3.0}
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.3.0)
-
-Endogenous time-variation of parameters.
-
-## v0.2.2 {#v0.2.3}
-
-[![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
-
-### New Capabilities (0.2.3)
-
-Stochasticity.
-
-## v0.2.1 {#v0.2.2}
+## v0.2.2 {#v0.2.2}
 
 [![Lifecycle
 Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.2.2)
 
-Log-linear exogenous time-variation of parameters.
+Log-linear time-variation of parameters. This feature generalizes the piece-wise time-variation of parameters to allow for the following.
+
+* Process error
+* Semi-parametric time-variation estimation
+* 
 
 ### Mathematical Description (0.2.2)
+
+This is a 
 
 Such parameters have their own parameters that determine a model of
 time-variation. These latter parameters get transformed to produce a
@@ -280,9 +136,7 @@ steps. One simple thing to do would be to put these time series into the
 parameter vector, and when parameters are accessed use the index
 `spi + t` where `spi` is the index into the `state_param` vector that
 picks out the first parameter in the time series and `t` is the current
-time step. I'm a little worried that this could have us jumping around
-to different memory locations too much, so I will need to discuss with
-Weiguang and Ben.
+time step.
 
 $$
 \log(u) = \log(u_0) + Xv
@@ -364,12 +218,14 @@ matrix(c(
 
 ### Data Structure (0.2.1)
 
-TODO: Weiguang
+`lag_diff_sri` remains unchanged from previous versions.
+
+`lag_diff_delay_n` is changed from a vector to a matrix, with rows associated with the elements of `lag_diff_sri` one column for each iterations.
 
 ## v0.2.0 {#v0.2.0}
 
 [![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Recommended&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.2.0)
 
@@ -650,7 +506,7 @@ We will pass the following additional data through to TMB to specify the objecti
 ## v0.1.2 {#v0.1.2}
 
 [![Lifecycle
-Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Experimental&color=yellow)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
+Badge](https://img.shields.io/static/v1.svg?label=Lifecycle&message=Frozen&color=green)](https://canmod.net/misc/flex_specs#versioning-and-lifecycle)
 
 ### New Capabilities (0.1.2)
 
