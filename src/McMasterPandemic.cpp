@@ -902,20 +902,21 @@ public:
         break;
 
       case 1: // Poisson
-        lll = dpois(observed, clamped_simulated, 1);
+        lll = -1.0 * dpois(observed, clamped_simulated, 1);
         break;
 
       case 2: // Log Normal
         param1 = sp[this->spi[0]]; // sd
-        lll = dnorm(log(observed), log(clamped_simulated), param1, 1);
+        lll = -1.0 * dnorm(log(observed), log(clamped_simulated), param1, 1);
         break;
 
       case 3: // Normal
         param1 = sp[this->spi[0]]; // sd
-        lll = dnorm(observed, clamped_simulated, param1, 1);
+        lll = -1.0 * dnorm(observed, clamped_simulated, param1, 1);
         break;
 
       case 4: // Beta
+        Rf_error("Beta distributed error is under construction");
         param1 = sp[this->spi[0]]; // shape1
         param2 = sp[this->spi[1]]; // shape2
         //lll = pbeta(observed, param1, param2);

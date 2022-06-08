@@ -2181,27 +2181,32 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
 #' @export
 update_observed = function(model, data, loss_params = NULL, regenerate_rates = TRUE) {
   stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
-  #allvars = model$condensation_map[final_sim_report_names(model)]
   obsvars = unique(data$var)
-  #stopifnot(all(obsvars %in% allvars))
   model$observed$data = data
 
   if (is.null(loss_params)) {
     if (nrow(model$observed$loss_params) == 0L) {
+      # message(
+      #   "\na default negative binomial error distribution for all observed\n",
+      #   "variables has been assumed. one dispersion parameter for each\n",
+      #   "variable has been added to the parameter vector and set to a\n",
+      #   "default value of 1. it is recommended that update_error_dist is\n",
+      #   "explicitly called."
+      # )
       model$observed$loss_params = data.frame(
         Parameter = "nb_disp" %_% obsvars, # default choice: dispersion
         Distribution = "negative_binomial",   # default choice: negative binomial
         Variable = obsvars
       )
       model$params = expand_params_nb_disp(model$params, obsvars)
-    } else {
-      warning(
-        "\nan error distribution was inherited from a modified flexmodel, \n",
-        "and has not been explicitly modified to be consistent with the \n",
-        "new observed data. it is recommended that update_error_dist is \n",
-        "explicitly called."
-      )
-    }
+    } #else {
+      # warning(
+      #   "\nan error distribution was inherited from a modified flexmodel, \n",
+      #   "and has not been explicitly modified to be consistent with the \n",
+      #   "new observed data. it is recommended that update_error_dist is \n",
+      #   "explicitly called."
+      # )
+    #}
   } else {
     model = update_loss_params(model, loss_params)
   }
