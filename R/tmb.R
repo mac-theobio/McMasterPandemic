@@ -669,9 +669,9 @@ add_state_param_sum = function(model, sum_name, summands) {
 pow = function(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
                state, params, sum_vector, factr_vector, pow_vector) {
   avail_vec = c(state, params, sum_vector, factr_vector, pow_vector)
-  arg1_idx = McMasterPandemic:::find_vec_indices(pow_arg1_nms, avail_vec)
-  arg2_idx = McMasterPandemic:::find_vec_indices(pow_arg2_nms, avail_vec)
-  const_idx = McMasterPandemic:::find_vec_indices(pow_const_nms, avail_vec)
+  arg1_idx = find_vec_indices(pow_arg1_nms, avail_vec)
+  arg2_idx = find_vec_indices(pow_arg2_nms, avail_vec)
+  const_idx = find_vec_indices(pow_const_nms, avail_vec)
   initial_value = setNames(
     avail_vec[const_idx] * (avail_vec[arg1_idx]^avail_vec[arg2_idx]),
     pow_nms
@@ -828,6 +828,17 @@ add_lag_diff = function(
     stop('the same variable is being differenced with the same lag, which is not currently allowed')
   }
   update_tmb_indices(model)
+}
+
+#' @export
+add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
+  stopifnot(input_names %in% intermediate_sim_report_names(model))
+  stopifnot(all(lag_dates %in% simulation_dates(sir_model)))
+  model$lag_diff_uneven = c(
+    model$lag_diff_uneven,
+    list(nlist(input_names, output_names, lag_dates))
+  )
+  model
 }
 
 #' Add Variable by Convolution
@@ -1375,23 +1386,6 @@ extend_end_date.flexmodel_calibrated = function(model, days_to_extend) {
   NextMethod("extend_end_date")
 }
 
-# a = function(x) {
-#   UseMethod('a')
-# }
-# a.A = function(x) {
-#   x = x + 2
-#   x = NextMethod('a')
-#   x
-# }
-# a.B = function(x) {
-#   x = x * 10
-#   x
-# }
-# a(structure(1, class = c('A', 'B')))
-# a(structure(1, class = c('B')))
-
-
-
 #' Update Simulation Bounds
 #'
 #' @param model \code{\link{flexmodel}} object
@@ -1413,7 +1407,6 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
   # TODO: check time-variation breakpoints? maybe updating the indices will be enough
   update_tmb_indices(model)
 }
-
 
 # compute indices and pass them to the tmb/c++ side ---------------------
 
@@ -2084,7 +2077,7 @@ add_error_dist = function(model, ...) {
   new_loss_params = (list(...)
    %>% lapply(
      parse_and_resolve_loss_form,
-     final_sim_report_names(model),
+     condensed_sim_report_names(model),
      names(model$params)
     )
    %>% bind_rows
@@ -2110,7 +2103,7 @@ update_error_dist = function(model, ...) {
   new_loss_params = (list(...)
    %>% lapply(
      parse_and_resolve_loss_form,
-     final_sim_report_names(model),
+     condensed_sim_report_names(model),
      names(model$params)
     )
    %>% bind_rows
@@ -2120,7 +2113,9 @@ update_error_dist = function(model, ...) {
 
 #' @rdname update_error_dist
 #' @export
-reset_error_dist = function(model) update_error_dist(model)
+reset_error_dist = function(model) {
+  update_error_dist(model)
+}
 
 #' Update Observation Error
 #'
@@ -2142,7 +2137,7 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
   model$observed$loss_params = loss_params
 
   if (regenerate_rates) {
-    model = regen_rates(model)
+    model = regen_model(model)
   }
 
   # HACK: refactor so that update_loss_params has a generic,
@@ -2151,7 +2146,6 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
     class(model) = c("flexmodel_obs_error", "flexmodel")
   } else {
     class(model) = c(
-      "flexmodel_obs_error",
       "flexmodel_to_calibrate",
       "flexmodel"
     )
@@ -2211,10 +2205,9 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
     model = update_loss_params(model, loss_params)
   }
   if (regenerate_rates) {
-    model = regen_rates(model)
+    model = regen_model(model)
   }
   class(model) = c(
-    'flexmodel_obs_error',
     'flexmodel_to_calibrate',
     'flexmodel'
   )
@@ -2326,7 +2319,7 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       }
     }
     if (regenerate_rates) {
-      model = regen_rates(model)
+      model = regen_model(model)
     }
     if (spec_ver_gt('0.1.2')) {
       model$timevar$piece_wise$schedule = (model$timevar$piece_wise$schedule
@@ -2352,7 +2345,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     )
   }
   ptv_to_cal = rbind(
-    model$timevar$piecewise$schedule[tv_cols],
+    model$timevar$piece_wise$schedule[tv_cols],
     params_timevar
   )
   update_piece_wise(
@@ -2364,6 +2357,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
 
 #' @export
 initialize_piece_wise = function(model) {
+  model$opt_tv_params = NULL
   model$timevar = list(
     piece_wise = list(
       breaks = integer(0L),
@@ -2403,49 +2397,5 @@ update_params = function(model, ...) {
     names(params_update)
   )))
   model$params[names(params_update)] = params_update
-  model
-}
-
-# regenerate model --------------------------------
-
-if(FALSE) {
-
-arg_names = function(f, include_dots = FALSE, warn_dots = TRUE) {
-  nms = names(formals(f))
-  if (include_dots) return(nms)
-  is_dots = nms == "..."
-  if (warn_dots & any(is_dots)) warning("removing dots")
-  nms[!is_dots]
-}
-
-arg_names_classify = function(f, nms) {
-  arg_nms = arg_names(f, TRUE)
-  args_in_nms = arg_nms %in% nms
-  nms_in_args = nms %in% arg_nms
-  list(
-    args_in_nms = arg_nms[args_in_nms],
-    args_not_in_nms = arg_nms[!args_in_nms],
-    nms_in_args = nms[nms_in_args],
-    nms_not_in_args = nms[!nms_in_args]
-  )
-}
-
-names(model)
-params_timevar = model$timevar$piece_wise$schedule[c("Date", "Symbol", "Value", "Type")]
-data = model$observed$data
-arg_names_classify(init_model, names(model))
-arg_names_classify(add_rate, names(model$rates[[1]]))
-arg_names_classify(add_state_param_sum, names(model$sums[[1]]))
-arg_names_classify(add_factr, names(model))
-arg_names_classify(add_sim_report_expr, names(model))
-arg_names_classify(add_lag_diff, names(model))
-arg_names_classify(add_conv, names(model))
-arg_names_classify(add_linearized_outflow, names(model))
-arg_names_classify(add_outflow, names(model))
-arg_names_classify(update_linearized_params, names(model))
-arg_names_classify(update_disease_free_state, names(model))
-arg_names_classify(initial_population, names(model))
-arg_names_classify(add_state_mappings, names(model))
-arg_names_classify(update_opt_params, names(model))
-arg_names_classify(update_opt_tv_params, names(model))
+  regen_model(model)
 }

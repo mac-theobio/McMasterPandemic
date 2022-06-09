@@ -469,6 +469,17 @@ all_except = function(x) {
   )
 }
 
+as_vector_no_attr = function(x) {
+  nms = names(x)
+  attributes(x) = NULL
+  setNames(x, nms)
+}
+
+as_data_frame_no_row_names = function(x) {
+  rownames(x) = NULL
+  x
+}
+
 ##' @export
 initial_sim_report_names = function(model) {
   c(
@@ -493,8 +504,16 @@ final_sim_report_names = function(model) {
   c(
     intermediate_sim_report_names(model),
     unlist(lapply(model$lag_diff, getElement, "output_names")),
+    unlist(lapply(model$lag_diff_uneven, getElement, "output_names")),
     unlist(lapply(model$conv, getElement, "output_names"))
   )
+}
+
+##' @export
+condensed_sim_report_names = function(model) {
+  nms = final_sim_report_names(model)
+  if (model$no_condensation) return(nms)
+  condense_names(nms, model$condensation_map)
 }
 
 pad_lag_diffs = function(sims, lag_diff) {
@@ -691,6 +710,11 @@ update_full_condensation_map = function(model) {
   srn = final_sim_report_names(model)
   model$condensation_map = setNames(srn, srn)
   model
+}
+
+#' @export
+condense_names = function(nms, nm_map) {
+  nm_map[nms[nms %in% names(nm_map)]]
 }
 
 #' Merge One Vector into Another by Name
@@ -1029,12 +1053,28 @@ reduce_rates = function(rates) {
 # rates component of a model -- the utility of this function is actually
 # a sign that we have spaghetti code and therefore should create a more
 # formal class structure
+regen_model = function(model) {
+  (model
+   %>% regen_rates
+   %>% regen_sim_report_expr
+  )
+}
 regen_rates = function(model) {
   remodel = model
   remodel$rates = list()
   for(r in seq_along(model$rates)) {
     args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
     remodel = do.call(add_rate, args)
+  }
+  remodel
+}
+
+regen_sim_report_expr = function(model) {
+  remodel = model
+  remodel$sim_report_exprs = list()
+  for(r in seq_along(model$sim_report_exprs)) {
+    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
+    remodel = do.call(add_sim_report_expr, args)
   }
   remodel
 }
@@ -1371,6 +1411,60 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
   summary
 }
 
+get_schedule = function(model) {
+  model$timevar$piece_wise$schedule
+}
+
+get_params_timevar_orig = function(model) {
+  (model
+    %>% get_schedule
+    %>% select(Date, Symbol, Value, Type)
+  )
+}
+
+get_params_timevar_impute = function(model) {
+  (model
+    %>% get_schedule
+    %>% select(Date, Symbol, init_tv_mult, Type)
+    %>% rename(Value = init_tv_mult)
+  )
+}
+
+get_params_timevar_series = function(model) {
+  (model
+   %>% get_schedule
+   %>% select(Date, Symbol, tv_val)
+   %>% rename(Value = tv_val)
+  )
+}
+
+get_tmb_report = function(model) {
+  tmb_fun(model)$report()
+}
+
+get_tmb_simulate = function(model) {
+  tmb_fun(model)$simulate()
+}
+
+get_tmb_data = function(model) {
+  tmb_fun(model)$env$data
+}
+
+get_tmb_params = function(model) {
+  get_tmb_report(model)$params
+}
+
+get_tmb_tv_mult = function(model) {
+  get_tmb_report(model)$tv_mult
+}
+
+get_tmb_hist = function(model) {
+  get_tmb_report(model)$simulation_history
+}
+
+get_tmb_hist_stoch = function(model) {
+  get_tmb_simulate(model)$simulation_history
+}
 
 ## @param x parameter vector or flexmodel
 ## @export
