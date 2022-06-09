@@ -2445,6 +2445,35 @@ lag_diff_indices = function(model) {
 }
 
 #' @export
+lag_diff_uneven_indices = function(model) {
+  lag_indices = (model$lag_diff_uneven
+    %>% lapply(getElement, 'input_names')
+    %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
+  )
+  lag_breaks = (model$lag_diff_uneven
+    %>% lapply(getElement, 'lag_dates')
+    %>% lapply(`-`, model$start_date)
+    %>% lapply(as.integer)
+    %>% rep(unlist(lapply(lag_indices, length)))
+  )
+  lag_ns = (model$lag_diff_uneven
+    %>% lapply(getElement, 'lag_dates')
+    %>% lapply(diff)
+    %>% lapply(as.integer)
+    %>% lapply(append, 0, after = 0)
+    %>% rep(unlist(lapply(lag_indices, length)))
+  )
+
+  ii = unlist(lag_breaks) + 1L
+  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
+  xx = unlist(lag_ns)
+  Matrix::sparseMatrix(
+    i = ii, j = jj, x = xx,
+    dims = c(model$iters, length(model$lag_diff_uneven))
+  )
+}
+
+#' @export
 conv_indices = function(model) {
   indices_for_one_pattern = function(pattern_input) {
     nms = intermediate_sim_report_names(model)

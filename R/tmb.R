@@ -833,7 +833,7 @@ add_lag_diff = function(
 #' @export
 add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
   stopifnot(input_names %in% intermediate_sim_report_names(model))
-  stopifnot(all(lag_dates %in% simulation_dates(sir_model)))
+  stopifnot(all(lag_dates %in% simulation_dates(model)))
   model$lag_diff_uneven = c(
     model$lag_diff_uneven,
     list(nlist(input_names, output_names, lag_dates))
