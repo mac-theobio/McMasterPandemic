@@ -710,6 +710,16 @@ const_named_vector = function(nms, cnst) {
   setNames(rep(cnst[[1]], length(nms)), nms)
 }
 
+unlist_params = function(x) {
+  # -- would be nice to use get_attr and put_attr from utils.R, but
+  #    the latter will set things back to pansim and this is not exactly
+  #    what we want
+  pattr = attributes(x)
+  x = setNames(unlist(x), names(x))  # FIXME: will silently fail for nested lists
+  attributes(x) = c(attributes(x), pattr)
+  x
+}
+
 #' @export
 update_full_condensation_map = function(model) {
   srn = final_sim_report_names(model)

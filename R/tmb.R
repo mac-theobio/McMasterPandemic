@@ -78,13 +78,12 @@ flexmodel <- function(params, state = NULL,
       #  - tried setting use_eigvec = FALSE, but this failed for some reason (bug??)
       #  - for now we can do this ugly thing of turning down the number of power
       #    method steps and then restoring
-      n_steps_default = getOption("MP_rexp_steps_default")
-      options(MP_rexp_steps_default = 1)
+      op = options(MP_rexp_steps_default = 1)
       state = make_state(params = params)
-      options(MP_rexp_steps_default = n_steps_default)
+      options(op)
       state[] = 0
     } else if (is.character(state)) {
-      state = setNames(rep(0, length(state)), state)
+      state = const_named_vector(state, 0)
     }
 
     if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
@@ -97,14 +96,7 @@ flexmodel <- function(params, state = NULL,
       )
     }
 
-    # TODO: keep an eye on this -- i think that the
-    # flex framework should _not_ use parameter
-    # lists and rather stick to numeric vectors, but
-    # not totally sure
-    # -- also should use get_attr and put_attr from utils.R
-    pattr = attributes(params)
-    params = setNames(unlist(params), names(params))  # FIXME: will silently fail for nested lists
-    attributes(params) = c(attributes(params), pattr)
+    params = unlist_params(params)
 
     model <- list(
         state = state,

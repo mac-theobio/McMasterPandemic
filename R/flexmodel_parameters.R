@@ -3,7 +3,7 @@
 
 # generic getters ------------------------
 
-#' Get Baseline Parameters
+#' Get and Set Model Parameters
 #' @export
 pars_base_sim = function(model) {
   UseMethod('pars_base_sim')

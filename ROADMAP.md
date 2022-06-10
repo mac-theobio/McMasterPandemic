@@ -117,24 +117,25 @@
     * Main existing pain-points:
       * The list is growing, which increases developer stress
     * Details:
+      * Enforce Ordering of Model Definition Functions
+      * Ensemble Forecasting
+        * Choose any combination of parameter uncertainty, observation error, and process error (when process error is possible)
+        * Flexibly omit error for particular time-series or omit uncertainty for certain parameters
+        * Ensemble forecasting should run faster in loops within simulation macros on the C++ side, as opposed to generating samples from the distribution of parameters on the R side and then passing back to C++
+        * Smoothing out the empirical quantiles so that forecast envelopes are not as bumpy
       * Symbolic Matrix Algebra Engine
         * Poorly documented
         * If we do a cleanup of the Arithmetic Engine then the matrix stuff should be done at that time, it we do not then the matrix stuff needs to be done sooner
       * Make State Cleanup
         * Option to not use eigenvector and just populate the initial state with elements of the parameter vector
         * More intuitive interface, or at least detailed documentation
-      * Ensemble Forecasting
-        * Choose any combination of parameter uncertainty, observation error, and process error (when process error is possible)
-        * Flexibly omit error for particular time-series or omit uncertainty for certain parameters
-        * Ensemble forecasting should run faster in loops within simulation macros on the C++ side, as opposed to generating samples from the distribution of parameters on the R side and then passing back to C++
-        * Smoothing out the empirical quantiles so that forecast envelopes are not as bumpy
       * Condensation
-        * Cumulative sums in condensation on the C++ side
         * Gaussian convolution -- make sure that it is robust when sd is large (set a threshold for an error -- in general we need this for all convolutions)
-        * Mass loss problem: the q-vector that we choose will cause us to lose mass at the tails
-          * Could renormalize (probably should)
-          * Take the difference of the cumulative convolution distribution of the two end-points, and if this is above a threshold then throw an error/warn/fix??
-          * We could also use this approach to check for negativity
+          * Mass loss problem: the q-vector that we choose will cause us to lose mass at the tails
+            * Could renormalize (probably should)
+            * Take the difference of the cumulative convolution distribution of the two end-points, and if this is above a threshold then throw an error/warn/fix??
+            * We could also use this approach to check for negativity
+        * Cumulative sums in condensation on the C++ side
       * Ability to fit prior hyperparameters
   * Guide for Contributors
     * Main existing pain-points:

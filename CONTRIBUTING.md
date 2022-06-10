@@ -89,6 +89,40 @@ TODO: describe the `get_*` family of functions and how they should be used to cr
 
 ### Types of `flexmodel`
 
+* `flexmodel`
+  * Use-cases:
+    * Deterministic simulation
+* `flexmodel_obs_error`
+  * Use-cases:
+    * Simulating with observation error
+  * Components:
+    * `observed$loss_params`
+* `flexmodel_obs_data`
+  * Use-cases:
+    * Comparing simulations (without observation error) with observed data
+  * Components:
+    * `observed$data`
+* `flexmodel_obs_info`
+  * Use-cases:
+    * Comparing simulations (with observation error) with observed data
+  * Components:
+    * `observed$loss_params`
+    * `observed$data`
+* `flexmodel_to_calibrate`
+  * Use-cases:
+    * Calibrating to observed data
+    * Comparing simulations (with observation error) with observed data
+  * Components:
+    * `observed$loss_params`
+    * `observed$data`
+    * `opt_params` and/or `opt_tv_params`
+* `flexmodel_calibrated
+  * Use-cases:
+    * Calibrating to observed data
+    * Comparing simulations (with observation error and parameter uncertainty) with observed data
+    * 
+
+
 * `flexmodel` base class
 * `flexmodel_to_calibrate` used to pass to an optimizer
 * `flexmodel_calibrated` used to simulate from a calibrated model
