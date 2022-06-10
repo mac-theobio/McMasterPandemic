@@ -2,10 +2,10 @@
 % Please edit documentation in R/flexmodel_parameters.R
 \name{pars_base_sim}
 \alias{pars_base_sim}
-\title{Get Baseline Parameters}
+\title{Get and Set Model Parameters}
 \usage{
 pars_base_sim(model)
 }
 \description{
-Get Baseline Parameters
+Get and Set Model Parameters
 }

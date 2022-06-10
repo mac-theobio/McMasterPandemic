@@ -5,7 +5,11 @@
 \alias{feature_check}
 \title{Spec and Feature Checks}
 \usage{
-spec_check(introduced_version, feature)
+spec_check(
+  introduced_version,
+  feature,
+  exception_type = c("stop", "warning", "message")
+)
 
 feature_check(introduced_version, feature)
 }

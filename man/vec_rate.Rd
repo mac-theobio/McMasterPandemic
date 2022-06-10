@@ -35,7 +35,8 @@ Other flexmodel_definition_functions:
 \code{\link{mat_rate}()},
 \code{\link{rep_rate}()},
 \code{\link{update_disease_free_state}()},
-\code{\link{update_linearized_params}()}
+\code{\link{update_linearized_params}()},
+\code{\link{update_tmb_indices}()}
 
 Other rate_functions: 
 \code{\link{add_rate}()},

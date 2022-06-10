@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmb.R
 \name{add_lag_diff}
 \alias{add_lag_diff}
+\alias{add_lag_diff_uneven}
 \title{Add Variable by Lag Differencing}
 \usage{
 add_lag_diff(model, var_pattern, delay_n = 1)
+
+add_lag_diff_uneven(model, input_names, output_names, lag_dates)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}

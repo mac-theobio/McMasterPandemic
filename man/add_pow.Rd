@@ -6,6 +6,17 @@
 \usage{
 add_pow(model, pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms)
 }
+\arguments{
+\item{model}{\code{\link{flexmodel}} object}
+
+\item{pow_nms}{name of the resulting power law}
+
+\item{pow_arg1_nms}{names of the variables used as the bases}
+
+\item{pow_arg2_nms}{names of the variables used as the exponents}
+
+\item{pow_const_nms}{names of the variables used as the constant}
+}
 \description{
 Compute and save the intermediate result of applying a
 power law to the state variables, parameters, sums of these

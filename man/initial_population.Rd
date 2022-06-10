@@ -38,6 +38,7 @@ Other flexmodel_definition_functions:
 \code{\link{rep_rate}()},
 \code{\link{update_disease_free_state}()},
 \code{\link{update_linearized_params}()},
+\code{\link{update_tmb_indices}()},
 \code{\link{vec_rate}()}
 }
 \concept{flexmodel_definition_functions}

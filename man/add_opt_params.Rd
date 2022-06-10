@@ -3,11 +3,23 @@
 \name{update_opt_params}
 \alias{update_opt_params}
 \alias{add_opt_params}
+\alias{initialize_opt_params}
+\alias{initialize_opt_tv_params}
+\alias{update_opt_tv_params}
+\alias{add_opt_tv_params}
 \title{Optimization Parameters}
 \usage{
 update_opt_params(model, ...)
 
 add_opt_params(model, ...)
+
+initialize_opt_params(model)
+
+initialize_opt_tv_params(model)
+
+update_opt_tv_params(model, tv_type = valid_tv_types, ...)
+
+add_opt_tv_params(model, tv_type = valid_tv_types, ...)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}

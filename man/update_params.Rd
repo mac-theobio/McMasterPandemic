@@ -14,3 +14,6 @@ update_params(model, ...)
 \description{
 Update Default Parameters
 }
+\seealso{
+\code{\link{`pars_base_sim<-`}}
+}

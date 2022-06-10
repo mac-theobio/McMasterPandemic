@@ -677,6 +677,12 @@ pow = function(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
 #' power law to the state variables, parameters, sums of these
 #' things, and factr expressions of them as well.
 #'
+#' @param model \code{\link{flexmodel}} object
+#' @param pow_nms name of the resulting power law
+#' @param pow_arg1_nms names of the variables used as the bases
+#' @param pow_arg2_nms names of the variables used as the exponents
+#' @param pow_const_nms names of the variables used as the constant
+#'
 #' @export
 add_pow = function(model, pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms) {
   model$pow = rbind(model$pow, pow(
@@ -822,6 +828,7 @@ add_lag_diff = function(
   update_tmb_indices(model)
 }
 
+#' @rdname add_lag_diff
 #' @export
 add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
   spec_check(
@@ -1234,6 +1241,7 @@ add_opt_params = function(model, ...) {
   model
 }
 
+#' @rdname add_opt_params
 #' @export
 initialize_opt_params = function(model) {
   # list(list( occurs because the result needs to
@@ -1252,6 +1260,7 @@ initialize_opt_params = function(model) {
   ))
 }
 
+#' @rdname add_opt_params
 #' @export
 initialize_opt_tv_params = function(model) {
   # FIXME: doesn't seem necessary
@@ -1277,6 +1286,7 @@ initialize_opt_tv_params = function(model) {
   lapply(nms, f)
 }
 
+#' @rdname add_opt_params
 #' @export
 update_opt_tv_params = function(
   model,
@@ -1302,6 +1312,7 @@ update_opt_tv_params = function(
   model
 }
 
+#' @rdname add_opt_params
 #' @export
 add_opt_tv_params = function(
   model,
@@ -1451,6 +1462,7 @@ add_tmb_indices = function(model) {
 }
 
 ##' @family flexmodel_definition_functions
+##' @rdname update_tmb_indices
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
@@ -2075,6 +2087,7 @@ update_initial_state = function(model, silent = FALSE) {
 
 # observed data and observation error ---------------------------------
 
+#' @rdname update_error_dist
 #' @export
 add_error_dist = function(model, ...) {
   new_loss_params = (list(...)
@@ -2358,6 +2371,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   )
 }
 
+#' @rdname update_piece_wise
 #' @export
 initialize_piece_wise = function(model) {
   model$opt_tv_params = NULL
@@ -2390,6 +2404,7 @@ initialize_piece_wise = function(model) {
 #'
 #' @param model \code{\link{flexmodel}} object
 #' @param ... named vectors of parameter names
+#' @seealso \code{\link{`pars_base_sim<-`}}
 #' @export
 update_params = function(model, ...) {
   params_update = unlist(list(...))

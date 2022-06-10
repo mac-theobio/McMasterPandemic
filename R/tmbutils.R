@@ -317,7 +317,6 @@ assert_len1_int = function(x) {
   }
 }
 
-#' @export
 exists_opt_params = function(model) {
   (model
    $  tmb_indices
@@ -337,137 +336,12 @@ is_fitted_by_bbmle = function(model) {
 
 # constructing names and strings ----------------------
 
-#' Paste with Underscore Separator
-#'
-#' Paste with an underscore separator, except for length-zero character
-#' strings in the first vector
-#'
-#' @param x character vector
-#' @param y character vector
-#'
-#' @export
-`%_%` = function(x, y) {
-  x = ifelse(nchar(trimws(as.character(x))) == 0L, '', paste(x, '_', sep = ""))
-  paste(x, y, sep = "")
-}
-
-#' Paste with Tilde Separator
-#'
-#' @param x character vector
-#' @param y character vector
-#'
-#' @export
-`%~%` = function(x, y) {
-  paste(x, y, sep = " ~ ")
-}
-
-#' Paste with Blank Separator
-#'
-#' Like Python string `+`
-#'
-#' @export
-`%+%` = function(x, y) paste(x, y, sep = "")
-
-#' @export
 is_empty = function(x) {
   x = as.character(x)
   is.na(x) | (nchar(x) == 0L) | is.nan(x)
 }
 
-#' @export
 omit_empty = function(x) x[!is_empty(x)]
-
-#' Get Substrings by Indices and Separators
-#'
-#' For example \code{index_sep('a_b_c', 2, '_')} equals \code{'b'}.
-#' For example \code{index_sep('a_b_c', c(1, 3), '_')} equals \code{'a_c'}.
-#' For example \code{index_sep('a_b_c', -2, '_')} equals \code{'a_c'}.
-#' For example \code{index_sep('a_b_c', 4, '_')} equals \code{''}.
-#' For example \code{index_sep('a', 1, '_')} equals \code{'a'}.
-#' For example \code{index_sep('a', 2, '_')} equals \code{''}.
-#' For example \code{index_sep(c('a_b', 'c'), 2, '_')} equals \code{c('b', '')}.
-#' For example \code{index_sep('a_b_c', c(3, 1), '_')} equals \code{'c_a'}.
-#'
-#' @param x character vector
-#' @param i integer vector without sign mixing
-#' @param sep length-one character vector
-#' @param complement if \code{TRUE} the indices in \code{i} that are not matched are returned
-#'
-#' @export
-index_sep = function(x, i, sep = "_") {
-  complement = FALSE
-  if (any(i < 0L)) {
-    if (!all(i < 0L)) stop("cannot mix positive and negative indices")
-    complement = TRUE
-    i = -1 * i
-  }
-  stopifnot(length(sep) == 1L)
-  if (complement) {
-    n_separated_items = nchar(x) - nchar(gsub(sep, '', x)) + 1
-    if (length(n_separated_items) > 1L) {
-      stop('cannot use complement method with multiple inputs')
-    }
-    i = setdiff(seq_len(n_separated_items), i)
-  }
-  (x
-   %>% as.character
-   %>% strsplit(sep)
-   %>% lapply(function(x) {
-     ifelse(
-       length(x) == 0L,
-       '',
-       paste0(omit_empty(x[i]), collapse = sep)
-     )
-   })
-   %>% unlist
-   %>% unname
-  )
-}
-
-#' @export
-wrap_exact = function(x) {
-  "^" %+% x %+% "$"
-}
-
-##' Regex Alternation Group
-##'
-##' @export
-alt_group = function(x, exact = FALSE, negate = FALSE) {
-  x = "(" %+% paste0(x, collapse = "|") %+% ")"
-  if (negate) {
-    x = "(?!(?:" %+% x %+% ")$).*"
-  }
-  if (exact) {
-    x = "^" %+% x %+% "$"
-  }
-  x
-}
-
-names_or_values = function(x) {
-  if (!is.character(x)) {
-    x = names(x)
-  }
-  x
-}
-
-##' @export
-all_in = names_or_values
-
-##' @export
-any_var = function(x) {
-  (x
-   %>% names_or_values
-   %>% alt_group(exact = TRUE)
-  )
-}
-
-##' @export
-all_except = function(x) {
-  (x
-   %>% names_or_values
-   %>% alt_group(exact = TRUE, negate = TRUE)
-  )
-}
 
 as_vector_no_attr = function(x) {
   nms = names(x)
@@ -480,7 +354,6 @@ as_data_frame_no_row_names = function(x) {
   x
 }
 
-##' @export
 initial_sim_report_names = function(model) {
   c(
     names(model$state),
@@ -491,7 +364,6 @@ initial_sim_report_names = function(model) {
   )
 }
 
-##' @export
 intermediate_sim_report_names = function(model) {
   c(
     initial_sim_report_names(model),
@@ -499,7 +371,6 @@ intermediate_sim_report_names = function(model) {
   )
 }
 
-##' @export
 final_sim_report_names = function(model) {
   if (spec_ver_gt('0.2.0')) {
     lags = model$lag_diff_uneven
@@ -514,7 +385,6 @@ final_sim_report_names = function(model) {
   )
 }
 
-##' @export
 condensed_sim_report_names = function(model) {
   nms = final_sim_report_names(model)
   if (model$no_condensation) return(nms)
@@ -543,7 +413,6 @@ pad_convs = function(sims, conv, conv_indices) {
   sims
 }
 
-
 # constructing data frames ----------------
 
 #' Vector to Data Frame
@@ -568,7 +437,6 @@ v2d = function(x, values_col = NULL, names_col = "names") {
 
 # flexmodel to latex (experimental) -------------------
 
-##' @export
 make_latex_symbols = function(nms) {
   greek_letters = c(
     "alpha",
@@ -637,8 +505,6 @@ make_latex_symbols = function(nms) {
   latex_vars
 }
 
-
-#' @export
 make_latex_rates = function(model) {
   (get_rate_factors(model)
    %>% bind_rows(.id = "rate")
@@ -670,7 +536,6 @@ make_latex_rates = function(model) {
   )
 }
 
-#' @export
 make_latex_flows = function(model) {
   rates = rate_summary(model, include_formula = TRUE, include_latex = TRUE)
   inflow = (rates
@@ -696,20 +561,6 @@ make_latex_flows = function(model) {
 
 # constructing vectors ---------------------
 
-#' @export
-layered_zero_state = function(...) {
-  state_nms = (list(...)
-   %>% lapply(as.character)
-   %>% Reduce(f = expand_names)
-  )
-  setNames(rep(0, length(state_nms)), state_nms)
-}
-
-#' @export
-const_named_vector = function(nms, cnst) {
-  setNames(rep(cnst[[1]], length(nms)), nms)
-}
-
 unlist_params = function(x) {
   # -- would be nice to use get_attr and put_attr from utils.R, but
   #    the latter will set things back to pansim and this is not exactly
@@ -720,44 +571,14 @@ unlist_params = function(x) {
   x
 }
 
-#' @export
 update_full_condensation_map = function(model) {
   srn = final_sim_report_names(model)
   model$condensation_map = setNames(srn, srn)
   model
 }
 
-#' @export
 condense_names = function(nms, nm_map) {
   nm_map[nms[nms %in% names(nm_map)]]
-}
-
-#' Merge One Vector into Another by Name
-#'
-#' If an item in \code{u} has the same name as an item
-#' in \code{v} then replace the value in \code{v} with that
-#' in \code{u}, otherwise create a new element in \code{v}.
-#'
-#' @param v named vector or list
-#' @param u named vector of list
-#' @export
-merge_named_vectors = function(v, u) {
-  if (is.null(names(v)) | is.null(names(u)) ) {
-    stop("v and u must be named vectors")
-  }
-  for (nm in names(u)) {
-    v[nm] = u[nm]
-  }
-  return(v)
-}
-
-#' @export
-merge_named_vec_attr = function(v, u, a) {
-  attr_v = attributes(v)
-  attr_u = attributes(u)
-  attr_v[[a]] = merge_named_vectors(attr_v[[a]], attr_u[[a]])
-  attributes(v) = attr_v
-  return(v)
 }
 
 ff = function(x) {
@@ -924,7 +745,7 @@ block = function(from, to, mat) {
   stop('Blockwise rate specification is not implemented')
 }
 
-#' @export
+## not currently working
 check_from_to = function(from, to, state_nms) {
   bads = c(
     from[!from %in% state_nms],
@@ -992,6 +813,83 @@ find_vec_indices <- function(x, vec) {
     %>% outer(vec, "==")
     %>% apply(1, which)
   )
+}
+
+# Nested Indices
+#
+# Create and return a nested set of character vectors from a sequence
+# of regular expressions, and return indices into each vector for recovering
+# other shorter vectors that are lower in the hierarchy.
+#
+# @section Motivating Example:
+#
+# There are three nested state vectors
+# a_states -- all states
+# p_states -- excludes accumulators
+# e_states -- includes only infected states
+#
+# There are three index vectors
+# i_ap -- indexes a_states to yield p_states
+# i_ae -- indexes a_states to yield e_states
+# i_pe -- indexes p_states to yield e_states
+#
+# There are also three inverse index vectors
+# j_ap -- indexes a_states to yield setdiff(a_states, p_states)
+# j_ae -- indexes a_states to yield setdiff(a_states, e_states)
+# j_pe -- indexes p_states to yield setdiff(p_states, e_states)
+#
+# In general -- assume that y_states are nested in x_states
+# i_xy -- indexes x_states to yield y_states
+# j_xy -- indexes x_states to yeild setdiff(x_states, y_states)
+# i_yx -- doesn't exist because not all x_states are also y_states
+#
+# @param x character vector
+# @param patterns named list or vector of regular expressions to be applied
+# sequentially to create a nested set of character vectors
+# @return List with three elements.
+# \describe{
+#   \item{\code{x}}{Nested character vectors.}
+#   \item{\code{i}}{
+#     List of lists, with inner list giving the indices into character vectors
+#     that are higher in the hierarchy. For example, one may read this
+#     expression, \code{x$e == x$p\\[i$e$p\\]}, as "e equals p at the index
+#     that takes p to e".
+#   }
+#   \item{\code{j}}{Set difference version of \code{i}.}
+# }
+
+make_nested_indices = function(x, patterns, invert = FALSE) {
+
+  stopifnot(all(sapply(patterns, is.character)))
+  stopifnot(all(sapply(patterns, length) == 1L))
+  stopifnot(!any(is.null(names(patterns))))
+
+  nms = c(deparse(substitute(x)), names(patterns))
+
+  x_list = list(x)
+  i_list = j_list = list()
+
+  # p indexes list of patterns
+  # v indexes list of vectors (i.e. list of nested subsets of x)
+  for(p in seq_along(patterns)) {
+    x_list[[p+1]] = grep(patterns[[p]], x_list[[p]], value = TRUE, perl = TRUE, invert = invert)
+    #i_list[[to]][[from]]
+    i_list[[p+1]] = j_list[[p+1]] = list()
+
+    for(v in seq_len(p)) {
+      indicators = x_list[[v]] %in% x_list[[p+1]]
+      i_list[[p+1]][[v]] = which( indicators)
+      j_list[[p+1]][[v]] = which(!indicators)
+
+    }
+    names(i_list[[p+1]]) = names(j_list[[p+1]]) = nms[1:p]
+  }
+
+  drop_null_elements = function(e) e[!sapply(e, is.null)]
+  list(
+    x = setNames(x_list, nms) %>% drop_null_elements,
+    i = setNames(i_list, nms) %>% drop_null_elements,
+    j = setNames(j_list, nms) %>% drop_null_elements)
 }
 
 combine_rates = function(rates) {
@@ -1074,6 +972,7 @@ regen_model = function(model) {
    %>% regen_sim_report_expr
   )
 }
+
 regen_rates = function(model) {
   remodel = model
   remodel$rates = list()
@@ -1082,306 +981,6 @@ regen_rates = function(model) {
     remodel = do.call(add_rate, args)
   }
   remodel
-}
-
-regen_sim_report_expr = function(model) {
-  remodel = model
-  remodel$sim_report_exprs = list()
-  for(r in seq_along(model$sim_report_exprs)) {
-    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
-    remodel = do.call(add_sim_report_expr, args)
-  }
-  remodel
-}
-
-#' Topological Sort
-#'
-#' Topologically sort the state names so that states earlier in the flow
-#' of individuals come earlier in sorted order.
-#'
-#' @param model \code{\link{flexmodel}} object
-#'
-#' @return character vector of state names in topological order
-#' @export
-topological_sort = function(model) {
-  state_order = c()
-  rates = model$rates
-  state_nms = names(model$state)
-  n = length(state_nms)
-  for(i in 1:n) {
-    if (length(state_nms) == 0L) break
-    remaining_inflow = sapply(
-      state_nms,
-      has_inflow,
-      rates,
-      state_nms
-    )
-    state_order = c(state_order, state_nms[!remaining_inflow])
-    rates = rates[!unlist(McMasterPandemic:::get_rate_to(rates)) %in% state_order]
-    rates = rates[!unlist(McMasterPandemic:::get_rate_from(rates)) %in% state_order]
-    state_nms = state_nms[remaining_inflow]
-    if (isTRUE(all(remaining_inflow)) & length(state_nms) != 0L & length(remaining_inflow) != 0L) {
-      stop("state network is not acyclic (i think), and therefore cannot be topologically sorted")
-    }
-  }
-  state_order
-}
-
-has_inflow = function(focal_state, rates, state_nms) {
-  stopifnot(focal_state %in% state_nms)
-  to_states = (rates
-    %>% McMasterPandemic:::get_rate_to()
-    %>% unlist
-    %>% unique
-  )
-  focal_state %in% to_states
-}
-
-if(FALSE) {
-  ## experimenting with
-  state_order = base::setdiff(topological_sort(model), c("V", "X"))
-  lapply(state_order, has_inflow, model$rates, state_order)
-  get_children = function(focal_state, rates) {
-    which_parent = unlist(McMasterPandemic:::get_rate_from(rates)) == focal_state
-    McMasterPandemic:::get_rate_to(rates)[which_parent]
-  }
-  get_children("Ip", model$rates)
-  e = list2env(list(path_number = 0))
-  tree_maker = function(focal_state, e, rates) {
-    children = get_children(focal_state, rates)
-    if (length(children) == 0L) {
-      e$path_number = e$path_number + 1
-    }
-    path = setNames(lapply(children, tree_maker, e, rates), children)
-    if (length(children) == 0L) {
-      return(e$path_number)
-    } else {
-      return(path)
-    }
-  }
-  S_tree = tree_maker("S", e, model$rates)
-  S_tree$E$Ia$R
-  S_tree$E$Ip$Im$R
-  S_tree$E$Ip$Is$H$R
-  S_tree$E$Ip$Is$ICUs$H2$R
-  S_tree$E$Ip$Is$ICUd$D
-  S_tree$E$Ip$Is$D
-  S_tree$E$Ip$Is
-}
-
-# getting information about rates and sums ----------------------
-
-# Get From-State Names
-#
-# Get vector of from-state names associated with each rate in the model.
-#
-# @param model \code{\link{flexmodel}} object
-#
-# @family get_flexmodel_info_functions
-
-get_rate_from = function(model) get_rate_info(model, 'from')
-
-# Get To-State Names
-#
-# Get vector of to-state names associated with each rate in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_to = function(model) get_rate_info(model, 'to')
-
-# Get Rate Info
-#
-# Get information on the rate associated with a particular state transition.
-#
-# @param what character describing the rate (i.e. \code{'state1_to_state2'})
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_info = function(model, what) {
-  if (inherits(model, "flexmodel")) {
-    rates = model$rates
-  } else {
-    rates = model
-  }
-  lapply(rates, '[[', what)
-}
-
-# Get Factr Info
-#
-# Get information about an intermediate factor
-#
-# @param what name of the intermediate factor, as named by
-# \code{\link{add_factr}} or \code{\link{vec_factr}}
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_factr_info = function(model, what) lapply(model$factrs, '[[', what)
-
-# Get Rate Formulas
-#
-# Get vector of formulas associated with each rate in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_formula = function(model) get_rate_info(model, 'formula')
-
-# Get Rate Factors
-#
-# Get the factor table associated with each rate in the model.
-# TODO: define the factor table or link to a description.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_factors = function(model) get_rate_info(model, 'factors')
-
-# Get Rate State Dependence
-#
-# Get a logical vector indicating which rates in the model depend on
-# state variables.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_state_dependent = function(model) get_rate_info(model, 'state_dependent')
-
-# Get Rate Time Variation
-#
-# Get a logical vector indicating which rates in the model are
-# time-varying.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_time_varying = function(model) get_rate_info(model, 'time_varying')
-
-# Get Rate Sum Dependence
-#
-# Get a logical vector indicating which rates in the model depend
-# on sums of parameters and state variables.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_sum_dependent = function(model) get_rate_info(model, 'sum_dependent')
-
-# Get Factr Formula
-#
-# Get vector of formulas for defining each intermediate factor in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_factr_formula = function(model) get_factr_info(model, 'formula')
-
-# Get the Number of Products
-#
-# Get a vector giving the number of products (in the multiplication sense)
-# that are required to compute each rate in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_n_products = function(model) {
-  (model
-   %>% get_rate_info('factors')
-   %>% lapply('[[', 'prod_indx')
-   %>% lapply(unique)
-   %>% lapply(length)
-  )
-}
-
-# Get Number of Variables
-#
-# Get a vector giving the numbers of variables (parameters, state variables,
-# sums of parameters and state variables, and intermediate factors) required
-# to compute each rate in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_n_variables = function(model) {
-  (model
-   %>% get_rate_info('factors')
-   %>% lapply('[[', 'var')
-   %>% lapply(length)
-  )
-}
-
-# Get Number of Factors
-#
-# Get the number of factors required to compute each rate in the
-# model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_n_factors = function(model) {
-  (model
-   %>% get_rate_info('factors')
-   %>% lapply(nrow)
-  )
-}
-
-# Get Sum Info
-#
-# Get information on each sum (of parameters and state variables)
-# in the model.
-#
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_sum_info = function(model, what) lapply(model$sums, '[[', what)
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_sum_summands = function(model) get_sum_info(model, 'summands')
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_sum_indices = function(model) get_sum_info(model, 'sum_indices')
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_sum_initial_value = function(model) get_sum_info(model, 'initial_value')
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_factr_initial_value = function(model) get_factr_info(model, 'initial_value')
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rate_vars = function(model) {
-  (model
-   %>% get_rate_factors
-   %>% lapply(getElement, "var")
-  )
-}
-
-# @family get_flexmodel_info_functions
-# @inheritParams get_rate_from
-
-get_rates_with_vars = function(model, var_pattern) {
-  ii = (model
-    %>% get_rate_vars
-    %>% lapply(grepl, pattern = var_pattern)
-    %>% lapply(any)
-    %>% sapply(isTRUE)
-  )
-  get_rates(model)[ii]
-}
-
-get_rates = function(model) {
-  model$rates
 }
 
 ##' Rate Summary
@@ -1426,63 +1025,18 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
   summary
 }
 
-get_schedule = function(model) {
-  model$timevar$piece_wise$schedule
+regen_sim_report_expr = function(model) {
+  remodel = model
+  remodel$sim_report_exprs = list()
+  for(r in seq_along(model$sim_report_exprs)) {
+    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
+    remodel = do.call(add_sim_report_expr, args)
+  }
+  remodel
 }
 
-get_params_timevar_orig = function(model) {
-  (model
-    %>% get_schedule
-    %>% select(Date, Symbol, Value, Type)
-  )
-}
-
-get_params_timevar_impute = function(model) {
-  (model
-    %>% get_schedule
-    %>% select(Date, Symbol, init_tv_mult, Type)
-    %>% rename(Value = init_tv_mult)
-  )
-}
-
-get_params_timevar_series = function(model) {
-  (model
-   %>% get_schedule
-   %>% select(Date, Symbol, tv_val)
-   %>% rename(Value = tv_val)
-  )
-}
-
-get_tmb_report = function(model) {
-  tmb_fun(model)$report()
-}
-
-get_tmb_simulate = function(model) {
-  tmb_fun(model)$simulate()
-}
-
-get_tmb_data = function(model) {
-  tmb_fun(model)$env$data
-}
-
-get_tmb_params = function(model) {
-  get_tmb_report(model)$params
-}
-
-get_tmb_tv_mult = function(model) {
-  get_tmb_report(model)$tv_mult
-}
-
-get_tmb_hist = function(model) {
-  get_tmb_report(model)$simulation_history
-}
-
-get_tmb_hist_stoch = function(model) {
-  get_tmb_simulate(model)$simulation_history
-}
 
 ## @param x parameter vector or flexmodel
-## @export
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
@@ -1496,12 +1050,10 @@ has_time_varying <- function(x) {
   }
 }
 
-##' @export
 time_varying_rates <- function(model) {
   model$rates[which_time_varying_rates(model)]
 }
 
-##' @export
 which_time_varying_rates <- function(model) {
   sd  <- get_rate_info(model, "state_dependent") %>% unlist
   tv  <- get_rate_info(model, "time_varying") %>% unlist
@@ -1509,19 +1061,16 @@ which_time_varying_rates <- function(model) {
   which(sd | tv | smd)
 }
 
-##' @export
 state_dependent_rates <- function(model) {
   i = get_rate_info(model, "state_dependent") %>% unlist
   model$rates[i]
 }
 
-##' @export
 sum_dependent_rates = function(model) {
   i = get_rate_info(model, "sum_dependent") %>% unlist
   model$rates[i]
 }
 
-#' @export
 compute_rates = function(model) {
   (model
    %>% get_rate_info("formula")
@@ -1530,7 +1079,6 @@ compute_rates = function(model) {
   )
 }
 
-#' @export
 compute_factrs = function(model) {
   (model
    %>% get_factr_info("formula")
@@ -1539,7 +1087,6 @@ compute_factrs = function(model) {
   )
 }
 
-#' @export
 eval_formulas = function(formula_list, var_list) {
   (formula_list
    %>% lapply(function(x) ifelse(inherits(x, 'formula'), as.character(x[2]), x))
@@ -1550,7 +1097,6 @@ eval_formulas = function(formula_list, var_list) {
   )
 }
 
-#' @export
 get_var_list = function(model) {
   c(
     as.list(model$params),
@@ -1605,7 +1151,6 @@ get_indices_per_rate = function(model, i) {
        start = start, end = end)
 }
 
-#' @export
 lookup_pairwise = function(from, to, M) {
   i = pwise(from, to, M)
   data.frame(
@@ -1615,11 +1160,10 @@ lookup_pairwise = function(from, to, M) {
 }
 
 
-#' Rate Matrix Loopup Table
-#'
-#' @param state state_pansim object
-#' @param ratemat rate matrix
-#' @export
+# Rate Matrix Lookup Table
+#
+# @param state state_pansim object
+# @param ratemat rate matrix
 rate_matrix_lookup = function(ratemat) {
   ratemat = as(ratemat, "dgTMatrix")
   (data.frame(
@@ -1630,148 +1174,6 @@ rate_matrix_lookup = function(ratemat) {
       to_state = ratemat@Dimnames[[2]][to_pos]
     )
   )
-}
-
-#' What Variables are Available?
-#'
-#' Find out what variables are available for particular functions that
-#' add variables to a model, based on existing variables.
-#'
-#' \describe{
-#'   \item{\code{avail_for_rate}}{\code{\link{add_rate}},\code{\link{rep_rate}},\code{\link{vec_rate}}}
-#'   \item{\code{avail_for_sum}}{\code{\link{add_state_param_sum}}}
-#'   \item{\code{avail_for_factr}}{\code{\link{add_factr}},\code{\link{vec_factr}}}
-#'   \item{\code{avail_for_expr}}{\code{\link{add_sim_report_expr}}}
-#'   \item{\code{avail_for_lag}}{\code{\link{add_lag_diff}}}
-#'   \item{\code{avail_for_conv}}{\code{\link{add_conv}}}
-#' }
-#'
-#' @param model a \code{\link{flexmodel}} object
-#'
-#' @return character vector of available variable names
-#'
-#' @rdname avail_for
-#' @export
-avail_for_rate = function(model) {
-  c(names(model$state),
-    names(model$params),
-    names(model$sums),
-    names(model$factrs))
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_sum = function(model) {
-  c(names(model$state),
-    names(model$params))
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_factr = function(model) {
-  c(names(model$state),
-    names(model$params),
-    names(model$sums),
-    names(model$factrs))
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_pow = function(model) {
-  c(names(model$state),
-    names(model$params),
-    names(model$sums),
-    names(model$factrs),
-    names(model$pows))
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_expr = function(model) {
-  initial_sim_report_names(model)
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_conv = function(model) {
-  intermediate_sim_report_names(model)
-}
-
-#' @rdname avail_for
-#' @export
-avail_for_lag = function(model) {
-  intermediate_sim_report_names(model)
-}
-
-
-
-# getting information about calibrated models -----------------
-
-#' Optimizer Object
-#'
-#' Get the object returned by the optimizer used to calibrate a
-#' \code{flexmodel_to_calibrate} object. The \code{convergence_info}
-#' function gets convergence information in case it is buried within
-#' the \code{opt_obj}.
-#'
-#' @param model object of class \code{flexmodel_calibrated}
-#' @export
-opt_obj = function(model) {
-  stopifnot(inherits(model, 'flexmodel_calibrated'))
-  model$opt_obj
-}
-
-#' @rdname opt_obj
-#' @export
-convergence_info = function(model) {
-  UseMethod('convergence_info')
-}
-
-#' @export
-convergence_info.default = function(model) {
-  stop('this function only applies to flexmodel_calibrated objects.')
-}
-
-#' @export
-convergence_info.flexmodel_calibrated = function(model) {
-  return(opt_obj(model))
-}
-
-#' @export
-convergence_info.flexmodel_failed_calibration = function(model) {
-  return(model$opt_err)
-}
-
-#' @export
-convergence_info.flexmodel_bbmle = function(model) {
-  return(opt_obj(model)@details)
-}
-
-
-# getting information about objective functions and models to calibrate --------------
-
-#' @export
-profile_obj_fun = function(model, focal_param) {
-  UseMethod('profile_obj_fun')
-}
-
-#' @export
-profile_obj_fun.flexmodel_to_calibrate = function(model, focal_param) {
-  model = remove_opt_param(model, focal_param)
-  # o = tmb_fun(model)
-  # param_names = names(tmb_params_trans(model))
-  # par_ind = which(param_names == focal_param)
-  # par = o$par
-  function(x) {
-    model$params[focal_param] = x
-    o = tmb_fun(model)
-    o$fn(par)
-  }
-}
-
-#' @export
-loss_params = function(model) {
-  model$observed$loss_params
 }
 
 # utilities for parsing opt_params and loss_params formulas and structures ------------------
@@ -2149,7 +1551,7 @@ resolve_param = function(x, params) {
   nlist(param_nms, trans)
 }
 
-#' Recursive function to parse a formula containing sums of names
+# Recursive function to parse a formula containing sums of names
 parse_name_sum = function(x) {
   stop("sums in opt_param formulas is under construction. ",
        "please specify the prior for each parameter separately.")
@@ -2358,617 +1760,6 @@ parse_loss_form = function(x, e = NULL) {
 
 # date and time utilities -----------
 
-# computing indices and data for tmb ----------------------
-
-##' @export
-sum_indices = function(sums, state, params) {
-  sum_index_list = lapply(sums, "[[", "sum_indices")
-  sumidx = c(seq_len(length(sums))) + length(state) + length(params)
-  sumcount = sapply(sum_index_list, length, USE.NAMES = FALSE) %>% unname
-  summandidx = c(unlist(sum_index_list, use.names = FALSE))
-  clean_if_empty = function(x) {
-    if((length(x) == 0L) | is.null(x)) return(integer(0L))
-    x
-  }
-  list(sumidx = clean_if_empty(sumidx),
-       sumcount = clean_if_empty(sumcount),
-       summandidx = clean_if_empty(summandidx))
-}
-
-##' @export
-factr_indices = function(factrs, state_param_sums) {
-  if (length(factrs) == 0L) {
-    indices = list(
-      spi_factr = integer(0L),
-      count = integer(0L),
-      spi = integer(0L),
-      modifier = integer(0L)
-    )
-    return(indices)
-  }
-  sp = state_param_sums
-  spi_factr = (factrs
-    %>% seq_along
-    %>% `+`(length(sp))
-  )
-  spi <- get_var_indx(factrs)
-  count <- get_var_counts(factrs)
-  modifier <- get_var_modifiers(factrs)
-  names(spi) = names(count)  = names(count) = NULL
-  indices <- list(
-    spi_factr = spi_factr,
-    count = count,
-    spi = spi,
-    modifier = modifier
-  )
-  return(indices)
-}
-
-#' @export
-pow_indices = function(pow, state_param_sum_factr_pow) {
-  if (nrow(pow) == 0L) {
-    return(init_tmb_indices$pow_indices)
-  }
-  list(
-    powidx = find_vec_indices(pow$pow_nms, state_param_sum_factr_pow),
-    powarg1idx = find_vec_indices(pow$pow_arg1_nms, state_param_sum_factr_pow),
-    powarg2idx = find_vec_indices(pow$pow_arg2_nms, state_param_sum_factr_pow),
-    powconstidx = find_vec_indices(pow$pow_const_nms, state_param_sum_factr_pow)
-  )
-}
-
-#' @export
-sim_report_expr_indices = function(exprs, init_sim_report_nms) {
-  if (length(exprs) == 0L) {
-    indices = list(
-      sri_output = integer(0L),
-      sr_count = integer(0L),
-      sri = integer(0L),
-      sr_modifier = integer(0L)
-    )
-    return(indices)
-  }
-  sri_output = seq_along(exprs) + length(init_sim_report_nms)
-  sri <- get_var_indx(exprs)
-  sr_count <- get_var_counts(exprs)
-  sr_modifier <- get_var_modifiers(exprs)
-  names(sri) = names(sr_count)  = names(sr_modifier) = NULL
-  indices <- list(
-    sri_output = sri_output,
-    sr_count = sr_count,
-    sri = sri,
-    sr_modifier = sr_modifier
-  )
-  return(indices)
-}
-
-#' @export
-lag_diff_indices = function(model) {
-  indices_for_one_pattern = function(pattern_input) {
-    nms = intermediate_sim_report_names(model)
-    indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
-    data.frame(
-      sri = indices,
-      delay_n = rep(pattern_input$delay_n, length(indices))
-    )
-  }
-  (model$lag_diff
-    %>% lapply(indices_for_one_pattern)
-    %>% Reduce(f = rbind)
-    %>% as.list
-  )
-}
-
-#' @export
-lag_diff_uneven_indices = function(model) {
-  lag_indices = (model$lag_diff_uneven
-    %>% lapply(getElement, 'input_names')
-    %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
-  )
-  if (length(lag_indices) == 0L) {
-    return(model)
-  }
-  lag_breaks = (model$lag_diff_uneven
-    %>% lapply(getElement, 'lag_dates')
-    %>% lapply(`-`, model$start_date)
-    %>% lapply(as.integer)
-    %>% rep(unlist(lapply(lag_indices, length)))
-  )
-  lag_ns = (model$lag_diff_uneven
-    %>% lapply(getElement, 'lag_dates')
-    %>% lapply(diff)
-    %>% lapply(as.integer)
-    %>% lapply(append, 0, after = 0)
-    %>% rep(unlist(lapply(lag_indices, length)))
-  )
-
-  ii = unlist(lag_breaks) + 1L
-  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
-  xx = unlist(lag_ns)
-  delay_n = Matrix::sparseMatrix(
-    i = ii, j = jj, x = xx,
-    dims = c(model$iters, length(model$lag_diff_uneven))
-  )
-  sri = unlist(lag_indices)
-  nlist(sri, delay_n)
-}
-
-#' @export
-conv_indices = function(model) {
-  indices_for_one_pattern = function(pattern_input) {
-    nms = intermediate_sim_report_names(model)
-    indices = grep(pattern_input$var_pattern, nms, perl = TRUE)
-    conv_par_indices = lapply(pattern_input$conv_pars, find_vec_indices, model$params)
-    init_c_delay_cv = model$params[pattern_input$conv_pars$c_delay_cv]
-    init_c_delay_mean = model$params[pattern_input$conv_pars$c_delay_mean]
-    init_c_prop = model$params[pattern_input$conv_pars$c_prop]
-    qmax = length(make_delay_kernel(init_c_prop, init_c_delay_mean, init_c_delay_cv)) + 1L
-    #qmax = qgamma(
-    #  0.95,
-    #  1/init_c_delay_cv^2,
-    #  init_c_delay_mean * init_c_delay_cv^2
-    #)
-    data.frame(
-      sri = indices,
-      c_prop_idx = rep(conv_par_indices$c_prop, length(indices)),
-      c_delay_cv_idx = rep(conv_par_indices$c_delay_cv, length(indices)),
-      c_delay_mean_idx = rep(conv_par_indices$c_delay_mean, length(indices)),
-      qmax = rep(qmax, length(indices))
-    )
-  }
-  (model$conv
-    %>% lapply(indices_for_one_pattern)
-    %>% Reduce(f = rbind)
-    %>% as.list
-  )
-}
-
-##' @export
-ratemat_indices <- function(rates, state_params) {
-  sp <- state_params
-  ratemat_indices <- sapply(rates, `[[`, "ratemat_indices")
-  spi <- get_var_indx(rates)
-  count <- get_var_counts(rates)
-  modifier <- get_var_modifiers(rates)
-  names(spi) <- colnames(ratemat_indices) <- names(count) <- NULL
-  indices <- list(
-    from = ratemat_indices[1, ],
-    to = ratemat_indices[2, ],
-    count = count,
-    spi = spi,
-    modifier = modifier
-  )
-  return(indices)
-}
-
-get_var_indx = function(l) {
-  {
-    lapply(l, function(y) {
-      y$factors$var_indx
-    }) %>% unlist()
-  }
-}
-
-get_var_counts = function(l) {
-  sapply(l, function(y) {
-    nrow(y$factors)
-  })
-}
-
-get_var_modifiers = function(l) {
-  # an 'item' is either a rate or (common) factr
-  (l
-   %>% unname
-   %>% lapply("[[", "factors")
-   %>% bind_rows(.id = "item_indx")
-   %>% mutate(new_item = as.logical(c(0, diff(as.numeric(item_indx)))))
-   %>% mutate(new_prod = as.logical(c(0, diff(as.numeric(prod_indx)))))
-   %>% mutate(add = new_prod & (!new_item))
-   %>% mutate(modifier = 4 * add + 2 * invrs + compl)
-   %>% `$`("modifier")
-  )
-}
-
-##' @family flexmodels
-##' @export
-state_mapping_indices = function(
-  state,
-  eigen_drop_pattern,
-  infected_drop_pattern,
-  susceptible_pattern) {
-  spec_check(introduced_version = "0.1.1",
-             feature = "Disease free state updates")
-
-  if(length(susceptible_pattern) == 0L) {
-    susceptible_idx = integer(0L)
-  } else {
-    susceptible_idx = grep(susceptible_pattern, names(state), perl = TRUE)
-  }
-
-  eigen = eigen_drop_pattern
-  infected = infected_drop_pattern
-  all = names(state)
-  if((length(eigen) == 0L) | (length(infected) == 0L)) {
-    index_set = list(
-      x = list(vector('list', 3L)),
-      i = list(vector('list', 3L)),
-      j = list(vector('list', 3L)))
-  } else {
-    index_set = make_nested_indices(all, nlist(eigen, infected), invert = TRUE)
-  }
-
-  c(
-    (index_set
-     %>% getElement('i')
-     %>% unlist(recursive = FALSE)
-     %>% setNames(c("all_to_eigen_idx",
-                    "all_to_infected_idx",
-                    "eigen_to_infected_idx"))
-    ),
-    (index_set
-     %>% getElement('j')
-     %>% unlist(recursive = FALSE)
-     %>% setNames(c("all_drop_eigen_idx",
-                    "all_drop_infected_idx",
-                    "eigen_drop_infected_idx"))
-    ),
-    nlist(susceptible_idx)
-  )
-}
-
-##' @export
-disease_free_indices = function(model) {
-  unpack(model)
-
-  df_state_par_idx = (disease_free
-    %>% lapply(`[`, 'params_to_use')
-    %>% unlist(use.names = FALSE)
-    %>% find_vec_indices(params)
-  )
-  df_state_count = (disease_free
-    %>% lapply(`[[`, 'states_to_update')
-    %>% lapply(length)
-    %>% unlist
-  )
-  df_state_idx = (disease_free
-    %>% lapply(`[`, 'states_to_update')
-    %>% unlist(use.names = FALSE)
-    %>% find_vec_indices(state)
-  )
-  nlist(df_state_par_idx, df_state_count, df_state_idx)
-}
-
-##' @export
-initial_population_indices = function(model) {
-  unpack(model)
-  infected_idx = which(initial_population$infected == names(params))
-  total_idx = which(initial_population$total == names(params))
-  nlist(total_idx, infected_idx)
-}
-
-##' @export
-initialization_mapping_indices = function(model) {
-  unpack(model)
-  state_mapping_indices(
-    state,
-    initialization_mapping$eigen,
-    initialization_mapping$infected,
-    initialization_mapping$susceptible)
-}
-
-##' @export
-linearized_param_indices = function(model) {
-  unpack(model)
-  lin_param_vals = (linearized_params
-                   %>% lapply(`[`, 'update_value')
-                   %>% unlist(use.names = FALSE)
-  )
-  lin_param_count = (linearized_params
-                    %>% lapply(`[[`, 'params_to_update')
-                    %>% lapply(length)
-                    %>% unlist(use.names = FALSE)
-  )
-  lin_param_idx = (linearized_params
-                  %>% lapply(`[`, 'params_to_update')
-                  %>% unlist(use.names = FALSE)
-                  %>% find_vec_indices(params)
-  )
-
-  nlist(lin_param_vals, lin_param_count, lin_param_idx)
-}
-
-##' @export
-outflow_indices = function(outflow, ratemat) {
-  if(length(outflow) == 0L) {
-    return(list(
-      row_count = integer(),
-      col_count = integer(),
-      rows = integer(),
-      cols = integer()
-    ))
-  }
-  indices = lapply(outflow, function(o) {
-    list(
-      state = grep(o$from, rownames(ratemat), perl = TRUE),
-      flow = grep(o$to, colnames(ratemat), perl = TRUE)
-    )
-  })
-  n = length(indices)
-  indices$row_count = seq(n)
-  indices$col_count = seq(n)
-  indices$rows = vector()
-  indices$cols = vector()
-
-  for(i in 1:n) {
-    rows = indices[[i]]$state
-    cols = indices[[i]]$flow
-
-    indices$row_count[i] = length(rows)
-    indices$col_count[i] = length(cols)
-
-    indices$rows = c(indices$rows, rows)
-    indices$cols = c(indices$cols, cols)
-  }
-
-  indices
-
-  # TODO: add warning if any state_indices are equal to other state_indices
-  #       that are already added to some other call to outflow in the model.
-  #       in general state_indices should be mutually exclusive across each
-  #       outflow.
-  #nlist(state_indices, flow_state_indices)
-  #all = names(model$state)
-  #lapply(model$outflow, McMasterPandemic::make_nested_indices, x = all)
-}
-
-#' Nested Indices
-#'
-#' Create and return a nested set of character vectors from a sequence
-#' of regular expressions, and return indices into each vector for recovering
-#' other shorter vectors that are lower in the hierarchy.
-#'
-#' @section Motivating Example:
-#'
-#' There are three nested state vectors
-#' a_states -- all states
-#' p_states -- excludes accumulators
-#' e_states -- includes only infected states
-#'
-#' There are three index vectors
-#' i_ap -- indexes a_states to yield p_states
-#' i_ae -- indexes a_states to yield e_states
-#' i_pe -- indexes p_states to yield e_states
-#'
-#' There are also three inverse index vectors
-#' j_ap -- indexes a_states to yield setdiff(a_states, p_states)
-#' j_ae -- indexes a_states to yield setdiff(a_states, e_states)
-#' j_pe -- indexes p_states to yield setdiff(p_states, e_states)
-#'
-#' In general -- assume that y_states are nested in x_states
-#' i_xy -- indexes x_states to yield y_states
-#' j_xy -- indexes x_states to yeild setdiff(x_states, y_states)
-#' i_yx -- doesn't exist because not all x_states are also y_states
-#'
-#' @param x character vector
-#' @param patterns named list or vector of regular expressions to be applied
-#' sequentially to create a nested set of character vectors
-#' @return List with three elements.
-#' \describe{
-#'   \item{\code{x}}{Nested character vectors.}
-#'   \item{\code{i}}{
-#'     List of lists, with inner list giving the indices into character vectors
-#'     that are higher in the hierarchy. For example, one may read this
-#'     expression, \code{x$e == x$p\\[i$e$p\\]}, as "e equals p at the index
-#'     that takes p to e".
-#'   }
-#'   \item{\code{j}}{Set difference version of \code{i}.}
-#' }
-make_nested_indices = function(x, patterns, invert = FALSE) {
-
-  stopifnot(all(sapply(patterns, is.character)))
-  stopifnot(all(sapply(patterns, length) == 1L))
-  stopifnot(!any(is.null(names(patterns))))
-
-  nms = c(deparse(substitute(x)), names(patterns))
-
-  x_list = list(x)
-  i_list = j_list = list()
-
-  # p indexes list of patterns
-  # v indexes list of vectors (i.e. list of nested subsets of x)
-  for(p in seq_along(patterns)) {
-    x_list[[p+1]] = grep(patterns[[p]], x_list[[p]], value = TRUE, perl = TRUE, invert = invert)
-    #i_list[[to]][[from]]
-    i_list[[p+1]] = j_list[[p+1]] = list()
-
-    for(v in seq_len(p)) {
-      indicators = x_list[[v]] %in% x_list[[p+1]]
-      i_list[[p+1]][[v]] = which( indicators)
-      j_list[[p+1]][[v]] = which(!indicators)
-
-    }
-    names(i_list[[p+1]]) = names(j_list[[p+1]]) = nms[1:p]
-  }
-
-  drop_null_elements = function(e) e[!sapply(e, is.null)]
-  list(
-    x = setNames(x_list, nms) %>% drop_null_elements,
-    i = setNames(i_list, nms) %>% drop_null_elements,
-    j = setNames(j_list, nms) %>% drop_null_elements)
-}
-
-lin_state_timevar_params = function(schedule) {
-  stop('function lin_state_timevar_params is under construction')
-}
-
-##' @export
-tmb_observed_data = function(model) {
-
-  lp = model$observed$loss_params
-  lp_by_var = (lp
-   %>% group_by(Variable, Distribution)
-   %>% summarise(loss_param_count = length(na.omit(Parameter)))
-  )
-
-  lp_for_vars = (lp
-    %>% select(-Parameter)
-    %>% distinct
-    %>% left_join(lp_by_var, by = c("Distribution", "Variable"))
-    %>% mutate(loss_id = find_vec_indices(
-       Distribution,
-       valid_loss_functions
-     ))
-     %>% mutate(variable_id = find_vec_indices(
-       Variable,
-       model$condensation_map[final_sim_report_names(model)]
-     ))
-     %>% select(loss_param_count, loss_id, variable_id)
-  )
-
-  lp_for_params = (lp
-    %>% filter(!is.na(Parameter))
-    %>% mutate(spi_loss_param = find_vec_indices(
-       Parameter,
-       c(model$state, model$params)
-      )
-    )
-    %>% select(spi_loss_param)
-  )
-
-  # initial_table = (model$observed$loss_params
-  #  %>% mutate(loss_id = find_vec_indices(
-  #    Distribution,
-  #    valid_loss_functions
-  #  ))
-   # %>% mutate(spi_loss_param = find_vec_indices(
-   #     Parameter,
-   #     c(model$state, model$params, setNames(NA = 0))
-   #    )
-   #  )
-  #  %>% mutate(variable_id = find_vec_indices(
-  #    Variable,
-  #    model$condensation_map[final_sim_report_names(model)]
-  #  ))
-  #  %>% select(variable_id, loss_id, spi_loss_param)
-  # )
-  # variables_by_distributions = (initial_table
-  #   %>% group_by(variable_id, loss_id)
-  #   %>% summarise(loss_param_count = n())
-  #   %>% ungroup
-  # )
-  # parameters = (initial_table
-  #   %>% select(spi_loss_param)
-  # )
-  comparisons = (model$observed$data
-   %>% na.omit
-   %>% rename(observed = value)
-   %>% mutate(time_step = find_vec_indices(
-     as.character(date),
-     as.character(simulation_dates(model))
-   ))
-   %>% mutate(history_col_id = find_vec_indices(
-     var,
-     model$condensation_map[final_sim_report_names(model)]
-   ))
-   %>% select(time_step, history_col_id, observed)
-   %>% arrange(time_step, history_col_id)
-  )
-
-  # HACK: simplify things for now while we only have a
-  # single loss function
-  # if (nrow(initial_table) == 0L) {
-  #   initial_table$loss_param_count = integer(0L)
-  # } else {
-  #   initial_table$loss_param_count = 1
-  # }
-  c(
-    #as.list(variables_by_distributions),
-    #as.list(parameters),
-    #as.list(initial_table),
-    as.list(lp_for_vars),
-    as.list(lp_for_params),
-    as.list(comparisons)
-  )
-}
-
-#' @export
-tmb_opt_params = function(model) {
-  indices = init_tmb_indices$opt_params
-
-  if (length(model$opt_params) > 0L) {
-
-    opt_tables = (model$opt_params
-      %>% lapply(tmb_opt_form, model$params)
-    )
-    indices$index_table = (opt_tables
-      %>% lapply(getElement, 'd')
-      %>% do.call(what = 'rbind')
-    )
-    indices$hyperparameters = (opt_tables
-      %>% lapply(getElement, 'hyperparams_vec')
-      %>% unlist
-    )
-  }
-  any_opt_tv_params = sum(unlist(lapply(model$opt_tv_params, length))) > 0L
-  if (any_opt_tv_params) {
-    opt_tv_tables = index_tv_table = hyperparameters_tv = setNames(
-      vector("list", length(model$opt_tv_params)),
-      names(model$opt_tv_params)
-    )
-    # loop over time-varying types (i.e. abs, rel_orig, rel_prev)
-    for(tvt in names(opt_tv_tables)) {
-      if(length(model$opt_tv_params[[tvt]]) > 0L) {
-        opt_tv_tables[[tvt]] = lapply(
-          model$opt_tv_params[[tvt]],
-          tmb_opt_form,
-          model$params,
-          model$timevar$piece_wise$schedule,
-          tvt
-        )
-        index_tv_table[[tvt]] = (opt_tv_tables[[tvt]]
-          %>% lapply(getElement, 'd')
-          %>% do.call(what = 'rbind')
-          #%>% arrange(tv_breaks)
-        )
-        hyperparameters_tv[[tvt]] = (opt_tv_tables[[tvt]]
-          %>% lapply(getElement, 'hyperparams_vec')
-          %>% unlist
-        )
-      }
-    }
-    indices$index_tv_table = bind_rows(index_tv_table)
-    indices$hyperparameters_tv = unlist(hyperparameters_tv)
-  }
-  indices
-}
-
-# tmb_opt_params = function(model) {
-#   return(tmb_opt_indices(model))
-#
-#   param_nms = lapply(model$opt_params, getElement, "param_nm")
-#   params_per_formula = sapply(param_nms, length)
-#   param_spi = lapply(param_nms, find_vec_indices, c(model$state, model$params))
-#   trans_nms = lapply(model$opt_params, getElement, "trans_nm")
-#
-#   prior_families = lapply(model$opt_params, getElement, "prior_family")
-#   reg_params = lapply(model$opt_params, getElement, "reg_params")
-#
-#   prior_families = rep(unlist(prior_families), params_per_formula)
-#
-#   count_reg_params = (model$opt_params
-#     %>% lapply(getElement, "reg_params")
-#     %>% sapply(length)
-#   )
-#   reg_params = (model$opt_params
-#     %>% lapply(getElement, "reg_params")
-#     %>% unlist
-#   )
-#   trans_id = find_vec_indices(trans_nms, c('', valid_trans))
-#   prior_family_id = find_vec_indices(prior_families, c('', valid_prior_families))
-#   nlist(param_spi, trans_id, count_reg_params, reg_params, prior_family_id)
-# }
-
-
 # retrieving information from tmb objective function --------------
 
 #' Extract Parameter Vector to Pass to a TMB Function
@@ -3016,6 +1807,8 @@ tmb_params = function(model) {
 }
 
 #' Parameter Vectors Transformed for TMB
+#'
+#' TODO: this should not be user-facing
 #'
 #' @param model flexmodel
 #' @param vec_type type of vector to return:
@@ -3084,7 +1877,6 @@ tmb_params_init = function(model) {
   c(init_trans_params, init_trans_tv_mult)
 }
 
-#' @export
 tmb_map_indices = function(model) {
   spec_check(
     introduced_version = '0.2.0',
@@ -3101,7 +1893,6 @@ tmb_map_indices = function(model) {
   )
 }
 
-#' @export
 tmb_param_names = function(model) {
   stop("not working")
   spec_check(
@@ -3117,7 +1908,6 @@ tmb_param_names = function(model) {
   )
 }
 
-#' @export
 simulation_dates = function(model) {
   seq.Date(
     as.Date(model$start_date),
@@ -3131,413 +1921,6 @@ compute_num_iters = function(model) {
     %>% as.integer
   )
 }
-
-# @param model flexmodel
-# @param sim_params parameter vector to pass to a TMB objective function
-#' @export
-changing_ratemat_elements = function(model, sim_params = NULL) {
-  if(is.null(sim_params)) sim_params = tmb_params(model)
-  tmb_fun(model)$simulate(sim_params)$concatenated_ratemat_nonzeros
-}
-
-#' @export
-simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
-  if (getOption("MP_auto_outflow")) {
-     model = add_outflow(model)
-  }
-  if (getOption("MP_auto_tmb_index_update")) {
-    model = update_tmb_indices(model)
-  }
-  updateidx = model$tmb_indices$updateidx
-  ratemat_elements = (model
-    %>% changing_ratemat_elements(sim_params)
-    %>% matrix(nrow = model$iters + 1L,
-               ncol = length(updateidx),
-               byrow = TRUE)
-  )
-
-  colnames(ratemat_elements) = names(updateidx)
-  ratemat_elements = as.data.frame(ratemat_elements)
-  if(add_dates) {
-    ratemat_elements = (model
-                  %>% simulation_dates
-                  %>% data.frame
-                  %>% setNames("Date")
-                  %>% cbind(ratemat_elements)
-    )
-  }
-  ratemat_elements
-}
-
-#' @export
-concatenated_state_vector = function(model, sim_params = NULL) {
-  if(is.null(sim_params)) sim_params = tmb_params(model)
-  tmb_fun(model)$simulate(sim_params)$concatenated_state_vector
-}
-
-#' @export
-structure_state_vector = function(x, iters, state_nms) {
-  matrix(
-    x,
-    nrow = iters + 1L,
-    ncol = length(state_nms),
-    dimnames = list(1:(iters + 1), state_nms),
-    byrow = TRUE
-  )
-}
-
-#' @export
-simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE,
-                                 format = c('wide', 'long', 'ggplot')) {
-  format = match.arg(format)
-  state_sims = (model
-   %>% concatenated_state_vector(sim_params)
-   %>% structure_state_vector(model$iters, names(model$state))
-   %>% as.data.frame
-  )
-  if(add_dates | format == 'ggplot') {
-    state_sims = (model
-      %>% simulation_dates
-      %>% data.frame
-      %>% setNames("Date")
-      %>% cbind(state_sims)
-    )
-    if (format %in% c('long', 'ggplot')) {
-      state_sims = pivot_longer(
-        state_sims, !Date,
-        names_to = 'Compartment',
-        values_to = 'State'
-      )
-    }
-  } else if(format == 'long') {
-    state_sims = pivot_longer(
-      state_sims,
-      names_to = 'Compartment',
-      values_to = 'State'
-    )
-  }
-  if (format == 'ggplot') {
-    state_sims = (state_sims
-      %>% ggplot
-       +  geom_line(aes(x = Date, y = State, colour = Compartment))
-    )
-  }
-  state_sims
-}
-
-#' @export
-initial_state_vector = function(model, sim_params = NULL) {
-  # FIXME: minor performance optimization could be made
-  # here by restricting the number of iterations temporarily
-  # so that the full simulation is not run just to get the
-  # first value -- i think all that is needed is this (but
-  # need to test):
-  # model$iters = 1
-  (model
-   %>% concatenated_state_vector(sim_params)
-   %>% head(length(model$state))
-   %>% setNames(names(model$state))
-  )
-}
-
-#' @export
-final_state_vector = function(model, sim_params = NULL) {
-  (model
-   %>% concatenated_state_vector(sim_params)
-   %>% tail(length(model$state))
-   %>% setNames(names(model$state))
-  )
-}
-
-#' @export
-penultimate_state_vector = function(model, sim_params = NULL) {
-  (model
-   %>% concatenated_state_vector(sim_params)
-   %>% tail(2 * length(model$state))
-   %>% head(length(model$state))
-   %>% setNames(names(model$state))
-  )
-}
-
-
-#' @export
-final_state_ratio = function(model, sim_params = NULL) {
-  last_two = (model
-   %>% concatenated_state_vector(sim_params)
-   %>% tail(2 * length(model$state))
-  )
-  n = length(model$state)
-  setNames(
-    head(last_two, n) / tail(last_two, n),
-    names(model$state))
-}
-
-#' @export
-initial_ratemat = function(model, sim_params = NULL) {
-  if(is.null(sim_params)) sim_params = tmb_params(model)
-  tmb_fun(model)$simulate(sim_params)$ratemat
-}
-
-#' Simulation History
-#'
-#' @param model a \code{\link{flexmodel}} object
-#' @param add_dates should a column called \code{Date} be added?
-#' @param sim_params vector to pass to a TMB AD function -- you can get
-#' examples of these out of the \code{opt_par} element of a fitted
-#' \code{\link{flexmodel}} or by calling \code{\link{tmb_params_trans}}
-#' @param include_initial_date should the first row be the initial state
-#' vector, or the first date after the initial?
-#'
-#' @family simulation
-#' @export
-simulation_history = function(
-    model,
-    add_dates = TRUE,
-    sim_params = NULL,
-    include_initial_date = TRUE,
-    obs_error = FALSE,
-    condense = FALSE
-  ) {
-  if (is.null(sim_params)) sim_params = tmb_params(model)
-  if (obs_error) {
-    sim_hist_raw = tmb_fun(model)$simulate()$simulation_history
-  } else {
-    sim_hist_raw = tmb_fun(model)$report()$simulation_history
-  }
-  sim_hist = (sim_hist_raw
-   %>% as.data.frame
-   %>% setNames(final_sim_report_names(model))
-  )
-
-  sim_hist = (sim_hist
-    %>% pad_lag_diffs(model$lag_diff)
-    %>% pad_convs(model$conv, model$tmb_indices$conv)
-  )
-
-  if (condense) {
-    sim_hist = setNames(
-      sim_hist[names(model$condensation_map)],
-      model$condensation_map
-    )
-    # FIXME: need cumRep hack in condense_flexmodel?
-  }
-
-  if (add_dates) {
-    sim_hist = (model
-      %>% simulation_dates
-      %>% data.frame
-      %>% setNames("Date")
-      %>% cbind(sim_hist)
-    )
-  }
-
-  if (!include_initial_date) {
-    sim_hist = sim_hist[-1,]
-  }
-
-  sim_hist
-}
-
-# @param cond_map condensation_map element of flexmodel
-# @param sim_hist value of simulation_history in a TMB report or simulation
-# apply_condensation = function(cond_map, sim_hist) {
-#
-# }
-
-# FIXME: following two functions do the same thing in slightly different
-# ways!
-
-#' Condensed set of Simulated Variables
-#'
-#' @export
-simulation_condensed = function(model, add_dates = TRUE, sim_params = NULL) {
-  cond_map = model$condensation_map
-  cond_nms = names(cond_map)
-  if (add_dates) {
-    cond_nms = c("Date", cond_nms)
-    cond_map = c(Date = "Date", cond_map)
-  }
-  sims = simulation_history(model, add_dates = TRUE, sim_params = sim_params)[cond_nms]
-  names(sims) = c(cond_map)
-  sims
-}
-
-
-#' @export
-condense_flexmodel = function(model) {
-  spec_check(
-    introduced_version = '0.2.0',
-    feature = "condensation in c++"
-  )
-  condensed_simulation_history = setNames(
-    simulation_history(model)[names(model$condensation_map)],
-    model$condensation_map
-  )
-
-  # HACK! ultimately we want cumulative reports calculated
-  # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
-  # also this assumes no observation error, and doesn't
-  # compute D as cumulative sum of deaths (as is done in run_sim)
-  if ('report' %in% names(condensed_simulation_history)) {
-    condensed_simulation_history$cumRep = cumsum(
-      ifelse(
-        !is.na(unname(unlist(condensed_simulation_history$report))),
-        unname(unlist(condensed_simulation_history$report)),
-        0
-      )
-    )
-  }
-
-  cbind(data.frame(date = simulation_dates(model), condensed_simulation_history))
-}
-
-
-#' @importFrom tidyr pivot_longer
-#' @export
-simulate.flexmodel = function(
-  object, nsim = 1, seed = NULL,
-  do_condensation = FALSE,
-  format = c('long', 'wide'),
-  add_dates = TRUE,
-  sim_params = NULL, ...) {
-
-  format = match.arg(format)
-  if ((nsim != 1) | !is.null(seed)) {
-    stop(
-      "nsim and seed cannot be set to non-default values yet.\n",
-      "they may become relevant in the future if it becomes possible\n",
-      "to add stochasticity to the simulations"
-    )
-  }
-  if (do_condensation) {
-    sims = simulation_condensed(object, add_dates, sim_params)
-  } else {
-    sims = simulation_history(object, add_dates, sim_params)
-  }
-  if (format == 'long') {
-    sims = pivot_longer(
-      sims, -Date,
-      names_to = "variable",
-      values_to = "value"
-    )
-  } else if (format != 'wide') {
-    stop('format must be either long or wide')
-  }
-  sims
-}
-
-#' Ensemble Simulation
-#'
-#' Given a sample of parameter vectors, simulate the condensed state simulation
-#' history for each ... TODO
-#'
-#' @param model \code{\link{flexmodel}} object, preferably a
-#' \code{flexmodel_calibrated} object that was fitted with
-#' \code{\link{bbmle_flexmodel}} or \code{\link{calibrate_flexmodel}}
-#' @param sim_params_matrix numberic matrix with rows giving simulation
-#' iterations and columns giving model parameters
-#' @param covmat not used
-#' @param qvec named numeric vector giving quantiles to compute
-#' @param ... arguments to pass on the \code{pop_pred_samp}, which
-#' is actually doing the sampling from the distribution of parameters.
-#' useful parameters here include the sample size, \code{n} (default 1000),
-#' and \code{PDify = TRUE} that can solve issues with non-positive definite
-#' matrices.
-#'
-#' @family simulation
-#' @export
-simulate_ensemble = function(
-    model,
-    sim_params_matrix = NULL,
-    covmat = NULL,
-    qvec = c(value = 0.5, lwr = 0.025, upr = 0.975),
-    use_progress_bar = TRUE,
-    ...
-  ) {
-  if (!is.null(covmat)) {
-    stop("covmat argument is not currently being used")
-  }
-
-  msg = paste0(
-    "\nsim_params_matrix missing, and unable to produce it. ",
-    "try using bbmle_flexmodel when calibrating.",
-    collapse = "\n"
-  )
-  if (inherits(model, 'flexmodel_calibrated')) {
-    if (is.null(sim_params_matrix)) {
-      if (is_fitted_by_bbmle(model)) {
-        sim_params_matrix = McMasterPandemic:::pop_pred_samp(
-          model$opt_obj,
-          Sigma = vcov(model),
-          ...
-        )
-      } else {
-        stop(msg)
-      }
-    }
-    model = model$model_to_calibrate
-  }
-  if (is.null(sim_params_matrix)) {
-    stop(msg)
-  }
-
-  stopifnot(!is.null(names(qvec)))
-
-  # avoid the cost of computing the loss function,
-  # and just do the simulations
-  model$observed$data = McMasterPandemic:::init_observed$data
-
-  o = tmb_fun(model)
-  trajectories = list()
-  ii = seq_len(nrow(sim_params_matrix))
-
-  cond_map = model$condensation_map
-  cond_nms = names(cond_map)
-
-  date_frame = (model
-    %>% simulation_dates
-    %>% data.frame
-    %>% setNames("Date")
-  )
-  fsrn = final_sim_report_names(model)
-
-  if (use_progress_bar) {
-    pb = txtProgressBar(min = min(ii), max = max(ii), initial = min(ii), style = 3)
-  }
-
-  for(i in ii) {
-    traj = as.data.frame(o$simulate(sim_params_matrix[i,])$simulation_history)
-    names(traj) = fsrn
-    traj = setNames(
-      traj[cond_nms],
-      cond_map
-    )
-    trajectories[[i]] = cbind(date_frame, traj)
-    if (use_progress_bar) {
-      setTxtProgressBar(pb, i)
-    }
-  }
-
-  if (use_progress_bar) cat("", "summarising ensemble ... ", sep = "\n")
-  names(trajectories) = ii
-  summarised_traj = (trajectories
-    %>% bind_rows(.id = 'simulation')
-    %>% pivot_longer(c(-simulation, -Date), names_to = 'var')
-    %>% group_by(Date, var)
-    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
-  )
-  attr(summarised_traj, "qvec") = qvec
-  summarised_traj
-}
-
-#' Simulated Variables to Compare with Observed Data
-#'
-#' @export
-simulation_fitted = function(model) {
-  obsvars = unique(model$observed$data$var)
-  simulation_condensed(model)[obsvars]
-}
-
 
 update_params_calibrated = function(model) {
   # TODO: check if opt_par exists
@@ -3559,87 +1942,6 @@ update_params_calibrated = function(model) {
   model$opt_tv_params = list()
   model = update_tmb_indices(model)
   model
-}
-
-#' Wrapped Optimizers for Flexmodels
-#'
-#' Currently there are \code{optim_flexmodel}, \code{nlminb_flexmodel},
-#' and \code{bbmle_flexmodel}
-#'
-#' @param model a \code{\link{flexmodel}} object
-#' @param update_default_params should the default parameters be updated
-#' to their calibrated values?
-#'
-#' @export
-optim_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
-  model_to_calibrate = model
-  obj_fun = tmb_fun(model)
-  model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
-  model$opt_par = model$opt_obj$par
-  model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_optim', 'flexmodel_calibrated', 'flexmodel')
-  update_params_calibrated(model)
-}
-
-#' @rdname optim_flexmodel
-#' @export
-nlminb_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
-  model_to_calibrate = model
-  obj_fun = tmb_fun(model)
-  model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
-  model$opt_par = model$opt_obj$par
-  model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_nlminb', 'flexmodel_calibrated', 'flexmodel')
-  update_params_calibrated(model)
-}
-
-#' @rdname optim_flexmodel
-#' @export
-bbmle_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
-  model_to_calibrate = model
-  obj_fun = tmb_fun(model)
-  start_par = tmb_params_trans(model)
-  if (getOption("MP_get_bbmle_init_from_nlminb")) {
-    start_par[] = nlminb_flexmodel(model)$opt_par
-  }
-  bbmle::parnames(obj_fun$fn) = names(start_par)
-  bbmle::parnames(obj_fun$gr) = names(start_par)
-  model$opt_obj = bbmle::mle2(
-    obj_fun$fn,
-    start_par,
-    gr = obj_fun$gr,
-    parnames = names(start_par),
-    vecpar = TRUE,
-    ...
-  )
-  model$opt_par = model$opt_obj@coef
-  model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_bbmle', 'flexmodel_calibrated', 'flexmodel')
-  update_params_calibrated(model)
-}
-
-#' @export
-fitted.flexmodel_calibrated = function(model) {
-  obs_var = unique(model$observed$data$var)
-  fits = (model
-    %>% simulation_history(obs_error = FALSE, condense = TRUE)
-    %>% pivot_longer(-Date, names_to = "var")
-    %>% filter(var %in% obs_var)
-  )
-  # fits = (model
-  #   %>% simulate(do_condensation = TRUE)
-  #   %>% filter(variable %in% obs_var)
-  # )
-  comparison_data = (model$observed$data
-    %>% left_join(
-      fits, by = c("date" = "Date", "var" = "var"),
-      suffix = c('', '_fitted')
-    )
-  )
-  comparison_data
 }
 
 # benchmarking and comparison in tests -----------------------
@@ -4029,10 +2331,11 @@ factory_fresh_macpan_options = function() {
 }
 
 # converting between classic and tmb params_timevar -------
+
 #   this is annoying:
 #   macpan_ontario orders by Symbol then Date
 #   macpan.cpp orders by breaks then spi (which is roughly Date then Symbol)
-#' @export
+
 timevar_order_indices = function(schedule) {
   # FIXME: need to do something different if rel_orig/rel_prev are both used?
 
