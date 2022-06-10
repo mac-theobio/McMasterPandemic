@@ -832,12 +832,19 @@ add_lag_diff = function(
 
 #' @export
 add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
-  stopifnot(input_names %in% intermediate_sim_report_names(model))
-  stopifnot(all(lag_dates %in% simulation_dates(model)))
-  model$lag_diff_uneven = c(
-    model$lag_diff_uneven,
-    list(nlist(input_names, output_names, lag_dates))
+  spec_check(
+    introduced_version = '0.2.1',
+    feature = 'uneven lagged differencing',
+    exception_type = 'warning'
   )
+  if (spec_ver_gt('0.2.0')) {
+    stopifnot(input_names %in% intermediate_sim_report_names(model))
+    stopifnot(all(lag_dates %in% simulation_dates(model)))
+    model$lag_diff_uneven = c(
+      model$lag_diff_uneven,
+      list(nlist(input_names, output_names, lag_dates))
+    )
+  }
   model
 }
 
@@ -1524,7 +1531,11 @@ tmb_indices <- function(model) {
         model$sim_report_exprs,
         initial_sim_report_names(model)
       )
-      indices$lag_diff = lag_diff_indices(model)
+      if (spec_ver_gt("0.2.0")) {
+        indices$lag_diff = lag_diff_uneven_indices(model)
+      } else {
+        indices$lag_diff = lag_diff_indices(model)
+      }
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
       indices$opt_params = tmb_opt_params(model)

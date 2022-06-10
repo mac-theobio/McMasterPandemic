@@ -85,7 +85,11 @@ spec_ver_btwn <- function(version_left, version_right) {
 ##' @param feature free-form text describing the feature
 ##' @return No return value. Called to get specific error messages when required.
 ##' @export
-spec_check <- function(introduced_version, feature) {
+spec_check <- function(
+      introduced_version,
+      feature,
+      exception_type = c('stop', 'warning', 'message')
+    ) {
 
     ## https://canmod.net/misc/flex_specs
     current_version <- getOption("MP_flex_spec_version")
@@ -98,8 +102,18 @@ spec_check <- function(introduced_version, feature) {
     ## TODO: need to handle possessive case?
     verb <- ifelse(grepl("s$", feature, perl = TRUE), " were ", " was ")
 
+    message_mp = function(..., call.) {
+      trash = call.
+      message(...)
+    }
+    exception_function = switch(
+      match.arg(exception_type),
+      stop = stop,
+      warning = warning,
+      message = message
+    )
     if (is.null(introduced_version)) {
-        stop(
+        exception_function(
             "\n\n",
             feature, verb,
             "has not yet been introduced by any specification version.\n",
@@ -109,7 +123,7 @@ spec_check <- function(introduced_version, feature) {
     }
 
     if (parse_version(current_version) < parse_version(introduced_version)) {
-        stop(
+        exception_function(
             "\n\n",
             feature, verb, "not introduced until specification version ",
             introduced_version, ".\n",

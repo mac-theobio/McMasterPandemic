@@ -501,10 +501,15 @@ intermediate_sim_report_names = function(model) {
 
 ##' @export
 final_sim_report_names = function(model) {
+  if (spec_ver_gt('0.2.0')) {
+    lags = model$lag_diff_uneven
+  } else {
+    lags = model$lag_diff
+  }
   c(
     intermediate_sim_report_names(model),
-    unlist(lapply(model$lag_diff, getElement, "output_names")),
-    unlist(lapply(model$lag_diff_uneven, getElement, "output_names")),
+    unlist(lapply(lags, getElement, "output_names")),
+    #unlist(lapply(model$lag_diff_uneven, getElement, "output_names")),
     unlist(lapply(model$conv, getElement, "output_names"))
   )
 }
@@ -2450,6 +2455,9 @@ lag_diff_uneven_indices = function(model) {
     %>% lapply(getElement, 'input_names')
     %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
   )
+  if (length(lag_indices) == 0L) {
+    return(model)
+  }
   lag_breaks = (model$lag_diff_uneven
     %>% lapply(getElement, 'lag_dates')
     %>% lapply(`-`, model$start_date)
@@ -2467,10 +2475,12 @@ lag_diff_uneven_indices = function(model) {
   ii = unlist(lag_breaks) + 1L
   jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
   xx = unlist(lag_ns)
-  Matrix::sparseMatrix(
+  delay_n = Matrix::sparseMatrix(
     i = ii, j = jj, x = xx,
     dims = c(model$iters, length(model$lag_diff_uneven))
   )
+  sri = unlist(lag_indices)
+  nlist(sri, delay_n)
 }
 
 #' @export
