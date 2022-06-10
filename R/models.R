@@ -403,7 +403,7 @@ make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALS
   McMasterPandemic::unpack(args)
 
   stopifnot(has_age(params))
-
+  state = unclass(state)
   model = flexmodel(params = unlist(params), state = setNames(state, make.names(names(state))), start_date = start_date, end_date=end_date)
 
   epi_cat = c(attr(state, "epi_cat"))
@@ -429,6 +429,7 @@ make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALS
            %>% rep_rate("Im",   "R",    ~                      (gamma_m))
            %>% rep_rate("Is",   "D",    ~ (    nonhosp_mort) * (gamma_s))
            %>% rep_rate("Is",   "H",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+           %>% rep_rate("Is",   "X",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
            %>% rep_rate("Is",   "ICUs", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (1 - phi2))
            %>% rep_rate("Is",   "ICUd", ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (    phi2))
            %>% rep_rate("ICUs", "H2",   ~                                  (    psi1))
