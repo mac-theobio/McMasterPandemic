@@ -469,6 +469,17 @@ all_except = function(x) {
   )
 }
 
+as_vector_no_attr = function(x) {
+  nms = names(x)
+  attributes(x) = NULL
+  setNames(x, nms)
+}
+
+as_data_frame_no_row_names = function(x) {
+  rownames(x) = NULL
+  x
+}
+
 ##' @export
 initial_sim_report_names = function(model) {
   c(
@@ -490,11 +501,24 @@ intermediate_sim_report_names = function(model) {
 
 ##' @export
 final_sim_report_names = function(model) {
+  if (spec_ver_gt('0.2.0')) {
+    lags = model$lag_diff_uneven
+  } else {
+    lags = model$lag_diff
+  }
   c(
     intermediate_sim_report_names(model),
-    unlist(lapply(model$lag_diff, getElement, "output_names")),
+    unlist(lapply(lags, getElement, "output_names")),
+    #unlist(lapply(model$lag_diff_uneven, getElement, "output_names")),
     unlist(lapply(model$conv, getElement, "output_names"))
   )
+}
+
+##' @export
+condensed_sim_report_names = function(model) {
+  nms = final_sim_report_names(model)
+  if (model$no_condensation) return(nms)
+  condense_names(nms, model$condensation_map)
 }
 
 pad_lag_diffs = function(sims, lag_diff) {
@@ -686,11 +710,26 @@ const_named_vector = function(nms, cnst) {
   setNames(rep(cnst[[1]], length(nms)), nms)
 }
 
+unlist_params = function(x) {
+  # -- would be nice to use get_attr and put_attr from utils.R, but
+  #    the latter will set things back to pansim and this is not exactly
+  #    what we want
+  pattr = attributes(x)
+  x = setNames(unlist(x), names(x))  # FIXME: will silently fail for nested lists
+  attributes(x) = c(attributes(x), pattr)
+  x
+}
+
 #' @export
 update_full_condensation_map = function(model) {
   srn = final_sim_report_names(model)
   model$condensation_map = setNames(srn, srn)
   model
+}
+
+#' @export
+condense_names = function(nms, nm_map) {
+  nm_map[nms[nms %in% names(nm_map)]]
 }
 
 #' Merge One Vector into Another by Name
@@ -1029,12 +1068,28 @@ reduce_rates = function(rates) {
 # rates component of a model -- the utility of this function is actually
 # a sign that we have spaghetti code and therefore should create a more
 # formal class structure
+regen_model = function(model) {
+  (model
+   %>% regen_rates
+   %>% regen_sim_report_expr
+  )
+}
 regen_rates = function(model) {
   remodel = model
   remodel$rates = list()
   for(r in seq_along(model$rates)) {
     args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
     remodel = do.call(add_rate, args)
+  }
+  remodel
+}
+
+regen_sim_report_expr = function(model) {
+  remodel = model
+  remodel$sim_report_exprs = list()
+  for(r in seq_along(model$sim_report_exprs)) {
+    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
+    remodel = do.call(add_sim_report_expr, args)
   }
   remodel
 }
@@ -1371,6 +1426,60 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
   summary
 }
 
+get_schedule = function(model) {
+  model$timevar$piece_wise$schedule
+}
+
+get_params_timevar_orig = function(model) {
+  (model
+    %>% get_schedule
+    %>% select(Date, Symbol, Value, Type)
+  )
+}
+
+get_params_timevar_impute = function(model) {
+  (model
+    %>% get_schedule
+    %>% select(Date, Symbol, init_tv_mult, Type)
+    %>% rename(Value = init_tv_mult)
+  )
+}
+
+get_params_timevar_series = function(model) {
+  (model
+   %>% get_schedule
+   %>% select(Date, Symbol, tv_val)
+   %>% rename(Value = tv_val)
+  )
+}
+
+get_tmb_report = function(model) {
+  tmb_fun(model)$report()
+}
+
+get_tmb_simulate = function(model) {
+  tmb_fun(model)$simulate()
+}
+
+get_tmb_data = function(model) {
+  tmb_fun(model)$env$data
+}
+
+get_tmb_params = function(model) {
+  get_tmb_report(model)$params
+}
+
+get_tmb_tv_mult = function(model) {
+  get_tmb_report(model)$tv_mult
+}
+
+get_tmb_hist = function(model) {
+  get_tmb_report(model)$simulation_history
+}
+
+get_tmb_hist_stoch = function(model) {
+  get_tmb_simulate(model)$simulation_history
+}
 
 ## @param x parameter vector or flexmodel
 ## @export
@@ -2348,6 +2457,40 @@ lag_diff_indices = function(model) {
     %>% Reduce(f = rbind)
     %>% as.list
   )
+}
+
+#' @export
+lag_diff_uneven_indices = function(model) {
+  lag_indices = (model$lag_diff_uneven
+    %>% lapply(getElement, 'input_names')
+    %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
+  )
+  if (length(lag_indices) == 0L) {
+    return(model)
+  }
+  lag_breaks = (model$lag_diff_uneven
+    %>% lapply(getElement, 'lag_dates')
+    %>% lapply(`-`, model$start_date)
+    %>% lapply(as.integer)
+    %>% rep(unlist(lapply(lag_indices, length)))
+  )
+  lag_ns = (model$lag_diff_uneven
+    %>% lapply(getElement, 'lag_dates')
+    %>% lapply(diff)
+    %>% lapply(as.integer)
+    %>% lapply(append, 0, after = 0)
+    %>% rep(unlist(lapply(lag_indices, length)))
+  )
+
+  ii = unlist(lag_breaks) + 1L
+  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
+  xx = unlist(lag_ns)
+  delay_n = Matrix::sparseMatrix(
+    i = ii, j = jj, x = xx,
+    dims = c(model$iters, length(model$lag_diff_uneven))
+  )
+  sri = unlist(lag_indices)
+  nlist(sri, delay_n)
 }
 
 #' @export
@@ -3459,6 +3602,9 @@ bbmle_flexmodel = function(model, ...) {
   model_to_calibrate = model
   obj_fun = tmb_fun(model)
   start_par = tmb_params_trans(model)
+  if (getOption("MP_get_bbmle_init_from_nlminb")) {
+    start_par[] = nlminb_flexmodel(model)$opt_par
+  }
   bbmle::parnames(obj_fun$fn) = names(start_par)
   bbmle::parnames(obj_fun$gr) = names(start_par)
   model$opt_obj = bbmle::mle2(
@@ -3869,6 +4015,9 @@ factory_fresh_macpan_options = function() {
         MP_condense_cpp = TRUE,
 
         MP_silent_tmb_function = TRUE,
+
+        # optimizer options ----------------------------------------------------
+        MP_get_bbmle_init_from_nlminb = FALSE,
 
         # -- control how comparable r and tmb engines are ----------------------
         # -- see r_tmb_comparable ----------------------------------------------

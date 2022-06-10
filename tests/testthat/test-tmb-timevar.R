@@ -309,7 +309,7 @@ test_that("logit-scale time-variation works", {
   )
   expect_equal(
     simulation_history(sir)$I_to_R %>% unique,
-    plogis(qlogis(initial_gamma) + (0:5) * qlogis(gamma_multiplier))
+    plogis(qlogis(initial_gamma) + (0:5) * gamma_multiplier)
   )
   synth_data = (sir
     %>% update_params(c(

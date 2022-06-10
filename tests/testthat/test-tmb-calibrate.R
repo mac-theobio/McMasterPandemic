@@ -792,6 +792,8 @@ test_that("mixed tv types get optimized properly", {
   reset_spec_version()
   r_tmb_comparable()
 
+  options(MP_get_bbmle_init_from_nlminb = TRUE)
+
   state = c(S = 20000, I = 100, R = 0)
   params = c(gamma = 0.06, beta = 0.15)
   start_date = ymd(20000101)
@@ -803,11 +805,20 @@ test_that("mixed tv types get optimized properly", {
     Value = NA,
     Type = 'abs'
   )
-  simple_timevar_bad = mutate(simple_timevar_good, Type = c("abs", "rel_orig"))
+  simple_timevar_bad = mutate(
+    simple_timevar_good,
+    Type = c("abs", "rel_orig")
+  )
 
   set.seed(2L)
   random_timevar = (data.frame(
-      Date = sort(sample(seq(from = start_date, to = end_date, by = 1), 15, replace = TRUE)),
+      Date = sort(
+        sample(
+          seq(from = start_date, to = end_date, by = 1),
+          15,
+          replace = TRUE
+        )
+      ),
       Symbol = sample(names(params), 15, replace = TRUE),
       Value = 0,
       Type = sample(c('abs', 'rel_orig', 'rel_prev'), 15, replace = TRUE)
@@ -864,48 +875,74 @@ test_that("mixed tv types get optimized properly", {
       logit_gamma ~ logit_flat(0)
     )
   )
-  model_cal = nlminb_flexmodel(model_to_cal)
+  model_cal = calibrate_flexmodel(model_to_cal)
+
+  expect_equal(pars_base_opt(model_cal), pars_base_sim(model_cal))
+  expect_equal(pars_base_init(model_cal), pars_base_init(model_to_cal))
+
+  pars_base_sim(model)
+  pars_base_sim(model_to_cal)
+
+  expect_equal(pars_infer_init(model_cal), pars_infer_init(model_to_cal))
+  expect_equal(unname(unique(pars_infer_init(model_cal))), 0)
+  expect_equal(
+    unname(exp(pars_infer_opt(model_cal)["log_beta"])),
+    unname(pars_base_opt(model_cal)["beta"]),
+  )
+  expect_equal(
+    unname(plogis(pars_infer_opt(model_cal)["logit_gamma"])),
+    unname(pars_base_opt(model_cal)["gamma"])
+  )
 
   dd = data.frame(
-    sim = model$timevar$piece_wise$schedule$Value,
-    to_cal = model_to_cal$timevar$piece_wise$schedule$Value,
-    cal = model_cal$timevar$piece_wise$schedule$Value
+    sim = pars_time_spec(model)$Value,
+    to_cal = pars_time_spec(model)$Value,
+    cal = pars_time_spec(model)$Value
   )
-  expect_equal(c(model$params), c(model_cal$params)[1:2], tolerance = 1e-4)
   expect_equal(dd$sim, dd$cal, tolerance = 1e-3)
 
+  expect_equal(
+    pars_base_sim(model),
+    pars_base_sim(model_cal)[1:2],
+    tolerance = 1e-4
+  )
+
   model_base = make_sir_model(
-    params = params, state = state, start_date = start_date, end_date = end_date
+    params = params,
+    state = state,
+    start_date = start_date,
+    end_date = end_date
   ) %>% update_observed(sims)
+
+  get_tmb_data = McMasterPandemic:::get_tmb_data
   tmb_good = (model_base
     %>% update_piece_wise(simple_timevar_good)
     %>% add_opt_tv_params("abs", log_beta ~ log_flat(0))
-    %>% tmb_fun
+    %>% get_tmb_data
   )
   tmb_bad = (model_base
     %>% update_piece_wise(simple_timevar_bad)
     %>% add_opt_tv_params("rel_orig", log_beta ~ log_normal(0, 1))
     %>% add_opt_tv_params("abs", log_beta ~ log_flat(0))
-    %>% tmb_fun
+    %>% get_tmb_data
   )
 
-  expect_equal(tmb_good$env$data$opt_tv_param_id, c(1, 2))
-  expect_equal(tmb_good$env$data$opt_tv_trans_id, c(2, 2))
-  expect_equal(tmb_good$env$data$opt_tv_count_reg_params, c(1, 1))
-  expect_equal(tmb_good$env$data$opt_tv_reg_params, c(0, 0))
-  expect_equal(tmb_good$env$data$opt_tv_reg_family_id, c(1, 1))
+  expect_equal(tmb_good$opt_tv_param_id, c(1, 2))
+  expect_equal(tmb_good$opt_tv_trans_id, c(2, 2))
+  expect_equal(tmb_good$opt_tv_count_reg_params, c(1, 1))
+  expect_equal(tmb_good$opt_tv_reg_params, c(0, 0))
+  expect_equal(tmb_good$opt_tv_reg_family_id, c(1, 1))
 
-  expect_equal(tmb_bad$env$data$opt_tv_param_id, c(1, 2))
-  expect_equal(tmb_bad$env$data$opt_tv_trans_id, c(2, 2))
-  expect_equal(tmb_bad$env$data$opt_tv_count_reg_params, c(1, 2))
-  expect_equal(tmb_bad$env$data$opt_tv_reg_params, c(0, 0, 1))
-  expect_equal(tmb_bad$env$data$opt_tv_reg_family_id, c(1, 2))
+  expect_equal(tmb_bad$opt_tv_param_id, c(1, 2))
+  expect_equal(tmb_bad$opt_tv_trans_id, c(2, 2))
+  expect_equal(tmb_bad$opt_tv_count_reg_params, c(1, 2))
+  expect_equal(tmb_bad$opt_tv_reg_params, c(0, 0, 1))
+  expect_equal(tmb_bad$opt_tv_reg_family_id, c(1, 2))
+
+  factory_fresh_macpan_options()
 })
 
 test_that("vector-valued hyperparameters work", {
-
-  library(McMasterPandemic)
-  library(lubridate)
   reset_spec_version()
   r_tmb_comparable()
 
@@ -1000,5 +1037,3 @@ sir = (flexmodel(
     I ~ log_normal("I_sd")
   )
 )
-simulation_history(sir, obs_error = TRUE)$I
-

@@ -78,13 +78,12 @@ flexmodel <- function(params, state = NULL,
       #  - tried setting use_eigvec = FALSE, but this failed for some reason (bug??)
       #  - for now we can do this ugly thing of turning down the number of power
       #    method steps and then restoring
-      n_steps_default = getOption("MP_rexp_steps_default")
-      options(MP_rexp_steps_default = 1)
+      op = options(MP_rexp_steps_default = 1)
       state = make_state(params = params)
-      options(MP_rexp_steps_default = n_steps_default)
+      options(op)
       state[] = 0
     } else if (is.character(state)) {
-      state = setNames(rep(0, length(state)), state)
+      state = const_named_vector(state, 0)
     }
 
     if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
@@ -97,14 +96,7 @@ flexmodel <- function(params, state = NULL,
       )
     }
 
-    # TODO: keep an eye on this -- i think that the
-    # flex framework should _not_ use parameter
-    # lists and rather stick to numeric vectors, but
-    # not totally sure
-    # -- also should use get_attr and put_attr from utils.R
-    pattr = attributes(params)
-    params = setNames(unlist(params), names(params))  # FIXME: will silently fail for nested lists
-    attributes(params) = c(attributes(params), pattr)
+    params = unlist_params(params)
 
     model <- list(
         state = state,
@@ -209,7 +201,6 @@ flexmodel <- function(params, state = NULL,
     # condensation -- spec_ver_gt("0.1.2)
     model$condensation = init_condensation
 
-    model = structure(model, class = "flexmodel")
 
     if (spec_ver_gt("0.1.2") & !is.null(data)) {
       model = update_observed(model, data)
@@ -229,6 +220,7 @@ flexmodel <- function(params, state = NULL,
       rel_prev = list()
     )
     model$condensation_map = init_condensation_map
+    model$no_condensation = TRUE
 
     if (FALSE & spec_ver_gt('0.1.2')) {
       model$opt_params = initialize_opt_params(model)
@@ -236,6 +228,7 @@ flexmodel <- function(params, state = NULL,
     }
 
     model$tmb_indices <- init_tmb_indices
+    class(model) = 'flexmodel'
 
     model
 }
@@ -668,9 +661,9 @@ add_state_param_sum = function(model, sum_name, summands) {
 pow = function(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
                state, params, sum_vector, factr_vector, pow_vector) {
   avail_vec = c(state, params, sum_vector, factr_vector, pow_vector)
-  arg1_idx = McMasterPandemic:::find_vec_indices(pow_arg1_nms, avail_vec)
-  arg2_idx = McMasterPandemic:::find_vec_indices(pow_arg2_nms, avail_vec)
-  const_idx = McMasterPandemic:::find_vec_indices(pow_const_nms, avail_vec)
+  arg1_idx = find_vec_indices(pow_arg1_nms, avail_vec)
+  arg2_idx = find_vec_indices(pow_arg2_nms, avail_vec)
+  const_idx = find_vec_indices(pow_const_nms, avail_vec)
   initial_value = setNames(
     avail_vec[const_idx] * (avail_vec[arg1_idx]^avail_vec[arg2_idx]),
     pow_nms
@@ -823,7 +816,28 @@ add_lag_diff = function(
     model$lag_diff,
     list(added_lag_diff)
   )
+  if (any(duplicated(unlist(lapply(model$lag_diff, getElement, "output_names"))))) {
+    stop('the same variable is being differenced with the same lag, which is not currently allowed')
+  }
   update_tmb_indices(model)
+}
+
+#' @export
+add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
+  spec_check(
+    introduced_version = '0.2.1',
+    feature = 'uneven lagged differencing',
+    exception_type = 'warning'
+  )
+  if (spec_ver_gt('0.2.0')) {
+    stopifnot(input_names %in% intermediate_sim_report_names(model))
+    stopifnot(all(lag_dates %in% simulation_dates(model)))
+    model$lag_diff_uneven = c(
+      model$lag_diff_uneven,
+      list(nlist(input_names, output_names, lag_dates))
+    )
+  }
+  model
 }
 
 #' Add Variable by Convolution
@@ -868,6 +882,9 @@ add_conv = function(
     model$conv,
     list(added_conv)
   )
+  if (any(duplicated(unlist(lapply(model$conv, getElement, "output_names"))))) {
+    stop('the same variable is being convolved twice, which is not currently allowed')
+  }
   update_tmb_indices(model)
 }
 
@@ -892,6 +909,7 @@ update_condense_map = function(model, map = NULL) {
   if (is.null(map)) map = setNames(allvars, allvars)
   stopifnot(all(names(map) %in% allvars))
   model$condensation_map = map
+  model$no_condensation = FALSE
   model
 }
 
@@ -1317,6 +1335,8 @@ update_opt_vec = function(model, ...) {
   )
 }
 
+# refine_initial_values = function(model)
+
 ##' Update Random Effect Parameters
 ##'
 ##' Specify parameters as random effects
@@ -1346,20 +1366,23 @@ update_ranef_params = function(model, ...) {
 #' @importFrom lubridate days
 #' @export
 extend_end_date = function(model, days_to_extend) {
+  UseMethod('extend_end_date')
+}
+
+#' @exportS3Method
+extend_end_date.flexmodel = function(model, days_to_extend) {
   model$end_date = model$end_date + days(days_to_extend)
   model$iters = compute_num_iters(model)
-
-  # HACK!
-  if (!is.null(model$model_to_calibrate)) {
-    model$model_to_calibrate$end_date =
-      model$model_to_calibrate$end_date +
-      days(days_to_extend)
-    model$model_to_calibrate$iters = compute_num_iters(model$model_to_calibrate)
-    model$model_to_calibrate =
-      update_tmb_indices(model$model_to_calibrate)
-  }
-
   update_tmb_indices(model)
+}
+
+#' @exportS3Method
+extend_end_date.flexmodel_calibrated = function(model, days_to_extend) {
+  model$model_to_calibrate = extend_end_date(
+    model$model_to_calibrate,
+    days_to_extend
+  )
+  NextMethod("extend_end_date")
 }
 
 #' Update Simulation Bounds
@@ -1384,7 +1407,6 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
   update_tmb_indices(model)
 }
 
-
 # compute indices and pass them to the tmb/c++ side ---------------------
 
 ##' Update TMB Indices
@@ -1403,9 +1425,14 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
 ##'
 ##' @param model \code{\link{flexmodel}} object
 ##' @export
-update_tmb_indices <- function(model) {
+update_tmb_indices = function(model) {
+  UseMethod("update_tmb_indices")
+}
 
-    if (length(model$condensation_map) == 0L) {
+##' @exportS3Method
+update_tmb_indices.flexmodel <- function(model) {
+
+    if (model$no_condensation) {
       model = update_full_condensation_map(model)
     }
 
@@ -1496,7 +1523,11 @@ tmb_indices <- function(model) {
         model$sim_report_exprs,
         initial_sim_report_names(model)
       )
-      indices$lag_diff = lag_diff_indices(model)
+      if (spec_ver_gt("0.2.0")) {
+        indices$lag_diff = lag_diff_uneven_indices(model)
+      } else {
+        indices$lag_diff = lag_diff_indices(model)
+      }
       indices$conv = conv_indices(model)
       indices$observed = tmb_observed_data(model)
       indices$opt_params = tmb_opt_params(model)
@@ -1550,7 +1581,7 @@ tmb_fun_args <- function(model) {
         model = add_outflow(model)
       }
     }
-    if ((length(model$condensation_map) == 0L) & (nrow(model$observed$data) > 0L)) {
+    if (model$no_condensation) {
       model = update_full_condensation_map(model)
     }
     if (getOption('MP_auto_tmb_index_update')) {
@@ -2049,7 +2080,7 @@ add_error_dist = function(model, ...) {
   new_loss_params = (list(...)
    %>% lapply(
      parse_and_resolve_loss_form,
-     final_sim_report_names(model),
+     condensed_sim_report_names(model),
      names(model$params)
     )
    %>% bind_rows
@@ -2075,7 +2106,7 @@ update_error_dist = function(model, ...) {
   new_loss_params = (list(...)
    %>% lapply(
      parse_and_resolve_loss_form,
-     final_sim_report_names(model),
+     condensed_sim_report_names(model),
      names(model$params)
     )
    %>% bind_rows
@@ -2085,7 +2116,9 @@ update_error_dist = function(model, ...) {
 
 #' @rdname update_error_dist
 #' @export
-reset_error_dist = function(model) update_error_dist(model)
+reset_error_dist = function(model) {
+  update_error_dist(model)
+}
 
 #' Update Observation Error
 #'
@@ -2107,12 +2140,18 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
   model$observed$loss_params = loss_params
 
   if (regenerate_rates) {
-    model = regen_rates(model)
+    model = regen_model(model)
   }
+
+  # HACK: refactor so that update_loss_params has a generic,
+  #       so that this class setting becomes unconditional
   if (isTRUE(all.equal(model$observed$data, init_observed$data))) {
-    class(model) = c("flexmodel", "flexmodel_obs_error")
+    class(model) = c("flexmodel_obs_error", "flexmodel")
   } else {
-    class(model) = c("flexmodel", "flexmodel_to_calibrate")
+    class(model) = c(
+      "flexmodel_to_calibrate",
+      "flexmodel"
+    )
   }
   model
 }
@@ -2139,34 +2178,42 @@ update_loss_params = function(model, loss_params, regenerate_rates = TRUE) {
 #' @export
 update_observed = function(model, data, loss_params = NULL, regenerate_rates = TRUE) {
   stopifnot(isTRUE(all.equal(c(names(data)), c("date", "var", "value"))))
-  #allvars = model$condensation_map[final_sim_report_names(model)]
   obsvars = unique(data$var)
-  #stopifnot(all(obsvars %in% allvars))
   model$observed$data = data
 
   if (is.null(loss_params)) {
     if (nrow(model$observed$loss_params) == 0L) {
+      # message(
+      #   "\na default negative binomial error distribution for all observed\n",
+      #   "variables has been assumed. one dispersion parameter for each\n",
+      #   "variable has been added to the parameter vector and set to a\n",
+      #   "default value of 1. it is recommended that update_error_dist is\n",
+      #   "explicitly called."
+      # )
       model$observed$loss_params = data.frame(
         Parameter = "nb_disp" %_% obsvars, # default choice: dispersion
         Distribution = "negative_binomial",   # default choice: negative binomial
         Variable = obsvars
       )
       model$params = expand_params_nb_disp(model$params, obsvars)
-    } else {
-      warning(
-        "\nan error distribution was inherited from a modified flexmodel, \n",
-        "and has not been explicitly modified to be consistent with the \n",
-        "new observed data. it is recommended that update_error_dist is \n",
-        "explicitly called."
-      )
-    }
+    } #else {
+      # warning(
+      #   "\nan error distribution was inherited from a modified flexmodel, \n",
+      #   "and has not been explicitly modified to be consistent with the \n",
+      #   "new observed data. it is recommended that update_error_dist is \n",
+      #   "explicitly called."
+      # )
+    #}
   } else {
     model = update_loss_params(model, loss_params)
   }
   if (regenerate_rates) {
-    model = regen_rates(model)
+    model = regen_model(model)
   }
-  class(model) = c('flexmodel_to_calibrate', 'flexmodel')
+  class(model) = c(
+    'flexmodel_to_calibrate',
+    'flexmodel'
+  )
   return(model)
 }
 
@@ -2239,7 +2286,7 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       }
       if (grepl("_logit$", schedule$Type[i])) {
         schedule$tv_val[i] <- plogis(
-          qlogis(old_val) + qlogis(schedule$Value[i])
+          qlogis(old_val) + schedule$Value[i]
         )
       } else {
         schedule$tv_val[i] <- old_val * schedule$Value[i]
@@ -2275,7 +2322,7 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
       }
     }
     if (regenerate_rates) {
-      model = regen_rates(model)
+      model = regen_model(model)
     }
     if (spec_ver_gt('0.1.2')) {
       model$timevar$piece_wise$schedule = (model$timevar$piece_wise$schedule
@@ -2291,7 +2338,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   tv_cols = c("Date", "Symbol", "Value", "Type")
   if (!is.null(model$model_to_calibrate)) {
     ptv_to_cal = rbind(
-      model$model_to_calibrate$timevar$piecewise$schedule[tv_cols],
+      model$model_to_calibrate$timevar$piece_wise$schedule[tv_cols],
       params_timevar
     )
     model$model_to_calibrate = update_piece_wise(
@@ -2301,7 +2348,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     )
   }
   ptv_to_cal = rbind(
-    model$timevar$piecewise$schedule[tv_cols],
+    model$timevar$piece_wise$schedule[tv_cols],
     params_timevar
   )
   update_piece_wise(
@@ -2313,6 +2360,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
 
 #' @export
 initialize_piece_wise = function(model) {
+  model$opt_tv_params = NULL
   model$timevar = list(
     piece_wise = list(
       breaks = integer(0L),
@@ -2352,49 +2400,5 @@ update_params = function(model, ...) {
     names(params_update)
   )))
   model$params[names(params_update)] = params_update
-  model
-}
-
-# regenerate model --------------------------------
-
-if(FALSE) {
-
-arg_names = function(f, include_dots = FALSE, warn_dots = TRUE) {
-  nms = names(formals(f))
-  if (include_dots) return(nms)
-  is_dots = nms == "..."
-  if (warn_dots & any(is_dots)) warning("removing dots")
-  nms[!is_dots]
-}
-
-arg_names_classify = function(f, nms) {
-  arg_nms = arg_names(f, TRUE)
-  args_in_nms = arg_nms %in% nms
-  nms_in_args = nms %in% arg_nms
-  list(
-    args_in_nms = arg_nms[args_in_nms],
-    args_not_in_nms = arg_nms[!args_in_nms],
-    nms_in_args = nms[nms_in_args],
-    nms_not_in_args = nms[!nms_in_args]
-  )
-}
-
-names(model)
-params_timevar = model$timevar$piece_wise$schedule[c("Date", "Symbol", "Value", "Type")]
-data = model$observed$data
-arg_names_classify(init_model, names(model))
-arg_names_classify(add_rate, names(model$rates[[1]]))
-arg_names_classify(add_state_param_sum, names(model$sums[[1]]))
-arg_names_classify(add_factr, names(model))
-arg_names_classify(add_sim_report_expr, names(model))
-arg_names_classify(add_lag_diff, names(model))
-arg_names_classify(add_conv, names(model))
-arg_names_classify(add_linearized_outflow, names(model))
-arg_names_classify(add_outflow, names(model))
-arg_names_classify(update_linearized_params, names(model))
-arg_names_classify(update_disease_free_state, names(model))
-arg_names_classify(initial_population, names(model))
-arg_names_classify(add_state_mappings, names(model))
-arg_names_classify(update_opt_params, names(model))
-arg_names_classify(update_opt_tv_params, names(model))
+  regen_model(model)
 }
