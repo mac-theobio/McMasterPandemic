@@ -15,8 +15,10 @@ bbmle_flexmodel(model, ...)
 \arguments{
 \item{model}{a \code{\link{flexmodel}} object}
 
-\item{update_default_params}{should the default parameters be updated
+\item{...}{additional arguments to pass to the wrapped optimizer
 to their calibrated values?}
+
+\item{object}{a \code{\link{flexmodel}} object (for S3 method consistency)}
 }
 \description{
 Currently there are \code{optim_flexmodel}, \code{nlminb_flexmodel},

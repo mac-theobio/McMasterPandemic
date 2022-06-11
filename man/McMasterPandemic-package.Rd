@@ -48,7 +48,7 @@ etc
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/bbolker/McMasterPandemic}
+  \item \url{https://github.com/mac-theobio/McMasterPandemic}
 }
 
 }

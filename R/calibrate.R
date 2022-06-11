@@ -1014,13 +1014,14 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
 ##' \code{\link{flexmodel}} object that contains observed data added either
 ##' throught the \code{data} argument in \code{\link{flexmodel}} or with the
 ##' \code{\link{update_observed}} function
-##' @param optimizer name of a valid optimizer -- currently \code{bbmle} is
+##' @param .optimizer_wrapper name of a valid optimizer -- currently \code{bbmle} is
 ##' recommended (see details for more information about the choices)
 ##' @param ... additional arguments to pass on to the optimizer
 ##'
 ##' @seealso \code{\link{bbmle_flexmodel}}, \code{\link{nlminb_flexmodel}},
 ##' \code{\link{optim_flexmodel}}
 ##' @return \code{flexmodel_calibrated} object
+##' @importFrom utils getFromNamespace
 ##' @export
 calibrate_flexmodel = function(
     model,

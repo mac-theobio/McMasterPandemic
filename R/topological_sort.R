@@ -21,8 +21,8 @@ topological_sort = function(model) {
       state_nms
     )
     state_order = c(state_order, state_nms[!remaining_inflow])
-    rates = rates[!unlist(McMasterPandemic:::get_rate_to(rates)) %in% state_order]
-    rates = rates[!unlist(McMasterPandemic:::get_rate_from(rates)) %in% state_order]
+    rates = rates[!unlist(get_rate_to(rates)) %in% state_order]
+    rates = rates[!unlist(get_rate_from(rates)) %in% state_order]
     state_nms = state_nms[remaining_inflow]
     if (isTRUE(all(remaining_inflow)) & length(state_nms) != 0L & length(remaining_inflow) != 0L) {
       stop("state network is not acyclic (i think), and therefore cannot be topologically sorted")
@@ -34,7 +34,7 @@ topological_sort = function(model) {
 has_inflow = function(focal_state, rates, state_nms) {
   stopifnot(focal_state %in% state_nms)
   to_states = (rates
-    %>% McMasterPandemic:::get_rate_to()
+    %>% get_rate_to()
     %>% unlist
     %>% unique
   )
@@ -46,8 +46,8 @@ if(FALSE) {
   state_order = base::setdiff(topological_sort(model), c("V", "X"))
   lapply(state_order, has_inflow, model$rates, state_order)
   get_children = function(focal_state, rates) {
-    which_parent = unlist(McMasterPandemic:::get_rate_from(rates)) == focal_state
-    McMasterPandemic:::get_rate_to(rates)[which_parent]
+    which_parent = unlist(get_rate_from(rates)) == focal_state
+    get_rate_to(rates)[which_parent]
   }
   get_children("Ip", model$rates)
   e = list2env(list(path_number = 0))

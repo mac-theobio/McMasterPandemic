@@ -4,10 +4,12 @@
 \alias{as.character.struc}
 \title{Convert struc Object to a character vector}
 \usage{
-\method{as.character}{struc}(x)
+\method{as.character}{struc}(x, ...)
 }
 \arguments{
 \item{x}{\code{\link{struc-class}} object}
+
+\item{...}{for S3 method consistency}
 }
 \value{
 character vector

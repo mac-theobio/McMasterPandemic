@@ -4,7 +4,8 @@
 #' and \code{bbmle_flexmodel}
 #'
 #' @param model a \code{\link{flexmodel}} object
-#' @param update_default_params should the default parameters be updated
+#' @param object a \code{\link{flexmodel}} object (for S3 method consistency)
+#' @param ... additional arguments to pass to the wrapped optimizer
 #' to their calibrated values?
 #'
 #' @export
@@ -59,7 +60,8 @@ bbmle_flexmodel = function(model, ...) {
 }
 
 #' @exportS3Method
-fitted.flexmodel_calibrated = function(model) {
+fitted.flexmodel_calibrated = function(object, ...) {
+  model = object # for S3 consistency
   obs_var = unique(model$observed$data$var)
   fits = (model
     %>% simulation_history(obs_error = FALSE, condense = TRUE)

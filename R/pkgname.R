@@ -8,6 +8,7 @@
 ## S' notation breaks PDF building on Travis, not sure why?
 ##  triggers "! LaTeX Error: Illegal character in array arg."
 
+##'
 ##' \pkg{McMasterPandemic}
 ##'
 ##' This R package provides compartmental epidemic models for

@@ -7,6 +7,8 @@
 initial_population(model, total, infected)
 }
 \arguments{
+\item{model}{\code{\link{flexmodel}} object}
+
 \item{total}{name of a single parameter to represent the total size of the
 population -- over all compartments}
 

@@ -77,6 +77,7 @@ simulation_history = function(
 #' and \code{PDify = TRUE} that can solve issues with non-positive definite
 #' matrices.
 #'
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @family simulation
 #' @export
 simulate_ensemble = function(
@@ -99,7 +100,7 @@ simulate_ensemble = function(
   if (inherits(model, 'flexmodel_calibrated')) {
     if (is.null(sim_params_matrix)) {
       if (is_fitted_by_bbmle(model)) {
-        sim_params_matrix = McMasterPandemic:::pop_pred_samp(
+        sim_params_matrix = pop_pred_samp(
           model$opt_obj,
           Sigma = vcov(model),
           ...
@@ -118,7 +119,7 @@ simulate_ensemble = function(
 
   # avoid the cost of computing the loss function,
   # and just do the simulations
-  model$observed$data = McMasterPandemic:::init_observed$data
+  model$observed$data = init_observed$data
 
   o = tmb_fun(model)
   trajectories = list()
@@ -380,6 +381,7 @@ condense_flexmodel = function(model) {
 
 
 #' @importFrom tidyr pivot_longer
+#' @importFrom stats simulate
 #' @rdname deprecated_simulation_functions
 #' @export
 simulate.flexmodel = function(

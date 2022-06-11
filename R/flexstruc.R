@@ -209,18 +209,20 @@ setMethod('resolve', c(x = 'struc_expanded'),
 #' Convert struc Object to a matrix
 #'
 #' @param x \code{\link{struc-class}} object
+#' @param ... for S3 method consistency
 #' @return matrix
 #' @export
-as.matrix.struc = function(x) {
+as.matrix.struc = function(x, ...) {
   matrix(x@v, x@dims[1], x@dims[2])
 }
 
 #' Convert struc Object to a character vector
 #'
 #' @param x \code{\link{struc-class}} object
+#' @param ... for S3 method consistency
 #' @return character vector
 #' @export
-as.character.struc = function(x) {
+as.character.struc = function(x, ...) {
   as.character(as.matrix(x))
 }
 

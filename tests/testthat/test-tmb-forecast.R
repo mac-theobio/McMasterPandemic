@@ -2,6 +2,9 @@ library(McMasterPandemic)
 library(dplyr)
 library(lubridate)
 library(testthat)
+library(here)
+
+pkg_home = here()
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -13,12 +16,12 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   rerun_r_engine_forecasts = FALSE
   run_simulation_comparison = FALSE
   #reset_spec_version()
-  set_spec_version("0.2.0", '../../inst/tmb')
+  set_spec_version("0.2.0", file.path('pkg_home','inst/tmb'))
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   options(MP_warn_bad_breaks = FALSE)
   r_tmb_comparable()
-  load("../../inst/testdata/ontario_flex_test_better.Rdata")
+  load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
 
   model = make_vaccination_model(
     params = model_params,
@@ -130,9 +133,13 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
       , debug = FALSE
       , debug_plot = FALSE
     )
-    save(fitted_model_r, file = "../../inst/testdata/ontario_flex_test_better_fit.rda")
+    save(
+      fitted_model_r,
+      file = system.file('testdata', 'ontario_flex_test_better_fit.Rdata', package = 'McMasterPandemic')
+     )
+      #file = file.path(pkg_home, "inst/testdata/ontario_flex_test_better_fit.rda"))
   } else {
-    load("../../inst/testdata/ontario_flex_test_better_fit.rda")
+    load(system.file('testdata', 'ontario_flex_test_better_fit.Rdata', package = 'McMasterPandemic'))
   }
   # [[1]]
   # Time difference of 4.138171 secs
@@ -156,9 +163,9 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   forecast_tmb = forecast_ensemble(fitted_model_tmb, nsim = 2, seed = 1)
   if (rerun_r_engine_forecasts) {
     forecast_r = forecast_ensemble(fitted_model_r, nsim = 2, seed = 1)
-    save(forecast_r, file = "../../inst/testdata/ontario_flex_test_better_forecasts.rda")
+    save(forecast_r, file = system.file('testdata', 'ontario_flex_test_better_forecasts.rda', package = 'McMasterPandemic'))
   } else {
-    load("../../inst/testdata/ontario_flex_test_better_forecasts.rda")
+    load(system.file('testdata', 'ontario_flex_test_better_forecasts.rda', package = 'McMasterPandemic'))
   }
 
   Rprof("~/testing.out")

@@ -548,6 +548,8 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
 #' @family flexmodel_definition_functions
 #' @export
 add_factr <- function(model, factr_nm, formula) {
+  state <- params <- sum_vector <- factr_vector <- state <- params <-
+    sum_vector <- factr_vector <- pow_vector <- ratemat <- NULL
   unpack(model)
 
   added_factr <- (factr_nm
@@ -801,6 +803,10 @@ add_sim_report_expr = function(model, expr_nm, formula) {
 #' differencing. See \code{\link{avail_for_lag}} for a function that will
 #' return the names of all variables that are available for differencing.
 #' @param delay_n Delay in days for determining the lag in the differences.
+#' @param lag_dates Dates between which differences should be taken.
+#' @param input_names names of variables to be differenced
+#' @param output_names names of the result of differencing
+#'
 #' @export
 add_lag_diff = function(
   model, var_pattern,
@@ -1091,6 +1097,7 @@ disease_free_state = function(model, state_pattern, param_pattern) {
 ##' across susceptible compartments -- currently a uniform distribution
 ##' is assumed..
 ##'
+##' @param model \code{\link{flexmodel}} object
 ##' @param total name of a single parameter to represent the total size of the
 ##' population -- over all compartments
 ##' @param infected name of a single parameter to represent the initial total size of
@@ -1156,17 +1163,6 @@ add_state_mappings = function(
 }
 
 
-#' @rdname add_opt_params
-#' @export
-update_opt_params = function(model, ...) {
-  if (!inherits(model, "flexmodel_to_calibrate")) {
-    stop("\nplease add observed data for model fitting, ",
-         "\nbefore specifying parameters to be optimized"
-    )
-  }
-  model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
-  model
-}
 
 #' Optimization Parameters
 #'
@@ -1218,6 +1214,9 @@ update_opt_params = function(model, ...) {
 #' }
 #'
 #' @param model \code{\link{flexmodel}} object
+#' @param tv_type type of time-variation for time-varying parameters,
+#' which can be one of \code{'abs', 'rel_orig', 'rel_prev',
+#' 'rel_orig_logit', 'rel_orig_prev'}
 #' @param ... a list of formulas for describing what parameters should
 #' be optimized, whether/how they should be transformed before being
 #' passed to the objective function, and what prior distribution (or
@@ -1238,7 +1237,19 @@ add_opt_params = function(model, ...) {
     model$opt_params,
     lapply(list(...), parse_and_resolve_opt_form, model$params)
   )
-  model
+  update_tmb_indices(model)
+}
+
+#' @rdname add_opt_params
+#' @export
+update_opt_params = function(model, ...) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
+  model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
+  update_tmb_indices(model)
 }
 
 #' @rdname add_opt_params
@@ -1438,6 +1449,21 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
 ##' @export
 update_tmb_indices = function(model) {
   UseMethod("update_tmb_indices")
+}
+
+##' @exportS3Method
+update_tmb_indices.flexmodel_to_calibrate = function(model) {
+  data_vars = unique(model$observed$data$var)
+  loss_vars = unique(model$observed$loss_params$Variable)
+  if (!all(data_vars %in% loss_vars)) {
+    # protects against segfaults!
+    stop(
+      "\nall variables in the observed data must be associated",
+      "\nwith observation error. please use update_error_dist and",
+      "\nadd_error_dist."
+    )
+  }
+  NextMethod('update_tmb_indices')
 }
 
 ##' @exportS3Method
@@ -2087,6 +2113,7 @@ update_initial_state = function(model, silent = FALSE) {
 
 # observed data and observation error ---------------------------------
 
+#' @importFrom dplyr bind_rows
 #' @rdname update_error_dist
 #' @export
 add_error_dist = function(model, ...) {

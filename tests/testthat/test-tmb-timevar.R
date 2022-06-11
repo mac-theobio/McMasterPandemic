@@ -9,6 +9,10 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 library(tidyr)
+library(here)
+
+pkg_home = here()
+
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -135,7 +139,7 @@ test_that('time variation works for vax models', {
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
 
-  load("../../inst/testdata/ontario_flex_test.rda")
+  load(file.path(pkg_home, "inst/testdata/ontario_flex_test.rda"))
 
   start_date = min(params_timevar$Date)
   end_date = max(params_timevar$Date) + days(1)

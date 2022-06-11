@@ -17,6 +17,12 @@ differencing. See \code{\link{avail_for_lag}} for a function that will
 return the names of all variables that are available for differencing.}
 
 \item{delay_n}{Delay in days for determining the lag in the differences.}
+
+\item{input_names}{names of variables to be differenced}
+
+\item{output_names}{names of the result of differencing}
+
+\item{lag_dates}{Dates between which differences should be taken.}
 }
 \description{
 Add a variable that will be available for comparisons with observed data

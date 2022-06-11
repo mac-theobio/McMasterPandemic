@@ -2,6 +2,10 @@
 % Please edit documentation in R/tmbutils.R
 \name{compare_sims}
 \alias{compare_sims}
+\alias{compare_sims_cbind}
+\alias{compare_sims_plot}
+\alias{compare_sims_diffmat}
+\alias{compare_sims_unlist}
 \title{Compare TMB-based and classic MacPan Simulations}
 \usage{
 compare_sims(
@@ -11,6 +15,14 @@ compare_sims(
   compare_attr = TRUE,
   na_is_zero = FALSE
 )
+
+compare_sims_cbind(classic_sim, tmb_sim, index)
+
+compare_sims_plot(...)
+
+compare_sims_diffmat(classic_sim, tmb_sim, state, op = `-`)
+
+compare_sims_unlist(classic_sim, tmb_sim, tolerance = testthat_tolerance())
 }
 \arguments{
 \item{classic_sim}{result of `run_sim` without using TMB}

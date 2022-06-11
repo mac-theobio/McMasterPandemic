@@ -1966,14 +1966,15 @@ update_params_calibrated = function(model) {
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
 #' @param na_is_zero should NAs be replaced with zeros?
+#' @importFrom testthat testthat_tolerance
 #' @export
 compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE, na_is_zero = FALSE) {
   if (is.null(tolerance)) {
-    if (require(testthat)) {
+    #if (require(testthat)) {
       tolerance = testthat_tolerance()
-    } else {
-      tolerance = .Machine$double.eps^0.5
-    }
+    #} else {
+    #  tolerance = .Machine$double.eps^0.5
+    #}
   }
   if (na_is_zero) {
     classic_sim[is.na(classic_sim)] = 0
@@ -2035,6 +2036,7 @@ time_wrap = function(expr1, expr2, units = 'secs') {
   list(dff1, dff2, as.numeric(dff2)/as.numeric(dff1))
 }
 
+#' @rdname compare_sims
 #' @export
 compare_sims_cbind = function(classic_sim, tmb_sim, index) {
   stopifnot(length(index) == 1L)
@@ -2044,6 +2046,7 @@ compare_sims_cbind = function(classic_sim, tmb_sim, index) {
   x
 }
 
+#' @rdname compare_sims
 #' @export
 compare_sims_plot = function(...) {
   x = compare_sims_cbind(...)
@@ -2052,6 +2055,7 @@ compare_sims_plot = function(...) {
   lines(x[,2], col = 'red', lty = 2)
 }
 
+#' @rdname compare_sims
 #' @export
 compare_sims_diffmat = function(classic_sim, tmb_sim, state, op = `-`) {
   op(
@@ -2059,6 +2063,7 @@ compare_sims_diffmat = function(classic_sim, tmb_sim, state, op = `-`) {
     as.matrix(tmb_sim[,names(state)]))
 }
 
+#' @rdname compare_sims
 #' @export
 compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolerance()) {
   all.equal(unlist(tmb_sim), unlist(classic_sim), tolerance)
@@ -2241,6 +2246,7 @@ get_macpan_options = function() {
   )
 }
 
+##' Factory Fresh MacPan Options
 ##' @export
 factory_fresh_macpan_options = function() {
   flex_version <- readLines(

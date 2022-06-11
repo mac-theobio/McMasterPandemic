@@ -170,7 +170,13 @@ test-tmb-timevar:
 test-tmb-forecast:
 	echo "testthat::test_file('tests/testthat/test-tmb-forecast.R')" | $(R) --slave
 
-test-tmb-all: test-tmb test-tmb-struc test-tmb-make-state test-tmb-calibrate test-tmb-timevar test-tmb-forecast
+test-tmb-formula:
+	echo "testthat::test_file('tests/testthat/test-tmb-forecast.R')" | $(R) --slave
+
+test-tmb-simulate:
+	echo "testthat::test_file('tests/testthat/test-tmb-simulate.R')" | $(R) --slave
+
+test-tmb-all: test-tmb test-tmb-struc test-tmb-make-state test-tmb-calibrate test-tmb-timevar test-tmb-forecast test-tmb-formula test-tmb-simulate
 
 src/McMasterPandemic.cpp: inst/tmb/**/* inst/tmb/recommended_spec_version cleanobjects
 	cp inst/tmb/$(SPECVERSION)/macpan.cpp src/McMasterPandemic.cpp

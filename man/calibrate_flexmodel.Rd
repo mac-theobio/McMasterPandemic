@@ -16,10 +16,10 @@ calibrate_flexmodel(
 throught the \code{data} argument in \code{\link{flexmodel}} or with the
 \code{\link{update_observed}} function}
 
-\item{...}{additional arguments to pass on to the optimizer}
-
-\item{optimizer}{name of a valid optimizer -- currently \code{bbmle} is
+\item{.optimizer_wrapper}{name of a valid optimizer -- currently \code{bbmle} is
 recommended (see details for more information about the choices)}
+
+\item{...}{additional arguments to pass on to the optimizer}
 }
 \value{
 \code{flexmodel_calibrated} object

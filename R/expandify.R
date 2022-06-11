@@ -835,6 +835,8 @@ expand_params_variant <- function(params,
 
 ##' Expand Parameter List to Include Initial Proportion of Susceptibles
 ##'
+##' TODO: deprecate this
+##'
 ##' @param params parameter list (e.g. read in with \code{read_params()})
 ##' @param S0 initial proportion of individuals in susceptible compartments
 ##'
@@ -863,7 +865,6 @@ expand_params_S0 = function(params, S0) {
     params
 }
 
-##' @export
 expand_params_nb_disp = function(params, observed_variables) {
     if (length(observed_variables) == 0L) return(params)
     error_dist_params = error_dist_desc = const_named_vector("nb_disp" %_% observed_variables, 1.0)
@@ -881,7 +882,6 @@ expand_params_nb_disp = function(params, observed_variables) {
     params
 }
 
-##' @export
 expand_params_normal_sd = function(params, observed_variables) {
     if (length(observed_variables) == 0L) return(params)
     error_dist_params = error_dist_desc = const_named_vector("normal_sd" %_% observed_variables, 1.0)

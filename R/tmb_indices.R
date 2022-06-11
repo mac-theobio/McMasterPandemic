@@ -1,6 +1,5 @@
 # computing indices and data for tmb ----------------------
 
-##' @export
 sum_indices = function(sums, state, params) {
   sum_index_list = lapply(sums, "[[", "sum_indices")
   sumidx = c(seq_len(length(sums))) + length(state) + length(params)
@@ -15,7 +14,6 @@ sum_indices = function(sums, state, params) {
        summandidx = clean_if_empty(summandidx))
 }
 
-##' @export
 factr_indices = function(factrs, state_param_sums) {
   if (length(factrs) == 0L) {
     indices = list(
@@ -44,7 +42,7 @@ factr_indices = function(factrs, state_param_sums) {
   return(indices)
 }
 
-#' @export
+
 pow_indices = function(pow, state_param_sum_factr_pow) {
   if (nrow(pow) == 0L) {
     return(init_tmb_indices$pow_indices)
@@ -57,7 +55,7 @@ pow_indices = function(pow, state_param_sum_factr_pow) {
   )
 }
 
-#' @export
+
 sim_report_expr_indices = function(exprs, init_sim_report_nms) {
   if (length(exprs) == 0L) {
     indices = list(
@@ -82,7 +80,7 @@ sim_report_expr_indices = function(exprs, init_sim_report_nms) {
   return(indices)
 }
 
-#' @export
+
 lag_diff_indices = function(model) {
   indices_for_one_pattern = function(pattern_input) {
     nms = intermediate_sim_report_names(model)
@@ -99,7 +97,7 @@ lag_diff_indices = function(model) {
   )
 }
 
-#' @export
+
 lag_diff_uneven_indices = function(model) {
   lag_indices = (model$lag_diff_uneven
     %>% lapply(getElement, 'input_names')
@@ -133,7 +131,7 @@ lag_diff_uneven_indices = function(model) {
   nlist(sri, delay_n)
 }
 
-#' @export
+
 conv_indices = function(model) {
   indices_for_one_pattern = function(pattern_input) {
     nms = intermediate_sim_report_names(model)
@@ -163,7 +161,7 @@ conv_indices = function(model) {
   )
 }
 
-##' @export
+
 ratemat_indices <- function(rates, state_params) {
   sp <- state_params
   ratemat_indices <- sapply(rates, `[[`, "ratemat_indices")
@@ -254,7 +252,7 @@ state_mapping_indices = function(
   )
 }
 
-##' @export
+
 disease_free_indices = function(model) {
   unpack(model)
 
@@ -359,7 +357,7 @@ lin_state_timevar_params = function(schedule) {
   stop('function lin_state_timevar_params is under construction')
 }
 
-##' @export
+
 tmb_observed_data = function(model) {
 
   lp = model$observed$loss_params
@@ -449,7 +447,7 @@ tmb_observed_data = function(model) {
   )
 }
 
-#' @export
+
 tmb_opt_params = function(model) {
   indices = init_tmb_indices$opt_params
 

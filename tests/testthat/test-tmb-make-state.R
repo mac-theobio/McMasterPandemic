@@ -5,6 +5,7 @@ library(tools)
 library(dplyr)
 library(semver)
 library(lubridate)
+library(here)
 
 test_that("an error is thrown when disease-free state is missing when required", {
   expect_error({
@@ -145,7 +146,15 @@ test_that('make state matches vax/variant model with realistic parameters', {
   # eigenvector to converge in rExp
   options(MP_rexp_steps_default = 150)
 
-  load("../../inst/testdata/ontario_flex_test.rda")
+  ontario_flex_test_file_path = system.file(
+    'testdata',
+    'ontario_flex_test.rda',
+    package = "McMasterPandemic"
+  )
+  print('ontario file exists??')
+  print(ontario_flex_test_file_path)
+  print(file.exists(ontario_flex_test_file_path))
+  load(ontario_flex_test_file_path)
 
   start_date = min(params_timevar$Date)
   end_date = start_date
