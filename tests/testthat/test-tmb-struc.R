@@ -2,9 +2,6 @@ library(McMasterPandemic)
 library(dplyr)
 library(testthat)
 library(lubridate)
-library(here)
-
-pkg_home = here()
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -541,7 +538,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   )
 
   # load data that came from macpan ontario
-  load(file.path(pkg_home, "inst/testdata/ontario_flex_test.rda"))
+  load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
 
   # make flex vaccination model -----------
   model = make_vaccination_model(

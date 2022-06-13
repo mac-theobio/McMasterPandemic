@@ -24,6 +24,12 @@ examples of these out of the \code{opt_par} element of a fitted
 
 \item{include_initial_date}{should the first row be the initial state
 vector, or the first date after the initial?}
+
+\item{obs_error}{should random observation error be added if it is
+defined in the \code{model}? -- see \code{\link{update_error_dist}}}
+
+\item{condense}{should a condensed set of simulation variables be
+returned? -- see \code{\link{update_condense_map}}}
 }
 \description{
 Simulation History

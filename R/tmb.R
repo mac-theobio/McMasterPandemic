@@ -16,7 +16,7 @@
 ##' variable -- only used when \code{do_make_state == TRUE}
 ##' @param do_approx_hazard approximate the hazard transformation
 ##' by a smooth function (experimental)
-##' @param do_approx_hazard like \code{do_approx_hazard} but for
+##' @param do_approx_hazard_lin like \code{do_approx_hazard} but for
 ##' the linearized model that is used to construct the initial
 ##' state (experimental)
 ##' @param do_make_state should state be remade on the c++ size?
@@ -44,22 +44,23 @@
 ##' @importFrom lubridate Date
 ##' @export
 flexmodel <- function(params, state = NULL,
-                       start_date = NULL, end_date = NULL,
-                       params_timevar = NULL,
-                       do_hazard = getOption("MP_default_do_hazard"),
-                       do_make_state = getOption("MP_default_do_make_state"),
-                       do_hazard_lin = getOption("MP_default_do_hazard_lin"),
-                       do_approx_hazard = getOption("MP_default_do_approx_hazard"),
-                       do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
-                       do_sim_constraint = getOption("MP_default_do_sim_constraint"),
-                       sim_lower_bound = getOption("MP_default_sim_lower_bound"),
-                       max_iters_eig_pow_meth = 8000,
-                       tol_eig_pow_meth = 1e-6,
-                       haz_eps = 1e-6,
-                       data = NULL,
-                       ...) {
+       start_date = NULL, end_date = NULL,
+       params_timevar = NULL,
+       do_hazard = getOption("MP_default_do_hazard"),
+       do_make_state = getOption("MP_default_do_make_state"),
+       do_hazard_lin = getOption("MP_default_do_hazard_lin"),
+       do_approx_hazard = getOption("MP_default_do_approx_hazard"),
+       do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
+       do_sim_constraint = getOption("MP_default_do_sim_constraint"),
+       sim_lower_bound = getOption("MP_default_sim_lower_bound"),
+       max_iters_eig_pow_meth = 8000,
+       tol_eig_pow_meth = 1e-6,
+       data = NULL, ...) {
     if(!is.null(data)) {
-      stop("currently the data argument is not working ... please use update_observed instead")
+      stop(
+        "currently the data argument is not working.\n",
+        "please use update_observed instead"
+      )
     }
     check_spec_ver_archived()
     name_regex = wrap_exact(getOption("MP_name_search_regex"))
@@ -172,7 +173,7 @@ flexmodel <- function(params, state = NULL,
         model$do_make_state = do_make_state
         model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
         model$tol_eig_pow_meth = tol_eig_pow_meth
-        model$haz_eps = haz_eps
+        model$haz_eps = 1e-6
         model$disease_free = list()
         model$linearized_params = list()
         model$outflow = list()
@@ -2431,7 +2432,7 @@ initialize_piece_wise = function(model) {
 #'
 #' @param model \code{\link{flexmodel}} object
 #' @param ... named vectors of parameter names
-#' @seealso \code{\link{`pars_base_sim<-`}}
+#' @seealso \code{\link{pars_base_sim<-}}
 #' @export
 update_params = function(model, ...) {
   params_update = unlist(list(...))

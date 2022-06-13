@@ -877,7 +877,10 @@ deprecate_timepars_warning <- FALSE
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @param use_ode integrate via ODE rather than discrete step?
 ##' @param ode_args additional arguments to \code{\link[deSolve]{ode}}
-##' @param use_flex use \code{flexmodel} approach (experimental)
+##' @param use_flex use \code{flexmodel} approach
+##' @param flexmodel optional \code{\link{flexmodel}} object
+##' @param obj_fun optional TMB objective function computed with
+##' \code{\link{tmb_fun}}
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))

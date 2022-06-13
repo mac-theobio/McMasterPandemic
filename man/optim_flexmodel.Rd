@@ -4,6 +4,7 @@
 \alias{optim_flexmodel}
 \alias{nlminb_flexmodel}
 \alias{bbmle_flexmodel}
+\alias{fitted.flexmodel_calibrated}
 \title{Wrapped Optimizers for Flexmodels}
 \usage{
 optim_flexmodel(model, ...)
@@ -11,6 +12,8 @@ optim_flexmodel(model, ...)
 nlminb_flexmodel(model, ...)
 
 bbmle_flexmodel(model, ...)
+
+\method{fitted}{flexmodel_calibrated}(object, ...)
 }
 \arguments{
 \item{model}{a \code{\link{flexmodel}} object}

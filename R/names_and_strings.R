@@ -38,11 +38,11 @@
 #' @param x character vector
 #' @param i integer vector without sign mixing
 #' @param sep length-one character vector
-#' @param complement if \code{TRUE} the indices in \code{i} that are not matched are returned
+#' @param complement if \code{TRUE} the indices in \code{i} that are not
+#' matched are returned
 #'
 #' @export
-index_sep = function(x, i, sep = "_") {
-  complement = FALSE
+index_sep = function(x, i, sep = "_", complement = FALSE) {
   if (any(i < 0L)) {
     if (!all(i < 0L)) stop("cannot mix positive and negative indices")
     complement = TRUE

@@ -82,9 +82,9 @@ mat = function(...) {
 #'
 #' @param x character vector
 #' @param y character vector
+#' @param sep character for separating \code{x} and \code{y} components
 #'
 #' @family struc_functions
-#' @return
 #' @export
 cross_mat = function(x, y, sep = "_") {
   struc(matrix(
@@ -388,8 +388,6 @@ setGeneric('inner',
              standardGeneric('inner')
            })
 
-#' @describeIn struc Inner product of vectors or matrices
-#' @export
 setMethod("inner", c(x = 'struc', y = 'struc'),
     function(x, y) {
       stopifnot(same_dims(x, y))

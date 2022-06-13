@@ -59,6 +59,7 @@ bbmle_flexmodel = function(model, ...) {
   update_params_calibrated(model)
 }
 
+#' @rdname optim_flexmodel
 #' @exportS3Method
 fitted.flexmodel_calibrated = function(object, ...) {
   model = object # for S3 consistency

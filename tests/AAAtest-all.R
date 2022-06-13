@@ -1,8 +1,4 @@
-if (require("testthat") & require("here")) {
-    print("AAA working directory: ")
-    print(getwd())
-    print("AAA here: ")
-    print(here())
+if (require("testthat")) {
     pkg <- "McMasterPandemic"
     require(pkg, character.only = TRUE)
     print(sessionInfo())

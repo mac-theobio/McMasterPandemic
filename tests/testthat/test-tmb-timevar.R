@@ -9,19 +9,15 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 library(tidyr)
-library(here)
-
-pkg_home = here()
-
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
 
 test_that('time variation works for several parameters and levels of continuity', {
-  reset_spec_version()
-  r_tmb_comparable()
-  params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
+    reset_spec_version()
+    r_tmb_comparable()
+    params <- read_params("ICU1.csv")
     mm = make_base_model(
       expand_params_S0(params, 1-1e-5),
       start_date = "2021-09-10",
@@ -54,30 +50,33 @@ test_that('time variation works for several parameters and levels of continuity'
       condense = FALSE,
       step_args = list(do_hazard = TRUE)
     )
-
-    compare_sims(r_sim, tmb_sim)
+    print("tmb")
+    print(attributes(tmb_sim)$params_timevar)
+    print("r")
+    print(attributes(r_sim)$params_timevar)
+    compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
   }
 
-  data.frame(
+  test_fun(data.frame(
     Date = as.Date(c("2021-09-15", "2021-09-20", "2021-10-05", "2021-09-20", "2021-10-03")),
     Symbol = c("beta0", "beta0", "beta0", "Ca", "Ca"),
     Value = c(0.5, 0.1, 0.05, 0.1, 2.3),
     Type = c("rel_orig", "rel_orig", "rel_orig", "rel_orig", "rel_orig")
-  ) %>% test_fun
+  ))
 
-  data.frame(
+  test_fun(data.frame(
     Date = ymd(20210910) + days(0:1),
     Symbol = "beta0",
     Value = seq(from = 0.1, to = 2, length.out = 2),
     Type = "rel_orig"
-  ) %>% test_fun
+  ))
 
-  data.frame(
+  test_fun(data.frame(
    Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
    Symbol = c("beta0", "beta0", "beta0"),
    Value = c(0.5, 0.1, 0.05),
    Type = c("rel_orig", "rel_orig", "rel_orig")
-  ) %>% test_fun
+  ))
 })
 
 test_that("time variation on the first two steps matches in r and tmb engines", {
@@ -125,7 +124,7 @@ test_that("time variation on the first two steps matches in r and tmb engines", 
 
     attributes(r_sim) = NULL
     attributes(tmb_sim) = NULL
-    compare_sims(r_sim, tmb_sim)
+    compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
   }
 
   sapply(c('rel_orig', 'rel_prev', 'abs'), test_fun)
@@ -139,7 +138,7 @@ test_that('time variation works for vax models', {
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
 
-  load(file.path(pkg_home, "inst/testdata/ontario_flex_test.rda"))
+  load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
 
   start_date = min(params_timevar$Date)
   end_date = max(params_timevar$Date) + days(1)
@@ -184,8 +183,8 @@ test_that('time variation works for vax models', {
 test_that('time variation works for a mix of types', {
   reset_spec_version()
   r_tmb_comparable()
-  params <- read_params("ICU1.csv")
   test_fun = function(tv_dat) {
+    params <- read_params("ICU1.csv")
     mm = make_base_model(
       expand_params_S0(params, 1-1e-5),
       start_date = "2021-09-10",
@@ -219,7 +218,7 @@ test_that('time variation works for a mix of types', {
       step_args = list(do_hazard = TRUE)
     )
 
-    compare_sims(r_sim, tmb_sim)
+    compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
   }
 
   data.frame(

@@ -18,6 +18,9 @@ feature_check(introduced_version, feature)
 (e.g. \code{"0.0.5"})}
 
 \item{feature}{free-form text describing the feature}
+
+\item{exception_type}{what type of exception to throw if the check
+is not passed}
 }
 \value{
 No return value. Called to get specific error messages when required.

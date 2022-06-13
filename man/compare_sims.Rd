@@ -34,6 +34,19 @@ compare_sims_unlist(classic_sim, tmb_sim, tolerance = testthat_tolerance())
 \item{compare_attr}{compare attributes or just the simulations themselves}
 
 \item{na_is_zero}{should NAs be replaced with zeros?}
+
+\item{index}{length-one vector for extracting the simulated variable to be
+compared}
+
+\item{...}{
+  Arguments passed on to \code{\link[=compare_sims_cbind]{compare_sims_cbind}}
+  \describe{
+    \item{\code{}}{}
+  }}
+
+\item{state}{vector of state names to compare}
+
+\item{op}{binary comparison operator}
 }
 \description{
 Exceptions to drop-in replacement:
@@ -49,3 +62,9 @@ Exceptions to drop-in replacement:
 6. don't require the ordering of params_timevar rows to be the same
    (FIXME: this should probably be handled in run_sim itself)
 }
+\seealso{
+Other compare: 
+\code{\link{compare_grads}()},
+\code{\link{time_wrap}()}
+}
+\concept{compare}

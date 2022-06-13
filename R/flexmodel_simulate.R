@@ -7,6 +7,10 @@
 #' \code{\link{flexmodel}} or by calling \code{\link{tmb_params_trans}}
 #' @param include_initial_date should the first row be the initial state
 #' vector, or the first date after the initial?
+#' @param obs_error should random observation error be added if it is
+#' defined in the \code{model}? -- see \code{\link{update_error_dist}}
+#' @param condense should a condensed set of simulation variables be
+#' returned? -- see \code{\link{update_condense_map}}
 #'
 #' @family simulation
 #' @export
@@ -71,6 +75,7 @@ simulation_history = function(
 #' iterations and columns giving model parameters
 #' @param covmat not used
 #' @param qvec named numeric vector giving quantiles to compute
+#' @param use_progress_bar should a progress bar be printed?
 #' @param ... arguments to pass on the \code{pop_pred_samp}, which
 #' is actually doing the sampling from the distribution of parameters.
 #' useful parameters here include the sample size, \code{n} (default 1000),
@@ -170,8 +175,8 @@ simulate_ensemble = function(
 #' @name deprecated_simulation_functions
 NULL
 
-# @param model flexmodel
-# @param sim_params parameter vector to pass to a TMB objective function
+#' @param model flexmodel
+#' @param sim_params parameter vector to pass to a TMB objective function
 #' @rdname deprecated_simulation_functions
 #' @export
 changing_ratemat_elements = function(model, sim_params = NULL) {
@@ -179,6 +184,7 @@ changing_ratemat_elements = function(model, sim_params = NULL) {
   tmb_fun(model)$simulate(sim_params)$concatenated_ratemat_nonzeros
 }
 
+#' @param add_dates should column with dates be added to the output
 #' @rdname deprecated_simulation_functions
 #' @export
 simulate_changing_ratemat_elements = function(model, sim_params = NULL, add_dates = FALSE) {
@@ -226,6 +232,7 @@ structure_state_vector = function(x, iters, state_nms) {
   )
 }
 
+#' @param format how to return the results
 #' @rdname deprecated_simulation_functions
 #' @export
 simulate_state_vector = function(model, sim_params = NULL, add_dates = FALSE,
@@ -380,6 +387,11 @@ condense_flexmodel = function(model) {
 }
 
 
+#' @param object \code{\link{flexmodel}} object
+#' @param nsim number of simulations
+#' @param seed random seed
+#' @param do_condensation should condensed set of variables be returned if
+#' available
 #' @importFrom tidyr pivot_longer
 #' @importFrom stats simulate
 #' @rdname deprecated_simulation_functions

@@ -22,7 +22,9 @@ if \code{spec_ver_gt('0.0.4')}}
     \item{\code{do_hazard_lin}}{like \code{do_hazard} but for the
 linearized model that is used to construct the initial state
 variable -- only used when \code{do_make_state == TRUE}}
-    \item{\code{do_approx_hazard}}{like \code{do_approx_hazard} but for
+    \item{\code{do_approx_hazard}}{approximate the hazard transformation
+by a smooth function (experimental)}
+    \item{\code{do_approx_hazard_lin}}{like \code{do_approx_hazard} but for
 the linearized model that is used to construct the initial
 state (experimental)}
     \item{\code{do_make_state}}{should state be remade on the c++ size?

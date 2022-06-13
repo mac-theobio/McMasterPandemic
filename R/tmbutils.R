@@ -989,7 +989,11 @@ regen_rates = function(model) {
 ##' compartments in the model.
 ##'
 ##' @param model a \code{\link{flexmodel}} object
+##' @param include_parse_info include information of numbers of variables,
+##' products, and factors associated with each rate
 ##' @param include_formula include a column for the expanded rate formula
+##' @param include_latex include a column with latex code for the rate formula
+##' (experimental)
 ##' @export
 rate_summary = function(model, include_parse_info = TRUE, include_formula = FALSE, include_latex = FALSE) {
   summary = data.frame(
@@ -1196,17 +1200,17 @@ remove_opt_param = function(model, focal_param) {
   model
 }
 
-#' Parse Fitted Parameter Formula
-#'
-#' \code{trans1_parameter ~ trans2_prior(hyperparameter1, ..., laplace = FALSE)}
-#'
-#' If \code{parameter}
-#'
-#' @param x opt_params formula
-#' @param params parameter vector
-#' @param regex_param_nm should the parameter name be treated as a regular
-#' expression used to produce a vector of parameter names
-#' @export
+# Parse Fitted Parameter Formula
+#
+# \code{trans1_parameter ~ trans2_prior(hyperparameter1, ..., laplace = FALSE)}
+#
+# If \code{parameter}
+#
+# @param x opt_params formula
+# @param params parameter vector
+# @param regex_param_nm should the parameter name be treated as a regular
+# expression used to produce a vector of parameter names
+
 parse_opt_param = function(x, params, params_timevar = NULL) {
 
   # TODO: allow for transformations associated with the regularization function
@@ -1572,24 +1576,25 @@ parse_name_sum = function(x) {
          'create the results of parsing the formula')
   }
 }
-#' Recursive function to parse a formula containing parameter
-#' optimization specifications
-#'
-#' trans1_param ~ trans2_prior(hyperparameters, ...)
-#'
-#' trans1_param can be:
-#'   (1) a symbol/name (or sum of symbols)
-#'   (2) an expression that evaluates (in the environment of the formula)
-#'       to a character vector
-#'   (3) a literal length-1 character vector
-#'
-#' if trans1_param is a symbol:
-#' trans1 = name of a valid parameter transformation, giving the scale
-#'          on which the optimizer treats the parameter(s)
-#' param = name of a parameter in the parameter vector
-#'
-#' if trans1_param is an expression
-#'
+# Recursive function to parse a formula containing parameter
+# optimization specifications
+#
+# trans1_param ~ trans2_prior(hyperparameters, ...)
+#
+# trans1_param can be:
+#   (1) a symbol/name (or sum of symbols)
+#   (2) an expression that evaluates (in the environment of the formula)
+#       to a character vector
+#   (3) a literal length-1 character vector
+#
+# if trans1_param is a symbol:
+# trans1 = name of a valid parameter transformation, giving the scale
+#          on which the optimizer treats the parameter(s)
+# param = name of a parameter in the parameter vector
+#
+# if trans1_param is an expression
+#
+
 parse_opt_form = function(x, e = NULL) {
   if (is.call(x)) {
     func = parse_opt_form(x[[1]], e)
@@ -1966,7 +1971,13 @@ update_params_calibrated = function(model) {
 #' @param tolerance numerical tolerance
 #' @param compare_attr compare attributes or just the simulations themselves
 #' @param na_is_zero should NAs be replaced with zeros?
+#' @param index length-one vector for extracting the simulated variable to be
+#' compared
+#' @param state vector of state names to compare
+#' @param op binary comparison operator
+#' @family compare
 #' @importFrom testthat testthat_tolerance
+#' @importFrom dplyr arrange
 #' @export
 compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = TRUE, na_is_zero = FALSE) {
   if (is.null(tolerance)) {
@@ -2019,6 +2030,7 @@ compare_sims = function(classic_sim, tmb_sim, tolerance = NULL, compare_attr = T
 #' and (3) the time for the first expression divided by the time
 #' for the second
 #'
+#' @family compare
 #' @export
 time_wrap = function(expr1, expr2, units = 'secs') {
   e = parent.frame()
@@ -2046,6 +2058,7 @@ compare_sims_cbind = function(classic_sim, tmb_sim, index) {
   x
 }
 
+#' @inheritDotParams compare_sims_cbind
 #' @rdname compare_sims
 #' @export
 compare_sims_plot = function(...) {
@@ -2089,6 +2102,7 @@ compare_sims_unlist = function(classic_sim, tmb_sim, tolerance = testthat_tolera
 #' \code{all.equal} using \code{do.call} if \code{is.na(tolerance)}
 #'
 #' @importFrom numDeriv grad
+#' @family compare
 #' @export
 compare_grads = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
 

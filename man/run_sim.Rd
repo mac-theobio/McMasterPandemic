@@ -59,7 +59,12 @@ run_sim(
 
 \item{verbose}{print messages (e.g. about time-varying parameters)?}
 
-\item{use_flex}{use \code{flexmodel} approach (experimental)}
+\item{use_flex}{use \code{flexmodel} approach}
+
+\item{flexmodel}{optional \code{\link{flexmodel}} object}
+
+\item{obj_fun}{optional TMB objective function computed with
+\code{\link{tmb_fun}}}
 }
 \description{
 Run pandemic simulation

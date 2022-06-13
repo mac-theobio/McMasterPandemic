@@ -83,6 +83,8 @@ spec_ver_btwn <- function(version_left, version_right) {
 ##' @param introduced_version string with the version of the spec
 ##' (e.g. \code{"0.0.5"})
 ##' @param feature free-form text describing the feature
+##' @param exception_type what type of exception to throw if the check
+##' is not passed
 ##' @return No return value. Called to get specific error messages when required.
 ##' @export
 spec_check <- function(

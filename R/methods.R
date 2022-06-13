@@ -1140,18 +1140,6 @@ print.flexmodel = function(x, ...) {
 }
 
 ##' @export
-coef.flexmodel = function(
-    object,
-    vector = c("tmb_arg", "params", "tv_mult"),
-    full = TRUE,
-    optimized = FALSE,
-    transformed = FALSE,
-    ...
-) {
-    stop("under construction")
-}
-
-##' @export
 isSymmetric.numeric = function(object, ...) {
     length(object) == 1L
 }

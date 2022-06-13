@@ -2,9 +2,6 @@ library(McMasterPandemic)
 library(dplyr)
 library(lubridate)
 library(testthat)
-library(here)
-
-pkg_home = here()
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -16,7 +13,8 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   rerun_r_engine_forecasts = FALSE
   run_simulation_comparison = FALSE
   #reset_spec_version()
-  set_spec_version("0.2.0", file.path('pkg_home','inst/tmb'))
+
+  set_spec_version("0.2.0", system.file('tmb', package = 'McMasterPandemic'))
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
   options(MP_warn_bad_breaks = FALSE)

@@ -139,7 +139,8 @@ pars_infer_opt.flexmodel_calibrated = function(model) {
 
 # generic setters ------------------------
 
-#' Get Baseline Parameters
+#' @param value named vector of parameters
+#' @rdname get_and_set_model_parameters
 #' @export
 `pars_base_sim<-` = function(model, value) {
   UseMethod("pars_base_sim<-")

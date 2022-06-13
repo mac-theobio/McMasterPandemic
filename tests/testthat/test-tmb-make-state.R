@@ -5,7 +5,6 @@ library(tools)
 library(dplyr)
 library(semver)
 library(lubridate)
-library(here)
 
 test_that("an error is thrown when disease-free state is missing when required", {
   expect_error({

@@ -7,7 +7,6 @@ library(dplyr)
 library(semver)
 library(numDeriv)
 library(lubridate)
-library(here)
 
 ## TODO/FIXME/BACKGROUND --------------------------------------------
 ## rename/repurpose this once the tmb engine is properly added
@@ -28,8 +27,7 @@ library(here)
 ## see https://canmod.net/misc/flex_specs for more on
 ## spec versioning.
 ## ------------------------------------------------------------------
-pkg_home = here()
-inst_tmb = file.path(pkg_home, 'inst/tmb')
+inst_tmb = system.file('tmb', package = "McMasterPandemic")
 
 test_that("spec v0.0.1 rate matrices match make_ratemat", {
     set_spec_version("0.0.1", system.file('tmb', package = 'McMasterPandemic'))

@@ -12,6 +12,7 @@
 \alias{pars_infer_init}
 \alias{pars_infer_opt}
 \alias{pars_infer_conf}
+\alias{pars_base_sim<-}
 \title{Get and Set Model Parameters}
 \usage{
 pars_base_sim(model)
@@ -33,9 +34,13 @@ pars_infer_init(model)
 pars_infer_opt(model)
 
 pars_infer_conf(model)
+
+pars_base_sim(model) <- value
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
+
+\item{value}{named vector of parameters}
 }
 \value{
 parameter vector or data frame of time-variation of parameters

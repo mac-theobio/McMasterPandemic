@@ -1,7 +1,15 @@
 ## GENERAL UTILITIES
-## to expand states with subcategories (age, vaccine status)
 
-## x_y, with x varying faster
+##' Expand Names
+##'
+##' To expand states with subcategories (age, vaccine status)
+##' x_y, with x varying faster
+##'
+##' @param x character vector
+##' @param y character vector
+##' @param sep character separating the \code{x} and \code{y} components
+##' of the output names
+##'
 ##' @export
 expand_names <- function(x, y, sep = "_") {
     unlist(lapply(y, function(a) paste(x, a, sep = sep)))
@@ -26,7 +34,7 @@ distribute_counts <- function(total, dist) {
 
 ##' collapse (non-accumulator) states into subcategories (ages, vax status)
 ##' @param x a state vector or data frame (each row is a different time point)
-##' @param values_only just return values (unlisted and unnamed?)
+##' @param return_type how to return condensed state
 ##' @importFrom dplyr matches
 ##' @export
 ##' @return a tibble of counts aggregated across epidemiological states

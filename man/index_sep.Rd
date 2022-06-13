@@ -4,7 +4,7 @@
 \alias{index_sep}
 \title{Get Substrings by Indices and Separators}
 \usage{
-index_sep(x, i, sep = "_")
+index_sep(x, i, sep = "_", complement = FALSE)
 }
 \arguments{
 \item{x}{character vector}
@@ -13,7 +13,8 @@ index_sep(x, i, sep = "_")
 
 \item{sep}{length-one character vector}
 
-\item{complement}{if \code{TRUE} the indices in \code{i} that are not matched are returned}
+\item{complement}{if \code{TRUE} the indices in \code{i} that are not
+matched are returned}
 }
 \description{
 For example \code{index_sep('a_b_c', 2, '_')} equals \code{'b'}.

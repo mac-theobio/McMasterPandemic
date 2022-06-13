@@ -31,3 +31,9 @@ or (2) a list is returned that can be passed to
 Compare differences in gradients of loss functions computed using
 automatic and numerical differentiation
 }
+\seealso{
+Other compare: 
+\code{\link{compare_sims}()},
+\code{\link{time_wrap}()}
+}
+\concept{compare}

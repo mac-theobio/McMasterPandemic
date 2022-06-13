@@ -25,6 +25,8 @@ iterations and columns giving model parameters}
 
 \item{qvec}{named numeric vector giving quantiles to compute}
 
+\item{use_progress_bar}{should a progress bar be printed?}
+
 \item{...}{arguments to pass on the \code{pop_pred_samp}, which
 is actually doing the sampling from the distribution of parameters.
 useful parameters here include the sample size, \code{n} (default 1000),

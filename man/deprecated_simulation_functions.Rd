@@ -57,6 +57,24 @@ condense_flexmodel(model)
 
 simulation_fitted(model)
 }
+\arguments{
+\item{model}{flexmodel}
+
+\item{sim_params}{parameter vector to pass to a TMB objective function}
+
+\item{add_dates}{should column with dates be added to the output}
+
+\item{format}{how to return the results}
+
+\item{object}{\code{\link{flexmodel}} object}
+
+\item{nsim}{number of simulations}
+
+\item{seed}{random seed}
+
+\item{do_condensation}{should condensed set of variables be returned if
+available}
+}
 \description{
 Deprecated Simulation Functions
 }

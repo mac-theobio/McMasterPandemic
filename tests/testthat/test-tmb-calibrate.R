@@ -7,10 +7,12 @@ library(semver)
 library(numDeriv)
 library(lubridate)
 library(tidyr)
-library(here)
 
-pkg_home = here()
-better_data_path = file.path(pkg_home, "inst/testdata/ontario_flex_test_better.Rdata")
+better_data_path = system.file(
+  "testdata",
+  "ontario_flex_test_better.Rdata",
+  package = "McMasterPandemic"
+)
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -587,9 +589,14 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   edate <- as.Date("2022-01-19")
   initial_date = as.Date("2021-08-03")
   start_date_offset = as.integer(sdate - initial_date)
+  report_data_yukon_h_and_i = system.file(
+    "testdata",
+    "report_data_yukon_h_and_i.csv",
+    package = "McMasterPandemic"
+  )
 
   # read and process data
-  covid_data <- (file.path(pkg_home, "sandbox/yukon/report_data_yukon_h_and_i.csv")
+  covid_data <- (report_data_yukon_h_and_i
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
                  %>% filter(date >= ymd(20210803))
@@ -669,9 +676,9 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
       debug = FALSE,
       sim_args = sim_args
     )
-    save(fit_no_flex, file = file.path(pkg_home, 'inst/testdata/yukon_no_flex.rda'))
+    save(fit_no_flex, file = system.file('testdata', 'yukon_no_flex.rda', package = "McMasterPandemic"))
   } else {
-    load(file.path(pkg_home, 'inst/testdata/yukon_no_flex.rda'))
+    load(system.file('testdata', 'yukon_no_flex.rda', package = "McMasterPandemic"))
   }
   fit_flex <- calibrate(
     data = covid_data,
@@ -703,10 +710,16 @@ test_that("transformations and priors give the right objective function and grad
   initial_date = as.Date("2021-08-03")
   start_date_offset = as.integer(sdate - initial_date)
 
+  report_data_yukon_h_and_i = system.file(
+    "testdata",
+    "report_data_yukon_h_and_i.csv",
+    package = "McMasterPandemic"
+  )
+
   # read and process data
   print('file exists: ')
-  print(file.exists(file.path(pkg_home, "sandbox/yukon/report_data_yukon_h_and_i.csv")))
-  covid_data <- (file.path(pkg_home, "sandbox/yukon/report_data_yukon_h_and_i.csv")
+  print(file.exists(report_data_yukon_h_and_i))
+  covid_data <- (report_data_yukon_h_and_i
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
                  %>% filter(date >= lubridate::ymd(20210803))
