@@ -1,12 +1,14 @@
 pandoc: 2.7.3
-pkgdown: 1.6.1
+pkgdown: 2.0.4
 pkgdown_sha: ~
 articles:
   calibration: calibration.html
   farr: farr.html
+  flex_intro: flex_intro.html
+  flex_specs: flex_specs.html
   getting_started: getting_started.html
   model: model.html
   testing_flow: testing_flow.html
   vaxify_implementation: vaxify_implementation.html
-last_built: 2021-07-15T16:55Z
+last_built: 2022-06-13T17:39Z
 
