@@ -2043,7 +2043,153 @@ tmb_fun_args <- function(model) {
         DLL = DLL,
         silent = getOption("MP_silent_tmb_function")
       )
-    } else {
+    } else if (spec_ver_gt('0.2.0')) {
+
+      unpack(sum_indices)
+      unpack(opt_params)
+
+      # update parameter vectors -----------------
+      init_tv_mult = integer(0L)
+      if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+
+      if(isTRUE(exists_opt_params(model))) {
+
+        # tell tmb what parameters to put in the objective function
+        map = ad_fun_map
+
+        # pass transformed parameters to the objective function
+        params = tmb_params_trans(model, vec_type = 'params')
+        init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+
+      } else {
+        map = list()
+      }
+      # -------------------------------------------
+
+      if (!all(between(observed$time_step, 2, iters + 1))) {
+        stop('observations outside of simulation range')
+      }
+
+      dd <- list(
+        data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = null_to_int0(from),
+          to = null_to_int0(to),
+          count = null_to_int0(count),
+          spi = null_to_int0(spi),
+          modifier = null_to_int0(modifier),
+          updateidx = null_to_int0(c(updateidx)),
+          breaks = null_to_int0(breaks),
+          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+
+          tv_val = null_to_num0(schedule$tv_val),
+          tv_spi = null_to_int0(schedule$tv_spi),
+          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+          # tv_mult = schedule$Value,  # moved to parameter vector
+          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+          tv_abs = null_to_log0(schedule$Type == "abs"),
+          tv_type_id = null_to_int0(schedule$tv_type_id),
+          #tv_type = null_to_int0(NULL),
+
+          sumidx = null_to_int0(sumidx),
+          sumcount = null_to_int0(unname(sumcount)),
+          summandidx = null_to_int0(summandidx),
+
+          factr_spi = null_to_int0(factr_indices$spi_factr),
+          factr_count = null_to_int0(factr_indices$count),
+          factr_spi_compute = null_to_int0(factr_indices$spi),
+          factr_modifier = null_to_int0(factr_indices$modifier),
+
+          powidx = null_to_int0(pow_indices$powidx),
+          powarg1idx = null_to_int0(pow_indices$powarg1idx),
+          powarg2idx = null_to_int0(pow_indices$powarg2idx),
+          powconstidx = null_to_int0(pow_indices$powconstidx),
+
+          do_make_state = isTRUE(do_make_state),
+          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+
+          outflow_row_count = null_to_int0(outflow$row_count),
+          outflow_col_count = null_to_int0(outflow$col_count),
+          outflow_rows = null_to_int0(outflow$rows),
+          outflow_cols = null_to_int0(outflow$cols),
+
+          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+
+          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+          lin_param_count = null_to_int0(linearized_params$lin_param_count),
+          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+
+          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+          df_state_count = null_to_int0(disease_free$df_state_count),
+          df_state_idx = null_to_int0(disease_free$df_state_idx),
+
+          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+          do_hazard = isTRUE(do_hazard),
+          do_hazard_lin = isTRUE(do_hazard_lin),
+          do_approx_hazard = isTRUE(do_approx_hazard),
+          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+          # haz_eps = haz_eps,
+
+          sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+          sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+          sri = null_to_int0(sim_report_expr_indices$sri),
+          sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+
+          lag_diff_sri = null_to_int0(lag_diff$sri),
+          lag_diff_delay_n = null_to_int0_mat(lag_diff$delay_n),
+
+          conv_sri = null_to_int0(conv$sri),
+          conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+          conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+          conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+          conv_qmax = null_to_int0(conv$qmax),
+
+          obs_var_id = null_to_int0(observed$variable_id),
+          obs_loss_id = null_to_int0(observed$loss_id),
+          obs_loss_param_count = null_to_int0(observed$loss_param_count),
+          obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
+          obs_time_step = null_to_int0(observed$time_step),
+          obs_history_col_id = null_to_int0(observed$history_col_id),
+          obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+
+
+          opt_param_id = null_to_int0(index_table$opt_param_id),
+          opt_trans_id = null_to_int0(index_table$param_trans_id),
+          opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+          opt_reg_params = null_to_num0(hyperparameters),
+          opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
+
+          opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+          opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+          opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+          opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+          opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+
+          obs_do_sim_constraint = isTRUE(do_sim_constraint),
+          obs_sim_lower_bound = null_to_num0(sim_lower_bound),
+
+          numIterations = int0_to_0(null_to_0(iters))
+        ),
+        parameters = list(params = c(unlist(params)),
+                          tv_mult = null_to_num0(init_tv_mult)),
+        map = map,
+        DLL = DLL,
+        silent = getOption("MP_silent_tmb_function")
+      )
+    }
+    else {
         stop("Construction of TMB functions is not supported by your installation of MacPan")
     }
     return(dd)

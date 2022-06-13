@@ -797,6 +797,15 @@ null_to_int0 = function(x) {
   as.integer(x)
 }
 
+null_to_int0_mat = function(x) {
+  if(is.null(x)) {
+    x = integer(0L)
+    dim(x) = c(0, 0)
+  }
+  mode(x) = 'integer'
+  x
+}
+
 null_to_num0 = function(x) {
   if(is.null(x)) return(numeric(0L))
   as.numeric(x)
