@@ -1,33 +1,15 @@
 # Contributing to McMasterPandemic
 
+This document has not yet taken shape -- please stay tuned ...
+
 Thank you for contributing to our project.
 
-## Architecture
-
-### Current Architecture
-
-The simplified current architecture is described by the following diagram.
-
-![](assets/architecture.svg)
-
-Each box is a layer of functions that call functions in the layers below them.
-
-Model definition functions are used to create and manipulate parameter and state-variable objects that define model structure and defaults values.  These objects have S3 classes `params_pansim` and `state_pansim`.  Common functions in this layer are `read_params`, `make_state`, and `expand_state_vax`.
-
-The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, `forecast_sim`, and others that are typically not used by users (e.g. `run_sim_range`, ...)
-
-### Target Architecture Proposal
-
-![](assets/target_architecture.svg)
-
-### Engine-Client Separation
+## Engine-Client Separation
 
 * Currently one client -- the R client -- and hopefully/probably we will only ever have one client
 * Currently two engines
   * Original R
   * TMB
-
-
 * Stuff that goes in the engine:
   * Indices
   * Simulation steps
@@ -39,18 +21,6 @@ The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, 
   * Names of parameters (e.g. transmission rate)
   * Names of loss functions (e.g. negative binomial, gaussian)
   * Topology of flow among states
-
-#### NOTES
-
-* What about summary methods for parameters?
-  * Use case -- compute R0/r/Gbar for an _ensemble_ of mcmc simulations of parameters
-  * In general we might need a many-to-one relationship between parameter sets and compartmental models
-* In general we need to think about ensembles, sampling from parameter distributions, importance sampling, mcmc, etc...
-
-
-## Engines
-
-
 
 ## Maintaining C++ Code
 
@@ -189,22 +159,6 @@ Simulation functions are all driven by the `simulate` method of TMB objects. The
 
 `flexmodel` objects contain two parameter vectors: `params` and `tv_mult`
 
-
-
-
-
-coef.flexmodel = function(
-  object,
-  vector = c("tmb_arg", "params", "tv_mult"),
-  full = TRUE,
-  optimized = FALSE,
-  transformed = FALSE,
-  ...
-) {
-  
-}
-default, opt_init, opt_final
-
 ## Testing Infrastructure
 
 When one only wants to test the TMB refactored functionality, please use the following commands.
@@ -219,14 +173,13 @@ The test level can be increased to `>1` to run tests that are slower because the
 It is also possible to only run tests associated with specific areas.
 
 ```
-test-tmb 
-test-tmb-forecast
-test-tmb-struc                       
-test-tmb-calibrate
-test-tmb-make-state
-test-tmb-timevar
+make test-tmb 
+make test-tmb-forecast
+make test-tmb-struc                       
+make test-tmb-calibrate
+make test-tmb-make-state
+make test-tmb-timevar
 ```
-
 
 ## Adding to the sp Vector on the C++ Side
 

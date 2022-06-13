@@ -1,6 +1,6 @@
 Package: McMasterPandemic
 Title: Pandemic Model
-Description: This is a compartmental model for pandemic modeling/health care utilization.
+Description: This is a modelling framework for pandemic forecasting and health care utilization.
 Version: 0.2.0.0
 Maintainer: Steve Walker <swalk@mcaster.ca>
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
@@ -9,7 +9,9 @@ Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre"
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
-		   person("Matthew So", role="ctb"))
+		   person("Matthew So", role="ctb"),
+		   person("Weiguang Guan", rol="ctb"),
+		   person("Darren Flynn-Primrose", rol="ctb"))
 Depends: R (>= 4.0.0), TMB, RcppEigen, dplyr, methods
 Imports:
 	lattice,
