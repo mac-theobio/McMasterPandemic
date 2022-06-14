@@ -1163,6 +1163,7 @@ Type objective_function<Type>::operator() ()
 
   DATA_IVECTOR(lag_diff_sri);
   DATA_IMATRIX(lag_diff_delay_n);
+  //DATA_IVECTOR(lag_diff_delay_n);
 
   DATA_IVECTOR(conv_sri);
   DATA_IVECTOR(conv_c_prop_idx);
@@ -1205,8 +1206,6 @@ Type objective_function<Type>::operator() ()
   //vector<int> conv_qmax(1); // you need to comment out DATA_IVECTOR(conv_qmax);
   //conv_qmax(0) = 6;
   //numIterations = 35;
-
-  //lag_diff_delay_n = lag_diff_delay_n.col(0); // for testing purposes only
 
   // The order of these PARAMETER_VECTOR macros
   // is important because it defines the order with
@@ -1605,14 +1604,15 @@ Type objective_function<Type>::operator() ()
     */
 
     // Item #6 Lag-n differences of any variables of type 1-5
+    
     for (int k=0; k<lag_diff_sri.size(); k++) {
-      if (i+1>=lag_diff_delay_n.col(0)[k]) {
+      if (i+1>=lag_diff_delay_n(i,k)) {
         int col = lag_diff_sri[k]-1;
         simulation_history(i+1, stateSize+tvElementsNum+sumSize+factrSize+powSize+extraExprNum+k) = \
-          simulation_history(i+1, col) - simulation_history(i+1-lag_diff_delay_n.col(0)[k], col);
+          simulation_history(i+1, col) - simulation_history(i+1-lag_diff_delay_n(i,k), col);
       }
     }
-
+    
     // Item #7 Convolutions of any variables of type 1-5 with a gamma-density kernel
     int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + powSize + \
                          extraExprNum + lag_diff_sri.size();
