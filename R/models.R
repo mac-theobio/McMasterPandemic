@@ -443,6 +443,9 @@ make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALS
 
            #Add variable rates within a single age category
            %>% vec_rate("S", "E", foi_vec)
+
+           #Remove outflow to accumulators
+           %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
   )
 
   #Add rates between age categories (if requested)
@@ -458,6 +461,131 @@ make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALS
     }
   }
 
+
+  model$classic_macpan_model = TRUE
+  return(model)
+}
+
+#' Converts a classic testified model to a flexmodel
+#'
+#' @inheritDotParams flexmodel
+#' @family flexmodels
+#' @family canned_models
+#' @export
+make_testified_model <-function(...){
+  args = list(...)
+  McMasterPandemic::unpack(args)
+
+  stopifnot(McMasterPandemic:::has_testing(params=params))
+
+  state = make_state(params=params)
+  state_names = names(state)
+  state_names[state_names == "N"]="Neg"
+  state_names[state_names == "P"]="Pos"
+  state = setNames(state, state_names)
+  state = unclass(state)
+
+  model = flexmodel(params=unlist(params), state = state, start_date=start_date, end_date=end_date)
+
+
+  epi_cat = c(attr(state, "epi_cat"))
+  expand_set = McMasterPandemic:::exclude_states(epi_cat, non_expanded_states)
+
+  posvec = paste("P", expand_set, sep="_")
+  negvec = vector(mode="character", length = length(expand_set))
+  for(i in 1:length(negvec)){
+    negvec[i]=complement(posvec[i])
+  }
+  posvec = vec(posvec)
+  negvec = vec(negvec)
+
+  wtsvec = vector(mode = "character", length = length(expand_set))
+  for(i in 1:length(expand_set)){
+    if(any(expand_set[i]==asymp_cat)) wtsvec[i] = "W_asymp"
+    else wtsvec[i] = "1"
+  }
+  wtsvec = vec(wtsvec)
+
+  testing_intensity = vec(rep("testing_intensity", length(posvec)))
+  u_to_n_flow = testing_intensity*wtsvec*negvec
+  u_to_p_flow = testing_intensity*wtsvec*posvec
+
+  Ia_set = paste("Ia", test_extensions, sep="_")
+  Im_set = paste("Im", test_extensions, sep="_")
+  Is_set = paste("Is", test_extensions, sep="_")
+  Is_set_rd = paste("Is", test_extensions[test_extensions!="u"], sep="_")
+  Ip_set = paste("Ip", test_extensions, sep="_")
+  ICUs_set = paste("ICUs", test_extensions, sep="_")
+  ICUs_set_rd = paste("ICUs", test_extensions[test_extensions!="u"], sep="_")
+  ICUd_set = paste("ICUd", test_extensions, sep="_")
+  ICUd_set_rd = paste("ICUd", test_extensions[test_extensions!="u"], sep="_")
+  H2_set = paste("H2", test_extensions, sep="_")
+  H_set = paste("H", test_extensions, sep="_")
+  H_set_rd = paste("H", test_extensions[test_extensions!="u"], sep="_")
+  R_set = paste("R", test_extensions, sep="_")
+  E_set = paste("E", test_extensions, sep="_")
+  S_set = paste("S", test_extensions, sep="_")
+
+  u_set = paste(expand_set, "u", sep="_")
+  p_set = paste(expand_set, "p", sep="_")
+  p_set_rd = paste(c("H", "ICUs", "ICUd"), "p", sep="_")
+  n_set = paste(expand_set, "n", sep="_")
+  n_set_rd = paste(c("H", "ICUs", "ICUd"), "n", sep="_")
+  t_set = paste(expand_set, "t", sep="_")
+
+  Is_u_outflow = vec("(1 - nonhosp_mort) * (gamma_s) * (    phi1)", "(1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (1 - phi2)", "(1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (    phi2)")
+  Is_u_outflow_p = Is_u_outflow * vec(rep("P_Is", 3))
+  Is_u_outflow_n = Is_u_outflow * vec(rep("1-P_Is", 3))
+
+
+  Istate = vec(c(Is_set, Ip_set, Im_set, Is_set))
+  trans_rates =
+    vec(
+      rep('Ca', 4),
+      rep('Cp', 4),
+      rep('(1 - iso_m) * (Cm)', 4),
+      rep('(1 - iso_s) * (Cs)', 4)) *
+    struc('(beta0) * (1/N)')
+  trans_rate = t(trans_rates)%*%Istate
+
+  model = (model
+           # Flow from expanded states to expanded states with constant rate
+           %>% rep_rate(Ia_set, R_set, ~                      (gamma_a))
+           %>% rep_rate(Im_set, R_set, ~                      (gamma_m))
+           %>% rep_rate(Is_set_rd, H_set_rd, ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+           %>% rep_rate(Is_set_rd, ICUs_set_rd, ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (1 - phi2))
+           %>% rep_rate(Is_set_rd, ICUd_set_rd, ~ (1 - nonhosp_mort) * (gamma_s) * (1 - phi1) * (    phi2))
+           %>% rep_rate(ICUs_set, H2_set, ~                                  (    psi1))
+           %>% rep_rate(H2_set, R_set,    ~                                  (    psi3))
+           %>% rep_rate(H_set,  R_set,    ~ (rho))
+           %>% rep_rate(E_set, Ia_set,      ~(           alpha ) * (sigma))
+           %>% rep_rate(E_set, Ip_set,      ~(1-alpha) * (sigma))
+           %>% rep_rate(Ip_set, Im_set,     ~(              mu ) * (gamma_p))
+           %>% rep_rate(Ip_set, Is_set,     ~(1-mu) * (gamma_p))
+
+           # Flow from expanded states to non-expanded states with constant rate
+           %>% rep_rate(Is_set,   "D",    ~ (    nonhosp_mort) * (gamma_s))
+           %>% rep_rate(Is_set,   "X",    ~ (1 - nonhosp_mort) * (gamma_s) * (    phi1))
+           %>% rep_rate(ICUd_set, "D",    ~                                  (    psi2))
+
+           # Force of infection flow
+           %>% rep_rate(S_set, E_set, as.character(trans_rate))
+
+           # Flow related to testing
+           %>% vec_rate(u_set, n_set, u_to_n_flow)
+           %>% vec_rate(u_set, p_set, u_to_p_flow)
+           %>% rep_rate(n_set, u_set, ~ omega)
+           %>% rep_rate(p_set, t_set, ~ omega)
+
+           # Special flows related to hospital visits
+           %>% vec_rate(rep("Is_u", 3), p_set_rd, Is_u_outflow_p)
+           %>% vec_rate(rep("Is_u", 3), n_set_rd, Is_u_outflow_n)
+
+           # Pos and Neg Accumulators
+           %>% vec_rate(u_set, rep("Pos", length(u_set)), u_to_p_flow)
+           %>% vec_rate(u_set, rep("Neg", length(u_set)), u_to_n_flow)
+           %>% add_outflow(".+", "^(S|E|I|H|ICU|D|R)")
+  )
 
   model$classic_macpan_model = TRUE
   return(model)
