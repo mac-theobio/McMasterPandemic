@@ -4,6 +4,7 @@ Description: This is a modelling framework for pandemic forecasting and health c
 Version: 0.2.0.0
 Maintainer: Steve Walker <swalk@mcaster.ca>
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
+         person("Steve Walker",role="aut"),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
 		   person("Mike Li",role="aut"),
