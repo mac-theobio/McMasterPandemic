@@ -1898,7 +1898,7 @@ tmb_fun_args <- function(model) {
         DLL = DLL
       )
 
-    } else if (spec_ver_gt("0.1.1")) {
+    } else if (spec_ver_eq("0.2.0")) {
 
       unpack(sum_indices)
       unpack(opt_params)
@@ -2043,7 +2043,7 @@ tmb_fun_args <- function(model) {
         DLL = DLL,
         silent = getOption("MP_silent_tmb_function")
       )
-    } else if (spec_ver_gt('0.2.0')) {
+    } else if (spec_ver_eq('0.2.1')) {
 
       unpack(sum_indices)
       unpack(opt_params)

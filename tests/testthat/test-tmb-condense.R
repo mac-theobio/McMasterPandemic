@@ -4,7 +4,7 @@ library(dplyr)
 # version 0.2.0 will run without error, but will not create the required columns
 # in the simulation history.
 # version 0.2.1 with run with error until the 0.2.1 specs are implemented
-set_spec_version('0.2.0', '../../inst/tmb')
+set_spec_version('0.2.1', 'inst/tmb')
 
 uneven_dates_X = structure(
   c(10957, 10958, 10959, 10963, 10969, 10971, 10972,
@@ -46,4 +46,5 @@ sir_model = (
 sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
 sir_model$tmb_indices$lag_diff$delay_n   # lag_diff_delay_n
 
+tmb_fun(sir_model)$env$data$lag_diff_delay_n
 simulation_history(sir_model)
