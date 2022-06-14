@@ -16,6 +16,7 @@ We are [currently refactoring](https://github.com/mac-theobio/McMasterPandemic/p
 * [Package documentation](https://mac-theobio.github.io/McMasterPandemic/)
 * [User guide](https://canmod.github.io/macpan-book/)
 * [Issues list](https://github.com/mac-theobio/McMasterPandemic/issues)
+* [Roadmap](https://github.com/mac-theobio/McMasterPandemic/blob/master/TODO.md)
 * [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) written by Zach Levine
 * [Draft contributors guide for developers](https://github.com/mac-theobio/McMasterPandemic/blob/master/CONTRIBUTING.md)
 
