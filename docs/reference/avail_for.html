@@ -45,13 +45,13 @@ add variables to a model, based on existing variables."><!-- mathjax --><script 
       <a href="../articles/flex_specs.html">Flexible Compartmental Modelling Specifications</a>
     </li>
     <li>
-      <a href="../articles/getting_started.html">getting started</a>
+      <a href="../articles/getting_started.html">Getting Started</a>
     </li>
     <li>
       <a href="../articles/model.html">The 'McMaster Pandemic' model</a>
     </li>
     <li>
-      <a href="../articles/testing_flow.html">Incorporating testing dynamics in the MacPan model</a>
+      <a href="../articles/testing_flow.html">Incorporating Testing Dynamics in the MacPan Model</a>
     </li>
     <li>
       <a href="../articles/vaxify_implementation.html">Expandify Implementation Notes</a>
@@ -108,7 +108,8 @@ add variables to a model, based on existing variables.</p>
     <h2>Value</h2>
     
 
-<p>character vector of available variable names</p>
+<p>A character vector of names of variables that are available
+as input into the specified type of model component.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
@@ -134,6 +135,13 @@ add variables to a model, based on existing variables.</p>
 
 </dl></div>
 
+    <div id="ref-examples">
+    <h2>Examples</h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="fu">avail_for_conv</span><span class="op">(</span><span class="fu"><a href="make_hello_world_model.html">make_hello_world_model</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "S"      "I"      "R"      "S_to_I"</span>
+<span class="r-in"></span>
+</code></pre></div>
+    </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top"><h2 data-toc-skip>Contents</h2>
