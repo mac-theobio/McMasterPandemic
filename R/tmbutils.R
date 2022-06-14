@@ -522,6 +522,7 @@ condensed_sim_report_names = function(model) {
 }
 
 pad_lag_diffs = function(sims, lag_diff) {
+  if (spec_ver_eq('0.2.1')) return(sims)
   if(length(lag_diff) == 0L) return(sims)
   ff = function(x) {
     as.data.frame(x[c('delay_n', 'output_names')])

@@ -46,5 +46,4 @@ sir_model = (
 sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
 sir_model$tmb_indices$lag_diff$delay_n   # lag_diff_delay_n
 
-tmb_fun(sir_model)$env$data$lag_diff_delay_n
 simulation_history(sir_model)
