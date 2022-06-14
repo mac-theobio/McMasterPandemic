@@ -36,6 +36,7 @@ distribute_counts <- function(total, dist) {
 ##' @param x a state vector or data frame (each row is a different time point)
 ##' @param return_type how to return condensed state
 ##' @importFrom dplyr matches
+##' @family classic_macpan
 ##' @export
 ##' @return a tibble of counts aggregated across epidemiological states
 ## TODO: rewrite this as a generic function with custom methods for state_pansim
@@ -118,6 +119,7 @@ condense_state <- function(x, return_type = c("tibble", "named_vector", "unnamed
 ##'
 ##' @param model_type choose either the one-dose or the two-dose model
 ##'
+##' @family classic_macpan
 ##' @export
 mk_vaxcats <- function(model_type = c("onedose", "twodose")) {
     model_type <- match.arg(model_type)
@@ -143,6 +145,7 @@ mk_vaxcats <- function(model_type = c("onedose", "twodose")) {
 ##' @param params_desc parameter descriptions, as initialized in `read_params()`
 ##' @inheritParams mk_vaxcats
 ##'
+##' @family classic_macpan
 ##' @export
 expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodose")) {
     model_type <- match.arg(model_type)
@@ -183,6 +186,7 @@ expand_params_desc_vax <- function(params_desc, model_type = c("onedose", "twodo
 ##' @examples
 ##' params <- read_params("PHAC.csv")
 ##' params_vax <- expand_params_vax(params)
+##' @family classic_macpan
 ##' @export
 expand_params_vax <- function(params,
                               model_type = c("onedose", "twodose"),
@@ -258,6 +262,7 @@ expand_params_vax <- function(params,
 ##' @param params vaxified parameters (e.g. generated with `expand_params_vax()`)
 ##'
 ##' @return an object of class `params_pansim`
+##' @family classic_macpan
 ##' @export
 ##'
 ##' @examples condense_params_vax(expand_params_vax(read_params("PHAC.csv")))
@@ -294,6 +299,7 @@ condense_params_vax <- function(params) {
 ##' params <- read_params("PHAC.csv")
 ##' ss <- make_state(params=params)
 ##' ss2 <- expand_state_vax(ss)
+##' @family classic_macpan
 ##' @export
 expand_state_vax <- function(x,
                              model_type = c("onedose", "twodose"),
@@ -358,6 +364,7 @@ expand_state_vax <- function(x,
 ##' @importFrom tidyr unite
 ##' @importFrom dplyr all_of
 ##' @importFrom dplyr everything
+##' @family classic_macpan
 ##' @export
 ## wrap into condense() ?
 condense_vax <- function(x) {
@@ -475,6 +482,7 @@ condense_vax <- function(x) {
 ##' generate per capita daily vaccination rates
 ##' @param state state vector (an object of class `state_pansim`)
 ##' @param params model parameters (an object of class `params_pansim`)
+##' @family classic_macpan
 ##' @export
 make_vaxrate <- function(state, params) {
 
@@ -535,6 +543,7 @@ make_vaxrate <- function(state, params) {
 ##' @param state state vector (an object of class `state_pansim`)
 ##' @param params model parameters (an object of class `params_pansim`)
 ##' @param ratemat model rate matrix
+##' @family classic_macpan
 ##' @export
 add_updated_vaxrate <- function(state, params, ratemat) {
     vax_cat <- get_vax(params)
@@ -729,6 +738,7 @@ add_updated_vaxrate <- function(state, params, ratemat) {
 ##' @param dose the number of doses to consider, vector. (note that Moderna/Pfizer both recommend 2 doses) (??)
 ##'
 ##' @return `tibble` with columns for date and total vaccine doses actually administered each day (as captured in the simulation)
+##' @family classic_macpan
 ##' @export
 get_doses_per_day <- function(res, dose = c(1, 2)) {
     dose <- match.arg(dose)
@@ -767,6 +777,7 @@ get_doses_per_day <- function(res, dose = c(1, 2)) {
 ##'
 ##' @param params_desc parameter descriptions, as initialized in `read_params()`
 ##'
+##' @family classic_macpan
 ##' @export
 expand_params_desc_variant <- function(params_desc) {
     params_desc[["variant_prop"]] <- "Current proportion of infections caused by the variant"
@@ -792,6 +803,7 @@ expand_params_desc_variant <- function(params_desc) {
 ##' @examples
 ##' params <- read_params("PHAC.csv")
 ##' params_variant <- expand_params_variant(params)
+##' @family classic_macpan
 ##' @export
 expand_params_variant <- function(params,
                                   variant_prop = 0.01,
