@@ -76,22 +76,27 @@
 
 <div id="contributing-to-mcmasterpandemic" class="section level1">
 <p>Thank you for contributing to our project.</p>
+<p>This document needs quite a bit of work, but the section on <code>Development Tools</code> should be useful – please stay tuned …</p>
 <div class="section level2">
-<h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
-<div class="section level3">
-<h3 id="current-architecture">Current Architecture<a class="anchor" aria-label="anchor" href="#current-architecture"></a></h3>
-<p>The simplified current architecture is described by the following diagram.</p>
-<p><img src="assets/architecture.svg"></p>
-<p>Each box is a layer of functions that call functions in the layers below them.</p>
-<p>Model definition functions are used to create and manipulate parameter and state-variable objects that define model structure and defaults values. These objects have S3 classes <code>params_pansim</code> and <code>state_pansim</code>. Common functions in this layer are <code>read_params</code>, <code>make_state</code>, and <code>expand_state_vax</code>.</p>
-<p>The forecasting and simulation functions allow one to … <code>do_step</code>, <code>run_sim</code>, <code>forecast_sim</code>, and others that are typically not used by users (e.g. <code>run_sim_range</code>, …)</p>
+<h2 id="development-tools">Development Tools<a class="anchor" aria-label="anchor" href="#development-tools"></a></h2>
+<ul><li>the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) – there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see <code>dockerfile</code> for details on Debian Linux)</li>
+<li>as a convenience you can install all of the R and tex package dependencies using <code>make dependencies</code> or running <code>/misc/dependencies.R</code>
+</li>
+<li>to re-install the package, including re-building and incorporating vignettes, use <code>make build-package</code>
+</li>
+<li>If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use <code>make doc-update</code> to update the <code>.Rd</code> files.</li>
+<li>
+<strong>please test/check the package periodically</strong> as you go (use <code>make pkgcheck</code> and <code>make pkgtest</code> from the shell or <code><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">devtools::check()</a></code> and <code><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">devtools::test()</a></code> from within R). (Tests are also run on <a href="https://github.com/mac-theobio/McMasterPandemic/actions" class="external-link">GitHub Actions</a>; if you want to skip CI testing, e.g. for a trivial commit, put <code>[skip ci]</code> somewhere in your commit message.) Please don’t make a habit of pushing without testing.</li>
+<li>To avoid whitespace diffs between versions/branches, automatically style the package with <code>make style</code> or run <code>misc/macpan_style.R</code>. <code>make style</code> (or running <code>misc/macpan_lint.R</code>) also creates a new file, <code>misc/lints.csv</code>, which contains stylistic and other lints that <code>styler</code> cannot automatically fix.</li>
+<li>rebuild the <code>pkgdown</code> site using <a href="https://github.com/mac-theobio/McMasterPandemic/actions/workflows/pkgdown.yaml" class="external-link">GitHub Actions</a>: click “run workflow” on the link to rebuild.</li>
+<li>Code that is used in the refactoring process should go in the top-level <code>refactor</code> folder.</li>
+<li>Slow tests are skipped by default; this process is controlled by the presence of a <code>MACPAN_TEST_LEVEL</code> environment (shell) variable. Many of the test files contain this code:</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">testLevel</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"MACPAN_TEST_LEVEL"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span> <span class="kw">else</span> <span class="fl">1</span></code></pre></div>
+<p>which sets <code>testLevel</code> to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via <code>export MACPAN_TEST_LEVEL=2</code> in a bash shell), or via <code>Sys.setenv(MACPAN_TEST_LEVEL=2)</code> from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and &gt;1 are distinguished.</p>
 </div>
-<div class="section level3">
-<h3 id="target-architecture-proposal">Target Architecture Proposal<a class="anchor" aria-label="anchor" href="#target-architecture-proposal"></a></h3>
-<p><img src="assets/target_architecture.svg"></p>
-</div>
-<div class="section level3">
-<h3 id="engine-client-separation">Engine-Client Separation<a class="anchor" aria-label="anchor" href="#engine-client-separation"></a></h3>
+<div class="section level2">
+<h2 id="engine-client-separation">Engine-Client Separation<a class="anchor" aria-label="anchor" href="#engine-client-separation"></a></h2>
 <ul><li>Currently one client – the R client – and hopefully/probably we will only ever have one client</li>
 <li>Currently two engines<ul><li>Original R</li>
 <li>TMB</li>
@@ -107,16 +112,7 @@
 <li>Names of loss functions (e.g. negative binomial, gaussian)</li>
 <li>Topology of flow among states</li>
 </ul></li>
-</ul><div class="section level4">
-<h4 id="notes">NOTES<a class="anchor" aria-label="anchor" href="#notes"></a></h4>
-<ul><li>What about summary methods for parameters?<ul><li>Use case – compute R0/r/Gbar for an <em>ensemble</em> of mcmc simulations of parameters</li>
-<li>In general we might need a many-to-one relationship between parameter sets and compartmental models</li>
-</ul></li>
-<li>In general we need to think about ensembles, sampling from parameter distributions, importance sampling, mcmc, etc…</li>
 </ul></div>
-</div>
-</div>
-<div class="section level2"><h2 id="engines">Engines<a class="anchor" aria-label="anchor" href="#engines"></a></h2></div>
 <div class="section level2">
 <h2 id="maintaining-c-code">Maintaining C++ Code<a class="anchor" aria-label="anchor" href="#maintaining-c-code"></a></h2>
 <p>We try to be disciplined in how we maintain the <code>C++</code> code, in that the correctness of this code can in principle be judged against <a href="https://canmod.net/misc/flex_specs" class="external-link">this specification document</a>. These specifications are <a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle" class="external-link">versioned</a> with the reference implementation for each version located in <a href="https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb" class="external-link">inst/tmb</a>. The currently recommended version is saved in <a href="https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb/recommended_spec_version" class="external-link">inst/tmb/recommended_spec_version</a>.</p>
@@ -185,7 +181,7 @@
 <li><code>flexmodel_bbmle</code></li>
 <li><code>flexmodel_failed_calibration</code></li>
 </ul><p>S3 class vectors that appear in the package:</p>
-<ul><li><div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>error type             parameter tuning type           use case     </span></code></pre></div></li>
+<ul><li><div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>error type             parameter tuning type           use case     </span></code></pre></div></li>
 <li><code>c(                                                                                 'flexmodel')</code></li>
 <li>
 <code>c(                                                       'flexmodel_scenario',     'flexmodel')</code> (this is not necessary)</li>
@@ -231,8 +227,6 @@ make newinstall</code></pre>
 <p>There are two functions that take a <code>flexmodel</code> and return a vector of parameters</p>
 <p>Simulation functions are all driven by the <code>simulate</code> method of TMB objects. These functions have optional <code>sim_params</code> arguments, which should give a vector to pass to TMB simulate methods. If there are no <code>sim_params</code> provided by the user, the <code>tmb_params</code> function is used to attempt to guess.</p>
 <p><code>flexmodel</code> objects contain two parameter vectors: <code>params</code> and <code>tv_mult</code></p>
-<p>coef.flexmodel = function( object, vector = c(“tmb_arg”, “params”, “tv_mult”), full = TRUE, optimized = FALSE, transformed = FALSE, … ) {</p>
-<p>} default, opt_init, opt_final</p>
 </div>
 <div class="section level2">
 <h2 id="testing-infrastructure">Testing Infrastructure<a class="anchor" aria-label="anchor" href="#testing-infrastructure"></a></h2>
@@ -241,12 +235,12 @@ make newinstall</code></pre>
 make test-tmb-all</code></pre>
 <p>The test level can be increased to <code>&gt;1</code> to run tests that are slower because they compare refactored TMB/C++ results with equivalent jobs that use the original R-engine.</p>
 <p>It is also possible to only run tests associated with specific areas.</p>
-<pre><code><span class="va">test</span><span class="op">-</span><span class="va">tmb</span> 
-<span class="va">test</span><span class="op">-</span><span class="va">tmb</span><span class="op">-</span><span class="va">forecast</span>
-<span class="va">test</span><span class="op">-</span><span class="va">tmb</span><span class="op">-</span><span class="va">struc</span>                       
-<span class="va">test</span><span class="op">-</span><span class="va">tmb</span><span class="op">-</span><span class="va">calibrate</span>
-<span class="va">test</span><span class="op">-</span><span class="va">tmb</span><span class="op">-</span><span class="va">make</span><span class="op">-</span><span class="va">state</span>
-<span class="va">test</span><span class="op">-</span><span class="va">tmb</span><span class="op">-</span><span class="va">timevar</span></code></pre>
+<pre><code>make test-tmb 
+make test-tmb-forecast
+make test-tmb-struc                       
+make test-tmb-calibrate
+make test-tmb-make-state
+make test-tmb-timevar</code></pre>
 </div>
 <div class="section level2">
 <h2 id="adding-to-the-sp-vector-on-the-c-side">Adding to the sp Vector on the C++ Side<a class="anchor" aria-label="anchor" href="#adding-to-the-sp-vector-on-the-c-side"></a></h2>
@@ -371,7 +365,7 @@ void update_pow_in_sp(
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Ben Bolker, David Earn, Morgan Kain, Mike Li, Jonathan Dushoff.</p>
+  <p></p><p>Developed by Ben Bolker, Steve Walker, David Earn, Morgan Kain, Mike Li, Jonathan Dushoff.</p>
 </div>
 
 <div class="pkgdown">
