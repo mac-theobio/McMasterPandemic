@@ -490,3 +490,30 @@ make_sir_model = function(...) {
   )
   model
 }
+
+#' Hello World
+#'
+#' Return a hello-world SIR model
+#'
+#' @seealso \code{\link{make_sir_model}}
+#' @family flexmodels
+#' @family canned_models
+#' @export
+make_hello_world_model = function() {
+  state = c(S = 20000, I = 100, R = 0)
+  (
+    flexmodel(
+      params = c(
+        gamma = 0.06,
+        beta = 0.15,
+        N = sum(state)
+      ),
+      state = state,
+      start_date = "2016-07-08",
+      end_date = "2016-12-31",
+      do_hazard = FALSE
+    )
+    %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
+    %>% add_rate("I", "R", ~ (gamma))
+  )
+}

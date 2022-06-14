@@ -14,7 +14,11 @@
 #'
 #' @param model a \code{\link{flexmodel}} object
 #'
-#' @return character vector of available variable names
+#' @return A character vector of names of variables that are available
+#' as input into the specified type of model component.
+#'
+#' @examples
+#' avail_for_conv(make_hello_world_model())
 #'
 #' @rdname avail_for
 #' @export

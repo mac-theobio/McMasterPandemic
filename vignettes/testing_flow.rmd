@@ -4,7 +4,7 @@ author: "Ben Bolker"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Incorporating testing dynamics in the MacPan model}
+  %\VignetteIndexEntry{Incorporating Testing Dynamics in the MacPan Model}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---

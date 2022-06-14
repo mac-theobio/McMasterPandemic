@@ -28,7 +28,8 @@ avail_for_lag(model)
 \item{model}{a \code{\link{flexmodel}} object}
 }
 \value{
-character vector of available variable names
+A character vector of names of variables that are available
+as input into the specified type of model component.
 }
 \description{
 Find out what variables are available for particular functions that
@@ -43,4 +44,8 @@ add variables to a model, based on existing variables.
   \item{\code{avail_for_lag}}{\code{\link{add_lag_diff}}}
   \item{\code{avail_for_conv}}{\code{\link{add_conv}}}
 }
+}
+\examples{
+avail_for_conv(make_hello_world_model())
+
 }
