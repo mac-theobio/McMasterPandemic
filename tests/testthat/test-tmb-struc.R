@@ -538,7 +538,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   )
 
   # load data that came from macpan ontario
-  load("../../inst/testdata/ontario_flex_test.rda")
+  load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
 
   # make flex vaccination model -----------
   model = make_vaccination_model(

@@ -27,9 +27,10 @@ library(lubridate)
 ## see https://canmod.net/misc/flex_specs for more on
 ## spec versioning.
 ## ------------------------------------------------------------------
+inst_tmb = system.file('tmb', package = "McMasterPandemic")
 
 test_that("spec v0.0.1 rate matrices match make_ratemat", {
-    set_spec_version("0.0.1", "../../inst/tmb/")
+    set_spec_version("0.0.1", system.file('tmb', package = 'McMasterPandemic'))
     options(MP_force_dgTMatrix = TRUE)
     params <- read_params("ICU1.csv")
     state <- McMasterPandemic::make_state(params = params)
@@ -85,7 +86,7 @@ test_that("spec v0.0.1 rate matrices match make_ratemat", {
 
 test_that("spec v0.0.2 simulations match run_sim", {
 
-    set_spec_version("0.0.2", "../../inst/tmb/")
+    set_spec_version("0.0.2", system.file('tmb', package = 'McMasterPandemic'))
     params <- read_params("ICU1.csv")
     state <- McMasterPandemic::make_state(params = params)
     test_model <- (
@@ -131,7 +132,7 @@ test_that("spec v0.0.2 simulations match run_sim", {
 })
 
 test_that("spec v0.0.4 simulations with time varying parameters match run_sim", {
-    set_spec_version("0.0.4", "../../inst/tmb/")
+    set_spec_version("0.0.4", system.file('tmb', package = 'McMasterPandemic'))
     params <- read_params("ICU1.csv")
     tv_dat <- data.frame(
         Date = c("2021-09-15", "2021-09-20", "2021-10-05"),
@@ -199,7 +200,7 @@ test_that("spec v0.0.4 simulations with time varying parameters match run_sim", 
 
 test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff is working", {
 
-    set_spec_version("0.0.5", "../../inst/tmb/")
+    set_spec_version("0.0.5", system.file('tmb', package = 'McMasterPandemic'))
     r_tmb_comparable()
     params <- read_params("ICU1.csv")
     state = make_state(params = params)
@@ -327,7 +328,7 @@ test_that("spec v0.0.5 simulations with hazard steps match run_sim, and autodiff
 })
 
 test_that('spec v0.0.6 time-varying parameters are correctly updated on C++ side', {
-    set_spec_version("0.0.6", "../../inst/tmb/")
+    set_spec_version("0.0.6", system.file('tmb', package = 'McMasterPandemic'))
     params <- read_params("ICU1.csv")
     state <- make_state(params = params)
     M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -377,7 +378,7 @@ test_that('spec v0.0.6 time-varying parameters are correctly updated on C++ side
 })
 
 test_that('spec v0.0.6 that it remains ok to _not_ use time-varying parameters', {
-    set_spec_version("0.0.6", "../../inst/tmb/")
+    set_spec_version("0.0.6", system.file('tmb', package = 'McMasterPandemic'))
     params <- read_params("ICU1.csv")
     state <- make_state(params = params)
     M <- McMasterPandemic::make_ratemat(state, params, sparse = TRUE)
@@ -464,7 +465,7 @@ test_that('spec v0.1.1 tmb outflow can be set to match exponential simulation', 
     # trim off S, D, & R -- for eigenvector calculation 'by hand'
     r_final_state = unlist(r_sim[100, names(state)])[2:10]
     tmb_final_state = c(final_state_vector(model)[2:10])
-
+    norm_vec = McMasterPandemic:::norm_vec
     expect_equal(norm_vec(r_final_state), norm_vec(tmb_final_state))
 })
 

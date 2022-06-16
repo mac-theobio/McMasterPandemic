@@ -3,11 +3,14 @@
 \name{update_tmb_indices}
 \alias{update_tmb_indices}
 \alias{add_tmb_indices}
+\alias{tmb_indices}
 \title{Update TMB Indices}
 \usage{
 update_tmb_indices(model)
 
 add_tmb_indices(model)
+
+tmb_indices(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -26,3 +29,19 @@ during simulation and calibration using TMB
   every simulation step}
 }
 }
+\seealso{
+Other flexmodel_definition_functions: 
+\code{\link{add_factr}()},
+\code{\link{add_linearized_outflow}()},
+\code{\link{add_parallel_accumulators}()},
+\code{\link{add_rate}()},
+\code{\link{add_state_mappings}()},
+\code{\link{add_state_param_sum}()},
+\code{\link{initial_population}()},
+\code{\link{mat_rate}()},
+\code{\link{rep_rate}()},
+\code{\link{update_disease_free_state}()},
+\code{\link{update_linearized_params}()},
+\code{\link{vec_rate}()}
+}
+\concept{flexmodel_definition_functions}

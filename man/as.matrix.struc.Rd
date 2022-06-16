@@ -4,10 +4,12 @@
 \alias{as.matrix.struc}
 \title{Convert struc Object to a matrix}
 \usage{
-\method{as.matrix}{struc}(x)
+\method{as.matrix}{struc}(x, ...)
 }
 \arguments{
 \item{x}{\code{\link{struc-class}} object}
+
+\item{...}{for S3 method consistency}
 }
 \value{
 matrix

@@ -12,5 +12,5 @@ expand_params_S0(params, S0)
 \item{S0}{initial proportion of individuals in susceptible compartments}
 }
 \description{
-Expand Parameter List to Include Initial Proportion of Susceptibles
+TODO: deprecate this
 }

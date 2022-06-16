@@ -234,6 +234,7 @@ plot_res_by_state <- function(res, drop_states = NULL,
 ##' @param ... additional arguments to \code{\link{condense.pansim}}
 ##' @importFrom ggplot2 ggplot geom_line aes geom_vline scale_y_log10 geom_ribbon
 ##' @importFrom dplyr one_of
+##' @importFrom graphics par
 ##' @return a \code{\link[ggplot2]{ggplot}} object
 ##' @export
 plot.pansim <- function(x, drop_states = c("t", "S", "R", "E", "I", "X", "incidence"),
@@ -1133,21 +1134,9 @@ is.nan.data.frame <- function(x) {
 }
 
 ##' @export
-print.flexmodel = function(x) {
+print.flexmodel = function(x, ...) {
     print(rate_summary(x))
     invisible(x)
-}
-
-##' @export
-coef.flexmodel = function(
-    object,
-    vector = c("tmb_arg", "params", "tv_mult"),
-    full = TRUE,
-    optimized = FALSE,
-    transformed = FALSE,
-    ...
-) {
-    stop("under construction")
 }
 
 ##' @export

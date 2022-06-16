@@ -64,6 +64,7 @@ badness <- function(delta, params, target, pars_adj) {
 ##' summary(pp)
 ##' pp2 <- fix_pars(pp,debug=TRUE)
 ##' summary(pp2)
+##' @family classic_macpan
 ##' @export
 ## FIXME: automatically choose default pars_adj on the basis of target?
 ##  better checking of pars_adj (should be a list of named vectors with
@@ -116,6 +117,7 @@ fix_pars <- function(params, target = c(r = 0.23, Gbar = 6),
 ##' params <- read_params("ICU1.csv")
 ##' ## UNFINISHED
 ##' @inheritParams run_sim_break
+##' @family classic_macpan
 ##' @export
 run_sim_loglin <- function(params,
                            extra_pars = NULL,
@@ -209,6 +211,7 @@ statefun <- function(params, sim_args) {
 
 ##' run with transmission propto relative mobility
 ##' @inheritParams run_sim_break
+##' @family classic_macpan
 ##' @export
 run_sim_mobility <- function(params,
                              extra_pars = NULL,
@@ -271,6 +274,7 @@ run_sim_mobility <- function(params,
 ##' ## can also use it to run without breaks ...
 ##' r2 <- run_sim_break(params, sim_args=list(start_date="2020-02-01", end_date="2020-04-01"))
 ##' plot(r2,log=TRUE)
+##' @family classic_macpan
 ##' @export
 run_sim_break <- function(params,
                           extra_pars = NULL,
@@ -421,6 +425,7 @@ run_sim_decay <- function(params,
 ##' params <- fix_pars(read_params("ICU1.csv"))
 ##' forecast_sim(p, op, base_params=params,ff$start_date, ff$end_date,
 ##'     time_args=ff$time_args)
+##' @family classic_macpan
 ##' @export
 forecast_sim <- function(p, opt_pars, base_params, start_date, end_date,
                          time_args = NULL,
@@ -553,6 +558,7 @@ do_debug_plot <- function(r2) {
 ##' mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p2)
 ##' p3 <- update(p, obs_disp_H=2, obs_disp_death=2)
 ##' mle_fun(p=unlist(op), dd, opt_pars=op, base_params=p3)
+##' @family classic_macpan
 ##' @export
 mle_fun <- function(p, data,
                     debug = FALSE,
@@ -751,6 +757,7 @@ update_debug_hist <- function(params, NLL) {
 ##'    }
 ##'    attr(cal2,"de")$optim$bestval
 ##' }
+##' @family classic_macpan
 ##' @export
 ##' @importFrom stats var vcov
 calibrate <- function(start_date = min(data$date) - start_date_offset,
@@ -1014,13 +1021,14 @@ calibrate <- function(start_date = min(data$date) - start_date_offset,
 ##' \code{\link{flexmodel}} object that contains observed data added either
 ##' throught the \code{data} argument in \code{\link{flexmodel}} or with the
 ##' \code{\link{update_observed}} function
-##' @param optimizer name of a valid optimizer -- currently \code{bbmle} is
+##' @param .optimizer_wrapper name of a valid optimizer -- currently \code{bbmle} is
 ##' recommended (see details for more information about the choices)
 ##' @param ... additional arguments to pass on to the optimizer
 ##'
 ##' @seealso \code{\link{bbmle_flexmodel}}, \code{\link{nlminb_flexmodel}},
 ##' \code{\link{optim_flexmodel}}
 ##' @return \code{flexmodel_calibrated} object
+##' @importFrom utils getFromNamespace
 ##' @export
 calibrate_flexmodel = function(
     model,
@@ -1063,6 +1071,7 @@ calibrate_flexmodel = function(
 ##' @param parallel whether to attempt parallel processing
 ##' @param n_cores number of cores for parallel forecasting (ignored if not parallel) (??)
 ##' @import foreach
+##' @family classic_macpan
 ##' @export
 ## FIXME: way to add args to forecast_args list, e.g. stochastic components?
 forecast_ensemble <- function(fit,
@@ -1331,6 +1340,7 @@ date_logist <- function(date_vec, date_prev, date_next = NA,
 ##' }
 ##' @inheritParams calibrate
 ##' @importFrom splines ns bs
+##' @family classic_macpan
 ##' @export
 calibrate_comb <- function(data,
                            params,

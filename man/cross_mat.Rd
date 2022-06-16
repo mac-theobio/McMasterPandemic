@@ -10,9 +10,8 @@ cross_mat(x, y, sep = "_")
 \item{x}{character vector}
 
 \item{y}{character vector}
-}
-\value{
 
+\item{sep}{character for separating \code{x} and \code{y} components}
 }
 \description{
 Cross Two Sets of Names in Matrix Form

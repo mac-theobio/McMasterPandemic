@@ -2,61 +2,55 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/mac-theobio/McMasterPandemic/actions)
-
-![](https://img.shields.io/static/v1.svg?label=Status&message=Draft&color=blue)
+[![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
 
 <!-- badges: end -->
 
 Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Weiguang Guan, Morgan Kain, Michael Li, Irena Papst, Steve Walker (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
 
+### Refactoring for Speed and Generality
+
+We are [currently refactoring](https://github.com/mac-theobio/McMasterPandemic/projects/7) McMasterPandemic to make it faster and more general. We have merged the [development branch for this refactoring project](https://github.com/mac-theobio/McMasterPandemic/tree/tmb-condense) back into the master branch. However the classic functionality of McMasterPandemic is still available and coexists with the more general interface and faster engine. To get started with the classic functionality, please read [this vignette](https://mac-theobio.github.io/McMasterPandemic/articles/getting_started.html). To get started with the faster and more general functionality, please read [this user guide](https://canmod.github.io/macpan-book/).
+
 ### Documentation
-* See the accompanying [pkgdown](https://mac-theobio.github.io/McMasterPandemic/) site.
-* Functions are under the `Reference` tab.
-* Vignettes (under construction!) are under `Articles`.
-* [Issues](https://github.com/mac-theobio/McMasterPandemic/issues) list.
+* [Package documentation](https://mac-theobio.github.io/McMasterPandemic/)
+* [User guide](https://canmod.github.io/macpan-book/)
+* [Issues list](https://github.com/mac-theobio/McMasterPandemic/issues)
+* [Roadmap](https://github.com/mac-theobio/McMasterPandemic/blob/master/TODO.md)
 * [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) written by Zach Levine
+* [Draft contributors guide for developers](https://github.com/mac-theobio/McMasterPandemic/blob/master/CONTRIBUTING.md)
 
 ### Installation
 
-The repository contains an R package and various workflows/analyses. You can fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) and install locally or use `remotes::install_github("mac-theobio/McMasterPandemic")` to install the package. You will need to first install the developer version of `bbmle` (`remotes::install_github("bbolker/bbmle")`) before installing `McMasterPandemic`, followed by another package that is not on CRAN (`remotes::install_github("johndharrison/semver")`).
-
-### For developers
-
-[![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
-
-See our guide to [contributing](https://github.com/mac-theobio/McMasterPandemic/blob/tmb-condense/CONTRIBUTING.md).
-
-* the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) -- there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see `dockerfile` for details on Debian Linux)
-* as a convenience you can install all of the R and tex package dependencies using `make dependencies` or running `/misc/dependencies.R`
-* to re-install the package, including re-building and incorporating vignettes, use `make build-package`
-* If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
-* **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/mac-theobio/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Please don't make a habit of pushing without testing.
-* To avoid whitespace diffs between versions/branches, automatically style the package with `make style` or run `misc/macpan_style.R`. `make style` (or running `misc/macpan_lint.R`) also creates a new file, `misc/lints.csv`, which contains stylistic and other lints that `styler` cannot automatically fix.
-* rebuild the `pkgdown` site using [GitHub Actions](https://github.com/mac-theobio/McMasterPandemic/actions/workflows/pkgdown.yaml): click "run workflow" on the link to rebuild. 
-* Code that is used in the refactoring process should go in the top-level `refactor` folder. 
-* Slow tests are skipped by default; this process is controlled by the presence of a `MACPAN_TEST_LEVEL` environment (shell) variable. Many of the test files contain this code:
-```r
-testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+The repository contains an R package and various workflows/analyses. This repository is not on [CRAN](https://cran.r-project.org/) so you will need to either fork/clone the repository (from [here](https://github.com/mac-theobio/McMasterPandemic)) or install directly from GitHub. Either option will (may?) require you to first install two R packages that are also not on CRAN.
 ```
-which sets `testLevel` to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via `export MACPAN_TEST_LEVEL=2` in  a bash shell), or via `Sys.setenv(MACPAN_TEST_LEVEL=2)` from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and >1 are distinguished.
+remotes::install_github("bbolker/bbmle")
+remotes::install_github("johndharrison/semver")
+```
+Note that these commands depend on having the `remotes` package, which you can get from CRAN with the following command from an R prompt.
+```
+install.packages('remotes')
+```
 
-### Documentation 
+To install `McMasterPandemic` itself you follow the same formula.
+```
+remotes::install_github("mac-theobio/McMasterPandemic")
+```
+If this command fails it may be because your R installation is not set up to compile C++ code. Windows users should be able to get past this issue by installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/).
 
-The documentation is a little bit scattered right now, working on cleaning it up. In addition to the standard short descriptions of the functions (`help(package="McMasterPandemic")`), stuff can be found: 
+The classic `McMasterPandemic` functionality described [here](https://mac-theobio.github.io/McMasterPandemic/articles/getting_started.html) does not depend on C++ code, and you can get access to this functionality by installing with this command.
+```
+remotes::install_github("mac-theobio/McMasterPandemic@v0.0.20.1")
+```
 
-* in the vignettes (look at the source code in the [vignettes] directory or `vignette(<title>, package="McMasterPandemic")`)
-    * `getting_started`
-	* `model`: design decisions and information for developers
-	* `calibration` (**very out of date**)
-	* `farr`: stuff on Farr's law and phenomenological curve-fitting (**very incomplete and likely to remain so for now**)
-	* `testing_flow`: incorporating testing dynamics (**ditto**)
-* `McMasterReport.Rnw`: this is a more or less up-to-date description of calibration to Ontario data
-* `ontario_calibration_report.html`: more technical and less up-to-date than the preceding document
-* `TODO.md`: active to-do list
+Getting access to experimental features can sometimes be achieved with this command.
 
-More bits and pieces: `notes/refactor.Rmd`, `testing.md`, `reimplementation.md`
+```
+remotes::install_github("mac-theobio/McMasterPandemic@tmb-condense")
+```
+
+
 
 ### DISCLAIMER
 
 All use of this package is at your own risk. Quantitative forecasts are only as good as their parameter estimates.
-

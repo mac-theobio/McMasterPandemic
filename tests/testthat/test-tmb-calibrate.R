@@ -8,6 +8,12 @@ library(numDeriv)
 library(lubridate)
 library(tidyr)
 
+better_data_path = system.file(
+  "testdata",
+  "ontario_flex_test_better.Rdata",
+  package = "McMasterPandemic"
+)
+
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
 
@@ -447,7 +453,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
   #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 150)
-  load("../../inst/testdata/ontario_flex_test_better.Rdata")
+  load(better_data_path)
 
   model = make_vaccination_model(
     params = model_params,
@@ -534,9 +540,9 @@ test_that("macpan ontario calibration example works the same regardless of engin
       , debug = FALSE
       , debug_plot = FALSE
     )
-    save(fitted_model_r, "../../inst/testdata/ontario_flex_test_better_fit.rda")
+    save(fitted_model_r, better_data_path)
   } else {
-    load("../../inst/testdata/ontario_flex_test_better_fit.rda")
+    load(better_data_path)
   }
   # [[1]]
   # Time difference of 4.138171 secs
@@ -583,9 +589,14 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   edate <- as.Date("2022-01-19")
   initial_date = as.Date("2021-08-03")
   start_date_offset = as.integer(sdate - initial_date)
+  report_data_yukon_h_and_i = system.file(
+    "testdata",
+    "report_data_yukon_h_and_i.csv",
+    package = "McMasterPandemic"
+  )
 
   # read and process data
-  covid_data <- ("../../sandbox/yukon/report_data_yukon_h_and_i.csv"
+  covid_data <- (report_data_yukon_h_and_i
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
                  %>% filter(date >= ymd(20210803))
@@ -665,9 +676,9 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
       debug = FALSE,
       sim_args = sim_args
     )
-    save(fit_no_flex, file = '../../inst/testdata/yukon_no_flex.rda')
+    save(fit_no_flex, file = system.file('testdata', 'yukon_no_flex.rda', package = "McMasterPandemic"))
   } else {
-    load('../../inst/testdata/yukon_no_flex.rda')
+    load(system.file('testdata', 'yukon_no_flex.rda', package = "McMasterPandemic"))
   }
   fit_flex <- calibrate(
     data = covid_data,
@@ -699,8 +710,16 @@ test_that("transformations and priors give the right objective function and grad
   initial_date = as.Date("2021-08-03")
   start_date_offset = as.integer(sdate - initial_date)
 
+  report_data_yukon_h_and_i = system.file(
+    "testdata",
+    "report_data_yukon_h_and_i.csv",
+    package = "McMasterPandemic"
+  )
+
   # read and process data
-  covid_data <- ("../../sandbox/yukon/report_data_yukon_h_and_i.csv"
+  print('file exists: ')
+  print(file.exists(report_data_yukon_h_and_i))
+  covid_data <- (report_data_yukon_h_and_i
                  %>% read.csv
                  %>% mutate(date = as.Date(date))
                  %>% filter(date >= lubridate::ymd(20210803))

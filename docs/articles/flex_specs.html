@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Steve Walker, Weiguang Guan, Ben Bolker" />
+
+
+<title>Flexible Compartmental Modelling Specifications</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Flexible Compartmental Modelling Specifications</h1>
+<h4 class="author">Steve Walker, Weiguang Guan, Ben Bolker</h4>
+
+
+
+<p><a href="https://canmod.net/misc/flex_specs"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTMyIiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlVwZGF0ZWQ6IDIwMjItMDYtMTQiPjx0aXRsZT5VcGRhdGVkOiAyMDIyLTA2LTE0PC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSIxMzIiIGhlaWdodD0iMjAiIHJ4PSIzIiBmaWxsPSIjZmZmIi8+PC9jbGlwUGF0aD48ZyBjbGlwLXBhdGg9InVybCgjcikiPjxyZWN0IHdpZHRoPSI1NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzU1NSIvPjxyZWN0IHg9IjU3IiB3aWR0aD0iNzUiIGhlaWdodD0iMjAiIGZpbGw9IiMwMDdlYzYiLz48cmVjdCB3aWR0aD0iMTMyIiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjI5NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iNDcwIj5VcGRhdGVkPC90ZXh0Pjx0ZXh0IHg9IjI5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iNDcwIj5VcGRhdGVkPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI5MzUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjY1MCI+MjAyMi0wNi0xNDwvdGV4dD48dGV4dCB4PSI5MzUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjY1MCI+MjAyMi0wNi0xNDwvdGV4dD48L2c+PC9zdmc+" alt="Live Version" /></a></p>
+<p><a href="https://github.com/mac-theobio/McMasterPandemic">McMasterPandemic</a> is a modelling tool that was rapidly developed to provide timely insights into the Covid-19 Pandemic in Canada. We are currently refactoring this tool so that it is faster and more general. This refactoring will be done incrementally by implementing a series of versioned specifications that define each step. This document outlines these specifications, and provides a roadmap for planning future specifications.</p>
+<div id="table-of-contents" class="section level1">
+<h1>Table of Contents</h1>
+<ul>
+<li><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle">Versioning and Lifecycle</a></li>
+<li><a href="https://canmod.net/misc/flex_specs#version-summary">Version Summary</a></li>
+<li><a href="https://canmod.net/misc/flex_specs#version-descriptions">Version Descriptions</a></li>
+</ul>
+</div>
+<div id="versioning-and-lifecycle" class="section level1">
+<h1>Versioning and Lifecycle</h1>
+<p>We are using semantic versioning <a href="https://semver.org/" class="uri">https://semver.org/</a> to provide versions for the specs. All versions of a spec that have not been implemented in a released version of the McMasterPandemic R package have major version 0 (e.g. 0.x.y, <a href="https://semver.org#spec-item-4" class="uri">https://semver.org#spec-item-4</a>) – currently all of them. Although none of these specs are released, they are being experimentally implemented on the <a href="https://github.com/mac-theobio/McMasterPandemic/tree/tmb">TMB branch of McMasterPandemic</a>, with R-side code <a href="https://github.com/mac-theobio/McMasterPandemic/blob/tmb/R/tmb.R">here</a>. There is a global option, <code>MP_flex_spec_version</code>, that is used by this <code>R</code> code to control what spec version is being assumed by the <code>TMB</code>/<code>C++</code> code. This helps in <a href="https://github.com/mac-theobio/McMasterPandemic/blob/tmb/tests/testthat/test-tmb.R">testing</a> as well. <code>C++</code> files that implement various spec versions are currently being placed <a href="https://github.com/mac-theobio/McMasterPandemic/tree/tmb/inst/tmb">here</a>.</p>
+<p>Spec versions have three life cycle stages: frozen, experimental, recommended, and archived. If a frozen version needs clarification or updating, this clarification must be done by linking to a subsequent version that addresses the issue(s). Each frozen version of the spec must contain the following five sections.</p>
+<ul>
+<li><em>New Capabilities</em> – very short summary; refer to previous versions for background</li>
+<li><em>Assumptions</em> – known assumptions that can help users/developers understand if this version will suite their needs</li>
+<li><em>Mathematical Description</em> – precise definition of the new or changed features of the model; refer to previous versions for definitions being reused</li>
+<li><em>User Interface</em> – short description and example of the user interface in <code>R</code> for model specification</li>
+<li><em>Data Structure</em> – definition of the data structure to be passed from <code>R</code> to <code>TMB</code>/<code>C++</code> that stores the model structure</li>
+</ul>
+</div>
+<div id="version-summary" class="section level1">
+<h1>Version Summary</h1>
+<div id="frozen-versions" class="section level2">
+<h2>Frozen Versions</h2>
+<p>The specs for the following versions are frozen, which means that they will not change.</p>
+<ul>
+<li><a href="#v0.0.1">0.0.1 – Simple rate matrix updates</a></li>
+<li><a href="#v0.0.2">0.0.2 – Simulation (iterated state variable updates)</a></li>
+<li><a href="#v0.0.4">0.0.4 – Piece-wise constant exogenous time-variation of parameters</a></li>
+<li><a href="#v0.0.5">0.0.5 – Hazard simulation</a></li>
+<li><a href="#v0.0.6">0.0.6 – Updates of time-varying parameters from the initial parameters on the <code>C++</code> side</a></li>
+<li><a href="#v0.1.0">0.1.0 – Model structure</a></li>
+<li><a href="#v0.1.1">0.1.1 – Make state and calibrate time-varying multipliers</a></li>
+<li><a href="#v0.1.2">0.1.2 – Common factors</a></li>
+</ul>
+</div>
+<div id="recommended" class="section level2">
+<h2>Recommended</h2>
+<ul>
+<li><a href="#v0.2.0">0.2.0 – Condensation, calibration, and observation error on the <code>C++</code> side</a></li>
+</ul>
+</div>
+<div id="experimental-versions" class="section level2">
+<h2>Experimental Versions</h2>
+<p>The specs for the following versions are being actively developed and modified. Note that version numbers of experimental versions can change without warning.</p>
+<ul>
+<li><a href="#v0.2.1">0.2.1 – Uneven lagged differencing</a></li>
+<li><a href="#v0.2.2">0.2.2 – Log-linear time-variation of parameters</a></li>
+</ul>
+</div>
+<div id="archived-versions" class="section level2">
+<h2>Archived Versions</h2>
+<p>The specs for archived versions are frozen but no longer respected by the <code>McMasterPandemic</code> <code>R</code> package and/or its test framework. Archived versions cannot be ignored because Frozen and Experimental versions may still reference them.</p>
+<ul>
+<li><a href="#v0.0.3">0.0.3 – Piece-wise constant exogenous time-variation of parameters (first attempt)</a></li>
+</ul>
+</div>
+</div>
+<div id="version-descriptions" class="section level1">
+<h1>Version Descriptions</h1>
+<div id="v0.2.2" class="section level2">
+<h2>v0.2.2</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRXhwZXJpbWVudGFsIj48dGl0bGU+TGlmZWN5Y2xlOiBFeHBlcmltZW50YWw8L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjE0MCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI4MyIgaGVpZ2h0PSIyMCIgZmlsbD0iI2RmYjMxNyIvPjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI5NzUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjczMCI+RXhwZXJpbWVudGFsPC90ZXh0Pjx0ZXh0IHg9Ijk3NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iNzMwIj5FeHBlcmltZW50YWw8L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.2.2" class="section level3">
+<h3>New Capabilities (0.2.2)</h3>
+<p>Log-linear time-variation of parameters. This feature generalizes the piece-wise time-variation of parameters to allow for the following.</p>
+<ul>
+<li>Process error</li>
+<li>Semi-parametric time-variation estimation</li>
+<li></li>
+</ul>
+</div>
+<div id="mathematical-description-0.2.2" class="section level3">
+<h3>Mathematical Description (0.2.2)</h3>
+<p>This is a</p>
+<p>Such parameters have their own parameters that determine a model of time-variation. These latter parameters get transformed to produce a time series of parameter values of length equal to the number of time steps. One simple thing to do would be to put these time series into the parameter vector, and when parameters are accessed use the index <code>spi + t</code> where <code>spi</code> is the index into the <code>state_param</code> vector that picks out the first parameter in the time series and <code>t</code> is the current time step.</p>
+<p><span class="math display">\[
+\log(u) = \log(u_0) + Xv
+\]</span> where <span class="math inline">\(u\)</span> is a vector of length <span class="math inline">\(T\)</span>, the number of time steps, <span class="math inline">\(u_0\)</span> is a scalar parameter, <span class="math inline">\(v\)</span> is a vector of length <span class="math inline">\(D &lt; T\)</span> that parameterizes the model of time variation, and <span class="math inline">\(X\)</span> is a <span class="math inline">\(T\)</span>-by-<span class="math inline">\(D\)</span> matrix of constant columns (e.g. indicator variables, spline bases). Note that logs of vectors are taken element-wise.</p>
+<p><span class="math display">\[
+\log(u_t) = \log(u_0) + \sum_{i=1}^Dx_{ti}v_i
+\]</span> <span class="math display">\[
+u_t = u_0 \prod_{i=1}^D\exp\left(x_{ti}v_i\right)
+\]</span> For example:</p>
+<ul>
+<li><span class="math inline">\(D=2\)</span> breakpoints</li>
+<li><span class="math inline">\(v_1 = v_2 = \log\left(\frac{1}{2}\right) \approx -0.69\)</span></li>
+<li><span class="math inline">\(x_{ti} = \begin{cases} 1, &amp; t \ge t_i \\ 0, &amp; \text{otherwise} \end{cases}\)</span></li>
+</ul>
+<p>In this case we have the following time variation of <span class="math inline">\(u\)</span>. <span class="math display">\[
+u_t = 
+\begin{cases} 
+u_0, &amp; t &lt; t_1 \\
+\frac{u_0}{2}, &amp; t_1 \le t &lt; t_2 \\
+\frac{u_0}{4}, &amp; t \ge t_2
+\end{cases}
+\]</span></p>
+</div>
+</div>
+<div id="v0.2.1" class="section level2">
+<h2>v0.2.1</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRXhwZXJpbWVudGFsIj48dGl0bGU+TGlmZWN5Y2xlOiBFeHBlcmltZW50YWw8L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjE0MCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI4MyIgaGVpZ2h0PSIyMCIgZmlsbD0iI2RmYjMxNyIvPjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI5NzUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjczMCI+RXhwZXJpbWVudGFsPC90ZXh0Pjx0ZXh0IHg9Ijk3NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iNzMwIj5FeHBlcmltZW50YWw8L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.2.1" class="section level3">
+<h3>New Capabilities (0.2.1)</h3>
+<p>Lag-n differencing with variable lag. This will allow us to difference between time points with observed data, which is necessary when the frequency of data collection changes and other cases with uneven time-series.</p>
+</div>
+<div id="mathematical-description-0.2.1" class="section level3">
+<h3>Mathematical Description (0.2.1)</h3>
+<p>One way to frame this problem is to convert the scalar integer, <span class="math inline">\(n\)</span>, into a vector of length equal to the number of simuluation iterations. Let <span class="math inline">\(n_t\)</span> be the differencing lag at time <span class="math inline">\(t\)</span>, and <span class="math inline">\(x_t\)</span> and <span class="math inline">\(y_t\)</span> be the input and output variables of the differencing at this time.</p>
+<p><span class="math display">\[
+y_t = x_t - x_{t-n_t}
+\]</span></p>
+<p>If <span class="math inline">\(n_t = n\)</span> for all <span class="math inline">\(t\)</span>, then we have the special case of lag-n differencing in spec version 0.2.0.</p>
+<p>For all times where <span class="math inline">\(n_t = 0\)</span>, we will get <span class="math inline">\(y_t = 0\)</span> as well. This corresponds for example to delays in the reporting of incidence, where there are periods of several days over which we do not have any new reports – typically not because there are no new cases but because they have not yet been reported.</p>
+<p>Consider a case where the frequency of reporting changes from <span class="math inline">\(n = 1\)</span> to <span class="math inline">\(n = 7\)</span> (daily to weekly) at a particular time, <span class="math inline">\(\tau\)</span>. The following example takes <span class="math inline">\(\tau = 101\)</span></p>
+<pre><code>##      t n   x   y
+## 1   98 1 295  NA
+## 2   99 1 300   5
+## 3  100 1 310  10
+## 4  101 0 320   0
+## 5  102 0 330   0
+## 6  103 0 340   0
+## 7  104 0 350   0
+## 8  105 0 360   0
+## 9  106 0 370   0
+## 10 107 7 400  90
+## 11 108 0 410   0
+## 12 109 0 420   0
+## 13 110 0 430   0
+## 14 111 0 440   0
+## 15 112 0 450   0
+## 16 113 0 460   0
+## 17 114 0 500 100</code></pre>
+</div>
+<div id="data-structure-0.2.1" class="section level3">
+<h3>Data Structure (0.2.1)</h3>
+<p><code>lag_diff_sri</code> remains unchanged from previous versions.</p>
+<p><code>lag_diff_delay_n</code> is changed from a vector to a matrix, with rows associated with the elements of <code>lag_diff_sri</code> one column for each iterations.</p>
+</div>
+</div>
+<div id="v0.2.0" class="section level2">
+<h2>v0.2.0</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTQ4IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogUmVjb21tZW5kZWQiPjx0aXRsZT5MaWZlY3ljbGU6IFJlY29tbWVuZGVkPC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSIxNDgiIGhlaWdodD0iMjAiIHJ4PSIzIiBmaWxsPSIjZmZmIi8+PC9jbGlwUGF0aD48ZyBjbGlwLXBhdGg9InVybCgjcikiPjxyZWN0IHdpZHRoPSI1NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzU1NSIvPjxyZWN0IHg9IjU3IiB3aWR0aD0iOTEiIGhlaWdodD0iMjAiIGZpbGw9IiM5N2NhMDAiLz48cmVjdCB3aWR0aD0iMTQ4IiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjI5NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iNDcwIj5MaWZlY3ljbGU8L3RleHQ+PHRleHQgeD0iMjk1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMTAxNSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iODEwIj5SZWNvbW1lbmRlZDwvdGV4dD48dGV4dCB4PSIxMDE1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSI4MTAiPlJlY29tbWVuZGVkPC90ZXh0PjwvZz48L3N2Zz4=" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.2.0" class="section level3">
+<h3>New Capabilities (0.2.0)</h3>
+<p>Condensation and calibration on the <code>C++</code> side.</p>
+</div>
+<div id="mathematical-description-0.2.0" class="section level3">
+<h3>Mathematical Description (0.2.0)</h3>
+<div id="condensation" class="section level4">
+<h4>Condensation</h4>
+<p>Condensation is the process of summarizing the <code>concatenated_state_vector</code> so that it can be compared with available data. This comparison is done quantitatively through a negative log-likelihood function that measures how different the condensed <code>concatenated_state_vector</code> is from the data. The user can add any of the following variables to the condensed dataset.</p>
+<ol style="list-style-type: decimal">
+<li>Any state variable – already computed in <code>state</code> and stored in <code>concatenated_state_vector</code></li>
+<li>Element-wise sum of any set of state variables – already computed in <code>sp</code> but not stored</li>
+<li>Any time-varying rate matrix element – already computed in <code>ratemat</code> and stored in <code>concatenated_ratemat_nonzeros</code></li>
+<li>Element-wise product of any two variables of type 1-3 – not computed</li>
+<li>Element-wise sum of any variable of type 4 – not computed</li>
+<li>Lag-n differences of any variables of type 1-5 – not computed</li>
+<li>Convolutions of any variables of type 1-5 with a gamma-density kernel (see section below on computing convolutions) – not computed</li>
+</ol>
+<p>The following are computed in classic MacPan.</p>
+<ol style="list-style-type: decimal">
+<li>All the S boxes</li>
+<li>The sum over all the S boxes</li>
+<li>The sum over all the E boxes</li>
+<li>The sum over all the I boxes</li>
+<li>The sum over all the H and H2 boxes</li>
+<li>The sum over all the ICUs and ICUd boxes</li>
+<li>The sum over all R boxes</li>
+<li>The lag-1 difference of the total of all X boxes (with NA at the beginning) – called <code>hosp</code></li>
+<li>The sum over all X boxes</li>
+<li>The lag-1 difference of the total of all D boxes (with NA at the beginning) – called <code>death</code></li>
+<li>The sum over all D boxes</li>
+<li>All the foi columns</li>
+<li>Incidence:
+<ul>
+<li>compute foi times S box for each epi category</li>
+<li>compute row sums over the resulting columns</li>
+<li>compute the convolution (see section below on computing convolutions) of all of these columns (including the row sums column) – called <code>report</code></li>
+</ul></li>
+</ol>
+</div>
+<div id="computing-convolutions" class="section level4">
+<h4>Computing Convolutions</h4>
+<p>The convolution is based on a gamma-density kernel.</p>
+<p>The shape parameter of this gamma density depends on <code>params[&#39;c_delay_cv&#39;]</code>. <span class="math display">\[
+\text{shape} = \frac{1}{\text{c_delay_cv}^2}
+\]</span> The scale parameter depends on <code>params[&#39;c_delay_mean&#39;]</code> and the shape <span class="math display">\[
+\text{scale} = \text{(c_delay_mean)} \text{(c_delay_cv)}^2
+\]</span> Compute the vector <span class="math inline">\(\gamma\)</span> using the <a href="https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga3bd06a324f89b21694aac26bfe1aef45">TMB <code>pgamma</code> function</a>, which takes a vector <code>q</code> and scalar <code>shape</code> and <code>scale</code> arguments. <span class="math display">\[
+\gamma = \text{pgamma}(q, \text{shape}, \text{scale})
+\]</span></p>
+<p>where <span class="math inline">\(q\)</span> is a constant integer vector that gets created in the following way in R.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>qmax =<span class="st"> </span><span class="kw">ceiling</span>(<span class="kw">qgamma</span>(<span class="fl">0.95</span>, shape, scale))</span>
+<span id="cb2-2"><a href="#cb2-2"></a>q =<span class="st"> </span><span class="dv">1</span><span class="op">:</span>qmax</span></code></pre></div>
+<p>We will avoid computing <code>qmax</code> in C++ because it could introduce a discontinuity that could cause automatic differentiation to fail. This difference between refactored and classic MacPan only has the potential to cause numerical differences whenever <code>params[&#39;c_delay_cv&#39;]</code> and <code>params[&#39;c_delay_mean&#39;]</code> are varying – typically because they are in <code>opt_pars</code> – but I have not yet seen any examples where this is the case. To guarantee matched results at least for the initial parameter vector we will set <code>qmax</code> as follows on the R-side and pass it through a <code>DATA_</code> macro.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>qmax =<span class="st"> </span><span class="kw">ceiling</span>(<span class="kw">qgamma</span>(<span class="fl">0.95</span>, <span class="dv">1</span><span class="op">/</span>params[[<span class="st">&quot;c_delay_cv&quot;</span>]]<span class="op">^</span><span class="dv">2</span>, params[[<span class="st">&quot;c_delay_mean&quot;</span>]] <span class="op">*</span><span class="st"> </span>params[[<span class="st">&quot;c_delay_cv&quot;</span>]]<span class="op">^</span><span class="dv">2</span>))<span class="st">`</span></span></code></pre></div>
+<p>The delay kernel for the convolution is a numeric vector given by the following expression. <span class="math display">\[
+\kappa_i = (\text{c_prop})\frac{\delta_i}{\sum_j\delta_j}
+\]</span> where <span class="math inline">\(\delta_j = \gamma_{j+1} - \gamma_j\)</span> and <span class="math inline">\(\text{c_prop}\)</span> is a scalar in the parameter vector.</p>
+<p>The convolution, <span class="math inline">\(z\)</span>, of the time series of any state variable, <span class="math inline">\(x\)</span>, is given by the following. <span class="math display">\[
+z_{i+m-1} = \sum_{j = 1}^m \kappa_{m-j+1} x_{i+j-1}
+\]</span> where <span class="math inline">\(i = 1,...,n-m\)</span>, <span class="math inline">\(m\)</span> is the length of <span class="math inline">\(\kappa\)</span>, and <span class="math inline">\(n\)</span> is the number of time steps (length of the input vector <span class="math inline">\(x\)</span>). Note that the first <span class="math inline">\(m-1\)</span> elements of <span class="math inline">\(z\)</span> remain undefined and so they do not need to be stored on the C++-side because these <span class="math inline">\(m-1\)</span> missing values can be added on the R-side.</p>
+</div>
+<div id="condensation-algorithm" class="section level4">
+<h4>Condensation Algorithm</h4>
+<p>In Progress: in collaboration with Weiguang</p>
+<p>Condensation is the process of summarizing the history of the simulations. Before solving the condensation problem we should refactor how this history is currently summarized. Currently the <code>concatenated_state_vector</code> and <code>concatenated_ratemat_nonzeros</code> contain some history information, but it will be awkward to continue with this strategy. Instead we will introduce a matrix called <code>simulation_history</code> with rows corresponding to simulation steps and columns corresponding to the following (in the following order).</p>
+<ol style="list-style-type: decimal">
+<li>State variables</li>
+<li>Changing rate matrix elements (there is one such element in this model)</li>
+<li>Sums</li>
+<li>Factrs</li>
+<li>Element-wise expressions involving the first four items</li>
+<li>Lag-n differences of the first five items</li>
+<li>Convolutions of the first five items</li>
+</ol>
+<p>Items 1-4 are computed at simulation time, and simply need to be added to the <code>simulation_history</code> matrix at each iteration.</p>
+<p>Items 5-7 should be computed at the end of the simulation. These columns should be computed in the same order as they will appear in the <code>simulation_history</code> matrix. The input for these computations (5-7) will be stored in the following new data structures.</p>
+<ul>
+<li>Item 5 – element-wise expressions:
+<ul>
+<li><code>sr_count</code> – vector the same length as the number of columns added in step 3a giving the number of <code>simulation_history</code> columns to use as input for each new column (note that input columns can be used more than once – see <code>count</code> vector for a similar structure)</li>
+<li><code>sri</code> – indices into the columns of <code>simulation_history</code> to use as input (see <code>spi</code> vector for a similar structure)</li>
+<li><code>sr_modifier</code> – bitwise integer encoding of the parse tree (see <code>modifier</code> for a similar data structure)</li>
+</ul></li>
+<li>Item 6 – lag-n differences:
+<ul>
+<li><code>lag_diff_sri</code> – indices into the columns of <code>simulation_history</code> to use as input to lag-n difference operations</li>
+<li><code>lag_diff_delay_n</code> – vector same length as <code>lag_diff_sri</code> containing the delay (i.e. the “n” in lag-n) of the lag for each lag-n difference operation</li>
+</ul></li>
+<li>Item 7 – convolutions:
+<ul>
+<li><code>conv_sri</code> – indices into the columns of <code>simulation_history</code> to use as input to convolution operations</li>
+<li><code>conv_c_prop_idx</code>, <code>conv_c_delay_cv_idx</code>, <code>conv_c_mean_cv_idx</code> – three vectors each the same length as <code>conv_sri</code> giving indices into <code>params</code> for extracting the parameters of the convolutions</li>
+<li><code>conv_qmax</code> – vector the same length as <code>conv_sri</code> giving the maximum integer in the <code>q</code> vector for each convolution</li>
+</ul></li>
+</ul>
+<p>Add <code>simulation_history</code> to the report. On the R-side we could start using <code>simulation_history</code> where we currently use <code>concatenated_*</code> vectors, and eventually we could drop them.</p>
+</div>
+<div id="negative-binomial-negative-log-likelihood" class="section level4">
+<h4>Negative Binomial Negative Log Likelihood</h4>
+<p>We compare the negative binomial negative log likelihood with <code>observed_vector</code> as data and <code>condensed_state_vector</code> as predictions. Apologies that the word ‘negative’ is being used in two different ways – the first refers to the negative binomial distribution, and the second to the fact that we are multiplying the log likelihood by negative one. In R we would write this as follows.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="dv">-1</span> <span class="op">*</span><span class="st"> </span><span class="kw">dnbinom</span>(observed_vector, <span class="dt">mu =</span> condensed_state_vector, <span class="dt">size =</span> nb_disp, <span class="dt">log =</span> <span class="ot">TRUE</span>)</span></code></pre></div>
+<p>In TMB, <a href="https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351">this negative binomial density function</a> should be used for this (I think … how does <code>size</code> on the R-side correspond to <code>var</code> in TMB?).</p>
+<p>The first three arguments to this function are vectors of the same size.</p>
+<ul>
+<li><code>observed_vector</code> is an observed data stream that is provided by the user</li>
+<li><code>condensed_state_vector</code> is described in detail above</li>
+<li><code>nb_disp</code> is a vector of dispersion parameters, which is composed of values passed in through <code>PARAMETER</code> macros (see below for a description of how <code>nb_disp</code> is constructed)</li>
+</ul>
+<p>The sum of these negative log likelihood values gives a loss function to be returned to the user.</p>
+<p>TODO: how to handle clamping when we leave the support of the density? concerned about discontinuities.</p>
+</div>
+<div id="dispersion-parameters" class="section level4">
+<h4>Dispersion Parameters</h4>
+<p>We require an additional set of parameters to model negative binomial dispersion, <code>nb_disp</code>. The user has two options.</p>
+<ol style="list-style-type: decimal">
+<li>one dispersion parameter to be used in every element of <code>nb_disp</code></li>
+<li>one dispersion parameter is passed in for every variable in <code>condensed_state_vector</code></li>
+</ol>
+</div>
+<div id="optional-prior-distribution-penalties" class="section level4">
+<h4>Optional Prior Distribution Penalties</h4>
+<p>The user is allowed to specify a prior distribution for any element of <code>params</code>, <code>tv_mult</code>, or <code>nb_disp</code>. Initially only univariate normal prior distributions will be allowed, but this should be built to be extensible allowing for other distributions to be added in the future.</p>
+<p>For each parameter with a prior, the user specifies the distribution (initially <code>normal</code> will be the only choice), and a parameter vector for the arguments of the corresponding density function. At each evaluation of the optimizer the log of the prior densities are subtracted from the negative log-likelihood function.</p>
+<p>The <a href="https://kaskr.github.io/adcomp/dnorm_8hpp_source.html">TMB normal density function</a> should be used. We should be extensible to allow future developers to add other distributions from <a href="https://kaskr.github.io/adcomp/group__R__style__distribution.html">here</a>.</p>
+</div>
+<div id="optional-inverse-parameter-transformations" class="section level4">
+<h4>Optional Inverse Parameter Transformations</h4>
+<p>The user is allowed to express any value of <code>params</code> or <code>tv_mult</code> on one of several transformed scales. The corresponding inverse transformation is applied immediately as the parameter is read through the appropriate macro on the TMB-side. The user should be allowed to specify one of the following transformations.</p>
+<ul>
+<li><code>log10</code></li>
+<li><code>log</code></li>
+<li><code>logit</code></li>
+</ul>
+<p>The corresponding inverse transformations that would be applied after the macros are the following.</p>
+<ul>
+<li><code>10^x</code></li>
+<li><code>exp(x)</code></li>
+<li><code>1/(1+exp(-x))</code></li>
+</ul>
+</div>
+<div id="general-objective-function" class="section level4">
+<h4>General Objective Function</h4>
+<p>Let <span class="math inline">\(l_{\psi_i}\left(x_i(\theta); y_i\right)\)</span> be a loss function where <span class="math inline">\(x_i(\theta)\)</span> is a simulated element of the history matrix, <span class="math inline">\(y_i\)</span> is an associated observed data point, and <span class="math inline">\(\psi_i\)</span> is a vector of loss function parameters. Note that we write the simulation values as functions of <span class="math inline">\(\theta\)</span> to indicate their dependence on parameters. Every element <span class="math inline">\(i\)</span> that belongs to the same column of the history matrix has the same value for <span class="math inline">\(\psi_i\)</span>, but to simplify notation <span class="math inline">\(\psi\)</span> is sub-scripted by <span class="math inline">\(i\)</span>. Let <span class="math inline">\(r_{\phi_j}(\theta_j)\)</span> be an optional regularization function for each parameter <span class="math inline">\(\theta_j\)</span> being optimized, where <span class="math inline">\(\phi_j\)</span> is a vector of regularization function parameters associated with parameter <span class="math inline">\(j\)</span>. The objective function is then given by the following.</p>
+<p><span class="math display">\[
+L_{\psi, \phi}(\theta; y) = \sum_i l_{\psi_i}\left(x_i(\theta); y_i\right) + \sum_j r_{\phi_j}(\theta_j)
+\]</span> Currently the only objective function that is offered is the negative log negative binomial density, but the infrastructure we build assumes that other loss functions will be allowed in the future. Similarly the only regularizing function that is available is the negative log normal density.</p>
+<p>Each parameter, <span class="math inline">\(\theta_j\)</span>, can be optionally passed into the objective function on a <a href="https://canmod.net/misc/flex_specs#available-parameter-transformations">transformed scale</a>. These transformations allow users to enforce limits on the domain of the parameter space (e.g. a logit transformation will keep parameter values between 0 and 1). The regularization functions are applied on the transformed scale, but the elements of the rate matrix (and therefore the simulations, <span class="math inline">\(x\)</span>) are computed using the parameters on their original scale. Therefore, we have the following ordering of operations.</p>
+<ol style="list-style-type: decimal">
+<li>Parameter, <span class="math inline">\(\theta_j\)</span>, is passed in to the objective function on the transformed scale, <span class="math inline">\(f(\theta_j)\)</span></li>
+<li>The regularization function, <span class="math inline">\(r_{\phi_j}(\theta_j)\)</span>, is computed and saved</li>
+<li>The inverse transformation is applied to the parameter, <span class="math inline">\(\theta_j\)</span>, and the result is used to overwrite the previous value in the <code>c++</code> <code>params</code> vector</li>
+<li>The simulations are made</li>
+<li>The objective function, <span class="math inline">\(L\)</span>, is computed, and this computation includes adding the saved values of the regularization functions</li>
+<li>The objective function, <span class="math inline">\(L\)</span>, is returned by the <code>c++</code> function <code>objective_function</code></li>
+</ol>
+</div>
+<div id="available-loss-functions" class="section level4">
+<h4>Available Loss Functions</h4>
+<ul>
+<li>Negative log negative binomial density
+<ul>
+<li>Loss function parameters: dispersion</li>
+<li>In TMB use <a href="https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga76266c19046e04b651fce93aa0810351"><code>dnbinom2</code></a> to compute the log negative binomial density</li>
+<li>The arguments for <code>dnbinom2</code> can be computed as follows:
+<ul>
+<li><code>x</code> – observed data</li>
+<li><code>mu</code> – simulated data</li>
+<li><code>var</code> – <code>mu + mu^2 / disp</code>, where <code>disp</code> is the dispersion parameter</li>
+<li><code>give_log</code> – <code>1</code></li>
+</ul></li>
+<li>Lower bound on the simulated values
+<ul>
+<li>Before passing the simulated data to the <code>mu</code> argument, the user may optionally choose to smoothly constrain the simulated data to be greater than a lower bound, <code>eps</code>, by applying the function <code>mu_constrained = mu + eps*exp(-mu/eps)</code></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="available-regularization-functions" class="section level4">
+<h4>Available Regularization Functions</h4>
+<ul>
+<li>No regularization
+<ul>
+<li>Name to use in <code>C++</code>: <code>flat</code></li>
+<li>Regularization function parameters: initial value (<span class="math inline">\(\theta_\text{init}\)</span>)</li>
+<li><span class="math inline">\(r_{\theta_\text{init}}(\theta) = 0\)</span></li>
+<li>The fact that the regularization parameter, <span class="math inline">\(\theta_\text{init}\)</span>, has no effect on the regularization function is an unusual special case. When regularization is applied, the ‘location’ of the regularization function is used as the initial value for the optimization. In the case of no regularization, we are using the regularization parameters to contain the initial value. One interpretation of this regularization parameter is as the ‘peak’ of a flat prior.</li>
+</ul></li>
+<li>Negative log of the normal density
+<ul>
+<li>Name to use in <code>C++</code>: <code>normal</code></li>
+<li>Regularization function parameters: mean (<span class="math inline">\(\bar{\theta}\)</span>), standard deviation (<span class="math inline">\(\sigma_\theta\)</span>)</li>
+<li><span class="math inline">\(r_{\mu_f, \sigma_f}(\theta) = -\log\left[\mathcal{N}(f(\theta), \mu_f, \sigma_f)\right]\)</span>, where <span class="math inline">\(\mathcal{N}\)</span> is the normal density</li>
+<li>In TMB the <a href="https://kaskr.github.io/adcomp/group__R__style__distribution.html#ga5eb914782c488bd3ec4a50d4e4a73394">dnorm</a> function should be used with the following arguments
+<ul>
+<li><code>x</code> – <span class="math inline">\(f(\theta)\)</span> – value of the parameter on the transformed scale</li>
+<li><code>mean</code> – <span class="math inline">\(\mu_{f(\theta)}\)</span> – first regularization parameter</li>
+<li><code>sd</code> – <span class="math inline">\(\sigma_{f(\theta)}\)</span> – second regularization parameter</li>
+<li><code>give_log</code> ` – 1</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>The first regularization parameter for every regularization function is used as the starting value for the optimizer on the scale of the transformed parameter.</p>
+</div>
+<div id="available-parameter-transformations" class="section level4">
+<h4>Available Parameter Transformations</h4>
+<ul>
+<li><code>identity</code>
+<ul>
+<li>index = 1</li>
+<li>trans = <span class="math inline">\(f(x) = x\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = x\)</span></li>
+</ul></li>
+<li><code>log</code>
+<ul>
+<li>index = 2</li>
+<li>trans = <span class="math inline">\(f(x) = \log(x)\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = e^x\)</span></li>
+</ul></li>
+<li><code>log10</code>
+<ul>
+<li>index = 3</li>
+<li>trans = <span class="math inline">\(f(x) = log_{10}(x)\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = 10^x\)</span></li>
+</ul></li>
+<li><code>logit</code>
+<ul>
+<li>index = 4</li>
+<li>trans = <span class="math inline">\(f(x) = \log\left[\frac{x}{1-x}\right]\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = \frac{1}{1 + e^{-x}}\)</span></li>
+</ul></li>
+<li><code>cloglog</code>
+<ul>
+<li>index = 5</li>
+<li>trans = <span class="math inline">\(f(x) = \log\left[-\log(1-x)\right]\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = 1 - \exp\left[-\exp(x)\right]\)</span></li>
+</ul></li>
+<li><code>inverse</code>
+<ul>
+<li>index = 6</li>
+<li>trans = <span class="math inline">\(f(x) = \frac{1}{x}\)</span></li>
+<li>inverse = <span class="math inline">\(f^{-1}(x) = \frac{1}{x}\)</span></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="data-structure-0.2.0" class="section level3">
+<h3>Data Structure (0.2.0)</h3>
+<div id="general-objective-function-1" class="section level4">
+<h4>General Objective Function</h4>
+<p>We will pass the following additional data through to TMB to specify the objective function.</p>
+<ul>
+<li><strong>Variables</strong>: the following three integer vectors have one element per variable in the objective function and identify what loss function is used for each variable, as well as how many parameters those loss functions require
+<ul>
+<li><code>obs_var_id</code> – id giving the column in the history matrix associated with each variable in the objective function</li>
+<li><code>obs_loss_id</code> – identifier of the loss function being used for each variable (currently only one – negative log negative binomial density)</li>
+<li><code>obs_loss_param_count</code> – number of loss function parameters associated with each variable</li>
+</ul></li>
+<li><strong>Loss Function Parameters</strong>: the following vector has one element per loss function parameter (these are the <span class="math inline">\(\psi_i\)</span> parameters described above in the general objective function section)
+<ul>
+<li><code>obs_spi_loss_param</code> – index into sp containing the loss function parameters. the number of such parameters is sum(obs_loss_param_count)</li>
+</ul></li>
+<li><strong>Observed Data</strong> the following three vectors have one element for each observed data point, and identify what elements in the history matrix should be compared with each observed value (each element of these vectors corresponds to each <span class="math inline">\(i\)</span> in the description of the general objective function above)
+<ul>
+<li><code>obs_time_step</code> – row in the history matrix</li>
+<li><code>obs_history_col_id</code> – column in the history matrix (match with <code>obs_var_id</code> above to determine the <code>obs_loss_id</code> and <code>obs_loss_param_count</code>)</li>
+<li><code>obs_value</code> – value observed in data to compare with the associated element in the history matrix</li>
+<li><code>obs_do_sim_constraint</code> – Boolean determining if the lower bound in <code>obs_sim_lower_bound</code> should be applied to the simulated data with smooth constraint function <code>mu_constrained = mu + eps*exp(-mu/eps)</code></li>
+<li><code>obs_sim_lower_bound</code> – lower bound applied if <code>obs_do_sim_constraint</code> is true</li>
+</ul></li>
+<li><strong>Optimized Parameters</strong>: the following vectors have one element per parameter that is being optimized
+<ul>
+<li><code>opt_param_id</code> – indices into the <code>params</code> vector giving the parameters to be optimized</li>
+<li><code>opt_trans_id</code> – index identifying a transformation – see above for correspondence between indices and transformations</li>
+<li><code>opt_count_reg_params</code> – number of regularization parameters associated with each parameter to be optimized</li>
+<li><code>opt_reg_family_id</code> – index identifying a family of regularization functions – currently only two are available (<code>flat</code>, <code>normal</code>)</li>
+</ul></li>
+<li><strong>Optimized Time-Varying Parameters (not yet in scope)</strong>: similar to optimized parameters but for <code>tv_mult</code>
+<ul>
+<li><code>opt_tv_param_id</code> – indices into the <code>tv_mult</code> vector giving the time varying multipliers to be optimized</li>
+<li><code>opt_tv_trans_id</code> – index identifying a transformation – see above for correspondence between indices and transformations</li>
+<li><code>opt_tv_count_reg_params</code> – number of regularization parameters associated with each parameter to be optimized</li>
+<li><code>opt_tv_reg_family_id</code> – index identifying a family of regularization functions – currently only two are available (<code>flat</code>, <code>normal</code>)</li>
+</ul></li>
+<li><strong>Regularization Parameters</strong>:
+<ul>
+<li><code>opt_reg_params</code> – regularization parameters – the size of this vector is <code>opt_count_reg_params.sum()</code></li>
+<li><code>opt_tv_reg_params</code> – regularization parameters for <code>tv_mult</code> – the size of this vector is <code>opt_tv_count_reg_params.sum()</code></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="interface-0.2.0" class="section level3">
+<h3>Interface (0.2.0)</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>{opt<span class="op">-</span>trans}_{parameter} <span class="op">~</span><span class="st"> </span>{reg<span class="op">-</span>trans}_{baseline<span class="op">-</span>prior<span class="op">-</span>family}({hyperparameter1}, ...)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>{opt<span class="op">-</span>trans}_{parameter} <span class="op">~</span><span class="st"> </span>{reg<span class="op">-</span>trans}_{time<span class="op">-</span>varying<span class="op">-</span>prior<span class="op">-</span>family}({hyperparameter<span class="op">-</span>vector1}, ...)</span></code></pre></div>
+</div>
+</div>
+<div id="v0.1.2" class="section level2">
+<h2>v0.1.2</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.1.2" class="section level3">
+<h3>New Capabilities (0.1.2)</h3>
+<p>Save common factors when building rate expressions</p>
+</div>
+<div id="mathematical-description-0.1.2" class="section level3">
+<h3>Mathematical Description (0.1.2)</h3>
+<p>Expressions involving sums and products of state variables and parameters, as well as their complements and inverses, can be saved in a vector, <span class="math inline">\(\phi\)</span>. The elements of <span class="math inline">\(\phi\)</span> can then be used in expressions that define elements of the rate matrix.</p>
+</div>
+<div id="data-structure-0.1.2" class="section level3">
+<h3>Data Structure (0.1.2)</h3>
+<p>Four new integer vectors:</p>
+<ul>
+<li><code>factr_spi</code> – 1-based index into the elements of the <code>sp</code> vector that will contain the common factor</li>
+<li><code>factr_count</code> – vector the same length as <code>factr_spi</code> containing the number of elements in <code>sp</code> used to compute the common factor</li>
+<li><code>factr_spi_compute</code> – vector with <code>sum(factr_count)</code> elements giving the indices into the elements of the <code>sp</code> vector for extracting the elements used to compute the new factor</li>
+<li><code>factr_modifier</code> – vector with <code>sum(factr_count)</code> elements describing the operations to be performed for generating the common factor (see v0.0.1 for details on modifier vectors)</li>
+</ul>
+</div>
+</div>
+<div id="v0.1.1" class="section level2">
+<h2>v0.1.1</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.1.1" class="section level3">
+<h3>New Capabilities (0.1.1)</h3>
+<p>This is a very big ‘patch’. The motivation for it is to get a first release that is potentially useful to PHAC. This requires three enhancements.</p>
+<ul>
+<li>Generalization of the definition of the outflow vector</li>
+<li>Construct the state vector from the parameter vector at the beginning of each simulation run</li>
+<li>Move <code>tv_mult</code> to the parameters so that we can calibrate them if we need to do so</li>
+</ul>
+</div>
+<div id="mathematical-description-0.1.1" class="section level3">
+<h3>Mathematical Description (0.1.1)</h3>
+<div id="generalization-of-outflow-vector" class="section level4">
+<h4>Generalization of Outflow Vector</h4>
+<p>Let <span class="math inline">\(f_i^{(out)}\)</span> be the <span class="math inline">\(i\)</span>th element of the outflow vector, which is computed as follows. <span class="math display">\[
+f_i^{(out)} = \sum_{j \in \Omega_i}F_{ij}
+\]</span></p>
+<p>Where <span class="math inline">\(\Omega_i\)</span> is a subset of the indices into the state vector. Typically there are only a small number of unique index sets, with one <span class="math inline">\(\Omega_i\)</span> for many values of <span class="math inline">\(i\)</span> – for this reason the data structure for these indices only need to track each unique index set.</p>
+<p>We can express the previous definition of the outflow vector (TODO: link to previous definition) in the terms of this generalization as a constant <span class="math inline">\(\Omega = \Omega_i, \forall i\)</span>.</p>
+</div>
+<div id="make-state-vector" class="section level4">
+<h4>Make State Vector</h4>
+<p>In previous spec versions, the <code>C++</code> side needs to get the initial state vector directly from R. The difficulty with this strategy is that the initial state vector depends on the parameter vector, so when a new parameter vector gets updated in an optimization or ensemble run it becomes necessary to drop back to R causing a substantial performance bottleneck. So here we add the ability to create the initial state vector from the parameter vector in <code>C++</code>.</p>
+<p>What follows is a detailed description of the procedure, which makes reference to new items in the data structure (see Data Structure below).</p>
+<ol start="0" style="list-style-type: decimal">
+<li>We first check to see if a state vector has been passed – if not, do the following steps to create a new state vector</li>
+<li>Initialize two state vectors with all zeros
+<ul>
+<li><code>state</code> – initializing state vector for the full non-linearized model</li>
+<li><code>lin_state</code> – initializing state vector for the linearized model</li>
+</ul></li>
+<li>Make a copy (<code>lin_params</code>) of the parameter vector (<code>params</code>)</li>
+<li>Replace some user-specified elements of <code>lin_params</code> with user supplied constant values (<code>lin_param_vals</code>, <code>lin_param_count</code>, <code>lin_param_idx</code> – these can be found in <code>model$tmb_indices$linearized_params</code>)</li>
+<li>Replace some user-specified elements of <code>lin_state</code> with elements of <code>lin_params</code> (<code>df_state_par_idx</code>, <code>df_state_count</code>, <code>df_state_idx</code> – these can be found in <code>model$tmb_indices$disease_free</code>)</li>
+<li>Compute the Jacobian matrix (<code>jac</code>), which requires the following steps in a function that takes <code>lin_state</code> and returns an updated <code>lin_state</code>
+<ul>
+<li>Create a rate matrix (<code>lin_ratemat</code>) from <code>lin_state</code> and <code>lin_params</code> using the existing <code>make_ratemat_indices</code></li>
+<li>Create a flow matrix (<code>lin_flow</code>) from <code>lin_state</code> and <code>lin_ratemat</code></li>
+<li>Create inflow vector (<code>lin_inflow</code>) from <code>lin_flow</code> by taking column sums</li>
+<li>Create outflow vector (<code>lin_outflow</code>) from <code>lin_flow</code> by the method above – Generalization of Outflow Vector (<code>linearized_outflow_row_count</code>, <code>linearized_outflow_col_count</code>, <code>linearized_outflow_rows</code>, <code>linearized_outflow_cols</code>)</li>
+<li>Update <code>lin_state</code> using <code>lin_inflow</code> and <code>lin_outflow</code></li>
+</ul></li>
+<li>Remove certain user-defined rows, columns, and elements from <code>jac</code> and <code>lin_state</code> to create a new vector <code>eigvec</code> (<code>all_drop_eigen_idx</code> – can be found in <code>model$tmb_indices$initialization_mapping</code>)</li>
+<li>Compute the dominant eigenvector, <code>eigvec</code> of <code>jac</code></li>
+<li>Remove elements of <code>eigvec</code> to create <code>eig_infected</code> (<code>eigen_drop_infected_idx</code> – can be found in <code>model$tmb_indices$initialization_mapping</code>)</li>
+<li>Normalize <code>eig_infected</code> to have elements that sum to one</li>
+<li>Update <code>state[all_to_infected_idx] = eig_infected * param[infected_idx]</code> (<code>infected_idx</code> can be found in <code>model$tmb_indices$initial_population</code>)</li>
+<li>Update <code>state[susceptible_idx] = (1/susceptible_idx.size()) * (param[total_idx] - param[infected_idx])</code> (<code>infected_idx</code> and <code>total_idx</code> can be found in <code>model$tmb_indices$initial_population</code>)</li>
+</ol>
+</div>
+</div>
+<div id="data-structure-0.1.1" class="section level3">
+<h3>Data Structure (0.1.1)</h3>
+<div id="generalization-of-outflow-vector-1" class="section level4">
+<h4>Generalization of Outflow Vector</h4>
+<p>Objects of class <code>flexmodel</code> contains a new element called <code>tmb_indices$outflow</code>, with the following elements</p>
+<ul>
+<li><code>row_count</code> –</li>
+<li><code>col_count</code> –</li>
+<li><code>rows</code> –</li>
+<li><code>cols</code> –</li>
+</ul>
+<p>These indices encode information in the <span class="math inline">\(\omega_i\)</span> index sets (see Mathematical Description above).</p>
+<p>This <code>outflow</code> item means that <code>par_accum_indices</code> is no longer required. Given that we do not need to worry about back compatibility yet, it will be dropped from this and all future spec versions.</p>
+</div>
+<div id="make-state-vector-1" class="section level4">
+<h4>Make State Vector</h4>
+<p>Objects of class <code>flexmodel</code> contains the following new elements.</p>
+<ul>
+<li><code>linearized_params</code> – indices to update some elements of <code>lin_param</code> before computing the Jacobian of the linearized model
+<ul>
+<li><code>lin_param_vals</code> – values used to fill the elements of <code>lin_param</code></li>
+<li><code>lin_param_count</code> – the number of elements of <code>lin_param</code> that will be updated with each value in <code>lin_param_vals</code></li>
+<li><code>lin_param_idx</code> – indices of <code>lin_param</code> to update</li>
+</ul></li>
+<li><code>disease_free</code> – indices to initialize <code>lin_state</code> to be nearly disease-free, by setting some of its elements equal to some elements of <code>lin_param</code>
+<ul>
+<li><code>df_state_par_idx</code> – indices of <code>lin_param</code> used to fill the elements of <code>lin_state</code></li>
+<li><code>df_state_count</code> – the number of elements of <code>lin_state</code> that will be updated with each parameter identified by <code>df_state_par_ix</code></li>
+<li><code>df_state_idx</code> – indices of <code>lin_state</code> to update</li>
+</ul></li>
+<li><code>linearized_outflow</code> – same as <code>outflow</code> but for the linearized model</li>
+<li><code>initialization_mapping</code> – indices into various subsets of the state vector and eigenvector that could be useful for initializing the state – see justification below this list
+<ul>
+<li><code>all_to_eigen_idx</code> – indices into <code>state</code> and <code>lin_state</code> for identifying states in <code>eigvec</code></li>
+<li><code>all_to_infected_idx</code> – indices into <code>state</code> and <code>lin_state</code> for identifying states in <code>eig_infected</code></li>
+<li><code>eigen_to_infected_idx</code> – indices into <code>eigvec</code> for identifying states in <code>eig_infected</code></li>
+<li><code>all_drop_eigen_idx</code> – indices into <code>state</code> and <code>lin_state</code> for identifying states not in <code>eigvec</code></li>
+<li><code>all_drop_infected_idx</code> – indices into <code>state</code> and <code>lin_state</code> for identifying states not in <code>eig_infected</code></li>
+<li><code>eigen_drop_infected_idx</code> – indices into <code>eigvec</code> for identifying states not in <code>eig_infected</code></li>
+<li><code>susceptible_idx</code> – indices into <code>state</code> and <code>lin_state</code> for identifying states associated with the initial susceptible population</li>
+</ul></li>
+<li><code>initial_population</code> – indices into the parameter vector for identifying the total number of individuals in the population and the initial total number of infected individuals in the population
+<ul>
+<li><code>total_idx</code></li>
+<li><code>infected_idx</code></li>
+</ul></li>
+</ul>
+<p>The justification for the <code>initialization_mapping</code> is given here. One potential source of confusion in the above process is the need to keep track of the different subsets of states. To help clarify this point, there are conceptually three types of state vectors containing nested subsets of states. 1. <code>all_states</code> – vectors containing all states 2. <code>eigen_states</code> – vectors containing all states of the linearized system that are included in the dominant eigenvector 3. <code>infected_states</code> – vectors containing all infected states, which are <code>eigen_states</code> that will be initialized using corresponding elements in the eigenvector</p>
+<p>To make life a little easier for development on the <code>C++</code> side we provide index vectors for converting between the three nested sets of states. 1. <code>all_to_eigen_idx</code> 2. <code>all_to_infected_idx</code> 3. <code>eigen_to_infected_idx</code></p>
+<p>And for completeness, in case it is useful, we also provide index vectors for dropping states from each kind of state vector. 1. <code>all_drop_eigen_idx</code> 2. <code>all_drop_infected_idx</code> 3. <code>eigen_drop_infected_idx</code></p>
+</div>
+</div>
+</div>
+<div id="v0.1.0" class="section level2">
+<h2>v0.1.0</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.1.0" class="section level3">
+<h3>New Capabilities (0.1.0)</h3>
+<p>We bump major versions here to start working on model structure (e.g. vaccination, age, testing). We make two enhancements:</p>
+<ol style="list-style-type: decimal">
+<li>Introduce a new <code>struc</code> object class that allows for symbolic manipulation of matrices and vectors of parameters and state variables when defining rate matrix elements</li>
+<li>The ability to refer to sums of state variables and parameters when defining expressions for rate matrix elements.</li>
+</ol>
+</div>
+<div id="mathematical-description-0.1.0" class="section level3">
+<h3>Mathematical Description (0.1.0)</h3>
+<div id="struc-objects" class="section level4">
+<h4>struc objects</h4>
+</div>
+<div id="sums-of-state-variables-and-parameters" class="section level4">
+<h4>Sums of state variables and parameters</h4>
+<p>Within each simulation iteration, a user-defined number of sums of state variables and parameters are computed and stored immediately before the rate matrix is updated.</p>
+</div>
+</div>
+<div id="user-interface-0.1.0" class="section level3">
+<h3>User Interface (0.1.0)</h3>
+<div id="struc-objects-1" class="section level4">
+<h4>struc objects</h4>
+<p>As an example, the force of infection under the two-dose vaccination model can be given by the following <code>struc</code> objects.</p>
+<p>Start by getting a set of vaccination parameters and state variables.</p>
+<p>Create a symbolic vector of I-state variables, with 4 base states by 5 vaccination categories = 20 variables.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>base_params &lt;-<span class="st"> </span><span class="kw">read_params</span>(<span class="st">&quot;PHAC.csv&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>vax_params &lt;-<span class="st"> </span><span class="kw">expand_params_vax</span>(</span>
+<span id="cb7-3"><a href="#cb7-3"></a>  <span class="dt">params =</span> base_params,</span>
+<span id="cb7-4"><a href="#cb7-4"></a>  <span class="dt">model_type =</span> <span class="st">&quot;twodose&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6"></a>Istate =<span class="st"> </span>(McMasterPandemic<span class="op">:::</span><span class="kw">expand_names</span>(</span>
+<span id="cb7-7"><a href="#cb7-7"></a>  <span class="kw">c</span>(<span class="st">&#39;Ia&#39;</span>, <span class="st">&#39;Ip&#39;</span>, <span class="st">&#39;Im&#39;</span>, <span class="st">&#39;Is&#39;</span>),   <span class="co"># = Icats</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a>  <span class="kw">attr</span>(vax_params, <span class="st">&#39;vax_cat&#39;</span>)) <span class="co"># = vax_cats</span></span>
+<span id="cb7-9"><a href="#cb7-9"></a>  <span class="op">%&gt;%</span><span class="st"> </span>struc</span>
+<span id="cb7-10"><a href="#cb7-10"></a>)</span>
+<span id="cb7-11"><a href="#cb7-11"></a><span class="kw">as.matrix</span>(Istate)</span></code></pre></div>
+<pre><code>##       [,1]              
+##  [1,] &quot;(Ia_unvax)&quot;      
+##  [2,] &quot;(Ip_unvax)&quot;      
+##  [3,] &quot;(Im_unvax)&quot;      
+##  [4,] &quot;(Is_unvax)&quot;      
+##  [5,] &quot;(Ia_vaxdose1)&quot;   
+##  [6,] &quot;(Ip_vaxdose1)&quot;   
+##  [7,] &quot;(Im_vaxdose1)&quot;   
+##  [8,] &quot;(Is_vaxdose1)&quot;   
+##  [9,] &quot;(Ia_vaxprotect1)&quot;
+## [10,] &quot;(Ip_vaxprotect1)&quot;
+## [11,] &quot;(Im_vaxprotect1)&quot;
+## [12,] &quot;(Is_vaxprotect1)&quot;
+## [13,] &quot;(Ia_vaxdose2)&quot;   
+## [14,] &quot;(Ip_vaxdose2)&quot;   
+## [15,] &quot;(Im_vaxdose2)&quot;   
+## [16,] &quot;(Is_vaxdose2)&quot;   
+## [17,] &quot;(Ia_vaxprotect2)&quot;
+## [18,] &quot;(Ip_vaxprotect2)&quot;
+## [19,] &quot;(Im_vaxprotect2)&quot;
+## [20,] &quot;(Is_vaxprotect2)&quot;</code></pre>
+<p>Create a vector of base transmission rates associated with each of the 4 base I-states.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>baseline_trans_rates =</span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="st">  </span><span class="kw">struc</span>(</span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="st">&#39;Ca&#39;</span>,</span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="st">&#39;Cp&#39;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5"></a>  <span class="st">&#39;(1 - iso_m) * (Cm)&#39;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6"></a>  <span class="st">&#39;(1 - iso_s) * (Cs)&#39;</span>) <span class="op">*</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="st">  </span><span class="kw">struc</span>(<span class="st">&#39;(beta0) * (1/N)&#39;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="kw">as.matrix</span>(baseline_trans_rates)</span></code></pre></div>
+<pre><code>##      [,1]                                  
+## [1,] &quot;(Ca) * (beta0) * (1/N)&quot;              
+## [2,] &quot;(Cp) * (beta0) * (1/N)&quot;              
+## [3,] &quot;(1 - iso_m) * (Cm) * (beta0) * (1/N)&quot;
+## [4,] &quot;(1 - iso_s) * (Cs) * (beta0) * (1/N)&quot;</code></pre>
+<p>Create a 5-by-5 block matrix of vaccine efficacies</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>vax_trans_red =<span class="st"> </span><span class="kw">struc_block</span>(<span class="kw">struc</span>(</span>
+<span id="cb11-2"><a href="#cb11-2"></a>  <span class="st">&#39;1&#39;</span>,</span>
+<span id="cb11-3"><a href="#cb11-3"></a>  <span class="st">&#39;1&#39;</span>,</span>
+<span id="cb11-4"><a href="#cb11-4"></a>  <span class="st">&#39;(1 - vax_efficacy_dose1)&#39;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5"></a>  <span class="st">&#39;(1 - vax_efficacy_dose1)&#39;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6"></a>  <span class="st">&#39;(1 - vax_efficacy_dose2)&#39;</span>),</span>
+<span id="cb11-7"><a href="#cb11-7"></a>  <span class="dt">row_times =</span> <span class="dv">1</span>, <span class="dt">col_times =</span> <span class="dv">5</span>)</span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="kw">as.matrix</span>(vax_trans_red)</span></code></pre></div>
+<pre><code>##      [,1]                       [,2]                      
+## [1,] &quot;(1)&quot;                      &quot;(1)&quot;                     
+## [2,] &quot;(1)&quot;                      &quot;(1)&quot;                     
+## [3,] &quot;(1 - vax_efficacy_dose1)&quot; &quot;(1 - vax_efficacy_dose1)&quot;
+## [4,] &quot;(1 - vax_efficacy_dose1)&quot; &quot;(1 - vax_efficacy_dose1)&quot;
+## [5,] &quot;(1 - vax_efficacy_dose2)&quot; &quot;(1 - vax_efficacy_dose2)&quot;
+##      [,3]                       [,4]                      
+## [1,] &quot;(1)&quot;                      &quot;(1)&quot;                     
+## [2,] &quot;(1)&quot;                      &quot;(1)&quot;                     
+## [3,] &quot;(1 - vax_efficacy_dose1)&quot; &quot;(1 - vax_efficacy_dose1)&quot;
+## [4,] &quot;(1 - vax_efficacy_dose1)&quot; &quot;(1 - vax_efficacy_dose1)&quot;
+## [5,] &quot;(1 - vax_efficacy_dose2)&quot; &quot;(1 - vax_efficacy_dose2)&quot;
+##      [,5]                      
+## [1,] &quot;(1)&quot;                     
+## [2,] &quot;(1)&quot;                     
+## [3,] &quot;(1 - vax_efficacy_dose1)&quot;
+## [4,] &quot;(1 - vax_efficacy_dose1)&quot;
+## [5,] &quot;(1 - vax_efficacy_dose2)&quot;</code></pre>
+<!-- FIXME/wishlist: nice if we could do this as a more compact/abstract vector operation? -->
+<p>And finally the force of infection vector, which looks like we really need to introduce the capability for common factors.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>foi =<span class="st"> </span><span class="kw">kronecker</span>(vax_trans_red, <span class="kw">t</span>(baseline_trans_rates)) <span class="op">%*%</span><span class="st"> </span>Istate</span>
+<span id="cb13-2"><a href="#cb13-2"></a>foi</span></code></pre></div>
+<pre><code>## struc object with 5 rows and 1 column:
+## 
+## Row 1 
+## (Ca) * (beta0) * (1/N) * (Ia_unvax) +
+##  (Cp) * (beta0) * (1/N) * (Ip_unvax) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_unvax) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_unvax) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxdose1) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxdose1) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose1) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose1) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxprotect1) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxprotect1) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect1) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect1) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxdose2) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxdose2) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose2) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose2) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxprotect2) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxprotect2) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect2) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect2)
+## Row 2 
+## (Ca) * (beta0) * (1/N) * (Ia_unvax) +
+##  (Cp) * (beta0) * (1/N) * (Ip_unvax) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_unvax) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_unvax) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxdose1) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxdose1) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose1) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose1) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxprotect1) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxprotect1) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect1) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect1) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxdose2) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxdose2) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose2) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose2) +
+##  (Ca) * (beta0) * (1/N) * (Ia_vaxprotect2) +
+##  (Cp) * (beta0) * (1/N) * (Ip_vaxprotect2) +
+##  (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect2) +
+##  (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect2)
+## Row 3 
+## (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_unvax) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_unvax) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_unvax) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_unvax) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect2)
+## Row 4 
+## (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_unvax) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_unvax) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_unvax) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_unvax) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose1) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect1) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose2) +
+##  (1 - vax_efficacy_dose1) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect2) +
+##  (1 - vax_efficacy_dose1) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect2)
+## Row 5 
+## (1 - vax_efficacy_dose2) * (Ca) * (beta0) * (1/N) * (Ia_unvax) +
+##  (1 - vax_efficacy_dose2) * (Cp) * (beta0) * (1/N) * (Ip_unvax) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_unvax) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_unvax) +
+##  (1 - vax_efficacy_dose2) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose1) +
+##  (1 - vax_efficacy_dose2) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose1) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose1) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose1) +
+##  (1 - vax_efficacy_dose2) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect1) +
+##  (1 - vax_efficacy_dose2) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect1) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect1) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect1) +
+##  (1 - vax_efficacy_dose2) * (Ca) * (beta0) * (1/N) * (Ia_vaxdose2) +
+##  (1 - vax_efficacy_dose2) * (Cp) * (beta0) * (1/N) * (Ip_vaxdose2) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxdose2) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxdose2) +
+##  (1 - vax_efficacy_dose2) * (Ca) * (beta0) * (1/N) * (Ia_vaxprotect2) +
+##  (1 - vax_efficacy_dose2) * (Cp) * (beta0) * (1/N) * (Ip_vaxprotect2) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_m) * (Cm) * (beta0) * (1/N) * (Im_vaxprotect2) +
+##  (1 - vax_efficacy_dose2) * (1 - iso_s) * (Cs) * (beta0) * (1/N) * (Is_vaxprotect2)</code></pre>
+</div>
+<div id="sums-of-state-variables-and-parameters-1" class="section level4">
+<h4>Sums of state variables and parameters</h4>
+<p>Start with a basic example model.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>params &lt;-<span class="st"> </span><span class="kw">read_params</span>(<span class="st">&quot;ICU1.csv&quot;</span>)</span>
+<span id="cb15-2"><a href="#cb15-2"></a>state &lt;-<span class="st"> </span><span class="kw">make_state</span>(<span class="dt">params =</span> params)</span>
+<span id="cb15-3"><a href="#cb15-3"></a>M &lt;-<span class="st"> </span>McMasterPandemic<span class="op">::</span><span class="kw">make_ratemat</span>(state, params, <span class="dt">sparse =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb15-4"><a href="#cb15-4"></a>test_model &lt;-<span class="st"> </span><span class="kw">flexmodel</span>(</span>
+<span id="cb15-5"><a href="#cb15-5"></a>    params, state,</span>
+<span id="cb15-6"><a href="#cb15-6"></a>    <span class="dt">start_date =</span> <span class="st">&quot;2021-09-09&quot;</span>, <span class="dt">end_date =</span> <span class="st">&quot;2021-10-09&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a>)</span></code></pre></div>
+<p>Then we define sums of state variables and parameter vectors. Here we add the sum of the <code>I</code> states and of the <code>ICU</code> states using regular expressions and just a list of state names.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a>test_model =<span class="st"> </span>(test_model</span>
+<span id="cb16-2"><a href="#cb16-2"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_state_param_sum</span>(<span class="dt">sum =</span> <span class="st">&quot;Isum&quot;</span>, <span class="dt">summands =</span> <span class="st">&quot;^I[a-z]&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_state_param_sum</span>(<span class="dt">sum =</span> <span class="st">&quot;ICUsum&quot;</span>, <span class="dt">summands =</span> <span class="kw">c</span>(<span class="st">&quot;ICUs&quot;</span>, <span class="st">&quot;ICUd&quot;</span>))</span>
+<span id="cb16-4"><a href="#cb16-4"></a>)</span></code></pre></div>
+<p>Then we can just proceed as we normally would, but with the option to refer to these sums (this is not meant to reflect real epidemiology, but to illustrate the interface).</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">options</span>(<span class="dt">MP_flex_spec_version =</span> <span class="st">&quot;0.0.2&quot;</span>)</span>
+<span id="cb17-2"><a href="#cb17-2"></a>test_model =<span class="st"> </span>(test_model</span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ia&quot;</span>, <span class="op">~</span><span class="st"> </span>(alpha) <span class="op">*</span><span class="st"> </span>(sigma) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>Isum))</span>
+<span id="cb17-4"><a href="#cb17-4"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ip&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>alpha) <span class="op">*</span><span class="st"> </span>(sigma))</span>
+<span id="cb17-5"><a href="#cb17-5"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ia&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_a))</span>
+<span id="cb17-6"><a href="#cb17-6"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Im&quot;</span>, <span class="op">~</span><span class="st"> </span>(mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb17-7"><a href="#cb17-7"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Is&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb17-8"><a href="#cb17-8"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Im&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_m))</span>
+<span id="cb17-9"><a href="#cb17-9"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;H&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb17-10"><a href="#cb17-10"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUs&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb17-11"><a href="#cb17-11"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUd&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb17-12"><a href="#cb17-12"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(nonhosp_mort) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb17-13"><a href="#cb17-13"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUs&quot;</span>, <span class="st">&quot;H2&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi1))</span>
+<span id="cb17-14"><a href="#cb17-14"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUd&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi2))</span>
+<span id="cb17-15"><a href="#cb17-15"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H2&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi3))</span>
+<span id="cb17-16"><a href="#cb17-16"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(rho) <span class="op">/</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>ICUsum))</span>
+<span id="cb17-17"><a href="#cb17-17"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;X&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb17-18"><a href="#cb17-18"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;S&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="op">~</span></span>
+<span id="cb17-19"><a href="#cb17-19"></a><span class="st">                 </span>(Ia) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>N) <span class="op">*</span><span class="st"> </span>(Ca) <span class="op">+</span></span>
+<span id="cb17-20"><a href="#cb17-20"></a><span class="st">                 </span>(Ip) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>N) <span class="op">*</span><span class="st"> </span>(Cp) <span class="op">+</span></span>
+<span id="cb17-21"><a href="#cb17-21"></a><span class="st">                 </span>(Im) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>N) <span class="op">*</span><span class="st"> </span>(Cm) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>iso_m) <span class="op">+</span></span>
+<span id="cb17-22"><a href="#cb17-22"></a><span class="st">                 </span>(Is) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>N) <span class="op">*</span><span class="st"> </span>(Cs) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>iso_s))</span>
+<span id="cb17-23"><a href="#cb17-23"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_parallel_accumulators</span>(<span class="kw">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;N&quot;</span>, <span class="st">&quot;P&quot;</span>, <span class="st">&quot;V&quot;</span>))</span>
+<span id="cb17-24"><a href="#cb17-24"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">update_tmb_indices</span>()</span>
+<span id="cb17-25"><a href="#cb17-25"></a>)</span></code></pre></div>
+<p>And here are the indices that are relevant to the tracking of sums of state variables and parameters.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>test_model<span class="op">$</span>tmb_indices<span class="op">$</span>sum_indices</span></code></pre></div>
+<pre><code>## $sumidx
+## integer(0)
+## 
+## $sumcount
+## integer(0)
+## 
+## $summandidx
+## integer(0)</code></pre>
+<p>We describe these below.</p>
+</div>
+</div>
+<div id="data-structure-0.1.0" class="section level3">
+<h3>Data Structure (0.1.0)</h3>
+<div id="struc-objects-2" class="section level4">
+<h4>struc objects</h4>
+</div>
+<div id="sums-of-state-variables-and-parameters-2" class="section level4">
+<h4>Sums of state variables and parameters</h4>
+<p>We introduce three new index/count vectors.</p>
+<ul>
+<li><code>sumidx</code> – indices, locating the variable to store each sum, into the <code>state_param</code> vector defined in version 0.0.1</li>
+<li><code>sumcount</code> – vector containing the number of summands required for each sum</li>
+<li><code>summandidx</code> – indices, locating the summands, into the <code>state_param</code> vector</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="v0.0.6" class="section level2">
+<h2>v0.0.6</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.0.6" class="section level3">
+<h3>New Capabilities (0.0.6)</h3>
+<p>Updates of time-varying parameters from the initial parameters on the <code>C++</code> side. This is really a patch of 0.0.4, which didn’t work for calibration because it required updating the objective function (or its environment?) at every iteration of the optimizer. It is just easier to do it on the <code>C++</code> and we need to do this anyways.</p>
+</div>
+</div>
+<div id="v0.0.5" class="section level2">
+<h2>v0.0.5</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.0.5" class="section level3">
+<h3>New Capabilities (0.0.5)</h3>
+<ol style="list-style-type: decimal">
+<li>Hazard simulation</li>
+<li>Returning the time-varying rate matrix elements from <code>C++</code> to <code>R</code> so that they can be included in the results of <code>run_sim</code></li>
+</ol>
+</div>
+<div id="mathematical-description-0.0.5" class="section level3">
+<h3>Mathematical Description (0.0.5)</h3>
+<p>Define the sums of the rows of the rate matrix. <span class="math display">\[
+r_i = \sum_{j=1}^n M_{ij}
+\]</span> Define the elements of a vector of exponentiated row sums <span class="math display">\[
+\rho_i = \exp(-r_i)
+\]</span></p>
+<p>Define the elements of a normalized state vector. <span class="math display">\[
+\tilde{s}_i = \begin{cases}
+0 &amp; r_i = 0 \\
+\frac{s_i}{r_i} &amp; \text{otherwise}
+\end{cases}
+\]</span> With these definitions we can define the modified flow matrix. <span class="math display">\[
+F_{ij} = \begin{cases}
+M_{ij}\tilde{s}_i(1-\rho_i) &amp; i \ne j \\
+0 &amp; \text{otherwise}
+\end{cases}
+\]</span> This modified flow matrix can now be used in the same way as the unmodified flow matrix to produce state variable updates following spec version 0.0.2.</p>
+</div>
+<div id="user-interface-0.0.5" class="section level3">
+<h3>User Interface (0.0.5)</h3>
+<p>A Boolean argument needs to be added to the interface, indicating whether or not the hazard-based flow matrix is used rather than the simple flow matrix.</p>
+</div>
+<div id="data-structure-0.0.5" class="section level3">
+<h3>Data Structure (0.0.5)</h3>
+<p>The data structure is equivalent to 0.0.4.</p>
+</div>
+</div>
+<div id="v0.0.4" class="section level2">
+<h2>v0.0.4</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<p>We begin with simple piece-wise constant time-variation. <em>Piece-wise constant</em> means that each time-varying parameter is associated with a sequence of break-points at which the value of the parameter changes – at all other times the parameter is constant. We plan to relax the <em>piece-wise constant</em> restriction in later versions.</p>
+<div id="new-capabilities-0.0.4" class="section level3">
+<h3>New Capabilities (0.0.4)</h3>
+<p>Patch of the spec from 0.0.3 on piece-wise constant time-varying parameters.</p>
+</div>
+<div id="data-structure-0.0.4" class="section level3">
+<h3>Data Structure (0.0.4)</h3>
+<ul>
+<li><em>update_indices</em> (<strong>removed</strong>): a second set of <em>from</em> <em>to</em>, etc for need-to-update elements proposed in spec 0.0.2 is removed in this proposal because the newly introduced <em>upateidx</em> provides the information needed.</li>
+<li><em>updateidx</em> (<strong>added</strong>): a vector of indices into vectors <em>from</em>, <em>to</em>, and <em>count</em> of those elements in the rate matrix that need to be updated. It includes the indices of the elements that depend on either the state vector (0.0.2), or time-varying parameters (0.0.3 or 0.0.4), or both. At each simulation step, we will update only those elements specified by <em>updateidx</em>. The drawback of this design is that elements that only depends on piece-wise parameters (0.0.3) are updated at each step although they only need to be updated at certain breaks.</li>
+<li><em>breaks</em> (<strong>added</strong>): vector of all the breaks.</li>
+<li>*count_of_tv_at_breaks (<strong>added</strong>): vector of number of time-varying parameters that change at each break.</li>
+<li><em>tv_spi</em> (<strong>added</strong>): vector of indices into vector <em>sp</em> of those time-varying parameters in the order of breaks as major and parameters as minor.</li>
+<li><em>tv_val</em> (<strong>added</strong>): vector of new values corresponding to <em>tv_spi</em>.</li>
+</ul>
+</div>
+</div>
+<div id="v0.0.3" class="section level2">
+<h2>v0.0.3</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTE0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogQXJjaGl2ZWQiPjx0aXRsZT5MaWZlY3ljbGU6IEFyY2hpdmVkPC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSIxMTQiIGhlaWdodD0iMjAiIHJ4PSIzIiBmaWxsPSIjZmZmIi8+PC9jbGlwUGF0aD48ZyBjbGlwLXBhdGg9InVybCgjcikiPjxyZWN0IHdpZHRoPSI1NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzU1NSIvPjxyZWN0IHg9IjU3IiB3aWR0aD0iNTciIGhlaWdodD0iMjAiIGZpbGw9IiNlMDVkNDQiLz48cmVjdCB3aWR0aD0iMTE0IiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjI5NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iNDcwIj5MaWZlY3ljbGU8L3RleHQ+PHRleHQgeD0iMjk1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iODQ1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkFyY2hpdmVkPC90ZXh0Pjx0ZXh0IHg9Ijg0NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iNDcwIj5BcmNoaXZlZDwvdGV4dD48L2c+PC9zdmc+" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.0.3" class="section level3">
+<h3>New Capabilities (0.0.3)</h3>
+<p>This version was an early attempt to introduce parameters that can vary at each simulation step. It was never implemented on the <code>C++</code>-side, and has been superseded by <a href="#v0.0.4">version 0.0.4</a></p>
+</div>
+<div id="assumptions-0.0.3" class="section level3">
+<h3>Assumptions (0.0.3)</h3>
+</div>
+<div id="mathematical-description-0.0.3" class="section level3">
+<h3>Mathematical Description (0.0.3)</h3>
+<p>In the non-time-varying case of <a href="#v0.0.2">version 0.0.2</a>, we have scalar valued parameters. These parameters are constant in simulation time. We now consider parameters that can vary at any particular simulation step.</p>
+<p>Consider a focal scalar-valued time-varying parameter <span class="math inline">\(u\)</span>. In the non-time-varying case this scalar value, <span class="math inline">\(u\)</span>, is an element of the parameter vector, <span class="math inline">\(\theta\)</span>.</p>
+<p><span class="math display">\[
+\theta = [..., u, ...]
+\]</span></p>
+<p>In the time-varying case, there is a series of values, <span class="math inline">\(u_0, u_1, ..., u_n\)</span> associated with an initial value <span class="math inline">\(u = u_0\)</span> and the values, <span class="math inline">\(u_1, ..., u_n\)</span>, at <span class="math inline">\(n_u\)</span> break-points, <span class="math inline">\(t_1, ..., t_{n_u}\)</span>. We store these additional values by expanding the parameter vector to make room for them.</p>
+<p><span class="math display">\[
+\theta = [..., u_0, u_1, ..., u_n, ...]
+\]</span></p>
+<p>Each simulation step is indexed <span class="math inline">\(t = 1, ..., T\)</span>, where <span class="math inline">\(T\)</span> is the number of simulation steps. If the time-varying parameter, <span class="math inline">\(u\)</span>, is required at time <span class="math inline">\(t\)</span> to update an element of the rate-matrix, the value of <span class="math inline">\(u\)</span> that is used is <span class="math inline">\(u_i\)</span> such that <span class="math inline">\(t \in [t_i, t_{i+1})\)</span>.</p>
+</div>
+<div id="user-interface-0.0.3" class="section level3">
+<h3>User Interface (0.0.3)</h3>
+<p>We follow the <code>params_timevar</code> argument to <code>run_sim</code> in <code>McMasterPandemic</code>, which allows the user to specify a data frame with the following columns.</p>
+<ul>
+<li>Date</li>
+<li>Symbol</li>
+<li>Value</li>
+<li>Type</li>
+</ul>
+<p>The definition of these columns at the time of writing is given <a href="https://github.com/mac-theobio/McMasterPandemic/blob/c1e8aa40d12918728e25a41368f751a8b7f4b983/R/sim_funs.R#L864">here</a>.</p>
+<p>The user must also specify the starting and ending calendar dates of the simulation.</p>
+<p>An example model with time variation can be defined as follows.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">options</span>(<span class="dt">MP_flex_spec_version =</span> <span class="st">&quot;0.0.3&quot;</span>)</span>
+<span id="cb20-2"><a href="#cb20-2"></a>params =<span class="st"> </span><span class="kw">read_params</span>(<span class="st">&#39;ICU1.csv&#39;</span>)</span>
+<span id="cb20-3"><a href="#cb20-3"></a>state =<span class="st"> </span><span class="kw">make_state</span>(<span class="dt">params =</span> params)</span>
+<span id="cb20-4"><a href="#cb20-4"></a>model =<span class="st"> </span>(</span>
+<span id="cb20-5"><a href="#cb20-5"></a>  <span class="kw">flexmodel</span>(</span>
+<span id="cb20-6"><a href="#cb20-6"></a>    params, state,</span>
+<span id="cb20-7"><a href="#cb20-7"></a>    <span class="dt">start_date =</span> <span class="st">&#39;2021-08-26&#39;</span>, <span class="dt">end_date =</span> <span class="st">&quot;2021-09-26&quot;</span>,</span>
+<span id="cb20-8"><a href="#cb20-8"></a>    <span class="dt">timevar_piece_wise =</span> <span class="kw">data.frame</span>(</span>
+<span id="cb20-9"><a href="#cb20-9"></a>      <span class="dt">Date =</span> <span class="kw">c</span>(<span class="st">&quot;2021-09-01&quot;</span>, <span class="st">&quot;2021-09-15&quot;</span>, <span class="st">&quot;2021-09-10&quot;</span>, <span class="st">&quot;2021-08-28&quot;</span>),</span>
+<span id="cb20-10"><a href="#cb20-10"></a>      <span class="dt">Symbol =</span> <span class="kw">c</span>(<span class="st">&quot;mu&quot;</span>, <span class="st">&quot;beta0&quot;</span>, <span class="st">&quot;beta0&quot;</span>, <span class="st">&quot;mu&quot;</span>),</span>
+<span id="cb20-11"><a href="#cb20-11"></a>      <span class="dt">Value =</span> <span class="kw">c</span>(<span class="fl">0.5</span>, <span class="fl">0.1</span>, <span class="dv">2</span>, <span class="fl">0.2</span>),</span>
+<span id="cb20-12"><a href="#cb20-12"></a>      <span class="dt">Type =</span> <span class="kw">c</span>(<span class="st">&quot;rel_prev&quot;</span>, <span class="st">&quot;rel_orig&quot;</span>, <span class="st">&quot;rel_prev&quot;</span>, <span class="st">&quot;rel_orig&quot;</span>)</span>
+<span id="cb20-13"><a href="#cb20-13"></a>    ))</span>
+<span id="cb20-14"><a href="#cb20-14"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ia&quot;</span>, <span class="op">~</span><span class="st"> </span>(alpha) <span class="op">*</span><span class="st"> </span>(sigma))</span>
+<span id="cb20-15"><a href="#cb20-15"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ip&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>alpha) <span class="op">*</span><span class="st"> </span>(sigma))</span>
+<span id="cb20-16"><a href="#cb20-16"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ia&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_a))</span>
+<span id="cb20-17"><a href="#cb20-17"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Im&quot;</span>, <span class="op">~</span><span class="st"> </span>(mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb20-18"><a href="#cb20-18"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Is&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb20-19"><a href="#cb20-19"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Im&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_m))</span>
+<span id="cb20-20"><a href="#cb20-20"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;H&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb20-21"><a href="#cb20-21"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUs&quot;</span>, <span class="op">~</span><span class="st"> </span></span>
+<span id="cb20-22"><a href="#cb20-22"></a><span class="st">                 </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb20-23"><a href="#cb20-23"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUd&quot;</span>, <span class="op">~</span><span class="st"> </span></span>
+<span id="cb20-24"><a href="#cb20-24"></a><span class="st">                 </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb20-25"><a href="#cb20-25"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(nonhosp_mort) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb20-26"><a href="#cb20-26"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUs&quot;</span>, <span class="st">&quot;H2&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi1))</span>
+<span id="cb20-27"><a href="#cb20-27"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUd&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi2))</span>
+<span id="cb20-28"><a href="#cb20-28"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H2&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi3))</span>
+<span id="cb20-29"><a href="#cb20-29"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(rho))</span>
+<span id="cb20-30"><a href="#cb20-30"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;X&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb20-31"><a href="#cb20-31"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;S&quot;</span>,  <span class="st">&quot;E&quot;</span>, <span class="op">~</span></span>
+<span id="cb20-32"><a href="#cb20-32"></a><span class="st">                 </span>(Ia) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Ca) <span class="op">+</span></span>
+<span id="cb20-33"><a href="#cb20-33"></a><span class="st">                 </span>(Ip) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cp) <span class="op">+</span></span>
+<span id="cb20-34"><a href="#cb20-34"></a><span class="st">                 </span>(Im) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cm) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">-</span>iso_m) <span class="op">+</span></span>
+<span id="cb20-35"><a href="#cb20-35"></a><span class="st">                 </span>(Is) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cs) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">-</span>iso_s))</span>
+<span id="cb20-36"><a href="#cb20-36"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_parallel_accumulators</span>(<span class="kw">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;N&quot;</span>, <span class="st">&quot;P&quot;</span>, <span class="st">&quot;V&quot;</span>))</span>
+<span id="cb20-37"><a href="#cb20-37"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">update_tmb_indices</span>()</span>
+<span id="cb20-38"><a href="#cb20-38"></a>)</span></code></pre></div>
+</div>
+<div id="data-structure-0.0.3" class="section level3">
+<h3>Data Structure (0.0.3)</h3>
+<p>Here we make a distinction between indices and time-indices. An index is a 1-based integer identifying a value within a vector. A time-index is a 1-based integer identifying the simulation step.</p>
+<ul>
+<li><code>tvi_spi</code>: vector of indices for each time varying factor, identifying the elements of the <code>spi</code> vector from <a href="https://canmod.net/misc/flex_specs#v0.0.1">version 0.0.1</a></li>
+<li><code>n_breaks</code>: vector of the number of time breaks for each time varying factor</li>
+<li><code>t_breaks</code>: vector of time-indices locating all time breaks for all time varying factors, organized such that time-indices associated with the same factor are grouped together and time-indices are all ascending</li>
+</ul>
+<p>These indices and counts can be used to update the <code>spi</code> vector at each simulation step. Here is an example in <code>R</code>.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="kw">options</span>(<span class="dt">MP_flex_spec_version =</span> <span class="st">&quot;0.0.3&quot;</span>)</span>
+<span id="cb21-2"><a href="#cb21-2"></a>tvi_spi =<span class="st"> </span><span class="kw">c</span>(1L, 3L, 6L, 10L, 14L, 19L)</span>
+<span id="cb21-3"><a href="#cb21-3"></a>n_breaks =<span class="st"> </span><span class="kw">c</span>(3L, 3L, 2L, 2L, 2L, 2L)</span>
+<span id="cb21-4"><a href="#cb21-4"></a>t_breaks =<span class="st"> </span><span class="kw">c</span>(</span>
+<span id="cb21-5"><a href="#cb21-5"></a>  2L, 6L, 17L, <span class="co"># factor 1 has 3 break-points </span></span>
+<span id="cb21-6"><a href="#cb21-6"></a>  2L, 6L, 17L, <span class="co"># factor 2 has 3 break-points </span></span>
+<span id="cb21-7"><a href="#cb21-7"></a>  15L, 20L,    <span class="co"># factor 3 has 2 break-points </span></span>
+<span id="cb21-8"><a href="#cb21-8"></a>  15L, 20L,    <span class="co"># factor 4 has 2 break-points </span></span>
+<span id="cb21-9"><a href="#cb21-9"></a>  15L, 20L,    <span class="co"># factor 5 has 2 break-points </span></span>
+<span id="cb21-10"><a href="#cb21-10"></a>  15L, 20L     <span class="co"># factor 6 has 2 break-points </span></span>
+<span id="cb21-11"><a href="#cb21-11"></a>)</span>
+<span id="cb21-12"><a href="#cb21-12"></a></span>
+<span id="cb21-13"><a href="#cb21-13"></a><span class="co"># number of time varying factors</span></span>
+<span id="cb21-14"><a href="#cb21-14"></a>n =<span class="st"> </span><span class="kw">length</span>(tvi_spi)</span>
+<span id="cb21-15"><a href="#cb21-15"></a></span>
+<span id="cb21-16"><a href="#cb21-16"></a><span class="co"># initialize a break point counter. each element of t_breaks_t</span></span>
+<span id="cb21-17"><a href="#cb21-17"></a><span class="co"># is associated with a time varying factor. each time a break</span></span>
+<span id="cb21-18"><a href="#cb21-18"></a><span class="co"># point is encountered, increment the corresponding element in </span></span>
+<span id="cb21-19"><a href="#cb21-19"></a><span class="co"># this counter</span></span>
+<span id="cb21-20"><a href="#cb21-20"></a>t_breaks_t =<span class="st"> </span><span class="kw">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb21-21"><a href="#cb21-21"></a></span>
+<span id="cb21-22"><a href="#cb21-22"></a><span class="co"># indices into the state param vector for all factors, including</span></span>
+<span id="cb21-23"><a href="#cb21-23"></a><span class="co"># those that are not time varying</span></span>
+<span id="cb21-24"><a href="#cb21-24"></a>spi =<span class="st"> </span><span class="kw">c</span>(30L, 27L, 30L, 27L, 3L, 15L, 33L, 18L, 4L, 15L, 33L, 19L, 5L,</span>
+<span id="cb21-25"><a href="#cb21-25"></a>  15L, 33L, 20L, 36L, 6L, 15L, 33L, 21L, 36L)</span>
+<span id="cb21-26"><a href="#cb21-26"></a><span class="kw">print</span>(spi)</span></code></pre></div>
+<pre><code>##  [1] 30 27 30 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36</code></pre>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="co"># loop over time steps</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">30</span>) {</span>
+<span id="cb23-3"><a href="#cb23-3"></a>  </span>
+<span id="cb23-4"><a href="#cb23-4"></a>  <span class="co"># loop over time-varying factors</span></span>
+<span id="cb23-5"><a href="#cb23-5"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n) {</span>
+<span id="cb23-6"><a href="#cb23-6"></a>    </span>
+<span id="cb23-7"><a href="#cb23-7"></a>    <span class="co"># only do something if factor i has a break-point at time t</span></span>
+<span id="cb23-8"><a href="#cb23-8"></a>    break_now =<span class="st"> </span>t <span class="op">==</span><span class="st"> </span>t_breaks[<span class="dv">1</span> <span class="op">+</span><span class="st"> </span>t_breaks_t[i] <span class="op">+</span><span class="st"> </span><span class="kw">sum</span>(n_breaks[<span class="dv">1</span><span class="op">:</span>(i<span class="dv">-1</span>)])]</span>
+<span id="cb23-9"><a href="#cb23-9"></a>    <span class="cf">if</span>(<span class="kw">isTRUE</span>(break_now)) {</span>
+<span id="cb23-10"><a href="#cb23-10"></a>      </span>
+<span id="cb23-11"><a href="#cb23-11"></a>      <span class="co"># increment the break-point counter</span></span>
+<span id="cb23-12"><a href="#cb23-12"></a>      t_breaks_t[i] =<span class="st"> </span>t_breaks_t[i] <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb23-13"><a href="#cb23-13"></a>      </span>
+<span id="cb23-14"><a href="#cb23-14"></a>      <span class="co"># increment the spi vector for the ith time varying factor</span></span>
+<span id="cb23-15"><a href="#cb23-15"></a>      spi[tvi_spi[i]] =<span class="st"> </span>spi[tvi_spi[i]] <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb23-16"><a href="#cb23-16"></a>      </span>
+<span id="cb23-17"><a href="#cb23-17"></a>    }</span>
+<span id="cb23-18"><a href="#cb23-18"></a>  }</span>
+<span id="cb23-19"><a href="#cb23-19"></a>  <span class="kw">print</span>(spi)</span>
+<span id="cb23-20"><a href="#cb23-20"></a>  </span>
+<span id="cb23-21"><a href="#cb23-21"></a>  <span class="co"># do the rest of what needs to be done in this simulation step</span></span>
+<span id="cb23-22"><a href="#cb23-22"></a>  <span class="co"># (e.g. update the rate matrix, update the state vector)</span></span>
+<span id="cb23-23"><a href="#cb23-23"></a>  <span class="co"># ...</span></span>
+<span id="cb23-24"><a href="#cb23-24"></a>}</span></code></pre></div>
+<pre><code>##  [1] 30 27 30 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 31 27 31 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 31 27 31 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 31 27 31 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 31 27 31 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 15 33 18  4 15 33 19  5 15 33 20 36  6 15 33 21 36
+##  [1] 32 27 32 27  3 16 33 18  4 16 33 19  5 16 33 20 36  6 16 33 21 36
+##  [1] 32 27 32 27  3 16 33 18  4 16 33 19  5 16 33 20 36  6 16 33 21 36
+##  [1] 33 27 33 27  3 16 33 18  4 16 33 19  5 16 33 20 36  6 16 33 21 36
+##  [1] 33 27 33 27  3 16 33 18  4 16 33 19  5 16 33 20 36  6 16 33 21 36
+##  [1] 33 27 33 27  3 16 33 18  4 16 33 19  5 16 33 20 36  6 16 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36
+##  [1] 33 27 33 27  3 17 33 18  4 17 33 19  5 17 33 20 36  6 17 33 21 36</code></pre>
+<p>Each row in this output is a time step and each column is the <code>spi</code> index for a particular factor. Notice that only six columns change through time, and these are associated with the six time-varying factors. Columns 1 and 3 are associated with the same time-varying parameter, and so they change at the same break-points. The same is true of columns 6, 10, 14, and 19, which are associated with another time-varying parameter.</p>
+</div>
+</div>
+<div id="v0.0.2" class="section level2">
+<h2>v0.0.2</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.0.2" class="section level3">
+<h3>New Capabilities (0.0.2)</h3>
+<p>Iterated updates of the state vector.</p>
+</div>
+<div id="assumptions-0.0.2" class="section level3">
+<h3>Assumptions (0.0.2)</h3>
+<ol style="list-style-type: decimal">
+<li>No parameter varies throughout a simulation</li>
+<li>Simple <span class="math inline">\(dt = 1\)</span> simulation (i.e. unit time step, <code>do_exponential == FALSE</code>, and <code>do_hazard == FALSE</code>)</li>
+<li>No stochasticity</li>
+<li><code>MP_badsum_action = &#39;ignore&#39;</code></li>
+<li>No updates optimization</li>
+<li>No model structure (e.g. vaccination, age-structure, testing)</li>
+<li><a href="#assumptions-0.0.1">Assumptions 2-4 from 0.0.1</a></li>
+</ol>
+</div>
+<div id="mathematical-description-0.0.2" class="section level3">
+<h3>Mathematical Description (0.0.2)</h3>
+<p>Let <span class="math inline">\(s\)</span> be the state vector and <span class="math inline">\(M\)</span> be the rate matrix. Define the flows matrix, <span class="math inline">\(F\)</span>, to have the same dimensions as <span class="math inline">\(M\)</span>. The elements of <span class="math inline">\(F\)</span> are given by the following.</p>
+<p><span class="math display">\[
+F_{ij} = M_{ij} s_i
+\]</span></p>
+<p>Let <span class="math inline">\(f_{\text{in}}\)</span> and <span class="math inline">\(f_{\text{out}}\)</span> be the inflow and outflow vectors, given by the column sums and row sums of <span class="math inline">\(F\)</span> respectively. If the use specifies some states as being parallel accumulators, then the columns associated with those special states are removed from <span class="math inline">\(F\)</span> before the row sums are taken to compute <span class="math inline">\(f_{\text{out}}\)</span>.</p>
+<p>With these definitions in place the state vector update at each iteration is given by the following.</p>
+<p><span class="math display">\[
+s \to s - f_{\text{out}} + f_{\text{in}}
+\]</span> Here is a summary of the stages of a single simulation step under this model.</p>
+<ol style="list-style-type: decimal">
+<li>Update the rate matrix following <a href="#v0.0.1">version 0.0.1</a></li>
+<li>Compute the flow matrix</li>
+<li>Compute the inflow vector</li>
+<li>Compute the outflow vector, making sure to ignore the flow matrix columns associated with parallel accumulators</li>
+<li>Produce a new state by subtracting the outflows and adding the inflows</li>
+<li>Save every updated state vector</li>
+</ol>
+</div>
+<div id="user-interface-0.0.2" class="section level3">
+<h3>User Interface (0.0.2)</h3>
+<p>In addition to the <a href="#user-interface-0.0.1">interface elements specified in 0.0.1</a>, the user needs to provide some additional information. We need to provide a character vector of regex patterns with which to find the indices of the parallel accumulators amongst the state names (e.g. X, N, P, V). For example, one way to provide such a vector to an existing model would be the following.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="kw">options</span>(<span class="dt">MP_flex_spec_version =</span> <span class="st">&quot;0.0.2&quot;</span>)</span>
+<span id="cb25-2"><a href="#cb25-2"></a>model =<span class="st"> </span><span class="kw">add_parallel_accumulators</span>(model, <span class="kw">c</span>(<span class="st">&quot;X&quot;</span>, <span class="st">&quot;N&quot;</span>, <span class="st">&quot;P&quot;</span>, <span class="st">&quot;V&quot;</span>))</span></code></pre></div>
+<p>The user must specify the number of state vector updates.</p>
+</div>
+<div id="data-structure-0.0.2" class="section level3">
+<h3>Data Structure (0.0.2)</h3>
+<p>The following pieces of information need to be added to those described in <a href="#data-structure-0.0.1">Data Structure (0.0.1)</a> in order to make state vector updates.</p>
+<ul>
+<li><p>Modified copies of the following integer vectors described in <a href="#data-structure-0.0.1">0.0.1</a>: <code>spi</code>, <code>modifier</code>, <code>from</code>, <code>to</code>, <code>count</code></p>
+<ul>
+<li>These copies will only contain indices necessary for updating the rate matrix elements that could potentially change at each simulation step</li>
+<li>Currently this will include non-zero rate matrix elements that depend on at least one state variable (those that depend on parameters only will not need to be updated given that this version of the spec does not allow for time-varying parameters)</li>
+</ul></li>
+<li><p>A vector, <code>par_accum_indices</code> of indices into the columns of the flows matrix, identifying the states that are parallel accumulators</p></li>
+<li><p>The number of state vector updates to simulate</p></li>
+</ul>
+</div>
+</div>
+<div id="v0.0.1" class="section level2">
+<h2>v0.0.1</h2>
+<p><a href="https://canmod.net/misc/flex_specs#versioning-and-lifecycle"><img src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxpZmVjeWNsZTogRnJvemVuIj48dGl0bGU+TGlmZWN5Y2xlOiBGcm96ZW48L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9IjEwNCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjU3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNTciIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzk3Y2EwMCIvPjxyZWN0IHdpZHRoPSIxMDQiIGhlaWdodD0iMjAiIGZpbGw9InVybCgjcykiLz48L2c+PGcgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IlZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYiIHRleHQtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iIGZvbnQtc2l6ZT0iMTEwIj48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMjk1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI0NzAiPkxpZmVjeWNsZTwvdGV4dD48dGV4dCB4PSIyOTUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQ3MCI+TGlmZWN5Y2xlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI3OTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjM3MCI+RnJvemVuPC90ZXh0Pjx0ZXh0IHg9Ijc5NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5Gcm96ZW48L3RleHQ+PC9nPjwvc3ZnPg==" alt="Lifecycle Badge" /></a></p>
+<div id="new-capabilities-0.0.1" class="section level3">
+<h3>New Capabilities (0.0.1)</h3>
+<p>Update the non-zero elements of a rate matrix on the <code>TMB</code>/<code>C++</code> side using a restricted set of operations (complements, inverses, sums, and products). The update formula must be specified separately for each non-zero element.</p>
+</div>
+<div id="assumptions-0.0.1" class="section level3">
+<h3>Assumptions (0.0.1)</h3>
+<ol style="list-style-type: decimal">
+<li>The state vector is not actually updated, making this a more-or-less useless spec (but it provides a good ‘warm-up’ and sanity check)</li>
+<li>A <code>param_pansim</code> and a <code>state_pansim</code> object exists or can be constructed</li>
+<li>If <code>make_state</code> is used to create the <code>state_pansim</code> object, <code>vaxify</code>, <code>ageify</code>, and <code>testify</code> are all set to <code>FALSE</code></li>
+<li>There is no model structure (e.g. vaccination, age-structure, testing)</li>
+</ol>
+</div>
+<div id="mathematical-description-0.0.1" class="section level3">
+<h3>Mathematical Description (0.0.1)</h3>
+<p>Any element, <span class="math inline">\(x\)</span>, of either the parameter or state vector can be used to define a <em>factor</em> in one of the following three forms.</p>
+<ul>
+<li>Identity: <span class="math inline">\(x\)</span></li>
+<li>Complement: <span class="math inline">\(1-x\)</span></li>
+<li>Inverse: <span class="math inline">\(1/x\)</span></li>
+</ul>
+<p>We collect these user-defined factors into a factor vector, <span class="math inline">\(y\)</span>. Factors can be repeated in <span class="math inline">\(y\)</span> if required. Any number of factors can be multiplied together using <code>*</code> to produce a <em>product</em>. Any number of factors and products can be added together using <code>+</code>.</p>
+<p>There is a higher level nested structure associated with the factor vector, <span class="math inline">\(y\)</span>.</p>
+<ul>
+<li>All factors associated with the, <span class="math inline">\(i\)</span>th, non-zero rate matrix element, <span class="math inline">\(M_{(i)}\)</span>, are grouped together in a contiguous block</li>
+<li>Within the <span class="math inline">\(i\)</span>th block, all factors associated with the <span class="math inline">\(j\)</span>th product (<span class="math inline">\(j = 1 ... n_i\)</span>) in that block are grouped together in a contiguous sub-block</li>
+<li>Within the <span class="math inline">\(i,j\)</span>th sub-block, all factors are given an index, <span class="math inline">\(k = 1 ... m_{ij}\)</span></li>
+</ul>
+<p>With these definitions, the dependence of any non-zero rate matrix element on the parameters and state variables is given by the following expression.</p>
+<p><span class="math display">\[
+M_{(i)} = \sum_{j=1}^{n_i} \prod_{k=1}^{m_{ij}} y_{ijk}
+\]</span></p>
+<p>where <span class="math inline">\(y_{ijk}\)</span> is the <span class="math inline">\(k\)</span>th factor associated with the <span class="math inline">\(j\)</span>th product associated with the <span class="math inline">\(i\)</span>th non-zero rate matrix element.</p>
+</div>
+<div id="user-interface-0.0.1" class="section level3">
+<h3>User Interface (0.0.1)</h3>
+<p>Users can define the structure of a rate matrix with a list of expressions, each determining the parameter-dependence and/or state-dependence of a single non-zero rate matrix element. The standard <code>McMasterPandemic</code> introductory example model can be defined as follows.</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="kw">options</span>(<span class="dt">MP_flex_spec_version =</span> <span class="st">&quot;0.0.1&quot;</span>)</span>
+<span id="cb26-2"><a href="#cb26-2"></a>params =<span class="st"> </span><span class="kw">read_params</span>(<span class="st">&#39;ICU1.csv&#39;</span>)</span>
+<span id="cb26-3"><a href="#cb26-3"></a>state =<span class="st"> </span><span class="kw">make_state</span>(<span class="dt">params =</span> params)</span>
+<span id="cb26-4"><a href="#cb26-4"></a>model =<span class="st"> </span>(</span>
+<span id="cb26-5"><a href="#cb26-5"></a>  <span class="kw">flexmodel</span>(params, state)</span>
+<span id="cb26-6"><a href="#cb26-6"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ia&quot;</span>, <span class="op">~</span><span class="st"> </span>(alpha) <span class="op">*</span><span class="st"> </span>(sigma))</span>
+<span id="cb26-7"><a href="#cb26-7"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;E&quot;</span>, <span class="st">&quot;Ip&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>alpha) <span class="op">*</span><span class="st"> </span>(sigma))</span>
+<span id="cb26-8"><a href="#cb26-8"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ia&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_a))</span>
+<span id="cb26-9"><a href="#cb26-9"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Im&quot;</span>, <span class="op">~</span><span class="st"> </span>(mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb26-10"><a href="#cb26-10"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Ip&quot;</span>, <span class="st">&quot;Is&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>mu) <span class="op">*</span><span class="st"> </span>(gamma_p))</span>
+<span id="cb26-11"><a href="#cb26-11"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Im&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(gamma_m))</span>
+<span id="cb26-12"><a href="#cb26-12"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;H&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb26-13"><a href="#cb26-13"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUs&quot;</span>, <span class="op">~</span><span class="st"> </span></span>
+<span id="cb26-14"><a href="#cb26-14"></a><span class="st">                 </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb26-15"><a href="#cb26-15"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;ICUd&quot;</span>, <span class="op">~</span><span class="st"> </span></span>
+<span id="cb26-16"><a href="#cb26-16"></a><span class="st">                 </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>phi1) <span class="op">*</span><span class="st"> </span>(phi2) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb26-17"><a href="#cb26-17"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(nonhosp_mort) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb26-18"><a href="#cb26-18"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUs&quot;</span>, <span class="st">&quot;H2&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi1))</span>
+<span id="cb26-19"><a href="#cb26-19"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;ICUd&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi2))</span>
+<span id="cb26-20"><a href="#cb26-20"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H2&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(psi3))</span>
+<span id="cb26-21"><a href="#cb26-21"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;H&quot;</span>, <span class="st">&quot;R&quot;</span>, <span class="op">~</span><span class="st"> </span>(rho))</span>
+<span id="cb26-22"><a href="#cb26-22"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;Is&quot;</span>, <span class="st">&quot;X&quot;</span>, <span class="op">~</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>nonhosp_mort) <span class="op">*</span><span class="st"> </span>(phi1) <span class="op">*</span><span class="st"> </span>(gamma_s))</span>
+<span id="cb26-23"><a href="#cb26-23"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">add_rate</span>(<span class="st">&quot;S&quot;</span>,  <span class="st">&quot;E&quot;</span>, <span class="op">~</span></span>
+<span id="cb26-24"><a href="#cb26-24"></a><span class="st">                 </span>(Ia) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Ca) <span class="op">+</span></span>
+<span id="cb26-25"><a href="#cb26-25"></a><span class="st">                 </span>(Ip) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cp) <span class="op">+</span></span>
+<span id="cb26-26"><a href="#cb26-26"></a><span class="st">                 </span>(Im) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cm) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">-</span>iso_m) <span class="op">+</span></span>
+<span id="cb26-27"><a href="#cb26-27"></a><span class="st">                 </span>(Is) <span class="op">*</span><span class="st"> </span>(beta0) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>N) <span class="op">*</span><span class="st"> </span>(Cs) <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span><span class="op">-</span>iso_m))</span>
+<span id="cb26-28"><a href="#cb26-28"></a>  <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">update_tmb_indices</span>()</span>
+<span id="cb26-29"><a href="#cb26-29"></a>)</span></code></pre></div>
+<p>The first step, <code>flexmodel</code>, in this pipeline initializes the compartmental model by specifying objects containing the parameters and state variables respectively.</p>
+<p>Each subsequent call to <code>add_rate</code> defines the dependence of a single non-zero rate matrix element on parameters and state variables. When used in a pipeline, the <code>add_rate</code> function takes three arguments.</p>
+<ol style="list-style-type: decimal">
+<li><p><code>from</code> – character string describing the state associated with the row of the rate matrix</p></li>
+<li><p><code>to</code> – character string describing the state associated with the column of the rate matrix</p></li>
+<li><p><code>formula</code> – one-sided model formula defining the dependence based on symbols associated named parameter and state vectors</p>
+<ul>
+<li><p>Any single parameter or state variable name, <code>x</code>, can be placed in parentheses to produce a <em>factor</em> in the following three ways</p>
+<ul>
+<li>Identity: <code>(x)</code></li>
+<li>Complement: <code>(1-x)</code></li>
+<li>Inverse: <code>(1/x)</code></li>
+</ul></li>
+<li><p>Factors can be multiplied together with the <code>*</code> operator to produce a <em>product</em></p></li>
+<li><p>Products and factors can be added together with the <code>+</code> operator to produce a non-zero rate matrix element</p></li>
+</ul></li>
+</ol>
+<p>The final step of the pipeline adds the indices to be passed to <code>TMB</code>/<code>C++</code> that are described in the <a href="#data-structure-0.0.1">Data Structure</a> section below.</p>
+</div>
+<div id="data-structure-0.0.1" class="section level3">
+<h3>Data Structure (0.0.1)</h3>
+<p>The object created by the pipeline in the <a href="#user-interface-0.0.1">User Interface</a> section above must contain at a minimum the following seven objects.</p>
+<ol style="list-style-type: decimal">
+<li><p>The initial value of a <code>state_pansim</code> object representing the vector, <code>state</code>, containing the state variables</p></li>
+<li><p>The initial value of a <code>param_pansim</code> object representing the vector, <code>params</code>, containing the parameters</p></li>
+<li><p>An integer vector, <code>spi</code>, of 1-based indices into a concatenation, <code>state_param</code>, of <code>state</code> and <code>param</code></p>
+<ul>
+<li>The ordering of the elements of <code>state_param</code> is arbitrary because several integer vectors defined below contain indices into these elements for book-keeping purposes on the <code>TMB</code>/<code>C++</code> side</li>
+<li>However, typically it will make sense to at least keep the state variables together and the parameters together</li>
+<li>On the <code>R</code> side, <code>spi</code> has the property that <code>state_param[spi]</code> returns a vector of state variables and parameters in the order in which they occur in the factor vector defined above in the Mathematical Description section</li>
+<li>Note that <code>state_param[spi]</code> does not return the factor vector itself – to get the factor vector from <code>state_param[spi]</code> you would need to modify some of the elements by taking their complements and inverses</li>
+</ul></li>
+<li><p>An integer vector, <code>modifier</code>, of the same length as <code>spi</code></p>
+<ul>
+<li><p>Each element of <code>modifier</code> corresponds to a factor, as defined above in the Mathematical Description</p></li>
+<li><p>These elements bit-wise encode several pieces of information</p>
+<ul>
+<li>What elements of <code>state_param[spi]</code> need to transformed by complements or inverses</li>
+<li>Whether complements or inverses should be used for those elements that need to be transformed</li>
+<li>What elements of <code>state_param[spi]</code> need to be multiplied together to take products</li>
+</ul></li>
+<li><p>The binary expansion of these elements can each be represented with three bits, with each bit encoding different information</p>
+<ul>
+<li>The left-most bit is <code>1</code> if the corresponding factor is the first in a product that needs to be added to a previous product, and <code>0</code> otherwise</li>
+<li>The middle bit is <code>1</code> if the corresponding factor requires a complement and <code>0</code> otherwise</li>
+<li>The right-most bit is <code>1</code> if the corresponding factor requires an inverse and <code>0</code> otherwise</li>
+</ul></li>
+</ul></li>
+<li><p>An integer vector, <code>from</code>, of 1-based indices, the <span class="math inline">\(i\)</span>th element of which points to the row of the <span class="math inline">\(i\)</span>th non-zero rate matrix element</p></li>
+<li><p>An integer vector, <code>to</code>, of 1-based indices, the <span class="math inline">\(i\)</span>th element of which points to the column of the <span class="math inline">\(i\)</span>th non-zero rate matrix element</p></li>
+<li><p>An integer vector, <code>count</code>, the <span class="math inline">\(i\)</span>th element of which gives the number of factors used to calculate the <span class="math inline">\(i\)</span>th non-zero rate matrix element</p>
+<ul>
+<li>In terms of the Mathematical Description above, the elements of <code>count</code> store these sums <span class="math inline">\(\sum_{j=1}^{n_i}m_{ij}\)</span></li>
+</ul></li>
+</ol>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

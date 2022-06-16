@@ -15,5 +15,5 @@ tmb_params_trans(model, vec_type = c("tmb_fun_arg", "params", "tv_mult"))
 (3) tv_mult = same length as the \code{model$timevar$piece_wise$schedule$init_tv_mult}}
 }
 \description{
-Parameter Vectors Transformed for TMB
+TODO: this should not be user-facing
 }

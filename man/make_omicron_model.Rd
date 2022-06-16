@@ -21,12 +21,14 @@ Other flexmodels:
 \code{\link{flexmodel}()},
 \code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
+\code{\link{make_hello_world_model}()},
 \code{\link{make_sir_model}()},
 \code{\link{make_vaccination_model}()}
 
 Other canned_models: 
 \code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
+\code{\link{make_hello_world_model}()},
 \code{\link{make_sir_model}()},
 \code{\link{make_vaccination_model}()}
 }

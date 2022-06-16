@@ -4,52 +4,67 @@
 # generic getters ------------------------
 
 #' Get and Set Model Parameters
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @return parameter vector or data frame of time-variation of parameters
+#' @name get_and_set_model_parameters
+NULL
+
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_base_sim = function(model) {
   UseMethod('pars_base_sim')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_base_init = function(model) {
   UseMethod('pars_base_init')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_base_opt = function(model) {
   UseMethod('pars_base_opt')
 }
 
-#' Get Time-Varying Parameters
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_time_sim = function(model) {
   UseMethod('pars_time_sim')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_time_spec = function(model) {
   UseMethod('pars_time_spec')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_time_opt = function(model) {
   UseMethod('pars_time_opt')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_time_series = function(model) {
   UseMethod('pars_time_series')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_infer_init = function(model) {
   UseMethod('pars_infer_init')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_infer_opt = function(model) {
   UseMethod('pars_infer_opt')
 }
 
+#' @rdname get_and_set_model_parameters
 #' @export
 pars_infer_conf = function(model) {
   UseMethod('pars_infer_conf')
@@ -124,7 +139,8 @@ pars_infer_opt.flexmodel_calibrated = function(model) {
 
 # generic setters ------------------------
 
-#' Get Baseline Parameters
+#' @param value named vector of parameters
+#' @rdname get_and_set_model_parameters
 #' @export
 `pars_base_sim<-` = function(model, value) {
   UseMethod("pars_base_sim<-")

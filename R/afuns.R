@@ -4,6 +4,7 @@
 ##' @param p parameters
 ##' @param state state (needed for vaxified model)
 ##' @param method computation method
+##' @family classic_macpan
 ##' @export
 get_r <- function(p, state = NULL,
                   method = c("expsim", "kernel", "analytical")) {
@@ -35,6 +36,7 @@ get_r <- function(p, state = NULL,
 ##' @param p parameters
 ##' @param method computational method
 ##' @param ... args passed through to rExp (esp testify flag!)
+##' @family classic_macpan
 ##' @export
 get_evec <- function(p, method = c("expsim", "analytical"), ...) {
     method <- match.arg(method)
@@ -57,6 +59,7 @@ get_evec <- function(p, method = c("expsim", "analytical"), ...) {
 ##' compute mean generation interval from parameters
 ##' @param p a set of parameters
 ##' @param method computational method
+##' @family classic_macpan
 ##' @export
 get_Gbar <- function(p, method = c("analytical", "kernel")) {
     method <- match.arg(method)
@@ -75,6 +78,7 @@ get_Gbar <- function(p, method = c("analytical", "kernel")) {
 ##' compute R0, r, etc. based on kernel computation
 ##' @param params parameter vector
 ##' @param winstretch Length of window as multiple of analytic estimate
+##' @family classic_macpan
 ##' @export
 ## FIXME: check agreement between get_GI_moments() and kk ?
 get_kernel_moments <- function(params, winstretch=10) {
@@ -87,6 +91,7 @@ get_kernel_moments <- function(params, winstretch=10) {
 
 ##' compute moments of generation interval (mean and CV^2)
 ##' @param params parameters
+##' @family classic_macpan
 ##' @export
 get_GI_moments <- function(params) {
     ## FIXME: assumes ICU1 model. Consider adding a test in case this changes?
@@ -125,6 +130,7 @@ get_GI_moments <- function(params) {
 ##' @param params parameters
 ##' @param components report R0 component-by-component?
 ##' @param method computation method
+##' @family classic_macpan
 ##' @export
 get_R0 <- function(params, components = FALSE,
                    method = c("analytical", "kernel")) {

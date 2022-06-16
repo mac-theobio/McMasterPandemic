@@ -1,22 +1,23 @@
 Package: McMasterPandemic
 Title: Pandemic Model
-Description: This is a compartmental model for pandemic modeling/health care utilization.
-Version: 0.0.20.1
+Description: This is a modelling framework for pandemic forecasting and health care utilization.
+Version: 0.2.0.0
 Maintainer: Steve Walker <swalk@mcaster.ca>
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
+         person("Steve Walker",role="aut"),
 	   	   person("David Earn",role="aut"),
 	   	   person("Morgan Kain",role="aut"),
 		   person("Mike Li",role="aut"),
 		   person("Jonathan Dushoff",role="aut"),
 		   person("Zach Levine", role="ctb"),
-		   person("Matthew So", role="ctb"))
+		   person("Matthew So", role="ctb"),
+		   person("Weiguang Guan", rol="ctb"),
+		   person("Darren Flynn-Primrose", rol="ctb"))
 Depends: R (>= 4.0.0), TMB, RcppEigen, dplyr, methods
 Imports:
 	lattice,
 	Matrix,
 	MASS,
-	methods,
-	dplyr,
 	ggplot2,
 	tidyr,
 	plyr,
@@ -38,10 +39,12 @@ Imports:
 	foreach, 
 	readr, 
 	stringr,
-	semver
+	semver,
+	lubridate,
+	testthat,
+	numDeriv
 Suggests:
 	knitr,
-	testthat,
 	cowplot,
 	tikzDevice,
 	igraph,
@@ -58,4 +61,4 @@ Encoding: UTF-8
 License: GPL
 LazyData: yes
 VignetteBuilder: knitr
-URL: https://github.com/bbolker/McMasterPandemic
+URL: https://github.com/mac-theobio/McMasterPandemic

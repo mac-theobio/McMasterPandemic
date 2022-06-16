@@ -25,3 +25,9 @@ Evaluate two expressions in the environment in which
 \code{time_wrap} is called, and record the system
 time associated with each expression.
 }
+\seealso{
+Other compare: 
+\code{\link{compare_grads}()},
+\code{\link{compare_sims}()}
+}
+\concept{compare}

@@ -8,7 +8,6 @@
 \alias{\%*\%,struc,struc-method}
 \alias{kronecker,struc,struc-method}
 \alias{t,struc-method}
-\alias{inner,struc,struc-method}
 \alias{sum,struc-method}
 \alias{prod,struc-method}
 \alias{rowSums,struc-method}
@@ -25,8 +24,6 @@
 \S4method{kronecker}{struc,struc}(X, Y)
 
 \S4method{t}{struc}(x)
-
-\S4method{inner}{struc,struc}(x, y)
 
 \S4method{sum}{struc}(x, ..., na.rm = FALSE)
 
@@ -53,8 +50,6 @@ function.
 \item \code{kronecker}: Kronecker product
 
 \item \code{t}: Matrix or vector transpose
-
-\item \code{inner}: Inner product of vectors or matrices
 
 \item \code{sum}: Sum of vector or matrix elements
 

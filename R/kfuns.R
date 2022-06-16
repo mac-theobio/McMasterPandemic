@@ -85,6 +85,7 @@ rmult <- function(k, r) {
 ##' rExp(pp)
 ##' rExp(pp,return_val="eigenvector")
 ##' rExp(pp,return_val="eigenvector",testify=TRUE)
+##' @family classic_macpan
 ##' @export
 rExp <- function(params,
                  steps = getOption("MP_rexp_steps_default"),

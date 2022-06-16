@@ -20,7 +20,6 @@ flexmodel(
   sim_lower_bound = getOption("MP_default_sim_lower_bound"),
   max_iters_eig_pow_meth = 8000,
   tol_eig_pow_meth = 1e-06,
-  haz_eps = 1e-06,
   data = NULL,
   ...
 )
@@ -51,7 +50,10 @@ if \code{spec_ver_gt('0.1.0')}}
 linearized model that is used to construct the initial state
 variable -- only used when \code{do_make_state == TRUE}}
 
-\item{do_approx_hazard}{like \code{do_approx_hazard} but for
+\item{do_approx_hazard}{approximate the hazard transformation
+by a smooth function (experimental)}
+
+\item{do_approx_hazard_lin}{like \code{do_approx_hazard} but for
 the linearized model that is used to construct the initial
 state (experimental)}
 
@@ -87,6 +89,7 @@ https://canmod.net/misc/flex_specs
 Other flexmodels: 
 \code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
+\code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
 \code{\link{make_sir_model}()},
 \code{\link{make_vaccination_model}()}

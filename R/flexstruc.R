@@ -82,9 +82,9 @@ mat = function(...) {
 #'
 #' @param x character vector
 #' @param y character vector
+#' @param sep character for separating \code{x} and \code{y} components
 #'
 #' @family struc_functions
-#' @return
 #' @export
 cross_mat = function(x, y, sep = "_") {
   struc(matrix(
@@ -209,18 +209,20 @@ setMethod('resolve', c(x = 'struc_expanded'),
 #' Convert struc Object to a matrix
 #'
 #' @param x \code{\link{struc-class}} object
+#' @param ... for S3 method consistency
 #' @return matrix
 #' @export
-as.matrix.struc = function(x) {
+as.matrix.struc = function(x, ...) {
   matrix(x@v, x@dims[1], x@dims[2])
 }
 
 #' Convert struc Object to a character vector
 #'
 #' @param x \code{\link{struc-class}} object
+#' @param ... for S3 method consistency
 #' @return character vector
 #' @export
-as.character.struc = function(x) {
+as.character.struc = function(x, ...) {
   as.character(as.matrix(x))
 }
 
@@ -386,8 +388,6 @@ setGeneric('inner',
              standardGeneric('inner')
            })
 
-#' @describeIn struc Inner product of vectors or matrices
-#' @export
 setMethod("inner", c(x = 'struc', y = 'struc'),
     function(x, y) {
       stopifnot(same_dims(x, y))

@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{getting started}
+%\VignetteIndexEntry{Getting Started}
 %\VignetteEngine{knitr::knitr}
 %\VignetteEncoding{UTF-8}
 \documentclass[12pt]{article}

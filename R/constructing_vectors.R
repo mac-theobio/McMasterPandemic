@@ -1,0 +1,98 @@
+##' Layered Zero State Vector
+##'
+##' Initialize a state vector with all zeros that is based on
+##' a fully-crossed set of states in several sub-models.
+##'
+##' @param ... character vectors with sub-model state names
+##'
+##' @export
+layered_zero_state = function(...) {
+  state_nms = (list(...)
+   %>% lapply(as.character)
+   %>% Reduce(f = expand_names)
+  )
+  const_named_vector(state_nms, 0)
+}
+
+##' Constant Named Vector
+##'
+##' @param nms names of the output vector
+##' @param cnst single numeric value to be used in every element of the
+##' output vector
+##'
+##' @export
+const_named_vector = function(nms, cnst) {
+  stopifnot(length(cnst) == 1L)
+  stopifnot(is.character(nms))
+  setNames(rep(cnst[[1]], length(nms)), nms)
+}
+
+##' Expand Strain Names
+##'
+##' Like \code{\link{expand_names}} but for multi-strain models
+##'
+##' @param n_strains number of strains
+##' @param base_states character vector giving the states of the base model
+##' @param infected_states character vector giving the infected states
+##' @param strain_name_prefix prefix for names of strains (they are numbered)
+##' @return
+expand_strain_frame = function(
+    n_strains = 2,
+    base_states = c("S", "I", "R"),
+    infected_states = c(),
+    strain_name_prefix = "strain"
+  ) {
+  stopifnot(length(strain_name_prefix) == 1L)
+  prod_states = (base_states
+    %>% list
+    %>% rep(n_strains)
+    %>% setNames(strain_name_prefix %_% seq_len(n_strains))
+    %>% do.call(what = expand.grid)
+  )
+  no_super_infection_mat = matrix(
+    as.matrix(prod_states) %in% infected_state,
+    nrow = nrow(prod_states)
+  )
+  no_super_infection = apply(no_super_infection_mat, 1, sum) %in% c(0, 1)
+  prod_states[no_super_infection, ]
+}
+
+##' @inheritDotParams expand_strain_frame
+expand_strain_names = function(...) {
+  unname(apply(expand_strain_frame(...), 1, paste0, collapse = ""))
+}
+
+#' Merge One Vector into Another by Name
+#'
+#' If an item in \code{u} has the same name as an item
+#' in \code{v} then replace the value in \code{v} with that
+#' in \code{u}, otherwise create a new element in \code{v}.
+#'
+#' @param v named vector or list
+#' @param u named vector of list
+#' @export
+merge_named_vectors = function(v, u) {
+  if (is.null(names(v)) | is.null(names(u)) ) {
+    stop("v and u must be named vectors")
+  }
+  for (nm in names(u)) {
+    v[nm] = u[nm]
+  }
+  return(v)
+}
+
+##' Merge Named Vector Attribute
+##'
+##' @param v vector with an attribute, \code{a}
+##' @param u vector with attribute \code{a} that will be merged into
+##' \code{a} in \code{v} using \code{\link{merge_named_vectors}}
+##' @param a name of the atribute to merge
+##'
+##' @export
+merge_named_vec_attr = function(v, u, a) {
+  attr_v = attributes(v)
+  attr_u = attributes(u)
+  attr_v[[a]] = merge_named_vectors(attr_v[[a]], attr_u[[a]])
+  attributes(v) = attr_v
+  return(v)
+}

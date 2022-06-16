@@ -14,7 +14,13 @@ rate_summary(
 \arguments{
 \item{model}{a \code{\link{flexmodel}} object}
 
+\item{include_parse_info}{include information of numbers of variables,
+products, and factors associated with each rate}
+
 \item{include_formula}{include a column for the expanded rate formula}
+
+\item{include_latex}{include a column with latex code for the rate formula
+(experimental)}
 }
 \description{
 Summarize the properties of the rates of transition amongst the

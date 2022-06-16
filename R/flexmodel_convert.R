@@ -1,20 +1,25 @@
-# Convert between different types of flexmodels
-
+#' Convert between Types of Flexmodels
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @return another \code{\link{flexmodel}} object of a different type
 #' @export
 as.flexmodel = function(model) {
   UseMethod('as.flexmodel')
 }
 
+#' @rdname as.flexmodel
 #' @export
 as.flexmodel_to_calibrate = function(model) {
   UseMethod('as.flexmodel_to_calibrate')
 }
 
+#' @rdname as.flexmodel
 #' @export
 as.flexmodel_obs_error = function(model) {
   UseMethod('as.flexmodel_obs_error')
 }
 
+#' @rdname as.flexmodel
 #' @export
 as.flexmodel_one_step = function(model) {
   UseMethod('as.flexmodel_one_step')

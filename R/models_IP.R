@@ -1,6 +1,7 @@
 #' Make an Omicron invasion model
 #'
 #' @inheritDotParams init_model
+#' @inheritParams make_vaccination_model
 #' @family flexmodels
 #' @family canned_models
 #' @export

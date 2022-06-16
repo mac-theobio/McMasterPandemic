@@ -2,6 +2,7 @@
 ##' This is implemented for performance reasons, as it is much faster than sweep.
 ##' @param M matrix
 ##' @param v vector
+##' @family classic_macpan
 ##' @export
 col_multiply <- function(M, v) {
     new <- M * v ## t(t(M) * rep(v, rep.int(nrow(M), length(v))))
@@ -15,6 +16,7 @@ col_multiply <- function(M, v) {
 ## FIXME: derive from make_ratemat
 ##' @param state state vector (named)
 ##' @param params parameter vector
+##' @family classic_macpan
 ##' @export
 ##' @examples
 ##' params <- read_params("ICU1.csv")
@@ -86,6 +88,7 @@ make_jac <- function(params, state = NULL) {
 ##' @param state state vector
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
+##' @family classic_macpan
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
 make_betavec <- function(state, params, full = TRUE) {
@@ -159,6 +162,7 @@ calc_variant_adjustment <- function(params,
 ##' @param params parameter vector
 ##' @param full include non-infectious compartments (with transmission of 0) as well as infectious compartments?
 ##' @importFrom fastmatrix kronecker.prod
+##' @family classic_macpan
 ##' @export
 ## QUESTION: is the main testify argument to this function used?
 make_beta <- function(state, params, full = TRUE) {
@@ -402,6 +406,7 @@ make_beta <- function(state, params, full = TRUE) {
 ##'    image(Matrix(M))
 ##' }
 ##' make_ratemat(state,params,symbols=TRUE)
+##' @family classic_macpan
 ##' @export
 make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
                          symbols = FALSE, indices = FALSE) {
@@ -638,6 +643,7 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
 ##' maybe more efficient than modifying & returning the whole matrix
 ##' @inheritParams make_ratemat
 ##' @param beta vector or matrix of transmission rates, where (length(beta) | ncol(beta)) == length(state)
+##' @family classic_macpan
 ##' @export
 ## FIXME DRY from make_ratemat
 update_foi <- function(state, params, beta) {
@@ -757,6 +763,7 @@ update_ratemat <- function(ratemat, state, params, testwt_scale = "N") {
 ##' @param stoch_proc stochastic process error?
 ##' @param testwt_scale how to scale testing weights? "none"=use original weights as specified;
 ##' "N" = multiply by (pop size)/(sum(wts*state[u_pop])); "sum_u" = multiply by (sum(state[u_pop])/(sum(wts*state[u_pop])))
+##' @family classic_macpan
 ##' @export
 ##' @examples
 ##' params1 <- read_params("ICU1.csv")
@@ -877,7 +884,10 @@ deprecate_timepars_warning <- FALSE
 ##' @param condense_args arguments to pass to \code{\link{condense}} (before adding observation error)
 ##' @param use_ode integrate via ODE rather than discrete step?
 ##' @param ode_args additional arguments to \code{\link[deSolve]{ode}}
-##' @param use_flex use \code{flexmodel} approach (experimental)
+##' @param use_flex use \code{flexmodel} approach
+##' @param flexmodel optional \code{\link{flexmodel}} object
+##' @param obj_fun optional TMB objective function computed with
+##' \code{\link{tmb_fun}}
 ##' @examples
 ##' params <- read_params("ICU1.csv")
 ##' paramsS <- update(params,c(proc_disp=0.1,obs_disp=100))
@@ -899,6 +909,7 @@ deprecate_timepars_warning <- FALSE
 ##' plot(res3_Sz,log=TRUE,log_lwr=1e-4)
 ##' @importFrom stats rnbinom na.exclude napredict
 ##' @param verbose print messages (e.g. about time-varying parameters)?
+##' @family classic_macpan
 ##' @export
 ## FIXME: automate state construction better
 run_sim <- function(params,
@@ -1375,6 +1386,7 @@ run_sim <- function(params,
 ##' @param vaxify expand state vector to include groups that have 1-2 vaccine doses (??)
 ##' @note \code{"CI"} refers to the Stanford group's
 ##'     "covid intervention" model.
+##' @family classic_macpan
 ##' @export
 ##' @examples
 ##' p <- read_params("ICU1.csv")
@@ -1597,6 +1609,7 @@ gradfun <- function(t, y, parms, M) {
 ##' matplot(r1[,"t"],r1[,-1],type="l",lty=1,log="y")
 ##' matlines(r2[,"t"],r2[,-1],lty=2)
 ##' @importFrom dplyr left_join
+##' @family classic_macpan
 ##' @export
 run_sim_range <- function(params,
                           state = make_state(params[["N"]], params[["E0"]]),

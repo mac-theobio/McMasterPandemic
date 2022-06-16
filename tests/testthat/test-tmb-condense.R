@@ -1,6 +1,7 @@
 library(McMasterPandemic)
 library(dplyr)
 
+
 # version 0.2.0 will run without error, but will not create the required columns
 # in the simulation history.
 # version 0.2.1 with run with error until the 0.2.1 specs are implemented

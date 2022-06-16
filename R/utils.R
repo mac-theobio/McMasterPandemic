@@ -100,6 +100,7 @@ label_dict$Label <- ff(label_dict$Label)
 ## FIXME: NA for non-matches??? cleaner way to do this?
 ##' @importFrom stats na.omit
 ##' @param x a vector of state variables (factor or character)
+##' @family classic_macpan
 ##' @export
 trans_state_vars <- function(x) {
     if (inherits(x, "data.frame")) {
@@ -127,6 +128,7 @@ trans_state_vars <- function(x) {
 ##' @param desc_col name of (optional) column containing descriptions
 ##' @importFrom stats setNames
 ##' @importFrom utils read.csv write.table
+##' @family classic_macpan
 ##' @export
 read_params <- function(fn, value_col = "Value", symbol_col = "Symbol",
                         desc_col = "Parameter") {
@@ -153,6 +155,7 @@ read_params <- function(fn, value_col = "Value", symbol_col = "Symbol",
 ##' @param fn file name
 ##' @param params a params object
 ##' @param label a label for the parameters
+##' @family classic_macpan
 ##' @export
 write_params <- function(params, fn, label) {
     writeLines(
@@ -187,6 +190,7 @@ write_params <- function(params, fn, label) {
 ##' invlink_trans(tst2)
 ##' invlink_trans(list(time_beta=1,log_time_beta=0))  ## ignore non-link prefixes
 ##' invlink_trans(list(time_beta=c(2,3),log_time_beta=c(a=0,b=0)))  ##
+##' @family classic_macpan
 ##' @export
 invlink_trans <- function(p, unknown_link = "ignore", links = c("log", "log10", "logit")) {
     r <- vector("list", length(p))
@@ -239,6 +243,7 @@ invlink_trans <- function(p, unknown_link = "ignore", links = c("log", "log10", 
 ##' opt_pars <- list(log_E0=4, log_beta0=-1, log_rel_beta0=c(-1,-1), log_nb_disp=0)
 ##' restore(unlist(opt_pars),opt_pars)
 ##' invlink_trans(restore(unlist(opt_pars),opt_pars))
+##' @family classic_macpan
 ##' @export
 ## FIXME: fixed param might be obsolete (and we could go back to just using relist()
 ## now that we're using mle2 with its own fixed capabilities?
@@ -301,6 +306,7 @@ check_dots <- function(..., action = "stop") {
 ##' texify("R0 = beta/gamma", dollars=FALSE, force=TRUE)
 ##'
 ##' @seealso \code{\link[Hmisc:latex]{latexTranslate}}
+##' @family classic_macpan
 ##' @export
 texify <- function(x, dollars = TRUE, force = dev_is_tikz()) {
     if (!is.character(x)) {
@@ -358,6 +364,7 @@ texify <- function(x, dollars = TRUE, force = dev_is_tikz()) {
 ##' Convenient for dealing with text in graphics,
 ##' which can be rendered much more professionally with \code{\link[tikzDevice:tikzDevice-package]{tikz}}.
 ##' @return logical
+##' @family classic_macpan
 ##' @export
 dev_is_tikz <- function() {
     return(names(grDevices::dev.cur()) == "tikz output")
@@ -408,6 +415,7 @@ legacy_time_args <- function(x, update = FALSE) {
 ##' get_opt_pars(params,vars="hosp")
 ##' get_opt_pars(params,vars="report")
 ##' @importFrom stats qlogis
+##' @family classic_macpan
 ##' @export
 get_opt_pars <- function(params, vars = c("hosp", "death", "report")) {
     opt_pars <- list(params = c(
@@ -474,6 +482,7 @@ get_DE_lims <- function(opt_pars, default = c(lwr = -1, upr = 1),
 }
 
 ##' recursively log-ify expressions
+##' @family classic_macpan
 ##' @export
 ##' @param x an expression
 ##' @examples
@@ -560,6 +569,7 @@ recompress <- function(fn) {
 
 ##' extract and return original fitting data
 ##' @param x a fitted object
+##' @family classic_macpan
 ##' @export
 getData <- function(x) {
     x$mle2@data$data
@@ -644,7 +654,6 @@ state_round <- function(x) {
     round(x)
 }
 
-#' @export
 norm_vec = function(x) x/sum(x)
 
 do_variant <- function(x) {
@@ -683,6 +692,7 @@ do_variant <- function(x) {
 ##' show_ratemat(M)
 ##' ## silly but shows we can do multiple block types in different colours
 ##' show_ratemat(M, block_size=c(3,5), block_col=c(2,4))
+##' @family classic_macpan
 ##' @export
 show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
                          subset = NULL,
@@ -796,6 +806,7 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
 ##' vis_model()
 ##' vis_model(testify=TRUE)
 ##' vis_model(method="diagram")
+##' @family classic_macpan
 ##' @export
 vis_model <- function(params = read_params("PHAC_testify.csv"), testify = FALSE,
                       ageify = FALSE, method = c("Matrix", "diagram", "igraph"), ...) {
@@ -923,6 +934,7 @@ capitalize <- function(x) {
 ##' }
 ##' @param x fitted model (\code{fit_pansim})
 ##' @param sim_fun simulation function
+##' @family classic_macpan
 ##' @export
 fix_stored <- function(x, sim_fun = run_sim_break) {
     if (requireNamespace("anytime")) {

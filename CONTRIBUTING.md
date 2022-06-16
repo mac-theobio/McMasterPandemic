@@ -2,32 +2,31 @@
 
 Thank you for contributing to our project.
 
-## Architecture
+This document needs quite a bit of work, but the section on `Development Tools` should be useful -- please stay tuned ...
 
-### Current Architecture
+## Development Tools
 
-The simplified current architecture is described by the following diagram.
+* the main system dependencies are R, git, and pandoc (latest versions are recommended, but not strictly required) -- there are other dependencies (e.g. curl, openssl), but the specific requirements will vary among platforms (see `dockerfile` for details on Debian Linux)
+* as a convenience you can install all of the R and tex package dependencies using `make dependencies` or running `/misc/dependencies.R`
+* to re-install the package, including re-building and incorporating vignettes, use `make build-package`
+* If you modify function arguments, you should change the roxygen documentation accordingly. If you change the roxygen documentation, please use `make doc-update` to update the `.Rd` files.
+* **please test/check the package periodically** as you go (use `make pkgcheck` and `make pkgtest` from the shell or `devtools::check()` and `devtools::test()` from within R). (Tests are also run on [GitHub Actions](https://github.com/mac-theobio/McMasterPandemic/actions); if you want to skip CI testing, e.g. for a trivial commit, put `[skip ci]` somewhere in your commit message.) Please don't make a habit of pushing without testing.
+* To avoid whitespace diffs between versions/branches, automatically style the package with `make style` or run `misc/macpan_style.R`. `make style` (or running `misc/macpan_lint.R`) also creates a new file, `misc/lints.csv`, which contains stylistic and other lints that `styler` cannot automatically fix.
+* rebuild the `pkgdown` site using [GitHub Actions](https://github.com/mac-theobio/McMasterPandemic/actions/workflows/pkgdown.yaml): click "run workflow" on the link to rebuild. 
+* Code that is used in the refactoring process should go in the top-level `refactor` folder. 
+* Slow tests are skipped by default; this process is controlled by the presence of a `MACPAN_TEST_LEVEL` environment (shell) variable. Many of the test files contain this code:
+```r
+testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
+```
+which sets `testLevel` to a default value of 1 unless the environment variable is found. You can set this environment variable outside of your R session (e.g. via `export MACPAN_TEST_LEVEL=2` in  a bash shell), or via `Sys.setenv(MACPAN_TEST_LEVEL=2)` from within R. In principle this mechanism allows for a hierarchy of slowness; at present only 1 and >1 are distinguished.
 
-![](assets/architecture.svg)
 
-Each box is a layer of functions that call functions in the layers below them.
-
-Model definition functions are used to create and manipulate parameter and state-variable objects that define model structure and defaults values.  These objects have S3 classes `params_pansim` and `state_pansim`.  Common functions in this layer are `read_params`, `make_state`, and `expand_state_vax`.
-
-The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, `forecast_sim`, and others that are typically not used by users (e.g. `run_sim_range`, ...)
-
-### Target Architecture Proposal
-
-![](assets/target_architecture.svg)
-
-### Engine-Client Separation
+## Engine-Client Separation
 
 * Currently one client -- the R client -- and hopefully/probably we will only ever have one client
 * Currently two engines
   * Original R
   * TMB
-
-
 * Stuff that goes in the engine:
   * Indices
   * Simulation steps
@@ -39,18 +38,6 @@ The forecasting and simulation functions allow one to ... `do_step`, `run_sim`, 
   * Names of parameters (e.g. transmission rate)
   * Names of loss functions (e.g. negative binomial, gaussian)
   * Topology of flow among states
-
-#### NOTES
-
-* What about summary methods for parameters?
-  * Use case -- compute R0/r/Gbar for an _ensemble_ of mcmc simulations of parameters
-  * In general we might need a many-to-one relationship between parameter sets and compartmental models
-* In general we need to think about ensembles, sampling from parameter distributions, importance sampling, mcmc, etc...
-
-
-## Engines
-
-
 
 ## Maintaining C++ Code
 
@@ -189,22 +176,6 @@ Simulation functions are all driven by the `simulate` method of TMB objects. The
 
 `flexmodel` objects contain two parameter vectors: `params` and `tv_mult`
 
-
-
-
-
-coef.flexmodel = function(
-  object,
-  vector = c("tmb_arg", "params", "tv_mult"),
-  full = TRUE,
-  optimized = FALSE,
-  transformed = FALSE,
-  ...
-) {
-  
-}
-default, opt_init, opt_final
-
 ## Testing Infrastructure
 
 When one only wants to test the TMB refactored functionality, please use the following commands.
@@ -219,14 +190,13 @@ The test level can be increased to `>1` to run tests that are slower because the
 It is also possible to only run tests associated with specific areas.
 
 ```
-test-tmb 
-test-tmb-forecast
-test-tmb-struc                       
-test-tmb-calibrate
-test-tmb-make-state
-test-tmb-timevar
+make test-tmb 
+make test-tmb-forecast
+make test-tmb-struc                       
+make test-tmb-calibrate
+make test-tmb-make-state
+make test-tmb-timevar
 ```
-
 
 ## Adding to the sp Vector on the C++ Side
 

@@ -16,7 +16,7 @@
 ##' variable -- only used when \code{do_make_state == TRUE}
 ##' @param do_approx_hazard approximate the hazard transformation
 ##' by a smooth function (experimental)
-##' @param do_approx_hazard like \code{do_approx_hazard} but for
+##' @param do_approx_hazard_lin like \code{do_approx_hazard} but for
 ##' the linearized model that is used to construct the initial
 ##' state (experimental)
 ##' @param do_make_state should state be remade on the c++ size?
@@ -44,22 +44,23 @@
 ##' @importFrom lubridate Date
 ##' @export
 flexmodel <- function(params, state = NULL,
-                       start_date = NULL, end_date = NULL,
-                       params_timevar = NULL,
-                       do_hazard = getOption("MP_default_do_hazard"),
-                       do_make_state = getOption("MP_default_do_make_state"),
-                       do_hazard_lin = getOption("MP_default_do_hazard_lin"),
-                       do_approx_hazard = getOption("MP_default_do_approx_hazard"),
-                       do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
-                       do_sim_constraint = getOption("MP_default_do_sim_constraint"),
-                       sim_lower_bound = getOption("MP_default_sim_lower_bound"),
-                       max_iters_eig_pow_meth = 8000,
-                       tol_eig_pow_meth = 1e-6,
-                       haz_eps = 1e-6,
-                       data = NULL,
-                       ...) {
+       start_date = NULL, end_date = NULL,
+       params_timevar = NULL,
+       do_hazard = getOption("MP_default_do_hazard"),
+       do_make_state = getOption("MP_default_do_make_state"),
+       do_hazard_lin = getOption("MP_default_do_hazard_lin"),
+       do_approx_hazard = getOption("MP_default_do_approx_hazard"),
+       do_approx_hazard_lin = getOption("MP_default_do_approx_hazard_lin"),
+       do_sim_constraint = getOption("MP_default_do_sim_constraint"),
+       sim_lower_bound = getOption("MP_default_sim_lower_bound"),
+       max_iters_eig_pow_meth = 8000,
+       tol_eig_pow_meth = 1e-6,
+       data = NULL, ...) {
     if(!is.null(data)) {
-      stop("currently the data argument is not working ... please use update_observed instead")
+      stop(
+        "currently the data argument is not working.\n",
+        "please use update_observed instead"
+      )
     }
     check_spec_ver_archived()
     name_regex = wrap_exact(getOption("MP_name_search_regex"))
@@ -172,7 +173,7 @@ flexmodel <- function(params, state = NULL,
         model$do_make_state = do_make_state
         model$max_iters_eig_pow_meth = max_iters_eig_pow_meth
         model$tol_eig_pow_meth = tol_eig_pow_meth
-        model$haz_eps = haz_eps
+        model$haz_eps = 1e-6
         model$disease_free = list()
         model$linearized_params = list()
         model$outflow = list()
@@ -548,6 +549,8 @@ factr <- function(factr_nm, formula, state, params, sums, factrs, ratemat) {
 #' @family flexmodel_definition_functions
 #' @export
 add_factr <- function(model, factr_nm, formula) {
+  state <- params <- sum_vector <- factr_vector <- state <- params <-
+    sum_vector <- factr_vector <- pow_vector <- ratemat <- NULL
   unpack(model)
 
   added_factr <- (factr_nm
@@ -677,6 +680,12 @@ pow = function(pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms,
 #' power law to the state variables, parameters, sums of these
 #' things, and factr expressions of them as well.
 #'
+#' @param model \code{\link{flexmodel}} object
+#' @param pow_nms name of the resulting power law
+#' @param pow_arg1_nms names of the variables used as the bases
+#' @param pow_arg2_nms names of the variables used as the exponents
+#' @param pow_const_nms names of the variables used as the constant
+#'
 #' @export
 add_pow = function(model, pow_nms, pow_arg1_nms, pow_arg2_nms, pow_const_nms) {
   model$pow = rbind(model$pow, pow(
@@ -795,6 +804,10 @@ add_sim_report_expr = function(model, expr_nm, formula) {
 #' differencing. See \code{\link{avail_for_lag}} for a function that will
 #' return the names of all variables that are available for differencing.
 #' @param delay_n Delay in days for determining the lag in the differences.
+#' @param lag_dates Dates between which differences should be taken.
+#' @param input_names names of variables to be differenced
+#' @param output_names names of the result of differencing
+#'
 #' @export
 add_lag_diff = function(
   model, var_pattern,
@@ -822,6 +835,7 @@ add_lag_diff = function(
   update_tmb_indices(model)
 }
 
+#' @rdname add_lag_diff
 #' @export
 add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
   spec_check(
@@ -1084,6 +1098,7 @@ disease_free_state = function(model, state_pattern, param_pattern) {
 ##' across susceptible compartments -- currently a uniform distribution
 ##' is assumed..
 ##'
+##' @param model \code{\link{flexmodel}} object
 ##' @param total name of a single parameter to represent the total size of the
 ##' population -- over all compartments
 ##' @param infected name of a single parameter to represent the initial total size of
@@ -1149,17 +1164,6 @@ add_state_mappings = function(
 }
 
 
-#' @rdname add_opt_params
-#' @export
-update_opt_params = function(model, ...) {
-  if (!inherits(model, "flexmodel_to_calibrate")) {
-    stop("\nplease add observed data for model fitting, ",
-         "\nbefore specifying parameters to be optimized"
-    )
-  }
-  model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
-  model
-}
 
 #' Optimization Parameters
 #'
@@ -1211,6 +1215,9 @@ update_opt_params = function(model, ...) {
 #' }
 #'
 #' @param model \code{\link{flexmodel}} object
+#' @param tv_type type of time-variation for time-varying parameters,
+#' which can be one of \code{'abs', 'rel_orig', 'rel_prev',
+#' 'rel_orig_logit', 'rel_orig_prev'}
 #' @param ... a list of formulas for describing what parameters should
 #' be optimized, whether/how they should be transformed before being
 #' passed to the objective function, and what prior distribution (or
@@ -1231,9 +1238,22 @@ add_opt_params = function(model, ...) {
     model$opt_params,
     lapply(list(...), parse_and_resolve_opt_form, model$params)
   )
-  model
+  update_tmb_indices(model)
 }
 
+#' @rdname add_opt_params
+#' @export
+update_opt_params = function(model, ...) {
+  if (!inherits(model, "flexmodel_to_calibrate")) {
+    stop("\nplease add observed data for model fitting, ",
+         "\nbefore specifying parameters to be optimized"
+    )
+  }
+  model$opt_params = lapply(list(...), parse_and_resolve_opt_form, model$params)
+  update_tmb_indices(model)
+}
+
+#' @rdname add_opt_params
 #' @export
 initialize_opt_params = function(model) {
   # list(list( occurs because the result needs to
@@ -1252,6 +1272,7 @@ initialize_opt_params = function(model) {
   ))
 }
 
+#' @rdname add_opt_params
 #' @export
 initialize_opt_tv_params = function(model) {
   # FIXME: doesn't seem necessary
@@ -1277,6 +1298,7 @@ initialize_opt_tv_params = function(model) {
   lapply(nms, f)
 }
 
+#' @rdname add_opt_params
 #' @export
 update_opt_tv_params = function(
   model,
@@ -1302,6 +1324,7 @@ update_opt_tv_params = function(
   model
 }
 
+#' @rdname add_opt_params
 #' @export
 add_opt_tv_params = function(
   model,
@@ -1430,6 +1453,21 @@ update_tmb_indices = function(model) {
 }
 
 ##' @exportS3Method
+update_tmb_indices.flexmodel_to_calibrate = function(model) {
+  data_vars = unique(model$observed$data$var)
+  loss_vars = unique(model$observed$loss_params$Variable)
+  if (!all(data_vars %in% loss_vars)) {
+    # protects against segfaults!
+    stop(
+      "\nall variables in the observed data must be associated",
+      "\nwith observation error. please use update_error_dist and",
+      "\nadd_error_dist."
+    )
+  }
+  NextMethod('update_tmb_indices')
+}
+
+##' @exportS3Method
 update_tmb_indices.flexmodel <- function(model) {
 
     if (model$no_condensation) {
@@ -1451,6 +1489,7 @@ add_tmb_indices = function(model) {
 }
 
 ##' @family flexmodel_definition_functions
+##' @rdname update_tmb_indices
 ##' @export
 tmb_indices <- function(model) {
     check_spec_ver_archived()
@@ -2221,6 +2260,8 @@ update_initial_state = function(model, silent = FALSE) {
 
 # observed data and observation error ---------------------------------
 
+#' @importFrom dplyr bind_rows
+#' @rdname update_error_dist
 #' @export
 add_error_dist = function(model, ...) {
   new_loss_params = (list(...)
@@ -2504,6 +2545,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   )
 }
 
+#' @rdname update_piece_wise
 #' @export
 initialize_piece_wise = function(model) {
   model$opt_tv_params = NULL
@@ -2536,6 +2578,7 @@ initialize_piece_wise = function(model) {
 #'
 #' @param model \code{\link{flexmodel}} object
 #' @param ... named vectors of parameter names
+#' @seealso \code{\link{pars_base_sim<-}}
 #' @export
 update_params = function(model, ...) {
   params_update = unlist(list(...))

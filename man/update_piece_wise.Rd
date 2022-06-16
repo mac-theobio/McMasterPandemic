@@ -3,11 +3,14 @@
 \name{update_piece_wise}
 \alias{update_piece_wise}
 \alias{add_piece_wise}
+\alias{initialize_piece_wise}
 \title{Update the Piece-Wise Parameter Time-Variation Schedule}
 \usage{
 update_piece_wise(model, params_timevar, regenerate_rates = TRUE)
 
 add_piece_wise(model, params_timevar, regenerate_rates = TRUE)
+
+initialize_piece_wise(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}

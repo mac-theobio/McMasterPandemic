@@ -35,6 +35,7 @@ check_var_names <- function(var_names) {
 ##'    g <- igraph::graph_from_adjacency_matrix(tt2)
 ##'    plot(g, layout=igraph::layout_nicely)
 ##' }
+##' @family classic_macpan
 ##' @export
 make_test_wtsvec <- function(params, var_names = NULL) {
     if (!is.null(var_names)) {
@@ -86,6 +87,7 @@ make_test_wtsvec <- function(params, var_names = NULL) {
 ##' @rdname make_test_wtsvec
 ##'
 ##' @param params parameter vector
+##' @family classic_macpan
 ##' @export
 make_test_posvec <- function(params, var_names = NULL) {
     vec <- params[grepl("^P", names(params))]
@@ -122,6 +124,7 @@ make_test_posvec <- function(params, var_names = NULL) {
 ##' s <- make_state(params=pp)
 ##' expand_stateval_testing(s, params=pp)
 ##' expand_stateval_testing(s, method="untested")
+##' @family classic_macpan
 ##' @export
 
 expand_stateval_testing <- function(x, method = c("eigvec", "untested", "spread"),
@@ -180,6 +183,7 @@ expand_stateval_testing <- function(x, method = c("eigvec", "untested", "spread"
 ##' state <- make_state(params[["N"]],E0=params[["E0"]])
 ##' M <- make_ratemat(state,params)
 ##' image(M)
+##' @family classic_macpan
 ##' @export
 testify <- function(ratemat, params, debug = FALSE,
                     testing_time = NULL) {
