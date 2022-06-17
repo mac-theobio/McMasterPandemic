@@ -29,7 +29,9 @@ const_named_vector = function(nms, cnst) {
 
 ##' Expand Strain Names
 ##'
-##' Like \code{\link{expand_names}} but for multi-strain models
+##' This is similar to \code{\link{expand_names}} but for multi-strain models.
+##' The expansion also allows setting constraints on the numbers of particular
+##' \code{base_states} in the final constrained set of states.
 ##'
 ##' @param n_strains number of strains
 ##' @param base_states character vector giving the states of the base model
@@ -40,24 +42,37 @@ const_named_vector = function(nms, cnst) {
 ##' \code{expand_strain_names} returns a vector with the full state names for
 ##' each state in the expanded model.
 expand_strain_frame = function(
-    n_strains = 2,
     base_states = c("S", "I", "R"),
-    infected_states = c(),
+    constrained_states = c(),
+    constraint_counts = 0:1,
+    n_strains = 2,
     strain_name_prefix = "strain"
   ) {
+
+  # this implementation creates the full product model and then
+  # substracts states that are not in the full model.
+  # this implementation could be too slow when the full and
+  # constrained models are of very different sizes.
+
+
   stopifnot(length(strain_name_prefix) == 1L)
+
   prod_states = (base_states
     %>% list
     %>% rep(n_strains)
     %>% setNames(strain_name_prefix %_% seq_len(n_strains))
+    %>% c(list(stringsAsFactors = FALSE))
     %>% do.call(what = expand.grid)
   )
-  no_super_infection_mat = matrix(
-    as.matrix(prod_states) %in% infected_states,
+  no_constraints_mat = matrix(
+    as.matrix(prod_states) %in% constrained_states,
     nrow = nrow(prod_states)
   )
-  no_super_infection = apply(no_super_infection_mat, 1, sum) %in% c(0, 1)
-  prod_states[no_super_infection, ]
+  no_constraints = (no_constraints_mat
+    %>% rowSums
+    %in% constraint_counts
+  )
+  prod_states[no_constraints, ]
 }
 
 ##' @rdname expand_strain_frame
