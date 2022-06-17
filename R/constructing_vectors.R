@@ -35,7 +35,10 @@ const_named_vector = function(nms, cnst) {
 ##' @param base_states character vector giving the states of the base model
 ##' @param infected_states character vector giving the infected states
 ##' @param strain_name_prefix prefix for names of strains (they are numbered)
-##' @return
+##' @return \code{expand_strain_frame} returns a data frame with one column
+##' for each strain and one row for each expanded state.
+##' \code{expand_strain_names} returns a vector with the full state names for
+##' each state in the expanded model.
 expand_strain_frame = function(
     n_strains = 2,
     base_states = c("S", "I", "R"),
@@ -50,16 +53,18 @@ expand_strain_frame = function(
     %>% do.call(what = expand.grid)
   )
   no_super_infection_mat = matrix(
-    as.matrix(prod_states) %in% infected_state,
+    as.matrix(prod_states) %in% infected_states,
     nrow = nrow(prod_states)
   )
   no_super_infection = apply(no_super_infection_mat, 1, sum) %in% c(0, 1)
   prod_states[no_super_infection, ]
 }
 
+##' @rdname expand_strain_frame
 ##' @inheritDotParams expand_strain_frame
-expand_strain_names = function(...) {
-  unname(apply(expand_strain_frame(...), 1, paste0, collapse = ""))
+##' @param sep separator between strains
+expand_strain_names = function(..., sep = "") {
+  unname(apply(expand_strain_frame(...), 1, paste0, collapse = sep))
 }
 
 #' Merge One Vector into Another by Name
