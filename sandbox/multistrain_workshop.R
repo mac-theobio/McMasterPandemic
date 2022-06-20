@@ -12,7 +12,7 @@ make_variant_params<-function(params, number_of_variants){
   for(i in 1:number_of_variants){
     new_params = vector(mode = "numeric")
     for(j in param_names){
-      new_params=c(new_params, setNames(runif(1), j))
+      new_params=c(new_params, setNames(runif(1, min=0, max=params[j]), j))
     }
     new_params = c(new_params, N = params[["N"]], E0 = runif(1, min=0, max=params[["N"]]))
     class(new_params) = "params_pansim"
@@ -168,10 +168,23 @@ for(i in 1:NoV){# i is the strain we are currently adding the force of infection
   beta_effective = beta * beta_modifier
   invN = vec(rep("1/N", length(from_states)))
   infectious_states = struc(matrix(to_states, ncol=length(to_states), nrow=length(from_states)))
-  foi=rowSums((invN%*%t(beta_effective))*infectious_states)
+  foi=rowSums((invN%*%t(beta_effective))*t(infectious_states))
   model = (model%>%vec_rate(from_states, to_states, foi))
-  }
+}
 
+for(i in 1:NoV){
+  from_states = substater(fixed_status = c("I"), fixed_strain = c(i), n_strains=NoV)
+  to_states = substater(fixed_status = c("R"), fixed_strain = c(i), n_strains=NoV)
+
+  gamma = vec(rep(paste("gamma", i, sep="_"), length = length(from_states)))
+  gamma_modifier = vector(mode="character", length=length(from_states))
+  for(j in 1:length(from_states)){
+    gamma_modifier[j]=paste0("rec_", (lengths(regmatches(from_states[j], gregexpr("R", from_states[j])))+1))
+  }
+  gamma_modifier = vec(gamma_modifier)
+  gamma_effective = gamma*gamma_modifier
+  model=(model%>%vec_rate(from_states, to_states, gamma_effective))
+}
 return(model)
 }
 
@@ -180,9 +193,8 @@ return(model)
 
 
 
-params = c(beta = 0.5, gamma = 0.25, wane_rate = 0.02, N=1000000, E0 = 1000)
-variant_params = make_variant_params(params, 3)
-multivariant_sir_model = make_multivariant_sir_model(params = variant_params, resistance=c(1, 0.95, 0.80), recovery=c(1, 1.05, 1.15))
+params = c(beta = 0.05, gamma = 0.2, N=1000000, E0 = 1000)
+variant_params = make_variant_params(params, 6)
+multivariant_sir_model = make_multivariant_sir_model(params = variant_params, resistance=c(1, 0.96, 0.95, 0.94, 0.93, 0.92), recovery=c(1, 1.05, 1.06, 1.07, 1.08, 1.09))
+multivariant_sir_history = simulation_history(multivariant_sir_model)
 
-
-exmpl=substater(fixed_status=c("I"), fixed_strain = c(2), n_strain=3)
