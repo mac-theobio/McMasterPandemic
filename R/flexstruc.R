@@ -193,13 +193,23 @@ setMethod('resolve', c(x = 'struc_expanded'),
           function(x) {
             (x
              %>% slot('l')
+
+             # 1 times anything should just be that thing
              %>% lapply(gsub, pattern = '(\\(1\\)\\s*\\*{1}|\\*{1}\\s*\\(1\\))', replacement = '')
+
              %>% lapply(trimws)
+
+             # replace blank elements with the 1s that you removed just above
              %>% lapply(function(y) ifelse(y == '', '(1)', y))
+
+             # since we have only products in struc_expanded objects,
+             # we can simplify every term with a zero to be exactly zero
              %>% lapply(sub, pattern = ".*\\(0\\).*", replacement = "(0)")
+
+             # get rid of extraneous zeros
              %>% lapply(function(y) {
                y = y[y != "(0)"]
-               if(length(y) == 0L) y = "(0)"
+               if (length(y) == 0L) y = "(0)"
                y
              })
              %>% struc_expanded(d = dim(x))
