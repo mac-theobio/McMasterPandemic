@@ -87,15 +87,11 @@ flexmodel <- function(params, state = NULL,
       state = const_named_vector(state, 0)
     }
 
-    if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
-      ratemat = make_ratemat(state, params, sparse = TRUE)
-    } else {
-      ratemat = matrix(
-        0,
-        nrow = length(state), ncol = length(state),
-        dimnames = list(from = names(state), to = names(state))
-      )
-    }
+    ratemat = matrix(
+      0,
+      nrow = length(state), ncol = length(state),
+      dimnames = list(from = names(state), to = names(state))
+    )
 
     params = unlist_params(params)
 
