@@ -92,6 +92,7 @@ Other flexmodels:
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
 \code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()},
 \code{\link{make_vaccination_model}()}
 }
 \concept{flexmodels}

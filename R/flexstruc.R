@@ -497,6 +497,29 @@ struc_stretch = function(x, row_each, col_each) {
   return(struc(x))
 }
 
+#' Block Diagonal Matrix
+#'
+#' @param x list of \code{struc} objects
+#' @return block diagonal struc object
+#' @export
+struc_bdiag = function(x) {
+  y = matrix(
+    '(0)',
+    sum(unlist(lapply(x, nrow))),
+    sum(unlist(lapply(x, ncol)))
+  )
+  row_pointer = 0L
+  col_pointer = 0L
+  for(i in seq_along(x)) {
+    ii = row_pointer + seq_len(nrow(x[[i]]))
+    jj = col_pointer + seq_len(ncol(x[[i]]))
+    y[ii, jj] = as.matrix(x[[i]])
+    row_pointer = max(ii)
+    col_pointer = max(jj)
+  }
+  return(struc(y))
+}
+
 #' Numerically Evaluate Struc Object
 #'
 #' @param x \code{\link{struc-class}} object

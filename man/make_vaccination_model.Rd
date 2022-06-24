@@ -64,14 +64,16 @@ Other flexmodels:
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
-\code{\link{make_sir_model}()}
+\code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()}
 
 Other canned_models: 
 \code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
-\code{\link{make_sir_model}()}
+\code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()}
 }
 \concept{canned_models}
 \concept{flexmodels}
