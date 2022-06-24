@@ -193,13 +193,23 @@ setMethod('resolve', c(x = 'struc_expanded'),
           function(x) {
             (x
              %>% slot('l')
+
+             # 1 times anything should just be that thing
              %>% lapply(gsub, pattern = '(\\(1\\)\\s*\\*{1}|\\*{1}\\s*\\(1\\))', replacement = '')
+
              %>% lapply(trimws)
+
+             # replace blank elements with the 1s that you removed just above
              %>% lapply(function(y) ifelse(y == '', '(1)', y))
+
+             # since we have only products in struc_expanded objects,
+             # we can simplify every term with a zero to be exactly zero
              %>% lapply(sub, pattern = ".*\\(0\\).*", replacement = "(0)")
+
+             # get rid of extraneous zeros
              %>% lapply(function(y) {
                y = y[y != "(0)"]
-               if(length(y) == 0L) y = "(0)"
+               if (length(y) == 0L) y = "(0)"
                y
              })
              %>% struc_expanded(d = dim(x))
@@ -495,6 +505,29 @@ struc_stretch = function(x, row_each, col_each) {
   x =   matrix(rep(c(  x ), each = row_each), row_each * nrow(x), ncol(x))
   x = t(matrix(rep(c(t(x)), each = col_each), col_each * ncol(x), nrow(x)))
   return(struc(x))
+}
+
+#' Block Diagonal Matrix
+#'
+#' @param x list of \code{struc} objects
+#' @return block diagonal struc object
+#' @export
+struc_bdiag = function(x) {
+  y = matrix(
+    '(0)',
+    sum(unlist(lapply(x, nrow))),
+    sum(unlist(lapply(x, ncol)))
+  )
+  row_pointer = 0L
+  col_pointer = 0L
+  for(i in seq_along(x)) {
+    ii = row_pointer + seq_len(nrow(x[[i]]))
+    jj = col_pointer + seq_len(ncol(x[[i]]))
+    y[ii, jj] = as.matrix(x[[i]])
+    row_pointer = max(ii)
+    col_pointer = max(jj)
+  }
+  return(struc(y))
 }
 
 #' Numerically Evaluate Struc Object

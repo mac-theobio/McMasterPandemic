@@ -2294,6 +2294,10 @@ factory_fresh_macpan_options = function() {
         #     different spec versions in inst/tmb
         MP_flex_spec_dll = "McMasterPandemic",
 
+        # should the user be allowed to create TMB indices when
+        # their model was constructed
+        MP_no_indices_w_mismatched_specs = TRUE,
+
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
         # need to wrap this in wrap_exact for names that are not embedded in
         # character strings representing expressions

@@ -5,7 +5,7 @@ library(dplyr)
 # version 0.2.0 will run without error, but will not create the required columns
 # in the simulation history.
 # version 0.2.1 with run with error until the 0.2.1 specs are implemented
-set_spec_version('0.2.1', 'inst/tmb')
+set_spec_version('0.2.1', system.file('tmb', package = 'McMasterPandemic'))
 
 uneven_dates_X = structure(
   c(10957, 10958, 10959, 10963, 10969, 10971, 10972,

@@ -50,7 +50,7 @@ expand_strain_frame = function(
   ) {
 
   # this implementation creates the full product model and then
-  # substracts states that are not in the full model.
+  # subtracts states that are not in the full model.
   # this implementation could be too slow when the full and
   # constrained models are of very different sizes.
 

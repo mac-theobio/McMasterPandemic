@@ -87,15 +87,11 @@ flexmodel <- function(params, state = NULL,
       state = const_named_vector(state, 0)
     }
 
-    if(inherits(state, "state_pansim") & inherits(params, "params_pansim")) {
-      ratemat = make_ratemat(state, params, sparse = TRUE)
-    } else {
-      ratemat = matrix(
-        0,
-        nrow = length(state), ncol = length(state),
-        dimnames = list(from = names(state), to = names(state))
-      )
-    }
+    ratemat = as(matrix(
+      0,
+      nrow = length(state), ncol = length(state),
+      dimnames = list(from = names(state), to = names(state))
+    ), "dgTMatrix")
 
     params = unlist_params(params)
 
@@ -1449,6 +1445,23 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
 ##' @param model \code{\link{flexmodel}} object
 ##' @export
 update_tmb_indices = function(model) {
+  if ((!spec_ver_eq(model$spec_ver)) & getOption("MP_no_indices_w_mismatched_specs")) {
+    stop(
+      "\nthis model was initialized under spec version ",
+      model$spec_ver,
+      ",\nbut spec version ",
+      getOption("MP_flex_spec_version"),
+      " is currently running\n(see ", getOption("MP_flex_spec_doc_site"),
+      " for context).",
+      "\nyou can set options(MP_no_indices_w_mismatched_specs = FALSE),",
+      "\nbut this can be dangerous and lead to confusing errors.",
+      "\nit is better to create the model again in the current environment.",
+      "\nif you know what you are doing you can change the spec with",
+      "\noptions(MP_flex_spec_version = ",
+      sQuote(model$spec_ver), ") or set_spec_version(",
+      sQuote(model$spec_ver), ", ...)"
+    )
+  }
   UseMethod("update_tmb_indices")
 }
 
@@ -1611,10 +1624,41 @@ tmb_fun = function(model) {
 
 ##' @rdname tmb_fun
 ##' @export
-tmb_fun_args <- function(model) {
-    check_spec_ver_archived()
-    DLL = getOption('MP_flex_spec_dll')
+tmb_fun_args = function(model) {
+  spec_with_underscores = gsub(
+    "\\.", "_",
+    getOption("MP_flex_spec_version")
+  )
+  class(model) = c(
+    class(model),
+    'spec_ver' %_% spec_with_underscores
+  )
+  tmb_fun_args_by_spec(model)
+}
 
+tmb_fun_args_by_spec = function(model) {
+  check_spec_ver_archived()
+  DLL = getOption('MP_flex_spec_dll')
+  model = update_model_before_tmb_args(model)
+
+  unpack(model)
+  unpack(tmb_indices)
+  unpack(make_ratemat_indices)
+  if (spec_ver_gt("0.0.3")) {
+      unpack(timevar$piece_wise)
+  }
+
+  if (isTRUE(model$do_make_state)) {
+    if (isTRUE(length(tmb_indices$disease_free$df_state_idx) == 0L)) {
+      stop('cannot make the initial state because a disease-free state was not supplied. ',
+           'either choose do_make_state = FALSE when initializing the model, ',
+           'or use update_disease_free_state')
+    }
+  }
+  UseMethod("tmb_fun_args_by_spec")
+}
+
+update_model_before_tmb_args = function(model) {
     if (getOption('MP_auto_outflow') & spec_ver_gt("0.1.0")) {
       if (length(model$outflow) == 0L) {
         model = add_outflow(model)
@@ -1626,229 +1670,235 @@ tmb_fun_args <- function(model) {
     if (getOption('MP_auto_tmb_index_update')) {
       model = update_tmb_indices(model)
     }
+    model
+}
 
-    unpack(model)
-    unpack(tmb_indices)
-    unpack(make_ratemat_indices)
-    if (spec_ver_gt("0.0.3")) {
-        unpack(timevar$piece_wise)
-    }
+tmb_fun_args_by_spec.spec_ver_0_0_1 = function(model) {
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = from,
+          to = to,
+          count = count,
+          spi = spi,
+          modifier = modifier
+      ),
+      parameters = list(params = c(unlist(params))),
+      DLL = DLL
+  )
+  return(dd)
+}
 
-    if (isTRUE(model$do_make_state)) {
-      if (isTRUE(length(tmb_indices$disease_free$df_state_idx) == 0L)) {
-        stop('cannot make the initial state because a disease-free state was not supplied. ',
-             'either choose do_make_state = FALSE when initializing the model, ',
-             'or use update_disease_free_state')
-      }
-    }
+tmb_fun_args_by_spec.spec_ver_0_0_2 = function(model) {
+  up <- update_ratemat_indices
 
+  ## TODO: spec problem -- numIters should have been kept in model
+  numIters <- 3
 
-    ## make ad functions for different spec versions
-    if (spec_ver_eq("0.0.1")) {
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.0.2")) {
-        up <- update_ratemat_indices
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = from,
+          to = to,
+          count = count,
+          spi = spi,
+          modifier = modifier,
+          update_from = up$from,
+          update_to = up$to,
+          update_count = up$count,
+          update_spi = up$spi,
+          update_modifier = up$modifier,
+          par_accum_indices = par_accum_indices,
+          numIterations = numIters
+      ),
+      parameters = list(params = c(unlist(params))),
+      DLL = DLL
+  )
+  return(dd)
+}
 
-        ## TODO: spec problem -- numIters should have been kept in model
-        numIters <- 3
+tmb_fun_args_by_spec.spec_ver_0_0_4 = function(model) {
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = from,
+          to = to,
+          count = count,
+          spi = spi,
+          modifier = modifier,
+          updateidx = c(updateidx),
+          breaks = breaks,
+          count_of_tv_at_breaks = count_of_tv_at_breaks,
+          tv_spi = schedule$tv_spi,
+          tv_val = schedule$tv_val,
+          par_accum_indices = par_accum_indices,
+          numIterations = iters
+      ),
+      parameters = list(params = c(unlist(params))),
+      DLL = DLL
+  )
+  return(dd)
+}
 
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                update_from = up$from,
-                update_to = up$to,
-                update_count = up$count,
-                update_spi = up$spi,
-                update_modifier = up$modifier,
-                par_accum_indices = par_accum_indices,
-                numIterations = numIters
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.0.4")) {
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                updateidx = c(updateidx),
-                breaks = breaks,
-                count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_spi = schedule$tv_spi,
-                tv_val = schedule$tv_val,
-                par_accum_indices = par_accum_indices,
-                numIterations = iters
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.0.5")) {
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                updateidx = c(updateidx),
-                breaks = breaks,
-                count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_spi = schedule$tv_spi,
-                tv_val = schedule$tv_val,
-                par_accum_indices = par_accum_indices,
-                do_hazard = do_hazard,
-                numIterations = iters
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.0.6")) {
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                updateidx = c(updateidx),
-                breaks = breaks,
-                count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_spi = schedule$tv_spi,
-                tv_val = schedule$tv_val,
-                tv_mult = schedule$Value,
-                tv_orig = schedule$Type == "rel_orig",
-                par_accum_indices = par_accum_indices,
-                do_hazard = do_hazard,
-                numIterations = iters
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.1.0")) {
-        unpack(sum_indices)
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = from,
-                to = to,
-                count = count,
-                spi = spi,
-                modifier = modifier,
-                updateidx = c(updateidx),
-                breaks = breaks,
-                count_of_tv_at_breaks = count_of_tv_at_breaks,
-                tv_spi = schedule$tv_spi,
-                tv_val = schedule$tv_val,
-                tv_mult = schedule$Value,
-                tv_orig = schedule$Type == "rel_orig",
-                sumidx = sumidx,
-                sumcount = unname(sumcount),
-                summandidx = summandidx,
-                par_accum_indices = par_accum_indices,
-                do_hazard = do_hazard,
-                numIterations = iters
-            ),
-            parameters = list(params = c(unlist(params))),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.1.1")) {
-        unpack(sum_indices)
-        init_tv_mult = integer(0L)
-        if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
-        dd <- list(
-            data = list(
-                state = c(state),
-                ratemat = ratemat,
-                from = null_to_int0(from),
-                to = null_to_int0(to),
-                count = null_to_int0(count),
-                spi = null_to_int0(spi),
-                modifier = null_to_int0(modifier),
-                updateidx = null_to_int0(c(updateidx)),
-                breaks = null_to_int0(breaks),
-                count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
-                tv_val = null_to_num0(schedule$tv_val),
-                tv_spi = null_to_int0(schedule$tv_spi),
-                tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
-                # tv_mult = schedule$Value,  # moved to parameter vector
-                tv_orig = null_to_log0(schedule$Type == "rel_orig"),
-                tv_abs = null_to_log0(schedule$Type == "abs"),
+tmb_fun_args_by_spec.spec_ver_0_0_5 = function(model) {
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = from,
+          to = to,
+          count = count,
+          spi = spi,
+          modifier = modifier,
+          updateidx = c(updateidx),
+          breaks = breaks,
+          count_of_tv_at_breaks = count_of_tv_at_breaks,
+          tv_spi = schedule$tv_spi,
+          tv_val = schedule$tv_val,
+          par_accum_indices = par_accum_indices,
+          do_hazard = do_hazard,
+          numIterations = iters
+      ),
+      parameters = list(params = c(unlist(params))),
+      DLL = DLL
+  )
+  return(dd)
+}
 
-                sumidx = null_to_int0(sumidx),
-                sumcount = null_to_int0(unname(sumcount)),
-                summandidx = null_to_int0(summandidx),
+tmb_fun_args_by_spec.spec_ver_0_0_6 = function(model) {
+  dd <- list(
+    data = list(
+        state = c(state),
+        ratemat = ratemat,
+        from = from,
+        to = to,
+        count = count,
+        spi = spi,
+        modifier = modifier,
+        updateidx = c(updateidx),
+        breaks = breaks,
+        count_of_tv_at_breaks = count_of_tv_at_breaks,
+        tv_spi = schedule$tv_spi,
+        tv_val = schedule$tv_val,
+        tv_mult = schedule$Value,
+        tv_orig = schedule$Type == "rel_orig",
+        par_accum_indices = par_accum_indices,
+        do_hazard = do_hazard,
+        numIterations = iters
+    ),
+    parameters = list(params = c(unlist(params))),
+    DLL = DLL
+  )
+  return(dd)
+}
 
-                do_make_state = isTRUE(do_make_state),
-                max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
-                tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+tmb_fun_args_by_spec.spec_ver_0_1_0 = function(model) {
+  unpack(sum_indices)
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = from,
+          to = to,
+          count = count,
+          spi = spi,
+          modifier = modifier,
+          updateidx = c(updateidx),
+          breaks = breaks,
+          count_of_tv_at_breaks = count_of_tv_at_breaks,
+          tv_spi = schedule$tv_spi,
+          tv_val = schedule$tv_val,
+          tv_mult = schedule$Value,
+          tv_orig = schedule$Type == "rel_orig",
+          sumidx = sumidx,
+          sumcount = unname(sumcount),
+          summandidx = summandidx,
+          par_accum_indices = par_accum_indices,
+          do_hazard = do_hazard,
+          numIterations = iters
+      ),
+      parameters = list(params = c(unlist(params))),
+      DLL = DLL
+  )
+  return(dd)
+}
 
-                outflow_row_count = null_to_int0(outflow$row_count),
-                outflow_col_count = null_to_int0(outflow$col_count),
-                outflow_rows = null_to_int0(outflow$rows),
-                outflow_cols = null_to_int0(outflow$cols),
+tmb_fun_args_by_spec.spec_ver_0_1_1 = function(model) {
+  unpack(sum_indices)
+  init_tv_mult = integer(0L)
+  if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+  dd <- list(
+      data = list(
+          state = c(state),
+          ratemat = ratemat,
+          from = null_to_int0(from),
+          to = null_to_int0(to),
+          count = null_to_int0(count),
+          spi = null_to_int0(spi),
+          modifier = null_to_int0(modifier),
+          updateidx = null_to_int0(c(updateidx)),
+          breaks = null_to_int0(breaks),
+          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+          tv_val = null_to_num0(schedule$tv_val),
+          tv_spi = null_to_int0(schedule$tv_spi),
+          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+          # tv_mult = schedule$Value,  # moved to parameter vector
+          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+          tv_abs = null_to_log0(schedule$Type == "abs"),
 
-                linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
-                linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
-                linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
-                linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+          sumidx = null_to_int0(sumidx),
+          sumcount = null_to_int0(unname(sumcount)),
+          summandidx = null_to_int0(summandidx),
 
-                lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
-                lin_param_count = null_to_int0(linearized_params$lin_param_count),
-                lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+          do_make_state = isTRUE(do_make_state),
+          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
 
-                df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
-                df_state_count = null_to_int0(disease_free$df_state_count),
-                df_state_idx = null_to_int0(disease_free$df_state_idx),
+          outflow_row_count = null_to_int0(outflow$row_count),
+          outflow_col_count = null_to_int0(outflow$col_count),
+          outflow_rows = null_to_int0(outflow$rows),
+          outflow_cols = null_to_int0(outflow$cols),
 
-                im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
-                im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
-                im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
-                im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
 
-                ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
-                ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+          lin_param_count = null_to_int0(linearized_params$lin_param_count),
+          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
 
-                do_hazard = isTRUE(do_hazard),
-                do_hazard_lin = isTRUE(do_hazard_lin),
-                do_approx_hazard = isTRUE(do_approx_hazard),
-                do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
-                haz_eps = haz_eps,
+          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+          df_state_count = null_to_int0(disease_free$df_state_count),
+          df_state_idx = null_to_int0(disease_free$df_state_idx),
 
-                numIterations = int0_to_0(null_to_0(iters))
-            ),
-            parameters = list(params = c(unlist(params)),
-                              tv_mult = init_tv_mult),
-            DLL = DLL
-        )
-    } else if (spec_ver_eq("0.1.2")) {
+          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+          do_hazard = isTRUE(do_hazard),
+          do_hazard_lin = isTRUE(do_hazard_lin),
+          do_approx_hazard = isTRUE(do_approx_hazard),
+          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+          haz_eps = haz_eps,
+
+          numIterations = int0_to_0(null_to_0(iters))
+      ),
+      parameters = list(params = c(unlist(params)),
+                        tv_mult = init_tv_mult),
+      DLL = DLL
+  )
+  return(dd)
+}
+
+tmb_fun_args_by_spec.spec_ver_0_1_2 = function(model) {
       unpack(sum_indices)
       init_tv_mult = integer(0L)
       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
@@ -1936,303 +1986,896 @@ tmb_fun_args <- function(model) {
                           tv_mult = init_tv_mult),
         DLL = DLL
       )
-
-    } else if (spec_ver_eq("0.2.0")) {
-
-      unpack(sum_indices)
-      unpack(opt_params)
-
-      # update parameter vectors -----------------
-      init_tv_mult = integer(0L)
-      if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
-
-      if(isTRUE(exists_opt_params(model))) {
-
-        # tell tmb what parameters to put in the objective function
-        map = ad_fun_map
-
-        # pass transformed parameters to the objective function
-        params = tmb_params_trans(model, vec_type = 'params')
-        init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
-
-      } else {
-        map = list()
-      }
-      # -------------------------------------------
-
-      if (!all(between(observed$time_step, 2, iters + 1))) {
-        stop('observations outside of simulation range')
-      }
-
-      dd <- list(
-        data = list(
-          state = c(state),
-          ratemat = ratemat,
-          from = null_to_int0(from),
-          to = null_to_int0(to),
-          count = null_to_int0(count),
-          spi = null_to_int0(spi),
-          modifier = null_to_int0(modifier),
-          updateidx = null_to_int0(c(updateidx)),
-          breaks = null_to_int0(breaks),
-          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
-
-          tv_val = null_to_num0(schedule$tv_val),
-          tv_spi = null_to_int0(schedule$tv_spi),
-          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
-          # tv_mult = schedule$Value,  # moved to parameter vector
-          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
-          tv_abs = null_to_log0(schedule$Type == "abs"),
-          tv_type_id = null_to_int0(schedule$tv_type_id),
-          #tv_type = null_to_int0(NULL),
-
-          sumidx = null_to_int0(sumidx),
-          sumcount = null_to_int0(unname(sumcount)),
-          summandidx = null_to_int0(summandidx),
-
-          factr_spi = null_to_int0(factr_indices$spi_factr),
-          factr_count = null_to_int0(factr_indices$count),
-          factr_spi_compute = null_to_int0(factr_indices$spi),
-          factr_modifier = null_to_int0(factr_indices$modifier),
-
-          powidx = null_to_int0(pow_indices$powidx),
-          powarg1idx = null_to_int0(pow_indices$powarg1idx),
-          powarg2idx = null_to_int0(pow_indices$powarg2idx),
-          powconstidx = null_to_int0(pow_indices$powconstidx),
-
-          do_make_state = isTRUE(do_make_state),
-          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
-          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
-
-          outflow_row_count = null_to_int0(outflow$row_count),
-          outflow_col_count = null_to_int0(outflow$col_count),
-          outflow_rows = null_to_int0(outflow$rows),
-          outflow_cols = null_to_int0(outflow$cols),
-
-          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
-          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
-          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
-          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
-
-          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
-          lin_param_count = null_to_int0(linearized_params$lin_param_count),
-          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
-
-          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
-          df_state_count = null_to_int0(disease_free$df_state_count),
-          df_state_idx = null_to_int0(disease_free$df_state_idx),
-
-          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
-          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
-          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
-          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
-
-          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
-          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
-
-          do_hazard = isTRUE(do_hazard),
-          do_hazard_lin = isTRUE(do_hazard_lin),
-          do_approx_hazard = isTRUE(do_approx_hazard),
-          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
-          # haz_eps = haz_eps,
-
-          sri_output = null_to_int0(sim_report_expr_indices$sri_output),
-          sr_count = null_to_int0(sim_report_expr_indices$sr_count),
-          sri = null_to_int0(sim_report_expr_indices$sri),
-          sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
-
-          lag_diff_sri = null_to_int0(lag_diff$sri),
-          lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
-
-          conv_sri = null_to_int0(conv$sri),
-          conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
-          conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
-          conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
-          conv_qmax = null_to_int0(conv$qmax),
-
-          obs_var_id = null_to_int0(observed$variable_id),
-          obs_loss_id = null_to_int0(observed$loss_id),
-          obs_loss_param_count = null_to_int0(observed$loss_param_count),
-          obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
-          obs_time_step = null_to_int0(observed$time_step),
-          obs_history_col_id = null_to_int0(observed$history_col_id),
-          obs_value = observed$observed, # don't need to worry about missing values because they are omitted
-
-
-          opt_param_id = null_to_int0(index_table$opt_param_id),
-          opt_trans_id = null_to_int0(index_table$param_trans_id),
-          opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
-          opt_reg_params = null_to_num0(hyperparameters),
-          opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
-
-          opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
-          opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
-          opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
-          opt_tv_reg_params = null_to_num0(hyperparameters_tv),
-          opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
-
-          obs_do_sim_constraint = isTRUE(do_sim_constraint),
-          obs_sim_lower_bound = null_to_num0(sim_lower_bound),
-
-          numIterations = int0_to_0(null_to_0(iters))
-        ),
-        parameters = list(params = c(unlist(params)),
-                          tv_mult = null_to_num0(init_tv_mult)),
-        map = map,
-        DLL = DLL,
-        silent = getOption("MP_silent_tmb_function")
-      )
-    } else if (spec_ver_eq('0.2.1')) {
-
-      unpack(sum_indices)
-      unpack(opt_params)
-
-      # update parameter vectors -----------------
-      init_tv_mult = integer(0L)
-      if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
-
-      if(isTRUE(exists_opt_params(model))) {
-
-        # tell tmb what parameters to put in the objective function
-        map = ad_fun_map
-
-        # pass transformed parameters to the objective function
-        params = tmb_params_trans(model, vec_type = 'params')
-        init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
-
-      } else {
-        map = list()
-      }
-      # -------------------------------------------
-
-      if (!all(between(observed$time_step, 2, iters + 1))) {
-        stop('observations outside of simulation range')
-      }
-
-      dd <- list(
-        data = list(
-          state = c(state),
-          ratemat = ratemat,
-          from = null_to_int0(from),
-          to = null_to_int0(to),
-          count = null_to_int0(count),
-          spi = null_to_int0(spi),
-          modifier = null_to_int0(modifier),
-          updateidx = null_to_int0(c(updateidx)),
-          breaks = null_to_int0(breaks),
-          count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
-
-          tv_val = null_to_num0(schedule$tv_val),
-          tv_spi = null_to_int0(schedule$tv_spi),
-          tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
-          # tv_mult = schedule$Value,  # moved to parameter vector
-          tv_orig = null_to_log0(schedule$Type == "rel_orig"),
-          tv_abs = null_to_log0(schedule$Type == "abs"),
-          tv_type_id = null_to_int0(schedule$tv_type_id),
-          #tv_type = null_to_int0(NULL),
-
-          sumidx = null_to_int0(sumidx),
-          sumcount = null_to_int0(unname(sumcount)),
-          summandidx = null_to_int0(summandidx),
-
-          factr_spi = null_to_int0(factr_indices$spi_factr),
-          factr_count = null_to_int0(factr_indices$count),
-          factr_spi_compute = null_to_int0(factr_indices$spi),
-          factr_modifier = null_to_int0(factr_indices$modifier),
-
-          powidx = null_to_int0(pow_indices$powidx),
-          powarg1idx = null_to_int0(pow_indices$powarg1idx),
-          powarg2idx = null_to_int0(pow_indices$powarg2idx),
-          powconstidx = null_to_int0(pow_indices$powconstidx),
-
-          do_make_state = isTRUE(do_make_state),
-          max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
-          tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
-
-          outflow_row_count = null_to_int0(outflow$row_count),
-          outflow_col_count = null_to_int0(outflow$col_count),
-          outflow_rows = null_to_int0(outflow$rows),
-          outflow_cols = null_to_int0(outflow$cols),
-
-          linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
-          linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
-          linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
-          linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
-
-          lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
-          lin_param_count = null_to_int0(linearized_params$lin_param_count),
-          lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
-
-          df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
-          df_state_count = null_to_int0(disease_free$df_state_count),
-          df_state_idx = null_to_int0(disease_free$df_state_idx),
-
-          im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
-          im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
-          im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
-          im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
-
-          ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
-          ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
-
-          do_hazard = isTRUE(do_hazard),
-          do_hazard_lin = isTRUE(do_hazard_lin),
-          do_approx_hazard = isTRUE(do_approx_hazard),
-          do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
-          # haz_eps = haz_eps,
-
-          sri_output = null_to_int0(sim_report_expr_indices$sri_output),
-          sr_count = null_to_int0(sim_report_expr_indices$sr_count),
-          sri = null_to_int0(sim_report_expr_indices$sri),
-          sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
-
-          lag_diff_sri = null_to_int0(lag_diff$sri),
-          lag_diff_delay_n = null_to_int0_mat(lag_diff$delay_n),
-
-          conv_sri = null_to_int0(conv$sri),
-          conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
-          conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
-          conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
-          conv_qmax = null_to_int0(conv$qmax),
-
-          obs_var_id = null_to_int0(observed$variable_id),
-          obs_loss_id = null_to_int0(observed$loss_id),
-          obs_loss_param_count = null_to_int0(observed$loss_param_count),
-          obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
-          obs_time_step = null_to_int0(observed$time_step),
-          obs_history_col_id = null_to_int0(observed$history_col_id),
-          obs_value = observed$observed, # don't need to worry about missing values because they are omitted
-
-
-          opt_param_id = null_to_int0(index_table$opt_param_id),
-          opt_trans_id = null_to_int0(index_table$param_trans_id),
-          opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
-          opt_reg_params = null_to_num0(hyperparameters),
-          opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
-
-          opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
-          opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
-          opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
-          opt_tv_reg_params = null_to_num0(hyperparameters_tv),
-          opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
-
-          obs_do_sim_constraint = isTRUE(do_sim_constraint),
-          obs_sim_lower_bound = null_to_num0(sim_lower_bound),
-
-          numIterations = int0_to_0(null_to_0(iters))
-        ),
-        parameters = list(params = c(unlist(params)),
-                          tv_mult = null_to_num0(init_tv_mult)),
-        map = map,
-        DLL = DLL,
-        silent = getOption("MP_silent_tmb_function")
-      )
-    }
-    else {
-        stop("Construction of TMB functions is not supported by your installation of MacPan")
-    }
-    return(dd)
+      return(dd)
 }
+
+tmb_fun_args_by_spec.spec_ver_0_2_0 = function(model) {
+
+  unpack(sum_indices)
+  unpack(opt_params)
+
+  # update parameter vectors -----------------
+  init_tv_mult = integer(0L)
+  if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+
+  if(isTRUE(exists_opt_params(model))) {
+
+    # tell tmb what parameters to put in the objective function
+    map = ad_fun_map
+
+    # pass transformed parameters to the objective function
+    params = tmb_params_trans(model, vec_type = 'params')
+    init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+
+  } else {
+    map = list()
+  }
+  # -------------------------------------------
+
+  if (!all(between(observed$time_step, 2, iters + 1))) {
+    stop('observations outside of simulation range')
+  }
+
+  dd <- list(
+    data = list(
+      state = c(state),
+      ratemat = ratemat,
+      from = null_to_int0(from),
+      to = null_to_int0(to),
+      count = null_to_int0(count),
+      spi = null_to_int0(spi),
+      modifier = null_to_int0(modifier),
+      updateidx = null_to_int0(c(updateidx)),
+      breaks = null_to_int0(breaks),
+      count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+
+      tv_val = null_to_num0(schedule$tv_val),
+      tv_spi = null_to_int0(schedule$tv_spi),
+      tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+      # tv_mult = schedule$Value,  # moved to parameter vector
+      tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+      tv_abs = null_to_log0(schedule$Type == "abs"),
+      tv_type_id = null_to_int0(schedule$tv_type_id),
+      #tv_type = null_to_int0(NULL),
+
+      sumidx = null_to_int0(sumidx),
+      sumcount = null_to_int0(unname(sumcount)),
+      summandidx = null_to_int0(summandidx),
+
+      factr_spi = null_to_int0(factr_indices$spi_factr),
+      factr_count = null_to_int0(factr_indices$count),
+      factr_spi_compute = null_to_int0(factr_indices$spi),
+      factr_modifier = null_to_int0(factr_indices$modifier),
+
+      powidx = null_to_int0(pow_indices$powidx),
+      powarg1idx = null_to_int0(pow_indices$powarg1idx),
+      powarg2idx = null_to_int0(pow_indices$powarg2idx),
+      powconstidx = null_to_int0(pow_indices$powconstidx),
+
+      do_make_state = isTRUE(do_make_state),
+      max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+      tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+
+      outflow_row_count = null_to_int0(outflow$row_count),
+      outflow_col_count = null_to_int0(outflow$col_count),
+      outflow_rows = null_to_int0(outflow$rows),
+      outflow_cols = null_to_int0(outflow$cols),
+
+      linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+      linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+      linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+      linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+
+      lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+      lin_param_count = null_to_int0(linearized_params$lin_param_count),
+      lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+
+      df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+      df_state_count = null_to_int0(disease_free$df_state_count),
+      df_state_idx = null_to_int0(disease_free$df_state_idx),
+
+      im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+      im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+      im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+      im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+      ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+      ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+      do_hazard = isTRUE(do_hazard),
+      do_hazard_lin = isTRUE(do_hazard_lin),
+      do_approx_hazard = isTRUE(do_approx_hazard),
+      do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+      # haz_eps = haz_eps,
+
+      sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+      sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+      sri = null_to_int0(sim_report_expr_indices$sri),
+      sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+
+      lag_diff_sri = null_to_int0(lag_diff$sri),
+      lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
+
+      conv_sri = null_to_int0(conv$sri),
+      conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+      conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+      conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+      conv_qmax = null_to_int0(conv$qmax),
+
+      obs_var_id = null_to_int0(observed$variable_id),
+      obs_loss_id = null_to_int0(observed$loss_id),
+      obs_loss_param_count = null_to_int0(observed$loss_param_count),
+      obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
+      obs_time_step = null_to_int0(observed$time_step),
+      obs_history_col_id = null_to_int0(observed$history_col_id),
+      obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+
+
+      opt_param_id = null_to_int0(index_table$opt_param_id),
+      opt_trans_id = null_to_int0(index_table$param_trans_id),
+      opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+      opt_reg_params = null_to_num0(hyperparameters),
+      opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
+
+      opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+      opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+      opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+      opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+      opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+
+      obs_do_sim_constraint = isTRUE(do_sim_constraint),
+      obs_sim_lower_bound = null_to_num0(sim_lower_bound),
+
+      numIterations = int0_to_0(null_to_0(iters))
+    ),
+    parameters = list(params = c(unlist(params)),
+                      tv_mult = null_to_num0(init_tv_mult)),
+    map = map,
+    DLL = DLL,
+    silent = getOption("MP_silent_tmb_function")
+  )
+  return(dd)
+}
+
+tmb_fun_args_by_spec.spec_ver_0_2_1 = function(model) {
+  unpack(sum_indices)
+  unpack(opt_params)
+
+  # update parameter vectors -----------------
+  init_tv_mult = integer(0L)
+  if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+
+  if(isTRUE(exists_opt_params(model))) {
+
+    # tell tmb what parameters to put in the objective function
+    map = ad_fun_map
+
+    # pass transformed parameters to the objective function
+    params = tmb_params_trans(model, vec_type = 'params')
+    init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+
+  } else {
+    map = list()
+  }
+  # -------------------------------------------
+
+  if (!all(between(observed$time_step, 2, iters + 1))) {
+    stop('observations outside of simulation range')
+  }
+
+  dd <- list(
+    data = list(
+      state = c(state),
+      ratemat = ratemat,
+      from = null_to_int0(from),
+      to = null_to_int0(to),
+      count = null_to_int0(count),
+      spi = null_to_int0(spi),
+      modifier = null_to_int0(modifier),
+      updateidx = null_to_int0(c(updateidx)),
+      breaks = null_to_int0(breaks),
+      count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+
+      tv_val = null_to_num0(schedule$tv_val),
+      tv_spi = null_to_int0(schedule$tv_spi),
+      tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+      # tv_mult = schedule$Value,  # moved to parameter vector
+      tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+      tv_abs = null_to_log0(schedule$Type == "abs"),
+      tv_type_id = null_to_int0(schedule$tv_type_id),
+      #tv_type = null_to_int0(NULL),
+
+      sumidx = null_to_int0(sumidx),
+      sumcount = null_to_int0(unname(sumcount)),
+      summandidx = null_to_int0(summandidx),
+
+      factr_spi = null_to_int0(factr_indices$spi_factr),
+      factr_count = null_to_int0(factr_indices$count),
+      factr_spi_compute = null_to_int0(factr_indices$spi),
+      factr_modifier = null_to_int0(factr_indices$modifier),
+
+      powidx = null_to_int0(pow_indices$powidx),
+      powarg1idx = null_to_int0(pow_indices$powarg1idx),
+      powarg2idx = null_to_int0(pow_indices$powarg2idx),
+      powconstidx = null_to_int0(pow_indices$powconstidx),
+
+      do_make_state = isTRUE(do_make_state),
+      max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+      tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+
+      outflow_row_count = null_to_int0(outflow$row_count),
+      outflow_col_count = null_to_int0(outflow$col_count),
+      outflow_rows = null_to_int0(outflow$rows),
+      outflow_cols = null_to_int0(outflow$cols),
+
+      linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+      linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+      linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+      linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+
+      lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+      lin_param_count = null_to_int0(linearized_params$lin_param_count),
+      lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+
+      df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+      df_state_count = null_to_int0(disease_free$df_state_count),
+      df_state_idx = null_to_int0(disease_free$df_state_idx),
+
+      im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+      im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+      im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+      im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+
+      ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+      ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+
+      do_hazard = isTRUE(do_hazard),
+      do_hazard_lin = isTRUE(do_hazard_lin),
+      do_approx_hazard = isTRUE(do_approx_hazard),
+      do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+      # haz_eps = haz_eps,
+
+      sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+      sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+      sri = null_to_int0(sim_report_expr_indices$sri),
+      sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+
+      lag_diff_sri = null_to_int0(lag_diff$sri),
+      lag_diff_delay_n = null_to_int0_mat(lag_diff$delay_n),
+
+      conv_sri = null_to_int0(conv$sri),
+      conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+      conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+      conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+      conv_qmax = null_to_int0(conv$qmax),
+
+      obs_var_id = null_to_int0(observed$variable_id),
+      obs_loss_id = null_to_int0(observed$loss_id),
+      obs_loss_param_count = null_to_int0(observed$loss_param_count),
+      obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
+      obs_time_step = null_to_int0(observed$time_step),
+      obs_history_col_id = null_to_int0(observed$history_col_id),
+      obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+
+
+      opt_param_id = null_to_int0(index_table$opt_param_id),
+      opt_trans_id = null_to_int0(index_table$param_trans_id),
+      opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+      opt_reg_params = null_to_num0(hyperparameters),
+      opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
+
+      opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+      opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+      opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+      opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+      opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+
+      obs_do_sim_constraint = isTRUE(do_sim_constraint),
+      obs_sim_lower_bound = null_to_num0(sim_lower_bound),
+
+      numIterations = int0_to_0(null_to_0(iters))
+    ),
+    parameters = list(params = c(unlist(params)),
+                      tv_mult = null_to_num0(init_tv_mult)),
+    map = map,
+    DLL = DLL,
+    silent = getOption("MP_silent_tmb_function")
+  )
+  return(dd)
+}
+
+#
+# tmb_fun_args_by_spec.default <- function(model) {
+#     ## make ad functions for different spec versions
+#     if (spec_ver_eq("0.0.1")) {
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.0.2")) {
+#         up <- update_ratemat_indices
+#
+#         ## TODO: spec problem -- numIters should have been kept in model
+#         numIters <- 3
+#
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier,
+#                 update_from = up$from,
+#                 update_to = up$to,
+#                 update_count = up$count,
+#                 update_spi = up$spi,
+#                 update_modifier = up$modifier,
+#                 par_accum_indices = par_accum_indices,
+#                 numIterations = numIters
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.0.4")) {
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier,
+#                 updateidx = c(updateidx),
+#                 breaks = breaks,
+#                 count_of_tv_at_breaks = count_of_tv_at_breaks,
+#                 tv_spi = schedule$tv_spi,
+#                 tv_val = schedule$tv_val,
+#                 par_accum_indices = par_accum_indices,
+#                 numIterations = iters
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.0.5")) {
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier,
+#                 updateidx = c(updateidx),
+#                 breaks = breaks,
+#                 count_of_tv_at_breaks = count_of_tv_at_breaks,
+#                 tv_spi = schedule$tv_spi,
+#                 tv_val = schedule$tv_val,
+#                 par_accum_indices = par_accum_indices,
+#                 do_hazard = do_hazard,
+#                 numIterations = iters
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.0.6")) {
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier,
+#                 updateidx = c(updateidx),
+#                 breaks = breaks,
+#                 count_of_tv_at_breaks = count_of_tv_at_breaks,
+#                 tv_spi = schedule$tv_spi,
+#                 tv_val = schedule$tv_val,
+#                 tv_mult = schedule$Value,
+#                 tv_orig = schedule$Type == "rel_orig",
+#                 par_accum_indices = par_accum_indices,
+#                 do_hazard = do_hazard,
+#                 numIterations = iters
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.1.0")) {
+#         unpack(sum_indices)
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = from,
+#                 to = to,
+#                 count = count,
+#                 spi = spi,
+#                 modifier = modifier,
+#                 updateidx = c(updateidx),
+#                 breaks = breaks,
+#                 count_of_tv_at_breaks = count_of_tv_at_breaks,
+#                 tv_spi = schedule$tv_spi,
+#                 tv_val = schedule$tv_val,
+#                 tv_mult = schedule$Value,
+#                 tv_orig = schedule$Type == "rel_orig",
+#                 sumidx = sumidx,
+#                 sumcount = unname(sumcount),
+#                 summandidx = summandidx,
+#                 par_accum_indices = par_accum_indices,
+#                 do_hazard = do_hazard,
+#                 numIterations = iters
+#             ),
+#             parameters = list(params = c(unlist(params))),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.1.1")) {
+#         unpack(sum_indices)
+#         init_tv_mult = integer(0L)
+#         if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+#         dd <- list(
+#             data = list(
+#                 state = c(state),
+#                 ratemat = ratemat,
+#                 from = null_to_int0(from),
+#                 to = null_to_int0(to),
+#                 count = null_to_int0(count),
+#                 spi = null_to_int0(spi),
+#                 modifier = null_to_int0(modifier),
+#                 updateidx = null_to_int0(c(updateidx)),
+#                 breaks = null_to_int0(breaks),
+#                 count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+#                 tv_val = null_to_num0(schedule$tv_val),
+#                 tv_spi = null_to_int0(schedule$tv_spi),
+#                 tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+#                 # tv_mult = schedule$Value,  # moved to parameter vector
+#                 tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+#                 tv_abs = null_to_log0(schedule$Type == "abs"),
+#
+#                 sumidx = null_to_int0(sumidx),
+#                 sumcount = null_to_int0(unname(sumcount)),
+#                 summandidx = null_to_int0(summandidx),
+#
+#                 do_make_state = isTRUE(do_make_state),
+#                 max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+#                 tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+#
+#                 outflow_row_count = null_to_int0(outflow$row_count),
+#                 outflow_col_count = null_to_int0(outflow$col_count),
+#                 outflow_rows = null_to_int0(outflow$rows),
+#                 outflow_cols = null_to_int0(outflow$cols),
+#
+#                 linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+#                 linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+#                 linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+#                 linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+#
+#                 lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+#                 lin_param_count = null_to_int0(linearized_params$lin_param_count),
+#                 lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+#
+#                 df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+#                 df_state_count = null_to_int0(disease_free$df_state_count),
+#                 df_state_idx = null_to_int0(disease_free$df_state_idx),
+#
+#                 im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+#                 im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+#                 im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+#                 im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+#
+#                 ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+#                 ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+#
+#                 do_hazard = isTRUE(do_hazard),
+#                 do_hazard_lin = isTRUE(do_hazard_lin),
+#                 do_approx_hazard = isTRUE(do_approx_hazard),
+#                 do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+#                 haz_eps = haz_eps,
+#
+#                 numIterations = int0_to_0(null_to_0(iters))
+#             ),
+#             parameters = list(params = c(unlist(params)),
+#                               tv_mult = init_tv_mult),
+#             DLL = DLL
+#         )
+#     } else if (spec_ver_eq("0.1.2")) {
+#       unpack(sum_indices)
+#       init_tv_mult = integer(0L)
+#       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+#       dd <- list(
+#         data = list(
+#           state = c(state),
+#           ratemat = ratemat,
+#           from = null_to_int0(from),
+#           to = null_to_int0(to),
+#           count = null_to_int0(count),
+#           spi = null_to_int0(spi),
+#           modifier = null_to_int0(modifier),
+#           updateidx = null_to_int0(c(updateidx)),
+#           breaks = null_to_int0(breaks),
+#           count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+#           tv_val = null_to_num0(schedule$tv_val),
+#           tv_spi = null_to_int0(schedule$tv_spi),
+#           tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+#           # tv_mult = schedule$Value,  # moved to parameter vector
+#           tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+#           tv_abs = null_to_log0(schedule$Type == "abs"),
+#
+#           sumidx = null_to_int0(sumidx),
+#           sumcount = null_to_int0(unname(sumcount)),
+#           summandidx = null_to_int0(summandidx),
+#
+#           factr_spi = null_to_int0(factr_indices$spi_factr),
+#           factr_count = null_to_int0(factr_indices$count),
+#           factr_spi_compute = null_to_int0(factr_indices$spi),
+#           factr_modifier = null_to_int0(factr_indices$modifier),
+#
+#           do_make_state = isTRUE(do_make_state),
+#           max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+#           tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+#
+#           outflow_row_count = null_to_int0(outflow$row_count),
+#           outflow_col_count = null_to_int0(outflow$col_count),
+#           outflow_rows = null_to_int0(outflow$rows),
+#           outflow_cols = null_to_int0(outflow$cols),
+#
+#           linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+#           linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+#           linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+#           linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+#
+#           lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+#           lin_param_count = null_to_int0(linearized_params$lin_param_count),
+#           lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+#
+#           df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+#           df_state_count = null_to_int0(disease_free$df_state_count),
+#           df_state_idx = null_to_int0(disease_free$df_state_idx),
+#
+#           im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+#           im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+#           im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+#           im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+#
+#           ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+#           ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+#
+#           do_hazard = isTRUE(do_hazard),
+#           do_hazard_lin = isTRUE(do_hazard_lin),
+#           do_approx_hazard = isTRUE(do_approx_hazard),
+#           do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+#           # haz_eps = haz_eps,
+#
+#           sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+#           sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+#           sri = null_to_int0(sim_report_expr_indices$sri),
+#           sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+#
+#           lag_diff_sri = null_to_int0(lag_diff$sri),
+#           lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
+#
+#           conv_sri = null_to_int0(conv$sri),
+#           conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+#           conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+#           conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+#           conv_qmax = null_to_int0(conv$qmax),
+#
+#           numIterations = int0_to_0(null_to_0(iters))
+#         ),
+#         parameters = list(params = c(unlist(params)),
+#                           tv_mult = init_tv_mult),
+#         DLL = DLL
+#       )
+#
+#     } else if (spec_ver_eq("0.2.0")) {
+#
+#       unpack(sum_indices)
+#       unpack(opt_params)
+#
+#       # update parameter vectors -----------------
+#       init_tv_mult = integer(0L)
+#       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+#
+#       if(isTRUE(exists_opt_params(model))) {
+#
+#         # tell tmb what parameters to put in the objective function
+#         map = ad_fun_map
+#
+#         # pass transformed parameters to the objective function
+#         params = tmb_params_trans(model, vec_type = 'params')
+#         init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+#
+#       } else {
+#         map = list()
+#       }
+#       # -------------------------------------------
+#
+#       if (!all(between(observed$time_step, 2, iters + 1))) {
+#         stop('observations outside of simulation range')
+#       }
+#
+#       dd <- list(
+#         data = list(
+#           state = c(state),
+#           ratemat = ratemat,
+#           from = null_to_int0(from),
+#           to = null_to_int0(to),
+#           count = null_to_int0(count),
+#           spi = null_to_int0(spi),
+#           modifier = null_to_int0(modifier),
+#           updateidx = null_to_int0(c(updateidx)),
+#           breaks = null_to_int0(breaks),
+#           count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+#
+#           tv_val = null_to_num0(schedule$tv_val),
+#           tv_spi = null_to_int0(schedule$tv_spi),
+#           tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+#           # tv_mult = schedule$Value,  # moved to parameter vector
+#           tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+#           tv_abs = null_to_log0(schedule$Type == "abs"),
+#           tv_type_id = null_to_int0(schedule$tv_type_id),
+#           #tv_type = null_to_int0(NULL),
+#
+#           sumidx = null_to_int0(sumidx),
+#           sumcount = null_to_int0(unname(sumcount)),
+#           summandidx = null_to_int0(summandidx),
+#
+#           factr_spi = null_to_int0(factr_indices$spi_factr),
+#           factr_count = null_to_int0(factr_indices$count),
+#           factr_spi_compute = null_to_int0(factr_indices$spi),
+#           factr_modifier = null_to_int0(factr_indices$modifier),
+#
+#           powidx = null_to_int0(pow_indices$powidx),
+#           powarg1idx = null_to_int0(pow_indices$powarg1idx),
+#           powarg2idx = null_to_int0(pow_indices$powarg2idx),
+#           powconstidx = null_to_int0(pow_indices$powconstidx),
+#
+#           do_make_state = isTRUE(do_make_state),
+#           max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+#           tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+#
+#           outflow_row_count = null_to_int0(outflow$row_count),
+#           outflow_col_count = null_to_int0(outflow$col_count),
+#           outflow_rows = null_to_int0(outflow$rows),
+#           outflow_cols = null_to_int0(outflow$cols),
+#
+#           linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+#           linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+#           linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+#           linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+#
+#           lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+#           lin_param_count = null_to_int0(linearized_params$lin_param_count),
+#           lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+#
+#           df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+#           df_state_count = null_to_int0(disease_free$df_state_count),
+#           df_state_idx = null_to_int0(disease_free$df_state_idx),
+#
+#           im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+#           im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+#           im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+#           im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+#
+#           ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+#           ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+#
+#           do_hazard = isTRUE(do_hazard),
+#           do_hazard_lin = isTRUE(do_hazard_lin),
+#           do_approx_hazard = isTRUE(do_approx_hazard),
+#           do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+#           # haz_eps = haz_eps,
+#
+#           sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+#           sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+#           sri = null_to_int0(sim_report_expr_indices$sri),
+#           sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+#
+#           lag_diff_sri = null_to_int0(lag_diff$sri),
+#           lag_diff_delay_n = null_to_int0(lag_diff$delay_n),
+#
+#           conv_sri = null_to_int0(conv$sri),
+#           conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+#           conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+#           conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+#           conv_qmax = null_to_int0(conv$qmax),
+#
+#           obs_var_id = null_to_int0(observed$variable_id),
+#           obs_loss_id = null_to_int0(observed$loss_id),
+#           obs_loss_param_count = null_to_int0(observed$loss_param_count),
+#           obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
+#           obs_time_step = null_to_int0(observed$time_step),
+#           obs_history_col_id = null_to_int0(observed$history_col_id),
+#           obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+#
+#
+#           opt_param_id = null_to_int0(index_table$opt_param_id),
+#           opt_trans_id = null_to_int0(index_table$param_trans_id),
+#           opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+#           opt_reg_params = null_to_num0(hyperparameters),
+#           opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
+#
+#           opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+#           opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+#           opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+#           opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+#           opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+#
+#           obs_do_sim_constraint = isTRUE(do_sim_constraint),
+#           obs_sim_lower_bound = null_to_num0(sim_lower_bound),
+#
+#           numIterations = int0_to_0(null_to_0(iters))
+#         ),
+#         parameters = list(params = c(unlist(params)),
+#                           tv_mult = null_to_num0(init_tv_mult)),
+#         map = map,
+#         DLL = DLL,
+#         silent = getOption("MP_silent_tmb_function")
+#       )
+#     } else if (spec_ver_eq('0.2.1')) {
+#
+#       unpack(sum_indices)
+#       unpack(opt_params)
+#
+#       # update parameter vectors -----------------
+#       init_tv_mult = integer(0L)
+#       if(!is.null(schedule$init_tv_mult)) init_tv_mult = schedule$init_tv_mult
+#
+#       if(isTRUE(exists_opt_params(model))) {
+#
+#         # tell tmb what parameters to put in the objective function
+#         map = ad_fun_map
+#
+#         # pass transformed parameters to the objective function
+#         params = tmb_params_trans(model, vec_type = 'params')
+#         init_tv_mult = tmb_params_trans(model, vec_type = 'tv_mult')
+#
+#       } else {
+#         map = list()
+#       }
+#       # -------------------------------------------
+#
+#       if (!all(between(observed$time_step, 2, iters + 1))) {
+#         stop('observations outside of simulation range')
+#       }
+#
+#       dd <- list(
+#         data = list(
+#           state = c(state),
+#           ratemat = ratemat,
+#           from = null_to_int0(from),
+#           to = null_to_int0(to),
+#           count = null_to_int0(count),
+#           spi = null_to_int0(spi),
+#           modifier = null_to_int0(modifier),
+#           updateidx = null_to_int0(c(updateidx)),
+#           breaks = null_to_int0(breaks),
+#           count_of_tv_at_breaks = null_to_int0(count_of_tv_at_breaks),
+#
+#           tv_val = null_to_num0(schedule$tv_val),
+#           tv_spi = null_to_int0(schedule$tv_spi),
+#           tv_spi_unique = null_to_int0(sort(unique(schedule$tv_spi))),
+#           # tv_mult = schedule$Value,  # moved to parameter vector
+#           tv_orig = null_to_log0(schedule$Type == "rel_orig"),
+#           tv_abs = null_to_log0(schedule$Type == "abs"),
+#           tv_type_id = null_to_int0(schedule$tv_type_id),
+#           #tv_type = null_to_int0(NULL),
+#
+#           sumidx = null_to_int0(sumidx),
+#           sumcount = null_to_int0(unname(sumcount)),
+#           summandidx = null_to_int0(summandidx),
+#
+#           factr_spi = null_to_int0(factr_indices$spi_factr),
+#           factr_count = null_to_int0(factr_indices$count),
+#           factr_spi_compute = null_to_int0(factr_indices$spi),
+#           factr_modifier = null_to_int0(factr_indices$modifier),
+#
+#           powidx = null_to_int0(pow_indices$powidx),
+#           powarg1idx = null_to_int0(pow_indices$powarg1idx),
+#           powarg2idx = null_to_int0(pow_indices$powarg2idx),
+#           powconstidx = null_to_int0(pow_indices$powconstidx),
+#
+#           do_make_state = isTRUE(do_make_state),
+#           max_iters_eig_pow_meth = int0_to_0(null_to_0(max_iters_eig_pow_meth)),
+#           tol_eig_pow_meth = null_to_num0(tol_eig_pow_meth),
+#
+#           outflow_row_count = null_to_int0(outflow$row_count),
+#           outflow_col_count = null_to_int0(outflow$col_count),
+#           outflow_rows = null_to_int0(outflow$rows),
+#           outflow_cols = null_to_int0(outflow$cols),
+#
+#           linearized_outflow_row_count = null_to_int0(linearized_outflow$row_count),
+#           linearized_outflow_col_count = null_to_int0(linearized_outflow$col_count),
+#           linearized_outflow_rows = null_to_int0(linearized_outflow$rows),
+#           linearized_outflow_cols = null_to_int0(linearized_outflow$cols),
+#
+#           lin_param_vals = null_to_num0(linearized_params$lin_param_vals),
+#           lin_param_count = null_to_int0(linearized_params$lin_param_count),
+#           lin_param_idx = null_to_int0(linearized_params$lin_param_idx),
+#
+#           df_state_par_idx = null_to_int0(disease_free$df_state_par_idx),
+#           df_state_count = null_to_int0(disease_free$df_state_count),
+#           df_state_idx = null_to_int0(disease_free$df_state_idx),
+#
+#           im_all_drop_eigen_idx = null_to_int0(initialization_mapping$all_drop_eigen_idx),
+#           im_eigen_drop_infected_idx = null_to_int0(initialization_mapping$eigen_drop_infected_idx),
+#           im_all_to_infected_idx = null_to_int0(initialization_mapping$all_to_infected_idx),
+#           im_susceptible_idx = null_to_int0(initialization_mapping$susceptible_idx),
+#
+#           ip_total_idx = int0_to_0(null_to_0(initial_population$total_idx)),
+#           ip_infected_idx = int0_to_0(null_to_0(initial_population$infected_idx)),
+#
+#           do_hazard = isTRUE(do_hazard),
+#           do_hazard_lin = isTRUE(do_hazard_lin),
+#           do_approx_hazard = isTRUE(do_approx_hazard),
+#           do_approx_hazard_lin = isTRUE(do_approx_hazard_lin),
+#           # haz_eps = haz_eps,
+#
+#           sri_output = null_to_int0(sim_report_expr_indices$sri_output),
+#           sr_count = null_to_int0(sim_report_expr_indices$sr_count),
+#           sri = null_to_int0(sim_report_expr_indices$sri),
+#           sr_modifier = null_to_int0(sim_report_expr_indices$sr_modifier),
+#
+#           lag_diff_sri = null_to_int0(lag_diff$sri),
+#           lag_diff_delay_n = null_to_int0_mat(lag_diff$delay_n),
+#
+#           conv_sri = null_to_int0(conv$sri),
+#           conv_c_prop_idx = null_to_int0(conv$c_prop_idx),
+#           conv_c_delay_cv_idx = null_to_int0(conv$c_delay_cv_idx),
+#           conv_c_delay_mean_idx = null_to_int0(conv$c_delay_mean_idx),
+#           conv_qmax = null_to_int0(conv$qmax),
+#
+#           obs_var_id = null_to_int0(observed$variable_id),
+#           obs_loss_id = null_to_int0(observed$loss_id),
+#           obs_loss_param_count = null_to_int0(observed$loss_param_count),
+#           obs_spi_loss_param = null_to_int0(observed$spi_loss_param),
+#           obs_time_step = null_to_int0(observed$time_step),
+#           obs_history_col_id = null_to_int0(observed$history_col_id),
+#           obs_value = observed$observed, # don't need to worry about missing values because they are omitted
+#
+#
+#           opt_param_id = null_to_int0(index_table$opt_param_id),
+#           opt_trans_id = null_to_int0(index_table$param_trans_id),
+#           opt_count_reg_params = null_to_int0(index_table$count_hyperparams),
+#           opt_reg_params = null_to_num0(hyperparameters),
+#           opt_reg_family_id = null_to_int0(index_table$prior_distr_id),
+#
+#           opt_tv_param_id = null_to_int0(index_tv_table$opt_tv_mult_id),
+#           opt_tv_trans_id = null_to_int0(index_tv_table$param_trans_id),
+#           opt_tv_count_reg_params = null_to_int0(index_tv_table$count_hyperparams),
+#           opt_tv_reg_params = null_to_num0(hyperparameters_tv),
+#           opt_tv_reg_family_id = null_to_int0(index_tv_table$prior_distr_id),
+#
+#           obs_do_sim_constraint = isTRUE(do_sim_constraint),
+#           obs_sim_lower_bound = null_to_num0(sim_lower_bound),
+#
+#           numIterations = int0_to_0(null_to_0(iters))
+#         ),
+#         parameters = list(params = c(unlist(params)),
+#                           tv_mult = null_to_num0(init_tv_mult)),
+#         map = map,
+#         DLL = DLL,
+#         silent = getOption("MP_silent_tmb_function")
+#       )
+#     }
+#     else {
+#         stop("Construction of TMB functions is not supported by your installation of MacPan")
+#     }
+#     return(dd)
+# }
 
 ##' Update Initial State
 ##'
