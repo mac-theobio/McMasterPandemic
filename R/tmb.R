@@ -2284,6 +2284,8 @@ tmb_fun_args_by_spec.spec_ver_0_2_1 = function(model) {
   return(dd)
 }
 
+tmb_fun_args_by_spec.spec_ver_0_3_0 = tmb_fun_args_by_spec.spec_ver_0_2_1
+
 #
 # tmb_fun_args_by_spec.default <- function(model) {
 #     ## make ad functions for different spec versions
