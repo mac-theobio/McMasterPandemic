@@ -1094,37 +1094,36 @@ Type EvalExpr(
     int row = 0
 )
 {
-    Type r1, r2;
-
     switch (table_n[row]) {
         case -1:
             return valid_literals[table_x[row]-1];
-        case 0:
+        case 0: // if we make valid_vars be a matrix in the future, what indexing should be used?
             return valid_vars[table_x[row]-1];
         default:
+            int n = table_n[row];
+            vector<Type> r(n);
+            for (int i=0; i<n; i++)
+                r[i] = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1+i);
+
             switch(table_x[row]) {
                 case 1: // +
-                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
-                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
-                    return r1+r2;
+                    return r[0]+r[1];
                 case 2: // -
-                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
-                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
-                    return r1-r2;
+                    return r[0]-r[1];
                 case 3: // *
-                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
-                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
-                    return r1*r2;
+                    return r[0]*r[1];
                 case 4: // /
-                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
-                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
-                    return r1/r2;
+                    return r[0]/r[1];
                 case 5: // ^
-                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
-                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
-                    return pow(r1, r2);
+                    return pow(r[0], r[1]);
                 case 6: // (
-                    return EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    return r[0];
+                // below is an example for possible extension in the future
+		//case 7: // averaging
+                //    Type sum = 0.0;
+                //    for (i=0; i<n; i++) 
+                //        sum += r[i];
+                //    return sum;
                 default:
                     Rf_error("invalid operator in arithmatic expression");
                     return 0.0;
