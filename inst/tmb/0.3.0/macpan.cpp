@@ -1085,6 +1085,55 @@ void InverseTransformParams(
 
 ///////////////////////////////////////////////////////////////////////////////
 template<class Type>
+Type EvalExpr(
+    const vector<int>& table_x,
+    const vector<int>& table_n,
+    const vector<int>& table_i,
+    const vector<Type>& valid_vars,
+    const vector<Type>& valid_literals,
+    int row = 0
+)
+{
+    Type r1, r2;
+
+    switch (table_n[row]) {
+        case -1:
+            return valid_literals[table_x[row]-1];
+        case 0:
+            return valid_vars[table_x[row]-1];
+        default:
+            switch(table_x[row]) {
+                case 1: // +
+                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
+                    return r1+r2;
+                case 2: // -
+                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
+                    return r1-r2;
+                case 3: // *
+                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
+                    return r1*r2;
+                case 4: // /
+                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
+                    return r1/r2;
+                case 5: // ^
+                    r1 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                    r2 = EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]);
+                    return pow(r1, r2);
+                case 6: // (
+                    return EvalExpr(table_x, table_n, table_i, valid_vars, valid_literals, table_i[row]-1);
+                default:
+                    Rf_error("invalid operator in arithmatic expression");
+                    return 0.0;
+            }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+template<class Type>
 Type objective_function<Type>::operator() ()
 {
 
@@ -1203,6 +1252,12 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(parse_table_n); // v0.3.0
   DATA_IVECTOR(parse_table_i); // v0.3.0
   DATA_VECTOR(valid_literals); // v0.3.0
+
+  //std::cout << "parse_table_x = " << parse_table_x << std::endl;
+  //std::cout << "parse_table_n = " << parse_table_n << std::endl;
+  //std::cout << "parse_table_i = " << parse_table_i << std::endl;
+  //std::cout << "valid_literals = " << valid_literals << std::endl;
+
   //std::cout << "xx = " << xx << std::endl;
   //std::cout << "opt_tv_trans_id = " << opt_tv_trans_id << std::endl;
 
@@ -1220,6 +1275,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(params);
   PARAMETER_VECTOR(tv_mult);
   PARAMETER_VECTOR(valid_vars);  // v0.3.0
+  //std::cout << "valid_vars = " << valid_vars << std::endl;
 
   // Regularization
   Type regularization = Regularization(
@@ -1683,5 +1739,6 @@ Type objective_function<Type>::operator() ()
   REPORT(concatenated_ratemat_nonzeros);
   REPORT(simulation_history);
 
-  return sum_of_loss;
+  //return sum_of_loss;
+  return EvalExpr(parse_table_x, parse_table_n, parse_table_i, valid_vars, valid_literals);
 }
