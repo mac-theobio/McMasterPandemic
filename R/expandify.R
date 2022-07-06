@@ -13,6 +13,12 @@
 ##' @export
 expand_names <- function(x, y, sep = "_") {
     unlist(lapply(y, function(a) paste(x, a, sep = sep)))
+    # alt def:
+    # paste(
+    #   rep(x, times = length(y)),
+    #   rep(y, each = length(x)),
+    #   sep = sep
+    # )
 }
 
 ##' distribute counts given a desired distribution (with smart rounding)
