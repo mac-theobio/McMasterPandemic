@@ -1387,6 +1387,13 @@ Type objective_function<Type>::operator() ()
     simulation_history.row(0) = sh_row.transpose();
   }
 
+  /* The code section below works only when 
+     conv_c_prop_idx
+     conv_c_delay_cv_idx
+     conv_c_delay_mean_idx
+  do not vary through simulation. In this situation, we can pre-calculate
+  kappa. However, we can't pre-calculate kappa if these variables vary
+  through simulation.
   // Item #7 preparation --- calculating kappa so that we don't need to
   // repeatedly calculate it in the simulation
   vector<vector<Type> > kappa(conv_sri.size());
@@ -1423,6 +1430,7 @@ Type objective_function<Type>::operator() ()
     kappa[k] = c_prop*delta/delta.sum();
     //std::cout << "kappa = " << kappa[k] << std::endl;
   }
+  */
 
   // Preparation for the General Objective Function in spec 0.2.0
   // Build a map of var_id to loss func
@@ -1617,16 +1625,29 @@ Type objective_function<Type>::operator() ()
     int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + powSize + \
                          extraExprNum + lag_diff_sri.size();
     for (int k=0; k<conv_sri.size(); k++) {
-      vector<Type> kernel = kappa[k];
-      //std::cout << "THIS IS REAL KERNEL = " << kernel << std::endl;
-      Type conv = 0.0;
       if (i>conv_qmax[k]-4) { // i+2>=qmax-1
-        //std::cout << "========= i = " << i << std::endl;
+        Type c_prop = sp(stateSize + conv_c_prop_idx[k]-1);
+        Type c_delay_cv   = sp(stateSize + conv_c_delay_cv_idx[k]-1);
+        Type c_delay_mean = sp(stateSize + conv_c_delay_mean_idx[k]-1);
+
+        Type shape = 1.0/(c_delay_cv*c_delay_cv);
+        Type scale = c_delay_mean/shape;
+
+        vector<Type> delta(conv_qmax[k]-1);
+
+        Type pre_gamma = pgamma ((Type) 1.0, shape, scale);
+        for (int q=1; q<conv_qmax[k]; q++) {
+          Type cur_gamma = pgamma ((Type) (q+1), shape, scale);
+          delta(q-1) = cur_gamma - pre_gamma;
+          pre_gamma = cur_gamma;
+        }
+        vector<Type> kappa = c_prop*delta/delta.sum();
+
+
+        //vector<Type> kernel = kappa[k];
+        Type conv = 0.0;
         for (int j=0; j<conv_qmax[k]-1; j++) {
-          //std::cout << "x = " << simulation_history(i+1-j, conv_sri[k]) << std::endl;
-          //std::cout << "k = " << kernel(j) << std::endl;
-          conv += simulation_history(i+1-j, conv_sri[k]-1) * kernel(j);
-          //std::cout << "z = " << conv << std::endl;
+          conv += simulation_history(i+1-j, conv_sri[k]-1) * kappa(j);
         }
         simulation_history(i+1, index_to_item7+k) = conv;
       }
