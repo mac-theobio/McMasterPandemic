@@ -99,6 +99,7 @@ lag_diff_indices = function(model) {
 
 
 lag_diff_uneven_indices = function(model) {
+  n_delay_mat_rows = length(simulation_dates(model, 1L, -1L))
   lag_indices = (model$lag_diff_uneven
     %>% lapply(getElement, 'input_names')
     %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
@@ -129,7 +130,7 @@ lag_diff_uneven_indices = function(model) {
   # so we are just going to use dense integer matrices
   delay_n = as.matrix(Matrix::sparseMatrix(
     i = ii, j = jj, x = xx,
-    dims = c(model$iters, length(model$lag_diff_uneven))
+    dims = c(n_delay_mat_rows, length(model$lag_diff_uneven))
   ))
   mode(delay_n) = 'integer'
   sri = unlist(lag_indices)

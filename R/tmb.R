@@ -816,17 +816,31 @@ add_lag_diff = function(
     , value = TRUE
   )
   output_names = "lag" %_% delay_n %_% "diff" %_% var_matches
-  added_lag_diff = nlist(
-    var_pattern,
-    delay_n,
-    output_names
-  )
-  model$lag_diff = c(
-    model$lag_diff,
-    list(added_lag_diff)
-  )
-  if (any(duplicated(unlist(lapply(model$lag_diff, getElement, "output_names"))))) {
-    stop('the same variable is being differenced with the same lag, which is not currently allowed')
+  # if (spec_ver_gt("0.2.0")) {
+  #   #browser()
+  #   delay_n = matrix(delay_n, model$iters, length(output_names), byrow = TRUE)
+  # }
+  if (spec_ver_gt("0.2.0")) {
+    if (delay_n != 1L) stop("only delays of 1 are allowed now")
+    sdates = simulation_dates(model, start_shift = 1L, end_shift = -1L)
+    #sdates = simulation_dates(model)[1:model$iters] #[-model$iters]
+    #sdates = c(model$start_date - 1L, simulation_dates(model)[1:model$iters])
+    for (i in seq_along(var_matches)) {
+      model = add_lag_diff_uneven(model, var_matches[i], output_names[i], sdates)
+    }
+  } else {
+    added_lag_diff = nlist(
+      var_pattern,
+      delay_n,
+      output_names
+    )
+    model$lag_diff = c(
+      model$lag_diff,
+      list(added_lag_diff)
+    )
+    if (any(duplicated(unlist(lapply(model$lag_diff, getElement, "output_names"))))) {
+      stop('the same variable is being differenced with the same lag, which is not currently allowed')
+    }
   }
   update_tmb_indices(model)
 }
@@ -841,7 +855,7 @@ add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
   )
   if (spec_ver_gt('0.2.0')) {
     stopifnot(input_names %in% intermediate_sim_report_names(model))
-    stopifnot(all(lag_dates %in% simulation_dates(model)))
+    stopifnot(all(lag_dates %in% simulation_dates(model, 1L, -1L)))
     model$lag_diff_uneven = c(
       model$lag_diff_uneven,
       list(nlist(input_names, output_names, lag_dates))
@@ -1575,7 +1589,7 @@ tmb_indices <- function(model) {
         model$sim_report_exprs,
         initial_sim_report_names(model)
       )
-      if (spec_ver_gt("0.2.0")) {
+      if (spec_ver_gt("0.2.0") & TRUE) {
         indices$lag_diff = lag_diff_uneven_indices(model)
       } else {
         indices$lag_diff = lag_diff_indices(model)
