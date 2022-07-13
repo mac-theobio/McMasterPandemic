@@ -385,5 +385,9 @@ test_that("convolution paramters can be time-varying", {
   )
   tv_conv = na.omit(simulation_history(sir_with_tv)$conv_incidence)
   conv = na.omit(simulation_history(sir)$conv_incidence)
+  if (interactive()) {
+    plot(conv, type = 'l')
+    lines(tv_conv, lty = 2, col = 'red')
+  }
   expect_equal(sort(unique(tv_conv / conv)), c(0.5, 1.0))
 })
