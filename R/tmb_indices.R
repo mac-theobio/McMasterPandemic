@@ -109,28 +109,28 @@ lag_diff_uneven_indices = function(model) {
   }
   lag_breaks = (model$lag_diff_uneven
     %>% lapply(getElement, 'lag_dates')
-    %>% lapply(`-`, model$start_date)
+    %>% lapply(difftime, model$start_date, units = "days")
     %>% lapply(as.integer)
+    %>% lapply(`[`, -1L)
     %>% rep(unlist(lapply(lag_indices, length)))
   )
   lag_ns = (model$lag_diff_uneven
     %>% lapply(getElement, 'lag_dates')
     %>% lapply(diff)
     %>% lapply(as.integer)
-    %>% lapply(append, 0L, after = 0L)
     %>% rep(unlist(lapply(lag_indices, length)))
   )
 
-  ii = unlist(lag_breaks) + 1L
-  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
   xx = unlist(lag_ns)
+  ii = unlist(lag_breaks)
+  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
 
   # sparse integer matrices do not seem to be implemented,
   # and the c++ doesn't seem to work without integer matrices,
   # so we are just going to use dense integer matrices
   delay_n = as.matrix(Matrix::sparseMatrix(
     i = ii, j = jj, x = xx,
-    dims = c(n_delay_mat_rows, length(model$lag_diff_uneven))
+    dims = c(model$iters + 1L, length(model$lag_diff_uneven))
   ))
   mode(delay_n) = 'integer'
   sri = unlist(lag_indices)

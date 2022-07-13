@@ -822,7 +822,7 @@ add_lag_diff = function(
   # }
   if (spec_ver_gt("0.2.0")) {
     if (delay_n != 1L) stop("only delays of 1 are allowed now")
-    sdates = simulation_dates(model, start_shift = 1L, end_shift = -1L)
+    sdates = simulation_dates(model, start_shift = 0L, end_shift = 0L)
     #sdates = simulation_dates(model)[1:model$iters] #[-model$iters]
     #sdates = c(model$start_date - 1L, simulation_dates(model)[1:model$iters])
     for (i in seq_along(var_matches)) {
@@ -855,7 +855,7 @@ add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
   )
   if (spec_ver_gt('0.2.0')) {
     stopifnot(input_names %in% intermediate_sim_report_names(model))
-    stopifnot(all(lag_dates %in% simulation_dates(model, 1L, -1L)))
+    stopifnot(all(lag_dates %in% simulation_dates(model, 0L, 0L)))
     model$lag_diff_uneven = c(
       model$lag_diff_uneven,
       list(nlist(input_names, output_names, lag_dates))

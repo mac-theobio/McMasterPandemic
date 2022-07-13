@@ -6,7 +6,7 @@ library(dplyr)
 # in the simulation history.
 # version 0.2.1 with run with error until the 0.2.1 specs are implemented
 #set_spec_version('0.2.1', system.file('tmb', package = 'McMasterPandemic'))
-set_spec_version('0.2.1', '../../inst/tmb')
+#set_spec_version('0.2.1', '../../inst/tmb')
 
 uneven_dates_X = structure(
   c(10957, 10958, 10959, 10963, 10969, 10971, 10972,
@@ -34,7 +34,12 @@ sir_model = (
     do_hazard = TRUE,
     do_make_state = FALSE
   )
-  %>% add_piece_wise(data.frame(Date = "2000-03-01", Symbol = "c_prop", Value = 2/10, Type = "abs"))
+  %>% add_piece_wise(data.frame(
+    Date = "2000-03-01",
+    Symbol = "c_prop",
+    Value = 2/10,
+    Type = "abs"
+  ))
   %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
   %>% add_rate("S", "X", ~ (1/N) * (beta) * (I))
   %>% add_rate("I", "R", ~ (gamma))
@@ -48,7 +53,17 @@ sir_model = (
   %>% update_tmb_indices
 )
 
-sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
-sir_model$tmb_indices$lag_diff$delay_n   # lag_diff_delay_n
+# xx = numeric(sir_model$iters)
+# bb = (as.integer(difftime(uneven_dates_X, sir_model$start_date, units = "days")) + 1)[-1L]
+# dd = as.integer(diff(uneven_dates_X))
+# bb = bb[-length(bb)]
+# xx[bb] = as.integer(diff(uneven_dates_X))
 
-simulation_history(sir_model)
+# uneven_dates_X
+
+sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
+View(sir_model$tmb_indices$lag_diff$delay_n)   # lag_diff_delay_n
+
+View(simulation_history(sir_model)[,c("Date", "X", "Y", "X_uneven_diff", "Y_uneven_diff")])
+#View(simulation_history(sir_model)[,c("Date", "X", "lag_1_diff_X")])
+
