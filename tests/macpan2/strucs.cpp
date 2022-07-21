@@ -13,8 +13,8 @@
 template<class Type>
 struct ll {
   // below is a vector of vectors that passed from R
-  vector<vector<Type>> vectors;
-  
+  vector<vector<Type> > vectors;
+
   ll(SEXP ii){ // Constructor
     // Get elements by their names
     //Y = asVector<Type>(getListElement(ii,"Y"));
@@ -22,10 +22,10 @@ struct ll {
 
     // Get elements by their indices
     int n = length(ii);
-    vector<vector<Type>> vs(n);
+    vector<vector<Type> > vs(n);
     vectors = vs;
 
-    for (int i = 0; i < n; i++) 
+    for (int i = 0; i < n; i++)
       vectors[i] = asVector<Type>(VECTOR_ELT(ii, i));
   }
 };
