@@ -363,3 +363,31 @@ test_that("logit-scale time-variation works", {
   sir_cal = calibrate_flexmodel(sir_to_cal)
   sir_cal$opt_par
 })
+
+test_that("convolution paramters can be time-varying", {
+  tv = data.frame(
+    Date = "2016-09-02",
+    Symbol = "c_prop",
+    Value = 0.5,
+    Type = 'abs'
+  )
+  sir = (make_hello_world_model()
+    %>% update_params(
+      c_prop = 1,
+      c_delay_cv = 0.25,
+      c_delay_mean = 11
+    )
+    %>% add_sim_report_expr("incidence", "^S_to_I$")
+    %>% add_conv("^incidence$")
+  )
+  sir_with_tv = (sir
+    %>% add_piece_wise(tv)
+  )
+  tv_conv = na.omit(simulation_history(sir_with_tv)$conv_incidence)
+  conv = na.omit(simulation_history(sir)$conv_incidence)
+  if (interactive()) {
+    plot(conv, type = 'l')
+    lines(tv_conv, lty = 2, col = 'red')
+  }
+  expect_equal(sort(unique(tv_conv / conv)), c(0.5, 1.0))
+})

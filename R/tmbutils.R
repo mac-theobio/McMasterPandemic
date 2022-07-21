@@ -372,7 +372,7 @@ intermediate_sim_report_names = function(model) {
 }
 
 final_sim_report_names = function(model) {
-  if (spec_ver_gt('0.2.0')) {
+  if (spec_ver_gt('0.2.0') & TRUE) {
     lags = model$lag_diff_uneven
   } else {
     lags = model$lag_diff
@@ -1923,11 +1923,12 @@ tmb_param_names = function(model) {
   )
 }
 
-simulation_dates = function(model) {
+simulation_dates = function(model, start_shift = 0L, end_shift = 0L) {
   seq.Date(
-    as.Date(model$start_date),
-    as.Date(model$end_date),
-    by = 1)
+    as.Date(model$start_date) - as.integer(start_shift),
+    as.Date(model$end_date) + as.integer(end_shift),
+    by = 1
+  )
 }
 
 compute_num_iters = function(model) {
