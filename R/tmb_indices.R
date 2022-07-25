@@ -125,11 +125,15 @@ lag_diff_uneven_indices = function(model) {
   ii = unlist(lag_breaks)
   jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
 
+  within_sim_bounds = ii <= model$iters
+
   # sparse integer matrices do not seem to be implemented,
   # and the c++ doesn't seem to work without integer matrices,
   # so we are just going to use dense integer matrices
   delay_n = as.matrix(Matrix::sparseMatrix(
-    i = ii, j = jj, x = xx,
+    i = ii[within_sim_bounds],
+    j = jj[within_sim_bounds],
+    x = xx[within_sim_bounds],
     dims = c(model$iters + 1L, length(model$lag_diff_uneven))
   ))
   mode(delay_n) = 'integer'
