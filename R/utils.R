@@ -784,7 +784,7 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
     } else if (method == "diagram") {
         xpos <- c(S = 1, E = 2, Ia = 3, Ip = 3, Im = 4, Is = 4, H = 5, ICUs = 5, ICUd = 5, H2 = 6, D = 4, R = 7, X = 3)
         ypos <- c(S = 1, E = 1, Ia = 1, Ip = 2, Im = 2, Is = 3, H = 3, ICUs = 4, ICUd = 5, H2 = 4, D = 6, R = 1, X = 6)
-        box.type <- ifelse(names(xpos) %in% c("D", "X"), "rect", "circle")
+        box.type <- ifelse(names(xpos) %in% c("D", "X", "R"), "rect", "circle")
         pos <- cbind(xpos, ypos) / 8
         M3 <- M[names(xpos), names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
