@@ -80,19 +80,13 @@ model = make_vaccination_model(
   state = NULL,
   start_date = "2000-01-01", end_date = "2000-02-01",
   do_hazard = TRUE,
-  do_hazard_lin = FALSE,
-  do_approx_hazard = FALSE,
-  do_approx_hazard_lin = FALSE,
   do_make_state = TRUE,
-  max_iters_eig_pow_meth = 200,
   do_variant = TRUE,
   do_het = TRUE
 )
 (model
-  %>% update_params(zeta = 0)
+  %>% update_params(zeta = 0.8)
   %>% simulation_history
   %>% select(Date, ICU)
-  #%>% pivot_longer(-Date)
-  %>%  ggplot
-  + geom_line(aes(Date, ICU))
+  %>% ggplot + geom_line(aes(Date, ICU))
 )
