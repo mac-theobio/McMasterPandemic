@@ -12,7 +12,7 @@
 #' @export
 names_sim_hist = function(model) final_sim_report_names(model)
 
-#' @describeIn names_sim_hist
+#' @describeIn names_sim_hist testing
 #' @export
 names_sim_cond = function(model) condensed_sim_report_names(model)
 

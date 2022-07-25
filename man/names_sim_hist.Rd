@@ -2,9 +2,12 @@
 % Please edit documentation in R/names_and_strings.R
 \name{names_sim_hist}
 \alias{names_sim_hist}
+\alias{names_sim_cond}
 \title{Simulation Variable Names}
 \usage{
 names_sim_hist(model)
+
+names_sim_cond(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -20,3 +23,8 @@ returns the names of variables in the \code{simulation_history} if
 the \code{condense} argument is \code{FALSE} or if
 \code{\link{simulate_ensemble}} is used.
 }
+\section{Functions}{
+\itemize{
+\item \code{names_sim_cond}: testing
+}}
+

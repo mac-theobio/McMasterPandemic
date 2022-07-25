@@ -5,60 +5,63 @@
 
 #' Get and Set Model Parameters
 #'
+#' @note \code{pars_infer_*} are on the transformed scale that was chosen by the
+#' user (e.g. log, logit).
+#'
 #' @param model \code{\link{flexmodel}} object
 #' @return parameter vector or data frame of time-variation of parameters
 #' @name get_and_set_model_parameters
 NULL
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters base parameters that would be used in a simulation.
 #' @export
 pars_base_sim = function(model) {
   UseMethod('pars_base_sim')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters base parameters that would be used as an initial value for an optimizer.
 #' @export
 pars_base_init = function(model) {
   UseMethod('pars_base_init')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters optimized base parameters if they exist.
 #' @export
 pars_base_opt = function(model) {
   UseMethod('pars_base_opt')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters time-varying parameter schedule that would be used in a simulation
 #' @export
 pars_time_sim = function(model) {
   UseMethod('pars_time_sim')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters time-varying parameter schedule that was entered by the user at a model definition step.
 #' @export
 pars_time_spec = function(model) {
   UseMethod('pars_time_spec')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters time-varying parameter schedule with optimized values that were entered as NA by the user in the model definition.
 #' @export
 pars_time_opt = function(model) {
   UseMethod('pars_time_opt')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters time-varying parameter schedule with resolved multiplication strategy so that all values are on the same scale as the associated base parameter.
 #' @export
 pars_time_series = function(model) {
   UseMethod('pars_time_series')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters the initial value of the parameter vector involved in inference (e.g. passed to an objective function during calibration).
 #' @export
 pars_infer_init = function(model) {
   UseMethod('pars_infer_init')
 }
 
-#' @rdname get_and_set_model_parameters
+#' @describeIn get_and_set_model_parameters the optimized value of the parameter vector involved in inference.
 #' @export
 pars_infer_opt = function(model) {
   UseMethod('pars_infer_opt')

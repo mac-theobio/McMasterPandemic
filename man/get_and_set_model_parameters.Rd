@@ -48,3 +48,28 @@ parameter vector or data frame of time-variation of parameters
 \description{
 Get and Set Model Parameters
 }
+\section{Functions}{
+\itemize{
+\item \code{pars_base_sim}: base parameters that would be used in a simulation.
+
+\item \code{pars_base_init}: base parameters that would be used as an initial value for an optimizer.
+
+\item \code{pars_base_opt}: optimized base parameters if they exist.
+
+\item \code{pars_time_sim}: time-varying parameter schedule that would be used in a simulation
+
+\item \code{pars_time_spec}: time-varying parameter schedule that was entered by the user at a model definition step.
+
+\item \code{pars_time_opt}: time-varying parameter schedule with optimized values that were entered as NA by the user in the model definition.
+
+\item \code{pars_time_series}: time-varying parameter schedule with resolved multiplication strategy so that all values are on the same scale as the associated base parameter.
+
+\item \code{pars_infer_init}: the initial value of the parameter vector involved in inference (e.g. passed to an objective function during calibration).
+
+\item \code{pars_infer_opt}: the optimized value of the parameter vector involved in inference.
+}}
+
+\note{
+\code{pars_infer_*} are on the transformed scale that was chosen by the
+user (e.g. log, logit).
+}
