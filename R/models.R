@@ -120,10 +120,14 @@ make_base_model <- function(...) {
 #' Make a Two-Dose Vaccination Model
 #'
 #' @inheritDotParams flexmodel
+#' @param do_variant allow for different variants (TODO: more info obviously required here)
+#' @param do_variant_mu different mu for different variants
+#' @param do_wane including waning process where R boxes go back to S within vaccination strata
+#' @param do_het make use of the zeta heterogeneity parameter in the force of infection
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE, do_het = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -165,13 +169,23 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
     %>% expand_names(vax_cat)
     %>% vec
   )
-  baseline_trans_rates =
-    vec(
-      'Ca',
-      'Cp',
-      '(1 - iso_m) * (Cm)',
-      '(1 - iso_s) * (Cs)') *
-    struc('(beta0) * (1/N)')
+  if(do_het) {
+    baseline_trans_rates =
+      vec(
+        'Ca',
+        'Cp',
+        '(1 - iso_m) * (Cm)',
+        '(1 - iso_s) * (Cs)') *
+      struc('(beta0) * (1/hetN)')
+  } else {
+    baseline_trans_rates =
+      vec(
+        'Ca',
+        'Cp',
+        '(1 - iso_m) * (Cm)',
+        '(1 - iso_s) * (Cs)') *
+      struc('(beta0) * (1/N)')
+  }
   if(!do_variant) {
     vax_trans_red = struc_block(vec(
       '1',
@@ -188,6 +202,10 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
       '(1 - vax_efficacy_dose1) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose1) * (variant_advantage) * (variant_prop)',
       '(1 - vax_efficacy_dose2) * (1 - variant_prop) + (1 - variant_vax_efficacy_dose2) * (variant_advantage) * (variant_prop)'),
       row_times = 1, col_times = 5)
+  }
+  foi = (kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate)
+  if (do_het) {
+    foi = vec("hetS" %_% vax_cat) * foi
   }
 
   alpha   = c("alpha", "alpha", "vax_alpha_dose1", "vax_alpha_dose1", "vax_alpha_dose2")
@@ -214,6 +232,35 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
   if (spec_ver_gt('0.1.0')) {
     model$params = expand_params_S0(model$params, 1-1e-5)
   }
+
+  # Sums across states
+  model = (model
+    %>% add_state_param_sum("asymp_unvax_N",       asymp_cat %_% "unvax")
+    %>% add_state_param_sum("asymp_vaxprotect1_N", asymp_cat %_% "vaxprotect1")
+    %>% add_state_param_sum("Stotal", "^S" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Etotal", "^E" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Itotal", "^I(a|s|p|m)" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Htotal", "^H2?" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("ICU", "^ICU(s|d)" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Rtotal", "^R" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Xtotal", "^X" %_% alt_group(vax_cat))
+    %>% add_state_param_sum("Dtotal", "^D" %_% alt_group(vax_cat))
+  )
+
+  if (do_het) {
+    model = (model
+      %>% update_params(one = 1)
+      %>% add_factr("zeta_plus_1", ~ (zeta) + (one))
+      %>% add_pow("hetN", "N", "zeta_plus_1", "one")
+      %>% add_pow(
+        "hetS" %_% vax_cat,
+        "S" %_% vax_cat,
+        "zeta",
+        "one"
+      )
+    )
+  }
+
   model = (model
 
     # Flow within vaccination categories,
@@ -248,13 +295,9 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
     %>% vec_rate(
       "S" %_% vax_cat,
       "E" %_% vax_cat,
-      kronecker(vax_trans_red, t(baseline_trans_rates)) %*% Istate
+      foi
       #t(baseline_trans_rates) %*% Imat %*% t(vax_trans_red)
     )
-
-    # Sums across vaccination categories
-    %>% add_state_param_sum("asymp_unvax_N",       asymp_cat %_% "unvax")
-    %>% add_state_param_sum("asymp_vaxprotect1_N", asymp_cat %_% "vaxprotect1")
 
     # Flow among vaccination categories
     # (see dose_* above for epi states that are involved)
@@ -337,14 +380,6 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
     foi_vec = vec("S" %_% vax_cat %_% "to" %_% "E" %_% vax_cat)
     S_vec = vec("S" %_% vax_cat)
     model = (model
-      %>% add_state_param_sum("Stotal", "^S" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Etotal", "^E" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Itotal", "^I(a|s|p|m)" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Htotal", "^H2?" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("ICU", "^ICU(s|d)" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Rtotal", "^R" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Xtotal", "^X" %_% alt_group(vax_cat))
-      %>% add_state_param_sum("Dtotal", "^D" %_% alt_group(vax_cat))
       %>% add_sim_report_expr("Incidence_unvax", ~ (S_unvax_to_E_unvax) * (S_unvax))
       %>% add_sim_report_expr("Incidence_vaxdose1", ~ (S_vaxdose1_to_E_vaxdose1) * (S_vaxdose1))
       %>% add_sim_report_expr("Incidence_vaxprotect1", ~ (S_vaxprotect1_to_E_vaxprotect1) * (S_vaxprotect1))
@@ -640,7 +675,8 @@ make_hello_world_model = function() {
       state = state,
       start_date = "2016-07-08",
       end_date = "2016-12-31",
-      do_hazard = FALSE
+      do_hazard = FALSE,
+      do_make_state = FALSE
     )
     %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
     %>% add_rate("I", "R", ~ (gamma))

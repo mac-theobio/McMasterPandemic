@@ -1,5 +1,6 @@
 Sys.setenv(R_TESTS="")
 
+library(ggplot2)
 library(testthat)
 library(McMasterPandemic)
 library(TMB)
@@ -55,4 +56,43 @@ cbind(
   pars_base_sim(sir),
   pars_base_init(sir_calibrated),
   pars_base_opt(sir_calibrated)
+)
+
+
+options(macpan_pfun_method = "grep")
+
+
+base_params <- read_params("PHAC.csv")
+vax_params <- expand_params_vax(
+  params = base_params,
+  model_type = "twodose"
+)
+model_params <- expand_params_variant(
+  vax_params,
+  variant_prop = 1e-7,
+  variant_advantage = 1.5,
+  variant_vax_efficacy_dose1 = 0.3,
+  variant_vax_efficacy_dose2 = 0.8
+) %>% expand_params_S0(1 - 1e-5)
+
+model = make_vaccination_model(
+  params = model_params,
+  state = NULL,
+  start_date = "2000-01-01", end_date = "2000-02-01",
+  do_hazard = TRUE,
+  do_hazard_lin = FALSE,
+  do_approx_hazard = FALSE,
+  do_approx_hazard_lin = FALSE,
+  do_make_state = TRUE,
+  max_iters_eig_pow_meth = 200,
+  do_variant = TRUE,
+  do_het = TRUE
+)
+(model
+  %>% update_params(zeta = 0)
+  %>% simulation_history
+  %>% select(Date, ICU)
+  #%>% pivot_longer(-Date)
+  %>%  ggplot
+  + geom_line(aes(Date, ICU))
 )

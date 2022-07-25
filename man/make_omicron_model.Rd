@@ -12,6 +12,8 @@ make_omicron_model(..., do_variant = FALSE)
   \describe{
     \item{\code{}}{}
   }}
+
+\item{do_variant}{allow for different variants (TODO: more info obviously required here)}
 }
 \description{
 Make an Omicron invasion model
