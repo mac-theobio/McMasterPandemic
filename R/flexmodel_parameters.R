@@ -31,6 +31,12 @@ pars_base_opt = function(model) {
   UseMethod('pars_base_opt')
 }
 
+#' @describeIn get_and_set_model_parameters base simulation parameters with time-varying parameters at the end of the simulation
+#' @export
+pars_base_final = function(model) {
+  UseMethod('pars_base_final')
+}
+
 #' @describeIn get_and_set_model_parameters time-varying parameter schedule that would be used in a simulation
 #' @export
 pars_time_sim = function(model) {
@@ -97,6 +103,19 @@ pars_base_init.flexmodel_calibrated = function(model) {
 #' @exportS3Method
 pars_base_opt.flexmodel_calibrated = function(model) {
   as_vector_no_attr(model$params)
+}
+
+#' @exportS3Method
+pars_base_final.flexmodel = function(model) {
+  tv_value_end = function(d) d$Value[which.max(d$Date)]
+  pars = pars_base_sim(model)
+  ts = pars_time_series(model)
+  final_tv_params = (ts
+    %>% split(ts$Symbol)
+    %>% vapply(tv_value_end, numeric(1L))
+  )
+  pars[names(final_tv_params)] = unname(final_tv_params)
+  pars
 }
 
 #' @exportS3Method

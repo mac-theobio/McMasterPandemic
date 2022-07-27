@@ -5,6 +5,7 @@
 \alias{pars_base_sim}
 \alias{pars_base_init}
 \alias{pars_base_opt}
+\alias{pars_base_final}
 \alias{pars_time_sim}
 \alias{pars_time_spec}
 \alias{pars_time_opt}
@@ -20,6 +21,8 @@ pars_base_sim(model)
 pars_base_init(model)
 
 pars_base_opt(model)
+
+pars_base_final(model)
 
 pars_time_sim(model)
 
@@ -55,6 +58,8 @@ Get and Set Model Parameters
 \item \code{pars_base_init}: base parameters that would be used as an initial value for an optimizer.
 
 \item \code{pars_base_opt}: optimized base parameters if they exist.
+
+\item \code{pars_base_final}: base simulation parameters with time-varying parameters at the end of the simulation
 
 \item \code{pars_time_sim}: time-varying parameter schedule that would be used in a simulation
 

@@ -1,6 +1,10 @@
-##' Layered Zero State Vector
+##' Special Vector Construction
 ##'
-##' Initialize a state vector with all zeros that is based on
+##' @name special_vector_construction
+NULL
+
+##' @describeIn special_vector_construction
+##' Initialize a state (or other) vector with all zeros that is based on
 ##' a fully-crossed set of states in several sub-models.
 ##'
 ##' @param ... character vectors with sub-model state names
@@ -14,17 +18,43 @@ layered_zero_state = function(...) {
   const_named_vector(state_nms, 0)
 }
 
-##' Constant Named Vector
+##' @describeIn special_vector_construction
+##' Initialize a state (or other) vector with a constant value that is
+##' based on a fully-crossed set of states in several sub-models
+##'
+## @param cnst single numeric value to be used in every element of the
+##' output vectos
+##'
+##' @export
+layered_const_state = function(..., cnst) {
+  stopifnot(length(cnst) == 1L)
+  stopifnot(is.numeric(cnst))
+  x = layered_zero_state(...)
+  x[] = cnst
+}
+
+##' @describeIn special_vector_construction
+##' Initialize a state (or other) vector with a constant value
 ##'
 ##' @param nms names of the output vector
-##' @param cnst single numeric value to be used in every element of the
-##' output vector
 ##'
 ##' @export
 const_named_vector = function(nms, cnst) {
   stopifnot(length(cnst) == 1L)
   stopifnot(is.character(nms))
   setNames(rep(cnst[[1]], length(nms)), nms)
+}
+
+##' @describeIn special_vector_construction
+##' Construct a character vector with names given by its values
+##'
+##' @param nms
+##'
+##' @export
+self_named_vector = function(nms) {
+  stopifnot(is.character(nms))
+  nms = unname(nms)
+  setNames(nms, nms)
 }
 
 ##' Expand Strain Names

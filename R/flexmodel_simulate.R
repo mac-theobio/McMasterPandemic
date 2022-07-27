@@ -55,10 +55,13 @@ simulation_history = function(
     )
   }
 
+  sim_hist = sim_hist[seq_len(model$iters + 1L),]
   if (!include_initial_date) {
+    if (nrow(sim_hist) == 1L) {
+      warning("No simulations to return. Check start_date and end_date.")
+    }
     sim_hist = sim_hist[-1,]
   }
-
   sim_hist
 }
 

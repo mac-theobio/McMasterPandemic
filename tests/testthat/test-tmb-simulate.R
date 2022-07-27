@@ -1,6 +1,5 @@
 Sys.setenv(R_TESTS="")
 
-library(ggplot2)
 library(testthat)
 library(McMasterPandemic)
 library(TMB)
@@ -86,7 +85,12 @@ model = make_vaccination_model(
 )
 (model
   %>% update_params(zeta = 0.8)
+  #%>% as.flexmodel_one_step
   %>% simulation_history
-  %>% select(Date, ICU)
-  %>% ggplot + geom_line(aes(Date, ICU))
+  # %>% select(Date, ICU)
+  # %>% ggplot + geom_line(aes(Date, ICU))
 )
+
+nrow(simulation_history(model))
+
+

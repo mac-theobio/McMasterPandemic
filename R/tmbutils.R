@@ -2161,6 +2161,39 @@ compare_hessians = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
   all.equal(target, current, tolerance)
 }
 
+# sir simulations for tests
+
+#' @export
+read_sir = function(sir_name) {
+  readRDS(
+    system.file('testdata/sir_sims', sir_name, package = "McMasterPandemic")
+  )
+}
+
+#' @export
+read_sir_sim = function(sir_sim_name) {
+  read.csv(
+    system.file('testdata/sir_sims', sir_sim_name, package = "McMasterPandemic")
+  )
+}
+
+#' @export
+list_sir = function() {
+  list.files(
+    system.file('testdata/sir_sims', package = "McMasterPandemic"),
+    pattern = "*.rda"
+  )
+}
+
+#' @export
+list_sir_sim = function() {
+  list.files(
+    system.file('testdata/sir_sims', package = "McMasterPandemic"),
+    pattern = "*.csv"
+  )
+}
+
+
 # spec version and global option control ----------------------
 
 ##' Set and Reset Spec Version

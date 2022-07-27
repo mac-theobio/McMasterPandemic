@@ -390,4 +390,21 @@ test_that("convolution paramters can be time-varying", {
     lines(tv_conv, lty = 2, col = 'red')
   }
   expect_equal(sort(unique(tv_conv / conv)), c(0.5, 1.0))
+
+  # this test is for a bug where convolution padding extended
+  # short series to the length of the padded period
+  expect_equal(nrow(simulation_history(as.flexmodel_one_step(sir))), 1L)
+})
+
+test_that("final parameters can be extracted", {
+
+  sir = read_sir('sir_many_tv.rda')
+
+  base_final = pars_base_final(sir)
+  base_sim = pars_base_sim(sir)
+  time_series = pars_time_series(sir)
+
+  base_sim[c("beta", "gamma")] = time_series[c(5, 6),]$Value
+
+  expect_equal(base_sim, base_final)
 })
