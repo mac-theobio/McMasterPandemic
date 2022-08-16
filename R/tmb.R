@@ -3105,6 +3105,8 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
 
     if (nrow(schedule) > 0L) {
       schedule$tv_val <- NA
+    } else {
+      schedule$tv_val <- numeric(0L)
     }
     new_param <- TRUE
     ns <- nrow(schedule)

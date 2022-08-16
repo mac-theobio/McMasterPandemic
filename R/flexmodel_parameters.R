@@ -61,6 +61,18 @@ pars_time_series = function(model) {
   UseMethod('pars_time_series')
 }
 
+#' @describeIn get_and_set_model_parameters time-series for each time-varying parameter over the entire simulation range with resolved multiplication strategy.
+#' @export
+pars_time_hist = function(model) {
+  UseMethod('pars_time_hist')
+}
+
+#' @describeIn get_and_set_model_parameters normalized time-series for each time-varying parameter over the entire simulation range with resolved multiplication strategy, with normalization obtained by dividing all values by the initial value.
+#' @export
+pars_time_norm = function(model) {
+  UseMethod('pars_time_norm')
+}
+
 #' @describeIn get_and_set_model_parameters the initial value of the parameter vector involved in inference (e.g. passed to an objective function during calibration).
 #' @export
 pars_infer_init = function(model) {
@@ -136,6 +148,40 @@ pars_time_series.flexmodel = function(model) {
     %>% get_params_timevar_series
     %>% as_data_frame_no_row_names
   )
+}
+
+#' @importFrom zoo na.locf
+#' @exportS3Method
+pars_time_hist.flexmodel = function(model) {
+  sd = McMasterPandemic:::simulation_dates(model)
+  ts = pars_time_series(model)
+  base_tv_pars = get_time_varying_baseline_params(model)
+  pars = names(base_tv_pars)
+  ll = data.frame(Date = sd)
+  for (i in seq_along(pars)) {
+    ll[[pars[i]]] = NA
+    ll[1, pars[i]] = base_tv_pars[i]
+    w_ts = ts$Symbol == pars[i]
+    w_ll = ll$Date %in% ts$Date[w_ts]
+    ll[w_ll, pars[i]] = ts$Value[w_ts]
+    ll[[pars[i]]] = zoo::na.locf(ll[[pars[i]]])
+  }
+  as_data_frame_no_row_names(ll)
+}
+
+#' @exportS3Method
+pars_time_norm.flexmodel = function(model) {
+  pars_norm = pars_time_hist(model)
+  if (ncol(pars_norm) == 1L) return(pars_norm)
+  pars_tv = get_time_varying_baseline_params(model)
+  # TODO: warn if any baseline parameters are numerically zero
+  pars_norm[,-1] = sweep(
+    pars_norm[,-1, drop = FALSE],  # remove date column
+    2L,
+    pars_tv,
+    "/"
+  )
+  as_data_frame_no_row_names(pars_norm)
 }
 
 #' @exportS3Method

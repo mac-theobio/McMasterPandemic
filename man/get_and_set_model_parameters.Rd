@@ -10,6 +10,8 @@
 \alias{pars_time_spec}
 \alias{pars_time_opt}
 \alias{pars_time_series}
+\alias{pars_time_hist}
+\alias{pars_time_norm}
 \alias{pars_infer_init}
 \alias{pars_infer_opt}
 \alias{pars_infer_conf}
@@ -31,6 +33,10 @@ pars_time_spec(model)
 pars_time_opt(model)
 
 pars_time_series(model)
+
+pars_time_hist(model)
+
+pars_time_norm(model)
 
 pars_infer_init(model)
 
@@ -68,6 +74,10 @@ Get and Set Model Parameters
 \item \code{pars_time_opt}: time-varying parameter schedule with optimized values that were entered as NA by the user in the model definition.
 
 \item \code{pars_time_series}: time-varying parameter schedule with resolved multiplication strategy so that all values are on the same scale as the associated base parameter.
+
+\item \code{pars_time_hist}: time-series for each time-varying parameter over the entire simulation range with resolved multiplication strategy.
+
+\item \code{pars_time_norm}: normalized time-series for each time-varying parameter over the entire simulation range with resolved multiplication strategy, with normalization obtained by dividing all values by the initial value.
 
 \item \code{pars_infer_init}: the initial value of the parameter vector involved in inference (e.g. passed to an objective function during calibration).
 
