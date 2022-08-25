@@ -1,12 +1,33 @@
 ##' Represent a Standard Unstructured Model as a flexmodel
 ##'
+##' @param do_summaries should the model be set up to compute summaries like
+##' R0 and Rt?
 ##' @inheritDotParams flexmodel
 ##' @family flexmodels
 ##' @family canned_models
 ##' @export
-make_base_model <- function(...) {
+make_base_model <- function(..., do_summaries = FALSE) {
 
   spec_check("0.0.5", "run_sim with TMB")
+
+  cond_map = c(
+    S = "S",
+    E = "E",
+    Itotal = "I",
+    Htotal = 'H',
+    ICU = 'ICU',
+    R = 'R',
+    lag_1_diff_X = 'hosp',
+    X = 'X',
+    lag_1_diff_D = 'death',
+    D = 'D',
+    S_to_E = 'foi',
+    Incidence = 'incidence',
+    conv_Incidence = 'report'
+  )
+  if (do_summaries) {
+    cond_map = c(cond_map, prop_susceptibles = "prop_susceptibles")
+  }
 
   model = flexmodel(...)
   if (spec_ver_gt('0.1.0')) {
@@ -87,24 +108,15 @@ make_base_model <- function(...) {
       %>% add_state_param_sum("Htotal", "^H2?$")
       %>% add_state_param_sum("ICU", "^ICU(s|d)$")
       %>% add_state_param_sum("Itotal", "^I(a|p|m|s)$")
+    )
+    if (do_summaries) {
+      model = add_factr(model, "prop_susceptibles", ~ (S) * (1/N))
+    }
+    model = (model
       %>% add_sim_report_expr("Incidence", ~ (S_to_E) * (S))
       %>% add_lag_diff("^(X|D)$")
       %>% add_conv("^Incidence$")
-      %>% update_condense_map(c(
-        S = "S",
-        E = "E",
-        Itotal = "I",
-        Htotal = 'H',
-        ICU = 'ICU',
-        R = 'R',
-        lag_1_diff_X = 'hosp',
-        X = 'X',
-        lag_1_diff_D = 'death',
-        D = 'D',
-        S_to_E = 'foi',
-        Incidence = 'incidence',
-        conv_Incidence = 'report'
-      ))
+      %>% update_condense_map(cond_map)
     )
   }
 
@@ -112,6 +124,17 @@ make_base_model <- function(...) {
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
   }
+
+  if (do_summaries) {
+    model = configure_epi_summaries(model
+      , exposed_state_nm = "E"
+      , foi_nm = "S_to_E"
+      , prop_susceptible_nm = "prop_susceptibles"
+      , trans_rate_nm = "beta0"
+      , N = 1
+    )
+  }
+
   model$classic_macpan_model = TRUE
   model
 }
@@ -119,6 +142,7 @@ make_base_model <- function(...) {
 
 #' Make a Two-Dose Vaccination Model
 #'
+#' @inheritParams make_base_model
 #' @inheritDotParams flexmodel
 #' @param do_variant allow for different variants (TODO: more info obviously required here)
 #' @param do_variant_mu different mu for different variants
@@ -127,7 +151,7 @@ make_base_model <- function(...) {
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE, do_het = FALSE) {
+make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE, do_wane = FALSE, do_het = FALSE, do_summaries = FALSE) {
 
   spec_check("0.1.0", "model structure")
 
@@ -145,6 +169,39 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
       model_type = "twodose",
       unif = FALSE
     )
+  }
+
+  cond_map = c(
+      Stotal = "S",
+      Etotal = "E",
+      Itotal = "I",
+      Htotal = 'H',
+      ICU = 'ICU',
+      Rtotal = "R",
+      lag_1_diff_Xtotal = 'hosp',
+      Xtotal = "X",
+      lag_1_diff_Dtotal = 'death',
+      Dtotal = "D",
+      S_unvax_to_E_unvax = "foi_unvax",
+      S_vaxdose1_to_E_vaxdose1 = "foi_vaxdose1",
+      S_vaxprotect1_to_E_vaxprotect1 = "foi_vaxprotect1",
+      S_vaxdose2_to_E_vaxdose2 = "foi_vaxdose2",
+      S_vaxprotect2_to_E_vaxprotect2 = "foi_vaxprotect2",
+      Incidence_unvax = "incidence_unvax",
+      Incidence_vaxdose1 = "incidence_vaxdose1",
+      Incidence_vaxprotect1 = "incidence_vaxprotect1",
+      Incidence_vaxdose2 = "incidence_vaxdose2",
+      Incidence_vaxprotect2 = "incidence_vaxprotect2",
+      Incidence = 'incidence',
+      conv_Incidence_unvax = 'report_unvax',
+      conv_Incidence_vaxdose1 = 'report_vaxdose1',
+      conv_Incidence_vaxprotect1 = 'report_vaxprotect1',
+      conv_Incidence_vaxdose2 = 'report_vaxdose2',
+      conv_Incidence_vaxprotect2 = 'report_vaxprotect2',
+      conv_Incidence = 'report'
+  )
+  if (do_summaries) {
+    cond_map = c(cond_map, prop_susceptibles = "prop_susceptibles")
   }
 
   # ---------------------------
@@ -318,6 +375,9 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
       ~ (wane_rate)
     )
   }
+  if (do_summaries) {
+    model = add_factr(model, "prop_susceptibles", ~ (Stotal) * (1/N))
+  }
   if (spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
     model = add_parallel_accumulators(model, c('V' %_% vax_cat, 'X' %_% vax_cat))
@@ -388,41 +448,25 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
       %>% add_sim_report_expr("Incidence", sum(foi_vec * S_vec))
       %>% add_conv("^Incidence")
       %>% add_lag_diff("^(X|D)total$")
-      %>% update_condense_map(c(
-        Stotal = "S",
-        Etotal = "E",
-        Itotal = "I",
-        Htotal = 'H',
-        ICU = 'ICU',
-        Rtotal = "R",
-        lag_1_diff_Xtotal = 'hosp',
-        Xtotal = "X",
-        lag_1_diff_Dtotal = 'death',
-        Dtotal = "D",
-        S_unvax_to_E_unvax = "foi_unvax",
-        S_vaxdose1_to_E_vaxdose1 = "foi_vaxdose1",
-        S_vaxprotect1_to_E_vaxprotect1 = "foi_vaxprotect1",
-        S_vaxdose2_to_E_vaxdose2 = "foi_vaxdose2",
-        S_vaxprotect2_to_E_vaxprotect2 = "foi_vaxprotect2",
-        Incidence_unvax = "incidence_unvax",
-        Incidence_vaxdose1 = "incidence_vaxdose1",
-        Incidence_vaxprotect1 = "incidence_vaxprotect1",
-        Incidence_vaxdose2 = "incidence_vaxdose2",
-        Incidence_vaxprotect2 = "incidence_vaxprotect2",
-        Incidence = 'incidence',
-        conv_Incidence_unvax = 'report_unvax',
-        conv_Incidence_vaxdose1 = 'report_vaxdose1',
-        conv_Incidence_vaxprotect1 = 'report_vaxprotect1',
-        conv_Incidence_vaxdose2 = 'report_vaxdose2',
-        conv_Incidence_vaxprotect2 = 'report_vaxprotect2',
-        conv_Incidence = 'report'
-    ))
+      %>% update_condense_map(cond_map)
     )
   }
   model = update_tmb_indices(model)
   if (spec_ver_gt('0.1.0')) {
     model = update_initial_state(model, silent = TRUE)
   }
+
+  if (do_summaries) {
+    model = configure_epi_summaries(model
+      , exposed_state_nm = "E_unvax"
+      , foi_nm = "S_unvax_to_E_unvax"
+      , prop_susceptible_nm = "prop_susceptibles"
+      , trans_rate_nm = "beta0"
+      , N = 1
+      , vax_doses_per_day = 0
+    )
+  }
+
   model$classic_macpan_model = TRUE
   model
 }

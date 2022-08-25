@@ -262,19 +262,48 @@ which_unwraped = function(x) {
 #' @examples
 #' complement('p')
 #' inverse('N')
-complement = function(x) {
-  i = which_unwraped(x)
-  x[i] = "1 - " %+% x[i]
-  x
-}
+setGeneric("complement", function(x) {
+  standardGeneric("complement")
+})
 
 #' @rdname complement
 #' @export
-inverse = function(x) {
+setGeneric("inverse", function(x) {
+  standardGeneric("inverse")
+})
+
+#' @rdname complement
+#' @export
+setMethod("complement", c(x = "character"), function(x) {
+  i = which_unwraped(x)
+  # TODO: warn if any are wrapped
+  x[i] = "1 - " %+% x[i]
+  x
+})
+
+#' @rdname complement
+#' @export
+setMethod("inverse", c(x = "character"), function(x) {
   i = which_unwraped(x)
   x[i] = "1 / " %+% x[i]
   x
-}
+})
+
+#' @rdname complement
+#' @export
+setMethod("complement", c(x = "struc"), function(x) {
+  z = complement(x@v)
+  dim(z) = dim(x)
+  struc(z)
+})
+
+#' @rdname complement
+#' @export
+setMethod("inverse", c(x = "struc"), function(x) {
+  z = inverse(x@v)
+  dim(z) = dim(x)
+  struc(z)
+})
 
 
 setMethod(f = "show",
@@ -288,10 +317,10 @@ setMethod(f = "show",
               " and ",
               pluralizer(ncol(object), "column"),
               ":\n\n", sep = '')
-            for(i in 1:nrow(object)) {
-              for(j in 1:ncol(object)) {
-                if(!is_one_row) cat('Row', i, '\n')
-                if(!is_one_col) cat('Column', j, '\n')
+            for (i in 1:nrow(object)) {
+              for (j in 1:ncol(object)) {
+                if (!is_one_row) cat('Row', i, '\n')
+                if (!is_one_col) cat('Column', j, '\n')
                 cat(trimws(gsub('\\+', '\\+\n', as.matrix(object)[i, j])),
                     '\n', sep = '')
               }
@@ -317,12 +346,12 @@ setMethod('*', c(e1 = 'struc_expanded', e2 = 'struc_expanded'),
 #' @export
 setMethod("*", c(e1 = 'struc', e2 = 'struc'),
           function(e1, e2) {
-            if(!same_dims(e1, e2)) {
-              if(is_1by1(e1)) {
+            if (!same_dims(e1, e2)) {
+              if (is_1by1(e1)) {
                 big = expand_struc(e2)
                 # small always gets expanded to fix bug below
                 small = expand_struc(e1)
-              } else if(is_1by1(e2)) {
+              } else if (is_1by1(e2)) {
                 big = expand_struc(e1)
                 # small always gets expanded to fix bug below
                 small = expand_struc(e2)
@@ -342,7 +371,11 @@ setMethod("*", c(e1 = 'struc', e2 = 'struc'),
 )
 
 simple_mult = function(x, y) {
-  c(outer(x@v, y@v, paste, sep = ' * '))
+  c(outer(x@v, y@v, paste, sep = " * "))
+}
+
+recycle_mult = function(x, y) {
+  paste(x@v, y@v, sep = " * ")
 }
 
 #' @describeIn struc Elementwise or scalar addition
@@ -352,7 +385,9 @@ setMethod("+", c(e1 = 'struc', e2 = 'struc'),
             if(!same_dims(e1, e2)) {
               stopifnot(is_1by1(e1) | is_1by1(e2))
             }
-            struc(paste(e1@v, e2@v, sep = ' + '))
+            pp = paste(e1@v, e2@v, sep = ' + ')
+            dim(pp) = dim(e1)
+            return(struc(pp))
           }
 )
 
@@ -443,6 +478,8 @@ setMethod("dim", c(x = 'struc'),
           })
 
 
+
+
 # @describeIn struc Number of matrix rows
 # @export
 #nrow.struc <- function(x) {
@@ -520,7 +557,7 @@ struc_bdiag = function(x) {
   )
   row_pointer = 0L
   col_pointer = 0L
-  for(i in seq_along(x)) {
+  for (i in seq_along(x)) {
     ii = row_pointer + seq_len(nrow(x[[i]]))
     jj = col_pointer + seq_len(ncol(x[[i]]))
     y[ii, jj] = as.matrix(x[[i]])
@@ -533,16 +570,76 @@ struc_bdiag = function(x) {
 #' Numerically Evaluate Struc Object
 #'
 #' @param x \code{\link{struc-class}} object
-#' @param values object coercible to a named list
+#' @param values object coercible to a named list of numeric objects
 #'
 #' @export
 struc_eval = function(x, values) {
   x = as.matrix(x)
   y = matrix(nrow = nrow(x), ncol = ncol(x))
-  for(i in 1:nrow(x)) {
-    for(j in 1:ncol(x)) {
+  for (i in 1:nrow(x)) {
+    for (j in 1:ncol(x)) {
       y[i, j] = with(as.list(values), eval(parse(text = x[i, j])))
     }
   }
   y
 }
+
+#' @export
+setGeneric("size", function(x) {
+  standardGeneric("size")
+})
+
+#' @export
+setMethod("size", c(x = "struc"), function(x) {
+  length(x@v)
+})
+
+
+#' @export
+setGeneric("diagonal", function(x) {
+  standardGeneric("diagonal")
+})
+
+#' @export
+setMethod("diagonal", c(x = "struc"), function(x) {
+  struc(diag(as.matrix(x)))
+})
+
+
+#' @export
+setGeneric("flatten", function(x) {
+ standardGeneric("flatten")
+})
+
+#' @export
+setMethod("flatten", c(x = 'struc'), function(x) {
+  struc(as.character(x))
+})
+
+#' @export
+setGeneric("row_mult", function(x, y) {
+ standardGeneric("row_mult")
+})
+
+#' @export
+setMethod("row_mult", c(x = "struc", y = "struc"), function(x, y) {
+  if (ncol(x) != size(y)) stop("y must be the same size as a row of x")
+  z = struc_stretch(flatten(y), nrow(x), 1L) * flatten(x)
+  z_values = z@v
+  dim(z_values) = dim(x)
+  struc(z_values)
+})
+
+#' @export
+setGeneric("col_mult", function(x, y) {
+ standardGeneric("col_mult")
+})
+
+#' @export
+setMethod("col_mult", c(x = "struc", y = "struc"), function(x, y) {
+  if (nrow(x) != size(y)) stop("y must be the same size as a column of x")
+  z = struc_block(flatten(y), ncol(x), 1L) * flatten(x)
+  z_values = z@v
+  dim(z_values) = dim(x)
+  struc(z_values)
+})

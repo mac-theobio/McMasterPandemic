@@ -10,7 +10,8 @@ simulation_history(
   sim_params = NULL,
   include_initial_date = TRUE,
   obs_error = FALSE,
-  condense = FALSE
+  condense = FALSE,
+  summaries = FALSE
 )
 }
 \arguments{
@@ -30,6 +31,16 @@ defined in the \code{model}? -- see \code{\link{update_error_dist}}}
 
 \item{condense}{should a condensed set of simulation variables be
 returned? -- see \code{\link{update_condense_map}}}
+
+\item{summaries}{should epidemiological summaries (including \code{Rt} and
+the \code{rel_trans_rate}) be computed? note that this is only
+possible if the epidemiological summaries have been configured using
+\code{\link{configure_epi_summaries}}. the relative transmission rate
+is the transmission rate at each time divided by the transmission rate at
+the beginning of the simulations and computed using
+\code{\link{pars_time_norm}}. note also that the effective
+proportion of susceptible individuals will also be in the simulation
+history (with a user-defined name) if the summaries have been configured.}
 }
 \description{
 Simulation History

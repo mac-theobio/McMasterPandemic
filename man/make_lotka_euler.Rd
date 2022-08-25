@@ -9,6 +9,10 @@ make_lotka_euler(kernel)
 \arguments{
 \item{kernel}{vector of forces of infection over simulation time}
 }
+\value{
+a function that takes a guess at the intrinsic growth rate, r,
+and returns zero if the guess is correct
+}
 \description{
 Create a function to pass to uniroot for solving the Lotka-Euler Equation.
 }

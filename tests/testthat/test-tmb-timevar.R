@@ -1,4 +1,4 @@
-Sys.setenv(R_TESTS="")
+Sys.setenv(R_TESTS = "")
 
 library(testthat)
 library(McMasterPandemic)
@@ -19,7 +19,7 @@ test_that('time variation works for several parameters and levels of continuity'
     r_tmb_comparable()
     params <- read_params("ICU1.csv")
     mm = make_base_model(
-      expand_params_S0(params, 1-1e-5),
+      expand_params_S0(params, 1 - 1e-5),
       start_date = "2021-09-10",
       end_date = "2021-10-10",
       params_timevar = tv_dat,
@@ -29,7 +29,7 @@ test_that('time variation works for several parameters and levels of continuity'
     # change beta0, which is time-varying, so that
     # we can check that the parameter updates are
     # happening correctly in the C++ side
-    test_pars = expand_params_S0(params, 1-1e-5)
+    test_pars = expand_params_S0(params, 1 - 1e-5)
     test_pars[1] = 1
 
     tmb_sim <- run_sim(
@@ -50,10 +50,10 @@ test_that('time variation works for several parameters and levels of continuity'
       condense = FALSE,
       step_args = list(do_hazard = TRUE)
     )
-    print("tmb")
-    print(attributes(tmb_sim)$params_timevar)
-    print("r")
-    print(attributes(r_sim)$params_timevar)
+    #print("tmb")
+    #print(attributes(tmb_sim)$params_timevar)
+    #print("r")
+    #print(attributes(r_sim)$params_timevar)
     compare_sims(r_sim, tmb_sim, compare_attr = FALSE)
   }
 
@@ -82,7 +82,7 @@ test_that('time variation works for several parameters and levels of continuity'
 test_that("time variation on the first two steps matches in r and tmb engines", {
   reset_spec_version()
   r_tmb_comparable()
-  params <- read_params("PHAC.csv") %>% expand_params_S0(1-1e-5)
+  params <- read_params("PHAC.csv") %>% expand_params_S0(1 - 1e-5)
 
   test_fun = function(type) {
 
@@ -130,27 +130,23 @@ test_that("time variation on the first two steps matches in r and tmb engines", 
   sapply(c('rel_orig', 'rel_prev', 'abs'), test_fun)
 })
 
-test_that('time variation works for vax models', {
+test_that('time variation works for vax models (including R0/Rt)', {
   skip_if(skip_slow_tests)
 
   reset_spec_version()
-  #r_tmb_comparable()
+  factory_fresh_macpan_options()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
-  options(MP_rexp_steps_default = 150)
+  options(MP_rexp_steps_default = 200)
 
-  load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
+  load(system.file(
+    'testdata', 'ontario_flex_test_better.Rdata',
+    package = 'McMasterPandemic'
+  ))
 
   start_date = min(params_timevar$Date)
   end_date = max(params_timevar$Date) + days(1)
 
-  r_sim <- run_sim(
-    params = model_params,
-    start_date = start_date,
-    end_date = end_date,
-    params_timevar = params_timevar,
-    condense = FALSE,
-    step_args = list(do_hazard = TRUE)
-  )
   mm = make_vaccination_model(
     params = model_params,
     state = make_state(params = model_params),
@@ -160,6 +156,39 @@ test_that('time variation works for vax models', {
     do_hazard = TRUE,
     do_variant = TRUE
   )
+  r_sim <- run_sim(
+    params = model_params,
+    start_date = start_date,
+    end_date = end_date,
+    params_timevar = pars_time_sim(mm),
+    condense = FALSE,
+    step_args = list(do_hazard = TRUE)
+  )
+
+  mm_for_summaries = configure_epi_summaries(mm
+      , exposed_state_nm = "E_unvax"
+      , foi_nm = "S_unvax_to_E_unvax"
+      , prop_susceptible_nm = "prop_susceptibles"
+      , trans_rate_nm = "beta0"
+      , N = 1
+      , vax_doses_per_day = 0
+    ) %>% add_factr("prop_susceptibles", ~ (Stotal) * (1/N)) %>%
+    add_condense_map(c(prop_susceptibles = "prop_susceptibles"))
+
+  expect_equal(
+    epi_pars(mm_for_summaries),
+    c(R0 = 1.39772037155545, Gbar = 7.26070735593765, r = 0.0488883671496538)
+  )
+  expect_equal(
+    tail(simulation_history(mm_for_summaries, summaries = TRUE)$Rt),
+    c(1.22283655467279, 1.22283396617463, 1.2228315283155, 1.22282923444013,
+      1.22282706825161, 1.22282502095876)
+  )
+
+  # (mm
+  #   %>% simulation_history(summaries = TRUE, condense = TRUE)
+  #   %>% ggplot + geom_line(aes(Date, Rt)) + geom_line(aes(Date, rel_trans_rate), colour = 'red')
+  # )
 
   test_fun = function(do_make_state, tolerance = testthat_tolerance()) {
     mm$do_make_state = do_make_state
@@ -168,7 +197,7 @@ test_that('time variation works for vax models', {
       state = mm$state,
       start_date = mm$start_date,
       end_date = mm$end_date,
-      params_timevar = params_timevar,
+      params_timevar = pars_time_sim(mm),
       condense = FALSE,
       step_args = list(do_hazard = TRUE),
       flexmodel = mm
@@ -186,7 +215,7 @@ test_that('time variation works for a mix of types', {
   test_fun = function(tv_dat) {
     params <- read_params("ICU1.csv")
     mm = make_base_model(
-      expand_params_S0(params, 1-1e-5),
+      expand_params_S0(params, 1 - 1e-5),
       start_date = "2021-09-10",
       end_date = "2021-10-10",
       params_timevar = tv_dat,
@@ -196,7 +225,7 @@ test_that('time variation works for a mix of types', {
     # change beta0, which is time-varying, so that
     # we can check that the parameter updates are
     # happening correctly in the C++ side
-    test_pars = expand_params_S0(params, 1-1e-5)
+    test_pars = expand_params_S0(params, 1 - 1e-5)
     test_pars[1] = 1
 
     tmb_sim <- run_sim(
@@ -245,6 +274,7 @@ test_that('time variation works for a mix of types', {
 
 test_that("breakpoints outside of the simulation range cause a warning", {
   reset_spec_version()
+  factory_fresh_macpan_options()
   #r_tmb_comparable()
   options(macpan_pfun_method = "grep")
 
@@ -280,7 +310,7 @@ test_that("breakpoints outside of the simulation range cause a warning", {
       do_hazard = TRUE,
       do_approx_hazard = FALSE,
       do_make_state = TRUE,
-      max_iters_eig_pow_meth = 100,
+      max_iters_eig_pow_meth = 200,
       tol_eig_pow_meth = 1e-6,
       params_timevar = params_timevar,
       do_variant = TRUE),

@@ -13,6 +13,11 @@ better_data_path = system.file(
   "ontario_flex_test_better.Rdata",
   package = "McMasterPandemic"
 )
+better_fit_path = system.file(
+  "testdata",
+  "ontario_flex_test_better_fit.Rdata",
+  package = "McMasterPandemic"
+)
 
 testLevel <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL"))) as.numeric(s) else 1
 skip_slow_tests = isTRUE(testLevel == 1)
@@ -20,6 +25,7 @@ skip_slow_tests = isTRUE(testLevel == 1)
 test_that('simple models calibrate the same regardless of engine', {
   skip_if(skip_slow_tests)
   reset_spec_version()
+  factory_fresh_macpan_options()
   tmb_mode()
 
   params <- read_params("ICU1.csv")
@@ -102,6 +108,7 @@ test_that('simple models calibrate the same regardless of engine', {
 test_that('v0.1.1 simple models can calibrate time varying multipliers', {
   skip_if(skip_slow_tests)
   reset_spec_version()
+  factory_fresh_macpan_options()
   tmb_mode()
   options(MP_use_state_rounding = FALSE)
   r_tmb_comparable()
@@ -194,7 +201,7 @@ test_that('v0.1.1 simple models can calibrate time varying multipliers', {
   expect_equal(fitted_r$mle2@vcov, fitted_tmb$mle2@vcov)
 })
 
-if(FALSE) {
+if (FALSE) {
 test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
   reset_spec_version()
   tmb_mode()
@@ -233,7 +240,7 @@ test_that("v0.1.1 vaccination models calibrate the same regardless of engine", {
       params_timevar = params_timevar
     )
     ## reshape into the correct format for input data passed to calibrate()
-    %>% mutate(value=round(report), var="report")
+    %>% mutate(value = round(report), var = "report")
     %>% select(date, var, value)
     %>% na.omit()
   )
@@ -447,6 +454,7 @@ test_that("v0.1.1 vaccination models can calibrate time varying multipliers", {
 
 test_that("macpan ontario calibration example works the same regardless of engine", {
   skip_if(skip_slow_tests)
+  factory_fresh_macpan_options()
   rerun_r_engine_calibrations = FALSE
   run_simulation_comparison = FALSE
   reset_spec_version()
@@ -474,7 +482,7 @@ test_that("macpan ontario calibration example works the same regardless of engin
     %>% within({Value[is.na(Value)] = opt_pars$time_params})
   )
 
-  if(run_simulation_comparison) {
+  if (run_simulation_comparison) {
     r_sim = run_sim(
       params = model_params,
       start_date = model$start_date,
@@ -540,9 +548,9 @@ test_that("macpan ontario calibration example works the same regardless of engin
       , debug = FALSE
       , debug_plot = FALSE
     )
-    save(fitted_model_r, better_data_path)
+    save(fitted_model_r, better_fit_path)
   } else {
-    load(better_data_path)
+    load(better_fit_path)
   }
   # [[1]]
   # Time difference of 4.138171 secs
@@ -570,6 +578,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   refit_no_flex_model = FALSE # slow if TRUE
 
   reset_spec_version()
+  factory_fresh_macpan_options()
   tmb_mode()
 
   params1 <- read_params("PHAC.csv")
@@ -582,7 +591,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   params1[c("beta0", "N", "mu", "phi1")] <- c(0.1, 42507, 0.95, 0.98)
 
   # initial state of the simulation
-  state1 <- make_state(params=params1)
+  state1 <- make_state(params = params1)
 
   # start and end dates
   sdate <- as.Date("2021-11-01")
@@ -603,7 +612,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
                  %>% filter(between(as.Date(date), sdate, edate))
                  %>% select(date, report, death, hosp, ICU)
                  %>% pivot_longer(names_to = "var", -date)
-                 %>% mutate(value=round(value))
+                 %>% mutate(value = round(value))
   )
 
   # establish schedule of time variation of parameters
@@ -660,7 +669,9 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
     params_timevar = params_timevar,
     do_make_state = TRUE,
     do_hazard = TRUE,
-    tol_eig_pow_meth = 1e-6
+    tol_eig_pow_meth = 1e-4,
+    max_iters_eig_pow_meth = 12000,
+    do_sim_constraint = TRUE
   )
   sim_args_flex = list(flexmodel = mm)
   sim_args = list()
@@ -690,19 +701,69 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
     sim_args = sim_args_flex
   )
 
+  ## failed attempt to get full tmb approach to match old engine exactly --
+  ## although we can get pretty close
+  ##
+  ## -- maybe next time try not using the gradient
+
+  # mm_to_cal = (mm
+  #   %>% update_params(params1)
+  #   %>% update_simulation_bounds(start_date = min(covid_data$date) - start_date_offset)
+  #   %>% update_tmb_indices()
+  #   %>% update_observed(covid_data)
+  #   %>% update_error_dist(
+  #     report ~ negative_binomial("nb_disp_report"),
+  #     death ~ negative_binomial("nb_disp_death"),
+  #     hosp ~ negative_binomial("nb_disp_hosp"),
+  #     ICU ~ negative_binomial("nb_disp_ICU")
+  #   )
+  #   %>% add_opt_params(
+  #     log_beta0 ~ log_flat(opt_pars$params["log_beta0"]),
+  #     logit_mu ~ logit_flat(opt_pars$params["logit_mu"]),
+  #     logit_phi1 ~ logit_flat(opt_pars$params["logit_phi1"]),
+  #     log_nb_disp_report ~ log_flat(0),
+  #     log_nb_disp_death ~ log_flat(0),
+  #     log_nb_disp_hosp ~ log_flat(0),
+  #     log_nb_disp_ICU ~ log_flat(0)
+  #     # log_nb_disp_report ~ log_normal(0, 2),
+  #     # log_nb_disp_death ~ log_normal(0, 2),
+  #     # log_nb_disp_hosp ~ log_normal(0, 2),
+  #     # log_nb_disp_ICU ~ log_normal(0, 2)
+  #   )
+  #   %>% add_opt_tv_params('abs'
+  #     , log_beta0 ~ log_flat(opt_pars$log_time_params)
+  #   )
+  # )
+  # mm_to_cal$do_hazard = TRUE
+  # mm_to_cal$do_sim_constraint = TRUE
+  # #mm_to_cal$do_hazard_lin = TRUE
+  # mm_to_cal$max_iters_eig_pow_meth = 8000
+  # mm_to_cal$tol_eig_pow_meth = 1e-4
+  # mm_cal = calibrate_flexmodel(mm_to_cal)
+  # fit_full_flex = pars_infer_opt(mm_cal)
+  # fit_no_flex$mle2@coef
+  # fit_flex$mle2@coef
+
+#   c(params.log_beta0 = "log_beta0", params.logit_mu = "logit_mu",
+#     params_logit_phi1 = "logit_phi1", "log_nb_disp_report",
+# "log_nb_disp_death", "log_nb_disp_hosp", "log_nb_disp_ICU", "log_beta0_t104",
+# "log_beta0_t134", "log_beta0_t151")
+
   expect_equal(fit_no_flex$mle2@coef, fit_flex$mle2@coef)
   expect_equal(fit_no_flex$mle2@min, fit_flex$mle2@min)
   expect_equal(fit_no_flex$mle2@vcov, fit_flex$mle2@vcov)
+  beepr::beep(2)
 })
 
 test_that("transformations and priors give the right objective function and gradient, regardless of optimizer", {
   # construct example ---------------------------
   options(digits = 3, warn = -1)
+  factory_fresh_macpan_options()
   params <- read_params("PHAC.csv")
   params[c("N", "phi1")] <- c(42507, 0.98)
   params1 = params
 
-  state1 <- make_state(params=params1)
+  state1 <- make_state(params = params1)
 
   # start and end dates
   sdate <- as.Date("2021-11-01")
@@ -809,6 +870,7 @@ test_that("transformations and priors give the right objective function and grad
 
 test_that("mixed tv types get optimized properly", {
   reset_spec_version()
+  factory_fresh_macpan_options()
   r_tmb_comparable()
 
   options(MP_get_bbmle_init_from_nlminb = TRUE)
@@ -962,6 +1024,7 @@ test_that("mixed tv types get optimized properly", {
 })
 
 test_that("vector-valued hyperparameters work", {
+  factory_fresh_macpan_options()
   reset_spec_version()
   r_tmb_comparable()
 
@@ -1039,20 +1102,38 @@ test_that("an under-construction error is thrown for sums in opt_param forms", {
   )
 })
 
-factory_fresh_macpan_options()
-sir = (flexmodel(
-    params = c(beta = 0.1, gamma = 0.01, N = 100),
-    state = c(S = 99, I = 1, R = 0),
-    start_date = "2020-03-11",
-    end_date = "2020-12-01"
+if (FALSE) {
+  factory_fresh_macpan_options()
+  sir = (flexmodel(
+      params = c(beta = 0.1, gamma = 0.01, N = 100),
+      state = c(S = 99, I = 1, R = 0),
+      start_date = "2020-03-11",
+      end_date = "2020-12-01"
+    )
+    %>% add_rate("S", "I", ~ (I) * (beta) * (1/N))
+    %>% add_rate("I", "R", ~ (gamma))
+    %>% update_params(c(
+      I_sd = 1
+    ))
+    %>% add_error_dist(
+      S ~ poisson(),
+      I ~ log_normal("I_sd")
+    )
   )
-  %>% add_rate("S", "I", ~ (I) * (beta) * (1/N))
-  %>% add_rate("I", "R", ~ (gamma))
-  %>% update_params(c(
-    I_sd = 1
-  ))
-  %>% add_error_dist(
-    S ~ poisson(),
-    I ~ log_normal("I_sd")
-  )
-)
+}
+
+beepr::beep(2)
+
+epidemiological summaries, more symbolic ops, bug fixing
+- kernel-based R0, Gbar, r, and Rt
+- flexmodel_cohort class for kernel-based simulations
+- more documentation of flexmodel classes
+- allow adding items to existing condense maps
+- symbolic col/row multiplication
+- extract symbolic diagonal
+- flatten symbolic matrix
+- get size (num elements) of a symbolic struc object
+- inverse and complement now work with struc objects
+- minor style enhancements
+- fix #235
+

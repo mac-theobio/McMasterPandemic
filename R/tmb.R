@@ -224,6 +224,8 @@ flexmodel <- function(params, state = NULL,
       model$opt_tv_params = initialize_opt_tv_params(model)
     }
 
+    model$summary_config = init_summary_config
+
     model$tmb_indices <- init_tmb_indices
     class(model) = 'flexmodel'
 
@@ -822,12 +824,11 @@ add_lag_diff = function(
   # }
   if (spec_ver_gt("0.2.0")) {
     if (delay_n != 1L) stop("only delays of 1 are allowed now")
-    sdates = simulation_dates(model, start_shift = 0L, end_shift = 0L)
-    #sdates = simulation_dates(model)[1:model$iters] #[-model$iters]
-    #sdates = c(model$start_date - 1L, simulation_dates(model)[1:model$iters])
-    for (i in seq_along(var_matches)) {
-      model = add_lag_diff_uneven(model, var_matches[i], output_names[i], sdates)
-    }
+    added_lag_diff = uneven_from_even(model, var_matches, output_names)
+    model$lag_diff_uneven = c(
+      model$lag_diff_uneven,
+      added_lag_diff
+    )
   } else {
     added_lag_diff = nlist(
       var_pattern,
@@ -845,22 +846,41 @@ add_lag_diff = function(
   update_tmb_indices(model)
 }
 
-#' @rdname add_lag_diff
-#' @export
-add_lag_diff_uneven = function(model, input_names, output_names, lag_dates) {
+lag_diff_uneven = function(
+    model,
+    input_names,
+    output_names,
+    lag_dates,
+    method = c("uneven", "lag_one_day")
+  ) {
   spec_check(
     introduced_version = '0.2.1',
     feature = 'uneven lagged differencing',
     exception_type = 'warning'
   )
+  method = match.arg(method)
   if (spec_ver_gt('0.2.0')) {
     stopifnot(input_names %in% intermediate_sim_report_names(model))
     stopifnot(all(lag_dates %in% simulation_dates(model, 0L, 0L)))
-    model$lag_diff_uneven = c(
-      model$lag_diff_uneven,
-      list(nlist(input_names, output_names, lag_dates))
-    )
+    return(nlist(input_names, output_names, lag_dates, method))
   }
+
+}
+
+#' @rdname add_lag_diff
+#' @export
+add_lag_diff_uneven = function(
+    model,
+    input_names,
+    output_names,
+    lag_dates,
+    method = c("uneven", "lag_one_day")
+  ) {
+  method = match.arg(method)
+  model$lag_diff_uneven = c(
+    model$lag_diff_uneven,
+    list(lag_diff_uneven(model, input_names, output_names, lag_dates, method))
+  )
   model
 }
 
@@ -937,6 +957,11 @@ update_condense_map = function(model, map = NULL) {
   model
 }
 
+#' @describeIn update_condense_map append new items to the condensation map
+#' @export
+add_condense_map = function(model, map_update) {
+  update_condense_map(model, c(model$condensation_map, map_update))
+}
 
 # parallel accumulators (deprecated -- use outflow instead) ---------------------
 
@@ -1406,7 +1431,7 @@ extend_end_date = function(model, days_to_extend) {
 extend_end_date.flexmodel = function(model, days_to_extend) {
   model$end_date = model$end_date + days(days_to_extend)
   model$iters = compute_num_iters(model)
-  update_tmb_indices(model)
+  update_tmb_indices(refresh_even_lags(model))
 }
 
 #' @exportS3Method
@@ -1426,7 +1451,7 @@ extend_end_date.flexmodel_calibrated = function(model, days_to_extend) {
 #'
 #' @export
 update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
-  if (inherits(model, 'flexmodel_calibrated')) {
+  if (inherits(model, "flexmodel_calibrated")) {
     stop("it is not currently allowed to update the simulation bounds on a calibrated model. please see ?extend_end_date for a possible solution")
   }
   if (!is.null(start_date)) {
@@ -1437,7 +1462,7 @@ update_simulation_bounds = function(model, start_date = NULL, end_date = NULL) {
   }
   model$iters = compute_num_iters(model)
   # TODO: check time-variation breakpoints? maybe updating the indices will be enough
-  update_tmb_indices(model)
+  update_tmb_indices(refresh_even_lags(model))
 }
 
 # compute indices and pass them to the tmb/c++ side ---------------------
@@ -3055,8 +3080,8 @@ update_observed = function(model, data, loss_params = NULL, regenerate_rates = T
     model = regen_model(model)
   }
   class(model) = c(
-    'flexmodel_to_calibrate',
-    'flexmodel'
+    "flexmodel_to_calibrate",
+    "flexmodel"
   )
   return(model)
 }

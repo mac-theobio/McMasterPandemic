@@ -11,7 +11,7 @@
 #' @param model object of class \code{flexmodel_calibrated}
 #' @export
 opt_obj = function(model) {
-  stopifnot(inherits(model, 'flexmodel_calibrated'))
+  stopifnot(inherits(model, "flexmodel_calibrated"))
   model$opt_obj
 }
 

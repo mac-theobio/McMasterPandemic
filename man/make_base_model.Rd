@@ -4,7 +4,7 @@
 \alias{make_base_model}
 \title{Represent a Standard Unstructured Model as a flexmodel}
 \usage{
-make_base_model(...)
+make_base_model(..., do_summaries = FALSE)
 }
 \arguments{
 \item{...}{
@@ -48,6 +48,9 @@ of the power method used in initial state construction}
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}. (currently this is not working)}
   }}
+
+\item{do_summaries}{should the model be set up to compute summaries like
+R0 and Rt?}
 }
 \description{
 Represent a Standard Unstructured Model as a flexmodel

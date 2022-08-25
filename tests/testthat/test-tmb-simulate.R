@@ -49,6 +49,7 @@ sir_to_calibrate = (sir
   )
 )
 
+
 sir_calibrated = calibrate_flexmodel(sir_to_calibrate)
 
 cbind(
@@ -92,5 +93,3 @@ model = make_vaccination_model(
 )
 
 nrow(simulation_history(model))
-
-

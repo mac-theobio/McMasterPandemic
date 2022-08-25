@@ -73,6 +73,9 @@ rmult <- function(k, r) {
 #'
 #' @param kernel vector of forces of infection over simulation time
 #'
+#' @return a function that takes a guess at the intrinsic growth rate, r,
+#' and returns zero if the guess is correct
+#'
 #' @export
 make_lotka_euler = function(kernel) {
   kernel = force(kernel)

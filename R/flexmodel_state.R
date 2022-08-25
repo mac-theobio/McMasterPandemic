@@ -103,6 +103,9 @@ state_final_cond.flexmodel = function(model) {
   if (!all(names(value) %in% names(model$state))) {
     stop('only currently existing states can be set')
   }
+  if (is.null(names(value))) {
+    model$state[] = value
+  }
   model$state[names(value)] = value
   model
 }

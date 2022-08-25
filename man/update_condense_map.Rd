@@ -2,9 +2,12 @@
 % Please edit documentation in R/tmb.R
 \name{update_condense_map}
 \alias{update_condense_map}
+\alias{add_condense_map}
 \title{Specify and Name Variables for Condensation}
 \usage{
 update_condense_map(model, map = NULL)
+
+add_condense_map(model, map_update)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -23,3 +26,8 @@ allows one to define this subset and how it is renamed,
 by creating a map with the following structure:
 \code{c(orig_var_i = "cond_var_1", ..., orig_var_j = "cond_var_n")}.
 }
+\section{Functions}{
+\itemize{
+\item \code{add_condense_map}: append new items to the condensation map
+}}
+

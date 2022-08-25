@@ -3,17 +3,67 @@
 \name{as.flexmodel}
 \alias{as.flexmodel}
 \alias{as.flexmodel_to_calibrate}
+\alias{as.flexmodel_calibrated}
 \alias{as.flexmodel_obs_error}
 \alias{as.flexmodel_one_step}
+\alias{as.flexmodel_cohort}
+\alias{as.flexmodel.flexmodel}
+\alias{as.flexmodel_to_calibrate.flexmodel_to_calibrate}
+\alias{as.flexmodel_calibrated.flexmodel_calibrated}
+\alias{as.flexmodel_obs_error.flexmodel_obs_error}
+\alias{as.flexmodel_one_step.flexmodel_one_step}
+\alias{as.flexmodel.flexmodel_to_calibrate}
+\alias{as.flexmodel_calibrated.flexmodel_to_calibrate}
+\alias{as.flexmodel.flexmodel_calibrated}
+\alias{as.flexmodel.flexmodel_obs_error}
+\alias{as.flexmodel.flexmodel_failed_calibration}
+\alias{as.flexmodel_to_calibrate.flexmodel_failed_calibration}
+\alias{as.flexmodel_obs_error.flexmodel_to_calibrate}
+\alias{as.flexmodel_one_step.flexmodel}
+\alias{as.flexmodel_cohort.flexmodel}
 \title{Convert between Types of Flexmodels}
 \usage{
 as.flexmodel(model)
 
 as.flexmodel_to_calibrate(model)
 
+as.flexmodel_calibrated(model)
+
 as.flexmodel_obs_error(model)
 
 as.flexmodel_one_step(model)
+
+as.flexmodel_cohort(model)
+
+\method{as.flexmodel}{flexmodel}(model)
+
+\method{as.flexmodel_to_calibrate}{flexmodel_to_calibrate}(model)
+
+\method{as.flexmodel_calibrated}{flexmodel_calibrated}(model)
+
+\method{as.flexmodel_calibrated}{flexmodel_calibrated}(model)
+
+\method{as.flexmodel_obs_error}{flexmodel_obs_error}(model)
+
+\method{as.flexmodel_one_step}{flexmodel_one_step}(model)
+
+\method{as.flexmodel}{flexmodel_to_calibrate}(model)
+
+\method{as.flexmodel_calibrated}{flexmodel_to_calibrate}(model)
+
+\method{as.flexmodel}{flexmodel_calibrated}(model)
+
+\method{as.flexmodel}{flexmodel_obs_error}(model)
+
+\method{as.flexmodel}{flexmodel_failed_calibration}(model)
+
+\method{as.flexmodel_to_calibrate}{flexmodel_failed_calibration}(model)
+
+\method{as.flexmodel_obs_error}{flexmodel_to_calibrate}(model)
+
+\method{as.flexmodel_one_step}{flexmodel}(model)
+
+\method{as.flexmodel_cohort}{flexmodel}(model)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -22,5 +72,41 @@ as.flexmodel_one_step(model)
 another \code{\link{flexmodel}} object of a different type
 }
 \description{
-Convert between Types of Flexmodels
+There are different types of \code{\link{flexmodel}} with structures that
+are designed for specific purposes. There are often better ways to
+create different types of \code{\link{flexmodel}}s, and these ways
+are linked below in the Functions section.
 }
+\section{Functions}{
+\itemize{
+\item \code{as.flexmodel_to_calibrate}: If possible, convert a \code{\link{flexmodel}}
+to one that can be calibrated. A more reliable way to generate a model
+that can be calibrated is to configure what parameters should be
+optimized using \code{\link{add_opt_params}} and associated functions,
+and by adding observed data using \code{\link{update_observed}}.
+
+\item \code{as.flexmodel_calibrated}: If possible, fit a \code{\link{flexmodel}}
+to data using default optimization setting. To modify the defaults it is
+better to use \code{\link{calibrate_flexmodel}}. Calibration is only
+possible for models of class \code{flexmodel_to_calibrate}.
+
+\item \code{as.flexmodel_obs_error}: If possible, convert a \code{\link{flexmodel}}
+to one that has been configured to simulate observation error but cannot
+be calibrated because it lacks parameters to be optimized. A more reliable
+way to generate a model that can simulate observation error is to use
+the \code{\link{add_error_dist}} and related functions.
+
+\item \code{as.flexmodel_one_step}: Convert a \code{\link{flexmodel}} into one that
+takes one single step only. This is useful for getting information from
+C++ that doesn't require running a full simulation (e.g. initial state
+vector, back-transformed parameters).
+
+\item \code{as.flexmodel_cohort}: In possible, convert a \code{\link{flexmodel}}
+object to an epidemic cohort model. A cohort model starts with a population
+of a single exposed individual. The force of infection associated with that
+initial exposed class can be interpreted as the kernel of the original model.
+The kernel can then be used to calculate R0 and mean generation interval.
+This conversion is only possible if the epidemiological summaries have been
+configured using \code{\link{configure_epi_summaries}}.
+}}
+
