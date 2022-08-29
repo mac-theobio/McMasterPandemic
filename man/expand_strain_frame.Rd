@@ -18,6 +18,13 @@ expand_strain_names(..., sep = "")
 \arguments{
 \item{base_states}{character vector giving the states of the base model}
 
+\item{constrained_states}{character vector giving the states to use in
+constraining the final result (TODO: write this sentence in a non-cryptic
+way)}
+
+\item{constraint_counts}{how many occurrences of constrained states are
+allowed?}
+
 \item{n_strains}{number of strains}
 
 \item{strain_name_prefix}{prefix for names of strains (they are numbered)}
@@ -29,8 +36,6 @@ expand_strain_names(..., sep = "")
   }}
 
 \item{sep}{separator between strains}
-
-\item{infected_states}{character vector giving the infected states}
 }
 \value{
 \code{expand_strain_frame} returns a data frame with one column

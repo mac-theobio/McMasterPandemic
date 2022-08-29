@@ -153,7 +153,7 @@ pars_time_series.flexmodel = function(model) {
 #' @importFrom zoo na.locf
 #' @exportS3Method
 pars_time_hist.flexmodel = function(model) {
-  sd = McMasterPandemic:::simulation_dates(model)
+  sd = simulation_dates(model)
   ts = pars_time_series(model)
   base_tv_pars = get_time_varying_baseline_params(model)
   pars = names(base_tv_pars)

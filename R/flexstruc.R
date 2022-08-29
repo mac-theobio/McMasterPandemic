@@ -3,24 +3,38 @@
 #' The simplest way to create such objects is with the \code{\link{struc}}
 #' function.
 #'
+#' @param e1 first argument of a binary operator
+#' @param e2 second argument of a binary operator
+#' @param x argument in a method
+#' @param y argument in a method
+#' @param X argument in a method
+#' @param Y argument in a method
+#' @param ... arguments to pass on to other methods
+#' @param na.rm should missing values be removed?
+#' @param dims object dimensions
+#'
 #' @slot v character vector giving the expressions for each element
 #' of the matrix structure object
 #' @slot dims numeric vector giving the dimensions of the matrix
 #' structure object
+#'
+#' @note Methods that involve objects of class \code{struc_expanded}
+#' in their signature are not intended for users.
+#'
 #' @export
 setClass('struc', representation(v = "character", dims = "numeric"))
 
-#' Class to Represent an Expanded Matrix Structure Object
-#'
-#' @slot l list of struc objects
-#' @slot dims numeric vector giving the dimensions of the matrix
-#' structure object
+# Class to Represent an Expanded Matrix Structure Object
+#
+# @slot l list of struc objects
+# @slot dims numeric vector giving the dimensions of the matrix
+# structure object
 
 setClass('struc_expanded', representation(l = "list", dims = "numeric"), validity = function(object) {
   errors = character()
-  if(!all(unlist(lapply(object@l, inherits, 'struc')))) errors = append(errors, "not all elements of l are struc objects")
-  if(prod(object@dims) != length(object@l)) errors = append(errors, "dimensions are not consistent with the length of l")
-  if(length(errors) == 0L) return(TRUE)
+  if (!all(unlist(lapply(object@l, inherits, 'struc')))) errors = append(errors, "not all elements of l are struc objects")
+  if (prod(object@dims) != length(object@l)) errors = append(errors, "dimensions are not consistent with the length of l")
+  if (length(errors) == 0L) return(TRUE)
   return(errors)
 })
 
@@ -43,7 +57,7 @@ setClass('struc_expanded', representation(l = "list", dims = "numeric"), validit
 #' @export
 struc = function(...) {
   l = list(...)
-  if(length(l) == 1L) {
+  if (length(l) == 1L) {
     v = l[[1]]
   } else {
     v = unlist(l)
@@ -102,11 +116,11 @@ as.struc = function(x) {
   return(struc(x)) # still might fail
 }
 
-#' Construct a struc_expanded Object
-#'
-#' @param l list of struc objects
-#' @param d dimensions of the resulting object
-#' @return struc_expanded object
+# Construct a struc_expanded Object
+#
+# @param l list of struc objects
+# @param d dimensions of the resulting object
+# @return struc_expanded object
 
 struc_expanded = function(l, d) {
   stopifnot(is.recursive(l))
@@ -114,10 +128,10 @@ struc_expanded = function(l, d) {
   new('struc_expanded', l = l, dims = d)
 }
 
-#' Expand and Contract struc and struc_expanded Objects
-#'
-#' @param x object to contract or expand
-#' @rdname expand_contract_struc
+# Expand and Contract struc and struc_expanded Objects
+#
+# @param x object to contract or expand
+# @rdname expand_contract_struc
 
 expand_struc = function(x) {
   (x
@@ -327,6 +341,9 @@ setMethod(f = "show",
             }
           })
 
+#' Functions for Developers
+#' @rdname for_dev
+#' @keywords internal
 #' @export
 setMethod("*", c(e1 = 'struc_expanded', e2 = 'struc'),
           function(e1, e2) {
@@ -334,6 +351,9 @@ setMethod("*", c(e1 = 'struc_expanded', e2 = 'struc'),
             struc_expanded(lapply(l, struc), d = dim(e1))
           })
 
+#' Functions for Developers
+#' @rdname for_dev
+#' @keywords internal
 #' @export
 setMethod('*', c(e1 = 'struc_expanded', e2 = 'struc_expanded'),
           function(e1, e2) {
@@ -478,39 +498,14 @@ setMethod("dim", c(x = 'struc'),
           })
 
 
-
-
-# @describeIn struc Number of matrix rows
-# @export
-#nrow.struc <- function(x) {
-#  x@dims[1]
-#}
-
-
-# @describeIn struc Number of matrix columns
-# @export
-#setMethod("ncol", c(x = 'struc'),
-#          function(x) {
-#            x@dims[2]
-#          })
-
-
+#' Functions for Developers
+#' @rdname for_dev
+#' @keywords internal
+#' @export
 setMethod("dim", c(x = 'struc_expanded'),
           function(x) {
             x@dims
           })
-
-
-# setMethod("nrow", c(x = 'struc_expanded'),
-#           function(x) {
-#             x@dims[1]
-#           })
-
-
-# setMethod("ncol", c(x = 'struc_expanded'),
-#           function(x) {
-#             x@dims[2]
-#           })
 
 #' Repeat a Block
 #'
@@ -584,43 +579,75 @@ struc_eval = function(x, values) {
   y
 }
 
+#' Size
+#'
+#' Generic definition of object size.
+#'
+#' @param x object
+#'
 #' @export
 setGeneric("size", function(x) {
   standardGeneric("size")
 })
 
+#' @describeIn struc number of elements of \code{struc} object
 #' @export
 setMethod("size", c(x = "struc"), function(x) {
   length(x@v)
 })
 
 
+#' Symbolic Matrix Diagonal
+#'
+#' Get the diagonal of a \code{\link{struc}} matrix.
+#'
+#' @param x \code{\link{struc}} object
+#'
 #' @export
 setGeneric("diagonal", function(x) {
   standardGeneric("diagonal")
 })
 
+#' @describeIn struc diagonal of a struc matrix
 #' @export
 setMethod("diagonal", c(x = "struc"), function(x) {
   struc(diag(as.matrix(x)))
 })
 
 
+#' Flatten Symbolic Matrix
+#'
+#' @param x \code{\link{struc}} object
+#'
 #' @export
 setGeneric("flatten", function(x) {
  standardGeneric("flatten")
 })
 
+#' @describeIn struc Flatten a struc matrix
 #' @export
 setMethod("flatten", c(x = 'struc'), function(x) {
   struc(as.character(x))
 })
 
+#' Symbolic Row and Column Multiplication
+#'
+#' Element-wise multiplication of the rows/columns of a matrix by
+#' a vector of the same length as each row/column.
+#'
+#' @param x \code{\link{struc}} object playing the role of a matrix
+#' @param y \code{\link{struc}} object playing the role of a vector
+#' @name row_col_mult
+NULL
+
+#' @rdname row_col_mult
 #' @export
 setGeneric("row_mult", function(x, y) {
  standardGeneric("row_mult")
 })
 
+#' @describeIn struc Element-wise multiplication of the rows of a
+#' matrix by a vector of the same length as each row.
 #' @export
 setMethod("row_mult", c(x = "struc", y = "struc"), function(x, y) {
   if (ncol(x) != size(y)) stop("y must be the same size as a row of x")
@@ -630,11 +657,15 @@ setMethod("row_mult", c(x = "struc", y = "struc"), function(x, y) {
   struc(z_values)
 })
 
+
+#' @rdname row_col_mult
 #' @export
 setGeneric("col_mult", function(x, y) {
  standardGeneric("col_mult")
 })
 
+#' @describeIn struc Element-wise multiplication of the columns of a
+#' matrix by a vector of the same length as each column.
 #' @export
 setMethod("col_mult", c(x = "struc", y = "struc"), function(x, y) {
   if (nrow(x) != size(y)) stop("y must be the same size as a column of x")

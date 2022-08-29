@@ -444,6 +444,7 @@ condense_flexmodel = function(model) {
 #' @param seed random seed
 #' @param do_condensation should condensed set of variables be returned if
 #' available
+#' @param ... pass arguments on
 #' @importFrom tidyr pivot_longer
 #' @importFrom stats simulate
 #' @rdname deprecated_simulation_functions

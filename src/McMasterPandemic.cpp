@@ -1387,7 +1387,7 @@ Type objective_function<Type>::operator() ()
     simulation_history.row(0) = sh_row.transpose();
   }
 
-  /* The code section below works only when 
+  /* The code section below works only when
      conv_c_prop_idx
      conv_c_delay_cv_idx
      conv_c_delay_mean_idx
@@ -1612,7 +1612,7 @@ Type objective_function<Type>::operator() ()
     */
 
     // Item #6 Lag-n differences of any variables of type 1-5
-    
+
     for (int k=0; k<lag_diff_sri.size(); k++) {
       if (i+1>=lag_diff_delay_n(i,k)) {
         int col = lag_diff_sri[k]-1;
@@ -1620,7 +1620,7 @@ Type objective_function<Type>::operator() ()
           simulation_history(i+1, col) - simulation_history(i+1-lag_diff_delay_n(i,k), col);
       }
     }
-    
+
     // Item #7 Convolutions of any variables of type 1-5 with a gamma-density kernel
     int index_to_item7 = stateSize + tvElementsNum + sumSize + factrSize + powSize + \
                          extraExprNum + lag_diff_sri.size();
@@ -1670,6 +1670,7 @@ Type objective_function<Type>::operator() ()
 
 
   }
+
 
   for (int i=0; i<numIterations+1; i++) {
     SIMULATE {

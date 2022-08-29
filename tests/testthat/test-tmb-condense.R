@@ -62,10 +62,10 @@ sir_model = (
 # uneven_dates_X
 
 sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
-View(sir_model$tmb_indices$lag_diff$delay_n)   # lag_diff_delay_n
+sir_model$tmb_indices$lag_diff$delay_n   # lag_diff_delay_n
 
-View(simulation_history(sir_model)[,c("Date", "X", "Y", "X_uneven_diff", "Y_uneven_diff")])
-View(simulation_history(extend_end_date(sir_model, 10))[,c("Date", "X", "lag_1_diff_X")])
+simulation_history(sir_model)[,c("Date", "X", "Y", "X_uneven_diff", "Y_uneven_diff")]
+#simulation_history(extend_end_date(sir_model, 10))[,c("Date", "X", "lag_1_diff_X")]
 
 McMasterPandemic:::uneven_from_even(
   extend_end_date(sir_model, 10),
@@ -74,4 +74,4 @@ McMasterPandemic:::uneven_from_even(
 )
 
 
-View(simulation_history(extend_end_date(sir_model, 10)))
+simulation_history(extend_end_date(sir_model, 10))

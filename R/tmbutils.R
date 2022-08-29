@@ -2204,8 +2204,13 @@ compare_hessians = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
   all.equal(target, current, tolerance)
 }
 
-# sir simulations for tests
+#' SIR Simulations for Tests
+#'
+#' @name sir_sims_for_tests
+NULL
 
+#' @param sir_name Name of test SIR model
+#' @describeIn sir_sims_for_tests Read a test SIR model
 #' @export
 read_sir = function(sir_name) {
   readRDS(
@@ -2213,6 +2218,8 @@ read_sir = function(sir_name) {
   )
 }
 
+#' @param sir_sim_name Name of simulations from a test SIR model
+#' @describeIn sir_sims_for_tests Read simulations from a test SIR model
 #' @export
 read_sir_sim = function(sir_sim_name) {
   read.csv(
@@ -2220,6 +2227,7 @@ read_sir_sim = function(sir_sim_name) {
   )
 }
 
+#' @describeIn sir_sims_for_tests List available test SIR models
 #' @export
 list_sir = function() {
   list.files(
@@ -2228,6 +2236,8 @@ list_sir = function() {
   )
 }
 
+#' @describeIn sir_sims_for_tests List available simulations from test SIR
+#' models
 #' @export
 list_sir_sim = function() {
   list.files(
@@ -2273,7 +2283,7 @@ set_spec_version = function(v, cpp_path = NULL, use_version_directories = TRUE) 
   spec_version <- as.character(unlist(v))[1]
   options(MP_flex_spec_version = spec_version)
 
-  if(is.null(cpp_path)) {
+  if (is.null(cpp_path)) {
     options(MP_flex_spec_dll = "McMasterPandemic")
   } else {
     sub_dir = ifelse(use_version_directories, spec_version, '')

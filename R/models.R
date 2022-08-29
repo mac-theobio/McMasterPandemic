@@ -473,11 +473,15 @@ make_vaccination_model = function(..., do_variant = FALSE, do_variant_mu = FALSE
 
 #' Converts a classic ageified model to a flexmodel
 #'
+#' @param min_age minimum age
+#' @param max_age maximum age
+#' @param do_ageing should individuals age on the time-scale of the
+#' simulations?
 #' @inheritDotParams flexmodel
 #' @family flexmodels
 #' @family canned_models
 #' @export
-make_ageified_model <- function(...,min_age = 0, max_age = 100, do_ageing = FALSE){
+make_ageified_model <- function(..., min_age = 0, max_age = 100, do_ageing = FALSE){
   args = list(...)
   McMasterPandemic::unpack(args)
 
@@ -555,7 +559,7 @@ make_testified_model <-function(...){
   args = list(...)
   McMasterPandemic::unpack(args)
 
-  stopifnot(McMasterPandemic:::has_testing(params=params))
+  stopifnot(has_testing(params=params))
 
   state = make_state(params=params)
   state_names = names(state)
@@ -568,7 +572,7 @@ make_testified_model <-function(...){
 
 
   epi_cat = c(attr(state, "epi_cat"))
-  expand_set = McMasterPandemic:::exclude_states(epi_cat, non_expanded_states)
+  expand_set = exclude_states(epi_cat, non_expanded_states)
 
   posvec = paste("P", expand_set, sep="_")
   negvec = vector(mode="character", length = length(expand_set))

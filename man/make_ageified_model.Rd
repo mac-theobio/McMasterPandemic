@@ -48,6 +48,13 @@ of the power method used in initial state construction}
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}. (currently this is not working)}
   }}
+
+\item{min_age}{minimum age}
+
+\item{max_age}{maximum age}
+
+\item{do_ageing}{should individuals age on the time-scale of the
+simulations?}
 }
 \description{
 Converts a classic ageified model to a flexmodel

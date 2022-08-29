@@ -21,6 +21,8 @@ utils::globalVariables(
     "linearized_outflow", "hyperparameters_tv", "do_sim_constraint",
     "Distribution", "loss_param_count", "spi_loss_param", "history_col_id",
     "init_tv_mult", "tv_val", "start_date", "is_common_fact",
-    "latex_common_fact", "Compartment", "classic_order", "tmb_order"
+    "latex_common_fact", "Compartment", "classic_order", "tmb_order",
+    "var_nms", "kernel_param_updates", "maximum_spec_version",
+    "DLL", "kernel_param_updates"
   )
 )

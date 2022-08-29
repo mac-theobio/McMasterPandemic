@@ -19,7 +19,10 @@ self_named_vector(nms)
 \arguments{
 \item{...}{character vectors with sub-model state names}
 
-\item{nms}{}
+\item{cnst}{single numeric value to be used in every element of the
+output vectos}
+
+\item{nms}{names of the output vector}
 }
 \description{
 Special Vector Construction
@@ -31,8 +34,6 @@ a fully-crossed set of states in several sub-models.
 
 \item \code{layered_const_state}: Initialize a state (or other) vector with a constant value that is
 based on a fully-crossed set of states in several sub-models
-
-output vectos
 
 \item \code{const_named_vector}: Initialize a state (or other) vector with a constant value
 

@@ -82,9 +82,10 @@ epi_kernel = function(model) {
   cohort_sim$kernel
 }
 
-#' Kernel Summaries
-#'
-#' These functions summarize the epidemiological kernel
+# Kernel Summaries
+#
+# These functions summarize the epidemiological kernel
+
 epi_R0 = function(kern) sum(kern)
 epi_Gbar = function(kern) sum(seq_along(kern) * kern) / epi_R0(kern)
 epi_r = function(kern) {

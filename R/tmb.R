@@ -39,6 +39,7 @@
 ##' @param data optional observed data frame in long format to
 ##' compare with simulated trajectories. must have the following
 ##' columns: \code{date}, \code{var}, \code{value}. (currently this is not working)
+##' @param ... not currently used
 ##' @family flexmodels
 ##' @return flexmodel object representing a compartmental model
 ##' @importFrom lubridate Date
@@ -430,7 +431,6 @@ rep_rate = function(model, from, to, formula,
 #' for each \code{from-to} pair. See \code{\link{avail_for_rate}} for a
 #' function that will print out the names of variables that are available for
 #' use in these \code{\link{struc-class}} objects.
-#' @param mapping experimental -- please choose default for now
 #' @family flexmodel_definition_functions
 #' @family rate_functions
 #' @export
@@ -805,6 +805,11 @@ add_sim_report_expr = function(model, expr_nm, formula) {
 #' @param lag_dates Dates between which differences should be taken.
 #' @param input_names names of variables to be differenced
 #' @param output_names names of the result of differencing
+#' @param method method of producing lags using generic
+#' \code{add_lag_diff_uneven}. The default, \code{"uneven"} requires
+#' a vector dates at which to difference, and the alternative allows
+#' for automatic generation of this list of dates for creating the
+#' standard difference lag of one day, \code{"lag_one_day"}.
 #'
 #' @export
 add_lag_diff = function(
@@ -957,6 +962,7 @@ update_condense_map = function(model, map = NULL) {
   model
 }
 
+#' @param map_update map items to add to existing map
 #' @describeIn update_condense_map append new items to the condensation map
 #' @export
 add_condense_map = function(model, map_update) {

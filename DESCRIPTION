@@ -1,5 +1,5 @@
 Package: McMasterPandemic
-Title: Pandemic Model
+Title: Pandemic Modelling Framework
 Description: This is a modelling framework for pandemic forecasting and health care utilization.
 Version: 0.2.0.0
 Maintainer: Steve Walker <swalk@mcaster.ca>

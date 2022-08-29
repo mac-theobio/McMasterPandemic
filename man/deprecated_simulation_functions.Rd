@@ -74,6 +74,8 @@ simulation_fitted(model)
 
 \item{do_condensation}{should condensed set of variables be returned if
 available}
+
+\item{...}{pass arguments on}
 }
 \description{
 Deprecated Simulation Functions

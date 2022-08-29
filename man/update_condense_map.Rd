@@ -18,6 +18,8 @@ identity map is used that makes all simulation history
 variables available without name changes.
 (\code{final_sim_report_names(model)}) and values that
 give the names of the variables in the condensed data set}
+
+\item{map_update}{map items to add to existing map}
 }
 \description{
 The condensed simulation is a (possibly renamed) subset

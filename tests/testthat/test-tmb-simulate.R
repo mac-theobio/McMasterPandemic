@@ -1,4 +1,4 @@
-Sys.setenv(R_TESTS="")
+Sys.setenv(R_TESTS = "")
 
 library(testthat)
 library(McMasterPandemic)
@@ -10,6 +10,7 @@ library(numDeriv)
 library(lubridate)
 library(tidyr)
 
+factory_fresh_macpan_options()
 options(MP_default_do_sim_constraint = TRUE)
 
 sir = (flexmodel(

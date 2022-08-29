@@ -752,7 +752,7 @@ test_that("tmb engine calibrates correctly to multiple data streams", {
   expect_equal(fit_no_flex$mle2@coef, fit_flex$mle2@coef)
   expect_equal(fit_no_flex$mle2@min, fit_flex$mle2@min)
   expect_equal(fit_no_flex$mle2@vcov, fit_flex$mle2@vcov)
-  beepr::beep(2)
+  #if (interactive()) beepr::beep(2)
 })
 
 test_that("transformations and priors give the right objective function and gradient, regardless of optimizer", {
@@ -1122,18 +1122,4 @@ if (FALSE) {
   )
 }
 
-beepr::beep(2)
-
-epidemiological summaries, more symbolic ops, bug fixing
-- kernel-based R0, Gbar, r, and Rt
-- flexmodel_cohort class for kernel-based simulations
-- more documentation of flexmodel classes
-- allow adding items to existing condense maps
-- symbolic col/row multiplication
-- extract symbolic diagonal
-- flatten symbolic matrix
-- get size (num elements) of a symbolic struc object
-- inverse and complement now work with struc objects
-- minor style enhancements
-- fix #235
-
+# if (interactive()) beepr::beep(2)

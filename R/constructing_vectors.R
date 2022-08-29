@@ -22,7 +22,7 @@ layered_zero_state = function(...) {
 ##' Initialize a state (or other) vector with a constant value that is
 ##' based on a fully-crossed set of states in several sub-models
 ##'
-## @param cnst single numeric value to be used in every element of the
+##' @param cnst single numeric value to be used in every element of the
 ##' output vectos
 ##'
 ##' @export
@@ -48,8 +48,6 @@ const_named_vector = function(nms, cnst) {
 ##' @describeIn special_vector_construction
 ##' Construct a character vector with names given by its values
 ##'
-##' @param nms
-##'
 ##' @export
 self_named_vector = function(nms) {
   stopifnot(is.character(nms))
@@ -65,7 +63,11 @@ self_named_vector = function(nms) {
 ##'
 ##' @param n_strains number of strains
 ##' @param base_states character vector giving the states of the base model
-##' @param infected_states character vector giving the infected states
+##' @param constrained_states character vector giving the states to use in
+##' constraining the final result (TODO: write this sentence in a non-cryptic
+##' way)
+##' @param constraint_counts how many occurrences of constrained states are
+##' allowed?
 ##' @param strain_name_prefix prefix for names of strains (they are numbered)
 ##' @return \code{expand_strain_frame} returns a data frame with one column
 ##' for each strain and one row for each expanded state.
