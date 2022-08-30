@@ -11,6 +11,15 @@
 #' defined in the \code{model}? -- see \code{\link{update_error_dist}}
 #' @param condense should a condensed set of simulation variables be
 #' returned? -- see \code{\link{update_condense_map}}
+#' @param summaries should epidemiological summaries (including \code{Rt} and
+#' the \code{rel_trans_rate}) be computed? note that this is only
+#' possible if the epidemiological summaries have been configured using
+#' \code{\link{configure_epi_summaries}}. the relative transmission rate
+#' is the transmission rate at each time divided by the transmission rate at
+#' the beginning of the simulations and computed using
+#' \code{\link{pars_time_norm}}. note also that the effective
+#' proportion of susceptible individuals will also be in the simulation
+#' history (with a user-defined name) if the summaries have been configured.
 #'
 #' @family simulation
 #' @export
@@ -20,7 +29,8 @@ simulation_history = function(
     sim_params = NULL,
     include_initial_date = TRUE,
     obs_error = FALSE,
-    condense = FALSE
+    condense = FALSE,
+    summaries = FALSE
   ) {
   if (is.null(sim_params)) sim_params = tmb_params(model)
   if (obs_error) {
@@ -28,13 +38,39 @@ simulation_history = function(
   } else {
     sim_hist_raw = tmb_fun(model)$report()$simulation_history
   }
+
+  if (summaries) {
+    unpack(model$summary_config)
+    assert_len1_char(var_nms$trans_rate_nm)
+    assert_len1_char(var_nms$prop_susceptible_nm)
+    kern = epi_kernel(model)
+    R0 = epi_R0(kern)
+    rel_trans_rate = pars_time_norm(model)[[var_nms$trans_rate_nm]]
+    uncondensed_prop_S = (
+      (model$condensation_map == var_nms$prop_susceptible_nm)
+      %>% which
+      %>% names
+    )
+  }
+
   sim_hist = (sim_hist_raw
    %>% as.data.frame
    %>% setNames(final_sim_report_names(model))
   )
 
+  if (summaries) {
+    prop_S = sim_hist[[uncondensed_prop_S]]
+    Rt = R0 *  prop_S * rel_trans_rate
+  }
+
+  # FIXME: code smell -- should have different lag diff classes
+  if (spec_ver_gt("0.2.0")) {
+    ld = model$lag_diff_uneven
+  } else {
+    ld = model$lag_diff
+  }
   sim_hist = (sim_hist
-    %>% pad_lag_diffs(model$lag_diff)
+    %>% pad_lag_diffs(ld)
     %>% pad_convs(model$conv, model$tmb_indices$conv)
   )
 
@@ -55,7 +91,23 @@ simulation_history = function(
     )
   }
 
+  sim_hist = sim_hist[seq_len(model$iters + 1L),]
+
+  if (summaries) {
+    if (any(c("rel_trans_rate", "Rt") %in% names(sim_hist))) {
+      stop(
+        "\nat least one simulation variable has one of the following",
+        "\nreserved names: rel_trans_rate, Rt"
+      )
+    }
+    sim_hist$rel_trans_rate = rel_trans_rate
+    sim_hist$Rt = Rt
+  }
+
   if (!include_initial_date) {
+    if (nrow(sim_hist) == 1L) {
+      warning("No simulations to return. Check start_date and end_date.")
+    }
     sim_hist = sim_hist[-1,]
   }
 
@@ -102,7 +154,7 @@ simulate_ensemble = function(
     "try using bbmle_flexmodel when calibrating.",
     collapse = "\n"
   )
-  if (inherits(model, 'flexmodel_calibrated')) {
+  if (inherits(model, "flexmodel_calibrated")) {
     if (is.null(sim_params_matrix)) {
       if (is_fitted_by_bbmle(model)) {
         sim_params_matrix = pop_pred_samp(
@@ -392,6 +444,7 @@ condense_flexmodel = function(model) {
 #' @param seed random seed
 #' @param do_condensation should condensed set of variables be returned if
 #' available
+#' @param ... pass arguments on
 #' @importFrom tidyr pivot_longer
 #' @importFrom stats simulate
 #' @rdname deprecated_simulation_functions

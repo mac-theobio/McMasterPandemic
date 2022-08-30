@@ -12,6 +12,8 @@ make_omicron_model(..., do_variant = FALSE)
   \describe{
     \item{\code{}}{}
   }}
+
+\item{do_variant}{allow for different variants (TODO: more info obviously required here)}
 }
 \description{
 Make an Omicron invasion model
@@ -23,6 +25,7 @@ Other flexmodels:
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()},
 \code{\link{make_vaccination_model}()}
 
 Other canned_models: 
@@ -30,6 +33,7 @@ Other canned_models:
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()},
 \code{\link{make_vaccination_model}()}
 }
 \concept{canned_models}

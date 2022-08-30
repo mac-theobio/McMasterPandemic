@@ -864,3 +864,10 @@ test_that("sim_report expressions give correct results", {
   )
   simulation_history(model)
 })
+
+m = (make_hello_world_model()
+  %>% update_params(zeta = 0.8, one = 1)
+  %>% add_factr("zeta_plus_one", ~ (zeta) + (one))
+  %>% add_pow(c("Nhet", "Shet"), c("N", "S"), "zeta_plus_one", "one")
+)
+simulation_history(m)

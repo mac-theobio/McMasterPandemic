@@ -3,11 +3,23 @@
 \name{complement}
 \alias{complement}
 \alias{inverse}
+\alias{complement,character-method}
+\alias{inverse,character-method}
+\alias{complement,struc-method}
+\alias{inverse,struc-method}
 \title{Symbolic Complement and Inverse}
 \usage{
 complement(x)
 
 inverse(x)
+
+\S4method{complement}{character}(x)
+
+\S4method{inverse}{character}(x)
+
+\S4method{complement}{struc}(x)
+
+\S4method{inverse}{struc}(x)
 }
 \arguments{
 \item{x}{character vector}

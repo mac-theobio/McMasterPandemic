@@ -9,7 +9,7 @@ struc_eval(x, values)
 \arguments{
 \item{x}{\code{\link{struc-class}} object}
 
-\item{values}{object coercible to a named list}
+\item{values}{object coercible to a named list of numeric objects}
 }
 \description{
 Numerically Evaluate Struc Object

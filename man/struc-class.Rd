@@ -13,6 +13,11 @@
 \alias{rowSums,struc-method}
 \alias{colSums,struc-method}
 \alias{dim,struc-method}
+\alias{size,struc-method}
+\alias{diagonal,struc-method}
+\alias{flatten,struc-method}
+\alias{row_mult,struc,struc-method}
+\alias{col_mult,struc,struc-method}
 \title{Class to Represent Scalar, Vector, or Matrix Structure}
 \usage{
 \S4method{*}{struc,struc}(e1, e2)
@@ -34,6 +39,35 @@
 \S4method{colSums}{struc}(x, na.rm = FALSE, dims = 1L)
 
 \S4method{dim}{struc}(x)
+
+\S4method{size}{struc}(x)
+
+\S4method{diagonal}{struc}(x)
+
+\S4method{flatten}{struc}(x)
+
+\S4method{row_mult}{struc,struc}(x, y)
+
+\S4method{col_mult}{struc,struc}(x, y)
+}
+\arguments{
+\item{e1}{first argument of a binary operator}
+
+\item{e2}{second argument of a binary operator}
+
+\item{x}{argument in a method}
+
+\item{y}{argument in a method}
+
+\item{X}{argument in a method}
+
+\item{Y}{argument in a method}
+
+\item{...}{arguments to pass on to other methods}
+
+\item{na.rm}{should missing values be removed?}
+
+\item{dims}{object dimensions}
 }
 \description{
 The simplest way to create such objects is with the \code{\link{struc}}
@@ -60,6 +94,18 @@ function.
 \item \code{colSums}: Column sums of matrices
 
 \item \code{dim}: Dimensions of a matrix
+
+\item \code{size}: number of elements of \code{struc} object
+
+\item \code{diagonal}: diagonal of a struc matrix
+
+\item \code{flatten}: Flatten a struc matrix
+
+\item \code{row_mult}: Element-wise multiplication of the rows of a
+matrix by a vector of the same length as each row.
+
+\item \code{col_mult}: Element-wise multiplication of the columns of a
+matrix by a vector of the same length as each column.
 }}
 
 \section{Slots}{
@@ -72,3 +118,7 @@ of the matrix structure object}
 structure object}
 }}
 
+\note{
+Methods that involve objects of class \code{struc_expanded}
+in their signature are not intended for users.
+}

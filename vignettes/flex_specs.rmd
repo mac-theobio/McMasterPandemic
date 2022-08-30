@@ -755,7 +755,6 @@ refer to these sums (this is not meant to reflect real epidemiology, but
 to illustrate the interface).
 
 ```{r add_rates}
-options(MP_flex_spec_version = "0.0.2")
 test_model = (test_model
   %>% add_rate("E", "Ia", ~ (alpha) * (sigma) * (1 / Isum))
   %>% add_rate("E", "Ip", ~ (1 - alpha) * (sigma))
@@ -777,7 +776,6 @@ test_model = (test_model
                  (Ip) * (beta0) * (1 / N) * (Cp) +
                  (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                  (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
-  %>% add_parallel_accumulators(c("X", "N", "P", "V"))
   %>% update_tmb_indices()
 )
 ```

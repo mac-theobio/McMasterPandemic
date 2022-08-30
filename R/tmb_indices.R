@@ -99,6 +99,7 @@ lag_diff_indices = function(model) {
 
 
 lag_diff_uneven_indices = function(model) {
+  n_delay_mat_rows = length(simulation_dates(model, 1L, -1L))
   lag_indices = (model$lag_diff_uneven
     %>% lapply(getElement, 'input_names')
     %>% lapply(find_vec_indices, intermediate_sim_report_names(model))
@@ -108,25 +109,34 @@ lag_diff_uneven_indices = function(model) {
   }
   lag_breaks = (model$lag_diff_uneven
     %>% lapply(getElement, 'lag_dates')
-    %>% lapply(`-`, model$start_date)
+    %>% lapply(difftime, model$start_date, units = "days")
     %>% lapply(as.integer)
+    %>% lapply(`[`, -1L)
     %>% rep(unlist(lapply(lag_indices, length)))
   )
   lag_ns = (model$lag_diff_uneven
     %>% lapply(getElement, 'lag_dates')
     %>% lapply(diff)
     %>% lapply(as.integer)
-    %>% lapply(append, 0, after = 0)
     %>% rep(unlist(lapply(lag_indices, length)))
   )
 
-  ii = unlist(lag_breaks) + 1L
-  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
   xx = unlist(lag_ns)
-  delay_n = Matrix::sparseMatrix(
-    i = ii, j = jj, x = xx,
-    dims = c(model$iters, length(model$lag_diff_uneven))
-  )
+  ii = unlist(lag_breaks)
+  jj = rep(seq_along(lag_breaks), unlist(lapply(lag_breaks, length)))
+
+  within_sim_bounds = ii <= model$iters
+
+  # sparse integer matrices do not seem to be implemented,
+  # and the c++ doesn't seem to work without integer matrices,
+  # so we are just going to use dense integer matrices
+  delay_n = as.matrix(Matrix::sparseMatrix(
+    i = ii[within_sim_bounds],
+    j = jj[within_sim_bounds],
+    x = xx[within_sim_bounds],
+    dims = c(model$iters + 1L, length(model$lag_diff_uneven))
+  ))
+  mode(delay_n) = 'integer'
   sri = unlist(lag_indices)
   nlist(sri, delay_n)
 }

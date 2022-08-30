@@ -78,6 +78,8 @@ of the power method used in initial state construction}
 \item{data}{optional observed data frame in long format to
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}. (currently this is not working)}
+
+\item{...}{not currently used}
 }
 \value{
 flexmodel object representing a compartmental model
@@ -92,6 +94,7 @@ Other flexmodels:
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
 \code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()},
 \code{\link{make_vaccination_model}()}
 }
 \concept{flexmodels}

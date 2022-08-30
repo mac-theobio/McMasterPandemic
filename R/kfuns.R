@@ -67,6 +67,23 @@ rmult <- function(k, r) {
     )$root
 }
 
+#' Lotka Euler
+#'
+#' Create a function to pass to uniroot for solving the Lotka-Euler Equation.
+#'
+#' @param kernel vector of forces of infection over simulation time
+#'
+#' @return a function that takes a guess at the intrinsic growth rate, r,
+#' and returns zero if the guess is correct
+#'
+#' @export
+make_lotka_euler = function(kernel) {
+  kernel = force(kernel)
+  function(x) {
+    1 - sum(kernel * exp(-x * seq_along(kernel)))
+  }
+}
+
 ##
 ##' run a pure-exponential sim;
 ##' uses run_sim_range with a population of 1 (proportions) and a very small starting value,

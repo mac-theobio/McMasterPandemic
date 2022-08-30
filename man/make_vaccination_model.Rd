@@ -8,7 +8,9 @@ make_vaccination_model(
   ...,
   do_variant = FALSE,
   do_variant_mu = FALSE,
-  do_wane = FALSE
+  do_wane = FALSE,
+  do_het = FALSE,
+  do_summaries = FALSE
 )
 }
 \arguments{
@@ -53,6 +55,17 @@ of the power method used in initial state construction}
 compare with simulated trajectories. must have the following
 columns: \code{date}, \code{var}, \code{value}. (currently this is not working)}
   }}
+
+\item{do_variant}{allow for different variants (TODO: more info obviously required here)}
+
+\item{do_variant_mu}{different mu for different variants}
+
+\item{do_wane}{including waning process where R boxes go back to S within vaccination strata}
+
+\item{do_het}{make use of the zeta heterogeneity parameter in the force of infection}
+
+\item{do_summaries}{should the model be set up to compute summaries like
+R0 and Rt?}
 }
 \description{
 Make a Two-Dose Vaccination Model
@@ -64,14 +77,16 @@ Other flexmodels:
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
-\code{\link{make_sir_model}()}
+\code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()}
 
 Other canned_models: 
 \code{\link{make_ageified_model}()},
 \code{\link{make_base_model}()},
 \code{\link{make_hello_world_model}()},
 \code{\link{make_omicron_model}()},
-\code{\link{make_sir_model}()}
+\code{\link{make_sir_model}()},
+\code{\link{make_testified_model}()}
 }
 \concept{canned_models}
 \concept{flexmodels}

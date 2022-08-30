@@ -10,33 +10,33 @@
 #'
 #' @export
 optim_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  stopifnot(inherits(model, "flexmodel_to_calibrate"))
   model_to_calibrate = model
   obj_fun = tmb_fun(model)
   model$opt_obj = optim(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, ...)
   model$opt_par = model$opt_obj$par
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_optim', 'flexmodel_calibrated', 'flexmodel')
+  class(model) = c("flexmodel_optim", "flexmodel_calibrated", "flexmodel")
   update_params_calibrated(model)
 }
 
 #' @rdname optim_flexmodel
 #' @export
 nlminb_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  stopifnot(inherits(model, "flexmodel_to_calibrate"))
   model_to_calibrate = model
   obj_fun = tmb_fun(model)
   model$opt_obj = nlminb(tmb_params_trans(model), obj_fun$fn, obj_fun$gr, obj_fun$he, ...)
   model$opt_par = model$opt_obj$par
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_nlminb', 'flexmodel_calibrated', 'flexmodel')
+  class(model) = c("flexmodel_nlminb", "flexmodel_calibrated", "flexmodel")
   update_params_calibrated(model)
 }
 
 #' @rdname optim_flexmodel
 #' @export
 bbmle_flexmodel = function(model, ...) {
-  stopifnot(inherits(model, 'flexmodel_to_calibrate'))
+  stopifnot(inherits(model, "flexmodel_to_calibrate"))
   model_to_calibrate = model
   obj_fun = tmb_fun(model)
   start_par = tmb_params_trans(model)
@@ -55,7 +55,7 @@ bbmle_flexmodel = function(model, ...) {
   )
   model$opt_par = model$opt_obj@coef
   model$model_to_calibrate = model_to_calibrate
-  class(model) = c('flexmodel_bbmle', 'flexmodel_calibrated', 'flexmodel')
+  class(model) = c("flexmodel_bbmle", "flexmodel_calibrated", "flexmodel")
   update_params_calibrated(model)
 }
 

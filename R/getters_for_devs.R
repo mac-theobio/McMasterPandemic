@@ -240,6 +240,12 @@ get_params_timevar_series = function(model) {
   )
 }
 
+get_time_varying_baseline_params = function(model) {
+  get_schedule(model)$Symbol
+  tv_pars = unique(get_schedule(model)$Symbol)
+  pars_base_sim(model)[tv_pars, drop = FALSE]
+}
+
 get_tmb_report = function(model) {
   tmb_fun(model)$report()
 }

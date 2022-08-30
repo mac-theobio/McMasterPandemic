@@ -505,7 +505,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # base parameters using read_params target argument
 
   reset_spec_version()
-  #r_tmb_comparable()
+  r_tmb_comparable()
   options(macpan_pfun_method = "grep")
   options(MP_rexp_steps_default = 200)
 
@@ -540,6 +540,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
   # load data that came from macpan ontario
   load(system.file('testdata', 'ontario_flex_test_better.Rdata', package = 'McMasterPandemic'))
 
+  params_timevar = filter(params_timevar, Date < ymd(20211129))
   # make flex vaccination model -----------
   model = make_vaccination_model(
     params = model_params,
@@ -548,12 +549,6 @@ test_that("vax/variants model simulation matches run_sim with many break points"
     end_date = end_date + days(1),
     params_timevar = params_timevar,
     do_hazard = TRUE,
-    do_hazard_lin = FALSE,
-    do_approx_hazard = FALSE,
-    do_approx_hazard_lin = FALSE,
-    do_make_state = TRUE,
-    max_iters_eig_pow_meth = 1000,
-    tol_eig_pow_meth = 1e-4,
     do_variant = TRUE)
 
   time_wrap(
@@ -561,7 +556,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
       params = model_params,
       start_date = model$start_date,
       end_date = model$end_date,
-      params_timevar = params_timevar,
+      params_timevar = pars_time_sim(model),
       condense = FALSE,
       step_args = list(do_hazard = TRUE),
       flexmodel = model
@@ -570,7 +565,7 @@ test_that("vax/variants model simulation matches run_sim with many break points"
       params = model_params,
       start_date = model$start_date,
       end_date = model$end_date,
-      params_timevar = params_timevar,
+      params_timevar = pars_time_sim(model),
       condense = FALSE,
       step_args = list(do_hazard = TRUE)
     )

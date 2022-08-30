@@ -72,22 +72,25 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   # suppressing warning for now -- nelder-mead complaining
   # because it is a 1d problem (TODO: ask Mike if he is getting
   # this in production)
+  model$do_sim_constraint = TRUE
+  opt_pars_alt = opt_pars
+  opt_pars_alt$time_params = 1
   fitted_model_tmb <- suppressWarnings(calibrate(
     base_params  = model_params
     , data       = fitdat
-    , opt_pars   = opt_pars
+    , opt_pars   = opt_pars_alt
     , sim_args   = list(ndt = 1,
                         step_args = list(do_hazard = TRUE),
                         flexmodel = model)
     , time_args = list(params_timevar = params_timevar)
-    , mle2_control = cntrl
+    #, mle2_control = cntrl
     , start_date_offset = start_date_offset
     , use_DEoptim = FALSE
     , debug = FALSE
     , debug_plot = FALSE
   ))
 
-  model$do_sim_constraint = TRUE
+
   model_to_fit = (model
     #%>% update_piece_wise(params_timevar_sim)
     %>% update_observed(fitdat)
@@ -154,7 +157,11 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
     unname(fitted_model_tmb$mle2@coef),
     tolerance = 1e-3
   )
-  expect_equal(fitted_model_r$mle2@coef, fitted_model_tmb$mle2@coef)
+  expect_equal(
+    fitted_model_r$mle2@coef,
+    fitted_model_tmb$mle2@coef,
+    tolerance = 1e-4
+  )
   expect_equal(fitted_model_r$mle2@min, fitted_model_tmb$mle2@min)
   expect_equal(fitted_model_r$mle2@vcov, fitted_model_tmb$mle2@vcov)
 
@@ -170,7 +177,7 @@ test_that("macpan ontario forecasts work the same regardless of engine", {
   forecast_tmb_condense = simulate_ensemble(fitted_model_tmb_condense, n = 200)
   Rprof(NULL)
 
-  expect_equal(forecast_tmb, forecast_r)
+  expect_equal(forecast_tmb, forecast_r, tolerance = 1e-6)
 
   if (FALSE) {
     # these look similar, but the variation is very small in tmb??

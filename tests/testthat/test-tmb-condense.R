@@ -5,7 +5,8 @@ library(dplyr)
 # version 0.2.0 will run without error, but will not create the required columns
 # in the simulation history.
 # version 0.2.1 with run with error until the 0.2.1 specs are implemented
-set_spec_version('0.2.0', system.file("tmb", package = "McMasterPandemic"))
+#set_spec_version('0.2.1', system.file('tmb', package = 'McMasterPandemic'))
+#set_spec_version('0.2.1', '../../inst/tmb')
 
 uneven_dates_X = structure(
   c(10957, 10958, 10959, 10963, 10969, 10971, 10972,
@@ -24,7 +25,8 @@ sir_model = (
     params = c(
       gamma = 0.06,
       beta = 0.15,
-      N = sum(state)
+      N = sum(state),
+      c_prop = 1/10, c_delay_mean = 11, c_delay_cv = 0.25
     ),
     state = state,
     start_date = "2000-01-01",
@@ -32,6 +34,12 @@ sir_model = (
     do_hazard = TRUE,
     do_make_state = FALSE
   )
+  %>% add_piece_wise(data.frame(
+    Date = "2000-03-01",
+    Symbol = "c_prop",
+    Value = 2/10,
+    Type = "abs"
+  ))
   %>% add_rate("S", "I", ~ (1/N) * (beta) * (I))
   %>% add_rate("S", "X", ~ (1/N) * (beta) * (I))
   %>% add_rate("I", "R", ~ (gamma))
@@ -39,12 +47,31 @@ sir_model = (
   %>% add_outflow("S", "I")
   %>% add_outflow("I", "R")
   #%>% add_lag_diff("^X$", 1)
+  %>% add_conv("^X$")
   %>% add_lag_diff_uneven("X", "X_uneven_diff", uneven_dates_X)
   %>% add_lag_diff_uneven("Y", "Y_uneven_diff", uneven_dates_Y)
   %>% update_tmb_indices
 )
 
+# xx = numeric(sir_model$iters)
+# bb = (as.integer(difftime(uneven_dates_X, sir_model$start_date, units = "days")) + 1)[-1L]
+# dd = as.integer(diff(uneven_dates_X))
+# bb = bb[-length(bb)]
+# xx[bb] = as.integer(diff(uneven_dates_X))
+
+# uneven_dates_X
+
 sir_model$tmb_indices$lag_diff$sri       # lag_diff_sri
 sir_model$tmb_indices$lag_diff$delay_n   # lag_diff_delay_n
 
-simulation_history(sir_model)
+simulation_history(sir_model)[,c("Date", "X", "Y", "X_uneven_diff", "Y_uneven_diff")]
+#simulation_history(extend_end_date(sir_model, 10))[,c("Date", "X", "lag_1_diff_X")]
+
+McMasterPandemic:::uneven_from_even(
+  extend_end_date(sir_model, 10),
+  sir_model$lag_diff_uneven[[1]]$input_names,
+  sir_model$lag_diff_uneven[[1]]$output_names
+)
+
+
+simulation_history(extend_end_date(sir_model, 10))

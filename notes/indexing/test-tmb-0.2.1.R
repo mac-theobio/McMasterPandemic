@@ -67,9 +67,9 @@ mm = (make_base_model(
     end_date = edate,
     params_timevar = params_timevar,
     do_hazard = TRUE,
-    do_make_state = FALSE,
-    data = covid_data
+    do_make_state = FALSE
   )
+  %>% update_observed(covid_data)
   %>% update_opt_params(
     log_E0 ~ log_flat(log(5)),
     log_beta0 ~ log_flat(log(1), 1),
@@ -82,8 +82,16 @@ mm = (make_base_model(
     log_beta0 ~ log_flat(0),
     log_mu ~ log_flat(0)
   )
-  %>% update_tmb_indices
 )
+mm = update_tmb_indices(mm)
+
+ff = tmb_fun_args(mm)
+
+ff$data$lag_diff_delay_n
+
+tmb_fun(mm)
+
+if(FALSE) {
 
 # test gradients ---------------------------
 
@@ -196,5 +204,7 @@ if (FALSE) {
       sim_args = list(flexmodel = mm3)
     )
   )
+
+}
 
 }

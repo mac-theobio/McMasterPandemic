@@ -63,6 +63,16 @@ init_observed = list(
   )
 )
 
+init_summary_config = list(
+  var_nms = list(
+    exposed_state_nm = NULL,
+    foi_nm = NULL,
+    prop_susceptible_nm = NULL,
+    trans_rate_nm = NULL
+  ),
+  kernel_param_updates = list()
+)
+
 init_tmb_indices = list(
   make_ratemat_indices = list(
     from = integer(0L),
@@ -372,7 +382,7 @@ intermediate_sim_report_names = function(model) {
 }
 
 final_sim_report_names = function(model) {
-  if (spec_ver_gt('0.2.0')) {
+  if (spec_ver_gt('0.2.0') & TRUE) {
     lags = model$lag_diff_uneven
   } else {
     lags = model$lag_diff
@@ -392,23 +402,31 @@ condensed_sim_report_names = function(model) {
 }
 
 pad_lag_diffs = function(sims, lag_diff) {
-  if(length(lag_diff) == 0L) return(sims)
+  if (spec_ver_gt('0.2.0')) {
+    for (i in seq_along(lag_diff)) {
+      if (lag_diff[[i]]$method == "lag_one_day") {
+        sims[1L, lag_diff[[i]]$output_names] = NA
+      }
+    }
+    return(sims)
+  }
+  if (length(lag_diff) == 0L) return(sims)
   ff = function(x) {
     as.data.frame(x[c('delay_n', 'output_names')])
   }
   d = bind_rows(lapply(lag_diff, ff))
-  for(i in 1:nrow(d)) {
+  for (i in 1:nrow(d)) {
     sims[1:as.integer(d[i,'delay_n']), d[i,'output_names']] = NA
   }
   sims
 }
 
 pad_convs = function(sims, conv, conv_indices) {
-  if(length(conv) == 0L) return
+  if (length(conv) == 0L) return
   conv_nms = unlist(lapply(conv, getElement, 'output_names'))
   qmax = conv_indices$qmax
-  for(i in 1:length(conv_nms)) {
-    sims[1:(qmax[i]-2L), conv_nms[i]] = NA
+  for (i in 1:length(conv_nms)) {
+    sims[1:(qmax[i] - 2L), conv_nms[i]] = NA
   }
   sims
 }
@@ -616,6 +634,15 @@ null_to_char0 = function(x) {
 null_to_int0 = function(x) {
   if(is.null(x)) return(integer(0L))
   as.integer(x)
+}
+
+null_to_int0_mat = function(x) {
+  if(is.null(x)) {
+    x = integer(0L)
+    dim(x) = c(0, 0)
+  }
+  mode(x) = 'integer'
+  x
 }
 
 null_to_num0 = function(x) {
@@ -1765,6 +1792,32 @@ parse_loss_form = function(x, e = NULL) {
 
 # date and time utilities -----------
 
+uneven_from_even = function(model, input_names, output_names) {
+  sdates = simulation_dates(model, start_shift = 0L, end_shift = 0L)
+  ll = list()
+  for (i in seq_along(input_names)) {
+    ll[[i]] = lag_diff_uneven(
+      model,
+      input_names[i],
+      output_names[i],
+      sdates,
+      method = "lag_one_day"
+    )
+  }
+  return(ll)
+}
+
+refresh_even_lags = function(model) {
+  l = model$lag_diff_uneven
+  for (i in seq_along(l)) {
+    if (l[[i]]$method == "lag_one_day") {
+      l[i] = uneven_from_even(model, l[[i]]$input_names, l[[i]]$output_names)
+    }
+  }
+  model$lag_diff_uneven = l
+  model
+}
+
 # retrieving information from tmb objective function --------------
 
 #' Extract Parameter Vector to Pass to a TMB Function
@@ -1913,11 +1966,12 @@ tmb_param_names = function(model) {
   )
 }
 
-simulation_dates = function(model) {
+simulation_dates = function(model, start_shift = 0L, end_shift = 0L) {
   seq.Date(
-    as.Date(model$start_date),
-    as.Date(model$end_date),
-    by = 1)
+    as.Date(model$start_date) - as.integer(start_shift),
+    as.Date(model$end_date) + as.integer(end_shift),
+    by = 1
+  )
 }
 
 compute_num_iters = function(model) {
@@ -1929,7 +1983,7 @@ compute_num_iters = function(model) {
 
 update_params_calibrated = function(model) {
   # TODO: check if opt_par exists
-  if (!inherits(model, 'flexmodel_calibrated')) {
+  if (!inherits(model, "flexmodel_calibrated")) {
     stop('this is not a flexmodel_calibrated object. ',
          'please first use nlminb_flexmodel or optim_flexmodel.')
   }
@@ -2150,6 +2204,49 @@ compare_hessians = function(model, tolerance = 1e-5, tmb_pars = NULL, ...) {
   all.equal(target, current, tolerance)
 }
 
+#' SIR Simulations for Tests
+#'
+#' @name sir_sims_for_tests
+NULL
+
+#' @param sir_name Name of test SIR model
+#' @describeIn sir_sims_for_tests Read a test SIR model
+#' @export
+read_sir = function(sir_name) {
+  readRDS(
+    system.file('testdata/sir_sims', sir_name, package = "McMasterPandemic")
+  )
+}
+
+#' @param sir_sim_name Name of simulations from a test SIR model
+#' @describeIn sir_sims_for_tests Read simulations from a test SIR model
+#' @export
+read_sir_sim = function(sir_sim_name) {
+  read.csv(
+    system.file('testdata/sir_sims', sir_sim_name, package = "McMasterPandemic")
+  )
+}
+
+#' @describeIn sir_sims_for_tests List available test SIR models
+#' @export
+list_sir = function() {
+  list.files(
+    system.file('testdata/sir_sims', package = "McMasterPandemic"),
+    pattern = "*.rda"
+  )
+}
+
+#' @describeIn sir_sims_for_tests List available simulations from test SIR
+#' models
+#' @export
+list_sir_sim = function() {
+  list.files(
+    system.file('testdata/sir_sims', package = "McMasterPandemic"),
+    pattern = "*.csv"
+  )
+}
+
+
 # spec version and global option control ----------------------
 
 ##' Set and Reset Spec Version
@@ -2186,7 +2283,7 @@ set_spec_version = function(v, cpp_path = NULL, use_version_directories = TRUE) 
   spec_version <- as.character(unlist(v))[1]
   options(MP_flex_spec_version = spec_version)
 
-  if(is.null(cpp_path)) {
+  if (is.null(cpp_path)) {
     options(MP_flex_spec_dll = "McMasterPandemic")
   } else {
     sub_dir = ifelse(use_version_directories, spec_version, '')
@@ -2284,6 +2381,10 @@ factory_fresh_macpan_options = function() {
         #     different spec versions in inst/tmb
         MP_flex_spec_dll = "McMasterPandemic",
 
+        # should the user be allowed to create TMB indices when
+        # their model was constructed
+        MP_no_indices_w_mismatched_specs = TRUE,
+
         # https://stackoverflow.com/questions/8396577/check-if-character-value-is-a-valid-r-object-name
         # need to wrap this in wrap_exact for names that are not embedded in
         # character strings representing expressions
@@ -2346,7 +2447,21 @@ factory_fresh_macpan_options = function() {
         MP_use_state_rounding = TRUE,         # FALSE ~ comparable
         MP_vax_make_state_with_hazard = TRUE, # FALSE ~ comparable
         MP_tmb_models_match_r = FALSE,        # TRUE  ~ comparable
-        MP_force_dgTMatrix = FALSE            # TRUE  ~ comparable
+        MP_force_dgTMatrix = FALSE,           # TRUE  ~ comparable
+
+
+        # -- control calculation of epidemic parameters likes R0, Gbar ---------
+
+        # number of elements in epidemic kernels
+        MP_kernel_len = 100L,
+
+        # tolerance for determining if the exposed class is sufficiently
+        # emptied
+        MP_kernel_tol = 1e-10,
+
+        # upper bound of the interval over which the root finder
+        # should use to solve the Lokta-Euler equation
+        MP_kernel_r_upper_bound = 100
     )
 }
 

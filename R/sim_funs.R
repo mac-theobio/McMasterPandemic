@@ -948,6 +948,10 @@ run_sim <- function(params,
       params = unlist(params)
     }
 
+    if (!is.null(params_timevar)) {
+      flexmodel = update_piece_wise(flexmodel, params_timevar)
+    }
+
     ## always regenerate the objective function -- #164
     ##   this is not a performance burden, and bad things can happen
     ##   when the flexmodel and obj_fun are out of sync
@@ -955,14 +959,14 @@ run_sim <- function(params,
 
     start_date <- as.Date(start_date)
     end_date <- as.Date(end_date)
-    if(!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)
+    if (!is.null(params_timevar)) params_timevar$Date = as.Date(params_timevar$Date)
 
     # update parameters (or the whole model structure)
     # -- important in calibration situations where the parameters
     #    are changing each iteration of the optimizer
     if (!is.null(flexmodel)) {
       flexmodel$params = (params
-        %>% expand_params_S0(1-1e-5)
+        %>% expand_params_S0(1 - 1e-5)
         %>% expand_params_nb_disp(unique(flexmodel$observed$data$var))
       )
       if (spec_ver_gt('0.1.0') & (isTRUE(nrow(flexmodel$timevar$piece_wise$schedule) > 0))) {
@@ -1005,7 +1009,24 @@ run_sim <- function(params,
     full_param_vec = tmb_params(flexmodel)
     tmb_sims <- obj_fun$simulate(full_param_vec)
     if (spec_ver_gt('0.1.2') & condense & getOption("MP_condense_cpp")) {
-      res = condense_flexmodel(flexmodel)
+      res = simulation_history(flexmodel, condense = TRUE)
+
+      # HACK!
+      names(res)[1] = "date"
+
+      # HACK! ultimately we want cumulative reports calculated
+      # on the c++ side (https://github.com/mac-theobio/McMasterPandemic/issues/171)
+      # also this assumes no observation error, and doesn't
+      # compute D as cumulative sum of deaths (as is done in run_sim)
+      if ('report' %in% names(res)) {
+        res$cumRep = cumsum(
+          ifelse(
+            !is.na(unname(unlist(res$report))),
+            unname(unlist(res$report)),
+            0
+          )
+        )
+      }
       condense_cpp = TRUE
     } else {
       res = (tmb_sims
@@ -1197,6 +1218,7 @@ run_sim <- function(params,
                 ## reset all changing params
                 s <- params_timevar[j, "Symbol"]
                 v <- params_timevar[j, "Value"]
+                if (any(is.na(v))) stop("missing time-variation value")
                 t <- params_timevar[j, "Type"]
                 if (t == "abs") {
                   if (length(unique(params[[s]])) > 1) {

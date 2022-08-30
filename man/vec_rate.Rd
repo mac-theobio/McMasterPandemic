@@ -17,8 +17,6 @@ vec_rate(model, from, to, formula)
 for each \code{from-to} pair. See \code{\link{avail_for_rate}} for a
 function that will print out the names of variables that are available for
 use in these \code{\link{struc-class}} objects.}
-
-\item{mapping}{experimental -- please choose default for now}
 }
 \description{
 Specify Vector of Rates

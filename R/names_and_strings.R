@@ -1,3 +1,21 @@
+#' Simulation Variable Names
+#'
+#' Return vector of names of simulation variables. The \code{names_sim_hist}
+#' function returns the names of variables associated with the table returned
+#' by \code{\link{simulation_history}}. The \code{names_sim_cond} function
+#' returns the names of variables in the \code{simulation_history} if
+#' the \code{condense} argument is \code{FALSE} or if
+#' \code{\link{simulate_ensemble}} is used.
+#'
+#' @param model \code{\link{flexmodel}} object
+#' @return character vector of names
+#' @export
+names_sim_hist = function(model) final_sim_report_names(model)
+
+#' @describeIn names_sim_hist testing
+#' @export
+names_sim_cond = function(model) condensed_sim_report_names(model)
+
 #' String Concatenation Operators
 #'
 #' Paste with an underscore separator, tilde, or blank space,

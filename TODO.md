@@ -133,6 +133,8 @@
             * We could also use this approach to check for negativity
         * Cumulative sums in condensation on the C++ side
       * Ability to fit prior hyperparameters
+      * Outflow
+        * The auto-outflow approach is confusing, because people rightly expect add_outflow to _not_ mean subtract outflow but it can mean exactly that depending on how the model is set up
   * Guides
     * Main existing pain-points:
       * We have a [draft but reasonably helpful guide for users](https://canmod.github.io/macpan-book/), but the [contributors](https://github.com/mac-theobio/McMasterPandemic/blob/master/CONTRIBUTING.md) guide is totally insufficient

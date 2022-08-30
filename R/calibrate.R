@@ -1048,7 +1048,7 @@ calibrate_flexmodel = function(
     )
     if (inherits(output, 'try-error')) {
         model$opt_err = output
-        class(model) = c('flexmodel_failed_calibration', 'flexmodel')
+        class(model) = c("flexmodel_failed_calibration", "flexmodel")
         output = model
     }
     output

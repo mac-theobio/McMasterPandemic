@@ -7,7 +7,13 @@
 \usage{
 add_lag_diff(model, var_pattern, delay_n = 1)
 
-add_lag_diff_uneven(model, input_names, output_names, lag_dates)
+add_lag_diff_uneven(
+  model,
+  input_names,
+  output_names,
+  lag_dates,
+  method = c("uneven", "lag_one_day")
+)
 }
 \arguments{
 \item{model}{\code{\link{flexmodel}} object}
@@ -23,6 +29,12 @@ return the names of all variables that are available for differencing.}
 \item{output_names}{names of the result of differencing}
 
 \item{lag_dates}{Dates between which differences should be taken.}
+
+\item{method}{method of producing lags using generic
+\code{add_lag_diff_uneven}. The default, \code{"uneven"} requires
+a vector dates at which to difference, and the alternative allows
+for automatic generation of this list of dates for creating the
+standard difference lag of one day, \code{"lag_one_day"}.}
 }
 \description{
 Add a variable that will be available for comparisons with observed data
