@@ -678,7 +678,7 @@ do_variant <- function(x) {
 ##' @param xlab label on x axis
 ##' @param ylab label on y axis
 ##' @param sub subtitle for plot
-##' @param zlim appears to be unused (!!)
+##' @param y_space vertical spacing in flow chart
 ##' @param ... arguments to pass to lower level functions (plotmat::diagram/image/igraph)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
@@ -699,7 +699,6 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
                          xlab = "to",
                          ylab = "from",
                          sub = "",
-                         zlim = c(0, 1),
                          aspect = "iso",
                          block_size = NULL,
                          block_col = 2,
@@ -707,7 +706,9 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
                          const_width = (method == "igraph"),
                          colour_palette = viridis::magma(n = 50, direction = -1),
                          do_symbols = NULL,
-                         box.size = 0.02, ...) {
+                         box.size = 0.02,
+                         y_space = 1,
+                         ...) {
     method <- match.arg(method)
     ## subset ratemat, if desired
     if (!is.null(subset)) {
@@ -782,8 +783,9 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
             plot(g, layout = igraph::layout_as_tree, ...)
         }
     } else if (method == "diagram") {
-        xpos <- c(S = 1, E = 2, Ia = 3, Ip = 3, Im = 4, Is = 4, H = 5, ICUs = 5, ICUd = 5, H2 = 6, D = 7, R = 7, X = 7)
-        ypos <- c(S = 1, E = 1, Ia = 1, Ip = 2, Im = 2, Is = 3, H = 3, ICUs = 4, ICUd = 5, H2 = 4, D = 5, R = 1, X = 4)
+        xpos <- c(S = 1, E = 2, Ia = 3, Ip = 3, Im = 4, Is = 4, H = 5, ICUs = 5, ICUd = 5, H2 = 6, D = 4, R = 7, X = 3)
+        ypos <- c(S = 1, E = 1, Ia = 1, Ip = 2, Im = 2, Is = 3, H = 3, ICUs = 4, ICUd = 5, H2 = 4, D = 6, R = 1, X = 6)*y_space
+        box.type <- ifelse(names(xpos) %in% c("D", "X", "R"), "rect", "circle")
         pos <- cbind(xpos, ypos) / 8
         M3 <- M[names(xpos), names(xpos)] ## reorder ... does that matter?
         if (do_symbols) {
@@ -791,7 +793,8 @@ show_ratemat <- function(M, method = c("Matrix", "diagram", "igraph"),
         } else {
             M3[M3 != "0"] <- "" ## blank out all labels
         }
-        diagram::plotmat(t(M3), pos = pos, name = colnames(M3), box.size = box.size, add = FALSE, ...)
+        diagram::plotmat(t(M3), pos = pos, name = colnames(M3), box.size = box.size,
+                         box.type = box.type, add = FALSE, ...)
     }
     return(p)
 }
