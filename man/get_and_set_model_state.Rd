@@ -41,14 +41,14 @@ Get and Set Model State
 }
 \section{Functions}{
 \itemize{
-\item \code{state_default}: State vector used to define the model and used as the initial state if \code{do_make_state == FALSE}.
+\item \code{state_default()}: State vector used to define the model and used as the initial state if \code{do_make_state == FALSE}.
 
-\item \code{state_init}: Initial state vector at \code{model$start_date}
+\item \code{state_init()}: Initial state vector at \code{model$start_date}
 
-\item \code{state_final}: Deterministic value of the final state vector at \code{model$end_date}
+\item \code{state_final()}: Deterministic value of the final state vector at \code{model$end_date}
 
-\item \code{state_final_rand}: Random value of the final state vector at \code{model$end_date}
+\item \code{state_final_rand()}: Random value of the final state vector at \code{model$end_date}
 
-\item \code{state_final_cond}: Condensed state vector at \code{model$end_date}.
+\item \code{state_final_cond()}: Condensed state vector at \code{model$end_date}.
+
 }}
-

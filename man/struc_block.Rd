@@ -4,7 +4,7 @@
 \alias{struc_block}
 \title{Repeat a Block}
 \usage{
-struc_block(x, row_times, col_times)
+struc_block(x, row_times, col_times, dimname_template = NULL)
 }
 \arguments{
 \item{x}{\code{\link{struc-class}} object representing the block}
@@ -12,6 +12,9 @@ struc_block(x, row_times, col_times)
 \item{row_times}{number of times to replicate the block downwards}
 
 \item{col_times}{number of times to replicate the block to the right}
+
+\item{dimname_template}{optional object with dimnames to use for the
+output}
 }
 \value{
 struc object

@@ -2,9 +2,18 @@
 % Please edit documentation in R/flexstruc.R
 \name{same_dims}
 \alias{same_dims}
+\alias{same_dimnames}
+\alias{same_rownames}
+\alias{same_colnames}
 \title{Test if struc Objects have the Same Dimensions}
 \usage{
 same_dims(x, y)
+
+same_dimnames(x, y)
+
+same_rownames(x, y)
+
+same_colnames(x, y)
 }
 \arguments{
 \item{x, y}{\code{\link{struc}} objects}

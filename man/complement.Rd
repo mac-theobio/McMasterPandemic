@@ -4,9 +4,15 @@
 \alias{complement}
 \alias{inverse}
 \alias{complement,character-method}
-\alias{inverse,character-method}
 \alias{complement,struc-method}
+\alias{complement,struc_dimnames-method}
+\alias{complement,EpiMatrixInput-method}
+\alias{complement,numeric-method}
+\alias{inverse,character-method}
 \alias{inverse,struc-method}
+\alias{inverse,struc_dimnames-method}
+\alias{inverse,EpiMatrixInput-method}
+\alias{inverse,numeric-method}
 \title{Symbolic Complement and Inverse}
 \usage{
 complement(x)
@@ -15,14 +21,27 @@ inverse(x)
 
 \S4method{complement}{character}(x)
 
-\S4method{inverse}{character}(x)
-
 \S4method{complement}{struc}(x)
 
+\S4method{complement}{struc_dimnames}(x)
+
+\S4method{complement}{EpiMatrixInput}(x)
+
+\S4method{complement}{numeric}(x)
+
+\S4method{inverse}{character}(x)
+
 \S4method{inverse}{struc}(x)
+
+\S4method{inverse}{struc_dimnames}(x)
+
+\S4method{inverse}{EpiMatrixInput}(x)
+
+\S4method{inverse}{numeric}(x)
 }
 \arguments{
-\item{x}{character vector}
+\item{x}{character vector, \code{\link{struc}} object, or
+\code{\link{EpiMatrixInput}} object}
 }
 \description{
 Symbolic Complement and Inverse

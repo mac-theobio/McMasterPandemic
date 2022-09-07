@@ -4,14 +4,19 @@
 \alias{struc_stretch}
 \title{Stretch a Block}
 \usage{
-struc_stretch(x, row_each, col_each)
+struc_stretch(x, row_each, col_each, dimname_template = NULL)
 }
 \arguments{
 \item{x}{struc object representing the block}
 
-\item{row_each}{number of times to replicate each element of the block downwards}
+\item{row_each}{number of times to replicate each element of the block
+downwards}
 
-\item{col_each}{number of times to replicate each element of the block to the right}
+\item{col_each}{number of times to replicate each element of the block
+to the right}
+
+\item{dimname_template}{optional object with dimnames to use for the
+output}
 }
 \value{
 struc object

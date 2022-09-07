@@ -11,7 +11,6 @@ show_ratemat(
   xlab = "to",
   ylab = "from",
   sub = "",
-  zlim = c(0, 1),
   aspect = "iso",
   block_size = NULL,
   block_col = 2,
@@ -20,6 +19,7 @@ show_ratemat(
   colour_palette = viridis::magma(n = 50, direction = -1),
   do_symbols = NULL,
   box.size = 0.02,
+  y_space = 1,
   ...
 )
 }
@@ -36,8 +36,6 @@ show_ratemat(
 
 \item{sub}{subtitle for plot}
 
-\item{zlim}{appears to be unused (!!)}
-
 \item{aspect}{aspect ratio ("iso", "fill" are the sensible options)}
 
 \item{block_size}{numeric vector of number of compartments per block; if NA, try to guess from number of epidemiological compartments}
@@ -53,6 +51,8 @@ show_ratemat(
 \item{do_symbols}{plot symbolic values for flows?}
 
 \item{box.size}{box size for diagram}
+
+\item{y_space}{vertical spacing in flow chart}
 
 \item{...}{arguments to pass to lower level functions (plotmat::diagram/image/igraph)}
 }

@@ -1,5 +1,5 @@
 .onLoad <- function(lib, pkg) {
-    factory_fresh_macpan_options()
+  factory_fresh_macpan_options()
 }
 
 .onUnload <- function(libpath) {

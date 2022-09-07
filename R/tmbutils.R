@@ -327,6 +327,78 @@ assert_len1_int = function(x) {
   }
 }
 
+n_formula_sides = function(x, n = NULL) {
+  if (is.null(n)) {
+    if (!is_formula(x)) stop("not a formula")
+    if (length(x) == 2L) {
+      if (is_formula(x[[2L]])) {
+        stop("malformed formula 2")
+      } else {
+        return(1L)
+      }
+    }
+    n = 1L
+  }
+  if (is_formula(x)) {
+    if (length(x) == 2L) {
+      stop("malformed formula 3")
+      # if (is_formula(x[[2L]])) {
+      #   n = n_formula_sides(x[[2L]], n + 1L)
+      # }
+    }
+    if (length(x) == 3L) {
+      if (is_formula(x[[2L]])) {
+        n = n_formula_sides(x[[2L]], n + 1L)
+      } else {
+        n = n + 1L
+      }
+    }
+  }
+  n
+}
+
+if (FALSE) {
+  test_cases = list(
+    1,
+    ~1,
+    1~1,
+    ~1~1,
+    1~1~1,
+    ~1~1~1~1,
+    1~1~1~1
+  )
+  test_output = list()
+  for (i in seq_along(test_cases)) {
+    test_output[[i]] = try(n_formula_sides(test_cases[[i]]), silent = TRUE)
+  }
+}
+
+is_one_sided = function(x) isTRUE(n_formula_sides(x) == 1L)
+is_two_sided = function(x) isTRUE(n_formula_sides(x) == 2L)
+
+is_formula = function(x) {
+  is_call = is.call(x)
+  if (!is_call) return(FALSE)
+  isTRUE(x[[1L]] == "~")
+}
+
+get_lhs = function(x) {
+  if (!is_two_sided(x)) {
+    stop("there is no left-hand-side to a one-sided formula")
+  }
+  return(x[[2L]])
+}
+
+get_rhs = function(x) {
+  if (is_one_sided(x)) {
+    return(x[[2L]])
+  } else if (is_two_sided(x)) {
+    return(x[[3L]])
+  } else {
+    stop("there is no right-hand-side to a formula that is neither one- nor two-sided")
+  }
+}
+
 exists_opt_params = function(model) {
   (model
    $  tmb_indices
@@ -2461,7 +2533,24 @@ factory_fresh_macpan_options = function() {
 
         # upper bound of the interval over which the root finder
         # should use to solve the Lokta-Euler equation
-        MP_kernel_r_upper_bound = 100
+        MP_kernel_r_upper_bound = 100,
+
+        MP_valid_derive_funcs = nlist(
+          `+`, `*`, `sum`, `prod`, `inner`, `lin_combin`,
+          `kronecker`, `%*%`,
+          `t`, `rowSums`, `colSums`,
+          `row_mult`, `col_mult`,
+          `flatten`, `diagonal`, `[`, `(`,
+          `struc_stretch`, `struc_block`, `struc_bdiag`,
+          `list`, `c`, `inverse`, `complement`,
+          `dimnames_from_template`, `dim`, `nrow`, `ncol`
+        ),
+
+        MP_valid_alter_funcs = nlist(
+          `complement`, `inverse`,
+          `as.character`, `names`,
+          `c`, `%_%`, `paste0`, `paste`
+        )
     )
 }
 

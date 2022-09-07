@@ -2,9 +2,15 @@
 % Please edit documentation in R/flexstruc.R
 \name{is_1by1}
 \alias{is_1by1}
+\alias{is_1byn}
+\alias{is_nby1}
 \title{Test if 1-by-1}
 \usage{
 is_1by1(x)
+
+is_1byn(x)
+
+is_nby1(x)
 }
 \arguments{
 \item{x}{struc object}

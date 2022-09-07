@@ -42,8 +42,8 @@ Configure Epidemiological Summaries
 }
 \section{Functions}{
 \itemize{
-\item \code{epi_kernel}: obtain the kernel from \code{model}
+\item \code{epi_kernel()}: obtain the kernel from \code{model}
 
-\item \code{epi_pars}: compute epidemic growth parameters for \code{model}
+\item \code{epi_pars()}: compute epidemic growth parameters for \code{model}
+
 }}
-

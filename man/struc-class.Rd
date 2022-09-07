@@ -3,6 +3,11 @@
 \docType{class}
 \name{struc-class}
 \alias{struc-class}
+\alias{[.struc}
+\alias{dim,struc-method}
+\alias{size,struc-method}
+\alias{diagonal,struc-method}
+\alias{flatten,struc-method}
 \alias{*,struc,struc-method}
 \alias{+,struc,struc-method}
 \alias{\%*\%,struc,struc-method}
@@ -11,15 +16,23 @@
 \alias{sum,struc-method}
 \alias{prod,struc-method}
 \alias{rowSums,struc-method}
+\alias{rowSums,struc_dimnames-method}
 \alias{colSums,struc-method}
-\alias{dim,struc-method}
-\alias{size,struc-method}
-\alias{diagonal,struc-method}
-\alias{flatten,struc-method}
+\alias{colSums,struc_dimnames-method}
 \alias{row_mult,struc,struc-method}
 \alias{col_mult,struc,struc-method}
 \title{Class to Represent Scalar, Vector, or Matrix Structure}
 \usage{
+\method{[}{struc}(x, i, j, ..., drop = FALSE)
+
+\S4method{dim}{struc}(x)
+
+\S4method{size}{struc}(x)
+
+\S4method{diagonal}{struc}(x)
+
+\S4method{flatten}{struc}(x)
+
 \S4method{*}{struc,struc}(e1, e2)
 
 \S4method{+}{struc,struc}(e1, e2)
@@ -36,34 +49,30 @@
 
 \S4method{rowSums}{struc}(x, na.rm = FALSE, dims = 1L)
 
+\S4method{rowSums}{struc_dimnames}(x, na.rm = FALSE, dims = 1L)
+
 \S4method{colSums}{struc}(x, na.rm = FALSE, dims = 1L)
 
-\S4method{dim}{struc}(x)
-
-\S4method{size}{struc}(x)
-
-\S4method{diagonal}{struc}(x)
-
-\S4method{flatten}{struc}(x)
+\S4method{colSums}{struc_dimnames}(x, na.rm = FALSE, dims = 1L)
 
 \S4method{row_mult}{struc,struc}(x, y)
 
 \S4method{col_mult}{struc,struc}(x, y)
 }
 \arguments{
+\item{x}{argument in a method}
+
+\item{...}{arguments to pass on to other methods}
+
 \item{e1}{first argument of a binary operator}
 
 \item{e2}{second argument of a binary operator}
-
-\item{x}{argument in a method}
 
 \item{y}{argument in a method}
 
 \item{X}{argument in a method}
 
 \item{Y}{argument in a method}
-
-\item{...}{arguments to pass on to other methods}
 
 \item{na.rm}{should missing values be removed?}
 
@@ -75,39 +84,48 @@ function.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{*}: Elementwise or scalar multiplication
+\item \code{dim(struc)}: Dimensions of a matrix
 
-\item \code{+}: Elementwise or scalar addition
+\item \code{size(struc)}: number of elements of \code{struc} object
 
-\item \code{\%*\%}: Matrix multiplication
+\item \code{diagonal(struc)}: diagonal of a struc matrix
 
-\item \code{kronecker}: Kronecker product
+\item \code{flatten(struc)}: Flatten a struc matrix
 
-\item \code{t}: Matrix or vector transpose
+\item \code{e1 * e2}: Elementwise or scalar multiplication
 
-\item \code{sum}: Sum of vector or matrix elements
+\item \code{e1 + e2}: Elementwise or scalar addition
 
-\item \code{prod}: Product of vector or matrix elements
+\item \code{x \%*\% y}: Matrix multiplication
 
-\item \code{rowSums}: Row sums of matrices
+\item \code{kronecker(X = struc, Y = struc)}: Kronecker product
 
-\item \code{colSums}: Column sums of matrices
+\item \code{t(struc)}: Matrix or vector transpose
 
-\item \code{dim}: Dimensions of a matrix
+\item \code{sum(struc)}: Sum of vector or matrix elements
 
-\item \code{size}: number of elements of \code{struc} object
+\item \code{prod(struc)}: Product of vector or matrix elements
 
-\item \code{diagonal}: diagonal of a struc matrix
+\item \code{rowSums(struc)}: Row sums of matrices
 
-\item \code{flatten}: Flatten a struc matrix
+\item \code{rowSums(struc_dimnames)}: Column sums of matrices
 
-\item \code{row_mult}: Element-wise multiplication of the rows of a
+\item \code{colSums(struc)}: Column sums of matrices
+
+\item \code{colSums(struc_dimnames)}: Column sums of matrices
+
+\item \code{row_mult(x = struc, y = struc)}: Element-wise multiplication of the rows of a
 matrix by a vector of the same length as each row.
 
-\item \code{col_mult}: Element-wise multiplication of the columns of a
+\item \code{col_mult(x = struc, y = struc)}: Element-wise multiplication of the columns of a
 matrix by a vector of the same length as each column.
-}}
 
+}}
+\section{Functions}{
+\itemize{
+\item \code{[}: Extract specific elements of a struc object
+
+}}
 \section{Slots}{
 
 \describe{

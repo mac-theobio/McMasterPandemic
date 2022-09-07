@@ -29,14 +29,14 @@ Special Vector Construction
 }
 \section{Functions}{
 \itemize{
-\item \code{layered_zero_state}: Initialize a state (or other) vector with all zeros that is based on
+\item \code{layered_zero_state()}: Initialize a state (or other) vector with all zeros that is based on
 a fully-crossed set of states in several sub-models.
 
-\item \code{layered_const_state}: Initialize a state (or other) vector with a constant value that is
+\item \code{layered_const_state()}: Initialize a state (or other) vector with a constant value that is
 based on a fully-crossed set of states in several sub-models
 
-\item \code{const_named_vector}: Initialize a state (or other) vector with a constant value
+\item \code{const_named_vector()}: Initialize a state (or other) vector with a constant value
 
-\item \code{self_named_vector}: Construct a character vector with names given by its values
+\item \code{self_named_vector()}: Construct a character vector with names given by its values
+
 }}
-
