@@ -21,6 +21,7 @@ test_level <- if (nzchar(s <- Sys.getenv("MACPAN_TEST_LEVEL")) &&
 } else {
     1
 }
+test_level = 2
 
 library(dplyr)
 params <- fix_pars(read_params("ICU1.csv"))
@@ -47,7 +48,8 @@ if (Sys.getenv("TRAVIS") != "true" ## not on Travis
         opt_pars = opt_pars,
         use_DEoptim = TRUE,
         DE_cores = 1,
-        DE_args = list(control = list(itermax = 5, trace = FALSE))
+        DE_args = list(control = list(itermax = 5, trace = FALSE)),
+        time_args = list(params_timevar = NULL)
     ))
 
     de <- attr(cal1_DE, "de")

@@ -10,12 +10,12 @@ library(ggplot2)
 ## devtools::load_all("../..")
 pp <- read_params("PHAC_testify.csv")
 ##  state <- make_state(N=1, E0=1e-5, type="ICU1")  ## FIXME: don't assume ICU1?
-r1 <- rExp(params = pp, return_val = "sim")
+r1 <- expect_warning({rExp(params = pp, return_val = "sim")}, "^CHECK")
 ## including state breaks this ... ?
 r1z <- r1
 r1z[r1 == 0] <- NA ## avoid log-zero warnings
 if (interactive()) matplot(r1z[, 1], r1z[, 2:10], log = "y", type = "l", lty = 1)
-r2 <- rExp(params = pp, return_val = "sim", testify = TRUE)
+r2 <- expect_warning({rExp(params = pp, return_val = "sim", testify = TRUE)}, "^CHECK")
 ## plot S only
 ## matplot(r2[,1],r2[,2:5],log="y",type="l",lty=1)
 ## matplot(r2[,1],r2[,6:41],log="y",type="l",lty=1)

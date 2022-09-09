@@ -3,70 +3,14 @@
 \docType{class}
 \name{struc-class}
 \alias{struc-class}
-\alias{[.struc}
-\alias{dim,struc-method}
-\alias{size,struc-method}
-\alias{diagonal,struc-method}
-\alias{flatten,struc-method}
-\alias{*,struc,struc-method}
-\alias{+,struc,struc-method}
-\alias{\%*\%,struc,struc-method}
-\alias{kronecker,struc,struc-method}
-\alias{t,struc-method}
-\alias{sum,struc-method}
-\alias{prod,struc-method}
-\alias{rowSums,struc-method}
-\alias{rowSums,struc_dimnames-method}
-\alias{colSums,struc-method}
-\alias{colSums,struc_dimnames-method}
-\alias{row_mult,struc,struc-method}
-\alias{col_mult,struc,struc-method}
+\alias{struc_dimnames-class}
 \title{Class to Represent Scalar, Vector, or Matrix Structure}
-\usage{
-\method{[}{struc}(x, i, j, ..., drop = FALSE)
-
-\S4method{dim}{struc}(x)
-
-\S4method{size}{struc}(x)
-
-\S4method{diagonal}{struc}(x)
-
-\S4method{flatten}{struc}(x)
-
-\S4method{*}{struc,struc}(e1, e2)
-
-\S4method{+}{struc,struc}(e1, e2)
-
-\S4method{\%*\%}{struc,struc}(x, y)
-
-\S4method{kronecker}{struc,struc}(X, Y)
-
-\S4method{t}{struc}(x)
-
-\S4method{sum}{struc}(x, ..., na.rm = FALSE)
-
-\S4method{prod}{struc}(x, ..., na.rm = FALSE)
-
-\S4method{rowSums}{struc}(x, na.rm = FALSE, dims = 1L)
-
-\S4method{rowSums}{struc_dimnames}(x, na.rm = FALSE, dims = 1L)
-
-\S4method{colSums}{struc}(x, na.rm = FALSE, dims = 1L)
-
-\S4method{colSums}{struc_dimnames}(x, na.rm = FALSE, dims = 1L)
-
-\S4method{row_mult}{struc,struc}(x, y)
-
-\S4method{col_mult}{struc,struc}(x, y)
-}
 \arguments{
-\item{x}{argument in a method}
-
-\item{...}{arguments to pass on to other methods}
-
 \item{e1}{first argument of a binary operator}
 
 \item{e2}{second argument of a binary operator}
+
+\item{x}{\code{struc} object as an argument}
 
 \item{y}{argument in a method}
 
@@ -74,58 +18,104 @@
 
 \item{Y}{argument in a method}
 
+\item{...}{arguments to pass on to other methods}
+
 \item{na.rm}{should missing values be removed?}
 
 \item{dims}{object dimensions}
 }
 \description{
-The simplest way to create such objects is with the \code{\link{struc}}
-function.
+Objects of class \code{\link{struc}} are matrices that can be used in
+symbolic mathematical expressions for defining various
+characteristics of compartmental models. Several mathematical operations
+exist for \code{\link{struc}} objects, including
+\link[=elementwise]{elementwise sums and products},
+\link[=matmult]{matrix multiplication},
+\link[=sumprod]{total sums and products},
+\link[=rowcolsums]{marginal row and columns sums},
+\link[=row_col_mult]{multiplication of matrices by rows and columns},
+\link[=symbtrans]{matrix transpose},
+and blockwise matrix construction functions (
+\code{\link{struc_block}},
+\code{\link{struc_stretch}},
+\code{\link{struc_bdiag}}
+).
 }
-\section{Methods (by generic)}{
-\itemize{
-\item \code{dim(struc)}: Dimensions of a matrix
+\details{
+Symbolic expressions can be useful for computing complex rates
+of transition between compartments. For example, the force of
+infection in models with infectious classes with different severity
+levels often requires taking a weighted sum of infectious classes,
+where the weights are stored in a parameter vector.
 
-\item \code{size(struc)}: number of elements of \code{struc} object
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{severity = c("mild", "severe")
+I = struc("I" \%_\% severity)
+w = struc("w" \%_\% severity)
+}\if{html}{\out{</div>}}
 
-\item \code{diagonal(struc)}: diagonal of a struc matrix
+Here the \code{\link{struc}} function was used to construct symbolic
+math objects, \code{I} and \code{w}, from simple character string
+vectors. The \code{\link{\%_\%}} operator \code{\link{paste}}s character
+objects together with an underscore delimiter.
 
-\item \code{flatten(struc)}: Flatten a struc matrix
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{"I" \%_\% severity
+#> [1] "I_mild"   "I_severe"
+}\if{html}{\out{</div>}}
 
-\item \code{e1 * e2}: Elementwise or scalar multiplication
+With these \code{I} and \code{w} objects we can programmatically
+get an expression for the weighted sum.
 
-\item \code{e1 + e2}: Elementwise or scalar addition
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{sum(w * I)
+#> struc object with 1 row and 1 column:
+#> 
+#> (w_mild) * (I_mild) +
+#>  (w_severe) * (I_severe)
+}\if{html}{\out{</div>}}
 
-\item \code{x \%*\% y}: Matrix multiplication
+This expression could then be used to defines model variables and
+state transition rates.
 
-\item \code{kronecker(X = struc, Y = struc)}: Kronecker product
+Once a \code{struc} object is created it can be given
+\code{dimnames} by ... and creating a \code{struc_dimnames} object.
+This \code{struc_dimnames} class extends struc by adding names
+to the rows and columns of the \code{struc} object. For objects
+with only a single row or single column, it is not necessary to
+specify names for rows or columns respectively.
 
-\item \code{t(struc)}: Matrix or vector transpose
+Continuing the example, we add row names to the column vectors
+above and take their weighted sum to get the same answer as before.
 
-\item \code{sum(struc)}: Sum of vector or matrix elements
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{rownames(w) = rownames(I) = severity
+sum(w * I)
+#> struc object with 1 row and 1 column:
+#> 
+#> (w_mild) * (I_mild) +
+#>  (w_severe) * (I_severe)
+}\if{html}{\out{</div>}}
 
-\item \code{prod(struc)}: Product of vector or matrix elements
+But if we set incompatible row names we get the following error
 
-\item \code{rowSums(struc)}: Row sums of matrices
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{rownames(I) = c("wrong", "names")
+try(sum(w * I))
+#> Error in get_elementwise_dimnames(e1, e2) : 
+#>   if dimnames are different, one operand needs to be 1-by-1
+}\if{html}{\out{</div>}}
 
-\item \code{rowSums(struc_dimnames)}: Column sums of matrices
-
-\item \code{colSums(struc)}: Column sums of matrices
-
-\item \code{colSums(struc_dimnames)}: Column sums of matrices
-
-\item \code{row_mult(x = struc, y = struc)}: Element-wise multiplication of the rows of a
-matrix by a vector of the same length as each row.
-
-\item \code{col_mult(x = struc, y = struc)}: Element-wise multiplication of the columns of a
-matrix by a vector of the same length as each column.
-
-}}
-\section{Functions}{
-\itemize{
-\item \code{[}: Extract specific elements of a struc object
-
-}}
+In this way, the \code{struc_dimnames} class allows for stronger tests of
+dimensional compatibility of matrices used in symbolic computations.
+These tests require that the names of dimensions are also compatible,
+in addition to the numbers of rows and columns. These stronger
+tests can be useful for making it more likely that symbolic matrix
+operations are substantively meaningful, as opposed to just
+computationally possible. For example, consider a matrix with
+rows representing different levels of symptom severity, and another
+with columns representing different levels of vaccination. If the
+number of severity levels equals the number of vaccination levels,
+it will be possible to multiply these two matrices. But this
+multiplication is unlikely to be meaningful, and if the two matrices
+are stored as \code{struc_dimnames} objects with descriptive dimnames
+it will correctly not be possible to multiply them together.
+}
 \section{Slots}{
 
 \describe{
@@ -140,3 +130,10 @@ structure object}
 Methods that involve objects of class \code{struc_expanded}
 in their signature are not intended for users.
 }
+\section{Lifecycle}{
+The \code{\link{EpiMatrix-class}} is intended to superseed the
+\code{struc} class. Currently however, the \code{struc} class is
+the main way to manage model structure.
+}
+
+\concept{symbolic}

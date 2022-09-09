@@ -29,7 +29,7 @@ as.struc(x)
 \description{
 Create model structure objects (see \code{\link{struc-class}}), which are
 symbolic scalars, vectors, and matrices with elements that are expressions
-involving parameters, state variables.
+involving parameters, and state variables.
 }
 \details{
 \code{scal}, \code{vec}, and \code{mat} are similar to \code{struc}, but

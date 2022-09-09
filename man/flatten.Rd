@@ -2,9 +2,15 @@
 % Please edit documentation in R/flexstruc.R
 \name{flatten}
 \alias{flatten}
+\alias{flatten,struc-method}
+\alias{flatten,EpiMatrix-method}
 \title{Flatten Symbolic Matrix}
 \usage{
 flatten(x)
+
+\S4method{flatten}{struc}(x)
+
+\S4method{flatten}{EpiMatrix}(x)
 }
 \arguments{
 \item{x}{\code{\link{struc}} object}

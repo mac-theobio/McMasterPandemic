@@ -59,7 +59,7 @@ make_base_model <- function(..., do_summaries = FALSE) {
                    (Im) * (beta0) * (1 / N) * (Cm) * (1 - iso_m) +
                    (Is) * (beta0) * (1 / N) * (Cs) * (1 - iso_s))
   )
-  if(spec_ver_lt('0.1.1')) {
+  if (spec_ver_lt('0.1.1')) {
     # no deprecation period for add_parallel_accumulators
     model = add_parallel_accumulators(model, c("X", "N", "P", "V"))
   } else {

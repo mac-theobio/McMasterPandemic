@@ -2,15 +2,33 @@
 % Please edit documentation in R/flexstruc.R
 \name{names_to_values}
 \alias{names_to_values}
+\alias{names_to_values.numeric}
+\alias{names_to_values.character}
+\alias{names_to_values.matrix}
+\alias{names_to_values.EpiMatrixDerived}
+\alias{names_to_values.EpiMatrixInput}
+\alias{names_to_values.array}
 \title{Names to Values}
 \usage{
 names_to_values(x)
+
+\method{names_to_values}{numeric}(x)
+
+\method{names_to_values}{character}(x)
+
+\method{names_to_values}{matrix}(x)
+
+\method{names_to_values}{EpiMatrixDerived}(x)
+
+\method{names_to_values}{EpiMatrixInput}(x)
+
+\method{names_to_values}{array}(x)
 }
 \arguments{
 \item{x}{object to fill with its names}
 }
 \description{
-Replace the values of an object with its names.
+Replace the values of an object with the names of its elements.
 }
 \details{
 This function only makes sense for objects that have the same shape

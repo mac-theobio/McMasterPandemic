@@ -4,11 +4,17 @@
 \alias{row_col_mult}
 \alias{row_mult}
 \alias{col_mult}
+\alias{row_mult,struc,struc-method}
+\alias{col_mult,struc,struc-method}
 \title{Symbolic Row and Column Multiplication}
 \usage{
 row_mult(x, y)
 
 col_mult(x, y)
+
+\S4method{row_mult}{struc,struc}(x, y)
+
+\S4method{col_mult}{struc,struc}(x, y)
 }
 \arguments{
 \item{x}{\code{\link{struc}} object playing the role of a matrix}

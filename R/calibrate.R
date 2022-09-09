@@ -290,7 +290,7 @@ run_sim_break <- function(params,
     ## Do not need to make_state on the R-side when using
     ## appropriate versions of the flexmodel/tmb approach
     flexmodel = sim_args$flexmodel
-    if(isTRUE(sim_args$use_flex) &
+    if (isTRUE(sim_args$use_flex) &
        (!is.null(flexmodel)) &
        isTRUE(flexmodel$do_make_state) &
        spec_ver_gt('0.1.0')
@@ -299,7 +299,7 @@ run_sim_break <- function(params,
            sim_args,
            nlist(params, state = sim_args$flexmodel$state))
     } else {
-        if(isTRUE(sim_args$flexmodel$classic_macpan_model)) {
+        if (isTRUE(sim_args$flexmodel$classic_macpan_model)) {
             sim_args_state = make_state(params = params)
         } else {
             sim_args_state = sim_args$flexmodel$state

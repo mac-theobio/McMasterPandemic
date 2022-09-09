@@ -32,8 +32,11 @@ test_that("testified states make sense", {
 })
 
 test_that("make_state from scratch", {
+    s = expect_warning(
+        make_state(params = pp), "^CHECK"
+    )
     expect_equal(
-        names(make_state(params = pp)),
+        names(s),
         names(state_testified)
     )
 })
@@ -41,7 +44,7 @@ test_that("make_state from scratch", {
 test_that("make_ratemat from scratch (ignore testify in state)", {
     s0 <- make_state(params = pp, testify = FALSE)
     M0 <- make_ratemat(s0, pp)
-    s1 <- make_state(params = pp)
+    s1 <- expect_warning(make_state(params = pp), "^CHECK")
     M1 <- make_ratemat(state = s1, params = pp)
     ## FIXME: why does testify/untestify swap order of D and R?
     ## should be harmless but ...
@@ -91,10 +94,13 @@ test_that("FOI doesn't change (for 'untested' expansion)", {
     )
 })
 
-sim0_testified_condensed <- run_sim(
+sim0_testified_condensed <- expect_warning({
+  run_sim(
     params = pp,
     ## specify testing time to avoid warning
     ratemat_args = list(testing_time = "sample")
+  )},
+  "^CHECK"
 )
 
 if (interactive()) make_state(pp[["N"]], pp[["E0"]], params = pp)
@@ -139,11 +145,11 @@ test_that("time-varying test intensity", {
     )
     ## don't reduce testing to 0 - it will break things!
     pp[["testing_intensity"]] <- 0.002
-    sim0_testified_timevar <- run_sim(
+    sim0_testified_timevar <- expect_warning({run_sim(
         params = pp,
         ratemat_args = list(testing_time = "sample"),
         params_timevar = pt
-    )
+    )}, "^CHECK")
     ##     ## library(directlabels)
     p1 <- plot(sim0_testified_timevar, log = TRUE, log_lwr = 1e-7)
     ##     ## direct.label(p1,method="last.bumpup")
@@ -188,15 +194,15 @@ plotfun <- function(L) {
 
 test_that("testify + sampling time", {
     rvars <- c("N", "P")
-    sim0_testified_report <- run_sim(
+    sim0_testified_report <- expect_warning({run_sim(
         params = pp,
         ratemat_args = list(testing_time = "report")
-    )
+    )}, "^CHECK")
     res_report <- tail(sim0_testified_report[rvars], 1)
-    sim0_testified_sample <- run_sim(
+    sim0_testified_sample <- expect_warning({run_sim(
         params = pp,
         ratemat_args = list(testing_time = "sample")
-    )
+    )}, "^CHECK")
     res_sample <- tail(sim0_testified_sample[rvars], 1)
     expect(!(all(res_report == res_sample)), "results don't differ according to testing time")
     ##     expect_equal(unlist(res_sample),c(N = 78578.6760706341, P = 107.200806051815))
@@ -209,18 +215,18 @@ test_that("testify + alternative weights models", {
     class(ppw0) <- "params_pansim" ## restore class (lost after indexing) so we can use update()
     ppw1 <- update(ppw0, W_asymp = 0.2)
     ppw2 <- update(ppw0, c(W_asymp = 0.2, W_severe = 1.5))
-    sim0_w0 <- run_sim(
+    sim0_w0 <- expect_warning({run_sim(
         params = pp,
         ratemat_args = list(testing_time = "report")
-    )
-    sim0_w1 <- run_sim(
+    )}, "^CHECK")
+    sim0_w1 <- expect_warning({run_sim(
         params = ppw1,
         ratemat_args = list(testing_time = "report")
-    )
-    sim0_w2 <- run_sim(
+    )}, "^CHECK")
+    sim0_w2 <- expect_warning({run_sim(
         params = ppw2,
         ratemat_args = list(testing_time = "report")
-    )
+    )}, "^CHECK")
     gg1 <- plotfun(list(w0 = sim0_w0, w1 = sim0_w1, w2 = sim0_w2))
     ref_val <- structure(list(
         N = c(62097.0986898706, 61789.5190257482, 61781.6457354169),

@@ -2,9 +2,15 @@
 % Please edit documentation in R/flexstruc.R
 \name{size}
 \alias{size}
+\alias{size,struc-method}
+\alias{size,EpiMatrix-method}
 \title{Size}
 \usage{
 size(x)
+
+\S4method{size}{struc}(x)
+
+\S4method{size}{EpiMatrix}(x)
 }
 \arguments{
 \item{x}{object}

@@ -2,22 +2,18 @@
 % Please edit documentation in R/flexstruc.R
 \name{derive}
 \alias{derive}
-\title{#' @export
-epi_model_init = structure(
-  list(
-    const_list = epi_const_list(),
-    mat_list = epi_mat_list(),
-    param_mat_nms = character(0L),
-    state_mat_nms = character(0L),
-    rate_list = epi_rate_list()
-  ),
-  class = "EpiModelInit"
-)
-Derive}
+\alias{derive.EpiMatrixList}
+\title{Derive}
 \usage{
 derive(mat_list, ...)
+
+\method{derive}{EpiMatrixList}(mat_list, ...)
+}
+\arguments{
+\item{mat_list}{object containing a list of matrix-like objects}
 }
 \description{
 Derive symbolic expressions of existing epidemiological variables, and
-add them to the list
+add them to the list. See \code{\link{epi_mat_list}} for more details
+on usage.
 }
