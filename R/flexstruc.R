@@ -325,6 +325,16 @@ cross_mat = function(x, y, sep = "_") {
   ))
 }
 
+#' Construct an Epidemiological Matrix
+#'
+#' Construct a single object of class \code{\link{EpiMatrix-class}}. Typically,
+#' the \code{\link{epi_mat_list}} function is used to construct several
+#' such epidemiological matrices.
+#'
+#' @param nm Length-one character vector giving the name of the matrix
+#' @param x numeric or character vector or matrix with either names
+#' (for vectors) or dimnames (for matrices)
+#'
 #' @export
 epi_mat = function(nm, x) {
   x = as.matrix(x)
@@ -468,12 +478,10 @@ derive = function(mat_list, ...) {
   UseMethod("derive")
 }
 
-#' @export
 const = function(mat_list, ...) {
   UseMethod("const")
 }
 
-#' @export
 define_state = function(mat_list, ...) {
   UseMethod("define_state")
 }
@@ -487,6 +495,14 @@ alter = function(mat_list, ...) {
   UseMethod("alter")
 }
 
+#' Dimnames from Template
+#'
+#' Make the dimnames of \code{x} be the same as \code{template}
+#'
+#' @param x object with or without dimnames of the same dimensions as
+#' \code{template}
+#' @param template object with dimnames to apply to \code{x}
+#'
 #' @export
 setGeneric("dimnames_from_template", function(x, template) {
   standardGeneric("dimnames_from_template")
@@ -522,7 +538,7 @@ names_from_values = function(x) {
 #' Symbolic Complement and Inverse
 #'
 #' @param x character vector, \code{\link{struc}} object, or
-#' \code{\link{EpiMatrixInput}} object
+#' \code{\link{EpiMatrixInput-class}} object
 #' @export
 #' @examples
 #' complement('p')
@@ -537,11 +553,25 @@ setGeneric("inverse", function(x) {
   standardGeneric("inverse")
 })
 
+#' Inner Product
+#'
+#' Compute the inner product between two objects.
+#'
+#' @param x first operand to an inner product
+#' @param y second operand to an inner product
 #' @export
 setGeneric("inner", function(x, y, ...) {
   standardGeneric("inner")
 })
 
+#' Linear Combination
+#'
+#' Compute the linear combination of a list of objects
+#'
+#' @param w object containing weights for the linear combination
+#' @param l list of objects to linearly combine, with one object per
+#' element in \code{w}
+#'
 #' @export
 setGeneric("lin_combin", function(w, l) {
   standardGeneric("lin_combin")
@@ -942,17 +972,29 @@ setMethod("show", c(object = "EpiMatrix"), function(object) print(object@default
 
 # exposed utility functions --------------------------
 
+#' Select Epidemiological Matrices
+#'
+#' Select different types of epidemiological matrices from an
+#' \code{\link{EpiMatrixList}} object.
+#'
+#' @param mat_list an \code{\link{EpiMatrixList}} object.
+#' @rdname select_epi_mats
+NULL
+
+#' @describeIn select_epi_mats Select \code{\link{EpiMatrixDerived-class}}
+#' objects
 #' @export
 select_derived_mats = function(mat_list) {
   mat_list[vapply(mat_list, is, logical(1L), class2 = "EpiMatrixDerived")]
 }
 
+#' @describeIn select_epi_mats Select \code{\link{EpiMatrixInput-class}}
+#' objects
 #' @export
 select_input_mats = function(mat_list) {
   mat_list[vapply(mat_list, is, logical(1L), class2 = "EpiMatrixInput")]
 }
 
-#' @export
 mats_to_strucs = function(mat_list) {
   struc_list = (mat_list
     %>% lapply(names_to_values)
@@ -964,13 +1006,21 @@ mats_to_strucs = function(mat_list) {
   struc_list
 }
 
+#' Add Derived Matrices
 #'
+#' @param model \code{\link{flexmodel}} object
+#' @param mat object of \code{EpiMatrixDerived-class}
+#'
+#' @return \code{\link{flexmodel}} object with intermediate computations
+#' that could be used in calculating rates and/or including in simulation
+#' output
 #' @export
 add_derived_matrix = function(model, mat) {
   vec_factr(model, names(mat), values(mat))
 }
 
-#' @param mat_list todo
+#' @param mat_list object of class \code{EpiMatrixList}, containing at least
+#' some objects of \code{EpiMatrixDerived-class}
 #' @rdname add_derived_matrix
 #' @export
 add_derived_matrices = function(model, mat_list) {
@@ -1037,7 +1087,11 @@ fix_epi_names = function(x) {
 #' @describeIn epi_mat_names force names to include only digits
 #' @export
 force_numeric_epi_names = function(x) {
-  fix_epi_names(gsub("[^0-9_]+", "_", x))
+  y = fix_epi_names(gsub("[^0-9_]+", "_", x))
+  if (any(nchar(y) == 0L)) {
+    y = fix_epi_names(seq_along(x))
+  }
+  y
 }
 
 #' @describeIn epi_mat_names fix the names of an object to be passed
@@ -1666,7 +1720,6 @@ derive.EpiMatrixList = function(mat_list, ...) {
   )
 }
 
-#' @export
 const.EpiMatrixList = function(mat_list, ...) {
   new_constants = list(...)
   if (!all(vapply(new_constants, is.numeric, logical(1L)))) {

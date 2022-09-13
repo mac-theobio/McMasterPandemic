@@ -41,7 +41,7 @@ inverse(x)
 }
 \arguments{
 \item{x}{character vector, \code{\link{struc}} object, or
-\code{\link{EpiMatrixInput}} object}
+\code{\link{EpiMatrixInput-class}} object}
 }
 \description{
 Symbolic Complement and Inverse
