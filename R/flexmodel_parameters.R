@@ -85,8 +85,9 @@ pars_infer_opt = function(model) {
   UseMethod('pars_infer_opt')
 }
 
-#' @rdname get_and_set_model_parameters
-#' @export
+# @rdname get_and_set_model_parameters
+# @export
+
 pars_infer_conf = function(model) {
   UseMethod('pars_infer_conf')
 }

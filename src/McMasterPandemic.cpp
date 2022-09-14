@@ -1,4 +1,4 @@
-// This version implements spec 0.2.0 in https://canmod.net/misc/flex_specs
+// This version implements spec 0.2.1 in https://canmod.net/misc/flex_specs
 
 // grep for printouts that are not commented out: ^\s*std::cout
 // grep for printouts that are commented out: ^\s*//\s*std::cout
@@ -1670,7 +1670,6 @@ Type objective_function<Type>::operator() ()
 
 
   }
-
 
   for (int i=0; i<numIterations+1; i++) {
     SIMULATE {

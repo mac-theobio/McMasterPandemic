@@ -1068,6 +1068,7 @@ reduce_rates = function(rates) {
 regen_model = function(model) {
   (model
    %>% regen_rates
+   %>% regen_factr
    %>% regen_sim_report_expr
   )
 }
@@ -1075,12 +1076,33 @@ regen_model = function(model) {
 regen_rates = function(model) {
   remodel = model
   remodel$rates = list()
-  for(r in seq_along(model$rates)) {
+  for (r in seq_along(model$rates)) {
     args = c(list(model = remodel), model$rates[[r]][c('from', 'to', 'formula')])
     remodel = do.call(add_rate, args)
   }
   remodel
 }
+
+regen_factr = function(model) {
+  remodel = model
+  remodel$factrs = list()
+  for (r in seq_along(model$factrs)) {
+    args = c(list(model = remodel), model$factrs[[r]][c('factr_nm', 'formula')])
+    remodel = do.call(add_factr, args)
+  }
+  remodel
+}
+
+regen_sim_report_expr = function(model) {
+  remodel = model
+  remodel$sim_report_exprs = list()
+  for (r in seq_along(model$sim_report_exprs)) {
+    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
+    remodel = do.call(add_sim_report_expr, args)
+  }
+  remodel
+}
+
 
 ##' Rate Summary
 ##'
@@ -1100,7 +1122,7 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
     to = get_rate_info(model, "to") %>% unlist
   )
 
-  if(include_parse_info) {
+  if (include_parse_info) {
     summary$n_fctrs = get_n_factors(model) %>% unlist
     summary$n_prdcts = get_n_products(model) %>% unlist
     summary$n_vrbls = get_n_variables(model) %>% unlist
@@ -1109,7 +1131,7 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
     summary$sum_dependent = get_rate_info(model, "sum_dependent") %>% unlist
   }
 
-  if(include_formula) {
+  if (include_formula) {
     summary$formula = (model
       %>% get_rate_info('formula')
       %>% lapply(rateform_as_char)
@@ -1117,7 +1139,7 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
     )
   }
 
-  if(include_latex) {
+  if (include_latex) {
     summary = inner_join(
       summary,
       make_latex_rates(model),
@@ -1128,24 +1150,13 @@ rate_summary = function(model, include_parse_info = TRUE, include_formula = FALS
   summary
 }
 
-regen_sim_report_expr = function(model) {
-  remodel = model
-  remodel$sim_report_exprs = list()
-  for(r in seq_along(model$sim_report_exprs)) {
-    args = c(list(model = remodel), model$sim_report_exprs[[r]][c('expr_nm', 'formula')])
-    remodel = do.call(add_sim_report_expr, args)
-  }
-  remodel
-}
-
-
 ## @param x parameter vector or flexmodel
 has_time_varying <- function(x) {
   spec_check(
     feature = "Time-varying parameters",
     introduced_version = "0.0.3"
   )
-  if(inherits(x, 'flexmodel')) {
+  if (inherits(x, 'flexmodel')) {
     # more reliable test than looking at parameter attributes
     return(length(x$timevar$piece_wise$schedule$Value) > 0L)
   } else {

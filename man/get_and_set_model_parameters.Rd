@@ -14,7 +14,6 @@
 \alias{pars_time_norm}
 \alias{pars_infer_init}
 \alias{pars_infer_opt}
-\alias{pars_infer_conf}
 \alias{pars_base_sim<-}
 \title{Get and Set Model Parameters}
 \usage{
@@ -41,8 +40,6 @@ pars_time_norm(model)
 pars_infer_init(model)
 
 pars_infer_opt(model)
-
-pars_infer_conf(model)
 
 pars_base_sim(model) <- value
 }
