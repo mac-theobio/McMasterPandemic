@@ -2,7 +2,7 @@ Package: McMasterPandemic
 Title: Pandemic Model
 Description: This is a modelling framework for pandemic forecasting and health care utilization.
 Version: 0.2.0.0
-Maintainer: Steve Walker <swalk@mcaster.ca>
+Maintainer: Steve Walker <swalk@mcmaster.ca>
 Authors@R: c(person("Ben","Bolker",email="bolker@mcmaster.ca",role=c("aut","cre")),
          person("Steve Walker",role="aut"),
 	   	   person("David Earn",role="aut"),
