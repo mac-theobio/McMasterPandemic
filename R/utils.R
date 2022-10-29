@@ -563,6 +563,8 @@ smart_round <- function(x) {
 ##' @param const_width set flows to constant value of 1?
 ##' @param do_symbols plot symbolic values for flows?
 ##' @param axlabs for flow matrices, show axis tick labels?
+##' @param box.size box size for diagrams
+##' @param ... extra params (passed to diagram::plotmat)
 ##' @importFrom lattice panel.abline
 ##' @importFrom Matrix Matrix
 ##' @importFrom graphics image
@@ -572,7 +574,8 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
                          aspect="iso", add_blocks=NULL,
                          axlabs=TRUE,
                          const_width=(method=="igraph"),
-                         do_symbols=NULL) {
+                         do_symbols=NULL,
+                         box.size = 0.02, ...) {
     method <- match.arg(method)
     p <- NULL
     if (is.null(do_symbols)) {
@@ -623,7 +626,7 @@ show_ratemat <- function(M, method=c("Matrix","diagram","igraph"),
         } else {
             M3[M3!="0"] <- ""  ## blank out all labels
         }
-        diagram::plotmat(t(M3),pos=pos,name=colnames(M3),box.size=0.02, add=FALSE)
+        diagram::plotmat(t(M3),pos=pos,name=colnames(M3), box.size=box.size, add=FALSE, ...)
     }
     return(p)
 }

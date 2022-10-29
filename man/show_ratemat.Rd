@@ -11,7 +11,9 @@ show_ratemat(
   add_blocks = NULL,
   axlabs = TRUE,
   const_width = (method == "igraph"),
-  do_symbols = NULL
+  do_symbols = NULL,
+  box.size = 0.02,
+  ...
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ show_ratemat(
 \item{const_width}{set flows to constant value of 1?}
 
 \item{do_symbols}{plot symbolic values for flows?}
+
+\item{box.size}{box size for diagrams}
+
+\item{...}{extra params (passed to diagram::plotmat)}
 }
 \description{
 visualize rate (per-capita flow) matrix
