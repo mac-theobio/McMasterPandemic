@@ -978,7 +978,7 @@ setMethod("show", c(object = "EpiMatrix"), function(object) print(object@default
 #' \code{\link{EpiMatrixList}} object.
 #'
 #' @param mat_list an \code{\link{EpiMatrixList}} object.
-#' @rdname select_epi_mats
+#' @name select_epi_mats
 NULL
 
 #' @describeIn select_epi_mats Select \code{\link{EpiMatrixDerived-class}}

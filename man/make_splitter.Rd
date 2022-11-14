@@ -5,6 +5,7 @@
 \alias{make_splitter_by_fac}
 \alias{make_splitter_eq_rows}
 \alias{make_splitter_eq_time}
+\alias{make_splitter_date_breaks}
 \title{Make Splitter}
 \usage{
 make_splitter_by_fac(fac)
@@ -12,6 +13,8 @@ make_splitter_by_fac(fac)
 make_splitter_eq_rows(n_rows)
 
 make_splitter_eq_time(n_days)
+
+make_splitter_date_breaks(date_breaks)
 }
 \arguments{
 \item{fac}{Vector that can be coerced to a \code{\link{factor}} to be
@@ -21,6 +24,9 @@ data splitter.}
 \item{n_rows}{Target number of rows in each split of the data.}
 
 \item{n_days}{Target number of days in each split of the data.}
+
+\item{date_breaks}{Date vector giving the target first dates in each split
+of the data.}
 }
 \value{
 A function that takes a data frame with a \code{\link{Date}}
@@ -43,5 +49,8 @@ equal number of rows.
 
 \item \code{make_splitter_eq_time()}: Split data into groups with an
 approximately equal number of days.
+
+\item \code{make_splitter_date_breaks()}: Split data into groups based on custom dates
+to be used as cut-points
 
 }}

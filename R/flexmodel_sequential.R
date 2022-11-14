@@ -1,3 +1,13 @@
+#' Fitting Models Sequentially
+#'
+#' Inputs:
+#' 1. observed data splitting function (see \code{\link{make_splitter}})
+#' 2. a start date offset
+#' 3. time varying parameters
+#'
+#' @name sequential
+NULL
+
 #' Make Splitter
 #'
 #' Construct a function that will take an observed dataset
@@ -62,7 +72,27 @@ make_splitter_eq_time = function(n_days) {
     min_date = min(data$date)
     n_days_data = as.integer(diff(range(data$date), units = "days")) + 1L
     grid = min_date + days(seq(from = 0, to = n_days_data, by = n_days))
-    fac = floor_date(synthetic_data$date, grid)
+    fac = floor_date(data$date, grid)
+    split(data[order(data$date),], fac)
+  }
+}
+
+#' @describeIn make_splitter Split data into groups based on custom dates
+#' to be used as cut-points
+#' @param date_breaks Date vector giving the target first dates in each split
+#' of the data.
+#' @export
+make_splitter_date_breaks = function(date_breaks) {
+  if (packageVersion("lubridate") < package_version("1.9.0.9000")) {
+    stop(
+      "\nThis data splitter requires lubridate version 1.9.0.9000 or greater.",
+      "\nPlease either update your lubridate or use another data splitter",
+      "\nconstructor such as make_splitter_eq_rows or make_splitter_by_fac."
+    )
+  }
+  date_breaks = as.Date(date_breaks)
+  function(data) {
+    fac = floor_date(data$date, sort(date_breaks))
     split(data[order(data$date),], fac)
   }
 }
