@@ -26,13 +26,13 @@ SIR Simulations for Tests
 }
 \section{Functions}{
 \itemize{
-\item \code{read_sir}: Read a test SIR model
+\item \code{read_sir()}: Read a test SIR model
 
-\item \code{read_sir_sim}: Read simulations from a test SIR model
+\item \code{read_sir_sim()}: Read simulations from a test SIR model
 
-\item \code{list_sir}: List available test SIR models
+\item \code{list_sir()}: List available test SIR models
 
-\item \code{list_sir_sim}: List available simulations from test SIR
+\item \code{list_sir_sim()}: List available simulations from test SIR
 models
-}}
 
+}}

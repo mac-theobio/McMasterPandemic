@@ -3209,13 +3209,18 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     model
 }
 
-#' @rdname update_piece_wise
+#' @describeIn update_piece_wise Naively add the rows in \code{params_timevar}
+#' to the existing time-variation schedule in \code{models}. This function does
+#' not check if any symbol-date combinations in \code{params_timevar} already
+#' exist in the \code{model}, and therefore the resulting model will contain
+#' multiple rows for the same parameter at the same time and silently applying
+#' only one.
 #' @export
 add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   tv_cols = c("Date", "Symbol", "Value", "Type")
   if (!is.null(model$model_to_calibrate)) {
     ptv_to_cal = rbind(
-      model$model_to_calibrate$timevar$piece_wise$schedule[tv_cols],
+      get_schedule(model$model_to_calibrate)[tv_cols],
       params_timevar
     )
     model$model_to_calibrate = update_piece_wise(
@@ -3225,7 +3230,7 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
     )
   }
   ptv_to_cal = rbind(
-    model$timevar$piece_wise$schedule[tv_cols],
+    get_schedule(model)[tv_cols],
     params_timevar
   )
   update_piece_wise(
@@ -3235,7 +3240,28 @@ add_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   )
 }
 
-#' @rdname update_piece_wise
+#' @describeIn update_piece_wise Add rows in \code{params_timevar} to \code{model},
+#' first removing symbol-date combinations from the \code{model} that exist
+#' in \code{params_timevar}.
+#' @export
+join_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
+  new_params_timevar = select(params_timevar, Date, Symbol, Value, Type)
+  old_params_timevar = get_params_timevar_orig(model)
+  old_params_timevar$Date = as.Date(old_params_timevar$Date)
+  new_params_timevar$Date = as.Date(new_params_timevar$Date)
+  new_params_timevar = dplyr::anti_join(new_params_timevar
+    , old_params_timevar
+    , by = c("Date", "Symbol")
+  )
+  new_params_timevar = rbind(old_params_timevar, new_params_timevar)
+  update_piece_wise(model
+    , new_params_timevar
+    , regenerate_rates
+  )
+}
+
+#' @describeIn update_piece_wise Remove all piece-wise time-variation from the
+#' \code{model}.
 #' @export
 initialize_piece_wise = function(model) {
   model$opt_tv_params = NULL

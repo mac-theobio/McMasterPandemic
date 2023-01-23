@@ -30,6 +30,6 @@ by creating a map with the following structure:
 }
 \section{Functions}{
 \itemize{
-\item \code{add_condense_map}: append new items to the condensation map
-}}
+\item \code{add_condense_map()}: append new items to the condensation map
 
+}}

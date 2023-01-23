@@ -75,39 +75,39 @@ function.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{*}: Elementwise or scalar multiplication
+\item \code{e1 * e2}: Elementwise or scalar multiplication
 
-\item \code{+}: Elementwise or scalar addition
+\item \code{e1 + e2}: Elementwise or scalar addition
 
-\item \code{\%*\%}: Matrix multiplication
+\item \code{x \%*\% y}: Matrix multiplication
 
-\item \code{kronecker}: Kronecker product
+\item \code{kronecker(X = struc, Y = struc)}: Kronecker product
 
-\item \code{t}: Matrix or vector transpose
+\item \code{t(struc)}: Matrix or vector transpose
 
-\item \code{sum}: Sum of vector or matrix elements
+\item \code{sum(struc)}: Sum of vector or matrix elements
 
-\item \code{prod}: Product of vector or matrix elements
+\item \code{prod(struc)}: Product of vector or matrix elements
 
-\item \code{rowSums}: Row sums of matrices
+\item \code{rowSums(struc)}: Row sums of matrices
 
-\item \code{colSums}: Column sums of matrices
+\item \code{colSums(struc)}: Column sums of matrices
 
-\item \code{dim}: Dimensions of a matrix
+\item \code{dim(struc)}: Dimensions of a matrix
 
-\item \code{size}: number of elements of \code{struc} object
+\item \code{size(struc)}: number of elements of \code{struc} object
 
-\item \code{diagonal}: diagonal of a struc matrix
+\item \code{diagonal(struc)}: diagonal of a struc matrix
 
-\item \code{flatten}: Flatten a struc matrix
+\item \code{flatten(struc)}: Flatten a struc matrix
 
-\item \code{row_mult}: Element-wise multiplication of the rows of a
+\item \code{row_mult(x = struc, y = struc)}: Element-wise multiplication of the rows of a
 matrix by a vector of the same length as each row.
 
-\item \code{col_mult}: Element-wise multiplication of the columns of a
+\item \code{col_mult(x = struc, y = struc)}: Element-wise multiplication of the columns of a
 matrix by a vector of the same length as each column.
-}}
 
+}}
 \section{Slots}{
 
 \describe{

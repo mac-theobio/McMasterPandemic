@@ -25,6 +25,6 @@ the \code{condense} argument is \code{FALSE} or if
 }
 \section{Functions}{
 \itemize{
-\item \code{names_sim_cond}: testing
-}}
+\item \code{names_sim_cond()}: testing
 
+}}

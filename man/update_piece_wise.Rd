@@ -3,12 +3,15 @@
 \name{update_piece_wise}
 \alias{update_piece_wise}
 \alias{add_piece_wise}
+\alias{join_piece_wise}
 \alias{initialize_piece_wise}
 \title{Update the Piece-Wise Parameter Time-Variation Schedule}
 \usage{
 update_piece_wise(model, params_timevar, regenerate_rates = TRUE)
 
 add_piece_wise(model, params_timevar, regenerate_rates = TRUE)
+
+join_piece_wise(model, params_timevar, regenerate_rates = TRUE)
 
 initialize_piece_wise(model)
 }
@@ -25,3 +28,20 @@ select \code{TRUE}, which is the default.}
 \description{
 Update the Piece-Wise Parameter Time-Variation Schedule
 }
+\section{Functions}{
+\itemize{
+\item \code{add_piece_wise()}: Naively add the rows in \code{params_timevar}
+to the existing time-variation schedule in \code{models}. This function does
+not check if any symbol-date combinations in \code{params_timevar} already
+exist in the \code{model}, and therefore the resulting model will contain
+multiple rows for the same parameter at the same time and silently applying
+only one.
+
+\item \code{join_piece_wise()}: Add rows in \code{params_timevar} to \code{model},
+first removing symbol-date combinations from the \code{model} that exist
+in \code{params_timevar}.
+
+\item \code{initialize_piece_wise()}: Remove all piece-wise time-variation from the
+\code{model}.
+
+}}
