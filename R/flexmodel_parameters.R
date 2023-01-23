@@ -155,6 +155,7 @@ pars_time_series.flexmodel = function(model) {
 pars_time_hist.flexmodel = function(model) {
   sd = simulation_dates(model)
   ts = pars_time_series(model)
+  ts = filter(ts, Date %in% sd) ## can only handle change points inside the simulation bounds
   base_tv_pars = get_time_varying_baseline_params(model)
   pars = names(base_tv_pars)
   ll = data.frame(Date = sd)
