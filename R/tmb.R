@@ -88,11 +88,11 @@ flexmodel <- function(params, state = NULL,
       state = const_named_vector(state, 0)
     }
 
-    ratemat = as(matrix(
+    ratemat = to_sparse(matrix(
       0,
       nrow = length(state), ncol = length(state),
       dimnames = list(from = names(state), to = names(state))
-    ), "dgTMatrix")
+    ))
 
     params = unlist_params(params)
 

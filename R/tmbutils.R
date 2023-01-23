@@ -1196,7 +1196,8 @@ lookup_pairwise = function(from, to, M) {
 # @param state state_pansim object
 # @param ratemat rate matrix
 rate_matrix_lookup = function(ratemat) {
-  ratemat = as(ratemat, "dgTMatrix")
+  #ratemat = as(ratemat, "dgTMatrix")
+  ratemat = to_sparse(ratemat)
   (data.frame(
     from_pos = ratemat@i + 1,
     to_pos = ratemat@j + 1)

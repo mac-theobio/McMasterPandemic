@@ -627,7 +627,8 @@ make_ratemat <- function(state, params, do_ICU = TRUE, sparse = FALSE,
 
     if (sparse) {
         if(getOption("MP_force_dgTMatrix")){
-          M <- as(M, "dgTMatrix")
+          #M <- as(M, "dgTMatrix")
+          M <- to_sparse(M)
         } else {
           M <- Matrix::Matrix(M)
         }

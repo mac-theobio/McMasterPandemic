@@ -973,4 +973,6 @@ tibble_row_to_named_vec <- function(x) {
     return(x)
 }
 
-
+to_sparse = function(x) {
+  as(as(as(x, "dMatrix"), "generalMatrix"), "TsparseMatrix")
+}
