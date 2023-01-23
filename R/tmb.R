@@ -3249,8 +3249,8 @@ join_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
   old_params_timevar = get_params_timevar_orig(model)
   old_params_timevar$Date = as.Date(old_params_timevar$Date)
   new_params_timevar$Date = as.Date(new_params_timevar$Date)
-  new_params_timevar = dplyr::anti_join(new_params_timevar
-    , old_params_timevar
+  old_params_timevar = dplyr::anti_join(old_params_timevar
+    , new_params_timevar
     , by = c("Date", "Symbol")
   )
   new_params_timevar = rbind(old_params_timevar, new_params_timevar)
