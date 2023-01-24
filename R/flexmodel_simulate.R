@@ -179,6 +179,12 @@ simulate_ensemble = function(
   model$observed$data = init_observed$data
 
   o = tmb_fun(model)
+  if (length(o$par) != ncol(sim_params_matrix)) {
+    warning(
+      "You might not be able to fit as many parameters as you are\n",
+      "or maybe there are multiple changes to a time-varying parameter\n",
+      "on the same day.")
+  }
   trajectories = list()
   ii = seq_len(nrow(sim_params_matrix))
 

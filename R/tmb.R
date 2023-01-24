@@ -3148,11 +3148,18 @@ update_piece_wise = function(model, params_timevar, regenerate_rates = TRUE) {
         paste0(valid_tv_types, collapse = ', ')
       )
     }
+    all_symbols = unique(schedule$Symbol)
+    symbol_index_lookup = setNames(
+      lapply(lapply(all_symbols, `==`, schedule$Symbol), which),
+      all_symbols
+    )
     for (i in seq_len(ns)) {
       if ((new_param | grepl("^rel_orig", schedule$Type[i])) & (schedule$Type[i] != "abs")) {
         old_val <- model$params[schedule$Symbol[i]]
       } else if (grepl("^rel_prev", schedule$Type[i])) {
-        old_val <- schedule$tv_val[i - 1]
+        lookup = symbol_index_lookup[[schedule$Symbol[i]]]
+        old_val_pos = lookup[which(lookup == i) - 1L]
+        old_val <- schedule$tv_val[old_val_pos]
       } else if (schedule$Type[i] == "abs") {
         old_val <- 1
       } else {
