@@ -1,10 +1,22 @@
 # McMasterPandemic
 
+<hr>
+
+> **Note**
+> The McMasterPandemic project is [evolving](https://canmod.net/misc/macpan2_presentation)
+> * All new development work is happening in the [macpan2 repository](https://github.com/canmod/macpan2).    
+> * The [McMasterPandemic repository](https://github.com/mac-theobio/McMasterPandemic) is in **maintenance mode** to support **current users**. 
+> * If you are a **new user**, thank you for your interest! Please start [here at macpan2](https://github.com/canmod/macpan2).
+
+<hr>
+
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/mac-theobio/McMasterPandemic/actions)
 [![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
 
 <!-- badges: end -->
+
+
 
 Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Weiguang Guan, Morgan Kain, Michael Li, Irena Papst, Steve Walker (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
 
@@ -17,7 +29,6 @@ We are [currently refactoring](https://github.com/mac-theobio/McMasterPandemic/p
 * [User guide](https://canmod.github.io/macpan-book/)
 * [Issues list](https://github.com/mac-theobio/McMasterPandemic/issues)
 * [Roadmap](https://github.com/mac-theobio/McMasterPandemic/blob/master/TODO.md)
-* [Shiny app](https://mcmasterpandemic.shinyapps.io/mcmasterpandemicshiny/) written by Zach Levine
 * [Draft contributors guide for developers](https://github.com/mac-theobio/McMasterPandemic/blob/master/CONTRIBUTING.md)
 
 ### Installation
