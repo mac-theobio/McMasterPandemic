@@ -13,6 +13,7 @@
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mac-theobio/McMasterPandemic/workflows/R-CMD-check/badge.svg)](https://github.com/mac-theobio/McMasterPandemic/actions)
 [![Task list badge](https://img.shields.io/static/v1.svg?label=kanban&message=tmb%20engine&color=blue)](https://github.com/mac-theobio/McMasterPandemic/projects/7)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5122956.svg)](https://doi.org/10.5281/zenodo.5122956)
 
 <!-- badges: end -->
 
