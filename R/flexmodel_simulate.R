@@ -211,11 +211,25 @@ simulate_ensemble = function(
 
   if (use_progress_bar) cat("", "summarising ensemble ... ", sep = "\n")
   names(trajectories) = ii
+
+  summarise_trajectories(trajectories, qvec)
+}
+
+#' Summarise trajectories from forecast ensemble
+#'
+#' @param trajectories
+#' @param qvec
+#'
+#' @return data.frame with ensemble summary
+#' @export
+#'
+#' @examples
+summarise_trajectories = function(trajectories, qvec){
   summarised_traj = (trajectories
-    %>% bind_rows(.id = 'simulation')
-    %>% pivot_longer(c(-simulation, -Date), names_to = 'var')
-    %>% group_by(Date, var)
-    %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
+     %>% bind_rows(.id = 'simulation')
+     %>% pivot_longer(c(-simulation, -Date), names_to = 'var')
+     %>% group_by(Date, var)
+     %>% do(setNames(data.frame(t(quantile(.$value, probs = qvec, na.rm = TRUE))), names(qvec)))
   )
   attr(summarised_traj, "qvec") = qvec
   summarised_traj
