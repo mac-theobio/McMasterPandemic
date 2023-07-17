@@ -11,7 +11,8 @@ setup_stan = function(){
 
 #' Calibrate a flexmodel using STAN
 #'
-#' @param model a [McMasterPandemic::flexmodel_to_calibrate] object
+#' @param model a [McMasterPandemic::flexmodel] object, the precursor model to the next argument
+#' @param model_to_calibrate a [McMasterPandemic::flexmodel_to_calibrate] object
 #' @param chains number of MCMC chains
 #'
 #' @return a list with two elements
@@ -86,9 +87,11 @@ traceplot_stan = function(
 
 #' Forecast ensemble using STAN fit
 #'
-#' @param model_fit the output of [calibrate_stan()]
-#' @param days_to_forecast the number of days to forecast in the future
-#' @param params_timevar data frame (optional). time-varying parameters for forecast period. must have columns `Date`, `Symbol`, `Value`, and `Type`. see [here](https://canmod.github.io/macpan-book/time-varying-parameters.html#model-of-piece-wise-time-variation) for more details.
+#' @param model_fit the output of [calibrate_stan()].
+#' @param days_to_forecast the number of days to forecast in the future.
+#' @param params_timevar data frame. (optional) time-varying parameters for forecast period. must have columns `Date`, `Symbol`, `Value`, and `Type`. see [here](https://canmod.github.io/macpan-book/time-varying-parameters.html#model-of-piece-wise-time-variation) for more details. if `NULL`, will simulate without time-varying parameter changes in the forecast period.
+#' @param parallel logical. should the ensemble simulation be run in parallel?
+#' @param n_cores integer. number of cores to use for parallel simulation.
 #'
 #' @return data.frame with individual realizations from ensemble
 #' @export
@@ -162,7 +165,7 @@ forecast_stan = function(
 #'
 #' @param forecast output from [forecast_stan()]
 #' @param var_order variable order in output (_e.g._ as output by [topological_sort()])
-#' @param qvec named numeric vector giving quantiles to compute
+#' @param qvec named numeric vector giving quantiles to compute for summary
 #'
 #' @return a data.frame with the ensemble summary
 #' @export
