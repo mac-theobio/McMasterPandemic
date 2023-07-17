@@ -87,6 +87,7 @@ traceplot_stan = function(
 #' Forecast ensemble using STAN fit
 #'
 #' @param model_fit the output of [calibrate_stan()]
+#' @param days_to_forecast the number of days to forecast in the future
 #'
 #' @return data.frame with individual realizations from ensemble
 #' @export
@@ -94,6 +95,7 @@ traceplot_stan = function(
 #' @examples
 forecast_stan = function(
   model_fit,
+  days_to_forecast,
   parallel = TRUE,
   n_cores = 2
 ){
@@ -114,18 +116,24 @@ forecast_stan = function(
     foreach::registerDoSEQ()
   }
 
+  # extend simulation end date
+  model = (model
+    %>% McMasterPandemic::extend_end_date(
+     days_to_extend = days_to_forecast
+  ))
+
   # loop over samples, update model with sampled params, and simulate
   sims = foreach(i=c(1:nrow(samples)),
-                 .packages='McMasterPandemic') %dopar% {
+                 .packages=c('McMasterPandemic', 'magrittr')) %dopar% {
     params = samples[i,]
 
     # update model with samples and simulate
     # TODO: attach extension of end date
     # + time-varying forecast scenarios
     sim = McMasterPandemic::simulation_history(
+     model
      # update model with sample params
-     McMasterPandemic::update_params(
-       model,
+     %>% McMasterPandemic::update_params(
        # back-transform any transformed values
        McMasterPandemic::invlink_trans(params)
      )
