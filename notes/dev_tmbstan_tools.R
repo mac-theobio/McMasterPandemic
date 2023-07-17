@@ -1,9 +1,10 @@
 # test script for developing tmbstan_tools
 library(McMasterPandemic)
 library(tidyr)
+library(ggplot2)
 
 setup_stan()
-do_fit <- FALSE
+do_fit <- TRUE
 
 # define SEIR model
 set.seed(15)
@@ -27,7 +28,7 @@ params = c(
 # start and end dates specified as strings,
 # they don't have to be Date types
 start_date = "2020-03-01"
-end_date = "2020-06-01"
+end_date = "2020-04-20"
 
 seir = flexmodel(
   params = params,
@@ -103,6 +104,7 @@ if(do_fit){
     model_to_calibrate = seir_obs_err_to_calibrate,
     chains = 2
   )
+  saveRDS(model_fit, here::here("data", "stanfit_sample.RDS"))
 } else {
   # load fit
   model_fit <- readRDS(here::here("data", "stanfit_sample.RDS"))
@@ -115,7 +117,13 @@ traceplot_stan(model_fit)
 # forecast (status quo) with stan
 fcst = forecast_stan(
   model_fit,
-  days_to_forecast = 100,
+  days_to_forecast = 30,
+  params_timevar = data.frame(
+    Date = as.Date(end_date) + lubridate::days(1),
+    Symbol = "beta",
+    Value = 2,
+    Type = "rel_prev"
+  ),
   parallel = TRUE,
   n_cores = 7
 )
@@ -125,11 +133,17 @@ fcst_summary = summarise_forecast_stan(
   var_order = topological_sort(model_fit$model)
 )
 
-library(ggplot2)
 (ggplot(fcst_summary,
         aes(x = date))
   + geom_ribbon(aes(ymin = lwr, ymax = upr, fill = var), alpha = 0.3)
   + geom_line(aes(y = value, colour = var), linewidth = 1.25)
+  + geom_vline(data = tibble::tibble(
+    date = as.Date(end_date)
+    ),
+    mapping = aes(xintercept = date),
+    linetype = "dashed"
+  )
+  + scale_x_date(date_breaks = "1 month")
   + facet_wrap(~ var, ncol = 1)
   + theme_bw()
 )
