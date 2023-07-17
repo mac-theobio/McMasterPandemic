@@ -88,6 +88,7 @@ traceplot_stan = function(
 #'
 #' @param model_fit the output of [calibrate_stan()]
 #' @param days_to_forecast the number of days to forecast in the future
+#' @param params_timevar data frame (optional). time-varying parameters for forecast period. must have columns `Date`, `Symbol`, `Value`, and `Type`. see [here](https://canmod.github.io/macpan-book/time-varying-parameters.html#model-of-piece-wise-time-variation) for more details.
 #'
 #' @return data.frame with individual realizations from ensemble
 #' @export
@@ -96,6 +97,7 @@ traceplot_stan = function(
 forecast_stan = function(
   model_fit,
   days_to_forecast,
+  params_timevar = NULL,
   parallel = TRUE,
   n_cores = 2
 ){
@@ -116,11 +118,23 @@ forecast_stan = function(
     foreach::registerDoSEQ()
   }
 
-  # extend simulation end date
+  # update model with forecast info
+
   model = (model
+    # extend simulation end date
     %>% McMasterPandemic::extend_end_date(
      days_to_extend = days_to_forecast
   ))
+
+  if(!is.null(params_timevar)){
+    model = (model
+     # attach time-varying parameters for forecast scenario
+      %>% McMasterPandemic::add_piece_wise(
+        params_timevar = params_timevar
+      )
+    )
+  }
+
 
   # loop over samples, update model with sampled params, and simulate
   sims = foreach(i=c(1:nrow(samples)),
