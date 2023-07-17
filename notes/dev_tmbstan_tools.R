@@ -3,6 +3,7 @@ library(McMasterPandemic)
 library(tidyr)
 
 setup_stan()
+do_fit <- FALSE
 
 # define SEIR model
 set.seed(15)
@@ -96,11 +97,17 @@ seir_obs_err_to_calibrate = (seir_obs_err
 )
 
 # calibrate with stan
-model_fit = calibrate_stan(
-  model = seir_obs_err,
-  model_to_calibrate = seir_obs_err_to_calibrate,
-  chains = 2
-)
+if(do_fit){
+  model_fit = calibrate_stan(
+    model = seir_obs_err,
+    model_to_calibrate = seir_obs_err_to_calibrate,
+    chains = 2
+  )
+} else {
+  # load fit
+  model_fit <- readRDS(here::here("data", "stanfit_sample.RDS"))
+}
+
 
 # view traceplot
 traceplot_stan(model_fit)
@@ -108,6 +115,7 @@ traceplot_stan(model_fit)
 # forecast (status quo) with stan
 fcst = forecast_stan(
   model_fit,
+  days_to_forecast = 100,
   parallel = TRUE,
   n_cores = 7
 )
