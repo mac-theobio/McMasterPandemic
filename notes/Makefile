@@ -24,12 +24,13 @@ cachestuff:
 	git clone https://github.com/wzmli/MacPan_cache.git $@
 
 ######################################################################
-
-## Structure notes
-
-## refactor.html: refactor.Rmd
 %.html: %.Rmd
 	$(rmdh_r)
+
+## Structure notes
+## refactor.html: refactor.Rmd
+
+## testing_distrib.html: testing_distrib.Rmd
 
 ######################################################################
 ## Playing with vacc
