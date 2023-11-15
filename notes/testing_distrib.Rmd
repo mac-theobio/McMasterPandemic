@@ -74,10 +74,15 @@ abline(h=0.01,lty=2)
 What happens as we test more people than are actually infected in the population?
 ```{r plots1}
 par(las=1,bty="l")
-curve(prop_pos_test(t=x,i=0.01,phi=0.5),
-      from=c(0.001,0.4),log="x",xlab="proportion tested",
-      ylab="prop positive tests",
-      main=expression(list("prevalence=1%",phi==0.5)))
+x <- seq(0.001, 0.4, length.out =  101)
+y <- prop_pos_test(t=x,i=0.01,phi=0.5)
+## something funky about curve(),
+## throws Error in from <= 0 || to <= 0 : 'length = 2' in coercion to 'logical(1)'
+## hard to debug because of curve + mapply()/Vectorize() fanciness ...
+plot(x, y, type = "l",
+     log="x",xlab="proportion tested",
+     ylab="prop positive tests",
+     main=expression(list("prevalence=1%",phi==0.5)))
 abline(v=0.01,lty=2)
 ```
 
