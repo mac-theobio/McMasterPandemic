@@ -32,6 +32,7 @@ cachestuff:
 ## Structure notes
 ## refactor.html: refactor.Rmd
 
+Ignore += testing_distrib.html
 ## testing_distrib.html: testing_distrib.Rmd
 
 ######################################################################
