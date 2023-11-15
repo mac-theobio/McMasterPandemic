@@ -16,6 +16,8 @@ wrap_makeR=yes
 
 ######################################################################
 
+## cache-related .mk files commented out for now 2023 Nov 15 (Wed)
+
 Sources += $(wildcard *.R) Makefile
 
 ignore += cachestuff/
@@ -319,8 +321,8 @@ makestuff/Makefile:
 
 -include makestuff/os.mk
 
--include makestuff/cacheflow.mk
--include makestuff/cacherepo.mk
+## -include makestuff/cacheflow.mk
+## -include makestuff/cacherepo.mk
 
 -include makestuff/pipeR.mk
 -include makestuff/rmd.mk
