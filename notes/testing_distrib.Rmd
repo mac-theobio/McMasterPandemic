@@ -61,6 +61,8 @@ B(x,a,b)x
 $$
 Since we set the mean $a/(a+b)$ of the distribution $B(x,a,b)$ to $i$, we have $B(x,a,b)x = iB(x,a+1,b)$.
 
+Can we do a little bit more here since we're integrating this from $Q(a,b)$ to 1 ... ?
+
 In order to make the dispersion parameter a little more interpretable we will transform the parameter $\gamma$ from $(0,\infty)$  to a value $\phi=-\log(1-\gamma)$ (i.e. $\gamma=1-\exp(-\phi)$), so that 0 corresponds to random testing and 1 corresponds to perfectly focused testing.
 
 If we wanted to get more realistic/detailed we could relax the assumption of a Beta distribution and instead characterize the distribution of probability infected as a mixture of types (general population, symptomatic, travel history, etc.), with the constraint of a mean of $i$ \ldots
@@ -98,25 +100,35 @@ We need
 
 $$
 \newcommand{\var}{\textrm{Var}}
-\frac{E[\textrm{tested} \cdot \textrm{infected}]}{\sqrt{\var(\textrm{tested})} \cdot \var(\textrm{infected})}
+\frac{E[(\textrm{tested} - \overline{\textrm{tested}})\cdot 
+(\textrm{infected} - \overline{\textrm{infected}})]}{\sqrt{\var(\textrm{tested})} \cdot \var(\textrm{infected})}
 $$
 
-The probability of testing is 0 below the threshold and 1 above it.
-Thus the numerator is (?should be?) the same as the value we've already computed for the numerator of the proportion-positive value ($\int_{1-t}^1 x \textrm{Beta(x)}\,dx$). The variance of testing probability is ($(1-t)\cdot 0^2 + t \cdot 1^2 = t$); the variance of infection probability is the variance of the Beta distribution.
-
-Obviously this is wrong though!
+The probability of testing is 0 below the threshold and 1 above it; thus this distribution should be a Bernoulli with weight $1-t$ on zero and $t$ on 1.
+Thus the numerator is the value we've already computed for the numerator of the proportion-positive value ($\int_{1-t}^1 x \textrm{Beta(x)}\,dx$), *minus* the product of the testing and infection means ($= ti$, using the usual identity $E[(A-\bar A)(B-\bar B)] = E[AB] - \bar A \bar B$). The variance of testing probability is ($(1-t)\cdot 0^2 + t \cdot 1^2 = t$); the variance of infection probability is the variance of the Beta distribution.
 
 ```{r phi_corr}
 inf_test_corr <- function(i, t, phi) {
     a <- i/phi; b <- (1-i)/phi
     lwr <- qbeta(t, a, b, lower.tail = FALSE) ## hope we don't need robust version in covid19testing_funs.R
-    num <- pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))
-    var_test <- t
+    num <- pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))-t*i
+    var_test <- t*(1-t)
     var_inf <- a*b/((a+b)^2*(a+b+1)) ## Wikipedia
     num/sqrt(var_test*var_inf)
 }
-curve(inf_test_corr(0.25, 0.25, phi = x), from = 0, to = 1)
+nn <- 101
+phivec <- seq(0, 1, length.out = nn)
+cordf <- data.frame(i = rep(c(0.25, 0.1), c(nn, 2*nn)),
+                    t = rep(c(0.25, 0.05, 0.01), each = nn),
+                    phi = rep(phivec, 3))
+cordf$cor <- with(cordf, inf_test_corr(i,t,phi))
+cordf$cat <- with(cordf, sprintf("i = %1.2f, t = %1.2f", i, t))
+cordf$cat <- factor(cordf$cat, levels = unique(cordf$cat))
+ggplot(cordf, aes(phi, cor, colour = cat)) + geom_line()
 ```
+
+- ?? Is it true that correlation *decreases* with large $\phi$ when testing and prevalence are low ... ?? (Seems too large an effect to be due to numeric problems)
+- ?? Is there a simple expression for cor as a function of $\phi$ or *vice versa*?
 
 ## Numerical examples
 
