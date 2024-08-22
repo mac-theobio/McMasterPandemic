@@ -29,9 +29,15 @@ Now let's consider that in general we test people in (approximate) order of thei
 
 ## Machinery
 
-Let's use a Beta distribution with mean equal to prevalence $i$ as the distribution of 'probability infected'. (An alternative that might be more analytically tractable is the [Kumaraswamy distribution](https://en.wikipedia.org/wiki/Kumaraswamy_distribution).)  As the dispersion $\phi=1/(a+b)$ goes to infinity we end up with point masses $1-i$ on 0 and $i$ on 1; as it goes to 0 we end up with a point mass on $i$. If we always test 'from the top down' (i.e. calculate the mean value of the top fraction $T/N$ of the population distribution), these two extreme cases correspond to perfect testing (cases=$\min(T,I)$) and random testing (cases=$\textrm{Binomial}(i,T)$).
+Let's use a Beta distribution with mean equal to prevalence $i$ as the distribution of 'probability infected'. (An alternative that might be more analytically tractable is the [Kumaraswamy distribution](https://en.wikipedia.org/wiki/Kumaraswamy_distribution).)  As the dispersion $\phi=1/(a+b)$ goes to infinity we end up with point masses $1-i$ on 0 and $i$ on 1; as it goes to 0 we end up with a point mass on $i$. If we always test 'from the top down' (i.e. calculate the mean value of the top fraction $t = T/N$ of the population distribution), these two extreme cases correspond to perfect testing (cases=$\min(T,I)$) and random testing (cases=$\textrm{Binomial}(i,T)$).
 
-If $B$ is the Beta distribution with mean $i$ and dispersion $\gamma$, $\Phi_B$ is the CDF, and $Q$ is the inverse CDF (i.e., the quantile function) then our expected proportion positive from testing a fraction $T$ is $\left(\int_{Q(1-T/N)}^1 B(y,\phi) y \, dy\right)/(1-\Phi_B(Q(1-T/N)))$, i.e. "the mean of the upper tail of the infection-probability distribution".
+	If $B$ is the Beta distribution with mean $i$ and dispersion $\gamma$, $\Phi_B$ is the CDF, and $Q$ is the inverse CDF (i.e., the quantile function) then our expected proportion positive from testing a fraction $T$ is 
+	
+$$
+\frac{\left(\int_{Q(1-t)}^1 B(y,\phi) y \, dy\right)}{1-\Phi_B(Q(1-t))}
+$$
+
+i.e. the mean of the upper tail of the infection-probability distribution.
 
 We can get a little bit farther analytically.
 Given that $B(x,a,b) \propto x^{a-1} (1-x)^{b-1}$, the mean is $a/(a+b)=i \to a \phi =i \to a = i/\phi, b=(a+b)-a = 1/\phi - i/\phi = (1-i)/\phi$. We can show that $B(x,a,b) \cdot x = a/(a+b) B(x,a+1,b)$, so we should be able to do the integral directly by computing the appropriate CDF (or complementary CDF) of the Beta distribution.
@@ -59,6 +65,59 @@ In order to make the dispersion parameter a little more interpretable we will tr
 
 If we wanted to get more realistic/detailed we could relax the assumption of a Beta distribution and instead characterize the distribution of probability infected as a mixture of types (general population, symptomatic, travel history, etc.), with the constraint of a mean of $i$ \ldots
 
+## Graphical example
+
+```{r fig1-calcs, echo = FALSE}
+## a = i/phi, b = (1-i)/phi, so if we want a = 1, b=3 with i = 0.25, phi =  0.25
+incid <- 0.1
+testprop <- 0.2
+lwr <- qbeta(0.75, 1, 3)
+qq <- integrate(\(x) dbeta(x, 1, 3)*x, lwr, 1)$value
+qq/0.25
+```
+
+Suppose the population incidence is 25% and we test 25% of the population.
+Our $\phi$ parameter is 0.25 (shape parameters of the Beta are {1, 3}).
+The lower bound of the upper 25% tail is `r round(lwr, 3)`;
+the integral of $x$ under that portion of the curve is 
+`r round(qq, 3)`, so the test positivity is `round(qq/0.25)`.
+
+
+```{r fig1, echo = FALSE}
+par(las=1, yaxs = "i",xaxs = "i")
+cc <- curve(dbeta(x, 1, 3), from =0, to = 1, xlab = "prob(infected)", ylab = "prob density")
+cc2 <- curve(dbeta(x, 1, 3), from = lwr, to = 1, add = TRUE)
+polygon(c(cc2$x, rev(cc2$x)), c(rep(0, length(cc2$x)), rev(cc2$y)), col = "gray")
+```
+
+## Correlation
+
+What is the relationship between $\phi$ and the correlation between testing and infection?
+
+We need
+
+$$
+\newcommand{\var}{\textrm{Var}}
+\frac{E[\textrm{tested} \cdot \textrm{infected}]}{\sqrt{\var(\textrm{tested})} \cdot \var(\textrm{infected})}
+$$
+
+The probability of testing is 0 below the threshold and 1 above it.
+Thus the numerator is (?should be?) the same as the value we've already computed for the numerator of the proportion-positive value ($\int_{1-t}^1 x \textrm{Beta(x)}\,dx$). The variance of testing probability is ($(1-t)\cdot 0^2 + t \cdot 1^2 = t$); the variance of infection probability is the variance of the Beta distribution.
+
+Obviously this is wrong though!
+
+```{r phi_corr}
+inf_test_corr <- function(i, t, phi) {
+    a <- i/phi; b <- (1-i)/phi
+    lwr <- qbeta(t, a, b, lower.tail = FALSE) ## hope we don't need robust version in covid19testing_funs.R
+    num <- pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))
+    var_test <- t
+    var_inf <- a*b/((a+b)^2*(a+b+1)) ## Wikipedia
+    num/sqrt(var_test*var_inf)
+}
+curve(inf_test_corr(0.25, 0.25, phi = x), from = 0, to = 1)
+```
+
 ## Numerical examples
 
 ```{r plots0}
@@ -74,15 +133,10 @@ abline(h=0.01,lty=2)
 What happens as we test more people than are actually infected in the population?
 ```{r plots1}
 par(las=1,bty="l")
-x <- seq(0.001, 0.4, length.out =  101)
-y <- prop_pos_test(t=x,i=0.01,phi=0.5)
-## something funky about curve(),
-## throws Error in from <= 0 || to <= 0 : 'length = 2' in coercion to 'logical(1)'
-## hard to debug because of curve + mapply()/Vectorize() fanciness ...
-plot(x, y, type = "l",
-     log="x",xlab="proportion tested",
-     ylab="prop positive tests",
-     main=expression(list("prevalence=1%",phi==0.5)))
+curve(prop_pos_test(t=x,i=0.01,phi=0.5),
+      from=0.001, to=0.4,log="x",xlab="proportion tested",
+      ylab="prop positive tests",
+      main=expression(list("prevalence=1%",phi==0.5)))
 abline(v=0.01,lty=2)
 ```
 

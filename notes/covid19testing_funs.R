@@ -32,9 +32,11 @@ Qbeta2 <- function(p,shape1,shape2,lower.tail=FALSE) {
 ##' @param numint use numerical integration?
 ##' @param qfun beta quantile function to use
 ##' @param plot.it illustrate?
+##' @param phiscale ??
 ## FIXME: remove vestigial (qfun, numint) options
 ## FIXME: test phi=0; add special case if necessary (and maybe phi=1?)
-prop_pos_test0 <- function(i,t,phi,numint=FALSE,qfun=Qbeta2,
+prop_pos_test0 <- function(i,t,phi,
+                           numint=FALSE,qfun=Qbeta2,
                            plot.it=FALSE,
                            phiscale="constrained",
                            debug=FALSE
@@ -57,12 +59,12 @@ prop_pos_test0 <- function(i,t,phi,numint=FALSE,qfun=Qbeta2,
     if (plot.it) curve(dbeta(x,a,b),from=0,to=1)
     ## need special logic for extreme phi values?
     if (debug) cat("p2: ",t,a,(1-i)/phi,"\n")
-    lwr <- qfun(t,a,(1-i)/phi,lower.tail=FALSE)
+    lwr <- qfun(t,a,b,lower.tail=FALSE)
     if (debug) cat("lwr: ",lwr,"\n")
     if (plot.it) abline(v=lwr,col=2,lty=2)
     ## replace with pbeta(...,lower.tail=FALSE) with appropriate multiplier?
-    fn <- function(x) x*dbeta(x,a,b)
     val <- if (numint) {
+               fn <- function(x) x*dbeta(x,a,b)
                integrate(fn, lower=lwr, upper=1)$value
            } else {
                pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))
