@@ -31,10 +31,10 @@ Now let's consider that in general we test people in (approximate) order of thei
 
 Let's use a Beta distribution with mean equal to prevalence $i$ as the distribution of 'probability infected'. (An alternative that might be more analytically tractable is the [Kumaraswamy distribution](https://en.wikipedia.org/wiki/Kumaraswamy_distribution).)  As the dispersion $\phi=1/(a+b)$ goes to infinity we end up with point masses $1-i$ on 0 and $i$ on 1; as it goes to 0 we end up with a point mass on $i$. If we always test 'from the top down' (i.e. calculate the mean value of the top fraction $t = T/N$ of the population distribution), these two extreme cases correspond to perfect testing (cases=$\min(T,I)$) and random testing (cases=$\textrm{Binomial}(i,T)$).
 
-	If $B$ is the Beta distribution with mean $i$ and dispersion $\gamma$, $\Phi_B$ is the CDF, and $Q$ is the inverse CDF (i.e., the quantile function) then our expected proportion positive from testing a fraction $T$ is 
+If $B$ is the Beta distribution with mean $i$ and dispersion $\gamma$, $\Phi_B$ is the CDF, and $Q$ is the inverse CDF (i.e., the quantile function) then our expected proportion positive from testing a fraction $t$ is 
 	
 $$
-\frac{\left(\int_{Q(1-t)}^1 B(y,\phi) y \, dy\right)}{1-\Phi_B(Q(1-t))}
+\frac{\int_{Q(1-t)}^1 B(y,\phi) y \, dy}{t}
 $$
 
 i.e. the mean of the upper tail of the infection-probability distribution.
@@ -75,14 +75,14 @@ incid <- 0.1
 testprop <- 0.2
 lwr <- qbeta(0.75, 1, 3)
 qq <- integrate(\(x) dbeta(x, 1, 3)*x, lwr, 1)$value
-qq/0.25
+## qq/0.25
 ```
 
 Suppose the population incidence is 25% and we test 25% of the population.
 Our $\phi$ parameter is 0.25 (shape parameters of the Beta are {1, 3}).
 The lower bound of the upper 25% tail is `r round(lwr, 3)`;
 the integral of $x$ under that portion of the curve is 
-`r round(qq, 3)`, so the test positivity is `round(qq/0.25)`.
+`r round(qq, 3)`, so the test positivity is `r round(qq,3)`/0.25 = r round(qq/0.25, 3)`.
 
 
 ```{r fig1, echo = FALSE}

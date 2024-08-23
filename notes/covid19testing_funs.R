@@ -70,6 +70,6 @@ prop_pos_test0 <- function(i,t,phi,
                pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))
            }
     if (debug) cat("val: ",lwr,"\n")
-    return(val/pbeta(lwr,a,b,lower.tail=FALSE))
+    return(val/t)
 }
 prop_pos_test <- Vectorize(prop_pos_test0,c("i","t","phi"))
