@@ -105,15 +105,33 @@ $$
 $$
 
 The probability of testing is 0 below the threshold and 1 above it; thus this distribution should be a Bernoulli with weight $1-t$ on zero and $t$ on 1.
-Thus the numerator is the value we've already computed for the numerator of the proportion-positive value ($\int_{1-t}^1 x \textrm{Beta(x)}\,dx$), *minus* the product of the testing and infection means ($= ti$, using the usual identity $E[(A-\bar A)(B-\bar B)] = E[AB] - \bar A \bar B$). The variance of testing probability is ($(1-t)\cdot 0^2 + t \cdot 1^2 = t$); the variance of infection probability is the variance of the Beta distribution.
+Thus the numerator is the value we've already computed for the numerator of the proportion-positive value ($\int_{1-t}^1 x \textrm{Beta(x)}\,dx$), *minus* the product of the testing and infection means ($= ti$, using the usual identity $E[(A-\bar A)(B-\bar B)] = E[AB] - \bar A \bar B$). The variance of testing probability is that of a Bernoulli distribution ($t(1-t)$); the variance of infection probability is the variance of the Beta distribution.
 
-```{r phi_corr}
+```{r num_corr, cache=TRUE, echo = FALSE}
+## numerical test of 'interesting' case
+num_cor <- function(i, t, phi, n = 1e5) {
+    a <- i/phi; b <- (1-i)/phi
+    lwr <- qbeta(t, a, b, lower.tail = FALSE)
+    x <- rbeta(n, a, b)
+    y <- as.numeric(x>lwr)
+    cc <- cor.test(x,y)
+    data.frame(cor = cc$estimate, lwr=cc$conf.int[1], upr = cc$conf.int[2])
+}
+phivec <- seq(0.1, 0.95, by = 0.05)
+set.seed(101)
+numcor <- (purrr::map_dfr(phivec, \(p) num_cor(i=0.1, t=0.01, phi=p))
+    |> mutate(phi=phivec, .before = 1))
+```
+
+```{r phi_corr, warning=FALSE, echo = FALSE}
 inf_test_corr <- function(i, t, phi) {
     a <- i/phi; b <- (1-i)/phi
     lwr <- qbeta(t, a, b, lower.tail = FALSE) ## hope we don't need robust version in covid19testing_funs.R
     num <- pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))-t*i
     var_test <- t*(1-t)
     var_inf <- a*b/((a+b)^2*(a+b+1)) ## Wikipedia
+    ## == (i*(1-i)/phi^2)/((1/phi^2)*(1/phi+1)) ==
+    ##   i*(1-i)*phi/(1+phi)
     num/sqrt(var_test*var_inf)
 }
 nn <- 101
@@ -124,11 +142,14 @@ cordf <- data.frame(i = rep(c(0.25, 0.1), c(nn, 2*nn)),
 cordf$cor <- with(cordf, inf_test_corr(i,t,phi))
 cordf$cat <- with(cordf, sprintf("i = %1.2f, t = %1.2f", i, t))
 cordf$cat <- factor(cordf$cat, levels = unique(cordf$cat))
-ggplot(cordf, aes(phi, cor, colour = cat)) + geom_line()
+
+ggplot(cordf, aes(phi, cor, colour = cat)) + geom_line() +
+    geom_pointrange(data = numcor, aes(y=cor, ymin = lwr, ymax = upr),
+                    colour = "blue", size = 0.1)
 ```
 
-- ?? Is it true that correlation *decreases* with large $\phi$ when testing and prevalence are low ... ?? (Seems too large an effect to be due to numeric problems)
-- ?? Is there a simple expression for cor as a function of $\phi$ or *vice versa*?
+- Why does correlation *decreases* with large $\phi$ when testing and prevalence are low ... ?? (Seems real; simulation test agrees with calculations.) (Might be obvious if we draw the pictures as above for $phi = \{0.1, 0.375, 0.9\}$ to see what's happening.)
+- ?? Is there a simple expression for cor as a function of $\phi$ (and $i$ and $t$) or *vice versa*?
 
 ## Numerical examples
 
