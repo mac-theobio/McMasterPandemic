@@ -148,7 +148,7 @@ ggplot(cordf, aes(phi, cor, colour = cat)) + geom_line() +
                     colour = "blue", size = 0.1)
 ```
 
-- Why does correlation *decreases* with large $\phi$ when testing and prevalence are low ... ?? (Seems real; simulation test agrees with calculations.) (Might be obvious if we draw the pictures as above for $phi = \{0.1, 0.375, 0.9\}$ to see what's happening.)
+- Why does correlation *decrease* with large $\phi$ when testing and prevalence are low ... ?? (Seems real; simulation test agrees with calculations.) (Might be obvious if we draw the pictures as above for $\phi = \{0.1, 0.375, 0.9\}$ to see what's happening.)
 - ?? Is there a simple expression for cor as a function of $\phi$ (and $i$ and $t$) or *vice versa*?
 
 ## Numerical examples
@@ -208,10 +208,12 @@ When is $\phi$ identifiable?
 
 ### Simulations
 
-- The first thing to do is the minimal identifiability test: if we simulate data directly using `prop_pos_test`, then add some noise (e.g. binomial testing outcomes), and then we try to take the observed testing data (total tests and positive tests) and get an MLE of both phi and the parameters of the exponential growth of prevalence (initial value and growth rate), can we do it?  If $t$ is the fraction of the population tested and $N$ is the population size and $f(\tau)=\textrm{prop\_pos}(i(\tau),t(\tau),\phi)$ is the fraction positive, then we want to simulate $c(\tau) \sim \textrm{Binomial}(f,tN)$, the number of confirmed positive cases at time $\tau$. Not worrying about sensitivity/specificity yet (tests are perfect).
+- The first thing to do is the minimal identifiability test: if we simulate data directly using `prop_pos_test`, then add some noise (e.g. binomial testing outcomes), and then we try to take the observed testing data (total tests and positive tests) and get an MLE of both phi and the parameters of the exponential growth of prevalence (initial value and growth rate), can we do it?  If $t$ is the fraction of the population tested and $N$ is the population size and $f(\tau)=\textrm{prop_pos}(i(\tau),t(\tau),\phi)$ is the fraction positive, then we want to simulate $c(\tau) \sim \textrm{Binomial}(f,tN)$, the number of confirmed positive cases at time $\tau$. Not worrying about sensitivity/specificity yet (i.e., assume tests are perfect).
 
 MLE: want to estimate $i_0$, $r$ (growth rate of prevalence), and $\phi$. We know $t(\tau)$ and $c(\tau)$ (no time lags yet!)
    
+**FIXME**: redo this in [RTMB](https://cran.r-universe.dev/RTMB) ?
+
 ```{r testsim}
 ## t (test vector) and c (confirmation vector) are defined; tau is a time vector
 set.seed(101)
