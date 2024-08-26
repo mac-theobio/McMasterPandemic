@@ -73,3 +73,14 @@ prop_pos_test0 <- function(i,t,phi,
     return(val/pbeta(lwr,a,b,lower.tail=FALSE))
 }
 prop_pos_test <- Vectorize(prop_pos_test0,c("i","t","phi"))
+
+
+## 'pure' version of prop_pos_test0, for RTMB use
+prop_pos_test1 <- function(i,t,phi) {
+    ## transform phi??
+    a <- i/phi; b <- (1-i)/phi
+    lwr <- qbeta(t,a,b,lower.tail=FALSE)
+    val <- pbeta(lwr,a+1,b,lower.tail=FALSE)*(a/(a+b))
+    return(val/pbeta(lwr,a,b,lower.tail=FALSE))
+}
+
