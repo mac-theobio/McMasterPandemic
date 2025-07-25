@@ -21,10 +21,6 @@
 
 Compartmental epidemic models for forecasting and analysis of infectious disease pandemics: contributions from Ben Bolker, Jonathan Dushoff, David Earn, Weiguang Guan, Morgan Kain, Michael Li, Irena Papst, Steve Walker (in alphabetical order). Feedback is welcome at the [issues list](https://github.com/mac-theobio/McMasterPandemic/issues), or e-mail us.
 
-### Refactoring for Speed and Generality
-
-We are [currently refactoring](https://github.com/mac-theobio/McMasterPandemic/projects/7) McMasterPandemic to make it faster and more general. We have merged the [development branch for this refactoring project](https://github.com/mac-theobio/McMasterPandemic/tree/tmb-condense) back into the master branch. However the classic functionality of McMasterPandemic is still available and coexists with the more general interface and faster engine. To get started with the classic functionality, please read [this vignette](https://mac-theobio.github.io/McMasterPandemic/articles/getting_started.html). To get started with the faster and more general functionality, please read [this user guide](https://canmod.github.io/macpan-book/).
-
 ### Documentation
 * [Package documentation](https://mac-theobio.github.io/McMasterPandemic/)
 * [User guide](https://canmod.github.io/macpan-book/)
